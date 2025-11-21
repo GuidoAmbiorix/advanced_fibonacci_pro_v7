@@ -177,6 +177,7 @@ class BotStopRequest(BaseModel):
 class BotStatusResponse(BaseModel):
     bot_config_id: int
     is_active: bool
+    is_running: bool
     symbol: str
     timeframe: str
     current_price: Optional[float]

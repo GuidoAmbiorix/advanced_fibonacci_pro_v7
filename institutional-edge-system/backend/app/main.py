@@ -46,6 +46,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 mt5_connector: MT5Connector = None
 trading_engines: Dict[int, TradingEngine] = {}  # bot_config_id -> TradingEngine
 active_websockets: List[WebSocket] = []
+bot_manager = None  # Manages automated trading bots
 
 # ============================================================================
 # STARTUP & SHUTDOWN
@@ -77,6 +78,12 @@ async def startup_event():
         else:
             logger.warning("MT5 connection failed - running in demo mode")
 
+    # Initialize bot manager
+    global bot_manager
+    from app.services.trading_bot import BotManager
+    bot_manager = BotManager(mt5_connector)
+    logger.info("Bot manager initialized")
+
     logger.info("API started successfully on {}:{}", settings.HOST, settings.PORT)
 
 
@@ -85,6 +92,11 @@ async def shutdown_event():
     """Cleanup on shutdown"""
     logger.info("Shutting down...")
 
+    # Stop all bots
+    if bot_manager:
+        await bot_manager.stop_all()
+
+    # Disconnect MT5
     if mt5_connector:
         mt5_connector.disconnect()
 
@@ -214,7 +226,12 @@ async def start_bot(request: schemas.BotStartRequest, db: Session = Depends(data
     bot_config.is_active = True
     db.commit()
 
-    logger.info("Bot {} started for symbol {} {}", bot_config.name, bot_config.symbol, bot_config.timeframe)
+    # Start the automated bot
+    if bot_manager:
+        await bot_manager.start_bot(request.bot_config_id)
+        logger.info("✅ Bot {} started for symbol {} {}", bot_config.name, bot_config.symbol, bot_config.timeframe)
+    else:
+        logger.warning("Bot manager not available")
 
     return {
         "success": True,
@@ -230,10 +247,16 @@ async def stop_bot(request: schemas.BotStopRequest, db: Session = Depends(databa
     if not bot_config:
         raise HTTPException(status_code=404, detail="Bot configuration not found")
 
+    # Mark as inactive in database
     bot_config.is_active = False
     db.commit()
 
-    logger.info("Bot {} stopped", bot_config.name)
+    # Stop the automated bot
+    if bot_manager:
+        await bot_manager.stop_bot(request.bot_config_id)
+        logger.info("🛑 Bot {} stopped", bot_config.name)
+    else:
+        logger.warning("Bot manager not available")
 
     return {
         "success": True,
@@ -248,6 +271,11 @@ async def get_bot_status(bot_config_id: int, db: Session = Depends(database.get_
     bot_config = db.query(BotConfig).filter(BotConfig.id == bot_config_id).first()
     if not bot_config:
         raise HTTPException(status_code=404, detail="Bot configuration not found")
+
+    # Check if bot is actually running (not just DB flag)
+    is_running = False
+    if bot_manager:
+        is_running = bot_config_id in bot_manager.get_running_bots()
 
     # Get current price
     current_price = None
@@ -274,6 +302,7 @@ async def get_bot_status(bot_config_id: int, db: Session = Depends(database.get_
     return {
         "bot_config_id": bot_config.id,
         "is_active": bot_config.is_active,
+        "is_running": is_running,
         "symbol": bot_config.symbol,
         "timeframe": bot_config.timeframe,
         "current_price": current_price,
@@ -281,6 +310,19 @@ async def get_bot_status(bot_config_id: int, db: Session = Depends(database.get_
         "total_trades_today": len(trades_today),
         "pnl_today": pnl_today,
         "last_signal_time": bot_config.last_signal_time,
+    }
+
+
+@app.get("/api/bots/running")
+async def get_running_bots():
+    """Get list of all running bot IDs"""
+    if not bot_manager:
+        return {"running_bots": [], "count": 0}
+
+    running_bot_ids = bot_manager.get_running_bots()
+    return {
+        "running_bots": running_bot_ids,
+        "count": len(running_bot_ids)
     }
 
 
