@@ -2,7 +2,20 @@
   "permissions": {
     "allow": [
       "Bash(python test_system.py:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(timeout 5 docker-compose logs:*)",
+      "Bash(docker exec:*)",
+      "Bash(timeout 30 python:*)",
+      "Bash(dir:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(python init_database.py:*)",
+      "Bash(python init_db_docker.py:*)",
+      "Bash(start \"Institutional Edge Frontend\" cmd /k start_frontend.bat)",
+      "Bash(python run_backend.py:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 5 sleep:*)"
     ],
     "deny": [],
     "ask": []

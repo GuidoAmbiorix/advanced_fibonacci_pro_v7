@@ -210,6 +210,26 @@ async def analyze_market(symbol: str, timeframe: str):
     return analysis
 
 
+@app.get("/api/market/history/{symbol}/{timeframe}", response_model=schemas.OHLCVResponse)
+async def get_market_history(symbol: str, timeframe: str, bars: int = 100):
+    """Get historical OHLCV data for charts"""
+    if not mt5_connector or not mt5_connector.connected:
+        raise HTTPException(status_code=503, detail="MT5 not connected")
+
+    df = mt5_connector.get_ohlcv_data(symbol, timeframe, bars=bars)
+    if df is None or len(df) == 0:
+        raise HTTPException(status_code=404, detail=f"No data available for {symbol}")
+
+    # Convert to list of dicts
+    data = df.to_dict(orient='records')
+    
+    return {
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "data": data
+    }
+
+
 # ============================================================================
 # BOT CONTROL ENDPOINTS
 # ============================================================================
@@ -268,49 +288,57 @@ async def stop_bot(request: schemas.BotStopRequest, db: Session = Depends(databa
 @app.get("/api/bot/status/{bot_config_id}", response_model=schemas.BotStatusResponse)
 async def get_bot_status(bot_config_id: int, db: Session = Depends(database.get_db)):
     """Get bot status"""
-    bot_config = db.query(BotConfig).filter(BotConfig.id == bot_config_id).first()
-    if not bot_config:
-        raise HTTPException(status_code=404, detail="Bot configuration not found")
+    try:
+        bot_config = db.query(BotConfig).filter(BotConfig.id == bot_config_id).first()
+        if not bot_config:
+            raise HTTPException(status_code=404, detail="Bot configuration not found")
 
-    # Check if bot is actually running (not just DB flag)
-    is_running = False
-    if bot_manager:
-        is_running = bot_config_id in bot_manager.get_running_bots()
+        # Check if bot is actually running (not just DB flag)
+        is_running = False
+        if bot_manager:
+            is_running = bot_config_id in bot_manager.get_running_bots()
 
-    # Get current price
-    current_price = None
-    if mt5_connector and mt5_connector.connected:
-        price_data = mt5_connector.get_current_price(bot_config.symbol)
-        if price_data:
-            current_price = price_data['bid']
+        # Get current price
+        current_price = None
+        if mt5_connector and mt5_connector.connected:
+            price_data = mt5_connector.get_current_price(bot_config.symbol)
+            if price_data:
+                current_price = price_data['bid']
 
-    # Get open positions count
-    open_positions = 0
-    if mt5_connector and mt5_connector.connected:
-        positions = mt5_connector.get_open_positions(bot_config.symbol)
-        open_positions = len(positions)
+        # Get open positions count
+        open_positions = 0
+        if mt5_connector and mt5_connector.connected:
+            positions = mt5_connector.get_open_positions(bot_config.symbol)
+            open_positions = len(positions)
 
-    # Get today's trades
-    today = datetime.utcnow().date()
-    trades_today = db.query(Trade).filter(
-        Trade.user_id == bot_config.user_id,
-        Trade.opened_at >= today
-    ).all()
+        # Get today's trades
+        today = datetime.utcnow().date()
+        trades_today = db.query(Trade).filter(
+            Trade.user_id == bot_config.user_id,
+            Trade.opened_at >= today
+        ).all()
 
-    pnl_today = sum(trade.profit_loss for trade in trades_today)
+        # Handle None values in profit_loss
+        pnl_today = sum(trade.profit_loss or 0.0 for trade in trades_today)
 
-    return {
-        "bot_config_id": bot_config.id,
-        "is_active": bot_config.is_active,
-        "is_running": is_running,
-        "symbol": bot_config.symbol,
-        "timeframe": bot_config.timeframe,
-        "current_price": current_price,
-        "open_positions": open_positions,
-        "total_trades_today": len(trades_today),
-        "pnl_today": pnl_today,
-        "last_signal_time": bot_config.last_signal_time,
-    }
+        return {
+            "bot_config_id": bot_config.id,
+            "is_active": bot_config.is_active,
+            "is_running": is_running,
+            "symbol": bot_config.symbol,
+            "timeframe": bot_config.timeframe,
+            "current_price": current_price,
+            "open_positions": open_positions,
+            "total_trades_today": len(trades_today),
+            "pnl_today": pnl_today,
+            "last_signal_time": bot_config.last_signal_time,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting bot status for bot {bot_config_id}: {e}")
+        logger.exception(e)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @app.get("/api/bots/running")

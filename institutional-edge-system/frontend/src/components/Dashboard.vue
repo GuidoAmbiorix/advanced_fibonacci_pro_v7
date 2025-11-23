@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <!-- Quick Stats -->
+    <!-- Top Row: Quick Stats -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
       <StatCard
         title="Current Price"
@@ -16,7 +16,7 @@
       <StatCard
         title="Bull Confluence"
         :value="`${bullScore}/10`"
-        valueClass="text-green-400"
+        valueClass="text-emerald-400"
         icon="🟢"
       />
       <StatCard
@@ -27,13 +27,45 @@
       />
     </div>
 
-    <!-- Analysis Controls -->
+    <!-- Middle Row: Command Center -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[500px]">
+      <!-- Left: Strategy Commander -->
+      <div class="lg:col-span-3 h-full">
+        <StrategyCommander />
+      </div>
+
+      <!-- Center: Real-time Chart -->
+      <div class="lg:col-span-6 h-full card flex flex-col">
+        <div class="card-header flex justify-between items-center">
+          <h3 class="font-bold text-lg">Live Market Data</h3>
+          <div class="flex space-x-2">
+             <span class="badge badge-info">{{ symbol }}</span>
+             <span class="badge badge-warning">{{ timeframe }}</span>
+          </div>
+        </div>
+        <div class="card-body flex-1 relative p-4">
+          <RealTimeChart :symbol="symbol" :timeframe="timeframe" />
+        </div>
+      </div>
+
+      <!-- Right: Risk Center -->
+      <div class="lg:col-span-3 h-full">
+        <RiskCenter />
+      </div>
+    </div>
+
+    <!-- Manual Analysis & Controls -->
     <div class="card">
-      <div class="card-header">
-        <h2 class="text-xl font-bold">Market Analysis</h2>
+      <div class="card-header flex justify-between items-center">
+        <h2 class="text-xl font-bold">Manual Analysis & Controls</h2>
+        <div class="flex space-x-2">
+          <router-link to="/stream" class="btn-secondary flex items-center text-sm px-3 py-1">
+            📺 Stream Mode
+          </router-link>
+        </div>
       </div>
       <div class="card-body">
-        <div class="flex flex-wrap gap-4">
+        <div class="flex flex-wrap gap-4 items-end">
           <div>
             <label class="block text-sm text-gray-400 mb-2">Symbol</label>
             <input
@@ -57,7 +89,7 @@
             </select>
           </div>
 
-          <div class="flex items-end gap-2">
+          <div class="flex gap-2">
             <button @click="analyze" class="btn-primary" :disabled="isAnalyzing">
               {{ isAnalyzing ? 'Analyzing...' : '🔍 Analyze' }}
             </button>
@@ -127,6 +159,9 @@ import ConfluenceCard from './ConfluenceCard.vue'
 import MarketStructureCard from './MarketStructureCard.vue'
 import PositionsPanel from './PositionsPanel.vue'
 import TradesPanel from './TradesPanel.vue'
+import StrategyCommander from './StrategyCommander.vue'
+import RiskCenter from './RiskCenter.vue'
+import RealTimeChart from './RealTimeChart.vue'
 
 // State
 const symbol = ref('EURUSD')
@@ -152,7 +187,7 @@ const lastUpdate = ref(null)
 let autoRefreshInterval = null
 
 const trendColor = computed(() => {
-  return trend.value === 'BULLISH' ? 'text-green-400' : 'text-red-400'
+  return trend.value === 'BULLISH' ? 'text-emerald-400' : 'text-red-400'
 })
 
 async function analyze() {

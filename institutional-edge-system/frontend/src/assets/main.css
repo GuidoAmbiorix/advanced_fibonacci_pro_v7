@@ -4,60 +4,75 @@
 
 @layer base {
   body {
-    @apply bg-gray-900 text-white;
+    @apply bg-slate-950 text-slate-50 font-sans antialiased;
   }
 }
 
 @layer components {
+  /* Cyber-Black Theme Components */
   .btn-primary {
-    @apply px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded font-semibold transition-colors;
+    @apply px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold tracking-wide shadow-lg shadow-blue-900/20 transition-all duration-200 border border-blue-500/30;
   }
 
   .btn-secondary {
-    @apply px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition-colors;
+    @apply px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold tracking-wide border border-slate-700 transition-all duration-200;
   }
 
   .btn-success {
-    @apply px-6 py-2 bg-green-600 hover:bg-green-700 rounded font-semibold transition-colors;
+    @apply px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold tracking-wide shadow-lg shadow-emerald-900/20 transition-all duration-200 border border-emerald-500/30;
   }
 
   .btn-danger {
-    @apply px-6 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors;
+    @apply px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold tracking-wide shadow-lg shadow-red-900/20 transition-all duration-200 border border-red-500/30;
   }
 
   .card {
-    @apply bg-gray-800 rounded-lg shadow-lg;
+    @apply bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl shadow-xl;
   }
 
   .card-header {
-    @apply px-6 py-4 border-b border-gray-700;
+    @apply px-6 py-4 border-b border-slate-800 bg-slate-900/50 rounded-t-xl;
   }
 
   .card-body {
-    @apply px-6 py-4;
+    @apply p-6;
   }
 
   .input-field {
-    @apply px-4 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 transition-colors;
+    @apply px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200;
   }
 
   .badge {
-    @apply px-3 py-1 rounded-full text-xs font-semibold;
+    @apply px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase;
   }
 
   .badge-success {
-    @apply bg-green-600 text-white;
+    @apply bg-emerald-500/10 text-emerald-400 border border-emerald-500/20;
   }
 
   .badge-danger {
-    @apply bg-red-600 text-white;
+    @apply bg-red-500/10 text-red-400 border border-red-500/20;
   }
 
   .badge-warning {
-    @apply bg-yellow-600 text-white;
+    @apply bg-yellow-500/10 text-yellow-400 border border-yellow-500/20;
   }
 
   .badge-info {
-    @apply bg-blue-600 text-white;
+    @apply bg-blue-500/10 text-blue-400 border border-blue-500/20;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-slate-950;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-800 rounded-full hover:bg-slate-700;
   }
 }

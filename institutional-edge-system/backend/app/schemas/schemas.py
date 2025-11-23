@@ -5,7 +5,7 @@ Pydantic Schemas for API Request/Response Validation
 """
 
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 
@@ -121,7 +121,13 @@ class AnalysisResponse(BaseModel):
     bull_score_breakdown: Dict[str, int]
     bear_score_breakdown: Dict[str, int]
     signals: List[SignalResponse]
-    premium_discount: Dict[str, any]
+    premium_discount: Dict[str, Any]
+
+
+class OHLCVResponse(BaseModel):
+    symbol: str
+    timeframe: str
+    data: List[Dict[str, Any]]  # List of {time, open, high, low, close, volume}
 
 
 # ============================================================================

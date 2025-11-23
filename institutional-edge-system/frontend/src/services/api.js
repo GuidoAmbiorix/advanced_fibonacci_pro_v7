@@ -49,6 +49,11 @@ export default {
     return response.data
   },
 
+  async getMarketHistory(symbol, timeframe, bars = 100) {
+    const response = await api.get(`/api/market/history/${symbol}/${timeframe}?bars=${bars}`)
+    return response.data
+  },
+
   // MT5 Operations
   async getAccountInfo() {
     const response = await api.get('/api/mt5/account')

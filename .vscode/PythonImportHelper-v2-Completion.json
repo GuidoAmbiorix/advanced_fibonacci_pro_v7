@@ -80,6 +80,38 @@
         "documentation": {}
     },
     {
+        "label": "create_engine",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "create_engine",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
         "label": "sessionmaker",
         "importPath": "sqlalchemy.orm",
         "description": "sqlalchemy.orm",
@@ -209,6 +241,14 @@
     },
     {
         "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -474,6 +514,14 @@
         "documentation": {}
     },
     {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
         "label": "time",
         "kind": 6,
         "isExtraImport": true,
@@ -678,11 +726,93 @@
         "documentation": {}
     },
     {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
+        "isExtraImport": true,
+        "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
+        "isExtraImport": true,
+        "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
+        "isExtraImport": true,
+        "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "OperationalError",
+        "importPath": "sqlalchemy.exc",
+        "description": "sqlalchemy.exc",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.exc",
+        "documentation": {}
+    },
+    {
         "label": "init_db",
         "importPath": "api.database",
         "description": "api.database",
         "isExtraImport": true,
         "detail": "api.database",
+        "documentation": {}
+    },
+    {
+        "label": "subprocess",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "subprocess",
+        "description": "subprocess",
+        "detail": "subprocess",
         "documentation": {}
     },
     {
@@ -945,6 +1075,15 @@
         "documentation": {}
     },
     {
+        "label": "OHLCVResponse",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class OHLCVResponse(BaseModel):\n    symbol: str\n    timeframe: str\n    data: List[Dict[str, Any]]  # List of {time, open, high, low, close, volume}\n# ============================================================================\n# TRADE SCHEMAS\n# ============================================================================\nclass TradeCreate(BaseModel):\n    symbol: str\n    trade_type: str  # \"BUY\" or \"SELL\"",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
         "label": "TradeCreate",
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.schemas.schemas",
@@ -1059,6 +1198,114 @@
         "description": "institutional-edge-system.backend.app.main",
         "peekOfCode": "bot_manager = None  # Manages automated trading bots\n# ============================================================================\n# STARTUP & SHUTDOWN\n# ============================================================================\n@app.on_event(\"startup\")\nasync def startup_event():\n    \"\"\"Initialize on startup\"\"\"\n    logger.info(\"Starting Institutional Edge Pro API...\")\n    # Create database tables\n    database.init_db()",
         "detail": "institutional-edge-system.backend.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "project_root",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.run_backend",
+        "description": "institutional-edge-system.backend.run_backend",
+        "peekOfCode": "project_root = Path(__file__).parent.parent\nenv_file = project_root / \".env\"\nload_dotenv(env_file)\n# Add app directory to Python path\napp_dir = Path(__file__).parent / \"app\"\nsys.path.insert(0, str(app_dir))\n# Change to app directory for proper module resolution\nos.chdir(str(app_dir))\n# Now import and run\nif __name__ == \"__main__\":",
+        "detail": "institutional-edge-system.backend.run_backend",
+        "documentation": {}
+    },
+    {
+        "label": "env_file",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.run_backend",
+        "description": "institutional-edge-system.backend.run_backend",
+        "peekOfCode": "env_file = project_root / \".env\"\nload_dotenv(env_file)\n# Add app directory to Python path\napp_dir = Path(__file__).parent / \"app\"\nsys.path.insert(0, str(app_dir))\n# Change to app directory for proper module resolution\nos.chdir(str(app_dir))\n# Now import and run\nif __name__ == \"__main__\":\n    import uvicorn",
+        "detail": "institutional-edge-system.backend.run_backend",
+        "documentation": {}
+    },
+    {
+        "label": "app_dir",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.run_backend",
+        "description": "institutional-edge-system.backend.run_backend",
+        "peekOfCode": "app_dir = Path(__file__).parent / \"app\"\nsys.path.insert(0, str(app_dir))\n# Change to app directory for proper module resolution\nos.chdir(str(app_dir))\n# Now import and run\nif __name__ == \"__main__\":\n    import uvicorn\n    from core.config import settings\n    print(f\"Starting {settings.APP_NAME} v{settings.APP_VERSION}\")\n    print(f\"Server: http://{settings.HOST}:{settings.PORT}\")",
+        "detail": "institutional-edge-system.backend.run_backend",
+        "documentation": {}
+    },
+    {
+        "label": "project_root",
+        "kind": 5,
+        "importPath": "institutional-edge-system.init_database",
+        "description": "institutional-edge-system.init_database",
+        "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom sqlalchemy.exc import OperationalError\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()",
+        "detail": "institutional-edge-system.init_database",
+        "documentation": {}
+    },
+    {
+        "label": "backend_path",
+        "kind": 5,
+        "importPath": "institutional-edge-system.init_database",
+        "description": "institutional-edge-system.init_database",
+        "peekOfCode": "backend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom sqlalchemy.exc import OperationalError\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/institutional_edge')",
+        "detail": "institutional-edge-system.init_database",
+        "documentation": {}
+    },
+    {
+        "label": "DATABASE_URL",
+        "kind": 5,
+        "importPath": "institutional-edge-system.init_database",
+        "description": "institutional-edge-system.init_database",
+        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Institutional Edge PRO - Database Initialization\")\nprint(\"=\" * 70)\nprint(f\"\\nDatabase URL: {DATABASE_URL.split('@')[1] if '@' in DATABASE_URL else DATABASE_URL}\")\n# Test connection\nprint(\"\\n[1/3] Testing database connection...\")\ntry:\n    engine = create_engine(DATABASE_URL, pool_pre_ping=True)\n    with engine.connect() as conn:",
+        "detail": "institutional-edge-system.init_database",
+        "documentation": {}
+    },
+    {
+        "label": "project_root",
+        "kind": 5,
+        "importPath": "institutional-edge-system.init_db_docker",
+        "description": "institutional-edge-system.init_db_docker",
+        "peekOfCode": "project_root = Path(__file__).parent\nprint(\"=\" * 70)\nprint(\"Institutional Edge PRO - Database Initialization (Docker Method)\")\nprint(\"=\" * 70)\n# Read the SQL schema from models\nprint(\"\\n[1/2] Generating database schema...\")\nsql_commands = \"\"\"\n-- Create users table\nCREATE TABLE IF NOT EXISTS users (\n    id SERIAL PRIMARY KEY,",
+        "detail": "institutional-edge-system.init_db_docker",
+        "documentation": {}
+    },
+    {
+        "label": "sql_commands",
+        "kind": 5,
+        "importPath": "institutional-edge-system.init_db_docker",
+        "description": "institutional-edge-system.init_db_docker",
+        "peekOfCode": "sql_commands = \"\"\"\n-- Create users table\nCREATE TABLE IF NOT EXISTS users (\n    id SERIAL PRIMARY KEY,\n    email VARCHAR UNIQUE NOT NULL,\n    username VARCHAR UNIQUE NOT NULL,\n    hashed_password VARCHAR NOT NULL,\n    is_active BOOLEAN DEFAULT TRUE,\n    is_admin BOOLEAN DEFAULT FALSE,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        "detail": "institutional-edge-system.init_db_docker",
+        "documentation": {}
+    },
+    {
+        "label": "sql_file",
+        "kind": 5,
+        "importPath": "institutional-edge-system.init_db_docker",
+        "description": "institutional-edge-system.init_db_docker",
+        "peekOfCode": "sql_file = project_root / \"init_schema.sql\"\nwith open(sql_file, 'w') as f:\n    f.write(sql_commands)\nprint(f\"Generated schema file: {sql_file}\")\n# Execute via Docker\nprint(\"\\n[2/2] Creating tables in PostgreSQL...\")\ntry:\n    # Copy SQL file into container\n    subprocess.run([\n        \"docker\", \"cp\",",
+        "detail": "institutional-edge-system.init_db_docker",
+        "documentation": {}
+    },
+    {
+        "label": "test_connection",
+        "kind": 2,
+        "importPath": "institutional-edge-system.test_db_connection",
+        "description": "institutional-edge-system.test_db_connection",
+        "peekOfCode": "def test_connection():\n    \"\"\"Test database connection\"\"\"\n    logger.info(\"Testing database connection...\")\n    logger.info(f\"Database URL: {DATABASE_URL.split('@')[1] if '@' in DATABASE_URL else DATABASE_URL}\")\n    try:\n        # Create engine\n        engine = create_engine(DATABASE_URL, pool_pre_ping=True)\n        # Test connection\n        with engine.connect() as conn:\n            # Execute simple query",
+        "detail": "institutional-edge-system.test_db_connection",
+        "documentation": {}
+    },
+    {
+        "label": "backend_path",
+        "kind": 5,
+        "importPath": "institutional-edge-system.test_db_connection",
+        "description": "institutional-edge-system.test_db_connection",
+        "peekOfCode": "backend_path = Path(__file__).parent / 'backend' / 'app'\nsys.path.insert(0, str(backend_path))\nfrom sqlalchemy import create_engine, text\nfrom dotenv import load_dotenv\nfrom loguru import logger\nimport os\n# Load environment variables\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/institutional_edge')\ndef test_connection():",
+        "detail": "institutional-edge-system.test_db_connection",
+        "documentation": {}
+    },
+    {
+        "label": "DATABASE_URL",
+        "kind": 5,
+        "importPath": "institutional-edge-system.test_db_connection",
+        "description": "institutional-edge-system.test_db_connection",
+        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/institutional_edge')\ndef test_connection():\n    \"\"\"Test database connection\"\"\"\n    logger.info(\"Testing database connection...\")\n    logger.info(f\"Database URL: {DATABASE_URL.split('@')[1] if '@' in DATABASE_URL else DATABASE_URL}\")\n    try:\n        # Create engine\n        engine = create_engine(DATABASE_URL, pool_pre_ping=True)\n        # Test connection\n        with engine.connect() as conn:",
+        "detail": "institutional-edge-system.test_db_connection",
         "documentation": {}
     },
     {

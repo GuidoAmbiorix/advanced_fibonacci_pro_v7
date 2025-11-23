@@ -70,9 +70,7 @@ class Settings(BaseSettings):
     EMAIL_USER: str = ""
     EMAIL_PASSWORD: str = ""
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = {"extra": "ignore", "env_file": ".env", "case_sensitive": True}
 
 
 # Global settings instance
