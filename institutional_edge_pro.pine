@@ -1,0 +1,502 @@
+//@version=6
+// ============================================================================
+// INSTITUTIONAL EDGE PRO v2.1 (ANCHORED FIX)
+// ============================================================================
+// Fix: Replaced plotshape with time-anchored labels so signals "stick" 
+// precisely to the candles when moving the chart.
+// ============================================================================
+
+indicator("Institutional Edge PRO v2.1",
+         shorttitle="IEP v2.1",
+         overlay=true,
+         max_labels_count=500,
+         max_lines_count=500,
+         max_boxes_count=200,
+         max_bars_back=5000)
+
+// ============================================================================
+// SETTINGS
+// ============================================================================
+
+// Smart Money Concepts
+group_smc = "SMART MONEY CONCEPTS"
+showOrderBlocks = input.bool(true, "Order Blocks", group=group_smc)
+obLookback = input.int(50, "OB Lookback", minval=5, maxval=100, group=group_smc) 
+obMitigationMode = input.string("Wick", "OB Mitigation", options=["Wick", "Close"], group=group_smc)
+showFVG = input.bool(true, "Fair Value Gaps", group=group_smc)
+fvgMinSize = input.float(0.3, "FVG Min Size (ATR %)", minval=0.01, maxval=2.0, step=0.05, group=group_smc) 
+showBOS = input.bool(true, "Break of Structure", group=group_smc)
+showCHOCH = input.bool(true, "Change of Character", group=group_smc)
+showLiquiditySweeps = input.bool(true, "Liquidity Sweeps", group=group_smc)
+showPremiumDiscount = input.bool(true, "Premium/Discount Zones", group=group_smc)
+
+// Volume Profile
+group_vp = "VOLUME PROFILE"
+showVolumeProfile = input.bool(true, "Volume Profile", group=group_vp)
+vpLookback = input.int(100, "VP Lookback", minval=20, maxval=500, group=group_vp)
+vpRows = input.int(24, "VP Rows", minval=10, maxval=50, group=group_vp)
+valueAreaPercent = input.float(70, "Value Area %", minval=50, maxval=90, group=group_vp)
+showPOC = input.bool(true, "Point of Control", group=group_vp)
+
+// Confluence System
+group_conf = "CONFLUENCE SCORING"
+showConfluence = input.bool(true, "Show Confluence Score", group=group_conf)
+minConfluenceScore = input.int(6, "Min Score for Signal", minval=3, maxval=10, group=group_conf)
+showScoreBreakdown = input.bool(true, "Show Score Breakdown", group=group_conf)
+
+// Dashboard
+group_dash = "DASHBOARD"
+showDashboard = input.bool(true, "Show Dashboard", group=group_dash)
+dashPosition = input.string("Top Right", "Position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"], group=group_dash)
+
+// Visual
+group_visual = "VISUAL SETTINGS"
+bullColor = input.color(color.new(#00E676, 0), "Bullish Color", group=group_visual)
+bearColor = input.color(color.new(#FF5252, 0), "Bearish Color", group=group_visual)
+neutralColor = input.color(color.new(#FFCA28, 30), "Neutral Color", group=group_visual)
+fvgBullColor = input.color(color.new(#00E676, 80), "FVG Bullish", group=group_visual)
+fvgBearColor = input.color(color.new(#FF5252, 80), "FVG Bearish", group=group_visual)
+
+// Alerts
+group_alerts = "ALERTS"
+alertOnBOS = input.bool(true, "Alert on BOS", group=group_alerts)
+alertOnCHOCH = input.bool(true, "Alert on CHOCH", group=group_alerts)
+alertOnHighConfluence = input.bool(true, "Alert on High Confluence", group=group_alerts)
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+type OrderBlock
+    float top
+    float bottom
+    int startBar
+    bool isBullish
+    bool isMitigated
+    float volume
+
+type FairValueGap
+    float top
+    float bottom
+    int startBar
+    bool isBullish
+    bool isFilled
+
+type SwingPoint
+    float price
+    int barIdx
+    bool isHigh
+
+type StructureBreak
+    int barIdx
+    float price
+    bool isBullish
+    bool isChoch
+
+// ============================================================================
+// CORE CALCULATIONS
+// ============================================================================
+
+atr = ta.atr(14)
+avgVolume = ta.sma(volume, 20)
+
+// Swing Detection
+swingLen = 10 
+swingHigh = ta.pivothigh(high, swingLen, swingLen)
+swingLow = ta.pivotlow(low, swingLen, swingLen)
+
+// Track swing points
+var array<SwingPoint> swingHighs = array.new<SwingPoint>()
+var array<SwingPoint> swingLows = array.new<SwingPoint>()
+
+if not na(swingHigh)
+    sp = SwingPoint.new(swingHigh, bar_index - swingLen, true)
+    array.push(swingHighs, sp)
+    if array.size(swingHighs) > 50
+        array.shift(swingHighs)
+
+if not na(swingLow)
+    sp = SwingPoint.new(swingLow, bar_index - swingLen, false)
+    array.push(swingLows, sp)
+    if array.size(swingLows) > 50
+        array.shift(swingLows)
+
+// Get recent swing levels
+lastSwingHigh = array.size(swingHighs) > 0 ? array.get(swingHighs, array.size(swingHighs) - 1).price : ta.highest(high, 20)
+lastSwingLow = array.size(swingLows) > 0 ? array.get(swingLows, array.size(swingLows) - 1).price : ta.lowest(low, 20)
+prevSwingHigh = array.size(swingHighs) > 1 ? array.get(swingHighs, array.size(swingHighs) - 2).price : lastSwingHigh
+prevSwingLow = array.size(swingLows) > 1 ? array.get(swingLows, array.size(swingLows) - 2).price : lastSwingLow
+
+// ============================================================================
+// MARKET STRUCTURE (BOS & CHOCH)
+// ============================================================================
+
+var bool trendBullish = true
+var float lastBrokenHigh = na
+var float lastBrokenLow = na
+
+// Break of Structure Detection
+bosUp = ta.crossover(close, lastSwingHigh) and close > prevSwingHigh
+bosDown = ta.crossunder(close, lastSwingLow) and close < prevSwingLow
+
+// Change of Character (trend reversal)
+chochUp = bosUp and not trendBullish
+chochDown = bosDown and trendBullish
+
+// Update trend
+if bosUp
+    if not trendBullish
+        trendBullish := true
+    lastBrokenHigh := lastSwingHigh
+
+if bosDown
+    if trendBullish
+        trendBullish := false
+    lastBrokenLow := lastSwingLow
+
+// ============================================================================
+// ORDER BLOCKS
+// ============================================================================
+
+var array<OrderBlock> bullishOBs = array.new<OrderBlock>()
+var array<OrderBlock> bearishOBs = array.new<OrderBlock>()
+
+// Detect Bullish Order Block (last down candle before up move)
+isBullishOB = close[2] < open[2] and close[1] > open[1] and close > high[2] and volume[2] > avgVolume[2]
+isBearishOB = close[2] > open[2] and close[1] < open[1] and close < low[2] and volume[2] > avgVolume[2]
+
+if showOrderBlocks and isBullishOB
+    ob = OrderBlock.new(high[2], low[2], bar_index - 2, true, false, volume[2])
+    array.push(bullishOBs, ob)
+    if array.size(bullishOBs) > 20
+        array.shift(bullishOBs)
+
+if showOrderBlocks and isBearishOB
+    ob = OrderBlock.new(high[2], low[2], bar_index - 2, false, false, volume[2])
+    array.push(bearishOBs, ob)
+    if array.size(bearishOBs) > 20
+        array.shift(bearishOBs)
+
+// Check for Order Block mitigation
+mitigationPrice = obMitigationMode == "Close" ? close : (close > open ? low : high)
+
+if array.size(bullishOBs) > 0
+    for i = array.size(bullishOBs) - 1 to 0
+        ob = array.get(bullishOBs, i)
+        if not ob.isMitigated and mitigationPrice < ob.bottom
+            ob.isMitigated := true
+            array.set(bullishOBs, i, ob)
+
+if array.size(bearishOBs) > 0
+    for i = array.size(bearishOBs) - 1 to 0
+        ob = array.get(bearishOBs, i)
+        if not ob.isMitigated and mitigationPrice > ob.top
+            ob.isMitigated := true
+            array.set(bearishOBs, i, ob)
+
+// Count active order blocks
+activeOBCount = 0
+atBullishOB = false
+atBearishOB = false
+
+if array.size(bullishOBs) > 0
+    for i = 0 to array.size(bullishOBs) - 1
+        ob = array.get(bullishOBs, i)
+        if not ob.isMitigated
+            activeOBCount += 1
+            if low <= ob.top and high >= ob.bottom
+                atBullishOB := true
+
+if array.size(bearishOBs) > 0
+    for i = 0 to array.size(bearishOBs) - 1
+        ob = array.get(bearishOBs, i)
+        if not ob.isMitigated
+            activeOBCount += 1
+            if low <= ob.top and high >= ob.bottom
+                atBearishOB := true
+
+// ============================================================================
+// FAIR VALUE GAPS
+// ============================================================================
+
+var array<FairValueGap> bullishFVGs = array.new<FairValueGap>()
+var array<FairValueGap> bearishFVGs = array.new<FairValueGap>()
+
+fvgMinATR = atr * fvgMinSize
+
+bullFVGTop = low
+bullFVGBottom = high[2]
+hasBullFVG = bullFVGBottom < bullFVGTop and (bullFVGTop - bullFVGBottom) > fvgMinATR
+
+bearFVGTop = low[2]
+bearFVGBottom = high
+hasBearFVG = bearFVGBottom < bearFVGTop and (bearFVGTop - bearFVGBottom) > fvgMinATR
+
+if showFVG and hasBullFVG
+    fvg = FairValueGap.new(bullFVGTop, bullFVGBottom, bar_index - 1, true, false)
+    array.push(bullishFVGs, fvg)
+    if array.size(bullishFVGs) > 30
+        array.shift(bullishFVGs)
+
+if showFVG and hasBearFVG
+    fvg = FairValueGap.new(bearFVGTop, bearFVGBottom, bar_index - 1, false, false)
+    array.push(bearishFVGs, fvg)
+    if array.size(bearishFVGs) > 30
+        array.shift(bearishFVGs)
+
+// Check for FVG fill
+atBullishFVG = false
+atBearishFVG = false
+
+if array.size(bullishFVGs) > 0
+    for i = array.size(bullishFVGs) - 1 to 0
+        fvg = array.get(bullishFVGs, i)
+        if not fvg.isFilled
+            if low <= fvg.bottom
+                fvg.isFilled := true
+                array.set(bullishFVGs, i, fvg)
+            else if low <= fvg.top and high >= fvg.bottom
+                atBullishFVG := true
+
+if array.size(bearishFVGs) > 0
+    for i = array.size(bearishFVGs) - 1 to 0
+        fvg = array.get(bearishFVGs, i)
+        if not fvg.isFilled
+            if high >= fvg.top
+                fvg.isFilled := true
+                array.set(bearishFVGs, i, fvg)
+            else if low <= fvg.top and high >= fvg.bottom
+                atBearishFVG := true
+
+// ============================================================================
+// LIQUIDITY SWEEPS
+// ============================================================================
+
+tolerance = atr * 0.1
+highSweep = high > lastSwingHigh and close < lastSwingHigh
+lowSweep = low < lastSwingLow and close > lastSwingLow
+
+liquiditySweepBull = showLiquiditySweeps and lowSweep
+liquiditySweepBear = showLiquiditySweeps and highSweep
+
+// ============================================================================
+// PREMIUM/DISCOUNT ZONES
+// ============================================================================
+
+equilibrium = (lastSwingHigh + lastSwingLow) / 2
+inPremium = close > equilibrium
+inDiscount = close < equilibrium
+
+// ============================================================================
+// VOLUME PROFILE
+// ============================================================================
+
+var float pocLevel = na
+
+if showVolumeProfile and bar_index > vpLookback
+    highestPrice = ta.highest(high, vpLookback)
+    lowestPrice = ta.lowest(low, vpLookback)
+    priceRange = highestPrice - lowestPrice
+    rowHeight = priceRange / vpRows
+
+    var array<float> vpVolumes = array.new<float>(vpRows, 0.0)
+    totalVolume = 0.0
+    maxVolume = 0.0
+    maxVolumeRow = 0
+
+    for i = 0 to vpRows - 1
+        rowLow = lowestPrice + (i * rowHeight)
+        rowHigh = rowLow + rowHeight
+        rowVol = 0.0
+
+        for j = 0 to math.min(vpLookback - 1, 100)
+            if low[j] <= rowHigh and high[j] >= rowLow
+                overlap = math.min(high[j], rowHigh) - math.max(low[j], rowLow)
+                candleRange = high[j] - low[j]
+                if candleRange > 0
+                    rowVol += volume[j] * (overlap / candleRange)
+
+        array.set(vpVolumes, i, rowVol)
+        totalVolume += rowVol
+
+        if rowVol > maxVolume
+            maxVolume := rowVol
+            maxVolumeRow := i
+
+    pocLevel := lowestPrice + (maxVolumeRow * rowHeight) + (rowHeight / 2)
+
+// Check proximity to volume profile levels
+nearPOC = showVolumeProfile and not na(pocLevel) and math.abs(close - pocLevel) < atr * 0.5
+
+// ============================================================================
+// CONFLUENCE SCORING SYSTEM
+// ============================================================================
+
+bullConfluenceScore = 0
+bearConfluenceScore = 0
+
+if atBullishOB
+    bullConfluenceScore += 2
+if atBearishOB
+    bearConfluenceScore += 2
+if atBullishFVG
+    bullConfluenceScore += 2
+if atBearishFVG
+    bearConfluenceScore += 2
+if trendBullish
+    bullConfluenceScore += 2
+else
+    bearConfluenceScore += 2
+if inDiscount
+    bullConfluenceScore += 2
+if inPremium
+    bearConfluenceScore += 2
+if liquiditySweepBull
+    bullConfluenceScore += 2
+if liquiditySweepBear
+    bearConfluenceScore += 2
+if nearPOC
+    bullConfluenceScore += 1
+    bearConfluenceScore += 1
+
+bullConfluenceScore := math.min(bullConfluenceScore, 10)
+bearConfluenceScore := math.min(bearConfluenceScore, 10)
+
+// ------------------------------------------------------------------------
+// SIGNAL GENERATION (DEBOUNCED)
+// ------------------------------------------------------------------------
+
+bullSignalTrigger = (bullConfluenceScore >= minConfluenceScore) and (bullConfluenceScore[1] < minConfluenceScore) and trendBullish
+bearSignalTrigger = (bearConfluenceScore >= minConfluenceScore) and (bearConfluenceScore[1] < minConfluenceScore) and not trendBullish
+
+// ============================================================================
+// VISUAL RENDERING
+// ============================================================================
+
+// Draw Order Blocks
+var array<box> obBoxes = array.new<box>()
+var int lastOBUpdate = 0
+
+obNeedsUpdate = isBullishOB or isBearishOB or barstate.isfirst or (bar_index - lastOBUpdate > 5)
+
+if showOrderBlocks and obNeedsUpdate
+    if array.size(obBoxes) > 0
+        for i = array.size(obBoxes) - 1 to 0
+            box.delete(array.get(obBoxes, i))
+        array.clear(obBoxes)
+
+    lastOBUpdate := bar_index
+
+    if array.size(bullishOBs) > 0
+        for i = 0 to array.size(bullishOBs) - 1
+            ob = array.get(bullishOBs, i)
+            if not ob.isMitigated and bar_index - ob.startBar < 300
+                b = box.new(ob.startBar, ob.top, bar_index, ob.bottom,
+                           border_color=bullColor, bgcolor=color.new(bullColor, 85),
+                           border_width=1, text="OB", text_color=bullColor, text_size=size.tiny,
+                           extend=extend.right)
+                array.push(obBoxes, b)
+
+    if array.size(bearishOBs) > 0
+        for i = 0 to array.size(bearishOBs) - 1
+            ob = array.get(bearishOBs, i)
+            if not ob.isMitigated and bar_index - ob.startBar < 300
+                b = box.new(ob.startBar, ob.top, bar_index, ob.bottom,
+                           border_color=bearColor, bgcolor=color.new(bearColor, 85),
+                           border_width=1, text="OB", text_color=bearColor, text_size=size.tiny,
+                           extend=extend.right)
+                array.push(obBoxes, b)
+
+// Draw FVGs
+var array<box> fvgBoxes = array.new<box>()
+var int lastFVGUpdate = 0
+fvgNeedsUpdate = hasBullFVG or hasBearFVG or barstate.isfirst or (bar_index - lastFVGUpdate > 5)
+
+if showFVG and fvgNeedsUpdate
+    if array.size(fvgBoxes) > 0
+        for i = array.size(fvgBoxes) - 1 to 0
+            box.delete(array.get(fvgBoxes, i))
+        array.clear(fvgBoxes)
+
+    lastFVGUpdate := bar_index
+
+    if array.size(bullishFVGs) > 0
+        for i = 0 to array.size(bullishFVGs) - 1
+            fvg = array.get(bullishFVGs, i)
+            if not fvg.isFilled and bar_index - fvg.startBar < 300
+                b = box.new(fvg.startBar, fvg.top, bar_index, fvg.bottom,
+                           border_color=color.new(fvgBullColor, 50), bgcolor=fvgBullColor,
+                           border_width=1, text="FVG", text_color=bullColor, text_size=size.tiny,
+                           extend=extend.right)
+                array.push(fvgBoxes, b)
+
+    if array.size(bearishFVGs) > 0
+        for i = 0 to array.size(bearishFVGs) - 1
+            fvg = array.get(bearishFVGs, i)
+            if not fvg.isFilled and bar_index - fvg.startBar < 300
+                b = box.new(fvg.startBar, fvg.top, bar_index, fvg.bottom,
+                           border_color=color.new(fvgBearColor, 50), bgcolor=fvgBearColor,
+                           border_width=1, text="FVG", text_color=bearColor, text_size=size.tiny,
+                           extend=extend.right)
+                array.push(fvgBoxes, b)
+
+// ------------------------------------------------------------------------
+// LABELS - REPLACED PLOTSHAPE WITH ANCHORED LABELS
+// ------------------------------------------------------------------------
+// Using xloc.bar_time ensures labels stick to the time, not the screen pixel
+
+if bullSignalTrigger
+    label.new(time, low, "BUY", xloc=xloc.bar_time, yloc=yloc.belowbar, 
+             style=label.style_label_up, color=bullColor, textcolor=color.white, size=size.normal)
+
+if bearSignalTrigger
+    label.new(time, high, "SELL", xloc=xloc.bar_time, yloc=yloc.abovebar, 
+             style=label.style_label_down, color=bearColor, textcolor=color.white, size=size.normal)
+
+// We still use plotshape for smaller icons as they are less obtrusive
+plotshape(showBOS and bosUp and not chochUp, title="BOS Up", location=location.abovebar,
+         style=shape.triangleup, size=size.tiny, color=bullColor, text="BOS")
+plotshape(showBOS and bosDown and not chochDown, title="BOS Down", location=location.belowbar,
+         style=shape.triangledown, size=size.tiny, color=bearColor, text="BOS")
+plotshape(showCHOCH and chochUp, title="CHOCH Up", location=location.abovebar,
+         style=shape.diamond, size=size.small, color=bullColor, text="CHOCH")
+plotshape(showCHOCH and chochDown, title="CHOCH Down", location=location.belowbar,
+         style=shape.diamond, size=size.small, color=bearColor, text="CHOCH")
+plotshape(liquiditySweepBull, title="Liq Sweep Bull", location=location.belowbar,
+         style=shape.xcross, size=size.small, color=bullColor, text="SWEEP")
+plotshape(liquiditySweepBear, title="Liq Sweep Bear", location=location.abovebar,
+         style=shape.xcross, size=size.small, color=bearColor, text="SWEEP")
+
+// Dashboard
+dashPos = switch dashPosition
+    "Top Right" => position.top_right
+    "Top Left" => position.top_left
+    "Bottom Right" => position.bottom_right
+    => position.bottom_left
+
+var table dashboard = table.new(dashPos, 2, 15, bgcolor=color.new(color.black, 20), border_width=1, border_color=color.gray)
+
+if showDashboard and barstate.islast
+    row = 0
+    table.cell(dashboard, 0, row, "INSTITUTIONAL EDGE", text_color=color.white, text_size=size.normal, bgcolor=color.new(color.blue, 50))
+    table.cell(dashboard, 1, row, "PRO v2.1", text_color=color.white, text_size=size.normal, bgcolor=color.new(color.blue, 50))
+    row += 1
+    
+    biasText = trendBullish ? "BULLISH" : "BEARISH"
+    biasColor = trendBullish ? bullColor : bearColor
+    table.cell(dashboard, 0, row, "Market Bias", text_color=color.gray)
+    table.cell(dashboard, 1, row, biasText, text_color=biasColor)
+    row += 1
+
+    bullScoreText = str.tostring(bullConfluenceScore) + "/10"
+    table.cell(dashboard, 0, row, "Bull Score", text_color=color.gray)
+    table.cell(dashboard, 1, row, bullScoreText, text_color=bullConfluenceScore >= minConfluenceScore ? bullColor : color.gray)
+    row += 1
+
+    bearScoreText = str.tostring(bearConfluenceScore) + "/10"
+    table.cell(dashboard, 0, row, "Bear Score", text_color=color.gray)
+    table.cell(dashboard, 1, row, bearScoreText, text_color=bearConfluenceScore >= minConfluenceScore ? bearColor : color.gray)
+
+// Alerts
+alertcondition(bullSignalTrigger, title="High Confluence Buy", message="HIGH CONFLUENCE BUY signal on {{ticker}}")
+alertcondition(bearSignalTrigger, title="High Confluence Sell", message="HIGH CONFLUENCE SELL signal on {{ticker}}")

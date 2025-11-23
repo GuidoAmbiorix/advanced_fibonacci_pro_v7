@@ -1,0 +1,1118 @@
+[
+    {
+        "label": "create_engine",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "Column",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "Integer",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "String",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "Float",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "Boolean",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "DateTime",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "JSON",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "Text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "ForeignKey",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "sessionmaker",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "Session",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "relationship",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "Session",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "Generator",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "Base",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfig",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Trade",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Signal",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Base",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "User",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfig",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Trade",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "BaseSettings",
+        "importPath": "pydantic_settings",
+        "description": "pydantic_settings",
+        "isExtraImport": true,
+        "detail": "pydantic_settings",
+        "documentation": {}
+    },
+    {
+        "label": "MetaTrader5",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "MetaTrader5",
+        "description": "MetaTrader5",
+        "detail": "MetaTrader5",
+        "documentation": {}
+    },
+    {
+        "label": "pandas",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "pandas",
+        "description": "pandas",
+        "detail": "pandas",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "time",
+        "description": "time",
+        "detail": "time",
+        "documentation": {}
+    },
+    {
+        "label": "numpy",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "numpy",
+        "description": "numpy",
+        "detail": "numpy",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "declarative_base",
+        "importPath": "sqlalchemy.ext.declarative",
+        "description": "sqlalchemy.ext.declarative",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.declarative",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "EmailStr",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "asyncio",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "asyncio",
+        "description": "asyncio",
+        "detail": "asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "app.core.trading_engine",
+        "description": "app.core.trading_engine",
+        "isExtraImport": true,
+        "detail": "app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "app.core.trading_engine",
+        "description": "app.core.trading_engine",
+        "isExtraImport": true,
+        "detail": "app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "MT5Connector",
+        "importPath": "app.core.mt5_connector",
+        "description": "app.core.mt5_connector",
+        "isExtraImport": true,
+        "detail": "app.core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "MT5Connector",
+        "importPath": "app.core.mt5_connector",
+        "description": "app.core.mt5_connector",
+        "isExtraImport": true,
+        "detail": "app.core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "SessionLocal",
+        "importPath": "app.api.database",
+        "description": "app.api.database",
+        "isExtraImport": true,
+        "detail": "app.api.database",
+        "documentation": {}
+    },
+    {
+        "label": "FastAPI",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "WebSocket",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "WebSocketDisconnect",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "status",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "CORSMiddleware",
+        "importPath": "fastapi.middleware.cors",
+        "description": "fastapi.middleware.cors",
+        "isExtraImport": true,
+        "detail": "fastapi.middleware.cors",
+        "documentation": {}
+    },
+    {
+        "label": "OAuth2PasswordBearer",
+        "importPath": "fastapi.security",
+        "description": "fastapi.security",
+        "isExtraImport": true,
+        "detail": "fastapi.security",
+        "documentation": {}
+    },
+    {
+        "label": "OAuth2PasswordRequestForm",
+        "importPath": "fastapi.security",
+        "description": "fastapi.security",
+        "isExtraImport": true,
+        "detail": "fastapi.security",
+        "documentation": {}
+    },
+    {
+        "label": "schemas",
+        "importPath": "app.schemas",
+        "description": "app.schemas",
+        "isExtraImport": true,
+        "detail": "app.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "database",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
+        "documentation": {}
+    },
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "init_db",
+        "importPath": "api.database",
+        "description": "api.database",
+        "isExtraImport": true,
+        "detail": "api.database",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "core.trading_engine",
+        "description": "core.trading_engine",
+        "isExtraImport": true,
+        "detail": "core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "MT5Connector",
+        "importPath": "core.mt5_connector",
+        "description": "core.mt5_connector",
+        "isExtraImport": true,
+        "detail": "core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "init_db",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.api.database",
+        "description": "institutional-edge-system.backend.app.api.database",
+        "peekOfCode": "def init_db():\n    \"\"\"Initialize database - create all tables\"\"\"\n    Base.metadata.create_all(bind=engine)\ndef get_db() -> Generator[Session, None, None]:\n    \"\"\"\n    Dependency for getting database session\n    Usage:\n        @app.get(\"/endpoint\")\n        def endpoint(db: Session = Depends(get_db)):\n            # Use db here",
+        "detail": "institutional-edge-system.backend.app.api.database",
+        "documentation": {}
+    },
+    {
+        "label": "get_db",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.api.database",
+        "description": "institutional-edge-system.backend.app.api.database",
+        "peekOfCode": "def get_db() -> Generator[Session, None, None]:\n    \"\"\"\n    Dependency for getting database session\n    Usage:\n        @app.get(\"/endpoint\")\n        def endpoint(db: Session = Depends(get_db)):\n            # Use db here\n    \"\"\"\n    db = SessionLocal()\n    try:",
+        "detail": "institutional-edge-system.backend.app.api.database",
+        "documentation": {}
+    },
+    {
+        "label": "engine",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.api.database",
+        "description": "institutional-edge-system.backend.app.api.database",
+        "peekOfCode": "engine = create_engine(\n    settings.DATABASE_URL,\n    pool_size=settings.DATABASE_POOL_SIZE,\n    max_overflow=settings.DATABASE_MAX_OVERFLOW,\n    pool_pre_ping=True,  # Verify connections before using\n)\n# Create session factory\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndef init_db():\n    \"\"\"Initialize database - create all tables\"\"\"",
+        "detail": "institutional-edge-system.backend.app.api.database",
+        "documentation": {}
+    },
+    {
+        "label": "SessionLocal",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.api.database",
+        "description": "institutional-edge-system.backend.app.api.database",
+        "peekOfCode": "SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndef init_db():\n    \"\"\"Initialize database - create all tables\"\"\"\n    Base.metadata.create_all(bind=engine)\ndef get_db() -> Generator[Session, None, None]:\n    \"\"\"\n    Dependency for getting database session\n    Usage:\n        @app.get(\"/endpoint\")\n        def endpoint(db: Session = Depends(get_db)):",
+        "detail": "institutional-edge-system.backend.app.api.database",
+        "documentation": {}
+    },
+    {
+        "label": "Settings",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.config",
+        "description": "institutional-edge-system.backend.app.core.config",
+        "peekOfCode": "class Settings(BaseSettings):\n    \"\"\"Application settings loaded from environment variables\"\"\"\n    # Application\n    APP_NAME: str = \"Institutional Edge Pro\"\n    APP_VERSION: str = \"1.0.0\"\n    DEBUG: bool = True\n    SECRET_KEY: str\n    # Server\n    HOST: str = \"0.0.0.0\"\n    PORT: int = 8000",
+        "detail": "institutional-edge-system.backend.app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.config",
+        "description": "institutional-edge-system.backend.app.core.config",
+        "peekOfCode": "settings = Settings()",
+        "detail": "institutional-edge-system.backend.app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "MT5Connector",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.mt5_connector",
+        "description": "institutional-edge-system.backend.app.core.mt5_connector",
+        "peekOfCode": "class MT5Connector:\n    \"\"\"\n    MetaTrader 5 Connection and Data Management\n    \"\"\"\n    def __init__(self, config: Dict):\n        \"\"\"\n        Initialize MT5 Connector\n        Args:\n            config: Configuration dictionary with MT5 credentials\n        \"\"\"",
+        "detail": "institutional-edge-system.backend.app.core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "OrderBlock",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.trading_engine",
+        "description": "institutional-edge-system.backend.app.core.trading_engine",
+        "peekOfCode": "class OrderBlock:\n    \"\"\"Order Block structure\"\"\"\n    top: float\n    bottom: float\n    start_time: datetime\n    is_bullish: bool\n    is_mitigated: bool\n    volume: float\n    bar_index: int\n@dataclass",
+        "detail": "institutional-edge-system.backend.app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "FairValueGap",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.trading_engine",
+        "description": "institutional-edge-system.backend.app.core.trading_engine",
+        "peekOfCode": "class FairValueGap:\n    \"\"\"Fair Value Gap structure\"\"\"\n    top: float\n    bottom: float\n    start_time: datetime\n    is_bullish: bool\n    is_filled: bool\n    bar_index: int\n@dataclass\nclass SwingPoint:",
+        "detail": "institutional-edge-system.backend.app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "SwingPoint",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.trading_engine",
+        "description": "institutional-edge-system.backend.app.core.trading_engine",
+        "peekOfCode": "class SwingPoint:\n    \"\"\"Swing High/Low structure\"\"\"\n    price: float\n    time: datetime\n    is_high: bool\n    bar_index: int\n@dataclass\nclass TradingSignal:\n    \"\"\"Trading Signal with full context\"\"\"\n    signal_type: str  # \"BUY\" or \"SELL\"",
+        "detail": "institutional-edge-system.backend.app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "TradingSignal",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.trading_engine",
+        "description": "institutional-edge-system.backend.app.core.trading_engine",
+        "peekOfCode": "class TradingSignal:\n    \"\"\"Trading Signal with full context\"\"\"\n    signal_type: str  # \"BUY\" or \"SELL\"\n    entry_price: float\n    stop_loss: float\n    take_profit_1: float\n    take_profit_2: float\n    take_profit_3: float\n    confluence_score: int\n    score_breakdown: Dict[str, int]",
+        "detail": "institutional-edge-system.backend.app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.trading_engine",
+        "description": "institutional-edge-system.backend.app.core.trading_engine",
+        "peekOfCode": "class TradingEngine:\n    \"\"\"\n    Core Trading Engine implementing Institutional Edge Pro logic\n    \"\"\"\n    def __init__(self, config: Dict):\n        \"\"\"\n        Initialize Trading Engine\n        Args:\n            config: Configuration dictionary with trading parameters\n        \"\"\"",
+        "detail": "institutional-edge-system.backend.app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "User",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.models.database",
+        "description": "institutional-edge-system.backend.app.models.database",
+        "peekOfCode": "class User(Base):\n    \"\"\"User model for authentication\"\"\"\n    __tablename__ = \"users\"\n    id = Column(Integer, primary_key=True, index=True)\n    email = Column(String, unique=True, index=True, nullable=False)\n    username = Column(String, unique=True, index=True, nullable=False)\n    hashed_password = Column(String, nullable=False)\n    is_active = Column(Boolean, default=True)\n    is_admin = Column(Boolean, default=False)\n    created_at = Column(DateTime, default=datetime.utcnow)",
+        "detail": "institutional-edge-system.backend.app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfig",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.models.database",
+        "description": "institutional-edge-system.backend.app.models.database",
+        "peekOfCode": "class BotConfig(Base):\n    \"\"\"Bot configuration per user\"\"\"\n    __tablename__ = \"bot_configs\"\n    id = Column(Integer, primary_key=True, index=True)\n    user_id = Column(Integer, ForeignKey(\"users.id\"), nullable=False)\n    name = Column(String, nullable=False)\n    # MT5 Configuration\n    mt5_login = Column(String)\n    mt5_server = Column(String)\n    mt5_password_encrypted = Column(String)  # Encrypted",
+        "detail": "institutional-edge-system.backend.app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Trade",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.models.database",
+        "description": "institutional-edge-system.backend.app.models.database",
+        "peekOfCode": "class Trade(Base):\n    \"\"\"Trade execution record\"\"\"\n    __tablename__ = \"trades\"\n    id = Column(Integer, primary_key=True, index=True)\n    user_id = Column(Integer, ForeignKey(\"users.id\"), nullable=False)\n    # Trade Details\n    ticket = Column(Integer, unique=True, nullable=True)  # MT5 ticket\n    symbol = Column(String, nullable=False)\n    trade_type = Column(String, nullable=False)  # \"BUY\" or \"SELL\"\n    # Prices",
+        "detail": "institutional-edge-system.backend.app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Signal",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.models.database",
+        "description": "institutional-edge-system.backend.app.models.database",
+        "peekOfCode": "class Signal(Base):\n    \"\"\"Trading signal history\"\"\"\n    __tablename__ = \"signals\"\n    id = Column(Integer, primary_key=True, index=True)\n    # Signal Data\n    symbol = Column(String, nullable=False)\n    timeframe = Column(String, nullable=False)\n    signal_type = Column(String, nullable=False)  # \"BUY\" or \"SELL\"\n    # Prices\n    price = Column(Float, nullable=False)",
+        "detail": "institutional-edge-system.backend.app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "PerformanceMetrics",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.models.database",
+        "description": "institutional-edge-system.backend.app.models.database",
+        "peekOfCode": "class PerformanceMetrics(Base):\n    \"\"\"Daily performance metrics\"\"\"\n    __tablename__ = \"performance_metrics\"\n    id = Column(Integer, primary_key=True, index=True)\n    user_id = Column(Integer, ForeignKey(\"users.id\"), nullable=False)\n    date = Column(DateTime, nullable=False)\n    # Metrics\n    total_trades = Column(Integer, default=0)\n    winning_trades = Column(Integer, default=0)\n    losing_trades = Column(Integer, default=0)",
+        "detail": "institutional-edge-system.backend.app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Base",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.models.database",
+        "description": "institutional-edge-system.backend.app.models.database",
+        "peekOfCode": "Base = declarative_base()\nclass User(Base):\n    \"\"\"User model for authentication\"\"\"\n    __tablename__ = \"users\"\n    id = Column(Integer, primary_key=True, index=True)\n    email = Column(String, unique=True, index=True, nullable=False)\n    username = Column(String, unique=True, index=True, nullable=False)\n    hashed_password = Column(String, nullable=False)\n    is_active = Column(Boolean, default=True)\n    is_admin = Column(Boolean, default=False)",
+        "detail": "institutional-edge-system.backend.app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "UserCreate",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class UserCreate(BaseModel):\n    email: EmailStr\n    username: str\n    password: str\nclass UserLogin(BaseModel):\n    username: str\n    password: str\nclass UserResponse(BaseModel):\n    id: int\n    email: str",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "UserLogin",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class UserLogin(BaseModel):\n    username: str\n    password: str\nclass UserResponse(BaseModel):\n    id: int\n    email: str\n    username: str\n    is_active: bool\n    is_admin: bool\n    created_at: datetime",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "UserResponse",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class UserResponse(BaseModel):\n    id: int\n    email: str\n    username: str\n    is_active: bool\n    is_admin: bool\n    created_at: datetime\n    class Config:\n        from_attributes = True\nclass Token(BaseModel):",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "Token",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class Token(BaseModel):\n    access_token: str\n    token_type: str\n# ============================================================================\n# BOT CONFIG SCHEMAS\n# ============================================================================\nclass BotConfigCreate(BaseModel):\n    name: str\n    mt5_login: Optional[str] = None\n    mt5_server: Optional[str] = None",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfigCreate",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class BotConfigCreate(BaseModel):\n    name: str\n    mt5_login: Optional[str] = None\n    mt5_server: Optional[str] = None\n    mt5_password: Optional[str] = None\n    symbol: str = \"EURUSD\"\n    timeframe: str = \"H1\"\n    risk_percent: float = Field(default=2.0, ge=0.5, le=5.0)\n    min_confluence_score: int = Field(default=6, ge=3, le=10)\n    max_trades: int = Field(default=3, ge=1, le=10)",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfigUpdate",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class BotConfigUpdate(BaseModel):\n    name: Optional[str] = None\n    symbol: Optional[str] = None\n    timeframe: Optional[str] = None\n    risk_percent: Optional[float] = Field(default=None, ge=0.5, le=5.0)\n    min_confluence_score: Optional[int] = Field(default=None, ge=3, le=10)\n    max_trades: Optional[int] = Field(default=None, ge=1, le=10)\n    is_active: Optional[bool] = None\nclass BotConfigResponse(BaseModel):\n    id: int",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfigResponse",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class BotConfigResponse(BaseModel):\n    id: int\n    user_id: int\n    name: str\n    symbol: str\n    timeframe: str\n    risk_percent: float\n    min_confluence_score: int\n    max_trades: int\n    is_active: bool",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "SignalResponse",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class SignalResponse(BaseModel):\n    signal_type: str  # \"BUY\" or \"SELL\"\n    entry_price: float\n    stop_loss: float\n    take_profit_1: float\n    take_profit_2: float\n    take_profit_3: float\n    confluence_score: int\n    score_breakdown: Dict[str, int]\n    timestamp: datetime",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "AnalysisResponse",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class AnalysisResponse(BaseModel):\n    timestamp: datetime\n    current_price: float\n    trend: str\n    active_order_blocks: int\n    active_fvgs: int\n    poc_level: Optional[float]\n    vah_level: Optional[float]\n    val_level: Optional[float]\n    bull_confluence_score: int",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "TradeCreate",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class TradeCreate(BaseModel):\n    symbol: str\n    trade_type: str  # \"BUY\" or \"SELL\"\n    entry_price: float\n    stop_loss: float\n    take_profit_1: Optional[float] = None\n    take_profit_2: Optional[float] = None\n    take_profit_3: Optional[float] = None\n    volume: float\n    risk_percent: float",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "TradeResponse",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class TradeResponse(BaseModel):\n    id: int\n    ticket: Optional[int]\n    symbol: str\n    trade_type: str\n    entry_price: float\n    stop_loss: Optional[float]\n    take_profit_1: Optional[float]\n    exit_price: Optional[float]\n    volume: float",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "BotStartRequest",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class BotStartRequest(BaseModel):\n    bot_config_id: int\nclass BotStopRequest(BaseModel):\n    bot_config_id: int\nclass BotStatusResponse(BaseModel):\n    bot_config_id: int\n    is_active: bool\n    is_running: bool\n    symbol: str\n    timeframe: str",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "BotStopRequest",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class BotStopRequest(BaseModel):\n    bot_config_id: int\nclass BotStatusResponse(BaseModel):\n    bot_config_id: int\n    is_active: bool\n    is_running: bool\n    symbol: str\n    timeframe: str\n    current_price: Optional[float]\n    open_positions: int",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "BotStatusResponse",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class BotStatusResponse(BaseModel):\n    bot_config_id: int\n    is_active: bool\n    is_running: bool\n    symbol: str\n    timeframe: str\n    current_price: Optional[float]\n    open_positions: int\n    total_trades_today: int\n    pnl_today: float",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "AccountInfoResponse",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class AccountInfoResponse(BaseModel):\n    login: int\n    balance: float\n    equity: float\n    margin: float\n    margin_free: float\n    profit: float\n    currency: str\n    leverage: int\n# ============================================================================",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "PerformanceMetricsResponse",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class PerformanceMetricsResponse(BaseModel):\n    date: datetime\n    total_trades: int\n    winning_trades: int\n    losing_trades: int\n    win_rate: float\n    net_profit: float\n    profit_factor: float\n    largest_win: float\n    largest_loss: float",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "WebSocketMessage",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.schemas.schemas",
+        "description": "institutional-edge-system.backend.app.schemas.schemas",
+        "peekOfCode": "class WebSocketMessage(BaseModel):\n    type: str  # \"price_update\", \"signal\", \"trade_update\", \"error\"\n    data: Dict\n    timestamp: datetime = Field(default_factory=datetime.utcnow)",
+        "detail": "institutional-edge-system.backend.app.schemas.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "TradingBot",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.trading_bot",
+        "description": "institutional-edge-system.backend.app.services.trading_bot",
+        "peekOfCode": "class TradingBot:\n    \"\"\"\n    Automated trading bot that runs continuously\n    \"\"\"\n    def __init__(self, bot_config_id: int, mt5_connector: MT5Connector):\n        \"\"\"\n        Initialize trading bot\n        Args:\n            bot_config_id: Database ID of bot configuration\n            mt5_connector: MT5 connector instance",
+        "detail": "institutional-edge-system.backend.app.services.trading_bot",
+        "documentation": {}
+    },
+    {
+        "label": "BotManager",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.trading_bot",
+        "description": "institutional-edge-system.backend.app.services.trading_bot",
+        "peekOfCode": "class BotManager:\n    \"\"\"\n    Manages multiple trading bots\n    \"\"\"\n    def __init__(self, mt5_connector: MT5Connector):\n        self.mt5_connector = mt5_connector\n        self.bots: Dict[int, TradingBot] = {}\n        self.tasks: Dict[int, asyncio.Task] = {}\n    async def start_bot(self, bot_config_id: int):\n        \"\"\"Start a trading bot\"\"\"",
+        "detail": "institutional-edge-system.backend.app.services.trading_bot",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.main",
+        "description": "institutional-edge-system.backend.app.main",
+        "peekOfCode": "app = FastAPI(\n    title=settings.APP_NAME,\n    version=settings.APP_VERSION,\n    description=\"Professional Trading System with Smart Money Concepts\",\n)\n# CORS Middleware\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=settings.cors_origins_list,\n    allow_credentials=True,",
+        "detail": "institutional-edge-system.backend.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "oauth2_scheme",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.main",
+        "description": "institutional-edge-system.backend.app.main",
+        "peekOfCode": "oauth2_scheme = OAuth2PasswordBearer(tokenUrl=\"token\")\n# Global instances\nmt5_connector: MT5Connector = None\ntrading_engines: Dict[int, TradingEngine] = {}  # bot_config_id -> TradingEngine\nactive_websockets: List[WebSocket] = []\nbot_manager = None  # Manages automated trading bots\n# ============================================================================\n# STARTUP & SHUTDOWN\n# ============================================================================\n@app.on_event(\"startup\")",
+        "detail": "institutional-edge-system.backend.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "bot_manager",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.main",
+        "description": "institutional-edge-system.backend.app.main",
+        "peekOfCode": "bot_manager = None  # Manages automated trading bots\n# ============================================================================\n# STARTUP & SHUTDOWN\n# ============================================================================\n@app.on_event(\"startup\")\nasync def startup_event():\n    \"\"\"Initialize on startup\"\"\"\n    logger.info(\"Starting Institutional Edge Pro API...\")\n    # Create database tables\n    database.init_db()",
+        "detail": "institutional-edge-system.backend.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "terminal_info",
+        "kind": 5,
+        "importPath": "institutional-edge-system.test_mt5_simple",
+        "description": "institutional-edge-system.test_mt5_simple",
+        "peekOfCode": "terminal_info = mt5.terminal_info()\nif terminal_info:\n    print(f\"   Terminal: {terminal_info.name}\")\n    print(f\"   Company: {terminal_info.company}\")\n    print(f\"   Build: {terminal_info.build}\")\n    print(f\"   Path: {terminal_info.path}\")\n    print(f\"   Connected: {terminal_info.connected}\")\nelse:\n    print(\"   [WARNING] Could not get terminal info\")\n# Get account info",
+        "detail": "institutional-edge-system.test_mt5_simple",
+        "documentation": {}
+    },
+    {
+        "label": "account_info",
+        "kind": 5,
+        "importPath": "institutional-edge-system.test_mt5_simple",
+        "description": "institutional-edge-system.test_mt5_simple",
+        "peekOfCode": "account_info = mt5.account_info()\nif account_info:\n    print(f\"   Account: #{account_info.login}\")\n    print(f\"   Server: {account_info.server}\")\n    print(f\"   Balance: ${account_info.balance:.2f}\")\n    print(f\"   Equity: ${account_info.equity:.2f}\")\n    print(f\"   Leverage: 1:{account_info.leverage}\")\n    print(f\"   Currency: {account_info.currency}\")\nelse:\n    print(\"   [WARNING] Could not get account info\")",
+        "detail": "institutional-edge-system.test_mt5_simple",
+        "documentation": {}
+    },
+    {
+        "label": "symbols",
+        "kind": 5,
+        "importPath": "institutional-edge-system.test_mt5_simple",
+        "description": "institutional-edge-system.test_mt5_simple",
+        "peekOfCode": "symbols = mt5.symbols_total()\nprint(f\"   Total symbols available: {symbols}\")\n# Test getting data\nprint(\"\\n5. Testing market data retrieval...\")\ntry:\n    rates = mt5.copy_rates_from_pos(\"EURUSD\", mt5.TIMEFRAME_H1, 0, 10)\n    if rates is not None and len(rates) > 0:\n        print(f\"   [SUCCESS] Successfully got {len(rates)} bars of EURUSD H1 data\")\n        print(f\"   Latest close price: {rates[-1]['close']:.5f}\")\n    else:",
+        "detail": "institutional-edge-system.test_mt5_simple",
+        "documentation": {}
+    },
+    {
+        "label": "test_trading_engine",
+        "kind": 2,
+        "importPath": "institutional-edge-system.test_system",
+        "description": "institutional-edge-system.test_system",
+        "peekOfCode": "def test_trading_engine():\n    \"\"\"Test the trading engine with sample data\"\"\"\n    print(\"=\" * 60)\n    print(\"Testing Trading Engine...\")\n    print(\"=\" * 60)\n    # Create sample OHLCV data\n    dates = pd.date_range(start=datetime.now() - timedelta(days=500), periods=500, freq='H')\n    # Generate realistic price data\n    np.random.seed(42)\n    close_prices = 1.0850 + np.cumsum(np.random.randn(500) * 0.0001)",
+        "detail": "institutional-edge-system.test_system",
+        "documentation": {}
+    },
+    {
+        "label": "test_mt5_connector",
+        "kind": 2,
+        "importPath": "institutional-edge-system.test_system",
+        "description": "institutional-edge-system.test_system",
+        "peekOfCode": "def test_mt5_connector():\n    \"\"\"Test MT5 connection (optional - requires MT5 installed and configured)\"\"\"\n    print(\"\\n\" + \"=\" * 60)\n    print(\"Testing MT5 Connector...\")\n    print(\"=\" * 60)\n    config = {\n        'mt5_login': '',  # Leave empty for now\n        'mt5_password': '',\n        'mt5_server': '',\n        'mt5_path': '',",
+        "detail": "institutional-edge-system.test_system",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "institutional-edge-system.test_system",
+        "description": "institutional-edge-system.test_system",
+        "peekOfCode": "def main():\n    \"\"\"Run all tests\"\"\"\n    print(\"\\n\" + \"=\" * 60)\n    print(\"🚀 INSTITUTIONAL EDGE PRO - System Test\")\n    print(\"=\" * 60)\n    all_passed = True\n    # Test 1: Trading Engine\n    try:\n        test_trading_engine()\n    except Exception as e:",
+        "detail": "institutional-edge-system.test_system",
+        "documentation": {}
+    }
+]
