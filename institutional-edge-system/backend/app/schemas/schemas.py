@@ -105,6 +105,8 @@ class SignalResponse(BaseModel):
     symbol: str
     timeframe: str
     risk_reward_ratio: float
+    fib_level: Optional[str] = None
+    fib_zone: Optional[str] = None
 
 
 class AnalysisResponse(BaseModel):

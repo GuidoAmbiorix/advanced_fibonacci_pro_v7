@@ -71,6 +71,8 @@ class TradingSignal:
     risk_reward_ratio: float
     ai_confidence: float = 0.0  # AI confidence score (0-100)
     ai_recommendation: str = "UNCERTAIN"  # AI recommendation
+    fib_level: Optional[str] = None
+    fib_zone: Optional[str] = None
 
 
 class TradingEngine:
@@ -581,7 +583,25 @@ class TradingEngine:
                 bear_score += 1
                 bear_breakdown['Volume'] = 1
 
-        # Normalize to 0-10
+        # 8. Fibonacci Confluence (+2 for Golden Zone, +1 for other levels)
+        fib_data = self._calculate_fibonacci_levels(df)
+        
+        # Bullish Fib (Retracement from High to Low for buying dip? No, Bullish Retracement is Low to High, buying the pull back)
+        # Wait, standard fib retracement:
+        # Uptrend: Draw from Low to High. Price retraces down to levels.
+        # Downtrend: Draw from High to Low. Price retraces up to levels.
+        
+        if fib_data['bullish_level']:
+            score = 2 if fib_data['is_golden_zone'] else 1
+            bull_score += score
+            bull_breakdown[f'Fib {fib_data["bullish_level"]}'] = score
+            
+        if fib_data['bearish_level']:
+            score = 2 if fib_data['is_golden_zone'] else 1
+            bear_score += score
+            bear_breakdown[f'Fib {fib_data["bearish_level"]}'] = score
+
+        # Normalize to 0-10 (allow going over 10 slightly with extra confluence, but cap at 10 for standardizing)
         bull_score = min(bull_score, 10)
         bear_score = min(bear_score, 10)
 
@@ -589,8 +609,96 @@ class TradingEngine:
             'bull_score': bull_score,
             'bear_score': bear_score,
             'bull_breakdown': bull_breakdown,
-            'bear_breakdown': bear_breakdown
+            'bear_breakdown': bear_breakdown,
+            'fib_data': fib_data
         }
+
+
+    def _calculate_fibonacci_levels(self, df: pd.DataFrame) -> Dict:
+        """
+        Calculate Fibonacci retracement levels based on recent swings
+        Returns dictionary with active levels and zones
+        """
+        if not self.swing_highs or not self.swing_lows:
+            return {'bullish_level': None, 'bearish_level': None, 'is_golden_zone': False}
+
+        current_price = df.iloc[-1]['close']
+        
+        # Find most recent significant swing points
+        # For Bullish setup (buying a dip): We need a recent Low -> High move
+        last_low = self.swing_lows[-1].price
+        last_high = self.swing_highs[-1].price
+        
+        # Ensure the high came after the low for a valid bullish leg
+        # But swing points are stored in lists, we need to check their indices/times
+        # Let's just take the most recent high and low for simplicity first, 
+        # but ideally we want the defined "Trend Leg"
+        
+        # Simple approach: Use the range of the last N bars or the detected swings
+        # Let's use the last confirmed swing high and low
+        
+        result = {
+            'bullish_level': None, 
+            'bearish_level': None, 
+            'is_golden_zone': False,
+            'nearest_level': None
+        }
+
+        # Check Bullish Retracement (Price coming down from High)
+        # Range: Low -> High
+        if last_high > last_low:
+            range_price = last_high - last_low
+            fib_levels = {
+                '0.382': last_high - (range_price * 0.382),
+                '0.5': last_high - (range_price * 0.5),
+                '0.618': last_high - (range_price * 0.618),
+                '0.786': last_high - (range_price * 0.786)
+            }
+            
+            # Check if current price is near any level
+            for level_name, price in fib_levels.items():
+                # Tolerance: 0.1% of price
+                tolerance = current_price * 0.001
+                if abs(current_price - price) < tolerance:
+                    result['bullish_level'] = level_name
+                    if level_name in ['0.5', '0.618']:
+                        result['is_golden_zone'] = True
+                    break
+
+        # Check Bearish Retracement (Price going up from Low)
+        # Range: High -> Low
+        # Note: If we are in a downtrend, the last swing might be a Lower High and Lower Low
+        # We need the move from High down to Low
+        
+        # Let's look at the last 2 swings to define the range
+        # If we are looking for a SELL, we expect price to retrace UP
+        # So we need a previous High -> Low move
+        
+        # For now, let's just check proximity to levels calculated from the recent range
+        # regardless of trend direction, as the confluence score handles the trend filter
+        
+        if last_high > last_low:
+            # This is an uptrend leg, so we look for bullish retracements (dips)
+            pass 
+        else:
+            # This is a downtrend leg (High -> Low), we look for bearish retracements (rallies)
+            range_price = last_high - last_low
+            fib_levels = {
+                '0.382': last_low + (range_price * 0.382),
+                '0.5': last_low + (range_price * 0.5),
+                '0.618': last_low + (range_price * 0.618),
+                '0.786': last_low + (range_price * 0.786)
+            }
+            
+            for level_name, price in fib_levels.items():
+                tolerance = current_price * 0.001
+                if abs(current_price - price) < tolerance:
+                    result['bearish_level'] = level_name
+                    if level_name in ['0.5', '0.618']:
+                        result['is_golden_zone'] = True
+                    break
+                    
+        return result
 
 
     def _generate_signals(self, df: pd.DataFrame, confluence_data: Dict) -> List[TradingSignal]:
@@ -631,7 +739,9 @@ class TradingEngine:
                 timestamp=df.iloc[-1]['time'],
                 symbol=self.config.get('symbol', 'UNKNOWN'),
                 timeframe=self.config.get('timeframe', 'UNKNOWN'),
-                risk_reward_ratio=3.0
+                risk_reward_ratio=3.0,
+                fib_level=confluence_data['fib_data']['bullish_level'],
+                fib_zone="GOLDEN" if confluence_data['fib_data']['is_golden_zone'] else None
             )
 
             # Add AI confidence prediction
@@ -688,7 +798,9 @@ class TradingEngine:
                 timestamp=df.iloc[-1]['time'],
                 symbol=self.config.get('symbol', 'UNKNOWN'),
                 timeframe=self.config.get('timeframe', 'UNKNOWN'),
-                risk_reward_ratio=3.0
+                risk_reward_ratio=3.0,
+                fib_level=confluence_data['fib_data']['bearish_level'],
+                fib_zone="GOLDEN" if confluence_data['fib_data']['is_golden_zone'] else None
             )
 
             # Add AI confidence prediction

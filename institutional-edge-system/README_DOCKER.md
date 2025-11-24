@@ -1,6 +1,6 @@
 # Docker Setup for Institutional Edge PRO
 
-This guide will help you set up the database using Docker.
+This guide will help you set up the entire system (Frontend, Backend, Database, Redis) using Docker.
 
 ## Prerequisites
 
@@ -9,53 +9,54 @@ This guide will help you set up the database using Docker.
 
 ## Quick Start
 
-### 1. Start the Database
+### 1. Start the System
 
 ```bash
-# Start all services (PostgreSQL, Redis, PgAdmin)
-docker-compose up -d
+# Start all services (Frontend, Backend, PostgreSQL, Redis, PgAdmin)
+docker-compose up -d --build
 
 # Check if containers are running
 docker-compose ps
 
 # View logs
-docker-compose logs -f postgres
+docker-compose logs -f
 ```
 
-### 2. Verify PostgreSQL is Running
+### 2. Access the Application
 
-```bash
-# Connect to PostgreSQL using psql
-docker exec -it institutional_edge_db psql -U postgres -d institutional_edge
+- **Frontend (Dashboard):** http://localhost
+- **Backend API:** http://localhost:8000
+- **API Documentation:** http://localhost:8000/docs
+- **PgAdmin (Database UI):** http://localhost:5050
 
-# Inside psql, you can run:
-\l          # List databases
-\dt         # List tables (after initialization)
-\q          # Quit
-```
+### 3. Important Note on MetaTrader 5
 
-### 3. Access PgAdmin (Optional)
+The backend running in Docker is Linux-based. **MetaTrader 5 (MT5) is a Windows-only application.**
 
-1. Open browser: http://localhost:5050
-2. Login:
-   - Email: admin@institutional-edge.com
-   - Password: admin
-3. Add server:
-   - Host: postgres
-   - Port: 5432
-   - Database: institutional_edge
-   - Username: postgres
-   - Password: postgres
+- When running in Docker, the backend will start in **Headless/Mock Mode**.
+- It will **NOT** connect to a real MT5 terminal.
+- This mode allows you to develop the UI, test the API, and work with the database without a live trading connection.
+- To connect to a real MT5 terminal, you must run the backend **locally on Windows** (outside Docker) while keeping the database and frontend in Docker, OR use a Windows container (advanced).
 
 ## Service Details
 
+### Frontend
+- **Host:** localhost
+- **Port:** 80
+- **Technology:** Vue 3 + Vite (served by Nginx)
+
+### Backend
+- **Host:** localhost
+- **Port:** 8000
+- **Technology:** FastAPI (Python 3.11)
+- **Swagger Docs:** http://localhost:8000/docs
+
 ### PostgreSQL
 - **Host:** localhost
-- **Port:** 5432
+- **Port:** 5433 (mapped from 5432)
 - **Database:** institutional_edge
 - **Username:** postgres
 - **Password:** postgres
-- **Connection String:** `postgresql://postgres:postgres@localhost:5432/institutional_edge`
 
 ### Redis
 - **Host:** localhost
@@ -69,89 +70,34 @@ docker exec -it institutional_edge_db psql -U postgres -d institutional_edge
 ## Docker Commands
 
 ```bash
-# Start services
-docker-compose up -d
+# Start services and rebuild images
+docker-compose up -d --build
 
 # Stop services
 docker-compose down
 
-# Stop and remove volumes (WARNING: This deletes all data!)
+# Stop and remove volumes (WARNING: This deletes all database data!)
 docker-compose down -v
 
-# View logs
-docker-compose logs -f
+# View logs for a specific service
+docker-compose logs -f backend
+docker-compose logs -f frontend
 
-# Restart a specific service
-docker-compose restart postgres
+# Execute commands in Backend container
+docker exec -it institutional_edge_backend bash
 
 # Execute commands in PostgreSQL container
 docker exec -it institutional_edge_db psql -U postgres -d institutional_edge
-
-# Backup database
-docker exec institutional_edge_db pg_dump -U postgres institutional_edge > backup.sql
-
-# Restore database
-docker exec -i institutional_edge_db psql -U postgres institutional_edge < backup.sql
 ```
 
 ## Troubleshooting
 
-### Port Already in Use
-
-If port 5432 is already in use:
-
-1. Stop existing PostgreSQL service
-2. Or change the port in docker-compose.yml:
-   ```yaml
-   ports:
-     - "5433:5432"  # Change to 5433
-   ```
-   Then update DATABASE_URL in .env to use port 5433
-
-### Container Won't Start
-
-```bash
-# Check container logs
-docker-compose logs postgres
-
-# Remove and recreate
-docker-compose down
-docker-compose up -d
+### Port Conflicts
+If ports 80, 8000, or 5433 are in use, modify `docker-compose.yml` ports section:
+```yaml
+ports:
+  - "8080:80"  # Change frontend to 8080
 ```
 
-### Reset Database
-
-```bash
-# Stop and remove everything
-docker-compose down -v
-
-# Start fresh
-docker-compose up -d
-```
-
-## Production Notes
-
-For production deployment:
-
-1. Change default passwords in docker-compose.yml
-2. Use Docker secrets for sensitive data
-3. Configure regular backups
-4. Set resource limits
-5. Use external volumes for data persistence
-6. Configure SSL/TLS for PostgreSQL
-
-## Integration with Application
-
-The `.env` file should contain:
-
-```bash
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/institutional_edge
-REDIS_HOST=localhost
-REDIS_PORT=6379
-```
-
-Then run the database initialization script:
-
-```bash
-python init_db.py
-```
+### Database Connection
+The backend automatically connects to the `postgres` service within the Docker network using the hostname `postgres`. You do not need to change `.env` files for Docker execution; `docker-compose.yml` handles the environment variables.
