@@ -118,6 +118,10 @@ class TradingEngine:
         self.vah_level: Optional[float] = None
         self.val_level: Optional[float] = None
 
+        # Phase 1: BOS/CHoCH tracking
+        self.last_bos_type: Optional[str] = None
+        self.last_bos_bar_index: Optional[int] = None
+
         logger.info("Trading Engine initialized with config: {}", config)
 
 
@@ -147,6 +151,9 @@ class TradingEngine:
         self._detect_swing_points(df)
         self._update_market_structure(df)
 
+        # Phase 1: Detect BOS/CHoCH
+        bos_choch_data = self._detect_bos_choch(df)
+
         # Detect patterns
         self._detect_order_blocks(df)
         self._detect_fair_value_gaps(df)
@@ -156,7 +163,7 @@ class TradingEngine:
         self._calculate_volume_profile(df)
 
         # Calculate confluence and generate signals
-        confluence_data = self._calculate_confluence(df)
+        confluence_data = self._calculate_confluence(df, bos_choch_data)
         signals = self._generate_signals(df, confluence_data)
 
         return {
@@ -434,6 +441,71 @@ class TradingEngine:
         return bull_sweep, bear_sweep
 
 
+    def _detect_bos_choch(self, df: pd.DataFrame) -> Dict:
+        """
+        Detect Break of Structure (BOS) and Change of Character (CHoCH)
+        
+        BOS: Price breaks the most recent swing high (bullish) or swing low (bearish)
+        CHoCH: Price breaks structure in opposite direction, signaling potential reversal
+        
+        Returns:
+            Dict with BOS/CHoCH flags and recency
+        """
+        from app.core.phase1_config import BOS_RECENT_BARS
+        
+        result = {
+            'bos_bullish': False,
+            'bos_bearish': False,
+            'choch_to_bullish': False,
+            'choch_to_bearish': False,
+            'bos_recent': False
+        }
+        
+        if not self.swing_highs or not self.swing_lows or len(self.swing_highs) < 2 or len(self.swing_lows) < 2:
+            return result
+            
+        current_bar = len(df) - 1
+        current_high = df.iloc[-1]['high']
+        current_low = df.iloc[-1]['low']
+        
+        # Get most recent swing points
+        last_swing_high = self.swing_highs[-1]
+        prev_swing_high = self.swing_highs[-2]
+        last_swing_low = self.swing_lows[-1]
+        prev_swing_low = self.swing_lows[-2]
+        
+        # Bullish BOS: Price breaks above most recent swing high (continuation in uptrend)
+        if current_high > last_swing_high.price:
+            result['bos_bullish'] = True
+            self.last_bos_type = "BULLISH"
+            self.last_bos_bar_index = current_bar
+            logger.info("🔵 Bullish BOS detected - Price broke above {:.5f}", last_swing_high.price)
+            
+        # Bearish BOS: Price breaks below most recent swing low (continuation in downtrend)
+        if current_low < last_swing_low.price:
+            result['bos_bearish'] = True
+            self.last_bos_type = "BEARISH"
+            self.last_bos_bar_index = current_bar
+            logger.info("🔴 Bearish BOS detected - Price broke below {:.5f}", last_swing_low.price)
+            
+        # CHoCH to Bullish: In downtrend, price breaks above previous swing high (trend change signal)
+        if not self.trend_bullish and current_high > prev_swing_high.price:
+            result['choch_to_bullish'] = True
+            logger.info("🟢 CHoCH to Bullish - Potential trend reversal")
+            
+        # CHoCH to Bearish: In uptrend, price breaks below previous swing low (trend change signal)
+        if self.trend_bullish and current_low < prev_swing_low.price:
+            result['choch_to_bearish'] = True
+            logger.info("🟠 CHoCH to Bearish - Potential trend reversal")
+            
+        # Check if BOS is recent (within last N bars)
+        if self.last_bos_bar_index is not None:
+            bars_since_bos = current_bar - self.last_bos_bar_index
+            result['bos_recent'] = bars_since_bos <= BOS_RECENT_BARS
+            
+        return result
+
+
     def _calculate_volume_profile(self, df: pd.DataFrame):
         """Calculate Volume Profile and POC"""
         if len(df) < self.vp_lookback:
@@ -507,7 +579,7 @@ class TradingEngine:
             return {"zone": "DISCOUNT", "equilibrium": equilibrium}
 
 
-    def _calculate_confluence(self, df: pd.DataFrame) -> Dict:
+    def _calculate_confluence(self, df: pd.DataFrame, bos_choch_data: Dict) -> Dict:
         """Calculate confluence scores for both directions"""
         bull_score = 0
         bear_score = 0
@@ -601,6 +673,29 @@ class TradingEngine:
             bear_score += score
             bear_breakdown[f'Fib {fib_data["bearish_level"]}'] = score
 
+        # 9. BOS/CHoCH Confluence (+2 for BOS, +3 for CHoCH)
+        from app.core.phase1_config import BOS_CONFLUENCE_POINTS, CHOCH_CONFLUENCE_POINTS
+        
+        # Bullish BOS: Recent break above structure
+        if bos_choch_data['bos_bullish'] and bos_choch_data['bos_recent']:
+            bull_score += BOS_CONFLUENCE_POINTS
+            bull_breakdown['BOS Bullish'] = BOS_CONFLUENCE_POINTS
+            
+        # Bearish BOS: Recent break below structure
+        if bos_choch_data['bos_bearish'] and bos_choch_data['bos_recent']:
+            bear_score += BOS_CONFLUENCE_POINTS
+            bear_breakdown['BOS Bearish'] = BOS_CONFLUENCE_POINTS
+            
+        # CHoCH to Bullish: High-quality reversal setup
+        if bos_choch_data['choch_to_bullish']:
+            bull_score += CHOCH_CONFLUENCE_POINTS
+            bull_breakdown['CHoCH Reversal'] = CHOCH_CONFLUENCE_POINTS
+            
+        # CHoCH to Bearish: High-quality reversal setup
+        if bos_choch_data['choch_to_bearish']:
+            bear_score += CHOCH_CONFLUENCE_POINTS
+            bear_breakdown['CHoCH Reversal'] = CHOCH_CONFLUENCE_POINTS
+
         # Normalize to 0-10 (allow going over 10 slightly with extra confluence, but cap at 10 for standardizing)
         bull_score = min(bull_score, 10)
         bear_score = min(bear_score, 10)
@@ -610,7 +705,8 @@ class TradingEngine:
             'bear_score': bear_score,
             'bull_breakdown': bull_breakdown,
             'bear_breakdown': bear_breakdown,
-            'fib_data': fib_data
+            'fib_data': fib_data,
+            'bos_choch_data': bos_choch_data
         }
 
 
@@ -722,8 +818,15 @@ class TradingEngine:
                 higher_tf_allows_sell = False
                 logger.info("Skipping SELL signals - Higher TF is BULLISH")
 
-        # Bull Signal
-        if bull_score >= self.min_confluence_score and self.trend_bullish and higher_tf_allows_buy:
+        # Phase 1: BOS/CHoCH filter - only generate signals with structure confirmation
+        bos_choch_data = confluence_data.get('bos_choch_data', {})
+        bos_allows_buy = bos_choch_data.get('bos_bullish', False) and bos_choch_data.get('bos_recent', False)
+        choch_allows_buy = bos_choch_data.get('choch_to_bullish', False)
+        bos_allows_sell = bos_choch_data.get('bos_bearish', False) and bos_choch_data.get('bos_recent', False)
+        choch_allows_sell = bos_choch_data.get('choch_to_bearish', False)
+
+        # Bull Signal  
+        if bull_score >= self.min_confluence_score and self.trend_bullish and higher_tf_allows_buy and (bos_allows_buy or choch_allows_buy):
             stop_loss = current_price - (atr * 1.5)
             risk = current_price - stop_loss
 
@@ -782,7 +885,7 @@ class TradingEngine:
             signals.append(signal)
 
         # Bear Signal
-        if bear_score >= self.min_confluence_score and not self.trend_bullish and higher_tf_allows_sell:
+        if bear_score >= self.min_confluence_score and not self.trend_bullish and higher_tf_allows_sell and (bos_allows_sell or choch_allows_sell):
             stop_loss = current_price + (atr * 1.5)
             risk = stop_loss - current_price
 
