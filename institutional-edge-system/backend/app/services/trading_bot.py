@@ -137,7 +137,7 @@ class TradingBot:
             logger.warning("MT5 not connected, skipping analysis")
             return
 
-        # Get market data
+        # Get market data for current timeframe
         df = self.mt5_connector.get_ohlcv_data(
             self.config.symbol,
             self.config.timeframe,
@@ -148,15 +148,31 @@ class TradingBot:
             logger.warning("No market data available for {}", self.config.symbol)
             return
 
-        # Run analysis
-        analysis = self.trading_engine.analyze(df)
+        # Get higher timeframe data for multi-timeframe analysis (H4 if on H1, D1 if on H4)
+        df_higher_tf = None
+        if self.config.timeframe == "H1":
+            df_higher_tf = self.mt5_connector.get_ohlcv_data(
+                self.config.symbol,
+                "H4",
+                bars=200
+            )
+        elif self.config.timeframe == "M15":
+            df_higher_tf = self.mt5_connector.get_ohlcv_data(
+                self.config.symbol,
+                "H1",
+                bars=200
+            )
+
+        # Run analysis with multi-timeframe data
+        analysis = self.trading_engine.analyze(df, df_higher_tf)
 
         if 'error' in analysis:
             logger.error("Analysis error: {}", analysis['error'])
             return
 
         # Log analysis results
-        logger.info("Analysis complete - Bull: {}/10, Bear: {}/10, Signals: {}",
+        logger.info("Analysis complete - H TF: {}, Bull: {}/10, Bear: {}/10, Signals: {}",
+                   analysis.get('higher_tf_trend', 'N/A'),
                    analysis['bull_confluence_score'],
                    analysis['bear_confluence_score'],
                    len(analysis['signals']))
@@ -166,6 +182,18 @@ class TradingBot:
 
         # Execute trades if conditions are met
         for signal in analysis['signals']:
+            # Check AI confidence threshold (if available)
+            ai_confidence = getattr(signal, 'ai_confidence', 0)
+            ai_recommendation = getattr(signal, 'ai_recommendation', 'UNCERTAIN')
+
+            # Minimum AI confidence threshold (45% = cautious threshold)
+            min_ai_confidence = 45.0
+
+            if ai_confidence > 0 and ai_confidence < min_ai_confidence:
+                logger.warning("Skipping signal - AI confidence too low: {:.1f}% ({})",
+                             ai_confidence, ai_recommendation)
+                continue
+
             await self._execute_signal(signal)
 
         # Update last analysis time in DB
@@ -188,6 +216,8 @@ class TradingBot:
                     take_profit=sig.take_profit_2,
                     confluence_score=sig.confluence_score,
                     score_breakdown=sig.score_breakdown,
+                    ai_confidence=sig.ai_confidence,
+                    ai_recommendation=sig.ai_recommendation,
                     trend=self.trading_engine.trend_bullish and "BULLISH" or "BEARISH",
                     poc_level=self.trading_engine.poc_level,
                     was_executed=False
@@ -243,13 +273,42 @@ class TradingBot:
 
         if result and result.get('success'):
             # Save trade to database
-            self._save_trade(signal, result, lot_size)
+            trade_id = self._save_trade(signal, result, lot_size)
             self.open_positions_count += 1
             logger.info("✅ Trade opened successfully - Ticket: {}", result['ticket'])
+
+            # Broadcast trade execution to websockets
+            await self._broadcast_trade_execution(signal, result, trade_id)
         else:
             logger.error("❌ Failed to open trade")
 
-    def _save_trade(self, signal, result: Dict, lot_size: float):
+    async def _broadcast_trade_execution(self, signal, result: Dict, trade_id: int):
+        """Broadcast trade execution to all WebSocket clients"""
+        try:
+            # Import here to avoid circular dependency
+            from app.main import broadcast_to_websockets
+
+            message = {
+                "type": "trade_executed",
+                "data": {
+                    "trade_id": trade_id,
+                    "ticket": result['ticket'],
+                    "symbol": signal.symbol,
+                    "signal_type": signal.signal_type,
+                    "entry_price": result['price'],
+                    "stop_loss": signal.stop_loss,
+                    "take_profit": signal.take_profit_1,
+                    "confluence_score": signal.confluence_score,
+                    "timestamp": datetime.utcnow().isoformat()
+                },
+                "timestamp": datetime.utcnow().isoformat()
+            }
+
+            await broadcast_to_websockets(message)
+        except Exception as e:
+            logger.error("Failed to broadcast trade execution: {}", e)
+
+    def _save_trade(self, signal, result: Dict, lot_size: float) -> int:
         """Save executed trade to database"""
         db = SessionLocal()
         try:
@@ -272,10 +331,13 @@ class TradingBot:
 
             db.add(trade)
             db.commit()
+            db.refresh(trade)
             logger.info("Trade saved to database - ID: {}", trade.id)
+            return trade.id
         except Exception as e:
             logger.exception("Error saving trade: {}", e)
             db.rollback()
+            return None
         finally:
             db.close()
 

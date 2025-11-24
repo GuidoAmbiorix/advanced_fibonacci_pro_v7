@@ -137,7 +137,7 @@ class OHLCVResponse(BaseModel):
 class TradeCreate(BaseModel):
     symbol: str
     trade_type: str  # "BUY" or "SELL"
-    entry_price: float
+    entry_price: Optional[float] = None  # Optional - will be filled by MT5 execution
     stop_loss: float
     take_profit_1: Optional[float] = None
     take_profit_2: Optional[float] = None

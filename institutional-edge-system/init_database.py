@@ -35,10 +35,10 @@ try:
     with engine.connect() as conn:
         result = conn.execute(text("SELECT version()"))
         version = result.fetchone()[0]
-    print(f"✅ Connected successfully!")
+    print(f"[OK] Connected successfully!")
     print(f"PostgreSQL version: {version.split(',')[0]}")
 except OperationalError as e:
-    print(f"❌ Connection failed: {e}")
+    print(f"[ERROR] Connection failed: {e}")
     print("\nTroubleshooting:")
     print("1. Start Docker: docker-compose up -d")
     print("2. Check containers: docker-compose ps")
@@ -60,12 +60,12 @@ try:
         ))
         tables = [row[0] for row in result]
 
-    print(f"✅ Created {len(tables)} tables:")
+    print(f"[OK] Created {len(tables)} tables:")
     for table in tables:
         print(f"   - {table}")
 
 except Exception as e:
-    print(f"❌ Failed to create tables: {e}")
+    print(f"[ERROR] Failed to create tables: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)
@@ -75,21 +75,23 @@ print("\n[3/3] Creating initial data...")
 try:
     from sqlalchemy.orm import sessionmaker
     from models.database import User, BotConfig
-    from passlib.context import CryptContext
+    import bcrypt
 
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = SessionLocal()
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     # Check if admin exists
     existing = db.query(User).filter(User.email == "admin@institutional-edge.com").first()
 
     if not existing:
-        # Create admin user
+        # Create admin user with bcrypt directly
+        password = "admin123"
+        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
         admin = User(
             email="admin@institutional-edge.com",
             username="admin",
-            hashed_password=pwd_context.hash("admin123"),
+            hashed_password=hashed.decode('utf-8'),
             is_active=True,
             is_admin=True
         )
@@ -97,10 +99,10 @@ try:
         db.commit()
         db.refresh(admin)
 
-        print("✅ Created admin user:")
+        print("[OK] Created admin user:")
         print("   Email: admin@institutional-edge.com")
         print("   Password: admin123")
-        print("   ⚠️  Change this password after first login!")
+        print("   [WARNING] Change this password after first login!")
 
         # Create default bot config
         bot = BotConfig(
@@ -116,19 +118,19 @@ try:
         db.add(bot)
         db.commit()
 
-        print("✅ Created default bot configuration")
+        print("[OK] Created default bot configuration")
     else:
-        print("ℹ️  Admin user already exists")
+        print("[INFO] Admin user already exists")
 
     db.close()
 
 except Exception as e:
-    print(f"⚠️  Could not create initial data: {e}")
+    print(f"[WARNING] Could not create initial data: {e}")
     print("You can create users manually later")
 
 # Success!
 print("\n" + "=" * 70)
-print("✅ Database initialization completed successfully!")
+print("[OK] Database initialization completed successfully!")
 print("=" * 70)
 print("\nNext steps:")
 print("1. Start backend: cd backend/app && python main.py")

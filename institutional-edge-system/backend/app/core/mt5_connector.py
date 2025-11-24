@@ -45,6 +45,24 @@ class MT5Connector:
             'MN1': mt5.TIMEFRAME_MN1,
         }
 
+    def normalize_symbol(self, symbol: str, symbol_type: str = "forex") -> str:
+        """
+        Normalize symbol based on type
+        For crypto symbols, ensure they have # prefix
+
+        Args:
+            symbol: Raw symbol name (e.g., "BTCUSD" or "#BTCUSD")
+            symbol_type: Type of symbol ("forex" or "crypto")
+
+        Returns:
+            Normalized symbol for MT5
+        """
+        if symbol_type == "crypto":
+            # Add # prefix if not present
+            if not symbol.startswith("#"):
+                return f"#{symbol}"
+        return symbol
+
 
     def connect(self) -> bool:
         """

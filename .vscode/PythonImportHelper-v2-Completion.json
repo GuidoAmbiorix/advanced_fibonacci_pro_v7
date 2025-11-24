@@ -8,6 +8,14 @@
         "documentation": {}
     },
     {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
         "label": "Column",
         "importPath": "sqlalchemy",
         "description": "sqlalchemy",
@@ -104,7 +112,95 @@
         "documentation": {}
     },
     {
+        "label": "create_engine",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
         "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "create_engine",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "create_engine",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "create_engine",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "create_engine",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "create_engine",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "create_engine",
         "importPath": "sqlalchemy",
         "description": "sqlalchemy",
         "isExtraImport": true,
@@ -137,6 +233,30 @@
     },
     {
         "label": "Session",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "sessionmaker",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "sessionmaker",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "sessionmaker",
         "importPath": "sqlalchemy.orm",
         "description": "sqlalchemy.orm",
         "isExtraImport": true,
@@ -193,6 +313,30 @@
     },
     {
         "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -305,6 +449,30 @@
     },
     {
         "label": "Base",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Trade",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Signal",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfig",
         "importPath": "app.models.database",
         "description": "app.models.database",
         "isExtraImport": true,
@@ -426,6 +594,38 @@
         "documentation": {}
     },
     {
+        "label": "time",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
         "label": "datetime",
         "importPath": "datetime",
         "description": "datetime",
@@ -471,6 +671,22 @@
         "description": "datetime",
         "isExtraImport": true,
         "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
         "documentation": {}
     },
     {
@@ -548,6 +764,169 @@
         "documentation": {}
     },
     {
+        "label": "pickle",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "pickle",
+        "description": "pickle",
+        "detail": "pickle",
+        "documentation": {}
+    },
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "SignalQualityPredictor",
+        "importPath": "app.ml.signal_predictor",
+        "description": "app.ml.signal_predictor",
+        "isExtraImport": true,
+        "detail": "app.ml.signal_predictor",
+        "documentation": {}
+    },
+    {
+        "label": "SessionLocal",
+        "importPath": "app.api.database",
+        "description": "app.api.database",
+        "isExtraImport": true,
+        "detail": "app.api.database",
+        "documentation": {}
+    },
+    {
+        "label": "engine",
+        "importPath": "app.api.database",
+        "description": "app.api.database",
+        "isExtraImport": true,
+        "detail": "app.api.database",
+        "documentation": {}
+    },
+    {
+        "label": "SessionLocal",
+        "importPath": "app.api.database",
+        "description": "app.api.database",
+        "isExtraImport": true,
+        "detail": "app.api.database",
+        "documentation": {}
+    },
+    {
         "label": "declarative_base",
         "importPath": "sqlalchemy.ext.declarative",
         "description": "sqlalchemy.ext.declarative",
@@ -618,14 +997,6 @@
         "description": "app.core.mt5_connector",
         "isExtraImport": true,
         "detail": "app.core.mt5_connector",
-        "documentation": {}
-    },
-    {
-        "label": "SessionLocal",
-        "importPath": "app.api.database",
-        "description": "app.api.database",
-        "isExtraImport": true,
-        "detail": "app.api.database",
         "documentation": {}
     },
     {
@@ -717,53 +1088,27 @@
         "documentation": {}
     },
     {
-        "label": "sys",
-        "kind": 6,
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
         "isExtraImport": true,
-        "importPath": "sys",
-        "description": "sys",
-        "detail": "sys",
+        "detail": "dotenv",
         "documentation": {}
     },
     {
-        "label": "os",
-        "kind": 6,
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
         "isExtraImport": true,
-        "importPath": "os",
-        "description": "os",
-        "detail": "os",
+        "detail": "dotenv",
         "documentation": {}
     },
     {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
         "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
+        "detail": "dotenv",
         "documentation": {}
     },
     {
@@ -788,6 +1133,54 @@
         "description": "dotenv",
         "isExtraImport": true,
         "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
+        "isExtraImport": true,
+        "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
+        "isExtraImport": true,
+        "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
+        "isExtraImport": true,
+        "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
+        "isExtraImport": true,
+        "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfig",
+        "importPath": "models.database",
+        "description": "models.database",
+        "isExtraImport": true,
+        "detail": "models.database",
+        "documentation": {}
+    },
+    {
+        "label": "User",
+        "importPath": "models.database",
+        "description": "models.database",
+        "isExtraImport": true,
+        "detail": "models.database",
         "documentation": {}
     },
     {
@@ -796,14 +1189,6 @@
         "description": "sqlalchemy.exc",
         "isExtraImport": true,
         "detail": "sqlalchemy.exc",
-        "documentation": {}
-    },
-    {
-        "label": "init_db",
-        "importPath": "api.database",
-        "description": "api.database",
-        "isExtraImport": true,
-        "detail": "api.database",
         "documentation": {}
     },
     {
@@ -937,6 +1322,69 @@
         "description": "institutional-edge-system.backend.app.core.trading_engine",
         "peekOfCode": "class TradingEngine:\n    \"\"\"\n    Core Trading Engine implementing Institutional Edge Pro logic\n    \"\"\"\n    def __init__(self, config: Dict):\n        \"\"\"\n        Initialize Trading Engine\n        Args:\n            config: Configuration dictionary with trading parameters\n        \"\"\"",
         "detail": "institutional-edge-system.backend.app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "SignalQualityPredictor",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.ml.signal_predictor",
+        "description": "institutional-edge-system.backend.app.ml.signal_predictor",
+        "peekOfCode": "class SignalQualityPredictor:\n    \"\"\"\n    ML model that predicts signal success probability\n    \"\"\"\n    def __init__(self, model_path: Optional[str] = None):\n        \"\"\"\n        Initialize the predictor\n        Args:\n            model_path: Path to saved model file\n        \"\"\"",
+        "detail": "institutional-edge-system.backend.app.ml.signal_predictor",
+        "documentation": {}
+    },
+    {
+        "label": "get_predictor",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.ml.signal_predictor",
+        "description": "institutional-edge-system.backend.app.ml.signal_predictor",
+        "peekOfCode": "def get_predictor(model_path: Optional[str] = None) -> SignalQualityPredictor:\n    \"\"\"Get or create global predictor instance\"\"\"\n    global _predictor\n    if _predictor is None:\n        if model_path is None:\n            # Default model path\n            model_dir = Path(__file__).parent / 'models'\n            model_dir.mkdir(exist_ok=True)\n            model_path = str(model_dir / 'signal_predictor.pkl')\n        _predictor = SignalQualityPredictor(model_path)",
+        "detail": "institutional-edge-system.backend.app.ml.signal_predictor",
+        "documentation": {}
+    },
+    {
+        "label": "prepare_training_data",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.ml.train_model",
+        "description": "institutional-edge-system.backend.app.ml.train_model",
+        "peekOfCode": "def prepare_training_data() -> pd.DataFrame:\n    \"\"\"\n    Prepare training data from historical trades and signals\n    Returns:\n        DataFrame with features and target (profitable=1/0)\n    \"\"\"\n    logger.info(\"=\" * 70)\n    logger.info(\"Preparing training data from database\")\n    logger.info(\"=\" * 70)\n    db = SessionLocal()",
+        "detail": "institutional-edge-system.backend.app.ml.train_model",
+        "documentation": {}
+    },
+    {
+        "label": "extract_signal_features",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.ml.train_model",
+        "description": "institutional-edge-system.backend.app.ml.train_model",
+        "peekOfCode": "def extract_signal_features(signal: Signal, trade: Trade = None) -> dict:\n    \"\"\"Extract features from signal for training\"\"\"\n    features = {}\n    # Signal features\n    features['confluence_score'] = signal.confluence_score\n    features['signal_type'] = 1 if signal.signal_type == 'BUY' else 0\n    # Score breakdown\n    breakdown = signal.score_breakdown or {}\n    features['trend_score'] = breakdown.get('Trend', 0)\n    features['structure_score'] = breakdown.get('Structure', 0)",
+        "detail": "institutional-edge-system.backend.app.ml.train_model",
+        "documentation": {}
+    },
+    {
+        "label": "generate_synthetic_data",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.ml.train_model",
+        "description": "institutional-edge-system.backend.app.ml.train_model",
+        "peekOfCode": "def generate_synthetic_data(n_samples: int = 100) -> list:\n    \"\"\"\n    Generate synthetic training data for initial model training\n    Based on trading logic assumptions\n    \"\"\"\n    logger.info(\"Generating {} synthetic training samples\", n_samples)\n    np.random.seed(42)\n    data = []\n    for _ in range(n_samples):\n        # Generate random features",
+        "detail": "institutional-edge-system.backend.app.ml.train_model",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.ml.train_model",
+        "description": "institutional-edge-system.backend.app.ml.train_model",
+        "peekOfCode": "def main():\n    \"\"\"Main training function\"\"\"\n    logger.info(\"=\" * 70)\n    logger.info(\"AI Signal Quality Predictor - Model Training\")\n    logger.info(\"=\" * 70)\n    # Prepare data\n    df = prepare_training_data()\n    if df.empty or len(df) < 10:\n        logger.error(\"Insufficient training data. Cannot train model.\")\n        return False",
+        "detail": "institutional-edge-system.backend.app.ml.train_model",
+        "documentation": {}
+    },
+    {
+        "label": "project_root",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.ml.train_model",
+        "description": "institutional-edge-system.backend.app.ml.train_model",
+        "peekOfCode": "project_root = Path(__file__).parent.parent.parent\nsys.path.insert(0, str(project_root))\nfrom app.ml.signal_predictor import SignalQualityPredictor\nfrom app.models.database import Trade, Signal, BotConfig\nfrom app.api.database import SessionLocal, engine\nfrom sqlalchemy import text\ndef prepare_training_data() -> pd.DataFrame:\n    \"\"\"\n    Prepare training data from historical trades and signals\n    Returns:",
+        "detail": "institutional-edge-system.backend.app.ml.train_model",
         "documentation": {}
     },
     {
@@ -1088,7 +1536,7 @@
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.schemas.schemas",
         "description": "institutional-edge-system.backend.app.schemas.schemas",
-        "peekOfCode": "class TradeCreate(BaseModel):\n    symbol: str\n    trade_type: str  # \"BUY\" or \"SELL\"\n    entry_price: float\n    stop_loss: float\n    take_profit_1: Optional[float] = None\n    take_profit_2: Optional[float] = None\n    take_profit_3: Optional[float] = None\n    volume: float\n    risk_percent: float",
+        "peekOfCode": "class TradeCreate(BaseModel):\n    symbol: str\n    trade_type: str  # \"BUY\" or \"SELL\"\n    entry_price: Optional[float] = None  # Optional - will be filled by MT5 execution\n    stop_loss: float\n    take_profit_1: Optional[float] = None\n    take_profit_2: Optional[float] = None\n    take_profit_3: Optional[float] = None\n    volume: float\n    risk_percent: float",
         "detail": "institutional-edge-system.backend.app.schemas.schemas",
         "documentation": {}
     },
@@ -1230,6 +1678,231 @@
     {
         "label": "project_root",
         "kind": 5,
+        "importPath": "institutional-edge-system.add_ai_columns",
+        "description": "institutional-edge-system.add_ai_columns",
+        "peekOfCode": "project_root = Path(__file__).parent\nsys.path.insert(0, str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Adding AI columns to signals table\")\nprint(\"=\" * 70)",
+        "detail": "institutional-edge-system.add_ai_columns",
+        "documentation": {}
+    },
+    {
+        "label": "DATABASE_URL",
+        "kind": 5,
+        "importPath": "institutional-edge-system.add_ai_columns",
+        "description": "institutional-edge-system.add_ai_columns",
+        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Adding AI columns to signals table\")\nprint(\"=\" * 70)\nengine = create_engine(DATABASE_URL)\ntry:\n    with engine.connect() as conn:\n        # Check if columns already exist\n        result = conn.execute(text(\"\"\"\n            SELECT column_name",
+        "detail": "institutional-edge-system.add_ai_columns",
+        "documentation": {}
+    },
+    {
+        "label": "engine",
+        "kind": 5,
+        "importPath": "institutional-edge-system.add_ai_columns",
+        "description": "institutional-edge-system.add_ai_columns",
+        "peekOfCode": "engine = create_engine(DATABASE_URL)\ntry:\n    with engine.connect() as conn:\n        # Check if columns already exist\n        result = conn.execute(text(\"\"\"\n            SELECT column_name\n            FROM information_schema.columns\n            WHERE table_name='signals' AND column_name IN ('ai_confidence', 'ai_recommendation')\n        \"\"\"))\n        existing_cols = {row[0] for row in result}",
+        "detail": "institutional-edge-system.add_ai_columns",
+        "documentation": {}
+    },
+    {
+        "label": "project_root",
+        "kind": 5,
+        "importPath": "institutional-edge-system.add_bot_configs",
+        "description": "institutional-edge-system.add_bot_configs",
+        "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()",
+        "detail": "institutional-edge-system.add_bot_configs",
+        "documentation": {}
+    },
+    {
+        "label": "backend_path",
+        "kind": 5,
+        "importPath": "institutional-edge-system.add_bot_configs",
+        "description": "institutional-edge-system.add_bot_configs",
+        "peekOfCode": "backend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')",
+        "detail": "institutional-edge-system.add_bot_configs",
+        "documentation": {}
+    },
+    {
+        "label": "DATABASE_URL",
+        "kind": 5,
+        "importPath": "institutional-edge-system.add_bot_configs",
+        "description": "institutional-edge-system.add_bot_configs",
+        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Adding Bot Configurations to Database\")\nprint(\"=\" * 70)\nprint(f\"\\nDatabase URL: {DATABASE_URL.split('@')[1] if '@' in DATABASE_URL else DATABASE_URL}\")\n# Create engine and session\nengine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:",
+        "detail": "institutional-edge-system.add_bot_configs",
+        "documentation": {}
+    },
+    {
+        "label": "engine",
+        "kind": 5,
+        "importPath": "institutional-edge-system.add_bot_configs",
+        "description": "institutional-edge-system.add_bot_configs",
+        "peekOfCode": "engine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    from models.database import BotConfig, User\n    # Check if admin user exists\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()\n    if not admin:\n        print(\"[ERROR] Admin user not found. Please run init_database.py first\")\n        sys.exit(1)",
+        "detail": "institutional-edge-system.add_bot_configs",
+        "documentation": {}
+    },
+    {
+        "label": "SessionLocal",
+        "kind": 5,
+        "importPath": "institutional-edge-system.add_bot_configs",
+        "description": "institutional-edge-system.add_bot_configs",
+        "peekOfCode": "SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    from models.database import BotConfig, User\n    # Check if admin user exists\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()\n    if not admin:\n        print(\"[ERROR] Admin user not found. Please run init_database.py first\")\n        sys.exit(1)\n    print(f\"[OK] Found admin user (ID: {admin.id})\")",
+        "detail": "institutional-edge-system.add_bot_configs",
+        "documentation": {}
+    },
+    {
+        "label": "db",
+        "kind": 5,
+        "importPath": "institutional-edge-system.add_bot_configs",
+        "description": "institutional-edge-system.add_bot_configs",
+        "peekOfCode": "db = SessionLocal()\ntry:\n    from models.database import BotConfig, User\n    # Check if admin user exists\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()\n    if not admin:\n        print(\"[ERROR] Admin user not found. Please run init_database.py first\")\n        sys.exit(1)\n    print(f\"[OK] Found admin user (ID: {admin.id})\")\n    # Check existing bots",
+        "detail": "institutional-edge-system.add_bot_configs",
+        "documentation": {}
+    },
+    {
+        "label": "project_root",
+        "kind": 5,
+        "importPath": "institutional-edge-system.add_symbol_type",
+        "description": "institutional-edge-system.add_symbol_type",
+        "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')",
+        "detail": "institutional-edge-system.add_symbol_type",
+        "documentation": {}
+    },
+    {
+        "label": "backend_path",
+        "kind": 5,
+        "importPath": "institutional-edge-system.add_symbol_type",
+        "description": "institutional-edge-system.add_symbol_type",
+        "peekOfCode": "backend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)",
+        "detail": "institutional-edge-system.add_symbol_type",
+        "documentation": {}
+    },
+    {
+        "label": "DATABASE_URL",
+        "kind": 5,
+        "importPath": "institutional-edge-system.add_symbol_type",
+        "description": "institutional-edge-system.add_symbol_type",
+        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Adding symbol_type column to bot_configs table\")\nprint(\"=\" * 70)\nengine = create_engine(DATABASE_URL)\ntry:\n    with engine.connect() as conn:\n        # Check if column already exists\n        result = conn.execute(text(\"\"\"\n            SELECT column_name",
+        "detail": "institutional-edge-system.add_symbol_type",
+        "documentation": {}
+    },
+    {
+        "label": "engine",
+        "kind": 5,
+        "importPath": "institutional-edge-system.add_symbol_type",
+        "description": "institutional-edge-system.add_symbol_type",
+        "peekOfCode": "engine = create_engine(DATABASE_URL)\ntry:\n    with engine.connect() as conn:\n        # Check if column already exists\n        result = conn.execute(text(\"\"\"\n            SELECT column_name\n            FROM information_schema.columns\n            WHERE table_name='bot_configs' AND column_name='symbol_type'\n        \"\"\"))\n        if result.fetchone():",
+        "detail": "institutional-edge-system.add_symbol_type",
+        "documentation": {}
+    },
+    {
+        "label": "project_root",
+        "kind": 5,
+        "importPath": "institutional-edge-system.create_sample_bots",
+        "description": "institutional-edge-system.create_sample_bots",
+        "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom models.database import BotConfig, User\nfrom dotenv import load_dotenv\n# Load environment",
+        "detail": "institutional-edge-system.create_sample_bots",
+        "documentation": {}
+    },
+    {
+        "label": "backend_path",
+        "kind": 5,
+        "importPath": "institutional-edge-system.create_sample_bots",
+        "description": "institutional-edge-system.create_sample_bots",
+        "peekOfCode": "backend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom models.database import BotConfig, User\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()",
+        "detail": "institutional-edge-system.create_sample_bots",
+        "documentation": {}
+    },
+    {
+        "label": "DATABASE_URL",
+        "kind": 5,
+        "importPath": "institutional-edge-system.create_sample_bots",
+        "description": "institutional-edge-system.create_sample_bots",
+        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Creating sample bot configurations\")\nprint(\"=\" * 70)\nengine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    # Get or create admin user\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()",
+        "detail": "institutional-edge-system.create_sample_bots",
+        "documentation": {}
+    },
+    {
+        "label": "engine",
+        "kind": 5,
+        "importPath": "institutional-edge-system.create_sample_bots",
+        "description": "institutional-edge-system.create_sample_bots",
+        "peekOfCode": "engine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    # Get or create admin user\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()\n    if not admin:\n        print(\"[ERROR] Admin user not found. Run init_database.py first.\")\n        sys.exit(1)\n    # Create bot configurations",
+        "detail": "institutional-edge-system.create_sample_bots",
+        "documentation": {}
+    },
+    {
+        "label": "SessionLocal",
+        "kind": 5,
+        "importPath": "institutional-edge-system.create_sample_bots",
+        "description": "institutional-edge-system.create_sample_bots",
+        "peekOfCode": "SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    # Get or create admin user\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()\n    if not admin:\n        print(\"[ERROR] Admin user not found. Run init_database.py first.\")\n        sys.exit(1)\n    # Create bot configurations\n    bots = [",
+        "detail": "institutional-edge-system.create_sample_bots",
+        "documentation": {}
+    },
+    {
+        "label": "db",
+        "kind": 5,
+        "importPath": "institutional-edge-system.create_sample_bots",
+        "description": "institutional-edge-system.create_sample_bots",
+        "peekOfCode": "db = SessionLocal()\ntry:\n    # Get or create admin user\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()\n    if not admin:\n        print(\"[ERROR] Admin user not found. Run init_database.py first.\")\n        sys.exit(1)\n    # Create bot configurations\n    bots = [\n        {",
+        "detail": "institutional-edge-system.create_sample_bots",
+        "documentation": {}
+    },
+    {
+        "label": "project_root",
+        "kind": 5,
+        "importPath": "institutional-edge-system.fix_bot_configs_schema",
+        "description": "institutional-edge-system.fix_bot_configs_schema",
+        "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')",
+        "detail": "institutional-edge-system.fix_bot_configs_schema",
+        "documentation": {}
+    },
+    {
+        "label": "backend_path",
+        "kind": 5,
+        "importPath": "institutional-edge-system.fix_bot_configs_schema",
+        "description": "institutional-edge-system.fix_bot_configs_schema",
+        "peekOfCode": "backend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)",
+        "detail": "institutional-edge-system.fix_bot_configs_schema",
+        "documentation": {}
+    },
+    {
+        "label": "DATABASE_URL",
+        "kind": 5,
+        "importPath": "institutional-edge-system.fix_bot_configs_schema",
+        "description": "institutional-edge-system.fix_bot_configs_schema",
+        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Fixing bot_configs table schema\")\nprint(\"=\" * 70)\nengine = create_engine(DATABASE_URL)\ntry:\n    with engine.connect() as conn:\n        # Get existing columns\n        result = conn.execute(text(\"\"\"\n            SELECT column_name",
+        "detail": "institutional-edge-system.fix_bot_configs_schema",
+        "documentation": {}
+    },
+    {
+        "label": "engine",
+        "kind": 5,
+        "importPath": "institutional-edge-system.fix_bot_configs_schema",
+        "description": "institutional-edge-system.fix_bot_configs_schema",
+        "peekOfCode": "engine = create_engine(DATABASE_URL)\ntry:\n    with engine.connect() as conn:\n        # Get existing columns\n        result = conn.execute(text(\"\"\"\n            SELECT column_name\n            FROM information_schema.columns\n            WHERE table_name='bot_configs'\n        \"\"\"))\n        existing_cols = {row[0] for row in result}",
+        "detail": "institutional-edge-system.fix_bot_configs_schema",
+        "documentation": {}
+    },
+    {
+        "label": "DATABASE_URL",
+        "kind": 5,
+        "importPath": "institutional-edge-system.fix_database",
+        "description": "institutional-edge-system.fix_database",
+        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"Connecting to database...\")\nengine = create_engine(DATABASE_URL)\nwith engine.connect() as conn:\n    # Add all missing columns\n    print(\"Adding missing columns...\")\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS mt5_password_encrypted VARCHAR\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS swing_length INTEGER DEFAULT 10\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS ob_lookback INTEGER DEFAULT 50\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS fvg_min_size FLOAT DEFAULT 0.3\"))",
+        "detail": "institutional-edge-system.fix_database",
+        "documentation": {}
+    },
+    {
+        "label": "engine",
+        "kind": 5,
+        "importPath": "institutional-edge-system.fix_database",
+        "description": "institutional-edge-system.fix_database",
+        "peekOfCode": "engine = create_engine(DATABASE_URL)\nwith engine.connect() as conn:\n    # Add all missing columns\n    print(\"Adding missing columns...\")\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS mt5_password_encrypted VARCHAR\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS swing_length INTEGER DEFAULT 10\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS ob_lookback INTEGER DEFAULT 50\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS fvg_min_size FLOAT DEFAULT 0.3\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS vp_lookback INTEGER DEFAULT 100\"))\n    conn.commit()",
+        "detail": "institutional-edge-system.fix_database",
+        "documentation": {}
+    },
+    {
+        "label": "project_root",
+        "kind": 5,
         "importPath": "institutional-edge-system.init_database",
         "description": "institutional-edge-system.init_database",
         "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom sqlalchemy.exc import OperationalError\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()",
@@ -1279,6 +1952,33 @@
         "description": "institutional-edge-system.init_db_docker",
         "peekOfCode": "sql_file = project_root / \"init_schema.sql\"\nwith open(sql_file, 'w') as f:\n    f.write(sql_commands)\nprint(f\"Generated schema file: {sql_file}\")\n# Execute via Docker\nprint(\"\\n[2/2] Creating tables in PostgreSQL...\")\ntry:\n    # Copy SQL file into container\n    subprocess.run([\n        \"docker\", \"cp\",",
         "detail": "institutional-edge-system.init_db_docker",
+        "documentation": {}
+    },
+    {
+        "label": "run_command",
+        "kind": 2,
+        "importPath": "institutional-edge-system.start_system",
+        "description": "institutional-edge-system.start_system",
+        "peekOfCode": "def run_command(cmd, description):\n    \"\"\"Run a command and log output\"\"\"\n    logger.info(\"=\" * 70)\n    logger.info(description)\n    logger.info(\"=\" * 70)\n    try:\n        result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)\n        if result.stdout:\n            print(result.stdout)\n        return True",
+        "detail": "institutional-edge-system.start_system",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "institutional-edge-system.start_system",
+        "description": "institutional-edge-system.start_system",
+        "peekOfCode": "def main():\n    logger.info(\"\")\n    logger.info(\"=\" * 70)\n    logger.info(\"INSTITUTIONAL EDGE PRO - AI-POWERED TRADING SYSTEM\")\n    logger.info(\"=\" * 70)\n    logger.info(\"\")\n    os.chdir(str(project_root))\n    # Step 1: Install/upgrade dependencies\n    logger.info(\"Step 1: Installing dependencies...\")\n    if not run_command(",
+        "detail": "institutional-edge-system.start_system",
+        "documentation": {}
+    },
+    {
+        "label": "project_root",
+        "kind": 5,
+        "importPath": "institutional-edge-system.start_system",
+        "description": "institutional-edge-system.start_system",
+        "peekOfCode": "project_root = Path(__file__).parent\ndef run_command(cmd, description):\n    \"\"\"Run a command and log output\"\"\"\n    logger.info(\"=\" * 70)\n    logger.info(description)\n    logger.info(\"=\" * 70)\n    try:\n        result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)\n        if result.stdout:\n            print(result.stdout)",
+        "detail": "institutional-edge-system.start_system",
         "documentation": {}
     },
     {
@@ -1360,6 +2060,60 @@
         "description": "institutional-edge-system.test_system",
         "peekOfCode": "def main():\n    \"\"\"Run all tests\"\"\"\n    print(\"\\n\" + \"=\" * 60)\n    print(\"🚀 INSTITUTIONAL EDGE PRO - System Test\")\n    print(\"=\" * 60)\n    all_passed = True\n    # Test 1: Trading Engine\n    try:\n        test_trading_engine()\n    except Exception as e:",
         "detail": "institutional-edge-system.test_system",
+        "documentation": {}
+    },
+    {
+        "label": "project_root",
+        "kind": 5,
+        "importPath": "institutional-edge-system.update_bot1",
+        "description": "institutional-edge-system.update_bot1",
+        "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()",
+        "detail": "institutional-edge-system.update_bot1",
+        "documentation": {}
+    },
+    {
+        "label": "backend_path",
+        "kind": 5,
+        "importPath": "institutional-edge-system.update_bot1",
+        "description": "institutional-edge-system.update_bot1",
+        "peekOfCode": "backend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')",
+        "detail": "institutional-edge-system.update_bot1",
+        "documentation": {}
+    },
+    {
+        "label": "DATABASE_URL",
+        "kind": 5,
+        "importPath": "institutional-edge-system.update_bot1",
+        "description": "institutional-edge-system.update_bot1",
+        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"Updating bot configuration 1...\")\nengine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    from models.database import BotConfig\n    # Get bot 1\n    bot = db.query(BotConfig).filter(BotConfig.id == 1).first()\n    if bot:",
+        "detail": "institutional-edge-system.update_bot1",
+        "documentation": {}
+    },
+    {
+        "label": "engine",
+        "kind": 5,
+        "importPath": "institutional-edge-system.update_bot1",
+        "description": "institutional-edge-system.update_bot1",
+        "peekOfCode": "engine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    from models.database import BotConfig\n    # Get bot 1\n    bot = db.query(BotConfig).filter(BotConfig.id == 1).first()\n    if bot:\n        bot.name = \"Bitcoin Alpha\"\n        bot.symbol = \"#BTCUSD\"",
+        "detail": "institutional-edge-system.update_bot1",
+        "documentation": {}
+    },
+    {
+        "label": "SessionLocal",
+        "kind": 5,
+        "importPath": "institutional-edge-system.update_bot1",
+        "description": "institutional-edge-system.update_bot1",
+        "peekOfCode": "SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    from models.database import BotConfig\n    # Get bot 1\n    bot = db.query(BotConfig).filter(BotConfig.id == 1).first()\n    if bot:\n        bot.name = \"Bitcoin Alpha\"\n        bot.symbol = \"#BTCUSD\"\n        bot.timeframe = \"H1\"",
+        "detail": "institutional-edge-system.update_bot1",
+        "documentation": {}
+    },
+    {
+        "label": "db",
+        "kind": 5,
+        "importPath": "institutional-edge-system.update_bot1",
+        "description": "institutional-edge-system.update_bot1",
+        "peekOfCode": "db = SessionLocal()\ntry:\n    from models.database import BotConfig\n    # Get bot 1\n    bot = db.query(BotConfig).filter(BotConfig.id == 1).first()\n    if bot:\n        bot.name = \"Bitcoin Alpha\"\n        bot.symbol = \"#BTCUSD\"\n        bot.timeframe = \"H1\"\n        db.commit()",
+        "detail": "institutional-edge-system.update_bot1",
         "documentation": {}
     }
 ]

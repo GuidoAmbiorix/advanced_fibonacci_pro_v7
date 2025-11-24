@@ -14,6 +14,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from loguru import logger
 
+try:
+    from app.ml.signal_predictor import get_predictor
+    ML_AVAILABLE = True
+except ImportError:
+    ML_AVAILABLE = False
+    logger.warning("ML module not available - AI predictions disabled")
+
 
 @dataclass
 class OrderBlock:
@@ -62,6 +69,8 @@ class TradingSignal:
     symbol: str
     timeframe: str
     risk_reward_ratio: float
+    ai_confidence: float = 0.0  # AI confidence score (0-100)
+    ai_recommendation: str = "UNCERTAIN"  # AI recommendation
 
 
 class TradingEngine:
@@ -83,6 +92,10 @@ class TradingEngine:
         self.ob_lookback = config.get('ob_lookback', 50)
         self.fvg_min_size_atr = config.get('fvg_min_size', 0.3)
         self.min_confluence_score = config.get('min_confluence_score', 6)
+
+        # Multi-timeframe
+        self.use_multi_timeframe = config.get('use_multi_timeframe', True)
+        self.higher_tf_trend: Optional[str] = None
 
         # Volume Profile
         self.vp_lookback = config.get('vp_lookback', 100)
@@ -106,12 +119,13 @@ class TradingEngine:
         logger.info("Trading Engine initialized with config: {}", config)
 
 
-    def analyze(self, df: pd.DataFrame) -> Dict:
+    def analyze(self, df: pd.DataFrame, df_higher_tf: Optional[pd.DataFrame] = None) -> Dict:
         """
         Main analysis function - analyzes price data and returns trading signals
 
         Args:
             df: DataFrame with OHLCV data (columns: open, high, low, close, volume, time)
+            df_higher_tf: Optional higher timeframe data for multi-timeframe analysis
 
         Returns:
             Dictionary with analysis results and potential signals
@@ -119,6 +133,10 @@ class TradingEngine:
         if len(df) < self.vp_lookback:
             logger.warning("Not enough data for analysis. Need at least {} bars", self.vp_lookback)
             return {"error": "Insufficient data"}
+
+        # Multi-timeframe trend check
+        if self.use_multi_timeframe and df_higher_tf is not None:
+            self._analyze_higher_timeframe(df_higher_tf)
 
         # Calculate indicators
         df = self._calculate_indicators(df)
@@ -143,6 +161,7 @@ class TradingEngine:
             "timestamp": df.iloc[-1]['time'],
             "current_price": df.iloc[-1]['close'],
             "trend": "BULLISH" if self.trend_bullish else "BEARISH",
+            "higher_tf_trend": self.higher_tf_trend,
             "active_order_blocks": len([ob for ob in self.bullish_obs + self.bearish_obs if not ob.is_mitigated]),
             "active_fvgs": len([fvg for fvg in self.bullish_fvgs + self.bearish_fvgs if not fvg.is_filled]),
             "poc_level": self.poc_level,
@@ -155,6 +174,45 @@ class TradingEngine:
             "signals": signals,
             "premium_discount": self._get_premium_discount_zone(df),
         }
+
+    def _analyze_higher_timeframe(self, df: pd.DataFrame):
+        """
+        Analyze higher timeframe to determine overall trend
+
+        Args:
+            df: Higher timeframe DataFrame
+        """
+        if len(df) < 20:
+            self.higher_tf_trend = "NEUTRAL"
+            return
+
+        # Calculate EMA 20 and 50 for trend
+        df['ema20'] = df['close'].ewm(span=20).mean()
+        df['ema50'] = df['close'].ewm(span=50).mean()
+
+        current_price = df.iloc[-1]['close']
+        ema20 = df.iloc[-1]['ema20']
+        ema50 = df.iloc[-1]['ema50']
+
+        # Check swing structure
+        highs = df['high'].tail(10)
+        lows = df['low'].tail(10)
+
+        higher_highs = highs.iloc[-1] > highs.iloc[-5]
+        higher_lows = lows.iloc[-1] > lows.iloc[-5]
+        lower_highs = highs.iloc[-1] < highs.iloc[-5]
+        lower_lows = lows.iloc[-1] < lows.iloc[-5]
+
+        # Determine trend
+        if current_price > ema20 > ema50 and higher_highs and higher_lows:
+            self.higher_tf_trend = "BULLISH"
+            logger.info("Higher TF trend: BULLISH")
+        elif current_price < ema20 < ema50 and lower_highs and lower_lows:
+            self.higher_tf_trend = "BEARISH"
+            logger.info("Higher TF trend: BEARISH")
+        else:
+            self.higher_tf_trend = "NEUTRAL"
+            logger.info("Higher TF trend: NEUTRAL")
 
 
     def _calculate_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -544,8 +602,20 @@ class TradingEngine:
         current_price = df.iloc[-1]['close']
         atr = df.iloc[-1]['atr']
 
+        # Multi-timeframe filter: only take signals aligned with higher TF trend
+        higher_tf_allows_buy = True
+        higher_tf_allows_sell = True
+
+        if self.use_multi_timeframe and self.higher_tf_trend:
+            if self.higher_tf_trend == "BEARISH":
+                higher_tf_allows_buy = False
+                logger.info("Skipping BUY signals - Higher TF is BEARISH")
+            elif self.higher_tf_trend == "BULLISH":
+                higher_tf_allows_sell = False
+                logger.info("Skipping SELL signals - Higher TF is BULLISH")
+
         # Bull Signal
-        if bull_score >= self.min_confluence_score and self.trend_bullish:
+        if bull_score >= self.min_confluence_score and self.trend_bullish and higher_tf_allows_buy:
             stop_loss = current_price - (atr * 1.5)
             risk = current_price - stop_loss
 
@@ -553,20 +623,56 @@ class TradingEngine:
                 signal_type="BUY",
                 entry_price=current_price,
                 stop_loss=stop_loss,
-                take_profit_1=current_price + (risk * 1.0),
-                take_profit_2=current_price + (risk * 2.0),
-                take_profit_3=current_price + (risk * 3.0),
+                take_profit_1=current_price + (risk * 1.5),
+                take_profit_2=current_price + (risk * 3.0),
+                take_profit_3=current_price + (risk * 5.0),
                 confluence_score=bull_score,
                 score_breakdown=confluence_data['bull_breakdown'],
                 timestamp=df.iloc[-1]['time'],
                 symbol=self.config.get('symbol', 'UNKNOWN'),
                 timeframe=self.config.get('timeframe', 'UNKNOWN'),
-                risk_reward_ratio=2.0
+                risk_reward_ratio=3.0
             )
+
+            # Add AI confidence prediction
+            if ML_AVAILABLE:
+                try:
+                    predictor = get_predictor()
+                    signal_data = {
+                        'signal_type': 'BUY',
+                        'confluence_score': bull_score,
+                        'score_breakdown': confluence_data['bull_breakdown'],
+                        'entry_price': current_price,
+                        'stop_loss': stop_loss,
+                        'take_profit_1': signal.take_profit_1
+                    }
+                    market_data = {
+                        'current_price': current_price,
+                        'atr': atr,
+                        'higher_tf_trend': self.higher_tf_trend,
+                        'volatility_percentile': 50,
+                        'active_order_blocks': len([ob for ob in self.bullish_obs + self.bearish_obs if not ob.is_mitigated]),
+                        'active_fvgs': len([fvg for fvg in self.bullish_fvgs + self.bearish_fvgs if not fvg.is_filled]),
+                        'near_poc': abs(current_price - self.poc_level) < atr if self.poc_level else False,
+                        'in_value_area': self.val_level <= current_price <= self.vah_level if self.val_level and self.vah_level else False,
+                        'zone': self._get_premium_discount_zone(df)
+                    }
+
+                    ai_confidence, ai_recommendation = predictor.predict(signal_data, market_data)
+                    signal.ai_confidence = ai_confidence
+                    signal.ai_recommendation = ai_recommendation
+
+                    logger.info("✅ BUY signal generated - Confluence: {}/10, AI: {:.1f}% ({})",
+                               bull_score, ai_confidence, ai_recommendation)
+                except Exception as e:
+                    logger.error("AI prediction error: {}", e)
+            else:
+                logger.info("✅ BUY signal generated with higher TF confirmation")
+
             signals.append(signal)
 
         # Bear Signal
-        if bear_score >= self.min_confluence_score and not self.trend_bullish:
+        if bear_score >= self.min_confluence_score and not self.trend_bullish and higher_tf_allows_sell:
             stop_loss = current_price + (atr * 1.5)
             risk = stop_loss - current_price
 
@@ -574,16 +680,52 @@ class TradingEngine:
                 signal_type="SELL",
                 entry_price=current_price,
                 stop_loss=stop_loss,
-                take_profit_1=current_price - (risk * 1.0),
-                take_profit_2=current_price - (risk * 2.0),
-                take_profit_3=current_price - (risk * 3.0),
+                take_profit_1=current_price - (risk * 1.5),
+                take_profit_2=current_price - (risk * 3.0),
+                take_profit_3=current_price - (risk * 5.0),
                 confluence_score=bear_score,
                 score_breakdown=confluence_data['bear_breakdown'],
                 timestamp=df.iloc[-1]['time'],
                 symbol=self.config.get('symbol', 'UNKNOWN'),
                 timeframe=self.config.get('timeframe', 'UNKNOWN'),
-                risk_reward_ratio=2.0
+                risk_reward_ratio=3.0
             )
+
+            # Add AI confidence prediction
+            if ML_AVAILABLE:
+                try:
+                    predictor = get_predictor()
+                    signal_data = {
+                        'signal_type': 'SELL',
+                        'confluence_score': bear_score,
+                        'score_breakdown': confluence_data['bear_breakdown'],
+                        'entry_price': current_price,
+                        'stop_loss': stop_loss,
+                        'take_profit_1': signal.take_profit_1
+                    }
+                    market_data = {
+                        'current_price': current_price,
+                        'atr': atr,
+                        'higher_tf_trend': self.higher_tf_trend,
+                        'volatility_percentile': 50,
+                        'active_order_blocks': len([ob for ob in self.bullish_obs + self.bearish_obs if not ob.is_mitigated]),
+                        'active_fvgs': len([fvg for fvg in self.bullish_fvgs + self.bearish_fvgs if not fvg.is_filled]),
+                        'near_poc': abs(current_price - self.poc_level) < atr if self.poc_level else False,
+                        'in_value_area': self.val_level <= current_price <= self.vah_level if self.val_level and self.vah_level else False,
+                        'zone': self._get_premium_discount_zone(df)
+                    }
+
+                    ai_confidence, ai_recommendation = predictor.predict(signal_data, market_data)
+                    signal.ai_confidence = ai_confidence
+                    signal.ai_recommendation = ai_recommendation
+
+                    logger.info("✅ SELL signal generated - Confluence: {}/10, AI: {:.1f}% ({})",
+                               bear_score, ai_confidence, ai_recommendation)
+                except Exception as e:
+                    logger.error("AI prediction error: {}", e)
+            else:
+                logger.info("✅ SELL signal generated with higher TF confirmation")
+
             signals.append(signal)
 
         return signals

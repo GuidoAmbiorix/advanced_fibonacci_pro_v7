@@ -43,14 +43,20 @@ export default {
     return response.data
   },
 
-  // Market Analysis
-  async analyzeMarket(symbol, timeframe) {
-    const response = await api.get(`/api/analysis/${symbol}/${timeframe}`)
+  // Symbols
+  async getSymbols() {
+    const response = await api.get('/api/symbols')
     return response.data
   },
 
-  async getMarketHistory(symbol, timeframe, bars = 100) {
-    const response = await api.get(`/api/market/history/${symbol}/${timeframe}?bars=${bars}`)
+  // Market Analysis
+  async analyzeMarket(symbol, timeframe, symbolType = 'forex') {
+    const response = await api.get(`/api/analysis/${symbol}/${timeframe}?symbol_type=${symbolType}`)
+    return response.data
+  },
+
+  async getMarketHistory(symbol, timeframe, bars = 100, symbolType = 'forex') {
+    const response = await api.get(`/api/market/history/${symbol}/${timeframe}?bars=${bars}&symbol_type=${symbolType}`)
     return response.data
   },
 
@@ -61,7 +67,8 @@ export default {
   },
 
   async getCurrentPrice(symbol) {
-    const response = await api.get(`/api/mt5/price/${symbol}`)
+    const encodedSymbol = encodeURIComponent(symbol)
+    const response = await api.get(`/api/mt5/price/${encodedSymbol}`)
     return response.data
   },
 
@@ -84,6 +91,15 @@ export default {
 
   async getBotStatus(botConfigId) {
     const response = await api.get(`/api/bot/status/${botConfigId}`)
+    return response.data
+  },
+
+  // Signals
+  async getSignals(symbol = null, limit = 50, executedOnly = false) {
+    const params = { limit }
+    if (symbol) params.symbol = symbol
+    if (executedOnly) params.executed_only = executedOnly
+    const response = await api.get('/api/signals', { params })
     return response.data
   },
 

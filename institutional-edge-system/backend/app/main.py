@@ -173,23 +173,26 @@ async def get_open_positions(symbol: str = None):
 # ============================================================================
 
 @app.get("/api/analysis/{symbol}/{timeframe}", response_model=schemas.AnalysisResponse)
-async def analyze_market(symbol: str, timeframe: str):
+async def analyze_market(symbol: str, timeframe: str, symbol_type: str = "forex"):
     """
     Analyze market and get trading signals
 
-    Example: /api/analysis/EURUSD/H1
+    Example: /api/analysis/EURUSD/H1 or /api/analysis/BTCUSD/H1?symbol_type=crypto
     """
     if not mt5_connector or not mt5_connector.connected:
         raise HTTPException(status_code=503, detail="MT5 not connected")
 
+    # Normalize symbol based on type
+    normalized_symbol = mt5_connector.normalize_symbol(symbol, symbol_type)
+
     # Get OHLCV data
-    df = mt5_connector.get_ohlcv_data(symbol, timeframe, bars=500)
+    df = mt5_connector.get_ohlcv_data(normalized_symbol, timeframe, bars=500)
     if df is None or len(df) == 0:
         raise HTTPException(status_code=404, detail=f"No data available for {symbol}")
 
     # Create trading engine config
     config = {
-        'symbol': symbol,
+        'symbol': normalized_symbol,
         'timeframe': timeframe,
         'swing_length': 10,
         'ob_lookback': 50,
@@ -211,18 +214,21 @@ async def analyze_market(symbol: str, timeframe: str):
 
 
 @app.get("/api/market/history/{symbol}/{timeframe}", response_model=schemas.OHLCVResponse)
-async def get_market_history(symbol: str, timeframe: str, bars: int = 100):
+async def get_market_history(symbol: str, timeframe: str, bars: int = 100, symbol_type: str = "forex"):
     """Get historical OHLCV data for charts"""
     if not mt5_connector or not mt5_connector.connected:
         raise HTTPException(status_code=503, detail="MT5 not connected")
 
-    df = mt5_connector.get_ohlcv_data(symbol, timeframe, bars=bars)
+    # Normalize symbol based on type
+    normalized_symbol = mt5_connector.normalize_symbol(symbol, symbol_type)
+
+    df = mt5_connector.get_ohlcv_data(normalized_symbol, timeframe, bars=bars)
     if df is None or len(df) == 0:
         raise HTTPException(status_code=404, detail=f"No data available for {symbol}")
 
     # Convert to list of dicts
     data = df.to_dict(orient='records')
-    
+
     return {
         "symbol": symbol,
         "timeframe": timeframe,
@@ -233,6 +239,38 @@ async def get_market_history(symbol: str, timeframe: str, bars: int = 100):
 # ============================================================================
 # BOT CONTROL ENDPOINTS
 # ============================================================================
+
+@app.get("/api/symbols")
+async def get_available_symbols(db: Session = Depends(database.get_db)):
+    """Get all available trading symbols from bot configurations"""
+    try:
+        bots = db.query(BotConfig).all()
+
+        symbols = []
+        for bot in bots:
+            symbol_data = {
+                "symbol": bot.symbol,
+                "symbol_type": bot.symbol_type or "forex",
+                "name": bot.name,
+                "timeframe": bot.timeframe
+            }
+            # Only add if not already in list (avoid duplicates)
+            if not any(s['symbol'] == bot.symbol for s in symbols):
+                symbols.append(symbol_data)
+
+        return {"symbols": symbols}
+    except Exception as e:
+        logger.error(f"Error getting symbols: {e}")
+        logger.exception(e)
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@app.get("/api/bots", response_model=List[schemas.BotConfigResponse])
+async def get_all_bots(db: Session = Depends(database.get_db)):
+    """Get all bot configurations"""
+    bots = db.query(BotConfig).all()
+    return bots
+
 
 @app.post("/api/bot/start")
 async def start_bot(request: schemas.BotStartRequest, db: Session = Depends(database.get_db)):
@@ -358,6 +396,57 @@ async def get_running_bots():
 # TRADE ENDPOINTS
 # ============================================================================
 
+@app.get("/api/signals")
+async def get_signals(
+    limit: int = 50,
+    symbol: str = None,
+    executed_only: bool = False,
+    db: Session = Depends(database.get_db)
+):
+    """Get trading signals from database"""
+    try:
+        from app.models.database import Signal
+
+        query = db.query(Signal)
+
+        if symbol:
+            query = query.filter(Signal.symbol == symbol)
+
+        if executed_only:
+            query = query.filter(Signal.was_executed == True)
+
+        signals = query.order_by(Signal.created_at.desc()).limit(limit).all()
+
+        return {
+            "signals": [
+                {
+                    "id": s.id,
+                    "symbol": s.symbol,
+                    "timeframe": s.timeframe,
+                    "signal_type": s.signal_type,
+                    "price": s.price,
+                    "stop_loss": s.stop_loss,
+                    "take_profit": s.take_profit,
+                    "confluence_score": s.confluence_score,
+                    "score_breakdown": s.score_breakdown,
+                    "trend": s.trend,
+                    "poc_level": s.poc_level,
+                    "zone": s.zone,
+                    "was_executed": s.was_executed,
+                    "created_at": s.created_at.isoformat() if s.created_at else None,
+                    "ai_confidence": getattr(s, 'ai_confidence', 0),
+                    "ai_recommendation": getattr(s, 'ai_recommendation', 'UNCERTAIN')
+                }
+                for s in signals
+            ],
+            "count": len(signals)
+        }
+    except Exception as e:
+        logger.error(f"Error getting signals: {e}")
+        logger.exception(e)
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
 @app.get("/api/trades", response_model=List[schemas.TradeResponse])
 async def get_trades(
     limit: int = 50,
@@ -427,7 +516,7 @@ async def open_trade(request: schemas.TradeCreate, db: Session = Depends(databas
 # ============================================================================
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(database.get_db)):
     """WebSocket for real-time updates"""
     await websocket.accept()
     active_websockets.append(websocket)
@@ -436,12 +525,31 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             # Send periodic updates
             if mt5_connector and mt5_connector.connected:
-                # Get current prices
+                # Get account info
                 account_info = mt5_connector.get_account_info()
 
+                # Get bot statuses
+                bot_statuses = []
+                if bot_manager:
+                    running_bots = bot_manager.get_running_bots()
+                    for bot_id in running_bots:
+                        bot_config = db.query(BotConfig).filter(BotConfig.id == bot_id).first()
+                        if bot_config:
+                            bot_statuses.append({
+                                "bot_id": bot_id,
+                                "symbol": bot_config.symbol,
+                                "timeframe": bot_config.timeframe,
+                                "is_active": bot_config.is_active,
+                                "last_signal_time": bot_config.last_signal_time.isoformat() if bot_config.last_signal_time else None
+                            })
+
                 message = {
-                    "type": "account_update",
-                    "data": account_info,
+                    "type": "status_update",
+                    "data": {
+                        "account": account_info,
+                        "running_bots": bot_statuses,
+                        "mt5_connected": True
+                    },
                     "timestamp": datetime.utcnow().isoformat(),
                 }
 

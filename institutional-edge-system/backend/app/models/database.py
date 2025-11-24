@@ -44,6 +44,7 @@ class BotConfig(Base):
 
     # Trading Parameters
     symbol = Column(String, default="EURUSD")
+    symbol_type = Column(String, default="forex")  # "forex" or "crypto"
     timeframe = Column(String, default="H1")
     risk_percent = Column(Float, default=2.0)
     min_confluence_score = Column(Integer, default=6)
@@ -125,6 +126,10 @@ class Signal(Base):
     # Confluence
     confluence_score = Column(Integer, nullable=False)
     score_breakdown = Column(JSON, nullable=True)
+
+    # AI Predictions
+    ai_confidence = Column(Float, default=0.0)  # 0-100 confidence score
+    ai_recommendation = Column(String, default="UNCERTAIN")  # STRONG_TAKE, TAKE, CAUTIOUS, SKIP, STRONG_SKIP
 
     # Market Context
     trend = Column(String, nullable=False)  # "BULLISH" or "BEARISH"

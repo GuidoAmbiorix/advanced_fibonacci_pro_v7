@@ -15,7 +15,21 @@
       "Bash(start \"Institutional Edge Frontend\" cmd /k start_frontend.bat)",
       "Bash(python run_backend.py:*)",
       "Bash(npm run dev:*)",
-      "Bash(timeout 5 sleep:*)"
+      "Bash(timeout 5 sleep:*)",
+      "Bash(start \"Institutional Edge Backend\" cmd /k start_backend.bat)",
+      "Bash(python main.py:*)",
+      "Bash(python -m app.main:*)",
+      "Bash(uvicorn:*)",
+      "Bash(python fix_database.py:*)",
+      "Bash(python add_symbol_type.py:*)",
+      "Bash(npm install:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(python:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill //F //PID 56040)",
+      "Bash(taskkill //F //PID 47140)"
     ],
     "deny": [],
     "ask": []
