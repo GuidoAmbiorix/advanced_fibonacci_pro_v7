@@ -14,6 +14,11 @@ const router = createRouter({
       path: '/stream',
       name: 'stream',
       component: StreamDashboard
+    },
+    {
+      path: '/signals',
+      name: 'signals',
+      component: () => import('../views/SignalsView.vue')
     }
   ]
 })

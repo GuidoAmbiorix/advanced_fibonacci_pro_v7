@@ -43,6 +43,12 @@
         >
           LIVE MARKET SCAN
         </div>
+        <router-link
+          to="/signals"
+          class="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded text-xs font-bold text-white transition-colors flex items-center"
+        >
+          <span class="mr-1">📡</span> SIGNALS
+        </router-link>
       </div>
 
       <div class="flex items-center space-x-6">

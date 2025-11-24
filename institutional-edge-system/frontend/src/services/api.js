@@ -51,12 +51,14 @@ export default {
 
   // Market Analysis
   async analyzeMarket(symbol, timeframe, symbolType = 'forex') {
-    const response = await api.get(`/api/analysis/${symbol}/${timeframe}?symbol_type=${symbolType}`)
+    const encodedSymbol = encodeURIComponent(symbol)
+    const response = await api.get(`/api/analysis/${encodedSymbol}/${timeframe}?symbol_type=${symbolType}`)
     return response.data
   },
 
   async getMarketHistory(symbol, timeframe, bars = 100, symbolType = 'forex') {
-    const response = await api.get(`/api/market/history/${symbol}/${timeframe}?bars=${bars}&symbol_type=${symbolType}`)
+    const encodedSymbol = encodeURIComponent(symbol)
+    const response = await api.get(`/api/market/history/${encodedSymbol}/${timeframe}?bars=${bars}&symbol_type=${symbolType}`)
     return response.data
   },
 
