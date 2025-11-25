@@ -22,16 +22,18 @@ class TradingBot:
     Automated trading bot that runs continuously
     """
 
-    def __init__(self, bot_config_id: int, mt5_connector: MT5Connector):
+    def __init__(self, bot_config_id: int, mt5_connector: MT5Connector, sio):
         """
         Initialize trading bot
 
         Args:
             bot_config_id: Database ID of bot configuration
             mt5_connector: MT5 connector instance
+            sio: Socket.IO server instance
         """
         self.bot_config_id = bot_config_id
         self.mt5_connector = mt5_connector
+        self.sio = sio
         self.is_running = False
         self.config: Optional[BotConfig] = None
         self.trading_engine: Optional[TradingEngine] = None
@@ -241,6 +243,19 @@ class TradingBot:
 
             db.commit()
             logger.info("Saved {} signals to database", len(signals))
+            
+            # Emit event
+            for sig in signals:
+                await self.sio.emit('signal_generated', {
+                    'symbol': sig.symbol,
+                    'signal_type': sig.signal_type,
+                    'price': sig.entry_price,
+                    'stop_loss': sig.stop_loss,
+                    'take_profit': sig.take_profit_2,
+                    'confluence_score': sig.confluence_score,
+                    'created_at': datetime.utcnow().isoformat()
+                })
+                
         except Exception as e:
             logger.exception("Error saving signals: {}", e)
             db.rollback()
@@ -333,7 +348,21 @@ class TradingBot:
             db.add(trade)
             db.commit()
             db.refresh(trade)
+            db.refresh(trade)
             logger.info("Trade saved to database - ID: {}", trade.id)
+            
+            # Emit event
+            await self.sio.emit('trade_opened', {
+                'ticket': trade.ticket,
+                'symbol': trade.symbol,
+                'type': trade.trade_type,
+                'volume': trade.volume,
+                'entry': trade.entry_price,
+                'sl': trade.stop_loss,
+                'tp': trade.take_profit_1,
+                'pnl': 0.0
+            })
+            
             return trade.id
         except Exception as e:
             logger.exception("Error saving trade: {}", e)
@@ -413,8 +442,9 @@ class BotManager:
     Manages multiple trading bots
     """
 
-    def __init__(self, mt5_connector: MT5Connector):
+    def __init__(self, mt5_connector: MT5Connector, sio):
         self.mt5_connector = mt5_connector
+        self.sio = sio
         self.bots: Dict[int, TradingBot] = {}
         self.tasks: Dict[int, asyncio.Task] = {}
 
@@ -424,7 +454,7 @@ class BotManager:
             logger.warning("Bot {} already running", bot_config_id)
             return
 
-        bot = TradingBot(bot_config_id, self.mt5_connector)
+        bot = TradingBot(bot_config_id, self.mt5_connector, self.sio)
         self.bots[bot_config_id] = bot
 
         # Run bot in background task

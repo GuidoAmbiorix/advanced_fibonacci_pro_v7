@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { io } from 'socket.io-client'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -128,29 +129,25 @@ export default {
     return response.data
   },
 
-  // WebSocket connection
-  createWebSocket(onMessage, onError) {
-    const wsUrl = API_BASE_URL.replace('http', 'ws') + '/ws'
-    const ws = new WebSocket(wsUrl)
+  // Socket.IO connection
+  initSocket() {
+    const socket = io(API_BASE_URL, {
+      transports: ['websocket', 'polling'],
+      autoConnect: true
+    })
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      onMessage(data)
-    }
+    socket.on('connect', () => {
+      console.log('Socket.IO Connected:', socket.id)
+    })
 
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error)
-      if (onError) onError(error)
-    }
+    socket.on('disconnect', () => {
+      console.log('Socket.IO Disconnected')
+    })
 
-    ws.onclose = () => {
-      console.log('WebSocket connection closed')
-      // Auto-reconnect after 5 seconds
-      setTimeout(() => {
-        this.createWebSocket(onMessage, onError)
-      }, 5000)
-    }
+    socket.on('connect_error', (error) => {
+      console.error('Socket.IO Connection Error:', error)
+    })
 
-    return ws
+    return socket
   }
 }

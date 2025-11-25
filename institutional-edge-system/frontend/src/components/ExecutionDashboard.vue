@@ -410,7 +410,8 @@ const formatTimeAgo = (iso) => {
 const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
 // Lifecycle
-let pollInterval;
+let socket;
+
 onMounted(() => {
   loadSymbols();
   loadConfig();
@@ -418,14 +419,34 @@ onMounted(() => {
   updateChart();
   fetchTrades();
   
-  pollInterval = setInterval(() => {
-    fetchSignals();
-    fetchTrades();
-    if (isBotRunning.value) updateChart(); // Only update chart frequently if active
-  }, 5000);
+  // Initialize Socket.IO
+  socket = api.initSocket();
+  
+  socket.on('signal_generated', (signal) => {
+    console.log('New Signal Received:', signal);
+    // Add to top of list
+    signals.value.unshift({
+      ...signal,
+      id: Date.now(), // Temp ID until refresh
+      was_executed: false
+    });
+  });
+
+  socket.on('trade_opened', (trade) => {
+    console.log('Trade Opened:', trade);
+    openTrades.value.unshift({
+      ticket: trade.ticket,
+      symbol: trade.symbol,
+      type: trade.type,
+      volume: trade.volume,
+      entry: trade.entry,
+      current: trade.entry,
+      pnl: 0.0
+    });
+  });
 });
 
 onUnmounted(() => {
-  clearInterval(pollInterval);
+  if (socket) socket.disconnect();
 });
 </script>

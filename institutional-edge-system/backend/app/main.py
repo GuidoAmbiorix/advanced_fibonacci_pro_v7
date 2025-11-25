@@ -47,6 +47,19 @@ mt5_connector: MT5Connector = None
 trading_engines: Dict[int, TradingEngine] = {}  # bot_config_id -> TradingEngine
 bot_manager = None  # Manages automated trading bots
 
+# Socket.IO Setup
+import socketio
+sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
+app = socketio.ASGIApp(sio, app)
+
+@sio.event
+async def connect(sid, environ):
+    logger.info(f"Socket connected: {sid}")
+
+@sio.event
+async def disconnect(sid):
+    logger.info(f"Socket disconnected: {sid}")
+
 # ============================================================================
 # STARTUP & SHUTDOWN
 # ============================================================================
@@ -80,7 +93,7 @@ async def startup_event():
     # Initialize bot manager
     global bot_manager
     from app.services.trading_bot import BotManager
-    bot_manager = BotManager(mt5_connector)
+    bot_manager = BotManager(mt5_connector, sio)
     logger.info("Bot manager initialized")
 
     logger.info("API started successfully on {}:{}", settings.HOST, settings.PORT)
