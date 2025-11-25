@@ -17,6 +17,8 @@ from app.models.database import BotConfig, Trade, Signal
 from app.api.database import SessionLocal
 
 
+from app.services.rabbitmq_service import RabbitMQService
+
 class TradingBot:
     """
     Automated trading bot that runs continuously
@@ -34,6 +36,7 @@ class TradingBot:
         self.bot_config_id = bot_config_id
         self.mt5_connector = mt5_connector
         self.sio = sio
+        self.rabbitmq = RabbitMQService()
         self.is_running = False
         self.config: Optional[BotConfig] = None
         self.trading_engine: Optional[TradingEngine] = None
@@ -47,6 +50,9 @@ class TradingBot:
         """Start the trading bot"""
         self.is_running = True
         logger.info("Starting trading bot {}", self.bot_config_id)
+
+        # Connect to RabbitMQ
+        await self.rabbitmq.connect()
 
         # Load configuration
         self._load_config()
@@ -68,7 +74,31 @@ class TradingBot:
     async def stop(self):
         """Stop the trading bot"""
         self.is_running = False
+        await self.rabbitmq.close()
         logger.info("Stopping trading bot {}", self.bot_config_id)
+
+    # ... (rest of methods) ...
+
+    async def _execute_signal(self, signal):
+        """Execute a trading signal"""
+        
+        # ... (checks) ...
+
+        # Publish to RabbitMQ for execution
+        signal_data = {
+            "symbol": signal.symbol,
+            "signal_type": signal.signal_type,
+            "entry_price": signal.entry_price,
+            "stop_loss": signal.stop_loss,
+            "take_profit": signal.take_profit_1,
+            "risk_percent": self.config.risk_percent,
+            "confluence_score": signal.confluence_score
+        }
+        
+        await self.rabbitmq.publish_signal(signal_data)
+        
+        # Also execute locally for now (Hybrid Mode) until Worker is fully tested
+        # ... (existing execution logic) ...
 
     def _load_config(self):
         """Load bot configuration from database"""
@@ -283,6 +313,18 @@ class TradingBot:
         if not self._check_daily_risk():
             logger.warning("Daily risk limit reached, skipping")
             return
+
+        # Publish to RabbitMQ (Decoupled Execution)
+        await self.rabbitmq.publish_signal({
+            "symbol": signal.symbol,
+            "signal_type": signal.signal_type,
+            "entry_price": signal.entry_price,
+            "stop_loss": signal.stop_loss,
+            "take_profit": signal.take_profit_1,
+            "risk_percent": self.config.risk_percent,
+            "confluence_score": signal.confluence_score,
+            "bot_config_id": self.bot_config_id
+        })
 
         # Get account info for position sizing
         account_info = self.mt5_connector.get_account_info()
