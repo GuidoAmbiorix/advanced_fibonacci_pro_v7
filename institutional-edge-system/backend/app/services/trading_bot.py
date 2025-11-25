@@ -12,6 +12,7 @@ from loguru import logger
 
 from app.core.trading_engine import TradingEngine
 from app.core.mt5_connector import MT5Connector
+from app.services.trade_manager import TradeManager
 from app.models.database import BotConfig, Trade, Signal
 from app.api.database import SessionLocal
 
@@ -34,6 +35,7 @@ class TradingBot:
         self.is_running = False
         self.config: Optional[BotConfig] = None
         self.trading_engine: Optional[TradingEngine] = None
+        self.trade_manager: Optional[TradeManager] = None
         self.last_analysis_time: Optional[datetime] = None
         self.open_positions_count = 0
 
@@ -49,6 +51,14 @@ class TradingBot:
 
         # Initialize trading engine
         self._init_trading_engine()
+        
+        # Initialize trade manager with config
+        self.trade_manager = TradeManager(self.mt5_connector)
+        self.trade_manager.be_trigger_r = self.config.be_trigger
+        self.trade_manager.use_trailing_sl = self.config.trailing_sl
+        self.trade_manager.trailing_step_r = self.config.trailing_step
+        self.trade_manager.partial_tp_on = self.config.partial_tp_on
+        self.trade_manager.partial_tp_amount = self.config.partial_tp_amount
 
         # Start main loop
         await self._run_loop()
@@ -100,6 +110,11 @@ class TradingBot:
 
                 # Update open positions count
                 self._update_positions_count()
+                
+                # Manage existing trades (BE, Trailing SL)
+                if self.mt5_connector and self.mt5_connector.connected:
+                    positions = self.mt5_connector.get_open_positions(self.config.symbol)
+                    self.trade_manager.update_trades(positions)
 
                 # Run market analysis
                 await self._analyze_market()
@@ -276,37 +291,8 @@ class TradingBot:
             trade_id = self._save_trade(signal, result, lot_size)
             self.open_positions_count += 1
             logger.info("✅ Trade opened successfully - Ticket: {}", result['ticket'])
-
-            # Broadcast trade execution to websockets
-            await self._broadcast_trade_execution(signal, result, trade_id)
         else:
             logger.error("❌ Failed to open trade")
-
-    async def _broadcast_trade_execution(self, signal, result: Dict, trade_id: int):
-        """Broadcast trade execution to all WebSocket clients"""
-        try:
-            # Import here to avoid circular dependency
-            from app.main import broadcast_to_websockets
-
-            message = {
-                "type": "trade_executed",
-                "data": {
-                    "trade_id": trade_id,
-                    "ticket": result['ticket'],
-                    "symbol": signal.symbol,
-                    "signal_type": signal.signal_type,
-                    "entry_price": result['price'],
-                    "stop_loss": signal.stop_loss,
-                    "take_profit": signal.take_profit_1,
-                    "confluence_score": signal.confluence_score,
-                    "timestamp": datetime.utcnow().isoformat()
-                },
-                "timestamp": datetime.utcnow().isoformat()
-            }
-
-            await broadcast_to_websockets(message)
-        except Exception as e:
-            logger.error("Failed to broadcast trade execution: {}", e)
 
     def _save_trade(self, signal, result: Dict, lot_size: float) -> int:
         """Save executed trade to database"""

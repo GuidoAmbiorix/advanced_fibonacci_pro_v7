@@ -56,6 +56,13 @@ class BotConfig(Base):
     fvg_min_size = Column(Float, default=0.3)
     vp_lookback = Column(Integer, default=100)
 
+    # Trade Management Settings
+    be_trigger = Column(Float, default=1.0)  # R-multiple to move to BE
+    trailing_sl = Column(Boolean, default=False)
+    trailing_step = Column(Float, default=1.0)  # R-multiple for trailing step
+    partial_tp_on = Column(Boolean, default=False)
+    partial_tp_amount = Column(Float, default=0.5)  # 0.5 = 50%
+
     # Bot Status
     is_active = Column(Boolean, default=False)
     last_signal_time = Column(DateTime, nullable=True)

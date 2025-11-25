@@ -4,7 +4,7 @@ INSTITUTIONAL EDGE PRO - FastAPI Main Application
 ============================================================================
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -45,7 +45,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # Global instances
 mt5_connector: MT5Connector = None
 trading_engines: Dict[int, TradingEngine] = {}  # bot_config_id -> TradingEngine
-active_websockets: List[WebSocket] = []
 bot_manager = None  # Manages automated trading bots
 
 # ============================================================================
@@ -509,70 +508,6 @@ async def open_trade(request: schemas.TradeCreate, db: Session = Depends(databas
     db.refresh(trade)
 
     return {"success": True, "trade_id": trade.id, "ticket": result['ticket']}
-
-
-# ============================================================================
-# WEBSOCKET ENDPOINT
-# ============================================================================
-
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(database.get_db)):
-    """WebSocket for real-time updates"""
-    await websocket.accept()
-    active_websockets.append(websocket)
-
-    try:
-        while True:
-            # Send periodic updates
-            if mt5_connector and mt5_connector.connected:
-                # Get account info
-                account_info = mt5_connector.get_account_info()
-
-                # Get bot statuses
-                bot_statuses = []
-                if bot_manager:
-                    running_bots = bot_manager.get_running_bots()
-                    for bot_id in running_bots:
-                        bot_config = db.query(BotConfig).filter(BotConfig.id == bot_id).first()
-                        if bot_config:
-                            bot_statuses.append({
-                                "bot_id": bot_id,
-                                "symbol": bot_config.symbol,
-                                "timeframe": bot_config.timeframe,
-                                "is_active": bot_config.is_active,
-                                "last_signal_time": bot_config.last_signal_time.isoformat() if bot_config.last_signal_time else None
-                            })
-
-                message = {
-                    "type": "status_update",
-                    "data": {
-                        "account": account_info,
-                        "running_bots": bot_statuses,
-                        "mt5_connected": True
-                    },
-                    "timestamp": datetime.utcnow().isoformat(),
-                }
-
-                await websocket.send_json(message)
-
-            await asyncio.sleep(2)  # Update every 2 seconds
-
-    except WebSocketDisconnect:
-        active_websockets.remove(websocket)
-        logger.info("WebSocket client disconnected")
-
-
-# ============================================================================
-# UTILITY FUNCTIONS
-# ============================================================================
-
-async def broadcast_to_websockets(message: Dict):
-    """Broadcast message to all connected WebSocket clients"""
-    for websocket in active_websockets:
-        try:
-            await websocket.send_json(message)
-        except:
-            pass
 
 
 if __name__ == "__main__":

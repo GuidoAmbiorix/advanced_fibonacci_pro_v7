@@ -59,6 +59,11 @@ class BotConfigCreate(BaseModel):
     ob_lookback: int = Field(default=50, ge=10, le=100)
     fvg_min_size: float = Field(default=0.3, ge=0.1, le=2.0)
     vp_lookback: int = Field(default=100, ge=20, le=500)
+    be_trigger: float = Field(default=1.0, ge=0.5, le=5.0)
+    trailing_sl: bool = False
+    trailing_step: float = Field(default=1.0, ge=0.5, le=5.0)
+    partial_tp_on: bool = False
+    partial_tp_amount: float = Field(default=0.5, ge=0.1, le=1.0)
 
 
 class BotConfigUpdate(BaseModel):
@@ -68,6 +73,11 @@ class BotConfigUpdate(BaseModel):
     risk_percent: Optional[float] = Field(default=None, ge=0.5, le=5.0)
     min_confluence_score: Optional[int] = Field(default=None, ge=3, le=10)
     max_trades: Optional[int] = Field(default=None, ge=1, le=10)
+    be_trigger: Optional[float] = Field(default=None, ge=0.5, le=5.0)
+    trailing_sl: Optional[bool] = None
+    trailing_step: Optional[float] = Field(default=None, ge=0.5, le=5.0)
+    partial_tp_on: Optional[bool] = None
+    partial_tp_amount: Optional[float] = Field(default=None, ge=0.1, le=1.0)
     is_active: Optional[bool] = None
 
 
@@ -80,6 +90,11 @@ class BotConfigResponse(BaseModel):
     risk_percent: float
     min_confluence_score: int
     max_trades: int
+    be_trigger: float
+    trailing_sl: bool
+    trailing_step: float
+    partial_tp_on: bool
+    partial_tp_amount: float
     is_active: bool
     created_at: datetime
     updated_at: datetime
