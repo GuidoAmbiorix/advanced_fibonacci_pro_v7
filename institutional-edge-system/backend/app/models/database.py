@@ -63,6 +63,12 @@ class BotConfig(Base):
     partial_tp_on = Column(Boolean, default=False)
     partial_tp_amount = Column(Float, default=0.5)  # 0.5 = 50%
 
+    # Risk & Filters
+    max_spread = Column(Float, default=2.0)  # Max spread in pips
+    trading_hours_start = Column(String, default="00:00")
+    trading_hours_end = Column(String, default="23:59")
+    daily_loss_limit_percent = Column(Float, default=3.0)
+
     # Bot Status
     is_active = Column(Boolean, default=False)
     last_signal_time = Column(DateTime, nullable=True)
@@ -104,6 +110,7 @@ class Trade(Base):
 
     # Status
     status = Column(String, default="OPEN")  # OPEN, CLOSED, CANCELLED
+    is_partially_closed = Column(Boolean, default=False)
     profit_loss = Column(Float, default=0.0)
 
     # Timestamps

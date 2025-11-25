@@ -96,6 +96,16 @@ export default {
     return response.data
   },
 
+  async getBotConfig(botConfigId) {
+    const response = await api.get(`/api/bot-config/${botConfigId}`)
+    return response.data
+  },
+
+  async updateBotConfig(botConfigId, configData) {
+    const response = await api.put(`/api/bot-config/${botConfigId}`, configData)
+    return response.data
+  },
+
   // Signals
   async getSignals(symbol = null, limit = 50, executedOnly = false) {
     const params = { limit }

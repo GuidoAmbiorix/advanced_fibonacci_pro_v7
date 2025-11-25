@@ -249,9 +249,24 @@ class TradingBot:
 
     async def _execute_signal(self, signal):
         """Execute a trading signal"""
-        # Check if we've reached max trades
+        # 1. Check Max Trades
         if self.open_positions_count >= self.config.max_trades:
             logger.info("Max trades ({}) reached, skipping signal", self.config.max_trades)
+            return
+
+        # 2. Check Spread
+        if not self._check_spread(signal.symbol):
+            logger.warning("Spread too high for {}, skipping", signal.symbol)
+            return
+
+        # 3. Check Trading Hours
+        if not self._check_trading_hours():
+            logger.warning("Outside trading hours, skipping")
+            return
+
+        # 4. Check Daily Risk
+        if not self._check_daily_risk():
+            logger.warning("Daily risk limit reached, skipping")
             return
 
         # Get account info for position sizing
@@ -341,6 +356,54 @@ class TradingBot:
         except Exception as e:
             logger.exception("Error updating last analysis time: {}", e)
             db.rollback()
+        finally:
+            db.close()
+
+
+    def _check_spread(self, symbol: str) -> bool:
+        """Check if spread is within limits"""
+        price_info = self.mt5_connector.get_current_price(symbol)
+        if not price_info:
+            return False
+        
+        spread_pips = price_info['spread'] / 0.0001 # Assuming standard pip
+        # For JPY pairs, pip is 0.01, need more robust pip calculation if supporting JPY
+        if "JPY" in symbol:
+             spread_pips = price_info['spread'] / 0.01
+
+        return spread_pips <= self.config.max_spread
+
+    def _check_trading_hours(self) -> bool:
+        """Check if current time is within trading hours"""
+        now = datetime.utcnow().strftime("%H:%M")
+        return self.config.trading_hours_start <= now <= self.config.trading_hours_end
+
+    def _check_daily_risk(self) -> bool:
+        """Check if daily loss limit has been reached"""
+        # Calculate daily PnL from closed trades today
+        db = SessionLocal()
+        try:
+            today = datetime.utcnow().date()
+            trades = db.query(Trade).filter(
+                Trade.user_id == self.config.user_id,
+                Trade.closed_at >= datetime.combine(today, datetime.min.time())
+            ).all()
+            
+            daily_pnl = sum(t.profit_loss for t in trades)
+            
+            # Get account balance to calculate %
+            account_info = self.mt5_connector.get_account_info()
+            if not account_info:
+                return True # Fail safe
+                
+            balance = account_info['balance']
+            daily_pnl_percent = (daily_pnl / balance) * 100
+            
+            # If loss is greater than limit (e.g. -4% < -3%)
+            if daily_pnl_percent < -self.config.daily_loss_limit_percent:
+                return False
+                
+            return True
         finally:
             db.close()
 

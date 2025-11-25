@@ -391,6 +391,43 @@ async def get_running_bots():
     }
 
 
+@app.get("/api/bot-config/{bot_config_id}", response_model=schemas.BotConfigResponse)
+async def get_bot_config(bot_config_id: int, db: Session = Depends(database.get_db)):
+    """Get bot configuration details"""
+    bot_config = db.query(BotConfig).filter(BotConfig.id == bot_config_id).first()
+    if not bot_config:
+        raise HTTPException(status_code=404, detail="Bot configuration not found")
+    return bot_config
+
+
+@app.put("/api/bot-config/{bot_config_id}", response_model=schemas.BotConfigResponse)
+async def update_bot_config(
+    bot_config_id: int, 
+    config_update: schemas.BotConfigUpdate, 
+    db: Session = Depends(database.get_db)
+):
+    """Update bot configuration"""
+    bot_config = db.query(BotConfig).filter(BotConfig.id == bot_config_id).first()
+    if not bot_config:
+        raise HTTPException(status_code=404, detail="Bot configuration not found")
+
+    # Update fields
+    update_data = config_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(bot_config, key, value)
+
+    db.commit()
+    db.refresh(bot_config)
+
+    # Restart bot if running to apply changes
+    if bot_manager and bot_config_id in bot_manager.get_running_bots():
+        logger.info("Config updated for running bot {}, restarting...", bot_config_id)
+        await bot_manager.stop_bot(bot_config_id)
+        await bot_manager.start_bot(bot_config_id)
+
+    return bot_config
+
+
 # ============================================================================
 # TRADE ENDPOINTS
 # ============================================================================

@@ -346,10 +346,23 @@ class MT5Connector:
     def close_position(self, ticket: int) -> bool:
         """
         Close a position by ticket
-
+        
         Args:
             ticket: Position ticket number
+            
+        Returns:
+            True if closed successfully
+        """
+        return self.close_partial_position(ticket, volume=None)
 
+    def close_partial_position(self, ticket: int, volume: Optional[float] = None) -> bool:
+        """
+        Close a position (fully or partially)
+        
+        Args:
+            ticket: Position ticket number
+            volume: Volume to close (None for full close)
+            
         Returns:
             True if closed successfully
         """
@@ -363,6 +376,9 @@ class MT5Connector:
                 return False
 
             position = position[0]
+            
+            # Determine volume to close
+            close_volume = volume if volume else position.volume
 
             # Prepare close request
             order_type = mt5.ORDER_TYPE_SELL if position.type == mt5.ORDER_TYPE_BUY else mt5.ORDER_TYPE_BUY
@@ -371,13 +387,13 @@ class MT5Connector:
             request = {
                 "action": mt5.TRADE_ACTION_DEAL,
                 "symbol": position.symbol,
-                "volume": position.volume,
+                "volume": close_volume,
                 "type": order_type,
                 "position": ticket,
                 "price": price,
                 "deviation": 20,
                 "magic": 234000,
-                "comment": "Close by Institutional Edge Pro",
+                "comment": "Partial Close" if volume else "Close by Institutional Edge Pro",
                 "type_time": mt5.ORDER_TIME_GTC,
                 "type_filling": mt5.ORDER_FILLING_IOC,
             }
@@ -388,7 +404,7 @@ class MT5Connector:
                 logger.error("Failed to close position {}, retcode: {}", ticket, result.retcode)
                 return False
 
-            logger.info("Position {} closed successfully", ticket)
+            logger.info("Position {} closed (Vol: {}) successfully", ticket, close_volume)
             return True
 
         except Exception as e:

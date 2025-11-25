@@ -137,24 +137,51 @@ class TradeManager:
 
     def _check_and_partial_close(self, trade: Dict, r_multiple: float):
         """Check and execute Partial Take Profit"""
-        # We use TP1 as the trigger for partial close
-        # Assuming TP1 is roughly at 1R or 1.5R. 
-        # For simplicity, let's say if we hit 1R and haven't partially closed yet.
-        # Ideally, we'd track if we already partially closed this trade in DB.
-        # Since we don't have DB state here easily, we can check volume.
-        # If volume is original size, we close. If it's smaller, we assume we already closed.
+        # Trigger at 1.5R (or configurable)
+        if r_multiple < 1.5:
+            return
+
+        ticket = trade['ticket']
         
-        # This is a simplification. A robust system would check the Trade DB record.
-        # For now, let's assume if R >= 1.5 and we haven't moved SL past BE + buffer, we might need to act.
-        # But checking volume is safer if we know standard lot size.
-        
-        # BETTER APPROACH: Just check if we hit a specific R level (e.g. 1.5R)
-        if r_multiple >= 1.5:
-            # We need to know if we already took partials. 
-            # Without DB access in this method, it's risky.
-            # Let's skip this for now or implement a simple "close half if R > 1.5" 
-            # but we risk doing it repeatedly if we don't track it.
-            pass 
+        # Check DB state
+        db = SessionLocal()
+        try:
+            db_trade = db.query(Trade).filter(Trade.ticket == ticket).first()
+            if not db_trade:
+                return
+                
+            if db_trade.is_partially_closed:
+                return # Already closed partials
+                
+            # Execute Partial Close
+            volume_to_close = trade['volume'] * self.partial_tp_amount
+            # Round to 2 decimals or step
+            volume_to_close = round(volume_to_close, 2)
+            
+            if volume_to_close < 0.01:
+                return
+
+            logger.info(f"Executing Partial Close for {ticket}: {volume_to_close} lots")
+            
+            # We need a partial close method in MT5Connector, but close_position closes all.
+            # We need to implement partial close in MT5Connector or use close_position with volume.
+            # Assuming close_position handles volume or we create a new method.
+            # Let's use a new method `close_partial_position` in MT5Connector (need to add it)
+            # OR modify close_position to accept volume.
+            
+            # For now, let's assume we added close_partial to MT5Connector
+            if self.mt5_connector.close_partial_position(ticket, volume_to_close):
+                db_trade.is_partially_closed = True
+                db.commit()
+                logger.info(f"✅ Partial close successful for {ticket}")
+                
+                # Move SL to BE immediately after partial
+                self._check_and_move_to_be(trade, r_multiple, 0) # Force BE check
+                
+        except Exception as e:
+            logger.error(f"Error in partial close for {ticket}: {e}")
+        finally:
+            db.close() 
 
     def _modify_position(self, ticket: int, sl: float, tp: float):
         """Modify trade position"""

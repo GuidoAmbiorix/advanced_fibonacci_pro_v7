@@ -46,16 +46,74 @@
       <div class="col-span-4 flex flex-col space-y-6">
         <!-- Trading Plan Config -->
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-xl">
-          <h3 class="text-slate-400 text-xs uppercase tracking-widest mb-4 font-bold">Trading Plan</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="text-xs text-slate-500 block mb-1">Risk per Trade (%)</label>
-              <input type="number" v-model.number="tradingPlan.riskPercent" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm">
+          <div class="flex justify-between items-center mb-4">
+             <h3 class="text-slate-400 text-xs uppercase tracking-widest font-bold">Trading Plan</h3>
+             <button @click="saveConfig" class="text-xs bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-white font-bold transition-colors">SAVE</button>
+          </div>
+          
+          <div class="space-y-4">
+            <!-- Risk & BE -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-xs text-slate-500 block mb-1">Risk per Trade (%)</label>
+                <input type="number" v-model.number="tradingPlan.risk_percent" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm focus:border-blue-500 outline-none">
+              </div>
+              <div>
+                <label class="text-xs text-slate-500 block mb-1">BE Trigger (R)</label>
+                <input type="number" v-model.number="tradingPlan.be_trigger" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm focus:border-blue-500 outline-none">
+              </div>
             </div>
-            <div>
-              <label class="text-xs text-slate-500 block mb-1">BE Trigger (R)</label>
-              <input type="number" v-model.number="tradingPlan.beTrigger" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm">
+
+            <!-- Trailing SL -->
+            <div class="bg-slate-900/50 p-2 rounded border border-slate-700/50">
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs text-slate-400 font-bold">Trailing Stop Loss</label>
+                <input type="checkbox" v-model="tradingPlan.trailing_sl" class="accent-blue-500">
+              </div>
+              <div v-if="tradingPlan.trailing_sl" class="grid grid-cols-1 gap-2">
+                 <div>
+                  <label class="text-[10px] text-slate-500 block mb-1">Step (R)</label>
+                  <input type="number" v-model.number="tradingPlan.trailing_step" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs">
+                </div>
+              </div>
             </div>
+
+            <!-- Partial TP -->
+            <div class="bg-slate-900/50 p-2 rounded border border-slate-700/50">
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs text-slate-400 font-bold">Partial Take Profit</label>
+                <input type="checkbox" v-model="tradingPlan.partial_tp_on" class="accent-blue-500">
+              </div>
+              <div v-if="tradingPlan.partial_tp_on" class="grid grid-cols-1 gap-2">
+                 <div>
+                  <label class="text-[10px] text-slate-500 block mb-1">Amount (0.1 - 1.0)</label>
+                  <input type="number" v-model.number="tradingPlan.partial_tp_amount" step="0.1" max="1.0" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs">
+                </div>
+              </div>
+            </div>
+
+            <!-- Filters -->
+             <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-xs text-slate-500 block mb-1">Max Spread (Pips)</label>
+                <input type="number" v-model.number="tradingPlan.max_spread" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm">
+              </div>
+              <div>
+                <label class="text-xs text-slate-500 block mb-1">Daily Loss Limit (%)</label>
+                <input type="number" v-model.number="tradingPlan.daily_loss_limit_percent" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm">
+              </div>
+            </div>
+             <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-xs text-slate-500 block mb-1">Start Time</label>
+                <input type="time" v-model="tradingPlan.trading_hours_start" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm">
+              </div>
+              <div>
+                <label class="text-xs text-slate-500 block mb-1">End Time</label>
+                <input type="time" v-model="tradingPlan.trading_hours_end" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm">
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -192,8 +250,16 @@ const isBotRunning = ref(false);
 const signals = ref([]);
 const openTrades = ref([]);
 const tradingPlan = ref({
-  riskPercent: 2.0,
-  beTrigger: 1.0
+  risk_percent: 2.0,
+  be_trigger: 1.0,
+  trailing_sl: false,
+  trailing_step: 1.0,
+  partial_tp_on: false,
+  partial_tp_amount: 0.5,
+  max_spread: 2.0,
+  trading_hours_start: "00:00",
+  trading_hours_end: "23:59",
+  daily_loss_limit_percent: 3.0
 });
 
 // Chart State
@@ -215,6 +281,36 @@ const loadSymbols = async () => {
     const data = await api.getSymbols();
     if (data.symbols) availableSymbols.value = data.symbols;
   } catch (e) { console.error(e); }
+};
+
+const loadConfig = async () => {
+  try {
+    const config = await api.getBotConfig(1); // Default ID 1
+    if (config) {
+      tradingPlan.value = {
+        risk_percent: config.risk_percent,
+        be_trigger: config.be_trigger,
+        trailing_sl: config.trailing_sl,
+        trailing_step: config.trailing_step,
+        partial_tp_on: config.partial_tp_on,
+        partial_tp_amount: config.partial_tp_amount,
+        max_spread: config.max_spread,
+        trading_hours_start: config.trading_hours_start,
+        trading_hours_end: config.trading_hours_end,
+        daily_loss_limit_percent: config.daily_loss_limit_percent
+      };
+    }
+  } catch (e) { console.error("Error loading config:", e); }
+};
+
+const saveConfig = async () => {
+  try {
+    await api.updateBotConfig(1, tradingPlan.value);
+    alert("Configuration Saved!");
+  } catch (e) {
+    console.error("Error saving config:", e);
+    alert("Failed to save configuration");
+  }
 };
 
 const fetchSignals = async () => {
@@ -286,7 +382,7 @@ const executeSignal = async (signal) => {
       volume: 0.01, // Default or calc
       stop_loss: signal.stop_loss,
       take_profit_1: signal.take_profit,
-      risk_percent: tradingPlan.value.riskPercent,
+      risk_percent: tradingPlan.value.risk_percent,
       confluence_score: signal.confluence_score,
       score_breakdown: signal.score_breakdown
     });
@@ -317,6 +413,7 @@ const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currenc
 let pollInterval;
 onMounted(() => {
   loadSymbols();
+  loadConfig();
   fetchSignals();
   updateChart();
   fetchTrades();
