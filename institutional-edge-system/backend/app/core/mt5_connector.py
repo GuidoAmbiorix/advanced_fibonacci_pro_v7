@@ -504,16 +504,16 @@ class MT5Connector:
         self,
         symbol: str,
         risk_percent: float,
-        stop_loss_pips: float,
+        sl_distance: float,
         account_balance: float
     ) -> float:
         """
-        Calculate lot size based on risk percentage
-
+        Calculate lot size based on risk percentage and stop loss distance
+        
         Args:
             symbol: Trading symbol
             risk_percent: Risk percentage (e.g., 2.0 for 2%)
-            stop_loss_pips: Stop loss distance in pips
+            sl_distance: Distance from entry to stop loss in price units
             account_balance: Account balance
 
         Returns:
@@ -522,11 +522,28 @@ class MT5Connector:
         try:
             symbol_info = mt5.symbol_info(symbol)
             if symbol_info is None:
+                logger.error(f"Symbol info not found for {symbol}")
                 return 0.01
 
             risk_amount = account_balance * (risk_percent / 100)
-            pip_value = symbol_info.trade_tick_value
-            lot_size = risk_amount / (stop_loss_pips * pip_value)
+            
+            # Get tick value and size
+            tick_size = symbol_info.trade_tick_size
+            tick_value = symbol_info.trade_tick_value
+            
+            if tick_size == 0 or tick_value == 0:
+                logger.error(f"Invalid tick data for {symbol}: size={tick_size}, value={tick_value}")
+                return 0.01
+                
+            # Calculate money risk for 1 lot
+            # Formula: (SL Distance / Tick Size) * Tick Value
+            ticks_at_risk = sl_distance / tick_size
+            risk_per_lot = ticks_at_risk * tick_value
+            
+            if risk_per_lot == 0:
+                return 0.01
+
+            lot_size = risk_amount / risk_per_lot
 
             # Round to symbol's volume step
             volume_step = symbol_info.volume_step
@@ -535,13 +552,17 @@ class MT5Connector:
             # Ensure within limits
             lot_size = max(symbol_info.volume_min, min(lot_size, symbol_info.volume_max))
 
-            logger.debug("Calculated lot size: {:.2f} for {}% risk", lot_size, risk_percent)
+            logger.debug(
+                "Calculated lot size for {}: {:.2f} (Risk: ${:.2f}, Dist: {:.5f}, Risk/Lot: ${:.2f})", 
+                symbol, lot_size, risk_amount, sl_distance, risk_per_lot
+            )
 
             return lot_size
 
         except Exception as e:
             logger.exception("Error calculating lot size: {}", e)
             return 0.01
+
 
 
     def is_market_open(self, symbol: str) -> bool:

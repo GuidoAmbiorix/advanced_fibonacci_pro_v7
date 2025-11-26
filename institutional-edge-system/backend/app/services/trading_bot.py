@@ -344,11 +344,11 @@ class TradingBot:
             return
 
         # Calculate position size
-        stop_loss_pips = abs(signal.entry_price - signal.stop_loss) / 0.0001
+        sl_distance = abs(signal.entry_price - signal.stop_loss)
         lot_size = self.mt5_connector.calculate_lot_size(
             symbol=signal.symbol,
             risk_percent=self.config.risk_percent,
-            stop_loss_pips=stop_loss_pips,
+            sl_distance=sl_distance,
             account_balance=account_info['balance']
         )
 
