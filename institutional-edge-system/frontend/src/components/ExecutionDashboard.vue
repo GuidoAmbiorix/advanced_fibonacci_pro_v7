@@ -52,19 +52,25 @@
         </div>
 
         <!-- Bot Control -->
-        <button 
-          @click="toggleBot" 
-          class="group relative px-6 py-2 rounded-lg font-bold text-sm transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden"
-          :class="isBotRunning ? 'bg-red-500/10 text-red-400 border border-red-500/50 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-500/20'"
-        >
-          <div class="flex items-center space-x-3">
-            <span class="relative flex h-2.5 w-2.5">
-              <span v-if="isBotRunning" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2.5 w-2.5" :class="isBotRunning ? 'bg-red-500' : 'bg-emerald-500'"></span>
-            </span>
-            <span class="tracking-wider">{{ isBotRunning ? 'STOP ALGO' : 'START ALGO' }}</span>
-          </div>
-        </button>
+        <div class="flex items-center space-x-3">
+          <router-link to="/performance" class="px-4 py-2 rounded-lg font-bold text-xs bg-slate-800 hover:bg-slate-700 text-purple-400 border border-purple-500/30 transition-all shadow-lg hover:shadow-purple-900/20">
+            STATS
+          </router-link>
+          
+          <button 
+            @click="toggleBot" 
+            class="group relative px-6 py-2 rounded-lg font-bold text-sm transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden"
+            :class="isBotRunning ? 'bg-red-500/10 text-red-400 border border-red-500/50 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-500/20'"
+          >
+            <div class="flex items-center space-x-3">
+              <span class="relative flex h-2.5 w-2.5">
+                <span v-if="isBotRunning" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5" :class="isBotRunning ? 'bg-red-500' : 'bg-emerald-500'"></span>
+              </span>
+              <span class="tracking-wider">{{ isBotRunning ? 'STOP ALGO' : 'START ALGO' }}</span>
+            </div>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -687,16 +693,34 @@ onMounted(async () => {
   fetchTrades();
   fetchAccountInfo();
   
-  // Polling for real-time PnL and Trade Status
-  pollingInterval = setInterval(() => {
-    fetchTrades();
-    fetchAccountInfo();
-  }, 2000); // Poll every 2 seconds
-  
   // Initialize Socket.IO
   socket = api.getSocket();
   
   if (socket) {
+    // Real-time Market Data (Replaces Polling)
+    socket.on('market_update', (data) => {
+      // Update Account Info
+      if (data.account) {
+        accountInfo.value = data.account;
+      }
+      
+      // Update Positions
+      if (data.positions) {
+        openTrades.value = data.positions.map(t => ({
+          ticket: t.ticket,
+          symbol: t.symbol,
+          type: t.type,
+          volume: t.volume,
+          entry: t.price_open,
+          current: t.price_current,
+          pnl: t.profit,
+          sl: t.sl,
+          tp: t.tp
+        }));
+        updateAnnotations();
+      }
+    });
+
     socket.on('signal_generated', (signal) => {
       // Only add if matches selected symbol
       if (signal.symbol === selectedSymbol.value) {
@@ -709,24 +733,18 @@ onMounted(async () => {
     });
 
     socket.on('trade_opened', (trade) => {
-      openTrades.value.unshift({
-        ticket: trade.ticket,
-        symbol: trade.symbol,
-        type: trade.type,
-        volume: trade.volume,
-        entry: trade.entry,
-        current: trade.entry,
-        pnl: 0.0,
-        sl: trade.sl,
-        tp: trade.tp
-      });
-      updateAnnotations();
+      // Optional: We get this via market_update now, but good for immediate notification
+      console.log("Trade opened:", trade.ticket);
     });
   }
 });
 
 onUnmounted(() => {
-  if (socket) socket.disconnect();
-  if (pollingInterval) clearInterval(pollingInterval);
+  if (socket) {
+    socket.off('market_update');
+    socket.off('signal_generated');
+    socket.off('trade_opened');
+    socket.disconnect();
+  }
 });
 </script>

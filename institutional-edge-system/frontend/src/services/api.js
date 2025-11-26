@@ -38,6 +38,41 @@ api.interceptors.response.use(
 )
 
 export default {
+  // Authentication
+  async login(username, password) {
+    const formData = new FormData();
+    formData.append('username', username);
+    formData.append('password', password);
+
+    const response = await api.post('/api/auth/token', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+
+    if (response.data.access_token) {
+      localStorage.setItem('token', response.data.access_token);
+      localStorage.setItem('user', JSON.stringify({
+        id: response.data.user_id,
+        username: response.data.username
+      }));
+    }
+    return response.data;
+  },
+
+  async register(email, username, password) {
+    const response = await api.post('/api/auth/register', {
+      email,
+      username,
+      password
+    });
+    return response.data;
+  },
+
+  logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  },
+
   // Health Check
   async getHealth() {
     const response = await api.get('/health')
@@ -151,6 +186,19 @@ export default {
 
   async getLiveTrades() {
     const response = await api.get('/api/trades/live')
+    return response.data
+  },
+
+  // Performance Stats
+  async getPerformanceMetrics(days = 30) {
+    const response = await api.get(`/api/stats/performance?days=${days}`)
+    return response.data
+  },
+
+  async getTradeHistory(limit = 100, offset = 0, symbol = null) {
+    const params = { limit, offset }
+    if (symbol) params.symbol = symbol
+    const response = await api.get('/api/stats/history', { params })
     return response.data
   },
 

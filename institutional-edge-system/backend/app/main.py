@@ -14,11 +14,8 @@ from datetime import datetime, timedelta
 from loguru import logger
 
 from app.core.config import settings
-from app.core.trading_engine import TradingEngine
-from app.core.mt5_connector import MT5Connector
-from app.schemas import schemas
 from app.models.database import Base, User, BotConfig, Trade
-from app.api import database
+from app.api import database, auth, stats
 
 # ============================================================================
 # APPLICATION SETUP
@@ -38,6 +35,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include Routers
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(stats.router, prefix="/api/stats", tags=["stats"])
 
 # OAuth2
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -62,6 +63,35 @@ async def disconnect(sid):
 # ============================================================================
 # STARTUP & SHUTDOWN
 # ============================================================================
+
+# Background Task for Real-time Updates
+async def broadcast_market_data():
+    """
+    Periodically broadcast market data (Account, Positions, PnL) to all clients
+    This replaces frontend polling.
+    """
+    while True:
+        try:
+            if mt5_connector and mt5_connector.connected:
+                # 1. Get Account Info
+                account = mt5_connector.get_account_info()
+                
+                # 2. Get Open Positions
+                positions = mt5_connector.get_open_positions()
+                
+                # 3. Broadcast
+                if account:
+                    await sio.emit('market_update', {
+                        'account': account,
+                        'positions': positions,
+                        'timestamp': datetime.utcnow().isoformat()
+                    })
+                    
+        except Exception as e:
+            logger.error(f"Error in broadcast loop: {e}")
+            
+        # Wait 1 second (Real-time feel without overloading)
+        await asyncio.sleep(1)
 
 @app.on_event("startup")
 async def startup_event():
@@ -94,6 +124,9 @@ async def startup_event():
     from app.services.trading_bot import BotManager
     bot_manager = BotManager(mt5_connector, sio)
     logger.info("Bot manager initialized")
+    
+    # Start Broadcast Loop
+    asyncio.create_task(broadcast_market_data())
 
     logger.info("API started successfully on {}:{}", settings.HOST, settings.PORT)
 
