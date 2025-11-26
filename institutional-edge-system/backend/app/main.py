@@ -1,4 +1,4 @@
-"""
+﻿"""
 ============================================================================
 INSTITUTIONAL EDGE PRO - FastAPI Main Application
 ============================================================================
@@ -50,7 +50,6 @@ bot_manager = None  # Manages automated trading bots
 # Socket.IO Setup
 import socketio
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
-app = socketio.ASGIApp(sio, app)
 
 @sio.event
 async def connect(sid, environ):
@@ -299,7 +298,7 @@ async def start_bot(request: schemas.BotStartRequest, db: Session = Depends(data
     # Start the automated bot
     if bot_manager:
         await bot_manager.start_bot(request.bot_config_id)
-        logger.info("✅ Bot {} started for symbol {} {}", bot_config.name, bot_config.symbol, bot_config.timeframe)
+        logger.info("âœ… Bot {} started for symbol {} {}", bot_config.name, bot_config.symbol, bot_config.timeframe)
     else:
         logger.warning("Bot manager not available")
 
@@ -324,7 +323,7 @@ async def stop_bot(request: schemas.BotStopRequest, db: Session = Depends(databa
     # Stop the automated bot
     if bot_manager:
         await bot_manager.stop_bot(request.bot_config_id)
-        logger.info("🛑 Bot {} stopped", bot_config.name)
+        logger.info("ðŸ›‘ Bot {} stopped", bot_config.name)
     else:
         logger.warning("Bot manager not available")
 
@@ -515,50 +514,158 @@ async def get_trades(
 @app.post("/api/trades/open")
 async def open_trade(request: schemas.TradeCreate, db: Session = Depends(database.get_db)):
     """Open a new trade"""
+    import traceback
+    try:
+        if not mt5_connector or not mt5_connector.connected:
+            raise HTTPException(status_code=503, detail="MT5 not connected")
+
+        # Calculate lot size
+        account_info = mt5_connector.get_account_info()
+        if not account_info:
+            raise HTTPException(status_code=500, detail="Failed to get account info")
+
+        # Open position
+        result = mt5_connector.open_position(
+            symbol=request.symbol,
+            order_type=request.trade_type,
+            volume=request.volume,
+            stop_loss=request.stop_loss,
+            take_profit=request.take_profit_1,
+        )
+
+        if not result or not result.get('success'):
+            error_msg = result.get('error') if result else "Failed to open trade"
+            raise HTTPException(status_code=500, detail=error_msg)
+
+        # Get user
+        user = db.query(User).first()
+        if not user:
+            raise HTTPException(status_code=500, detail="No user found")
+
+        # Save to database
+        trade = Trade(
+            user_id=user.id,
+            ticket=result['ticket'],
+            symbol=request.symbol,
+            trade_type=request.trade_type,
+            entry_price=result['price'],
+            stop_loss=request.stop_loss,
+            take_profit_1=request.take_profit_1,
+            take_profit_2=request.take_profit_2,
+            take_profit_3=request.take_profit_3,
+            volume=request.volume,
+            risk_percent=request.risk_percent,
+            confluence_score=request.confluence_score,
+            score_breakdown=request.score_breakdown,
+            status="OPEN",
+        )
+
+        db.add(trade)
+        db.commit()
+        db.refresh(trade)
+
+        return {"success": True, "trade_id": trade.id, "ticket": result['ticket']}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error opening trade: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.post("/api/trades/close/{ticket}")
+async def close_trade(ticket: int, db: Session = Depends(database.get_db)):
+    """Close a trade by ticket"""
+    try:
+        if not mt5_connector or not mt5_connector.connected:
+            raise HTTPException(status_code=503, detail="MT5 not connected")
+
+        # Close position in MT5
+        success = mt5_connector.close_position(ticket)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to close position in MT5")
+
+        # Update database
+        trade = db.query(Trade).filter(Trade.ticket == ticket).first()
+        if trade:
+            trade.status = "CLOSED"
+            trade.closed_at = datetime.utcnow()
+            # PnL should be updated by a separate sync process or here if we fetch history
+            db.commit()
+
+        return {"success": True, "message": f"Trade {ticket} closed"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error closing trade: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.post("/api/trades/be/{ticket}")
+async def move_to_be(ticket: int, db: Session = Depends(database.get_db)):
+    """Move trade SL to Break Even"""
+    try:
+        if not mt5_connector or not mt5_connector.connected:
+            raise HTTPException(status_code=503, detail="MT5 not connected")
+
+        # Get position info
+        positions = mt5_connector.get_open_positions()
+        position = next((p for p in positions if p['ticket'] == ticket), None)
+        
+        if not position:
+            raise HTTPException(status_code=404, detail="Position not found")
+
+        # Calculate BE level (Entry price)
+        new_sl = position['price_open']
+        
+        # Modify position
+        request = {
+            "action": mt5.TRADE_ACTION_SLTP,
+            "position": ticket,
+            "sl": new_sl,
+            "tp": position['tp']
+        }
+        
+        result = mt5.order_send(request)
+        
+        if result is None or result.retcode != mt5.TRADE_RETCODE_DONE:
+             raise HTTPException(status_code=500, detail=f"Failed to move to BE. Retcode: {result.retcode if result else 'None'}")
+
+        return {"success": True, "message": f"Trade {ticket} moved to BE"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error moving to BE: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.get("/api/account/summary")
+async def get_account_summary():
+    """Get live account summary from MT5"""
     if not mt5_connector or not mt5_connector.connected:
         raise HTTPException(status_code=503, detail="MT5 not connected")
-
-    # Calculate lot size
-    account_info = mt5_connector.get_account_info()
-    if not account_info:
+        
+    info = mt5_connector.get_account_info()
+    if not info:
         raise HTTPException(status_code=500, detail="Failed to get account info")
+        
+    return info
 
-    # Open position
-    result = mt5_connector.open_position(
-        symbol=request.symbol,
-        order_type=request.trade_type,
-        volume=request.volume,
-        stop_loss=request.stop_loss,
-        take_profit=request.take_profit_1,
-    )
 
-    if not result or not result.get('success'):
-        raise HTTPException(status_code=500, detail="Failed to open trade")
+@app.get("/api/trades/live")
+async def get_live_trades():
+    """Get live open positions from MT5"""
+    if not mt5_connector or not mt5_connector.connected:
+        raise HTTPException(status_code=503, detail="MT5 not connected")
+        
+    positions = mt5_connector.get_open_positions()
+    return positions
 
-    # Save to database
-    trade = Trade(
-        user_id=1,  # TODO: Get from authenticated user
-        ticket=result['ticket'],
-        symbol=request.symbol,
-        trade_type=request.trade_type,
-        entry_price=result['price'],
-        stop_loss=request.stop_loss,
-        take_profit_1=request.take_profit_1,
-        take_profit_2=request.take_profit_2,
-        take_profit_3=request.take_profit_3,
-        volume=request.volume,
-        risk_percent=request.risk_percent,
-        confluence_score=request.confluence_score,
-        score_breakdown=request.score_breakdown,
-        status="OPEN",
-    )
 
-    db.add(trade)
-    db.commit()
-    db.refresh(trade)
-
-    return {"success": True, "trade_id": trade.id, "ticket": result['ticket']}
-
+# Wrap FastAPI app with Socket.IO at the end, after all routes are defined
+app = socketio.ASGIApp(sio, app)
 
 if __name__ == "__main__":
     import uvicorn

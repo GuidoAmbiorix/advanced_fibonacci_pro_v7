@@ -48,9 +48,9 @@
         </div>
       </div>
 
-      <!-- Right: Risk Center -->
+      <!-- Right: Activity Log -->
       <div class="lg:col-span-3 h-full">
-        <RiskCenter />
+        <ActivityLog />
       </div>
     </div>
 
@@ -160,7 +160,7 @@ import MarketStructureCard from './MarketStructureCard.vue'
 import PositionsPanel from './PositionsPanel.vue'
 import TradesPanel from './TradesPanel.vue'
 import StrategyCommander from './StrategyCommander.vue'
-import RiskCenter from './RiskCenter.vue'
+import ActivityLog from './ActivityLog.vue'
 import RealTimeChart from './RealTimeChart.vue'
 
 // State

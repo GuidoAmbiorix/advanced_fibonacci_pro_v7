@@ -102,17 +102,18 @@ async function loadAccountInfo() {
 }
 
 function connectWebSocket() {
-  ws.value = api.createWebSocket(
-    (data) => {
-      if (data.type === 'account_update' && data.data) {
-        accountInfo.value = data.data
-      }
-    },
-    (error) => {
-      console.error('WebSocket error:', error)
-      isConnected.value = false
+  ws.value = api.initSocket()
+  
+  ws.value.on('account_update', (data) => {
+    if (data && data.data) {
+      accountInfo.value = data.data
     }
-  )
+  })
+
+  ws.value.on('connect_error', (error) => {
+    console.error('WebSocket error:', error)
+    isConnected.value = false
+  })
 }
 
 onMounted(async () => {

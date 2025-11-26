@@ -246,6 +246,35 @@ class MT5Connector:
             return None
 
 
+    def _get_filling_mode(self, symbol: str) -> int:
+        """
+        Determine the correct filling mode for the symbol
+        """
+        if not self.connected:
+            return mt5.ORDER_FILLING_FOK
+            
+        try:
+            symbol_info = mt5.symbol_info(symbol)
+            if symbol_info is None:
+                return mt5.ORDER_FILLING_FOK
+
+            filling = symbol_info.filling_mode
+            
+            # Check flags (prioritize FOK > IOC > RETURN)
+            # SYMBOL_FILLING_FOK = 1, SYMBOL_FILLING_IOC = 2
+            if filling & 1:
+                return mt5.ORDER_FILLING_FOK
+            
+            if filling & 2:
+                return mt5.ORDER_FILLING_IOC
+                
+            return mt5.ORDER_FILLING_RETURN
+            
+        except Exception as e:
+            logger.error(f"Error determining filling mode: {e}")
+            return mt5.ORDER_FILLING_FOK
+
+
     def open_position(
         self,
         symbol: str,
@@ -295,6 +324,9 @@ class MT5Connector:
             order_type_mt5 = mt5.ORDER_TYPE_BUY if order_type == "BUY" else mt5.ORDER_TYPE_SELL
             price = tick.ask if order_type == "BUY" else tick.bid
 
+            # Determine filling mode
+            filling_mode = self._get_filling_mode(symbol)
+
             request = {
                 "action": mt5.TRADE_ACTION_DEAL,
                 "symbol": symbol,
@@ -305,7 +337,7 @@ class MT5Connector:
                 "magic": 234000,
                 "comment": comment,
                 "type_time": mt5.ORDER_TIME_GTC,
-                "type_filling": mt5.ORDER_FILLING_IOC,
+                "type_filling": filling_mode,
             }
 
             # Add SL/TP if provided
@@ -324,7 +356,10 @@ class MT5Connector:
             if result.retcode != mt5.TRADE_RETCODE_DONE:
                 logger.error("Order failed, retcode: {}, description: {}",
                            result.retcode, result.comment)
-                return None
+                return {
+                    "success": False,
+                    "error": f"MT5 Error: {result.comment} ({result.retcode})"
+                }
 
             logger.info("Order opened successfully: {} {} {} lots @ {}",
                        order_type, symbol, volume, result.price)
@@ -384,6 +419,9 @@ class MT5Connector:
             order_type = mt5.ORDER_TYPE_SELL if position.type == mt5.ORDER_TYPE_BUY else mt5.ORDER_TYPE_BUY
             price = mt5.symbol_info_tick(position.symbol).bid if position.type == mt5.ORDER_TYPE_BUY else mt5.symbol_info_tick(position.symbol).ask
 
+            # Determine filling mode
+            filling_mode = self._get_filling_mode(position.symbol)
+
             request = {
                 "action": mt5.TRADE_ACTION_DEAL,
                 "symbol": position.symbol,
@@ -393,15 +431,20 @@ class MT5Connector:
                 "price": price,
                 "deviation": 20,
                 "magic": 234000,
-                "comment": "Partial Close" if volume else "Close by Institutional Edge Pro",
+                "comment": "Partial Close" if volume else "IEP Close",
                 "type_time": mt5.ORDER_TIME_GTC,
-                "type_filling": mt5.ORDER_FILLING_IOC,
+                "type_filling": filling_mode,
             }
 
             result = mt5.order_send(request)
 
+            if result is None:
+                error = mt5.last_error()
+                logger.error(f"Failed to send close order for {ticket}. Error: {error}")
+                return False
+
             if result.retcode != mt5.TRADE_RETCODE_DONE:
-                logger.error("Failed to close position {}, retcode: {}", ticket, result.retcode)
+                logger.error(f"Failed to close position {ticket}, retcode: {result.retcode}, comment: {result.comment}")
                 return False
 
             logger.info("Position {} closed (Vol: {}) successfully", ticket, close_volume)

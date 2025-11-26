@@ -829,6 +829,8 @@ class TradingEngine:
         if bull_score >= self.min_confluence_score and self.trend_bullish and higher_tf_allows_buy and (bos_allows_buy or choch_allows_buy):
             stop_loss = current_price - (atr * 1.5)
             risk = current_price - stop_loss
+            
+            logger.info(f"DEBUG SL CALC: Price={current_price}, ATR={atr}, SL={stop_loss}, Risk={risk}")
 
             signal = TradingSignal(
                 signal_type="BUY",
@@ -888,6 +890,8 @@ class TradingEngine:
         if bear_score >= self.min_confluence_score and not self.trend_bullish and higher_tf_allows_sell and (bos_allows_sell or choch_allows_sell):
             stop_loss = current_price + (atr * 1.5)
             risk = stop_loss - current_price
+            
+            logger.info(f"DEBUG SL CALC (SELL): Price={current_price}, ATR={atr}, SL={stop_loss}, Risk={risk}")
 
             signal = TradingSignal(
                 signal_type="SELL",

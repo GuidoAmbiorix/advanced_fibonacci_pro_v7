@@ -82,6 +82,11 @@ export default {
   },
 
   // Bot Control
+  async getBots() {
+    const response = await api.get('/api/bots')
+    return response.data
+  },
+
   async startBot(botConfigId) {
     const response = await api.post('/api/bot/start', { bot_config_id: botConfigId })
     return response.data
@@ -129,25 +134,56 @@ export default {
     return response.data
   },
 
+  async closeTrade(ticket) {
+    const response = await api.post(`/api/trades/close/${ticket}`)
+    return response.data
+  },
+
+  async moveToBE(ticket) {
+    const response = await api.post(`/api/trades/be/${ticket}`)
+    return response.data
+  },
+
+  async getAccountSummary() {
+    const response = await api.get('/api/account/summary')
+    return response.data
+  },
+
+  async getLiveTrades() {
+    const response = await api.get('/api/trades/live')
+    return response.data
+  },
+
   // Socket.IO connection
-  initSocket() {
-    const socket = io(API_BASE_URL, {
+  socket: null,
+
+  getSocket() {
+    if (this.socket) {
+      return this.socket
+    }
+
+    this.socket = io(API_BASE_URL, {
       transports: ['websocket', 'polling'],
       autoConnect: true
     })
 
-    socket.on('connect', () => {
-      console.log('Socket.IO Connected:', socket.id)
+    this.socket.on('connect', () => {
+      console.log('Socket.IO Connected:', this.socket.id)
     })
 
-    socket.on('disconnect', () => {
+    this.socket.on('disconnect', () => {
       console.log('Socket.IO Disconnected')
     })
 
-    socket.on('connect_error', (error) => {
+    this.socket.on('connect_error', (error) => {
       console.error('Socket.IO Connection Error:', error)
     })
 
-    return socket
+    return this.socket
+  },
+
+  // Deprecated: Alias for backward compatibility
+  initSocket() {
+    return this.getSocket()
   }
 }

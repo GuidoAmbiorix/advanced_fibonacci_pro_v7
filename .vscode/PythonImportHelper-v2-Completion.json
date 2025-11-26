@@ -96,46 +96,6 @@
         "documentation": {}
     },
     {
-        "label": "text",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "create_engine",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "create_engine",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "text",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "create_engine",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
         "label": "create_engine",
         "importPath": "sqlalchemy",
         "description": "sqlalchemy",
@@ -161,46 +121,6 @@
     },
     {
         "label": "text",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "create_engine",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "text",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "create_engine",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "text",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "create_engine",
         "importPath": "sqlalchemy",
         "description": "sqlalchemy",
         "isExtraImport": true,
@@ -233,22 +153,6 @@
     },
     {
         "label": "Session",
-        "importPath": "sqlalchemy.orm",
-        "description": "sqlalchemy.orm",
-        "isExtraImport": true,
-        "detail": "sqlalchemy.orm",
-        "documentation": {}
-    },
-    {
-        "label": "sessionmaker",
-        "importPath": "sqlalchemy.orm",
-        "description": "sqlalchemy.orm",
-        "isExtraImport": true,
-        "detail": "sqlalchemy.orm",
-        "documentation": {}
-    },
-    {
-        "label": "sessionmaker",
         "importPath": "sqlalchemy.orm",
         "description": "sqlalchemy.orm",
         "isExtraImport": true,
@@ -432,6 +336,46 @@
         "documentation": {}
     },
     {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
         "label": "settings",
         "importPath": "app.core.config",
         "description": "app.core.config",
@@ -473,6 +417,14 @@
     },
     {
         "label": "BotConfig",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Trade",
         "importPath": "app.models.database",
         "description": "app.models.database",
         "isExtraImport": true,
@@ -541,15 +493,6 @@
         "description": "pydantic_settings",
         "isExtraImport": true,
         "detail": "pydantic_settings",
-        "documentation": {}
-    },
-    {
-        "label": "MetaTrader5",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "MetaTrader5",
-        "description": "MetaTrader5",
-        "detail": "MetaTrader5",
         "documentation": {}
     },
     {
@@ -738,6 +681,22 @@
         "documentation": {}
     },
     {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
         "label": "time",
         "kind": 6,
         "isExtraImport": true,
@@ -830,62 +789,6 @@
         "documentation": {}
     },
     {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
         "label": "sys",
         "kind": 6,
         "isExtraImport": true,
@@ -912,6 +815,14 @@
     },
     {
         "label": "engine",
+        "importPath": "app.api.database",
+        "description": "app.api.database",
+        "isExtraImport": true,
+        "detail": "app.api.database",
+        "documentation": {}
+    },
+    {
+        "label": "SessionLocal",
         "importPath": "app.api.database",
         "description": "app.api.database",
         "isExtraImport": true,
@@ -959,6 +870,24 @@
         "documentation": {}
     },
     {
+        "label": "aio_pika",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "aio_pika",
+        "description": "aio_pika",
+        "detail": "aio_pika",
+        "documentation": {}
+    },
+    {
+        "label": "json",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "json",
+        "description": "json",
+        "detail": "json",
+        "documentation": {}
+    },
+    {
         "label": "asyncio",
         "kind": 6,
         "isExtraImport": true,
@@ -968,19 +897,19 @@
         "documentation": {}
     },
     {
-        "label": "TradingEngine",
-        "importPath": "app.core.trading_engine",
-        "description": "app.core.trading_engine",
+        "label": "MT5Connector",
+        "importPath": "app.core.mt5_connector",
+        "description": "app.core.mt5_connector",
         "isExtraImport": true,
-        "detail": "app.core.trading_engine",
+        "detail": "app.core.mt5_connector",
         "documentation": {}
     },
     {
-        "label": "TradingEngine",
-        "importPath": "app.core.trading_engine",
-        "description": "app.core.trading_engine",
+        "label": "MT5Connector",
+        "importPath": "app.core.mt5_connector",
+        "description": "app.core.mt5_connector",
         "isExtraImport": true,
-        "detail": "app.core.trading_engine",
+        "detail": "app.core.mt5_connector",
         "documentation": {}
     },
     {
@@ -997,26 +926,50 @@
         "description": "app.core.mt5_connector",
         "isExtraImport": true,
         "detail": "app.core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "app.core.trading_engine",
+        "description": "app.core.trading_engine",
+        "isExtraImport": true,
+        "detail": "app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "app.core.trading_engine",
+        "description": "app.core.trading_engine",
+        "isExtraImport": true,
+        "detail": "app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "TradeManager",
+        "importPath": "app.services.trade_manager",
+        "description": "app.services.trade_manager",
+        "isExtraImport": true,
+        "detail": "app.services.trade_manager",
+        "documentation": {}
+    },
+    {
+        "label": "RabbitMQService",
+        "importPath": "app.services.rabbitmq_service",
+        "description": "app.services.rabbitmq_service",
+        "isExtraImport": true,
+        "detail": "app.services.rabbitmq_service",
+        "documentation": {}
+    },
+    {
+        "label": "RabbitMQService",
+        "importPath": "app.services.rabbitmq_service",
+        "description": "app.services.rabbitmq_service",
+        "isExtraImport": true,
+        "detail": "app.services.rabbitmq_service",
         "documentation": {}
     },
     {
         "label": "FastAPI",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "WebSocket",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "WebSocketDisconnect",
         "importPath": "fastapi",
         "description": "fastapi",
         "isExtraImport": true,
@@ -1088,51 +1041,12 @@
         "documentation": {}
     },
     {
-        "label": "load_dotenv",
-        "importPath": "dotenv",
-        "description": "dotenv",
+        "label": "socketio",
+        "kind": 6,
         "isExtraImport": true,
-        "detail": "dotenv",
-        "documentation": {}
-    },
-    {
-        "label": "load_dotenv",
-        "importPath": "dotenv",
-        "description": "dotenv",
-        "isExtraImport": true,
-        "detail": "dotenv",
-        "documentation": {}
-    },
-    {
-        "label": "load_dotenv",
-        "importPath": "dotenv",
-        "description": "dotenv",
-        "isExtraImport": true,
-        "detail": "dotenv",
-        "documentation": {}
-    },
-    {
-        "label": "load_dotenv",
-        "importPath": "dotenv",
-        "description": "dotenv",
-        "isExtraImport": true,
-        "detail": "dotenv",
-        "documentation": {}
-    },
-    {
-        "label": "load_dotenv",
-        "importPath": "dotenv",
-        "description": "dotenv",
-        "isExtraImport": true,
-        "detail": "dotenv",
-        "documentation": {}
-    },
-    {
-        "label": "load_dotenv",
-        "importPath": "dotenv",
-        "description": "dotenv",
-        "isExtraImport": true,
-        "detail": "dotenv",
+        "importPath": "socketio",
+        "description": "socketio",
+        "detail": "socketio",
         "documentation": {}
     },
     {
@@ -1192,12 +1106,12 @@
         "documentation": {}
     },
     {
-        "label": "subprocess",
+        "label": "MetaTrader5",
         "kind": 6,
         "isExtraImport": true,
-        "importPath": "subprocess",
-        "description": "subprocess",
-        "detail": "subprocess",
+        "importPath": "MetaTrader5",
+        "description": "MetaTrader5",
+        "detail": "MetaTrader5",
         "documentation": {}
     },
     {
@@ -1277,6 +1191,258 @@
         "description": "institutional-edge-system.backend.app.core.mt5_connector",
         "peekOfCode": "class MT5Connector:\n    \"\"\"\n    MetaTrader 5 Connection and Data Management\n    \"\"\"\n    def __init__(self, config: Dict):\n        \"\"\"\n        Initialize MT5 Connector\n        Args:\n            config: Configuration dictionary with MT5 credentials\n        \"\"\"",
         "detail": "institutional-edge-system.backend.app.core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "BOS_LOOKBACK_BARS",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "BOS_LOOKBACK_BARS = 50  # How far back to look for structure breaks\nBOS_CONFLUENCE_POINTS = 2  # Confluence points for BOS confirmation\nCHOCH_CONFLUENCE_POINTS = 3  # Higher points for high-quality reversals\nBOS_RECENT_BARS = 10  # BOS must occur within last N bars to be valid\n# ============================================================================\n# Dynamic Stop Loss Settings\n# ============================================================================\nBREATHER_PIPS = 10  # Pips beyond structure for stop placement\nMAX_SL_ATR_MULTIPLE = 2.5  # Max SL distance in ATR units\nMIN_SL_PIPS = 15  # Minimum stop distance in pips",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "BOS_CONFLUENCE_POINTS",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "BOS_CONFLUENCE_POINTS = 2  # Confluence points for BOS confirmation\nCHOCH_CONFLUENCE_POINTS = 3  # Higher points for high-quality reversals\nBOS_RECENT_BARS = 10  # BOS must occur within last N bars to be valid\n# ============================================================================\n# Dynamic Stop Loss Settings\n# ============================================================================\nBREATHER_PIPS = 10  # Pips beyond structure for stop placement\nMAX_SL_ATR_MULTIPLE = 2.5  # Max SL distance in ATR units\nMIN_SL_PIPS = 15  # Minimum stop distance in pips\nUSE_STRUCTURE_SL = True  # Enable structure-based SL (vs fixed ATR)",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "CHOCH_CONFLUENCE_POINTS",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "CHOCH_CONFLUENCE_POINTS = 3  # Higher points for high-quality reversals\nBOS_RECENT_BARS = 10  # BOS must occur within last N bars to be valid\n# ============================================================================\n# Dynamic Stop Loss Settings\n# ============================================================================\nBREATHER_PIPS = 10  # Pips beyond structure for stop placement\nMAX_SL_ATR_MULTIPLE = 2.5  # Max SL distance in ATR units\nMIN_SL_PIPS = 15  # Minimum stop distance in pips\nUSE_STRUCTURE_SL = True  # Enable structure-based SL (vs fixed ATR)\n# ============================================================================",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "BOS_RECENT_BARS",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "BOS_RECENT_BARS = 10  # BOS must occur within last N bars to be valid\n# ============================================================================\n# Dynamic Stop Loss Settings\n# ============================================================================\nBREATHER_PIPS = 10  # Pips beyond structure for stop placement\nMAX_SL_ATR_MULTIPLE = 2.5  # Max SL distance in ATR units\nMIN_SL_PIPS = 15  # Minimum stop distance in pips\nUSE_STRUCTURE_SL = True  # Enable structure-based SL (vs fixed ATR)\n# ============================================================================\n# Time Filter Settings",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "BREATHER_PIPS",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "BREATHER_PIPS = 10  # Pips beyond structure for stop placement\nMAX_SL_ATR_MULTIPLE = 2.5  # Max SL distance in ATR units\nMIN_SL_PIPS = 15  # Minimum stop distance in pips\nUSE_STRUCTURE_SL = True  # Enable structure-based SL (vs fixed ATR)\n# ============================================================================\n# Time Filter Settings\n# ============================================================================\nNEWS_BLACKOUT_HOURS = 0.5  # Hours before/after major news\nAVOID_ASIAN_SESSION = True  # Reduce signals during Asian session\nLONDON_NY_OVERLAP_BOOST = True  # Boost signals during overlap",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "MAX_SL_ATR_MULTIPLE",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "MAX_SL_ATR_MULTIPLE = 2.5  # Max SL distance in ATR units\nMIN_SL_PIPS = 15  # Minimum stop distance in pips\nUSE_STRUCTURE_SL = True  # Enable structure-based SL (vs fixed ATR)\n# ============================================================================\n# Time Filter Settings\n# ============================================================================\nNEWS_BLACKOUT_HOURS = 0.5  # Hours before/after major news\nAVOID_ASIAN_SESSION = True  # Reduce signals during Asian session\nLONDON_NY_OVERLAP_BOOST = True  # Boost signals during overlap\nREDUCE_ASIAN_SCORE_BY = 1  # Points to subtract during Asian session",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "MIN_SL_PIPS",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "MIN_SL_PIPS = 15  # Minimum stop distance in pips\nUSE_STRUCTURE_SL = True  # Enable structure-based SL (vs fixed ATR)\n# ============================================================================\n# Time Filter Settings\n# ============================================================================\nNEWS_BLACKOUT_HOURS = 0.5  # Hours before/after major news\nAVOID_ASIAN_SESSION = True  # Reduce signals during Asian session\nLONDON_NY_OVERLAP_BOOST = True  # Boost signals during overlap\nREDUCE_ASIAN_SCORE_BY = 1  # Points to subtract during Asian session\n# Market Session Times (UTC)",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "USE_STRUCTURE_SL",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "USE_STRUCTURE_SL = True  # Enable structure-based SL (vs fixed ATR)\n# ============================================================================\n# Time Filter Settings\n# ============================================================================\nNEWS_BLACKOUT_HOURS = 0.5  # Hours before/after major news\nAVOID_ASIAN_SESSION = True  # Reduce signals during Asian session\nLONDON_NY_OVERLAP_BOOST = True  # Boost signals during overlap\nREDUCE_ASIAN_SCORE_BY = 1  # Points to subtract during Asian session\n# Market Session Times (UTC)\nASIAN_SESSION_START = 0",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "NEWS_BLACKOUT_HOURS",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "NEWS_BLACKOUT_HOURS = 0.5  # Hours before/after major news\nAVOID_ASIAN_SESSION = True  # Reduce signals during Asian session\nLONDON_NY_OVERLAP_BOOST = True  # Boost signals during overlap\nREDUCE_ASIAN_SCORE_BY = 1  # Points to subtract during Asian session\n# Market Session Times (UTC)\nASIAN_SESSION_START = 0\nASIAN_SESSION_END = 7\nLONDON_SESSION_START = 7\nLONDON_SESSION_END = 16\nOVERLAP_SESSION_START = 12",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "AVOID_ASIAN_SESSION",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "AVOID_ASIAN_SESSION = True  # Reduce signals during Asian session\nLONDON_NY_OVERLAP_BOOST = True  # Boost signals during overlap\nREDUCE_ASIAN_SCORE_BY = 1  # Points to subtract during Asian session\n# Market Session Times (UTC)\nASIAN_SESSION_START = 0\nASIAN_SESSION_END = 7\nLONDON_SESSION_START = 7\nLONDON_SESSION_END = 16\nOVERLAP_SESSION_START = 12\nOVERLAP_SESSION_END = 16",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "LONDON_NY_OVERLAP_BOOST",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "LONDON_NY_OVERLAP_BOOST = True  # Boost signals during overlap\nREDUCE_ASIAN_SCORE_BY = 1  # Points to subtract during Asian session\n# Market Session Times (UTC)\nASIAN_SESSION_START = 0\nASIAN_SESSION_END = 7\nLONDON_SESSION_START = 7\nLONDON_SESSION_END = 16\nOVERLAP_SESSION_START = 12\nOVERLAP_SESSION_END = 16\nNY_SESSION_START = 12",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "REDUCE_ASIAN_SCORE_BY",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "REDUCE_ASIAN_SCORE_BY = 1  # Points to subtract during Asian session\n# Market Session Times (UTC)\nASIAN_SESSION_START = 0\nASIAN_SESSION_END = 7\nLONDON_SESSION_START = 7\nLONDON_SESSION_END = 16\nOVERLAP_SESSION_START = 12\nOVERLAP_SESSION_END = 16\nNY_SESSION_START = 12\nNY_SESSION_END = 21",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "ASIAN_SESSION_START",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "ASIAN_SESSION_START = 0\nASIAN_SESSION_END = 7\nLONDON_SESSION_START = 7\nLONDON_SESSION_END = 16\nOVERLAP_SESSION_START = 12\nOVERLAP_SESSION_END = 16\nNY_SESSION_START = 12\nNY_SESSION_END = 21\n# ============================================================================\n# Partial Profit Settings",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "ASIAN_SESSION_END",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "ASIAN_SESSION_END = 7\nLONDON_SESSION_START = 7\nLONDON_SESSION_END = 16\nOVERLAP_SESSION_START = 12\nOVERLAP_SESSION_END = 16\nNY_SESSION_START = 12\nNY_SESSION_END = 21\n# ============================================================================\n# Partial Profit Settings\n# ============================================================================",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "LONDON_SESSION_START",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "LONDON_SESSION_START = 7\nLONDON_SESSION_END = 16\nOVERLAP_SESSION_START = 12\nOVERLAP_SESSION_END = 16\nNY_SESSION_START = 12\nNY_SESSION_END = 21\n# ============================================================================\n# Partial Profit Settings\n# ============================================================================\nTP1_PERCENTAGE = 0.50  # Close 50% at TP1",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "LONDON_SESSION_END",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "LONDON_SESSION_END = 16\nOVERLAP_SESSION_START = 12\nOVERLAP_SESSION_END = 16\nNY_SESSION_START = 12\nNY_SESSION_END = 21\n# ============================================================================\n# Partial Profit Settings\n# ============================================================================\nTP1_PERCENTAGE = 0.50  # Close 50% at TP1\nTP2_PERCENTAGE = 0.30  # Close 30% at TP2",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "OVERLAP_SESSION_START",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "OVERLAP_SESSION_START = 12\nOVERLAP_SESSION_END = 16\nNY_SESSION_START = 12\nNY_SESSION_END = 21\n# ============================================================================\n# Partial Profit Settings\n# ============================================================================\nTP1_PERCENTAGE = 0.50  # Close 50% at TP1\nTP2_PERCENTAGE = 0.30  # Close 30% at TP2\nTRAIL_PERCENTAGE = 0.20  # Trail remaining 20%",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "OVERLAP_SESSION_END",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "OVERLAP_SESSION_END = 16\nNY_SESSION_START = 12\nNY_SESSION_END = 21\n# ============================================================================\n# Partial Profit Settings\n# ============================================================================\nTP1_PERCENTAGE = 0.50  # Close 50% at TP1\nTP2_PERCENTAGE = 0.30  # Close 30% at TP2\nTRAIL_PERCENTAGE = 0.20  # Trail remaining 20%\nMOVE_SL_TO_BE_AT_TP1 = True  # Move SL to breakeven after TP1",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "NY_SESSION_START",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "NY_SESSION_START = 12\nNY_SESSION_END = 21\n# ============================================================================\n# Partial Profit Settings\n# ============================================================================\nTP1_PERCENTAGE = 0.50  # Close 50% at TP1\nTP2_PERCENTAGE = 0.30  # Close 30% at TP2\nTRAIL_PERCENTAGE = 0.20  # Trail remaining 20%\nMOVE_SL_TO_BE_AT_TP1 = True  # Move SL to breakeven after TP1\nENABLE_PARTIAL_PROFITS = True  # Master switch for partial profit taking",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "NY_SESSION_END",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "NY_SESSION_END = 21\n# ============================================================================\n# Partial Profit Settings\n# ============================================================================\nTP1_PERCENTAGE = 0.50  # Close 50% at TP1\nTP2_PERCENTAGE = 0.30  # Close 30% at TP2\nTRAIL_PERCENTAGE = 0.20  # Trail remaining 20%\nMOVE_SL_TO_BE_AT_TP1 = True  # Move SL to breakeven after TP1\nENABLE_PARTIAL_PROFITS = True  # Master switch for partial profit taking\nPARTIAL_PROFIT_CHECK_INTERVAL = 30  # Seconds between checks",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "TP1_PERCENTAGE",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "TP1_PERCENTAGE = 0.50  # Close 50% at TP1\nTP2_PERCENTAGE = 0.30  # Close 30% at TP2\nTRAIL_PERCENTAGE = 0.20  # Trail remaining 20%\nMOVE_SL_TO_BE_AT_TP1 = True  # Move SL to breakeven after TP1\nENABLE_PARTIAL_PROFITS = True  # Master switch for partial profit taking\nPARTIAL_PROFIT_CHECK_INTERVAL = 30  # Seconds between checks\n# ============================================================================\n# High-Impact News Events (for time filtering)\n# ============================================================================\nHIGH_IMPACT_KEYWORDS = [",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "TP2_PERCENTAGE",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "TP2_PERCENTAGE = 0.30  # Close 30% at TP2\nTRAIL_PERCENTAGE = 0.20  # Trail remaining 20%\nMOVE_SL_TO_BE_AT_TP1 = True  # Move SL to breakeven after TP1\nENABLE_PARTIAL_PROFITS = True  # Master switch for partial profit taking\nPARTIAL_PROFIT_CHECK_INTERVAL = 30  # Seconds between checks\n# ============================================================================\n# High-Impact News Events (for time filtering)\n# ============================================================================\nHIGH_IMPACT_KEYWORDS = [\n    \"NFP\", \"Non-Farm Payrolls\", \"Non Farm Payrolls\",",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "TRAIL_PERCENTAGE",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "TRAIL_PERCENTAGE = 0.20  # Trail remaining 20%\nMOVE_SL_TO_BE_AT_TP1 = True  # Move SL to breakeven after TP1\nENABLE_PARTIAL_PROFITS = True  # Master switch for partial profit taking\nPARTIAL_PROFIT_CHECK_INTERVAL = 30  # Seconds between checks\n# ============================================================================\n# High-Impact News Events (for time filtering)\n# ============================================================================\nHIGH_IMPACT_KEYWORDS = [\n    \"NFP\", \"Non-Farm Payrolls\", \"Non Farm Payrolls\",\n    \"FOMC\", \"Federal Reserve\", \"Fed Rate\",",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "MOVE_SL_TO_BE_AT_TP1",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "MOVE_SL_TO_BE_AT_TP1 = True  # Move SL to breakeven after TP1\nENABLE_PARTIAL_PROFITS = True  # Master switch for partial profit taking\nPARTIAL_PROFIT_CHECK_INTERVAL = 30  # Seconds between checks\n# ============================================================================\n# High-Impact News Events (for time filtering)\n# ============================================================================\nHIGH_IMPACT_KEYWORDS = [\n    \"NFP\", \"Non-Farm Payrolls\", \"Non Farm Payrolls\",\n    \"FOMC\", \"Federal Reserve\", \"Fed Rate\",\n    \"CPI\", \"Consumer Price\", \"Inflation\",",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "ENABLE_PARTIAL_PROFITS",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "ENABLE_PARTIAL_PROFITS = True  # Master switch for partial profit taking\nPARTIAL_PROFIT_CHECK_INTERVAL = 30  # Seconds between checks\n# ============================================================================\n# High-Impact News Events (for time filtering)\n# ============================================================================\nHIGH_IMPACT_KEYWORDS = [\n    \"NFP\", \"Non-Farm Payrolls\", \"Non Farm Payrolls\",\n    \"FOMC\", \"Federal Reserve\", \"Fed Rate\",\n    \"CPI\", \"Consumer Price\", \"Inflation\",\n    \"GDP\", \"Gross Domestic\",",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "PARTIAL_PROFIT_CHECK_INTERVAL",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "PARTIAL_PROFIT_CHECK_INTERVAL = 30  # Seconds between checks\n# ============================================================================\n# High-Impact News Events (for time filtering)\n# ============================================================================\nHIGH_IMPACT_KEYWORDS = [\n    \"NFP\", \"Non-Farm Payrolls\", \"Non Farm Payrolls\",\n    \"FOMC\", \"Federal Reserve\", \"Fed Rate\",\n    \"CPI\", \"Consumer Price\", \"Inflation\",\n    \"GDP\", \"Gross Domestic\",\n    \"Employment\", \"Unemployment\",",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "HIGH_IMPACT_KEYWORDS",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "HIGH_IMPACT_KEYWORDS = [\n    \"NFP\", \"Non-Farm Payrolls\", \"Non Farm Payrolls\",\n    \"FOMC\", \"Federal Reserve\", \"Fed Rate\",\n    \"CPI\", \"Consumer Price\", \"Inflation\",\n    \"GDP\", \"Gross Domestic\",\n    \"Employment\", \"Unemployment\",\n    \"Retail Sales\",\n    \"Interest Rate Decision\"\n]\n# Currency-specific news sources",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
+        "documentation": {}
+    },
+    {
+        "label": "CURRENCY_NEWS_MAP",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.phase1_config",
+        "description": "institutional-edge-system.backend.app.core.phase1_config",
+        "peekOfCode": "CURRENCY_NEWS_MAP = {\n    \"USD\": [\"United States\", \"US\", \"USA\"],\n    \"EUR\": [\"Eurozone\", \"Euro Area\", \"ECB\"],\n    \"GBP\": [\"United Kingdom\", \"UK\", \"BOE\"],\n    \"JPY\": [\"Japan\", \"BOJ\"],\n    \"AUD\": [\"Australia\", \"RBA\"],\n    \"NZD\": [\"New Zealand\", \"RBNZ\"],\n    \"CAD\": [\"Canada\", \"BOC\"],\n    \"CHF\": [\"Switzerland\", \"SNB\"]\n}",
+        "detail": "institutional-edge-system.backend.app.core.phase1_config",
         "documentation": {}
     },
     {
@@ -1491,7 +1657,7 @@
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.schemas.schemas",
         "description": "institutional-edge-system.backend.app.schemas.schemas",
-        "peekOfCode": "class BotConfigUpdate(BaseModel):\n    name: Optional[str] = None\n    symbol: Optional[str] = None\n    timeframe: Optional[str] = None\n    risk_percent: Optional[float] = Field(default=None, ge=0.5, le=5.0)\n    min_confluence_score: Optional[int] = Field(default=None, ge=3, le=10)\n    max_trades: Optional[int] = Field(default=None, ge=1, le=10)\n    is_active: Optional[bool] = None\nclass BotConfigResponse(BaseModel):\n    id: int",
+        "peekOfCode": "class BotConfigUpdate(BaseModel):\n    name: Optional[str] = None\n    symbol: Optional[str] = None\n    timeframe: Optional[str] = None\n    risk_percent: Optional[float] = Field(default=None, ge=0.5, le=5.0)\n    min_confluence_score: Optional[int] = Field(default=None, ge=3, le=10)\n    max_trades: Optional[int] = Field(default=None, ge=1, le=10)\n    be_trigger: Optional[float] = Field(default=None, ge=0.5, le=5.0)\n    trailing_sl: Optional[bool] = None\n    trailing_step: Optional[float] = Field(default=None, ge=0.5, le=5.0)",
         "detail": "institutional-edge-system.backend.app.schemas.schemas",
         "documentation": {}
     },
@@ -1500,7 +1666,7 @@
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.schemas.schemas",
         "description": "institutional-edge-system.backend.app.schemas.schemas",
-        "peekOfCode": "class BotConfigResponse(BaseModel):\n    id: int\n    user_id: int\n    name: str\n    symbol: str\n    timeframe: str\n    risk_percent: float\n    min_confluence_score: int\n    max_trades: int\n    is_active: bool",
+        "peekOfCode": "class BotConfigResponse(BaseModel):\n    id: int\n    user_id: int\n    name: str\n    symbol: str\n    timeframe: str\n    risk_percent: float\n    min_confluence_score: int\n    max_trades: int\n    be_trigger: float",
         "detail": "institutional-edge-system.backend.app.schemas.schemas",
         "documentation": {}
     },
@@ -1604,11 +1770,29 @@
         "documentation": {}
     },
     {
+        "label": "RabbitMQService",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.rabbitmq_service",
+        "description": "institutional-edge-system.backend.app.services.rabbitmq_service",
+        "peekOfCode": "class RabbitMQService:\n    def __init__(self):\n        self.connection = None\n        self.channel = None\n        self.exchange = None\n        self.queue_name = \"trade_signals\"\n    async def connect(self):\n        \"\"\"Connect to RabbitMQ\"\"\"\n        try:\n            self.connection = await aio_pika.connect_robust(",
+        "detail": "institutional-edge-system.backend.app.services.rabbitmq_service",
+        "documentation": {}
+    },
+    {
+        "label": "TradeManager",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.trade_manager",
+        "description": "institutional-edge-system.backend.app.services.trade_manager",
+        "peekOfCode": "class TradeManager:\n    \"\"\"\n    Manages active trades:\n    - Moves Stop Loss to Break Even\n    - Trails Stop Loss\n    - Takes Partial Profits\n    \"\"\"\n    def __init__(self, mt5_connector: MT5Connector):\n        self.mt5_connector = mt5_connector\n        # Default settings (can be overridden by config)",
+        "detail": "institutional-edge-system.backend.app.services.trade_manager",
+        "documentation": {}
+    },
+    {
         "label": "TradingBot",
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.services.trading_bot",
         "description": "institutional-edge-system.backend.app.services.trading_bot",
-        "peekOfCode": "class TradingBot:\n    \"\"\"\n    Automated trading bot that runs continuously\n    \"\"\"\n    def __init__(self, bot_config_id: int, mt5_connector: MT5Connector):\n        \"\"\"\n        Initialize trading bot\n        Args:\n            bot_config_id: Database ID of bot configuration\n            mt5_connector: MT5 connector instance",
+        "peekOfCode": "class TradingBot:\n    \"\"\"\n    Automated trading bot that runs continuously\n    \"\"\"\n    def __init__(self, bot_config_id: int, mt5_connector: MT5Connector, sio):\n        \"\"\"\n        Initialize trading bot\n        Args:\n            bot_config_id: Database ID of bot configuration\n            mt5_connector: MT5 connector instance",
         "detail": "institutional-edge-system.backend.app.services.trading_bot",
         "documentation": {}
     },
@@ -1617,7 +1801,7 @@
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.services.trading_bot",
         "description": "institutional-edge-system.backend.app.services.trading_bot",
-        "peekOfCode": "class BotManager:\n    \"\"\"\n    Manages multiple trading bots\n    \"\"\"\n    def __init__(self, mt5_connector: MT5Connector):\n        self.mt5_connector = mt5_connector\n        self.bots: Dict[int, TradingBot] = {}\n        self.tasks: Dict[int, asyncio.Task] = {}\n    async def start_bot(self, bot_config_id: int):\n        \"\"\"Start a trading bot\"\"\"",
+        "peekOfCode": "class BotManager:\n    \"\"\"\n    Manages multiple trading bots\n    \"\"\"\n    def __init__(self, mt5_connector: MT5Connector, sio):\n        self.mt5_connector = mt5_connector\n        self.sio = sio\n        self.bots: Dict[int, TradingBot] = {}\n        self.tasks: Dict[int, asyncio.Task] = {}\n    async def start_bot(self, bot_config_id: int):",
         "detail": "institutional-edge-system.backend.app.services.trading_bot",
         "documentation": {}
     },
@@ -1635,7 +1819,7 @@
         "kind": 5,
         "importPath": "institutional-edge-system.backend.app.main",
         "description": "institutional-edge-system.backend.app.main",
-        "peekOfCode": "oauth2_scheme = OAuth2PasswordBearer(tokenUrl=\"token\")\n# Global instances\nmt5_connector: MT5Connector = None\ntrading_engines: Dict[int, TradingEngine] = {}  # bot_config_id -> TradingEngine\nactive_websockets: List[WebSocket] = []\nbot_manager = None  # Manages automated trading bots\n# ============================================================================\n# STARTUP & SHUTDOWN\n# ============================================================================\n@app.on_event(\"startup\")",
+        "peekOfCode": "oauth2_scheme = OAuth2PasswordBearer(tokenUrl=\"token\")\n# Global instances\nmt5_connector: MT5Connector = None\ntrading_engines: Dict[int, TradingEngine] = {}  # bot_config_id -> TradingEngine\nbot_manager = None  # Manages automated trading bots\n# Socket.IO Setup\nimport socketio\nsio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')\napp = socketio.ASGIApp(sio, app)\n@sio.event",
         "detail": "institutional-edge-system.backend.app.main",
         "documentation": {}
     },
@@ -1644,7 +1828,25 @@
         "kind": 5,
         "importPath": "institutional-edge-system.backend.app.main",
         "description": "institutional-edge-system.backend.app.main",
-        "peekOfCode": "bot_manager = None  # Manages automated trading bots\n# ============================================================================\n# STARTUP & SHUTDOWN\n# ============================================================================\n@app.on_event(\"startup\")\nasync def startup_event():\n    \"\"\"Initialize on startup\"\"\"\n    logger.info(\"Starting Institutional Edge Pro API...\")\n    # Create database tables\n    database.init_db()",
+        "peekOfCode": "bot_manager = None  # Manages automated trading bots\n# Socket.IO Setup\nimport socketio\nsio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')\napp = socketio.ASGIApp(sio, app)\n@sio.event\nasync def connect(sid, environ):\n    logger.info(f\"Socket connected: {sid}\")\n@sio.event\nasync def disconnect(sid):",
+        "detail": "institutional-edge-system.backend.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "sio",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.main",
+        "description": "institutional-edge-system.backend.app.main",
+        "peekOfCode": "sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')\napp = socketio.ASGIApp(sio, app)\n@sio.event\nasync def connect(sid, environ):\n    logger.info(f\"Socket connected: {sid}\")\n@sio.event\nasync def disconnect(sid):\n    logger.info(f\"Socket disconnected: {sid}\")\n# ============================================================================\n# STARTUP & SHUTDOWN",
+        "detail": "institutional-edge-system.backend.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.main",
+        "description": "institutional-edge-system.backend.app.main",
+        "peekOfCode": "app = socketio.ASGIApp(sio, app)\n@sio.event\nasync def connect(sid, environ):\n    logger.info(f\"Socket connected: {sid}\")\n@sio.event\nasync def disconnect(sid):\n    logger.info(f\"Socket disconnected: {sid}\")\n# ============================================================================\n# STARTUP & SHUTDOWN\n# ============================================================================",
         "detail": "institutional-edge-system.backend.app.main",
         "documentation": {}
     },
@@ -1678,442 +1880,163 @@
     {
         "label": "project_root",
         "kind": 5,
-        "importPath": "institutional-edge-system.add_ai_columns",
-        "description": "institutional-edge-system.add_ai_columns",
-        "peekOfCode": "project_root = Path(__file__).parent\nsys.path.insert(0, str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Adding AI columns to signals table\")\nprint(\"=\" * 70)",
-        "detail": "institutional-edge-system.add_ai_columns",
-        "documentation": {}
-    },
-    {
-        "label": "DATABASE_URL",
-        "kind": 5,
-        "importPath": "institutional-edge-system.add_ai_columns",
-        "description": "institutional-edge-system.add_ai_columns",
-        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Adding AI columns to signals table\")\nprint(\"=\" * 70)\nengine = create_engine(DATABASE_URL)\ntry:\n    with engine.connect() as conn:\n        # Check if columns already exist\n        result = conn.execute(text(\"\"\"\n            SELECT column_name",
-        "detail": "institutional-edge-system.add_ai_columns",
-        "documentation": {}
-    },
-    {
-        "label": "engine",
-        "kind": 5,
-        "importPath": "institutional-edge-system.add_ai_columns",
-        "description": "institutional-edge-system.add_ai_columns",
-        "peekOfCode": "engine = create_engine(DATABASE_URL)\ntry:\n    with engine.connect() as conn:\n        # Check if columns already exist\n        result = conn.execute(text(\"\"\"\n            SELECT column_name\n            FROM information_schema.columns\n            WHERE table_name='signals' AND column_name IN ('ai_confidence', 'ai_recommendation')\n        \"\"\"))\n        existing_cols = {row[0] for row in result}",
-        "detail": "institutional-edge-system.add_ai_columns",
-        "documentation": {}
-    },
-    {
-        "label": "project_root",
-        "kind": 5,
-        "importPath": "institutional-edge-system.add_bot_configs",
-        "description": "institutional-edge-system.add_bot_configs",
-        "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()",
-        "detail": "institutional-edge-system.add_bot_configs",
-        "documentation": {}
-    },
-    {
-        "label": "backend_path",
-        "kind": 5,
-        "importPath": "institutional-edge-system.add_bot_configs",
-        "description": "institutional-edge-system.add_bot_configs",
-        "peekOfCode": "backend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')",
-        "detail": "institutional-edge-system.add_bot_configs",
-        "documentation": {}
-    },
-    {
-        "label": "DATABASE_URL",
-        "kind": 5,
-        "importPath": "institutional-edge-system.add_bot_configs",
-        "description": "institutional-edge-system.add_bot_configs",
-        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Adding Bot Configurations to Database\")\nprint(\"=\" * 70)\nprint(f\"\\nDatabase URL: {DATABASE_URL.split('@')[1] if '@' in DATABASE_URL else DATABASE_URL}\")\n# Create engine and session\nengine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:",
-        "detail": "institutional-edge-system.add_bot_configs",
-        "documentation": {}
-    },
-    {
-        "label": "engine",
-        "kind": 5,
-        "importPath": "institutional-edge-system.add_bot_configs",
-        "description": "institutional-edge-system.add_bot_configs",
-        "peekOfCode": "engine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    from models.database import BotConfig, User\n    # Check if admin user exists\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()\n    if not admin:\n        print(\"[ERROR] Admin user not found. Please run init_database.py first\")\n        sys.exit(1)",
-        "detail": "institutional-edge-system.add_bot_configs",
-        "documentation": {}
-    },
-    {
-        "label": "SessionLocal",
-        "kind": 5,
-        "importPath": "institutional-edge-system.add_bot_configs",
-        "description": "institutional-edge-system.add_bot_configs",
-        "peekOfCode": "SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    from models.database import BotConfig, User\n    # Check if admin user exists\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()\n    if not admin:\n        print(\"[ERROR] Admin user not found. Please run init_database.py first\")\n        sys.exit(1)\n    print(f\"[OK] Found admin user (ID: {admin.id})\")",
-        "detail": "institutional-edge-system.add_bot_configs",
-        "documentation": {}
-    },
-    {
-        "label": "db",
-        "kind": 5,
-        "importPath": "institutional-edge-system.add_bot_configs",
-        "description": "institutional-edge-system.add_bot_configs",
-        "peekOfCode": "db = SessionLocal()\ntry:\n    from models.database import BotConfig, User\n    # Check if admin user exists\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()\n    if not admin:\n        print(\"[ERROR] Admin user not found. Please run init_database.py first\")\n        sys.exit(1)\n    print(f\"[OK] Found admin user (ID: {admin.id})\")\n    # Check existing bots",
-        "detail": "institutional-edge-system.add_bot_configs",
-        "documentation": {}
-    },
-    {
-        "label": "project_root",
-        "kind": 5,
-        "importPath": "institutional-edge-system.add_symbol_type",
-        "description": "institutional-edge-system.add_symbol_type",
-        "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')",
-        "detail": "institutional-edge-system.add_symbol_type",
-        "documentation": {}
-    },
-    {
-        "label": "backend_path",
-        "kind": 5,
-        "importPath": "institutional-edge-system.add_symbol_type",
-        "description": "institutional-edge-system.add_symbol_type",
-        "peekOfCode": "backend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)",
-        "detail": "institutional-edge-system.add_symbol_type",
-        "documentation": {}
-    },
-    {
-        "label": "DATABASE_URL",
-        "kind": 5,
-        "importPath": "institutional-edge-system.add_symbol_type",
-        "description": "institutional-edge-system.add_symbol_type",
-        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Adding symbol_type column to bot_configs table\")\nprint(\"=\" * 70)\nengine = create_engine(DATABASE_URL)\ntry:\n    with engine.connect() as conn:\n        # Check if column already exists\n        result = conn.execute(text(\"\"\"\n            SELECT column_name",
-        "detail": "institutional-edge-system.add_symbol_type",
-        "documentation": {}
-    },
-    {
-        "label": "engine",
-        "kind": 5,
-        "importPath": "institutional-edge-system.add_symbol_type",
-        "description": "institutional-edge-system.add_symbol_type",
-        "peekOfCode": "engine = create_engine(DATABASE_URL)\ntry:\n    with engine.connect() as conn:\n        # Check if column already exists\n        result = conn.execute(text(\"\"\"\n            SELECT column_name\n            FROM information_schema.columns\n            WHERE table_name='bot_configs' AND column_name='symbol_type'\n        \"\"\"))\n        if result.fetchone():",
-        "detail": "institutional-edge-system.add_symbol_type",
-        "documentation": {}
-    },
-    {
-        "label": "project_root",
-        "kind": 5,
-        "importPath": "institutional-edge-system.create_sample_bots",
-        "description": "institutional-edge-system.create_sample_bots",
+        "importPath": "institutional-edge-system.scripts.create_sample_bots",
+        "description": "institutional-edge-system.scripts.create_sample_bots",
         "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom models.database import BotConfig, User\nfrom dotenv import load_dotenv\n# Load environment",
-        "detail": "institutional-edge-system.create_sample_bots",
+        "detail": "institutional-edge-system.scripts.create_sample_bots",
         "documentation": {}
     },
     {
         "label": "backend_path",
         "kind": 5,
-        "importPath": "institutional-edge-system.create_sample_bots",
-        "description": "institutional-edge-system.create_sample_bots",
+        "importPath": "institutional-edge-system.scripts.create_sample_bots",
+        "description": "institutional-edge-system.scripts.create_sample_bots",
         "peekOfCode": "backend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom models.database import BotConfig, User\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()",
-        "detail": "institutional-edge-system.create_sample_bots",
+        "detail": "institutional-edge-system.scripts.create_sample_bots",
         "documentation": {}
     },
     {
         "label": "DATABASE_URL",
         "kind": 5,
-        "importPath": "institutional-edge-system.create_sample_bots",
-        "description": "institutional-edge-system.create_sample_bots",
+        "importPath": "institutional-edge-system.scripts.create_sample_bots",
+        "description": "institutional-edge-system.scripts.create_sample_bots",
         "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Creating sample bot configurations\")\nprint(\"=\" * 70)\nengine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    # Get or create admin user\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()",
-        "detail": "institutional-edge-system.create_sample_bots",
+        "detail": "institutional-edge-system.scripts.create_sample_bots",
         "documentation": {}
     },
     {
         "label": "engine",
         "kind": 5,
-        "importPath": "institutional-edge-system.create_sample_bots",
-        "description": "institutional-edge-system.create_sample_bots",
+        "importPath": "institutional-edge-system.scripts.create_sample_bots",
+        "description": "institutional-edge-system.scripts.create_sample_bots",
         "peekOfCode": "engine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    # Get or create admin user\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()\n    if not admin:\n        print(\"[ERROR] Admin user not found. Run init_database.py first.\")\n        sys.exit(1)\n    # Create bot configurations",
-        "detail": "institutional-edge-system.create_sample_bots",
+        "detail": "institutional-edge-system.scripts.create_sample_bots",
         "documentation": {}
     },
     {
         "label": "SessionLocal",
         "kind": 5,
-        "importPath": "institutional-edge-system.create_sample_bots",
-        "description": "institutional-edge-system.create_sample_bots",
+        "importPath": "institutional-edge-system.scripts.create_sample_bots",
+        "description": "institutional-edge-system.scripts.create_sample_bots",
         "peekOfCode": "SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    # Get or create admin user\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()\n    if not admin:\n        print(\"[ERROR] Admin user not found. Run init_database.py first.\")\n        sys.exit(1)\n    # Create bot configurations\n    bots = [",
-        "detail": "institutional-edge-system.create_sample_bots",
+        "detail": "institutional-edge-system.scripts.create_sample_bots",
         "documentation": {}
     },
     {
         "label": "db",
         "kind": 5,
-        "importPath": "institutional-edge-system.create_sample_bots",
-        "description": "institutional-edge-system.create_sample_bots",
+        "importPath": "institutional-edge-system.scripts.create_sample_bots",
+        "description": "institutional-edge-system.scripts.create_sample_bots",
         "peekOfCode": "db = SessionLocal()\ntry:\n    # Get or create admin user\n    admin = db.query(User).filter(User.email == \"admin@institutional-edge.com\").first()\n    if not admin:\n        print(\"[ERROR] Admin user not found. Run init_database.py first.\")\n        sys.exit(1)\n    # Create bot configurations\n    bots = [\n        {",
-        "detail": "institutional-edge-system.create_sample_bots",
+        "detail": "institutional-edge-system.scripts.create_sample_bots",
         "documentation": {}
     },
     {
         "label": "project_root",
         "kind": 5,
-        "importPath": "institutional-edge-system.fix_bot_configs_schema",
-        "description": "institutional-edge-system.fix_bot_configs_schema",
-        "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')",
-        "detail": "institutional-edge-system.fix_bot_configs_schema",
-        "documentation": {}
-    },
-    {
-        "label": "backend_path",
-        "kind": 5,
-        "importPath": "institutional-edge-system.fix_bot_configs_schema",
-        "description": "institutional-edge-system.fix_bot_configs_schema",
-        "peekOfCode": "backend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)",
-        "detail": "institutional-edge-system.fix_bot_configs_schema",
-        "documentation": {}
-    },
-    {
-        "label": "DATABASE_URL",
-        "kind": 5,
-        "importPath": "institutional-edge-system.fix_bot_configs_schema",
-        "description": "institutional-edge-system.fix_bot_configs_schema",
-        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Fixing bot_configs table schema\")\nprint(\"=\" * 70)\nengine = create_engine(DATABASE_URL)\ntry:\n    with engine.connect() as conn:\n        # Get existing columns\n        result = conn.execute(text(\"\"\"\n            SELECT column_name",
-        "detail": "institutional-edge-system.fix_bot_configs_schema",
-        "documentation": {}
-    },
-    {
-        "label": "engine",
-        "kind": 5,
-        "importPath": "institutional-edge-system.fix_bot_configs_schema",
-        "description": "institutional-edge-system.fix_bot_configs_schema",
-        "peekOfCode": "engine = create_engine(DATABASE_URL)\ntry:\n    with engine.connect() as conn:\n        # Get existing columns\n        result = conn.execute(text(\"\"\"\n            SELECT column_name\n            FROM information_schema.columns\n            WHERE table_name='bot_configs'\n        \"\"\"))\n        existing_cols = {row[0] for row in result}",
-        "detail": "institutional-edge-system.fix_bot_configs_schema",
-        "documentation": {}
-    },
-    {
-        "label": "DATABASE_URL",
-        "kind": 5,
-        "importPath": "institutional-edge-system.fix_database",
-        "description": "institutional-edge-system.fix_database",
-        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"Connecting to database...\")\nengine = create_engine(DATABASE_URL)\nwith engine.connect() as conn:\n    # Add all missing columns\n    print(\"Adding missing columns...\")\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS mt5_password_encrypted VARCHAR\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS swing_length INTEGER DEFAULT 10\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS ob_lookback INTEGER DEFAULT 50\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS fvg_min_size FLOAT DEFAULT 0.3\"))",
-        "detail": "institutional-edge-system.fix_database",
-        "documentation": {}
-    },
-    {
-        "label": "engine",
-        "kind": 5,
-        "importPath": "institutional-edge-system.fix_database",
-        "description": "institutional-edge-system.fix_database",
-        "peekOfCode": "engine = create_engine(DATABASE_URL)\nwith engine.connect() as conn:\n    # Add all missing columns\n    print(\"Adding missing columns...\")\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS mt5_password_encrypted VARCHAR\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS swing_length INTEGER DEFAULT 10\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS ob_lookback INTEGER DEFAULT 50\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS fvg_min_size FLOAT DEFAULT 0.3\"))\n    conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS vp_lookback INTEGER DEFAULT 100\"))\n    conn.commit()",
-        "detail": "institutional-edge-system.fix_database",
-        "documentation": {}
-    },
-    {
-        "label": "project_root",
-        "kind": 5,
-        "importPath": "institutional-edge-system.init_database",
-        "description": "institutional-edge-system.init_database",
+        "importPath": "institutional-edge-system.scripts.init_database",
+        "description": "institutional-edge-system.scripts.init_database",
         "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom sqlalchemy.exc import OperationalError\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()",
-        "detail": "institutional-edge-system.init_database",
+        "detail": "institutional-edge-system.scripts.init_database",
         "documentation": {}
     },
     {
         "label": "backend_path",
         "kind": 5,
-        "importPath": "institutional-edge-system.init_database",
-        "description": "institutional-edge-system.init_database",
+        "importPath": "institutional-edge-system.scripts.init_database",
+        "description": "institutional-edge-system.scripts.init_database",
         "peekOfCode": "backend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine, text\nfrom sqlalchemy.exc import OperationalError\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/institutional_edge')",
-        "detail": "institutional-edge-system.init_database",
+        "detail": "institutional-edge-system.scripts.init_database",
         "documentation": {}
     },
     {
         "label": "DATABASE_URL",
         "kind": 5,
-        "importPath": "institutional-edge-system.init_database",
-        "description": "institutional-edge-system.init_database",
+        "importPath": "institutional-edge-system.scripts.init_database",
+        "description": "institutional-edge-system.scripts.init_database",
         "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/institutional_edge')\nprint(\"=\" * 70)\nprint(\"Institutional Edge PRO - Database Initialization\")\nprint(\"=\" * 70)\nprint(f\"\\nDatabase URL: {DATABASE_URL.split('@')[1] if '@' in DATABASE_URL else DATABASE_URL}\")\n# Test connection\nprint(\"\\n[1/3] Testing database connection...\")\ntry:\n    engine = create_engine(DATABASE_URL, pool_pre_ping=True)\n    with engine.connect() as conn:",
-        "detail": "institutional-edge-system.init_database",
-        "documentation": {}
-    },
-    {
-        "label": "project_root",
-        "kind": 5,
-        "importPath": "institutional-edge-system.init_db_docker",
-        "description": "institutional-edge-system.init_db_docker",
-        "peekOfCode": "project_root = Path(__file__).parent\nprint(\"=\" * 70)\nprint(\"Institutional Edge PRO - Database Initialization (Docker Method)\")\nprint(\"=\" * 70)\n# Read the SQL schema from models\nprint(\"\\n[1/2] Generating database schema...\")\nsql_commands = \"\"\"\n-- Create users table\nCREATE TABLE IF NOT EXISTS users (\n    id SERIAL PRIMARY KEY,",
-        "detail": "institutional-edge-system.init_db_docker",
-        "documentation": {}
-    },
-    {
-        "label": "sql_commands",
-        "kind": 5,
-        "importPath": "institutional-edge-system.init_db_docker",
-        "description": "institutional-edge-system.init_db_docker",
-        "peekOfCode": "sql_commands = \"\"\"\n-- Create users table\nCREATE TABLE IF NOT EXISTS users (\n    id SERIAL PRIMARY KEY,\n    email VARCHAR UNIQUE NOT NULL,\n    username VARCHAR UNIQUE NOT NULL,\n    hashed_password VARCHAR NOT NULL,\n    is_active BOOLEAN DEFAULT TRUE,\n    is_admin BOOLEAN DEFAULT FALSE,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-        "detail": "institutional-edge-system.init_db_docker",
-        "documentation": {}
-    },
-    {
-        "label": "sql_file",
-        "kind": 5,
-        "importPath": "institutional-edge-system.init_db_docker",
-        "description": "institutional-edge-system.init_db_docker",
-        "peekOfCode": "sql_file = project_root / \"init_schema.sql\"\nwith open(sql_file, 'w') as f:\n    f.write(sql_commands)\nprint(f\"Generated schema file: {sql_file}\")\n# Execute via Docker\nprint(\"\\n[2/2] Creating tables in PostgreSQL...\")\ntry:\n    # Copy SQL file into container\n    subprocess.run([\n        \"docker\", \"cp\",",
-        "detail": "institutional-edge-system.init_db_docker",
-        "documentation": {}
-    },
-    {
-        "label": "run_command",
-        "kind": 2,
-        "importPath": "institutional-edge-system.start_system",
-        "description": "institutional-edge-system.start_system",
-        "peekOfCode": "def run_command(cmd, description):\n    \"\"\"Run a command and log output\"\"\"\n    logger.info(\"=\" * 70)\n    logger.info(description)\n    logger.info(\"=\" * 70)\n    try:\n        result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)\n        if result.stdout:\n            print(result.stdout)\n        return True",
-        "detail": "institutional-edge-system.start_system",
-        "documentation": {}
-    },
-    {
-        "label": "main",
-        "kind": 2,
-        "importPath": "institutional-edge-system.start_system",
-        "description": "institutional-edge-system.start_system",
-        "peekOfCode": "def main():\n    logger.info(\"\")\n    logger.info(\"=\" * 70)\n    logger.info(\"INSTITUTIONAL EDGE PRO - AI-POWERED TRADING SYSTEM\")\n    logger.info(\"=\" * 70)\n    logger.info(\"\")\n    os.chdir(str(project_root))\n    # Step 1: Install/upgrade dependencies\n    logger.info(\"Step 1: Installing dependencies...\")\n    if not run_command(",
-        "detail": "institutional-edge-system.start_system",
-        "documentation": {}
-    },
-    {
-        "label": "project_root",
-        "kind": 5,
-        "importPath": "institutional-edge-system.start_system",
-        "description": "institutional-edge-system.start_system",
-        "peekOfCode": "project_root = Path(__file__).parent\ndef run_command(cmd, description):\n    \"\"\"Run a command and log output\"\"\"\n    logger.info(\"=\" * 70)\n    logger.info(description)\n    logger.info(\"=\" * 70)\n    try:\n        result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)\n        if result.stdout:\n            print(result.stdout)",
-        "detail": "institutional-edge-system.start_system",
+        "detail": "institutional-edge-system.scripts.init_database",
         "documentation": {}
     },
     {
         "label": "test_connection",
         "kind": 2,
-        "importPath": "institutional-edge-system.test_db_connection",
-        "description": "institutional-edge-system.test_db_connection",
+        "importPath": "institutional-edge-system.scripts.test_db_connection",
+        "description": "institutional-edge-system.scripts.test_db_connection",
         "peekOfCode": "def test_connection():\n    \"\"\"Test database connection\"\"\"\n    logger.info(\"Testing database connection...\")\n    logger.info(f\"Database URL: {DATABASE_URL.split('@')[1] if '@' in DATABASE_URL else DATABASE_URL}\")\n    try:\n        # Create engine\n        engine = create_engine(DATABASE_URL, pool_pre_ping=True)\n        # Test connection\n        with engine.connect() as conn:\n            # Execute simple query",
-        "detail": "institutional-edge-system.test_db_connection",
+        "detail": "institutional-edge-system.scripts.test_db_connection",
         "documentation": {}
     },
     {
         "label": "backend_path",
         "kind": 5,
-        "importPath": "institutional-edge-system.test_db_connection",
-        "description": "institutional-edge-system.test_db_connection",
+        "importPath": "institutional-edge-system.scripts.test_db_connection",
+        "description": "institutional-edge-system.scripts.test_db_connection",
         "peekOfCode": "backend_path = Path(__file__).parent / 'backend' / 'app'\nsys.path.insert(0, str(backend_path))\nfrom sqlalchemy import create_engine, text\nfrom dotenv import load_dotenv\nfrom loguru import logger\nimport os\n# Load environment variables\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/institutional_edge')\ndef test_connection():",
-        "detail": "institutional-edge-system.test_db_connection",
+        "detail": "institutional-edge-system.scripts.test_db_connection",
         "documentation": {}
     },
     {
         "label": "DATABASE_URL",
         "kind": 5,
-        "importPath": "institutional-edge-system.test_db_connection",
-        "description": "institutional-edge-system.test_db_connection",
+        "importPath": "institutional-edge-system.scripts.test_db_connection",
+        "description": "institutional-edge-system.scripts.test_db_connection",
         "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/institutional_edge')\ndef test_connection():\n    \"\"\"Test database connection\"\"\"\n    logger.info(\"Testing database connection...\")\n    logger.info(f\"Database URL: {DATABASE_URL.split('@')[1] if '@' in DATABASE_URL else DATABASE_URL}\")\n    try:\n        # Create engine\n        engine = create_engine(DATABASE_URL, pool_pre_ping=True)\n        # Test connection\n        with engine.connect() as conn:",
-        "detail": "institutional-edge-system.test_db_connection",
+        "detail": "institutional-edge-system.scripts.test_db_connection",
         "documentation": {}
     },
     {
         "label": "terminal_info",
         "kind": 5,
-        "importPath": "institutional-edge-system.test_mt5_simple",
-        "description": "institutional-edge-system.test_mt5_simple",
+        "importPath": "institutional-edge-system.scripts.test_mt5_simple",
+        "description": "institutional-edge-system.scripts.test_mt5_simple",
         "peekOfCode": "terminal_info = mt5.terminal_info()\nif terminal_info:\n    print(f\"   Terminal: {terminal_info.name}\")\n    print(f\"   Company: {terminal_info.company}\")\n    print(f\"   Build: {terminal_info.build}\")\n    print(f\"   Path: {terminal_info.path}\")\n    print(f\"   Connected: {terminal_info.connected}\")\nelse:\n    print(\"   [WARNING] Could not get terminal info\")\n# Get account info",
-        "detail": "institutional-edge-system.test_mt5_simple",
+        "detail": "institutional-edge-system.scripts.test_mt5_simple",
         "documentation": {}
     },
     {
         "label": "account_info",
         "kind": 5,
-        "importPath": "institutional-edge-system.test_mt5_simple",
-        "description": "institutional-edge-system.test_mt5_simple",
+        "importPath": "institutional-edge-system.scripts.test_mt5_simple",
+        "description": "institutional-edge-system.scripts.test_mt5_simple",
         "peekOfCode": "account_info = mt5.account_info()\nif account_info:\n    print(f\"   Account: #{account_info.login}\")\n    print(f\"   Server: {account_info.server}\")\n    print(f\"   Balance: ${account_info.balance:.2f}\")\n    print(f\"   Equity: ${account_info.equity:.2f}\")\n    print(f\"   Leverage: 1:{account_info.leverage}\")\n    print(f\"   Currency: {account_info.currency}\")\nelse:\n    print(\"   [WARNING] Could not get account info\")",
-        "detail": "institutional-edge-system.test_mt5_simple",
+        "detail": "institutional-edge-system.scripts.test_mt5_simple",
         "documentation": {}
     },
     {
         "label": "symbols",
         "kind": 5,
-        "importPath": "institutional-edge-system.test_mt5_simple",
-        "description": "institutional-edge-system.test_mt5_simple",
+        "importPath": "institutional-edge-system.scripts.test_mt5_simple",
+        "description": "institutional-edge-system.scripts.test_mt5_simple",
         "peekOfCode": "symbols = mt5.symbols_total()\nprint(f\"   Total symbols available: {symbols}\")\n# Test getting data\nprint(\"\\n5. Testing market data retrieval...\")\ntry:\n    rates = mt5.copy_rates_from_pos(\"EURUSD\", mt5.TIMEFRAME_H1, 0, 10)\n    if rates is not None and len(rates) > 0:\n        print(f\"   [SUCCESS] Successfully got {len(rates)} bars of EURUSD H1 data\")\n        print(f\"   Latest close price: {rates[-1]['close']:.5f}\")\n    else:",
-        "detail": "institutional-edge-system.test_mt5_simple",
+        "detail": "institutional-edge-system.scripts.test_mt5_simple",
         "documentation": {}
     },
     {
         "label": "test_trading_engine",
         "kind": 2,
-        "importPath": "institutional-edge-system.test_system",
-        "description": "institutional-edge-system.test_system",
+        "importPath": "institutional-edge-system.scripts.test_system",
+        "description": "institutional-edge-system.scripts.test_system",
         "peekOfCode": "def test_trading_engine():\n    \"\"\"Test the trading engine with sample data\"\"\"\n    print(\"=\" * 60)\n    print(\"Testing Trading Engine...\")\n    print(\"=\" * 60)\n    # Create sample OHLCV data\n    dates = pd.date_range(start=datetime.now() - timedelta(days=500), periods=500, freq='H')\n    # Generate realistic price data\n    np.random.seed(42)\n    close_prices = 1.0850 + np.cumsum(np.random.randn(500) * 0.0001)",
-        "detail": "institutional-edge-system.test_system",
+        "detail": "institutional-edge-system.scripts.test_system",
         "documentation": {}
     },
     {
         "label": "test_mt5_connector",
         "kind": 2,
-        "importPath": "institutional-edge-system.test_system",
-        "description": "institutional-edge-system.test_system",
+        "importPath": "institutional-edge-system.scripts.test_system",
+        "description": "institutional-edge-system.scripts.test_system",
         "peekOfCode": "def test_mt5_connector():\n    \"\"\"Test MT5 connection (optional - requires MT5 installed and configured)\"\"\"\n    print(\"\\n\" + \"=\" * 60)\n    print(\"Testing MT5 Connector...\")\n    print(\"=\" * 60)\n    config = {\n        'mt5_login': '',  # Leave empty for now\n        'mt5_password': '',\n        'mt5_server': '',\n        'mt5_path': '',",
-        "detail": "institutional-edge-system.test_system",
+        "detail": "institutional-edge-system.scripts.test_system",
         "documentation": {}
     },
     {
         "label": "main",
         "kind": 2,
-        "importPath": "institutional-edge-system.test_system",
-        "description": "institutional-edge-system.test_system",
+        "importPath": "institutional-edge-system.scripts.test_system",
+        "description": "institutional-edge-system.scripts.test_system",
         "peekOfCode": "def main():\n    \"\"\"Run all tests\"\"\"\n    print(\"\\n\" + \"=\" * 60)\n    print(\"🚀 INSTITUTIONAL EDGE PRO - System Test\")\n    print(\"=\" * 60)\n    all_passed = True\n    # Test 1: Trading Engine\n    try:\n        test_trading_engine()\n    except Exception as e:",
-        "detail": "institutional-edge-system.test_system",
-        "documentation": {}
-    },
-    {
-        "label": "project_root",
-        "kind": 5,
-        "importPath": "institutional-edge-system.update_bot1",
-        "description": "institutional-edge-system.update_bot1",
-        "peekOfCode": "project_root = Path(__file__).parent\nbackend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()",
-        "detail": "institutional-edge-system.update_bot1",
-        "documentation": {}
-    },
-    {
-        "label": "backend_path",
-        "kind": 5,
-        "importPath": "institutional-edge-system.update_bot1",
-        "description": "institutional-edge-system.update_bot1",
-        "peekOfCode": "backend_path = project_root / \"backend\" / \"app\"\nsys.path.insert(0, str(backend_path))\n# Set working directory\nos.chdir(str(project_root))\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom dotenv import load_dotenv\n# Load environment\nload_dotenv()\nDATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')",
-        "detail": "institutional-edge-system.update_bot1",
-        "documentation": {}
-    },
-    {
-        "label": "DATABASE_URL",
-        "kind": 5,
-        "importPath": "institutional-edge-system.update_bot1",
-        "description": "institutional-edge-system.update_bot1",
-        "peekOfCode": "DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5433/institutional_edge')\nprint(\"Updating bot configuration 1...\")\nengine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    from models.database import BotConfig\n    # Get bot 1\n    bot = db.query(BotConfig).filter(BotConfig.id == 1).first()\n    if bot:",
-        "detail": "institutional-edge-system.update_bot1",
-        "documentation": {}
-    },
-    {
-        "label": "engine",
-        "kind": 5,
-        "importPath": "institutional-edge-system.update_bot1",
-        "description": "institutional-edge-system.update_bot1",
-        "peekOfCode": "engine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    from models.database import BotConfig\n    # Get bot 1\n    bot = db.query(BotConfig).filter(BotConfig.id == 1).first()\n    if bot:\n        bot.name = \"Bitcoin Alpha\"\n        bot.symbol = \"#BTCUSD\"",
-        "detail": "institutional-edge-system.update_bot1",
-        "documentation": {}
-    },
-    {
-        "label": "SessionLocal",
-        "kind": 5,
-        "importPath": "institutional-edge-system.update_bot1",
-        "description": "institutional-edge-system.update_bot1",
-        "peekOfCode": "SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndb = SessionLocal()\ntry:\n    from models.database import BotConfig\n    # Get bot 1\n    bot = db.query(BotConfig).filter(BotConfig.id == 1).first()\n    if bot:\n        bot.name = \"Bitcoin Alpha\"\n        bot.symbol = \"#BTCUSD\"\n        bot.timeframe = \"H1\"",
-        "detail": "institutional-edge-system.update_bot1",
-        "documentation": {}
-    },
-    {
-        "label": "db",
-        "kind": 5,
-        "importPath": "institutional-edge-system.update_bot1",
-        "description": "institutional-edge-system.update_bot1",
-        "peekOfCode": "db = SessionLocal()\ntry:\n    from models.database import BotConfig\n    # Get bot 1\n    bot = db.query(BotConfig).filter(BotConfig.id == 1).first()\n    if bot:\n        bot.name = \"Bitcoin Alpha\"\n        bot.symbol = \"#BTCUSD\"\n        bot.timeframe = \"H1\"\n        db.commit()",
-        "detail": "institutional-edge-system.update_bot1",
+        "detail": "institutional-edge-system.scripts.test_system",
         "documentation": {}
     }
 ]

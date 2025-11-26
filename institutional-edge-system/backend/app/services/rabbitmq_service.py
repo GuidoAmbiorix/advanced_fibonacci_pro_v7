@@ -11,27 +11,34 @@ class RabbitMQService:
         self.exchange = None
         self.queue_name = "trade_signals"
 
-    async def connect(self):
-        """Connect to RabbitMQ"""
-        try:
-            self.connection = await aio_pika.connect_robust(
-                host=settings.RABBITMQ_HOST,
-                port=settings.RABBITMQ_PORT,
-                login=settings.RABBITMQ_USER,
-                password=settings.RABBITMQ_PASSWORD
-            )
-            self.channel = await self.connection.channel()
-            
-            # Declare queue
-            self.queue = await self.channel.declare_queue(
-                self.queue_name, 
-                durable=True
-            )
-            
-            logger.info("✅ Connected to RabbitMQ")
-        except Exception as e:
-            logger.error(f"❌ RabbitMQ Connection Failed: {e}")
-            # Don't raise, just log. We might be running without RMQ in dev.
+    async def connect(self, max_retries=5, retry_delay=2):
+        """Connect to RabbitMQ with retry logic"""
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"🔄 Connecting to RabbitMQ (attempt {attempt + 1}/{max_retries})...")
+                self.connection = await aio_pika.connect_robust(
+                    host=settings.RABBITMQ_HOST,
+                    port=settings.RABBITMQ_PORT,
+                    login=settings.RABBITMQ_USER,
+                    password=settings.RABBITMQ_PASSWORD
+                )
+                self.channel = await self.connection.channel()
+
+                # Declare queue
+                self.queue = await self.channel.declare_queue(
+                    self.queue_name,
+                    durable=True
+                )
+
+                logger.info("✅ Connected to RabbitMQ")
+                return
+            except Exception as e:
+                logger.warning(f"⚠️ RabbitMQ Connection attempt {attempt + 1} failed: {e}")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay)
+                else:
+                    logger.error(f"❌ RabbitMQ Connection Failed after {max_retries} attempts")
+                    # Don't raise, just log. We might be running without RMQ in dev.
 
     async def publish_signal(self, signal_data: dict):
         """Publish a signal to the queue"""

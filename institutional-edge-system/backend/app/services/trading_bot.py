@@ -181,7 +181,7 @@ class TradingBot:
     async def _analyze_market(self):
         """Analyze market and execute trades if signals found"""
         if not self.mt5_connector or not self.mt5_connector.connected:
-            logger.warning("MT5 not connected, skipping analysis")
+            await self._log_activity("MT5 not connected, skipping analysis", "warning")
             return
 
         # Get market data for current timeframe
@@ -218,14 +218,17 @@ class TradingBot:
             return
 
         # Log analysis results
-        logger.info("Analysis complete - H TF: {}, Bull: {}/10, Bear: {}/10, Signals: {}",
-                   analysis.get('higher_tf_trend', 'N/A'),
-                   analysis['bull_confluence_score'],
-                   analysis['bear_confluence_score'],
-                   len(analysis['signals']))
+        await self._log_activity(
+            "Analysis complete - H TF: {}, Bull: {}/10, Bear: {}/10, Signals: {}".format(
+                analysis.get('higher_tf_trend', 'N/A'),
+                analysis['bull_confluence_score'],
+                analysis['bear_confluence_score'],
+                len(analysis['signals'])
+            )
+        )
 
         # Save signals to database
-        self._save_signals(analysis['signals'])
+        await self._save_signals(analysis['signals'])
 
         # Execute trades if conditions are met
         for signal in analysis['signals']:
@@ -237,8 +240,10 @@ class TradingBot:
             min_ai_confidence = 45.0
 
             if ai_confidence > 0 and ai_confidence < min_ai_confidence:
-                logger.warning("Skipping signal - AI confidence too low: {:.1f}% ({})",
-                             ai_confidence, ai_recommendation)
+                await self._log_activity(
+                    "Skipping signal - AI confidence too low: {:.1f}% ({})".format(ai_confidence, ai_recommendation),
+                    "warning"
+                )
                 continue
 
             await self._execute_signal(signal)
@@ -246,7 +251,7 @@ class TradingBot:
         # Update last analysis time in DB
         self._update_last_analysis_time()
 
-    def _save_signals(self, signals: list):
+    async def _save_signals(self, signals: list):
         """Save trading signals to database"""
         if not signals:
             return
@@ -294,24 +299,30 @@ class TradingBot:
 
     async def _execute_signal(self, signal):
         """Execute a trading signal"""
+        # 0. Check Existing Position
+        existing_positions = self.mt5_connector.get_open_positions(symbol=signal.symbol)
+        if existing_positions:
+            await self._log_activity(f"Position already exists for {signal.symbol}, skipping signal", "warning")
+            return
+
         # 1. Check Max Trades
         if self.open_positions_count >= self.config.max_trades:
-            logger.info("Max trades ({}) reached, skipping signal", self.config.max_trades)
+            await self._log_activity(f"Max trades ({self.config.max_trades}) reached, skipping signal", "warning")
             return
 
         # 2. Check Spread
         if not self._check_spread(signal.symbol):
-            logger.warning("Spread too high for {}, skipping", signal.symbol)
+            await self._log_activity(f"Spread too high for {signal.symbol}, skipping", "warning")
             return
 
         # 3. Check Trading Hours
         if not self._check_trading_hours():
-            logger.warning("Outside trading hours, skipping")
+            await self._log_activity("Outside trading hours, skipping", "warning")
             return
 
         # 4. Check Daily Risk
         if not self._check_daily_risk():
-            logger.warning("Daily risk limit reached, skipping")
+            await self._log_activity("Daily risk limit reached, skipping", "warning")
             return
 
         # Publish to RabbitMQ (Decoupled Execution)
@@ -341,12 +352,11 @@ class TradingBot:
             account_balance=account_info['balance']
         )
 
-        logger.info("Opening {} position: {} lots @ {} (SL: {}, TP: {})",
-                   signal.signal_type,
-                   lot_size,
-                   signal.entry_price,
-                   signal.stop_loss,
-                   signal.take_profit_1)
+        await self._log_activity(
+            "Opening {} position: {} lots @ {} (SL: {}, TP: {})".format(
+                signal.signal_type, lot_size, signal.entry_price, signal.stop_loss, signal.take_profit_1
+            )
+        )
 
         # Open position
         result = self.mt5_connector.open_position(
@@ -360,13 +370,37 @@ class TradingBot:
 
         if result and result.get('success'):
             # Save trade to database
-            trade_id = self._save_trade(signal, result, lot_size)
+            trade_id = await self._save_trade(signal, result, lot_size)
             self.open_positions_count += 1
-            logger.info("✅ Trade opened successfully - Ticket: {}", result['ticket'])
+            await self._log_activity(f"✅ Trade opened successfully - Ticket: {result['ticket']}", "success")
         else:
-            logger.error("❌ Failed to open trade")
+            error_msg = result.get('error', 'Unknown error') if result else 'Unknown error'
+            await self._log_activity(f"❌ Failed to open trade: {error_msg}", "error")
 
-    def _save_trade(self, signal, result: Dict, lot_size: float) -> int:
+    async def _log_activity(self, message: str, level: str = "info"):
+        """Log activity and emit event"""
+        # Log to console/file
+        if level == "error":
+            logger.error(message)
+        elif level == "warning":
+            logger.warning(message)
+        else:
+            logger.info(message)
+            
+        # Emit to frontend
+        try:
+            await self.sio.emit('bot_activity', {
+                'bot_id': self.bot_config_id,
+                'message': message,
+                'level': level,
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        except Exception as e:
+            logger.error(f"Failed to emit activity log: {e}")
+
+
+
+    async def _save_trade(self, signal, result: Dict, lot_size: float) -> int:
         """Save executed trade to database"""
         db = SessionLocal()
         try:
