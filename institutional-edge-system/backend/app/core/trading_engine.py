@@ -720,18 +720,14 @@ class TradingEngine:
 
         current_price = df.iloc[-1]['close']
         
-        # Find most recent significant swing points
-        # For Bullish setup (buying a dip): We need a recent Low -> High move
-        last_low = self.swing_lows[-1].price
-        last_high = self.swing_highs[-1].price
+        # Sort all swings by time to find the last leg
+        all_swings = sorted(self.swing_highs + self.swing_lows, key=lambda x: x.bar_index)
         
-        # Ensure the high came after the low for a valid bullish leg
-        # But swing points are stored in lists, we need to check their indices/times
-        # Let's just take the most recent high and low for simplicity first, 
-        # but ideally we want the defined "Trend Leg"
-        
-        # Simple approach: Use the range of the last N bars or the detected swings
-        # Let's use the last confirmed swing high and low
+        if len(all_swings) < 2:
+            return {'bullish_level': None, 'bearish_level': None, 'is_golden_zone': False}
+
+        last_swing = all_swings[-1]
+        prev_swing = all_swings[-2]
         
         result = {
             'bullish_level': None, 
@@ -740,59 +736,58 @@ class TradingEngine:
             'nearest_level': None
         }
 
-        # Check Bullish Retracement (Price coming down from High)
-        # Range: Low -> High
-        if last_high > last_low:
-            range_price = last_high - last_low
-            fib_levels = {
-                '0.382': last_high - (range_price * 0.382),
-                '0.5': last_high - (range_price * 0.5),
-                '0.618': last_high - (range_price * 0.618),
-                '0.786': last_high - (range_price * 0.786)
-            }
+        # Identify the last leg direction
+        # If last swing was a High, the leg was Up (Low -> High). We look for Bullish Retracement (Dip).
+        if last_swing.is_high:
+            # Leg: Low -> High (Uptrend leg)
+            # Retracement: Downwards
+            high_price = last_swing.price
+            low_price = prev_swing.price
             
-            # Check if current price is near any level
-            for level_name, price in fib_levels.items():
-                # Tolerance: 0.1% of price
-                tolerance = current_price * 0.001
-                if abs(current_price - price) < tolerance:
-                    result['bullish_level'] = level_name
-                    if level_name in ['0.5', '0.618']:
-                        result['is_golden_zone'] = True
-                    break
+            # Validate it was actually a low before
+            if not prev_swing.is_high: 
+                range_price = high_price - low_price
+                fib_levels = {
+                    '0.382': high_price - (range_price * 0.382),
+                    '0.5': high_price - (range_price * 0.5),
+                    '0.618': high_price - (range_price * 0.618),
+                    '0.786': high_price - (range_price * 0.786)
+                }
+                
+                # Check proximity
+                for level_name, price in fib_levels.items():
+                    tolerance = current_price * 0.001 # 0.1% tolerance
+                    if abs(current_price - price) < tolerance:
+                        result['bullish_level'] = level_name
+                        if level_name in ['0.5', '0.618']:
+                            result['is_golden_zone'] = True
+                        break
 
-        # Check Bearish Retracement (Price going up from Low)
-        # Range: High -> Low
-        # Note: If we are in a downtrend, the last swing might be a Lower High and Lower Low
-        # We need the move from High down to Low
-        
-        # Let's look at the last 2 swings to define the range
-        # If we are looking for a SELL, we expect price to retrace UP
-        # So we need a previous High -> Low move
-        
-        # For now, let's just check proximity to levels calculated from the recent range
-        # regardless of trend direction, as the confluence score handles the trend filter
-        
-        if last_high > last_low:
-            # This is an uptrend leg, so we look for bullish retracements (dips)
-            pass 
+        # If last swing was a Low, the leg was Down (High -> Low). We look for Bearish Retracement (Rally).
         else:
-            # This is a downtrend leg (High -> Low), we look for bearish retracements (rallies)
-            range_price = last_high - last_low
-            fib_levels = {
-                '0.382': last_low + (range_price * 0.382),
-                '0.5': last_low + (range_price * 0.5),
-                '0.618': last_low + (range_price * 0.618),
-                '0.786': last_low + (range_price * 0.786)
-            }
+            # Leg: High -> Low (Downtrend leg)
+            # Retracement: Upwards
+            low_price = last_swing.price
+            high_price = prev_swing.price
             
-            for level_name, price in fib_levels.items():
-                tolerance = current_price * 0.001
-                if abs(current_price - price) < tolerance:
-                    result['bearish_level'] = level_name
-                    if level_name in ['0.5', '0.618']:
-                        result['is_golden_zone'] = True
-                    break
+            # Validate it was actually a high before
+            if prev_swing.is_high:
+                range_price = high_price - low_price
+                fib_levels = {
+                    '0.382': low_price + (range_price * 0.382),
+                    '0.5': low_price + (range_price * 0.5),
+                    '0.618': low_price + (range_price * 0.618),
+                    '0.786': low_price + (range_price * 0.786)
+                }
+                
+                # Check proximity
+                for level_name, price in fib_levels.items():
+                    tolerance = current_price * 0.001
+                    if abs(current_price - price) < tolerance:
+                        result['bearish_level'] = level_name
+                        if level_name in ['0.5', '0.618']:
+                            result['is_golden_zone'] = True
+                        break
                     
         return result
 

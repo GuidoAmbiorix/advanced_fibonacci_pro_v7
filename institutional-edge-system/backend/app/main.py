@@ -84,11 +84,23 @@ async def broadcast_market_data():
                 
                 # 3. Broadcast
                 if account:
+                    # Convert datetime objects in positions to strings
+                    serializable_positions = []
+                    for pos in positions:
+                        pos_dict = pos.copy()
+                        for k, v in pos_dict.items():
+                            if isinstance(v, datetime):
+                                pos_dict[k] = v.isoformat()
+                        serializable_positions.append(pos_dict)
+
+                    logger.info(f"Broadcasting market data. Positions: {len(serializable_positions)}") # Debug Log
                     await sio.emit('market_update', {
                         'account': account,
-                        'positions': positions,
+                        'positions': serializable_positions,
                         'timestamp': datetime.utcnow().isoformat()
                     })
+            else:
+                logger.warning("MT5 Not Connected - Skipping Broadcast")
                     
         except Exception as e:
             logger.error(f"Error in broadcast loop: {e}")

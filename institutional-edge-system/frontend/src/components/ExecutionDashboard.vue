@@ -23,6 +23,11 @@
              <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Equity</span>
              <span class="text-sm font-mono font-bold" :class="accountInfo.equity >= accountInfo.balance ? 'text-emerald-400' : 'text-red-400'">{{ formatCurrency(accountInfo.equity) }}</span>
            </div>
+           <div class="w-px h-6 bg-slate-700"></div>
+           <div class="flex items-center space-x-2">
+             <div class="w-2 h-2 rounded-full" :class="isSocketConnected ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'"></div>
+             <span class="text-[10px] font-bold uppercase tracking-wider" :class="isSocketConnected ? 'text-emerald-500' : 'text-red-500'">{{ isSocketConnected ? 'LIVE' : 'OFFLINE' }}</span>
+           </div>
         </div>
       </div>
 
@@ -234,33 +239,6 @@
                     <span class="font-black text-lg tracking-tight" :class="signal.signal_type === 'BUY' ? 'text-emerald-400' : 'text-red-400'">
                       {{ signal.signal_type }}
                     </span>
-                    <span class="text-slate-400 text-xs font-bold bg-slate-800 px-1.5 py-0.5 rounded">{{ signal.symbol }}</span>
-                  </div>
-                </div>
-                <div class="text-[10px] text-slate-500 font-mono">{{ formatTimeAgo(signal.created_at) }}</div>
-              </div>
-              
-              <div class="grid grid-cols-2 gap-y-1 gap-x-4 text-xs mb-4 pl-2">
-                <div class="flex justify-between">
-                  <span class="text-slate-500">Entry</span>
-                  <span class="font-mono text-slate-300">{{ signal.price }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-500">SL</span>
-                  <span class="font-mono text-red-400">{{ signal.stop_loss }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-500">TP1</span>
-                  <span class="font-mono text-emerald-400">{{ signal.take_profit }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-500">Score</span>
-                  <span class="font-bold text-yellow-400">{{ signal.confluence_score }}/10</span>
-                </div>
-              </div>
-
-              <button 
-                v-if="!signal.was_executed"
                 @click="executeSignal(signal)"
                 class="w-full py-2 rounded-lg font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-lg shadow-blue-900/20 transform active:scale-95"
               >
@@ -598,61 +576,6 @@ const updateAnnotations = () => {
     if (trade.tp) {
       annotations[`tp_${trade.ticket}`] = {
         type: 'line',
-        yMin: trade.tp,
-        yMax: trade.tp,
-        borderColor: '#10b981',
-        borderWidth: 1,
-        borderDash: [2, 2],
-        label: {
-          display: true,
-          content: `TP`,
-          position: 'end',
-          backgroundColor: 'rgba(16, 185, 129, 0.5)',
-          color: 'white',
-          font: { size: 9 }
-        }
-      };
-    }
-  });
-
-  chartOptions.value = {
-    ...chartOptions.value,
-    plugins: {
-      ...chartOptions.value.plugins,
-      annotation: {
-        annotations
-      }
-    }
-  };
-};
-
-const updateChart = async () => {
-  try {
-    const history = await api.getMarketHistory(selectedSymbol.value, selectedTimeframe.value, 100);
-    if (history && history.data) {
-      const prices = history.data.map(d => d.close);
-      const labels = history.data.map(d => new Date(d.time).toLocaleTimeString());
-      
-      chartData.value = {
-        labels,
-        datasets: [{
-          label: selectedSymbol.value,
-          data: prices,
-          borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          fill: true,
-          borderWidth: 2
-        }]
-      };
-    }
-  } catch (e) { console.error(e); }
-};
-
-const toggleBot = async () => {
-  if (!currentBotId.value) {
-    alert("No bot configuration found for this symbol.");
-    return;
-  }
   try {
     if (isBotRunning.value) {
       await api.stopBot(currentBotId.value);
@@ -770,8 +693,26 @@ onMounted(async () => {
   socket = api.getSocket();
   
   if (socket) {
+    // Check if already connected
+    if (socket.connected) {
+      console.log('Socket already connected');
+      isSocketConnected.value = true;
+    }
+
+    socket.on('connect', () => {
+      console.log('Socket Connected');
+      isSocketConnected.value = true;
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Socket Disconnected');
+      isSocketConnected.value = false;
+    });
+
     // Real-time Market Data (Replaces Polling)
     socket.on('market_update', (data) => {
+      console.log('Market Update Received:', data); // Debug Log
+      
       // Update Account Info
       if (data.account) {
         accountInfo.value = data.account;
@@ -791,6 +732,13 @@ onMounted(async () => {
           tp: t.tp
         }));
         updateAnnotations();
+        
+        // Refresh chart to show latest price action and annotations
+        try {
+            updateChart();
+        } catch (e) {
+            console.error("Chart update failed during socket event", e);
+        }
       }
     });
 
