@@ -68,8 +68,8 @@ const initChart = () => {
     height: chartContainer.value.clientHeight,
   });
 
-  // Candlestick Series
-  candlestickSeries = chart.addCandlestickSeries({
+  // Candlestick Series - v5 API uses addSeries with type
+  candlestickSeries = chart.addSeries('Candlestick', {
     upColor: '#10b981',
     downColor: '#ef4444',
     borderVisible: false,

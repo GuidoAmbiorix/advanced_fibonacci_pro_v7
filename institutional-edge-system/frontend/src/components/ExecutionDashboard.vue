@@ -569,10 +569,6 @@ const onTimeframeChange = async () => {
   }
 };
 
-const updateAnnotations = () => {
-  // TradingChart handles its own markers via props
-  // We can leave this empty or remove it if not used elsewhere
-};
 
 const executeSignal = async (signal) => {
   if (!confirm(`Execute ${signal.signal_type} on ${signal.symbol}?`)) return;
