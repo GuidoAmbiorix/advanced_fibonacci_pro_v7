@@ -23,6 +23,11 @@
              <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Equity</span>
              <span class="text-sm font-mono font-bold" :class="accountInfo.equity >= accountInfo.balance ? 'text-emerald-400' : 'text-red-400'">{{ formatCurrency(accountInfo.equity) }}</span>
            </div>
+           <div class="w-px h-6 bg-slate-700"></div>
+           <div class="flex items-center space-x-2">
+             <div class="w-2 h-2 rounded-full" :class="isSocketConnected ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'"></div>
+             <span class="text-[10px] font-bold uppercase tracking-wider" :class="isSocketConnected ? 'text-emerald-500' : 'text-red-500'">{{ isSocketConnected ? 'LIVE' : 'OFFLINE' }}</span>
+           </div>
         </div>
       </div>
 
@@ -114,11 +119,42 @@
                 <label class="text-xs text-slate-300 font-bold">Trailing Stop Loss</label>
                 <input type="checkbox" v-model="tradingPlan.trailing_sl" class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500 focus:ring-2">
               </div>
-              <div v-if="tradingPlan.trailing_sl" class="grid grid-cols-1 gap-2 animate-fadeIn">
-                 <div>
-                  <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">Step (R)</label>
-                  <input type="number" v-model.number="tradingPlan.trailing_step" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
-                </div>
+              <div v-if="tradingPlan.trailing_sl" class="grid grid-cols-1 gap-2 animate-fadeIn mt-2">
+                 <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">Mode</label>
+                      <select v-model="tradingPlan.tsl_mode" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
+                        <option value="FIXED">Fixed</option>
+                        <option value="ATR">ATR Dynamic</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">Activation (R)</label>
+                      <input type="number" v-model.number="tradingPlan.tsl_activation_r" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
+                    </div>
+                 </div>
+
+                 <div v-if="tradingPlan.tsl_mode === 'FIXED'" class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">Step (R)</label>
+                      <input type="number" v-model.number="tradingPlan.trailing_step" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
+                    </div>
+                     <div>
+                      <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">Distance (R)</label>
+                      <input type="number" v-model.number="tradingPlan.trailing_distance" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
+                    </div>
+                 </div>
+
+                 <div v-if="tradingPlan.tsl_mode === 'ATR'" class="grid grid-cols-2 gap-2 bg-slate-800/50 p-2 rounded border border-slate-700/50">
+                    <div>
+                      <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">ATR Period</label>
+                      <input type="number" v-model.number="tradingPlan.tsl_atr_period" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
+                    </div>
+                     <div>
+                      <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">Multiplier</label>
+                      <input type="number" v-model.number="tradingPlan.tsl_atr_multiplier" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
+                    </div>
+                 </div>
               </div>
             </div>
 
@@ -186,8 +222,13 @@
           <div v-if="activeTab === 'signals'" class="overflow-y-auto flex-1 p-4 space-y-3 custom-scrollbar">
             <div class="flex justify-between items-center mb-2">
                <span class="text-[10px] text-slate-500 font-bold uppercase">Latest Signals</span>
-               <button @click="fetchSignals" class="text-[10px] text-blue-400 hover:text-blue-300 font-bold">REFRESH</button>
+               <div class="flex space-x-2">
+                 <button @click="clearSignals" class="text-[10px] text-red-400 hover:text-red-300 font-bold">CLEAR</button>
+                 <button @click="fetchSignals" class="text-[10px] text-blue-400 hover:text-blue-300 font-bold">REFRESH</button>
+               </div>
             </div>
+
+
 
             <div v-for="signal in signals" :key="signal.id" class="bg-slate-900/40 border border-slate-700/50 rounded-lg p-4 hover:border-slate-600 transition-all group relative overflow-hidden">
               <div class="absolute top-0 left-0 w-1 h-full" :class="signal.signal_type === 'BUY' ? 'bg-emerald-500' : 'bg-red-500'"></div>
@@ -236,7 +277,7 @@
             </div>
             
             <div v-if="signals.length === 0" class="text-center text-slate-500 py-12 flex flex-col items-center">
-              <div class="text-4xl mb-2 opacity-20">ðŸ“¡</div>
+              <div class="text-4xl mb-2 opacity-20">📡</div>
               <span class="text-xs">Scanning market...</span>
             </div>
           </div>
@@ -258,15 +299,12 @@
              </div>
            </div>
            <div class="w-full h-full p-2 bg-slate-900/50 rounded-lg">
-            <Line
-              v-if="chartData.datasets.length > 0"
-              :data="chartData"
-              :options="chartOptions"
-            />
-            <div v-else class="flex flex-col items-center justify-center h-full text-slate-500">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
-              <span class="text-xs">Loading Market Data...</span>
-            </div>
+             <TradingChart 
+                :data="chartData" 
+                :trades="openTrades" 
+                :symbol="selectedSymbol"
+                :is-dark="true"
+             />
           </div>
         </div>
 
@@ -309,6 +347,7 @@
                   </td>
                   <td class="px-4 py-3 text-right">
                     <button @click="moveToBE(trade.ticket)" class="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded mr-2 transition-colors border border-slate-600">BE</button>
+                    <button @click="trailSL(trade.ticket)" class="text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-1 rounded mr-2 transition-colors">TRAIL</button>
                     <button @click="closeTrade(trade.ticket)" class="text-[10px] bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded transition-colors">CLOSE</button>
                   </td>
                 </tr>
@@ -326,13 +365,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import { Line } from 'vue-chartjs';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import annotationPlugin from 'chartjs-plugin-annotation';
+import TradingChart from './TradingChart.vue';
 import api from '../services/api';
 import ActivityLog from './ActivityLog.vue';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, annotationPlugin);
 
 // State
 const selectedSymbol = ref('EURUSD');
@@ -355,6 +390,11 @@ const tradingPlan = ref({
   be_trigger: 1.0,
   trailing_sl: false,
   trailing_step: 1.0,
+  trailing_distance: 1.5,
+  tsl_mode: 'FIXED',
+  tsl_activation_r: 0.0,
+  tsl_atr_period: 14,
+  tsl_atr_multiplier: 1.5,
   partial_tp_on: false,
   partial_tp_amount: 0.5,
   max_spread: 2.0,
@@ -364,22 +404,8 @@ const tradingPlan = ref({
 });
 
 // Chart State
-const chartData = ref({ labels: [], datasets: [] });
-const chartOptions = ref({
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-    x: { display: false }
-  },
-  plugins: { 
-    legend: { display: false },
-    annotation: {
-      annotations: {}
-    }
-  },
-  elements: { point: { radius: 0 }, line: { tension: 0.1 } }
-});
+const chartData = ref([]); // Raw OHLCV data for TradingChart
+const isDark = ref(true);
 
 // Methods
 const loadSymbols = async () => {
@@ -426,6 +452,11 @@ const loadConfig = async (botId) => {
         be_trigger: config.be_trigger,
         trailing_sl: config.trailing_sl,
         trailing_step: config.trailing_step,
+        trailing_distance: config.trailing_distance || 1.5,
+        tsl_mode: config.tsl_mode || 'FIXED',
+        tsl_activation_r: config.tsl_activation_r || 0.0,
+        tsl_atr_period: config.tsl_atr_period || 14,
+        tsl_atr_multiplier: config.tsl_atr_multiplier || 1.5,
         partial_tp_on: config.partial_tp_on,
         partial_tp_amount: config.partial_tp_amount,
         max_spread: config.max_spread,
@@ -448,6 +479,11 @@ const saveConfig = async () => {
         be_trigger: updatedConfig.be_trigger,
         trailing_sl: updatedConfig.trailing_sl,
         trailing_step: updatedConfig.trailing_step,
+        trailing_distance: updatedConfig.trailing_distance,
+        tsl_mode: updatedConfig.tsl_mode,
+        tsl_activation_r: updatedConfig.tsl_activation_r,
+        tsl_atr_period: updatedConfig.tsl_atr_period,
+        tsl_atr_multiplier: updatedConfig.tsl_atr_multiplier,
         partial_tp_on: updatedConfig.partial_tp_on,
         partial_tp_amount: updatedConfig.partial_tp_amount,
         max_spread: updatedConfig.max_spread,
@@ -472,8 +508,9 @@ const fetchSignals = async () => {
 
 const fetchTrades = async () => {
   try {
-    // Use getLiveTrades for real-time data
-    const trades = await api.getLiveTrades();
+    // Use getPositions for real-time data
+    const response = await api.getPositions();
+    const trades = response.positions || [];
     openTrades.value = trades.map(t => ({
       ticket: t.ticket,
       symbol: t.symbol,
@@ -491,115 +528,18 @@ const fetchTrades = async () => {
 
 const fetchAccountInfo = async () => {
   try {
-    const info = await api.getAccountSummary();
+    const info = await api.getAccountInfo();
     accountInfo.value = info;
   } catch (e) { console.error(e); }
 };
 
 const updateAnnotations = () => {
-  const annotations = {};
-  
-  // Only show annotations for the selected symbol
-  const symbolTrades = openTrades.value.filter(t => t.symbol === selectedSymbol.value);
-  
-  symbolTrades.forEach((trade, index) => {
-    // Entry Line
-    annotations[`entry_${trade.ticket}`] = {
-      type: 'line',
-      yMin: trade.entry,
-      yMax: trade.entry,
-      borderColor: trade.type === 'BUY' ? '#10b981' : '#ef4444',
-      borderWidth: 1,
-      borderDash: [5, 5],
-      label: {
-        display: true,
-        content: `${trade.type} @ ${trade.entry}`,
-        position: 'start',
-        backgroundColor: trade.type === 'BUY' ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)',
-        color: 'white',
-        font: { size: 10 }
-      }
-    };
-
-    // SL Line
-    if (trade.sl) {
-      annotations[`sl_${trade.ticket}`] = {
-        type: 'line',
-        yMin: trade.sl,
-        yMax: trade.sl,
-        borderColor: '#ef4444',
-        borderWidth: 1,
-        borderDash: [2, 2],
-        label: {
-          display: true,
-          content: `SL`,
-          position: 'end',
-          backgroundColor: 'rgba(239, 68, 68, 0.5)',
-          color: 'white',
-          font: { size: 9 }
-        }
-      };
-    }
-
-    // TP Line
-    if (trade.tp) {
-      annotations[`tp_${trade.ticket}`] = {
-        type: 'line',
-        yMin: trade.tp,
-        yMax: trade.tp,
-        borderColor: '#10b981',
-        borderWidth: 1,
-        borderDash: [2, 2],
-        label: {
-          display: true,
-          content: `TP`,
-          position: 'end',
-          backgroundColor: 'rgba(16, 185, 129, 0.5)',
-          color: 'white',
-          font: { size: 9 }
-        }
-      };
-    }
-  });
-
-  chartOptions.value = {
-    ...chartOptions.value,
-    plugins: {
-      ...chartOptions.value.plugins,
-      annotation: {
-        annotations
-      }
-    }
-  };
-};
-
-const updateChart = async () => {
-  try {
-    const history = await api.getMarketHistory(selectedSymbol.value, selectedTimeframe.value, 100);
-    if (history && history.data) {
-      const prices = history.data.map(d => d.close);
-      const labels = history.data.map(d => new Date(d.time).toLocaleTimeString());
-      
-      chartData.value = {
-        labels,
-        datasets: [{
-          label: selectedSymbol.value,
-          data: prices,
-          borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          fill: true,
-          borderWidth: 2
-        }]
-      };
-    }
-  } catch (e) { console.error(e); }
+  // TradingChart handles its own markers via props
 };
 
 const toggleBot = async () => {
-  if (!currentBotId.value) {
-    alert("No bot configuration found for this symbol.");
-    return;
-  }
+  if (!currentBotId.value) return;
+  
   try {
     if (isBotRunning.value) {
       await api.stopBot(currentBotId.value);
@@ -628,6 +568,7 @@ const onTimeframeChange = async () => {
     }
   }
 };
+
 
 const executeSignal = async (signal) => {
   if (!confirm(`Execute ${signal.signal_type} on ${signal.symbol}?`)) return;
@@ -682,6 +623,26 @@ const moveToBE = async (ticket) => {
   }
 };
 
+const clearSignals = async () => {
+  if (!confirm('Clear all signals?')) return;
+  try {
+    await api.clearSignals();
+    signals.value = []; // Optimistic update
+  } catch (e) {
+    console.error(e);
+    alert('Failed to clear signals');
+  }
+};
+
+const trailSL = async (ticket) => {
+  try {
+    await api.trailSL(ticket);
+    alert('SL Trailed');
+  } catch (e) {
+    alert('Failed to trail SL: ' + (e.response?.data?.detail || e.message));
+  }
+};
+
 // Lifecycle
 let socket;
 
@@ -697,8 +658,26 @@ onMounted(async () => {
   socket = api.getSocket();
   
   if (socket) {
+    // Check if already connected
+    if (socket.connected) {
+      console.log('Socket already connected');
+      isSocketConnected.value = true;
+    }
+
+    socket.on('connect', () => {
+      console.log('Socket Connected');
+      isSocketConnected.value = true;
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Socket Disconnected');
+      isSocketConnected.value = false;
+    });
+
     // Real-time Market Data (Replaces Polling)
     socket.on('market_update', (data) => {
+      console.log('Market Update Received:', data); // Debug Log
+      
       // Update Account Info
       if (data.account) {
         accountInfo.value = data.account;
@@ -718,6 +697,13 @@ onMounted(async () => {
           tp: t.tp
         }));
         updateAnnotations();
+        
+        // Refresh chart to show latest price action and annotations
+        try {
+            updateChart();
+        } catch (e) {
+            console.error("Chart update failed during socket event", e);
+        }
       }
     });
 

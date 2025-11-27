@@ -60,6 +60,11 @@ class BotConfig(Base):
     be_trigger = Column(Float, default=1.0)  # R-multiple to move to BE
     trailing_sl = Column(Boolean, default=False)
     trailing_step = Column(Float, default=1.0)  # R-multiple for trailing step
+    trailing_distance = Column(Float, default=1.5)  # R-multiple distance for TSL
+    tsl_mode = Column(String, default="FIXED") # "FIXED", "ATR", "SWING"
+    tsl_activation_r = Column(Float, default=0.0) # Profit R required to activate TSL
+    tsl_atr_period = Column(Integer, default=14)
+    tsl_atr_multiplier = Column(Float, default=1.5)
     partial_tp_on = Column(Boolean, default=False)
     partial_tp_amount = Column(Float, default=0.5)  # 0.5 = 50%
 

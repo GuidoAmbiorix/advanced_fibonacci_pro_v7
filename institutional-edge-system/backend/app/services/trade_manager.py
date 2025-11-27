@@ -27,6 +27,15 @@ class TradeManager:
         self.be_offset_pips = 2  # Pips to add to BE (to cover commissions)
         self.use_trailing_sl = False
         self.trailing_step_r = 1.0 # Trail every 1R
+        self.trailing_distance_r = 1.5 # Default distance
+        
+        # Advanced TSL Settings
+        self.tsl_mode = "FIXED" # FIXED, ATR, SWING
+        self.tsl_activation_r = 0.0 # Profit R required to activate
+        self.tsl_atr_period = 14
+        self.tsl_atr_multiplier = 1.5
+        self.timeframe = "H1" # Default timeframe for ATR
+        
         self.partial_tp_on = False
         self.partial_tp_amount = 0.5 # 50%
         
@@ -63,7 +72,10 @@ class TradeManager:
                 return
                 
             # Calculate current profit in R
-            if trade_type == 0: # Buy
+            # Fix type check to handle string 'BUY'/'SELL' from MT5Connector
+            is_buy = trade_type == 'BUY' or trade_type == 0
+            
+            if is_buy: # Buy
                 profit_pips = current_price - entry_price
                 r_multiple = profit_pips / risk_pips
             else: # Sell
@@ -98,7 +110,9 @@ class TradeManager:
         offset = self.be_offset_pips * point * 10 # Assuming point is 0.00001, pip is 0.0001
         
         new_sl = 0.0
-        if trade_type == 0: # Buy
+        is_buy = trade_type == 'BUY' or trade_type == 0
+        
+        if is_buy: # Buy
             new_sl = entry_price + offset
             # Only move if current SL is below BE
             if sl < new_sl:
@@ -109,22 +123,123 @@ class TradeManager:
             if sl > new_sl or sl == 0:
                 self._modify_position(ticket, new_sl, trade['tp'])
 
+    def manual_trail_sl(self, ticket: int, distance_r: float = 1.5) -> bool:
+        """
+        Manually trail SL for a specific trade
+        """
+        if not self.mt5_connector.connected:
+            return False
+
+        positions = self.mt5_connector.get_open_positions()
+        trade = next((p for p in positions if p['ticket'] == ticket), None)
+        
+        if not trade:
+            logger.error(f"Trade {ticket} not found for manual TSL")
+            return False
+
+        db = SessionLocal()
+        try:
+            db_trade = db.query(Trade).filter(Trade.ticket == ticket).first()
+            if not db_trade:
+                logger.error(f"Trade {ticket} not found in DB")
+                return False
+                
+            entry_price = db_trade.entry_price
+            initial_sl = db_trade.stop_loss
+            
+            if not initial_sl:
+                 logger.error(f"Trade {ticket} has no initial SL, cannot calc R")
+                 return False
+                 
+            risk_pips = abs(entry_price - initial_sl)
+            
+            # Calculate new SL
+            current_price = trade['price_current']
+            trade_type = trade['type']
+            
+            trail_distance = risk_pips * distance_r
+            
+            new_sl = 0.0
+            is_buy = trade_type == 'BUY' or trade_type == 0
+            
+            if is_buy:
+                new_sl = current_price - trail_distance
+                if new_sl > trade['sl']:
+                    return self.mt5_connector.modify_position(ticket, new_sl, trade['tp'])
+            else:
+                new_sl = current_price + trail_distance
+                if new_sl < trade['sl'] or trade['sl'] == 0:
+                    return self.mt5_connector.modify_position(ticket, new_sl, trade['tp'])
+                    
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error in manual TSL for {ticket}: {e}")
+            return False
+        finally:
+            db.close()
+
+    def _calculate_atr(self, symbol: str) -> float:
+        """Calculate ATR for the symbol"""
+        try:
+            # Get sufficient bars for ATR calculation
+            bars_needed = self.tsl_atr_period + 10
+            df = self.mt5_connector.get_ohlcv_data(symbol, self.timeframe, bars_needed)
+            
+            if df is None or len(df) < bars_needed:
+                logger.warning(f"Not enough data for ATR calculation on {symbol}")
+                return 0.0
+                
+            # Calculate TR
+            df['h-l'] = df['high'] - df['low']
+            df['h-pc'] = abs(df['high'] - df['close'].shift(1))
+            df['l-pc'] = abs(df['low'] - df['close'].shift(1))
+            df['tr'] = df[['h-l', 'h-pc', 'l-pc']].max(axis=1)
+            
+            # Calculate ATR
+            atr = df['tr'].rolling(window=self.tsl_atr_period).mean().iloc[-1]
+            return atr
+            
+        except Exception as e:
+            logger.error(f"Error calculating ATR: {e}")
+            return 0.0
+
     def _check_and_trail_sl(self, trade: Dict, r_multiple: float, risk_pips: float):
         """Check and update Trailing Stop Loss"""
         ticket = trade['ticket']
         sl = trade['sl']
         trade_type = trade['type']
         current_price = trade['price_current']
+        symbol = trade['symbol']
         
-        # Only trail if we are in profit by at least 1 step
+        # 1. Check Activation
+        if r_multiple < self.tsl_activation_r:
+            return
+
+        # 2. Check Step (Only trail if we moved enough from last trail or entry)
+        # This is simplified. Ideally we track 'last_trail_price'. 
+        # For now, we check if current profit > step. 
         if r_multiple < self.trailing_step_r:
             return
 
-        # Calculate new SL distance (e.g. 1.5R behind price)
-        trail_distance = risk_pips * 1.5 
+        # 3. Calculate Trail Distance
+        trail_distance = 0.0
+        
+        if self.tsl_mode == "ATR":
+            atr = self._calculate_atr(symbol)
+            if atr > 0:
+                trail_distance = atr * self.tsl_atr_multiplier
+            else:
+                # Fallback to Fixed if ATR fails
+                trail_distance = risk_pips * self.trailing_distance_r
+        else:
+            # FIXED Mode
+            trail_distance = risk_pips * self.trailing_distance_r
         
         new_sl = 0.0
-        if trade_type == 0: # Buy
+        is_buy = trade_type == 'BUY' or trade_type == 0
+        
+        if is_buy: # Buy
             new_sl = current_price - trail_distance
             # Only move SL up
             if new_sl > sl:

@@ -62,6 +62,11 @@ class BotConfigCreate(BaseModel):
     be_trigger: float = Field(default=1.0, ge=0.5, le=5.0)
     trailing_sl: bool = False
     trailing_step: float = Field(default=1.0, ge=0.5, le=5.0)
+    trailing_distance: float = Field(default=1.5, ge=0.5, le=5.0)
+    tsl_mode: str = "FIXED"
+    tsl_activation_r: float = Field(default=0.0, ge=0.0, le=10.0)
+    tsl_atr_period: int = Field(default=14, ge=1, le=50)
+    tsl_atr_multiplier: float = Field(default=1.5, ge=0.1, le=5.0)
     partial_tp_on: bool = False
     partial_tp_amount: float = Field(default=0.5, ge=0.1, le=1.0)
     max_spread: float = Field(default=2.0, ge=0.1, le=10.0)
@@ -80,6 +85,11 @@ class BotConfigUpdate(BaseModel):
     be_trigger: Optional[float] = Field(default=None, ge=0.5, le=5.0)
     trailing_sl: Optional[bool] = None
     trailing_step: Optional[float] = Field(default=None, ge=0.5, le=5.0)
+    trailing_distance: Optional[float] = Field(default=None, ge=0.5, le=5.0)
+    tsl_mode: Optional[str] = None
+    tsl_activation_r: Optional[float] = Field(default=None, ge=0.0, le=10.0)
+    tsl_atr_period: Optional[int] = Field(default=None, ge=1, le=50)
+    tsl_atr_multiplier: Optional[float] = Field(default=None, ge=0.1, le=5.0)
     partial_tp_on: Optional[bool] = None
     partial_tp_amount: Optional[float] = Field(default=None, ge=0.1, le=1.0)
     max_spread: Optional[float] = Field(default=None, ge=0.1, le=10.0)
@@ -101,6 +111,11 @@ class BotConfigResponse(BaseModel):
     be_trigger: float
     trailing_sl: bool
     trailing_step: float
+    trailing_distance: float
+    tsl_mode: str
+    tsl_activation_r: float
+    tsl_atr_period: int
+    tsl_atr_multiplier: float
     partial_tp_on: bool
     partial_tp_amount: float
     max_spread: float

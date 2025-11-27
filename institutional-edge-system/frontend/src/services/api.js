@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { io } from 'socket.io-client'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -179,13 +179,13 @@ export default {
     return response.data
   },
 
-  async getAccountSummary() {
-    const response = await api.get('/api/account/summary')
+  async trailSL(ticket) {
+    const response = await api.post(`/api/trades/trail/${ticket}`)
     return response.data
   },
 
-  async getLiveTrades() {
-    const response = await api.get('/api/trades/live')
+  async clearSignals() {
+    const response = await api.delete('/api/signals')
     return response.data
   },
 
