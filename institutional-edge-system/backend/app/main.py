@@ -16,6 +16,9 @@ from loguru import logger
 from app.core.config import settings
 from app.models.database import Base, User, BotConfig, Trade
 from app.api import database, auth, stats
+from app.core.mt5_connector import MT5Connector
+from app.core.trading_engine import TradingEngine
+from app.schemas import schemas
 
 # ============================================================================
 # APPLICATION SETUP
@@ -667,10 +670,55 @@ async def move_to_be(ticket: int, db: Session = Depends(database.get_db)):
 
         return {"success": True, "message": f"Trade {ticket} moved to BE"}
 
+    except Exception as e:
+        logger.error(f"Error moving to BE: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.post("/api/trades/trail/{ticket}")
+async def manual_trail_sl(ticket: int, distance: float = 1.5, db: Session = Depends(database.get_db)):
+    """Manually trail SL for a trade"""
+    try:
+        if not mt5_connector or not mt5_connector.connected:
+            raise HTTPException(status_code=503, detail="MT5 not connected")
+
+        # We need a TradeManager instance. 
+        # Ideally, we should use the one from the running bot if available, or create a temporary one.
+        # Since TradeManager is stateless regarding connection (uses connector), we can create one.
+        from app.services.trade_manager import TradeManager
+        tm = TradeManager(mt5_connector)
+        
+        success = tm.manual_trail_sl(ticket, distance)
+        
+        if not success:
+             raise HTTPException(status_code=500, detail="Failed to trail SL (check logs)")
+
+        return {"success": True, "message": f"Trade {ticket} SL trailed"}
+
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error moving to BE: {e}")
+        logger.error(f"Error trailing SL: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.delete("/api/signals")
+async def clear_signals(db: Session = Depends(database.get_db)):
+    """Clear all signals"""
+    try:
+        from app.models.database import Signal
+        # Delete all signals or just mark them? User asked to "clear".
+        # Let's delete non-executed ones or all? Usually "Clear" means clear the view.
+        # Let's delete all signals from DB to be sure.
+        db.query(Signal).delete()
+        db.commit()
+        
+        # Emit event to clear frontend
+        await sio.emit('signals_cleared')
+        
+        return {"success": True, "message": "Signals cleared"}
+    except Exception as e:
+        logger.error(f"Error clearing signals: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 

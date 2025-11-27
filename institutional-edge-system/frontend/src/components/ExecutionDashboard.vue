@@ -114,11 +114,42 @@
                 <label class="text-xs text-slate-300 font-bold">Trailing Stop Loss</label>
                 <input type="checkbox" v-model="tradingPlan.trailing_sl" class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500 focus:ring-2">
               </div>
-              <div v-if="tradingPlan.trailing_sl" class="grid grid-cols-1 gap-2 animate-fadeIn">
-                 <div>
-                  <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">Step (R)</label>
-                  <input type="number" v-model.number="tradingPlan.trailing_step" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
-                </div>
+              <div v-if="tradingPlan.trailing_sl" class="grid grid-cols-1 gap-2 animate-fadeIn mt-2">
+                 <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">Mode</label>
+                      <select v-model="tradingPlan.tsl_mode" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
+                        <option value="FIXED">Fixed</option>
+                        <option value="ATR">ATR Dynamic</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">Activation (R)</label>
+                      <input type="number" v-model.number="tradingPlan.tsl_activation_r" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
+                    </div>
+                 </div>
+
+                 <div v-if="tradingPlan.tsl_mode === 'FIXED'" class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">Step (R)</label>
+                      <input type="number" v-model.number="tradingPlan.trailing_step" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
+                    </div>
+                     <div>
+                      <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">Distance (R)</label>
+                      <input type="number" v-model.number="tradingPlan.trailing_distance" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
+                    </div>
+                 </div>
+
+                 <div v-if="tradingPlan.tsl_mode === 'ATR'" class="grid grid-cols-2 gap-2 bg-slate-800/50 p-2 rounded border border-slate-700/50">
+                    <div>
+                      <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">ATR Period</label>
+                      <input type="number" v-model.number="tradingPlan.tsl_atr_period" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
+                    </div>
+                     <div>
+                      <label class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 block">Multiplier</label>
+                      <input type="number" v-model.number="tradingPlan.tsl_atr_multiplier" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs font-mono focus:border-blue-500 outline-none">
+                    </div>
+                 </div>
               </div>
             </div>
 
@@ -186,8 +217,13 @@
           <div v-if="activeTab === 'signals'" class="overflow-y-auto flex-1 p-4 space-y-3 custom-scrollbar">
             <div class="flex justify-between items-center mb-2">
                <span class="text-[10px] text-slate-500 font-bold uppercase">Latest Signals</span>
-               <button @click="fetchSignals" class="text-[10px] text-blue-400 hover:text-blue-300 font-bold">REFRESH</button>
+               <div class="flex space-x-2">
+                 <button @click="clearSignals" class="text-[10px] text-red-400 hover:text-red-300 font-bold">CLEAR</button>
+                 <button @click="fetchSignals" class="text-[10px] text-blue-400 hover:text-blue-300 font-bold">REFRESH</button>
+               </div>
             </div>
+
+
 
             <div v-for="signal in signals" :key="signal.id" class="bg-slate-900/40 border border-slate-700/50 rounded-lg p-4 hover:border-slate-600 transition-all group relative overflow-hidden">
               <div class="absolute top-0 left-0 w-1 h-full" :class="signal.signal_type === 'BUY' ? 'bg-emerald-500' : 'bg-red-500'"></div>
@@ -309,6 +345,7 @@
                   </td>
                   <td class="px-4 py-3 text-right">
                     <button @click="moveToBE(trade.ticket)" class="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded mr-2 transition-colors border border-slate-600">BE</button>
+                    <button @click="trailSL(trade.ticket)" class="text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-1 rounded mr-2 transition-colors">TRAIL</button>
                     <button @click="closeTrade(trade.ticket)" class="text-[10px] bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded transition-colors">CLOSE</button>
                   </td>
                 </tr>
@@ -355,6 +392,11 @@ const tradingPlan = ref({
   be_trigger: 1.0,
   trailing_sl: false,
   trailing_step: 1.0,
+  trailing_distance: 1.5,
+  tsl_mode: 'FIXED',
+  tsl_activation_r: 0.0,
+  tsl_atr_period: 14,
+  tsl_atr_multiplier: 1.5,
   partial_tp_on: false,
   partial_tp_amount: 0.5,
   max_spread: 2.0,
@@ -426,6 +468,11 @@ const loadConfig = async (botId) => {
         be_trigger: config.be_trigger,
         trailing_sl: config.trailing_sl,
         trailing_step: config.trailing_step,
+        trailing_distance: config.trailing_distance || 1.5,
+        tsl_mode: config.tsl_mode || 'FIXED',
+        tsl_activation_r: config.tsl_activation_r || 0.0,
+        tsl_atr_period: config.tsl_atr_period || 14,
+        tsl_atr_multiplier: config.tsl_atr_multiplier || 1.5,
         partial_tp_on: config.partial_tp_on,
         partial_tp_amount: config.partial_tp_amount,
         max_spread: config.max_spread,
@@ -448,6 +495,11 @@ const saveConfig = async () => {
         be_trigger: updatedConfig.be_trigger,
         trailing_sl: updatedConfig.trailing_sl,
         trailing_step: updatedConfig.trailing_step,
+        trailing_distance: updatedConfig.trailing_distance,
+        tsl_mode: updatedConfig.tsl_mode,
+        tsl_activation_r: updatedConfig.tsl_activation_r,
+        tsl_atr_period: updatedConfig.tsl_atr_period,
+        tsl_atr_multiplier: updatedConfig.tsl_atr_multiplier,
         partial_tp_on: updatedConfig.partial_tp_on,
         partial_tp_amount: updatedConfig.partial_tp_amount,
         max_spread: updatedConfig.max_spread,
@@ -472,8 +524,9 @@ const fetchSignals = async () => {
 
 const fetchTrades = async () => {
   try {
-    // Use getLiveTrades for real-time data
-    const trades = await api.getLiveTrades();
+    // Use getPositions for real-time data
+    const response = await api.getPositions();
+    const trades = response.positions || [];
     openTrades.value = trades.map(t => ({
       ticket: t.ticket,
       symbol: t.symbol,
@@ -491,7 +544,7 @@ const fetchTrades = async () => {
 
 const fetchAccountInfo = async () => {
   try {
-    const info = await api.getAccountSummary();
+    const info = await api.getAccountInfo();
     accountInfo.value = info;
   } catch (e) { console.error(e); }
 };
@@ -679,6 +732,26 @@ const moveToBE = async (ticket) => {
     alert('Moved to Break Even');
   } catch (e) {
     alert('Failed to move to BE: ' + e.message);
+  }
+};
+
+const clearSignals = async () => {
+  if (!confirm('Clear all signals?')) return;
+  try {
+    await api.clearSignals();
+    signals.value = []; // Optimistic update
+  } catch (e) {
+    console.error(e);
+    alert('Failed to clear signals');
+  }
+};
+
+const trailSL = async (ticket) => {
+  try {
+    await api.trailSL(ticket);
+    alert('SL Trailed');
+  } catch (e) {
+    alert('Failed to trail SL: ' + (e.response?.data?.detail || e.message));
   }
 };
 

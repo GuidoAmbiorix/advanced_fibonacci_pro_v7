@@ -65,6 +65,15 @@ class TradingBot:
         self.trade_manager.be_trigger_r = self.config.be_trigger
         self.trade_manager.use_trailing_sl = self.config.trailing_sl
         self.trade_manager.trailing_step_r = self.config.trailing_step
+        self.trade_manager.trailing_distance_r = self.config.trailing_distance
+        
+        # Advanced TSL Config
+        self.trade_manager.tsl_mode = self.config.tsl_mode
+        self.trade_manager.tsl_activation_r = self.config.tsl_activation_r
+        self.trade_manager.tsl_atr_period = self.config.tsl_atr_period
+        self.trade_manager.tsl_atr_multiplier = self.config.tsl_atr_multiplier
+        self.trade_manager.timeframe = self.config.timeframe
+        
         self.trade_manager.partial_tp_on = self.config.partial_tp_on
         self.trade_manager.partial_tp_amount = self.config.partial_tp_amount
 
