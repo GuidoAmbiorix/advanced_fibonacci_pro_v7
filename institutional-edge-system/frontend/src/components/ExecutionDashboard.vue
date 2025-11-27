@@ -239,6 +239,33 @@
                     <span class="font-black text-lg tracking-tight" :class="signal.signal_type === 'BUY' ? 'text-emerald-400' : 'text-red-400'">
                       {{ signal.signal_type }}
                     </span>
+                    <span class="text-slate-400 text-xs font-bold bg-slate-800 px-1.5 py-0.5 rounded">{{ signal.symbol }}</span>
+                  </div>
+                </div>
+                <div class="text-[10px] text-slate-500 font-mono">{{ formatTimeAgo(signal.created_at) }}</div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-y-1 gap-x-4 text-xs mb-4 pl-2">
+                <div class="flex justify-between">
+                  <span class="text-slate-500">Entry</span>
+                  <span class="font-mono text-slate-300">{{ signal.price }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500">SL</span>
+                  <span class="font-mono text-red-400">{{ signal.stop_loss }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500">TP1</span>
+                  <span class="font-mono text-emerald-400">{{ signal.take_profit }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500">Score</span>
+                  <span class="font-bold text-yellow-400">{{ signal.confluence_score }}/10</span>
+                </div>
+              </div>
+
+              <button 
+                v-if="!signal.was_executed"
                 @click="executeSignal(signal)"
                 class="w-full py-2 rounded-lg font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-lg shadow-blue-900/20 transform active:scale-95"
               >
@@ -250,7 +277,7 @@
             </div>
             
             <div v-if="signals.length === 0" class="text-center text-slate-500 py-12 flex flex-col items-center">
-              <div class="text-4xl mb-2 opacity-20">ðŸ“¡</div>
+              <div class="text-4xl mb-2 opacity-20">📡</div>
               <span class="text-xs">Scanning market...</span>
             </div>
           </div>
@@ -272,15 +299,12 @@
              </div>
            </div>
            <div class="w-full h-full p-2 bg-slate-900/50 rounded-lg">
-            <Line
-              v-if="chartData.datasets.length > 0"
-              :data="chartData"
-              :options="chartOptions"
-            />
-            <div v-else class="flex flex-col items-center justify-center h-full text-slate-500">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
-              <span class="text-xs">Loading Market Data...</span>
-            </div>
+             <TradingChart 
+                :data="chartData" 
+                :trades="openTrades" 
+                :symbol="selectedSymbol"
+                :is-dark="true"
+             />
           </div>
         </div>
 
@@ -341,13 +365,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import { Line } from 'vue-chartjs';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import annotationPlugin from 'chartjs-plugin-annotation';
+import TradingChart from './TradingChart.vue';
 import api from '../services/api';
 import ActivityLog from './ActivityLog.vue';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, annotationPlugin);
 
 // State
 const selectedSymbol = ref('EURUSD');
@@ -384,22 +404,8 @@ const tradingPlan = ref({
 });
 
 // Chart State
-const chartData = ref({ labels: [], datasets: [] });
-const chartOptions = ref({
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-    x: { display: false }
-  },
-  plugins: { 
-    legend: { display: false },
-    annotation: {
-      annotations: {}
-    }
-  },
-  elements: { point: { radius: 0 }, line: { tension: 0.1 } }
-});
+const chartData = ref([]); // Raw OHLCV data for TradingChart
+const isDark = ref(true);
 
 // Methods
 const loadSymbols = async () => {
@@ -528,54 +534,12 @@ const fetchAccountInfo = async () => {
 };
 
 const updateAnnotations = () => {
-  const annotations = {};
-  
-  // Only show annotations for the selected symbol
-  const symbolTrades = openTrades.value.filter(t => t.symbol === selectedSymbol.value);
-  
-  symbolTrades.forEach((trade, index) => {
-    // Entry Line
-    annotations[`entry_${trade.ticket}`] = {
-      type: 'line',
-      yMin: trade.entry,
-      yMax: trade.entry,
-      borderColor: trade.type === 'BUY' ? '#10b981' : '#ef4444',
-      borderWidth: 1,
-      borderDash: [5, 5],
-      label: {
-        display: true,
-        content: `${trade.type} @ ${trade.entry}`,
-        position: 'start',
-        backgroundColor: trade.type === 'BUY' ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)',
-        color: 'white',
-        font: { size: 10 }
-      }
-    };
+  // TradingChart handles its own markers via props
+};
 
-    // SL Line
-    if (trade.sl) {
-      annotations[`sl_${trade.ticket}`] = {
-        type: 'line',
-        yMin: trade.sl,
-        yMax: trade.sl,
-        borderColor: '#ef4444',
-        borderWidth: 1,
-        borderDash: [2, 2],
-        label: {
-          display: true,
-          content: `SL`,
-          position: 'end',
-          backgroundColor: 'rgba(239, 68, 68, 0.5)',
-          color: 'white',
-          font: { size: 9 }
-        }
-      };
-    }
-
-    // TP Line
-    if (trade.tp) {
-      annotations[`tp_${trade.ticket}`] = {
-        type: 'line',
+const toggleBot = async () => {
+  if (!currentBotId.value) return;
+  
   try {
     if (isBotRunning.value) {
       await api.stopBot(currentBotId.value);
@@ -603,6 +567,11 @@ const onTimeframeChange = async () => {
       alert("Failed to update timeframe");
     }
   }
+};
+
+const updateAnnotations = () => {
+  // TradingChart handles its own markers via props
+  // We can leave this empty or remove it if not used elsewhere
 };
 
 const executeSignal = async (signal) => {
