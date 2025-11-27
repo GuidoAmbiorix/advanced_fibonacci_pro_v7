@@ -37,6 +37,7 @@ python-socketio==5.11.0
 # Data Validation
 pydantic==2.5.3
 pydantic-settings==2.1.0
+email-validator==2.1.0
 
 # Machine Learning / AI
 xgboost==2.0.3  # Signal quality prediction

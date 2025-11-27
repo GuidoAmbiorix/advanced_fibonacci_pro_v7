@@ -5,17 +5,17 @@ INSTITUTIONAL EDGE PRO - MT5 Integration Layer
 Handles all MetaTrader 5 connections and operations
 """
 
-try:
-    import MetaTrader5 as mt5
-except ImportError:
-    mt5 = None
-    logger.warning("MetaTrader5 package not found. Running in headless/mock mode.")
-
 import pandas as pd
 from typing import Optional, List, Dict, Tuple
 from datetime import datetime, timedelta
 from loguru import logger
 import time
+
+try:
+    import MetaTrader5 as mt5
+except ImportError:
+    mt5 = None
+    logger.warning("MetaTrader5 package not found. Running in headless/mock mode.")
 
 
 class MT5Connector:
