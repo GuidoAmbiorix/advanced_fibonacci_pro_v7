@@ -15,7 +15,7 @@ from loguru import logger
 
 from app.core.config import settings
 from app.models.database import Base, User, BotConfig, Trade
-from app.api import database, auth, stats
+from app.api import database, auth, stats, fundamentals
 from app.core.mt5_connector import MT5Connector
 from app.core.trading_engine import TradingEngine
 from app.schemas import schemas
@@ -38,6 +38,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include Routers
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(stats.router, prefix="/api/stats", tags=["stats"])
+app.include_router(fundamentals.router, prefix="/api/fundamentals", tags=["fundamentals"])
 
 # Socket.IO Setup
 import socketio
@@ -227,6 +232,16 @@ async def get_current_price(symbol: str):
     return price_data
 
 
+@app.get("/api/mt5/symbols/available")
+async def get_available_mt5_symbols():
+    """Get all available symbols from MT5 terminal"""
+    if not mt5_connector or not mt5_connector.connected:
+        raise HTTPException(status_code=503, detail="MT5 not connected")
+
+    symbols = mt5_connector.get_all_symbols()
+    return {"symbols": symbols, "count": len(symbols)}
+
+
 @app.get("/api/mt5/positions")
 async def get_open_positions(symbol: str = None):
     """Get open positions"""
@@ -339,6 +354,36 @@ async def get_all_bots(db: Session = Depends(database.get_db)):
     """Get all bot configurations"""
     bots = db.query(BotConfig).all()
     return bots
+
+
+@app.post("/api/bot/create")
+async def create_bot_config(request: schemas.BotConfigCreate, db: Session = Depends(database.get_db)):
+    """Create a new bot configuration"""
+    # Check if exists
+    existing = db.query(BotConfig).filter(
+        BotConfig.user_id == request.user_id,
+        BotConfig.symbol == request.symbol
+    ).first()
+    
+    if existing:
+        return existing
+
+    new_config = BotConfig(
+        user_id=request.user_id,
+        name=f"{request.symbol} Bot",
+        symbol=request.symbol,
+        symbol_type=request.symbol_type,
+        timeframe=request.timeframe or "H1",
+        risk_percent=2.0,
+        min_confluence_score=6,
+        max_trades=3
+    )
+    
+    db.add(new_config)
+    db.commit()
+    db.refresh(new_config)
+    
+    return new_config
 
 
 @app.post("/api/bot/start")
@@ -779,3 +824,4 @@ if __name__ == "__main__":
         reload=settings.DEBUG,
         log_level=settings.LOG_LEVEL.lower()
     )
+

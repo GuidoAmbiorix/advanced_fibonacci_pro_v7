@@ -600,3 +600,48 @@ class MT5Connector:
         except Exception as e:
             logger.exception("Error checking market status: {}", e)
             return False
+    def get_all_symbols(self) -> List[Dict]:
+        """
+        Get all symbols available in the terminal
+        """
+        if not self.connected:
+            return []
+
+        try:
+            symbols = mt5.symbols_get()
+            if symbols is None:
+                return []
+
+            result = []
+            for s in symbols:
+                # Basic filtering to avoid clutter (optional)
+                # if not s.visible: continue 
+                
+                result.append({
+                    "symbol": s.name,
+                    "path": s.path,
+                    "description": s.description,
+                    "type": self._determine_symbol_type(s.path, s.name)
+                })
+            return result
+        except Exception as e:
+            logger.error(f"Error getting all symbols: {e}")
+            return []
+
+    def _determine_symbol_type(self, path: str, name: str) -> str:
+        """Helper to guess symbol type from path or name"""
+        path_lower = path.lower()
+        name_lower = name.lower()
+        
+        if "crypto" in path_lower or "crypto" in name_lower or "btc" in name_lower:
+            return "crypto"
+        if "forex" in path_lower or "fx" in path_lower:
+            return "forex"
+        if "index" in path_lower or "indices" in path_lower or "us30" in name_lower or "nas100" in name_lower:
+            return "index"
+        if "metal" in path_lower or "gold" in name_lower or "xau" in name_lower:
+            return "commodity"
+        if "stock" in path_lower or "share" in path_lower:
+            return "stock"
+            
+        return "forex" # Default

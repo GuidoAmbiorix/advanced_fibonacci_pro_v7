@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     EMAIL_PASSWORD: str = ""
 
     # AlphaVantage
-    ALPHAVANTAGE_API_KEY: str = ""
+    ALPHAVANTAGE_API_KEY: str = "FA00393FME5LHC8H"
 
     # Strategy Parameters (God Combination)
     EMA_FAST: int = 50

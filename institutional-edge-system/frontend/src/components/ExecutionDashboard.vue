@@ -41,6 +41,11 @@
                 {{ sym.symbol }}
               </option>
             </select>
+            <button @click="openAddMarketModal" class="ml-2 text-blue-400 hover:text-blue-300 transition-colors" title="Add New Market">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+              </svg>
+            </button>
           </div>
           <div class="w-px h-6 bg-slate-700"></div>
           <div class="flex items-center px-2">
@@ -216,6 +221,14 @@
               <span class="relative z-10">Activity Log</span>
               <div v-if="activeTab === 'logs'" class="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
             </button>
+            <button 
+              @click="activeTab = 'fundamentals'" 
+              class="flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all relative overflow-hidden group"
+              :class="activeTab === 'fundamentals' ? 'text-purple-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/30'"
+            >
+              <span class="relative z-10">Fundamentals</span>
+              <div v-if="activeTab === 'fundamentals'" class="absolute bottom-0 left-0 w-full h-0.5 bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]"></div>
+            </button>
           </div>
           
           <!-- Signals Tab -->
@@ -283,8 +296,13 @@
           </div>
 
           <!-- Activity Log Tab -->
-          <div v-else class="flex-1 overflow-hidden bg-slate-950">
+          <div v-else-if="activeTab === 'logs'" class="flex-1 overflow-hidden bg-slate-950">
             <ActivityLog />
+          </div>
+
+          <!-- Fundamentals Tab -->
+          <div v-else-if="activeTab === 'fundamentals'" class="flex-1 overflow-hidden bg-slate-950 p-2">
+            <FundamentalWidget :symbol="selectedSymbol" />
           </div>
         </div>
       </div>
@@ -360,6 +378,69 @@
         </div>
       </div>
     </main>
+
+    <!-- Add Market Modal -->
+    <div v-if="showAddMarketModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div class="bg-[#1e293b] border border-slate-700 rounded-xl shadow-2xl w-[500px] max-h-[80vh] flex flex-col">
+        <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+          <h3 class="text-lg font-bold text-white">Add New Market</h3>
+          <button @click="showAddMarketModal = false" class="text-slate-400 hover:text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div class="p-4 border-b border-slate-700 space-y-3">
+          <input 
+            v-model="marketSearchQuery" 
+            type="text" 
+            placeholder="Search symbol (e.g. BTC, Gold, US30)..." 
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:border-blue-500 outline-none"
+          >
+          
+          <div class="flex flex-wrap gap-2">
+            <button 
+              v-for="cat in ['ALL', 'FOREX', 'CRYPTO', 'INDICES', 'COMMODITY', 'STOCK']" 
+              :key="cat"
+              @click="selectedCategory = cat"
+              class="px-3 py-1 text-[10px] font-bold rounded-full border transition-all"
+              :class="selectedCategory === cat ? 'bg-blue-500 text-white border-blue-500' : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-500'"
+            >
+              {{ cat }}
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-2 custom-scrollbar">
+          <div v-if="loadingMarkets" class="text-center py-8 text-slate-500">
+            <div class="animate-spin inline-block w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mb-2"></div>
+            <div>Loading symbols from broker...</div>
+          </div>
+          
+          <div v-else-if="filteredMarkets.length === 0" class="text-center py-8 text-slate-500">
+            No symbols found matching "{{ marketSearchQuery }}"
+          </div>
+
+          <div v-else class="grid grid-cols-1 gap-1">
+            <button 
+              v-for="market in filteredMarkets" 
+              :key="market.symbol"
+              @click="selectNewMarket(market)"
+              class="flex items-center justify-between p-3 hover:bg-slate-800 rounded-lg group transition-colors text-left"
+            >
+              <div>
+                <div class="font-bold text-white group-hover:text-blue-400">{{ market.symbol }}</div>
+                <div class="text-xs text-slate-500">{{ market.description }}</div>
+              </div>
+              <div class="text-xs font-mono px-2 py-1 rounded bg-slate-900 text-slate-400 border border-slate-700">
+                {{ market.type.toUpperCase() }}
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -368,6 +449,7 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import TradingChart from './TradingChart.vue';
 import api from '../services/api';
 import ActivityLog from './ActivityLog.vue';
+import FundamentalWidget from './FundamentalWidget.vue';
 
 // State
 const selectedSymbol = ref('EURUSD');
@@ -381,6 +463,85 @@ const currentBotId = ref(null);
 const accountInfo = ref(null);
 const isSocketConnected = ref(false);
 let pollingInterval = null;
+
+// Add Market State
+const showAddMarketModal = ref(false);
+const marketSearchQuery = ref('');
+const availableMarkets = ref([]);
+const loadingMarkets = ref(false);
+const selectedCategory = ref('ALL');
+
+const filteredMarkets = computed(() => {
+  let filtered = availableMarkets.value;
+
+  // Filter by Category
+  if (selectedCategory.value !== 'ALL') {
+    filtered = filtered.filter(m => m.type.toUpperCase() === selectedCategory.value);
+  }
+
+  // Filter by Search
+  if (marketSearchQuery.value) {
+    const query = marketSearchQuery.value.toLowerCase();
+    filtered = filtered.filter(m => 
+      m.symbol.toLowerCase().includes(query) || 
+      (m.description && m.description.toLowerCase().includes(query))
+    );
+  }
+
+  return filtered.slice(0, 50); // Limit view
+});
+
+const openAddMarketModal = async () => {
+  showAddMarketModal.value = true;
+  if (availableMarkets.value.length === 0) {
+    loadingMarkets.value = true;
+    try {
+      const data = await api.getAvailableSymbols();
+      if (data.symbols) {
+        availableMarkets.value = data.symbols;
+      }
+    } catch (e) {
+      console.error("Failed to load markets:", e);
+      alert("Failed to load symbols from broker");
+    } finally {
+      loadingMarkets.value = false;
+    }
+  }
+};
+
+const selectNewMarket = async (market) => {
+  if (!confirm(`Add ${market.symbol} (${market.type}) to your dashboard?`)) return;
+  
+  try {
+    // Create new bot config
+    // We need a user ID. In a real app, we get it from auth state.
+    // For now, we assume user ID 1 or fetch from local storage if available.
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user.id || 1; // Fallback to 1
+
+    const newConfig = await api.createBotConfig({
+      user_id: userId,
+      name: `${market.symbol} Bot`,
+      symbol: market.symbol,
+      symbol_type: market.type,
+      timeframe: 'H1'
+    });
+
+    if (newConfig) {
+      // Refresh available symbols list
+      await loadSymbols();
+      // Select the new symbol
+      selectedSymbol.value = newConfig.symbol;
+      await onSymbolChange();
+      
+      showAddMarketModal.value = false;
+      alert(`${market.symbol} added successfully!`);
+    }
+  } catch (e) {
+    console.error("Failed to add market:", e);
+    alert("Failed to add market");
+  }
+};
 
 const totalPnL = computed(() => {
   return openTrades.value.reduce((sum, trade) => sum + (trade.pnl || 0), 0);

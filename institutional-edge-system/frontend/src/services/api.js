@@ -154,6 +154,16 @@ export default {
     return response.data
   },
 
+  async createBotConfig(configData) {
+    const response = await api.post('/api/bot/create', configData)
+    return response.data
+  },
+
+  async getAvailableSymbols() {
+    const response = await api.get('/api/mt5/symbols/available')
+    return response.data
+  },
+
   // Signals
   async getSignals(symbol = null, limit = 50, executedOnly = false) {
     const params = { limit }

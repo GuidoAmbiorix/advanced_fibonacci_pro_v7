@@ -20,11 +20,16 @@
       <div v-else-if="data" class="space-y-6">
         <!-- Header -->
         <div class="flex justify-between items-start">
-          <div>
+          <div v-if="data.overview">
             <h3 class="text-2xl font-bold">{{ data.overview.Symbol }}</h3>
             <p class="text-sm text-gray-400">{{ data.overview.Sector }} | {{ data.overview.Industry }}</p>
           </div>
-          <div class="text-right">
+          <div v-else>
+            <h3 class="text-2xl font-bold">{{ symbol }}</h3>
+            <p class="text-sm text-gray-400">Market Data</p>
+          </div>
+
+          <div class="text-right" v-if="data.sentiment">
             <div class="text-sm text-gray-400">Sentiment</div>
             <div 
               class="text-lg font-bold px-3 py-1 rounded inline-block mt-1"
@@ -36,7 +41,7 @@
         </div>
 
         <!-- Key Metrics -->
-        <div class="grid grid-cols-2 gap-4">
+        <div v-if="data.overview" class="grid grid-cols-2 gap-4">
           <div class="bg-gray-800/50 p-3 rounded">
             <div class="text-xs text-gray-400">PE Ratio</div>
             <div class="text-lg font-semibold">{{ data.overview.PE_Ratio || 'N/A' }}</div>
@@ -54,9 +59,13 @@
             <div class="text-lg font-semibold">{{ data.overview['52WeekHigh'] || 'N/A' }}</div>
           </div>
         </div>
+        <div v-else class="text-center text-gray-500 py-4 bg-gray-800/30 rounded">
+          <p>Fundamental data not available for this asset class.</p>
+          <p class="text-xs mt-1">AlphaVantage provides full data mostly for US Stocks.</p>
+        </div>
 
         <!-- Description -->
-        <div class="text-sm text-gray-400 line-clamp-4">
+        <div v-if="data.overview" class="text-sm text-gray-400 line-clamp-4">
           {{ data.overview.Description }}
         </div>
       </div>

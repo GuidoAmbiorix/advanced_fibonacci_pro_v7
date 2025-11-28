@@ -46,11 +46,13 @@ class Token(BaseModel):
 # ============================================================================
 
 class BotConfigCreate(BaseModel):
+    user_id: int
     name: str
     mt5_login: Optional[str] = None
     mt5_server: Optional[str] = None
     mt5_password: Optional[str] = None
     symbol: str = "EURUSD"
+    symbol_type: str = "forex"
     timeframe: str = "H1"
     risk_percent: float = Field(default=2.0, ge=0.5, le=5.0)
     min_confluence_score: int = Field(default=6, ge=3, le=10)

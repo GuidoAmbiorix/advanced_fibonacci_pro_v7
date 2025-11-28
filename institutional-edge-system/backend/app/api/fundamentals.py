@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict
 from app.services.alphavantage_service import alphavantage_service
-from app.core.security import get_current_user
+from app.api.deps import get_current_user
 
 router = APIRouter()
 
