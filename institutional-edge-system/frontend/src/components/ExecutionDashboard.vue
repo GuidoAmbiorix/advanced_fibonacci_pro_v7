@@ -379,6 +379,7 @@ const openTrades = ref([]);
 const activeTab = ref('signals'); // 'signals' or 'logs'
 const currentBotId = ref(null);
 const accountInfo = ref(null);
+const isSocketConnected = ref(false);
 let pollingInterval = null;
 
 const totalPnL = computed(() => {
@@ -566,6 +567,17 @@ const onTimeframeChange = async () => {
       console.error("Failed to update timeframe", e);
       alert("Failed to update timeframe");
     }
+  }
+};
+
+const updateChart = async () => {
+  try {
+    const data = await api.getMarketHistory(selectedSymbol.value, selectedTimeframe.value);
+    if (data.data) {
+      chartData.value = data.data;
+    }
+  } catch (e) {
+    console.error("Error updating chart:", e);
   }
 };
 

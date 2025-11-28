@@ -10,6 +10,7 @@ from typing import Optional, List, Dict, Tuple
 from datetime import datetime, timedelta
 from loguru import logger
 import time
+import os
 
 try:
     import MetaTrader5 as mt5
@@ -37,18 +38,32 @@ class MT5Connector:
         self.path = config.get('mt5_path')
         self.connected = False
 
-        # Timeframe mapping
-        self.timeframe_map = {
-            'M1': mt5.TIMEFRAME_M1,
-            'M5': mt5.TIMEFRAME_M5,
-            'M15': mt5.TIMEFRAME_M15,
-            'M30': mt5.TIMEFRAME_M30,
-            'H1': mt5.TIMEFRAME_H1,
-            'H4': mt5.TIMEFRAME_H4,
-            'D1': mt5.TIMEFRAME_D1,
-            'W1': mt5.TIMEFRAME_W1,
-            'MN1': mt5.TIMEFRAME_MN1,
-        }
+        # Timeframe mapping (only if MT5 is available)
+        if mt5 is not None:
+            self.timeframe_map = {
+                'M1': mt5.TIMEFRAME_M1,
+                'M5': mt5.TIMEFRAME_M5,
+                'M15': mt5.TIMEFRAME_M15,
+                'M30': mt5.TIMEFRAME_M30,
+                'H1': mt5.TIMEFRAME_H1,
+                'H4': mt5.TIMEFRAME_H4,
+                'D1': mt5.TIMEFRAME_D1,
+                'W1': mt5.TIMEFRAME_W1,
+                'MN1': mt5.TIMEFRAME_MN1,
+            }
+        else:
+            # Mock timeframe mapping for headless mode
+            self.timeframe_map = {
+                'M1': 1,
+                'M5': 5,
+                'M15': 15,
+                'M30': 30,
+                'H1': 60,
+                'H4': 240,
+                'D1': 1440,
+                'W1': 10080,
+                'MN1': 43200,
+            }
 
     def normalize_symbol(self, symbol: str, symbol_type: str = "forex") -> str:
         """
@@ -83,6 +98,11 @@ class MT5Connector:
 
             # Initialize MT5
             if self.path:
+                # Auto-correct path if it's a directory
+                if os.path.isdir(self.path):
+                    logger.info(f"MT5 path is a directory, appending terminal64.exe: {self.path}")
+                    self.path = os.path.join(self.path, "terminal64.exe")
+
                 if not mt5.initialize(path=self.path):
                     logger.error("MT5 initialize() failed, error code: {}", mt5.last_error())
                     return False

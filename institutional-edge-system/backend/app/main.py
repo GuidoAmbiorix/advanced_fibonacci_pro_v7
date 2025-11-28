@@ -126,13 +126,13 @@ async def startup_event():
     }
 
     mt5_connector = MT5Connector(mt5_config)
-
-    if settings.MT5_LOGIN:
-        connected = mt5_connector.connect()
-        if connected:
-            logger.info("MT5 connected successfully")
-        else:
-            logger.warning("MT5 connection failed - running in demo mode")
+    
+    # Always attempt to connect (use active terminal if no creds)
+    connected = mt5_connector.connect()
+    if connected:
+        logger.info("MT5 connected successfully")
+    else:
+        logger.warning("MT5 connection failed - running in demo/mock mode")
 
     # Initialize bot manager
     global bot_manager
@@ -184,6 +184,28 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.utcnow(),
         "mt5_status": "connected" if (mt5_connector and mt5_connector.connected) else "disconnected",
+    }
+
+
+@app.post("/api/mt5/reconnect")
+async def reconnect_mt5():
+    """Reconnect to MT5"""
+    global mt5_connector
+
+    if not mt5_connector:
+        raise HTTPException(status_code=500, detail="MT5 connector not initialized")
+
+    # Disconnect if connected
+    if mt5_connector.connected:
+        mt5_connector.disconnect()
+
+    # Reconnect
+    connected = mt5_connector.connect()
+
+    return {
+        "success": connected,
+        "mt5_connected": connected,
+        "message": "MT5 connected successfully" if connected else "MT5 connection failed - check logs"
     }
 
 

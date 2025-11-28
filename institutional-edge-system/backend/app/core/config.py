@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     # Server
     HOST: str = "0.0.0.0"
-    PORT: int = 8080
+    PORT: int = 8000
 
     # MetaTrader 5
     MT5_LOGIN: str = ""
@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     RABBITMQ_PASSWORD: str = "guest"
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:8080"
 
     @property
     def cors_origins_list(self) -> List[str]:

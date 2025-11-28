@@ -8,7 +8,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, defineProps } from 'vue';
-import { createChart } from 'lightweight-charts';
+import { createChart, CandlestickSeries } from 'lightweight-charts';
 
 const props = defineProps({
   data: {
@@ -68,8 +68,8 @@ const initChart = () => {
     height: chartContainer.value.clientHeight,
   });
 
-  // Candlestick Series - v5 API uses addSeries with type
-  candlestickSeries = chart.addSeries('Candlestick', {
+  // Candlestick Series - v5 API uses addSeries
+  candlestickSeries = chart.addSeries(CandlestickSeries, {
     upColor: '#10b981',
     downColor: '#ef4444',
     borderVisible: false,
