@@ -76,6 +76,16 @@ class Settings(BaseSettings):
     EMAIL_USER: str = ""
     EMAIL_PASSWORD: str = ""
 
+    # AlphaVantage
+    ALPHAVANTAGE_API_KEY: str = ""
+
+    # Strategy Parameters (God Combination)
+    EMA_FAST: int = 50
+    EMA_SLOW: int = 200
+    ATR_PERIOD: int = 14
+    ATR_SL_MULTIPLIER: float = 1.5
+    ATR_TP_MULTIPLIER: float = 3.0
+
     model_config = {"extra": "ignore", "env_file": (".env", ".env.local", "local_config.env"), "case_sensitive": True}
 
 

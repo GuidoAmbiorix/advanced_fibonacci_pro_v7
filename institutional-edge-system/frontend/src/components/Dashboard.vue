@@ -48,9 +48,14 @@
         </div>
       </div>
 
-      <!-- Right: Activity Log -->
-      <div class="lg:col-span-3 h-full">
-        <ActivityLog />
+      <!-- Right: Fundamentals & Activity -->
+      <div class="lg:col-span-3 h-full flex flex-col gap-4">
+        <div class="h-1/2">
+          <FundamentalWidget :symbol="symbol" />
+        </div>
+        <div class="h-1/2">
+          <ActivityLog />
+        </div>
       </div>
     </div>
 
@@ -155,6 +160,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api from '../services/api'
 import StatCard from './StatCard.vue'
 import SignalsPanel from './SignalsPanel.vue'
+import FundamentalWidget from './FundamentalWidget.vue'
 import ConfluenceCard from './ConfluenceCard.vue'
 import MarketStructureCard from './MarketStructureCard.vue'
 import PositionsPanel from './PositionsPanel.vue'

@@ -98,6 +98,13 @@ export default {
     return response.data
   },
 
+  // Fundamentals
+  async getFundamentals(symbol) {
+    const encodedSymbol = encodeURIComponent(symbol)
+    const response = await api.get(`/api/fundamentals/${encodedSymbol}`)
+    return response.data
+  },
+
   // MT5 Operations
   async getAccountInfo() {
     const response = await api.get('/api/mt5/account')

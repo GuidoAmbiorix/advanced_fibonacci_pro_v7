@@ -225,33 +225,150 @@ class TradingEngine:
 
 
     def _calculate_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Calculate technical indicators"""
-        # ATR
-        df['atr'] = self._calculate_atr(df, 14)
-
-        # Average Volume
+        """Calculate technical indicators for God Combination"""
+        import ta
+        
+        # 1. Trend: EMA 50 & 200
+        df['ema50'] = ta.trend.ema_indicator(df['close'], window=self.config.get('EMA_FAST', 50))
+        df['ema200'] = ta.trend.ema_indicator(df['close'], window=self.config.get('EMA_SLOW', 200))
+        
+        # 2. Momentum: MACD
+        macd = ta.trend.MACD(df['close'])
+        df['macd'] = macd.macd()
+        df['macd_signal'] = macd.macd_signal()
+        df['macd_hist'] = macd.macd_diff()
+        
+        # 3. Volatility: ATR
+        df['atr'] = ta.volatility.average_true_range(df['high'], df['low'], df['close'], window=self.config.get('ATR_PERIOD', 14))
+        
+        # 4. Volume: OBV
+        df['obv'] = ta.volume.on_balance_volume(df['close'], df['volume'])
+        
+        # Average Volume for other checks
         df['avg_volume'] = df['volume'].rolling(window=20).mean()
-
-        # Volume spike
         df['volume_spike'] = df['volume'] > (df['avg_volume'] * 1.5)
 
         return df
 
+    def _generate_signals(self, df: pd.DataFrame, confluence_data: Dict) -> List[TradingSignal]:
+        """Generate trading signals based on God Combination Strategy"""
+        signals = []
+        
+        # Get latest data
+        current = df.iloc[-1]
+        prev = df.iloc[-2]
+        
+        # --- GOD COMBINATION CHECKS ---
+        
+        # 1. Trend Filter (EMA 50 vs 200)
+        trend_bullish = current['ema50'] > current['ema200']
+        trend_bearish = current['ema50'] < current['ema200']
+        
+        # 2. Momentum (MACD Histogram)
+        momentum_bullish = current['macd_hist'] > prev['macd_hist'] # Rising
+        momentum_bearish = current['macd_hist'] < prev['macd_hist'] # Falling
+        
+        # 3. Volume (OBV)
+        volume_bullish = current['obv'] > prev['obv'] # Rising
+        volume_bearish = current['obv'] < prev['obv'] # Falling
+        
+        # 4. Market Structure (Break + Retest)
+        # We use the BOS/CHoCH data calculated earlier
+        # Ideally, we want a recent BOS followed by a retest of that level
+        # For simplicity in this iteration, we'll use the BOS flags + Price Action
+        
+        structure_bullish = False
+        structure_bearish = False
+        
+        # Check if price is near a key level (Order Block or FVG) which acts as "Retest" support/resistance
+        # AND we have a bullish trend structure
+        
+        # Simplified Structure Check for "God Mode":
+        # Bullish: Price > EMA50 > EMA200 AND Recent Bullish BOS/CHoCH
+        if trend_bullish and (confluence_data['bos_choch_data']['bos_bullish'] or confluence_data['bos_choch_data']['choch_to_bullish']):
+             structure_bullish = True
+             
+        if trend_bearish and (confluence_data['bos_choch_data']['bos_bearish'] or confluence_data['bos_choch_data']['choch_to_bearish']):
+             structure_bearish = True
 
-    def _calculate_atr(self, df: pd.DataFrame, period: int = 14) -> pd.Series:
-        """Calculate Average True Range"""
-        high = df['high']
-        low = df['low']
-        close = df['close']
+        # --- SIGNAL GENERATION ---
+        
+        signal_type = None
+        score_breakdown = {}
+        confluence_score = 0
+        
+        # BUY LOGIC
+        if trend_bullish and momentum_bullish and volume_bullish:
+            signal_type = "BUY"
+            confluence_score += 5 # Base score for meeting core 3
+            score_breakdown['Trend (EMA)'] = 1
+            score_breakdown['Momentum (MACD)'] = 1
+            score_breakdown['Volume (OBV)'] = 1
+            
+            if structure_bullish:
+                confluence_score += 2
+                score_breakdown['Structure'] = 2
+                
+            # Add existing confluence factors
+            if confluence_data['bull_score'] > 0:
+                confluence_score += min(3, confluence_data['bull_score']) # Cap extra confluence
+                score_breakdown['Extra Confluence'] = min(3, confluence_data['bull_score'])
 
-        tr1 = high - low
-        tr2 = abs(high - close.shift())
-        tr3 = abs(low - close.shift())
+        # SELL LOGIC
+        elif trend_bearish and momentum_bearish and volume_bearish:
+            signal_type = "SELL"
+            confluence_score += 5
+            score_breakdown['Trend (EMA)'] = 1
+            score_breakdown['Momentum (MACD)'] = 1
+            score_breakdown['Volume (OBV)'] = 1
+            
+            if structure_bearish:
+                confluence_score += 2
+                score_breakdown['Structure'] = 2
+                
+            if confluence_data['bear_score'] > 0:
+                confluence_score += min(3, confluence_data['bear_score'])
+                score_breakdown['Extra Confluence'] = min(3, confluence_data['bear_score'])
 
-        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-        atr = tr.rolling(window=period).mean()
+        # Create Signal if valid
+        if signal_type and confluence_score >= self.min_confluence_score:
+            atr = current['atr']
+            entry_price = current['close']
+            
+            # ATR-based Risk Management
+            sl_mult = self.config.get('ATR_SL_MULTIPLIER', 1.5)
+            tp_mult = self.config.get('ATR_TP_MULTIPLIER', 3.0)
+            
+            if signal_type == "BUY":
+                stop_loss = entry_price - (atr * sl_mult)
+                take_profit_1 = entry_price + (atr * tp_mult)
+                take_profit_2 = entry_price + (atr * tp_mult * 1.5)
+                take_profit_3 = entry_price + (atr * tp_mult * 2.0)
+            else:
+                stop_loss = entry_price + (atr * sl_mult)
+                take_profit_1 = entry_price - (atr * tp_mult)
+                take_profit_2 = entry_price - (atr * tp_mult * 1.5)
+                take_profit_3 = entry_price - (atr * tp_mult * 2.0)
 
-        return atr
+            signal = TradingSignal(
+                signal_type=signal_type,
+                entry_price=entry_price,
+                stop_loss=stop_loss,
+                take_profit_1=take_profit_1,
+                take_profit_2=take_profit_2,
+                take_profit_3=take_profit_3,
+                confluence_score=confluence_score,
+                score_breakdown=score_breakdown,
+                timestamp=current['time'],
+                symbol=df.iloc[-1].get('symbol', 'Unknown'), # Assuming symbol is in DF or passed context
+                timeframe=df.iloc[-1].get('timeframe', 'Unknown'),
+                risk_reward_ratio=tp_mult / sl_mult
+            )
+            signals.append(signal)
+            
+            logger.info(f"GOD SIGNAL: {signal_type} Score: {confluence_score} Breakdown: {score_breakdown}")
+
+        return signals
 
 
     def _detect_swing_points(self, df: pd.DataFrame):

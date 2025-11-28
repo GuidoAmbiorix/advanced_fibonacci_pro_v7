@@ -39,18 +39,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Routers
-app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-app.include_router(stats.router, prefix="/api/stats", tags=["stats"])
-
-# OAuth2
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-# Global instances
-mt5_connector: MT5Connector = None
-trading_engines: Dict[int, TradingEngine] = {}  # bot_config_id -> TradingEngine
-bot_manager = None  # Manages automated trading bots
-
 # Socket.IO Setup
 import socketio
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')

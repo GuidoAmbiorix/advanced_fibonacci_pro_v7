@@ -30,6 +30,15 @@
                 >
                   {{ signal.signal_type }}
                 </span>
+                
+                <!-- God Mode Badge -->
+                <span 
+                  v-if="signal.score_breakdown['Trend (EMA)'] && signal.score_breakdown['Momentum (MACD)'] && signal.score_breakdown['Volume (OBV)']"
+                  class="bg-yellow-500 text-black font-bold px-2 py-1 rounded text-xs animate-pulse"
+                >
+                  ⚡ GOD MODE
+                </span>
+
                 <div>
                   <div class="text-sm text-gray-400">{{ signal.symbol }} - {{ signal.timeframe }}</div>
                   <div class="text-xs text-gray-500">
