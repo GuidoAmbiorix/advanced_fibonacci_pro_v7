@@ -1,47 +1,60 @@
-# Implementation Plan - RabbitMQ Integration
+# Implementation Plan - God Combination & AlphaVantage
 
 ## Goal
-Integrate RabbitMQ to decouple the **Analysis** phase (TradingBot) from the **Execution** phase (TradeExecutor). This improves scalability and reliability.
+Transform the trading system to use the "God Combination" strategy (Trend, Momentum, Volatility, Volume, Structure) and integrate AlphaVantage for fundamental analysis.
 
 ## User Review Required
 > [!IMPORTANT]
-> **Dependency**: We will install `aio_pika` for async RabbitMQ communication.
-> **Infrastructure**: A new Docker container `rabbitmq` will be added. You will need to run `start_all.bat` (or `docker-compose up -d`) to start it.
+> **API Key Required**: Please add `ALPHAVANTAGE_API_KEY=your_key_here` to your `.env` file.
+
+> [!WARNING]
+> **Strategy Change**: This will significantly modify the entry logic to strictly follow the "God Combination" rules (EMA50/200, MACD, OBV, Structure).
 
 ## Proposed Changes
 
-### [Infrastructure] Docker
-#### [MODIFY] [docker-compose.yml](file:///C:/Users/gamparo/Desktop/Projects/advanced_fibonacci_pro_v7/institutional-edge-system/docker-compose.yml)
-- Add `rabbitmq` service using `rabbitmq:3-management-alpine` image.
-- Expose ports `5672` (AMQP) and `15672` (Management UI).
-
-### [Configuration]
+### 1. Backend Configuration
 #### [MODIFY] [config.py](file:///C:/Users/gamparo/Desktop/Projects/advanced_fibonacci_pro_v7/institutional-edge-system/backend/app/core/config.py)
-- Add `RABBITMQ_HOST`, `RABBITMQ_PORT`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`.
+- Add `ALPHAVANTAGE_API_KEY`.
+- Add strategy parameters: `EMA_FAST=50`, `EMA_SLOW=200`, `ATR_PERIOD=14`, `ATR_SL_MULTIPLIER=1.5`, `ATR_TP_MULTIPLIER=3.0`.
 
-### [Backend] RabbitMQ Service
-#### [NEW] [rabbitmq_service.py](file:///C:/Users/gamparo/Desktop/Projects/advanced_fibonacci_pro_v7/institutional-edge-system/backend/app/services/rabbitmq_service.py)
-- Class `RabbitMQService` using `aio_pika`.
-- Method `connect()`: Establishes connection.
-- Method `publish_signal(signal_data)`: Publishes to `trade_signals` queue.
-- Method `consume_signals(callback)`: Listens to `trade_signals` queue.
+### 2. Fundamental Analysis (AlphaVantage)
+#### [NEW] [alphavantage_service.py](file:///C:/Users/gamparo/Desktop/Projects/advanced_fibonacci_pro_v7/institutional-edge-system/backend/app/services/alphavantage_service.py)
+- Implement `AlphaVantageService` to fetch:
+    - **Company Overview**: (PE Ratio, EPS, Sector) for fundamental filtering.
+    - **News/Sentiment**: (Optional) for market sentiment.
+- This service will be used to annotate signals with fundamental data.
 
-### [Backend] Trading Bot (Producer)
+### 3. Technical Analysis (God Combination)
+#### [MODIFY] [trading_engine.py](file:///C:/Users/gamparo/Desktop/Projects/advanced_fibonacci_pro_v7/institutional-edge-system/backend/app/core/trading_engine.py)
+- **Imports**: Add `ta` library for EMA, MACD, OBV, ATR.
+- **Indicators**: Implement `_calculate_god_indicators(df)`:
+    - EMA 50 & 200
+    - MACD (12, 26, 9) & Histogram
+    - OBV (On-Balance Volume)
+    - ATR (14)
+- **Logic Implementation**:
+    - **Trend**: `EMA50 > EMA200` (Buy) / `EMA50 < EMA200` (Sell).
+    - **Momentum**: `MACD_Hist > MACD_Hist[prev]` (Rising) vs Falling.
+    - **Volume**: `OBV > OBV[prev]` (Rising) vs Falling.
+    - **Structure**: Enhance `_detect_bos_choch` to specifically identify "Break + Retest" setups.
+        - *Break*: Price closes above Swing High.
+        - *Retest*: Price returns to the breakout level (or near it) and rejects.
+- **Signal Generation**:
+    - Enforce ALL conditions must be met for a signal.
+    - Calculate SL/TP using ATR multipliers.
+
+### 4. Integration
 #### [MODIFY] [trading_bot.py](file:///C:/Users/gamparo/Desktop/Projects/advanced_fibonacci_pro_v7/institutional-edge-system/backend/app/services/trading_bot.py)
-- Initialize `RabbitMQService`.
-- Instead of calling `_execute_signal` directly, call `await self.rabbitmq.publish_signal(signal)`.
-- *Note*: For this phase, we will keep direct execution as a fallback or option, but the primary path will be via queue.
-
-### [Backend] Trade Executor (Consumer)
-#### [NEW] [worker.py](file:///C:/Users/gamparo/Desktop/Projects/advanced_fibonacci_pro_v7/institutional-edge-system/backend/app/worker.py)
-- A standalone script that:
-    1.  Connects to RabbitMQ.
-    2.  Connects to MT5.
-    3.  Consumes signals.
-    4.  Executes trades using `MT5Connector`.
+- Integrate `AlphaVantageService` to check fundamentals before trading (e.g., log fundamental data, or avoid trading if PE is extreme - *User to confirm specific fundamental rules, currently just logging*).
 
 ## Verification Plan
-1.  **Start RabbitMQ**: Run `docker-compose up -d rabbitmq`.
-2.  **Check UI**: Visit `http://localhost:15672` (guest/guest).
-3.  **Run Worker**: Start `python worker.py`.
-4.  **Run Bot**: Start the bot and verify signals appear in the queue and are consumed by the worker.
+
+### Automated Tests
+- **Strategy Test**: Create `tests/test_god_strategy.py` to feed mock data (perfect setup) and verify a signal is generated.
+- **AlphaVantage Test**: Create `tests/test_alphavantage.py` to verify API connectivity.
+
+### Manual Verification
+- Run the bot in `paper_trading` mode.
+- Verify logs show:
+    - "God Combination" conditions being checked.
+    - Fundamental data being fetched from AlphaVantage.
