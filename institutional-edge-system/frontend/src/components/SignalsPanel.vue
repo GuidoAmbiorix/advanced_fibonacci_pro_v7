@@ -1,32 +1,40 @@
 <template>
-  <div class="card">
-    <div class="card-header flex items-center justify-between">
-      <h2 class="text-xl font-bold">🎯 Trading Signals</h2>
-      <span v-if="signals.length > 0" class="badge badge-success">
-        {{ signals.length }} Active
-      </span>
+  <div class="glass-panel h-full flex flex-col">
+    <div class="card-header">
+      <h2 class="text-xl font-bold flex items-center gap-2">
+        <span class="text-2xl">📡</span> 
+        <span class="bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple">
+          Live Signals
+        </span>
+      </h2>
+      <div class="text-xs text-gray-400 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-neon-blue animate-pulse"></span>
+        Scanning
+      </div>
     </div>
 
-    <div class="card-body">
-      <div v-if="signals.length === 0" class="text-center text-gray-400 py-8">
-        <div class="text-4xl mb-4">📭</div>
-        <p>No signals detected</p>
-        <p class="text-sm mt-2">Waiting for high confluence setups...</p>
+    <div class="card-body flex-1 overflow-y-auto custom-scrollbar">
+      <div v-if="signals.length === 0" class="text-center text-gray-400 py-8 flex flex-col items-center justify-center h-full">
+        <div class="text-6xl mb-4 opacity-50">📭</div>
+        <p class="text-lg">No signals detected</p>
+        <p class="text-sm mt-2 text-gray-500">Waiting for high confluence setups...</p>
       </div>
 
       <div v-else class="space-y-4">
         <div
           v-for="(signal, index) in signals"
           :key="index"
-          class="p-4 rounded-lg border-2"
-          :class="signal.signal_type === 'BUY' ? 'bg-green-900/20 border-green-600' : 'bg-red-900/20 border-red-600'"
+          class="p-4 rounded-xl border transition-all duration-300 hover:scale-[1.02]"
+          :class="signal.signal_type === 'BUY' 
+            ? 'bg-gradient-to-r from-green-900/20 to-transparent border-green-500/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
+            : 'bg-gradient-to-r from-red-900/20 to-transparent border-red-500/30 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]'"
         >
           <div class="flex items-start justify-between mb-4">
             <div>
               <div class="flex items-center space-x-3">
                 <span
-                  class="text-2xl font-bold px-4 py-2 rounded"
-                  :class="signal.signal_type === 'BUY' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'"
+                  class="text-xl font-bold px-4 py-1 rounded-lg shadow-lg backdrop-blur-sm"
+                  :class="signal.signal_type === 'BUY' ? 'bg-green-600/80 text-white' : 'bg-red-600/80 text-white'"
                 >
                   {{ signal.signal_type }}
                 </span>
@@ -34,52 +42,52 @@
                 <!-- God Mode Badge -->
                 <span 
                   v-if="signal.score_breakdown['Trend (EMA)'] && signal.score_breakdown['Momentum (MACD)'] && signal.score_breakdown['Volume (OBV)']"
-                  class="bg-yellow-500 text-black font-bold px-2 py-1 rounded text-xs animate-pulse"
+                  class="bg-yellow-500/20 text-yellow-300 border border-yellow-500/50 font-bold px-2 py-1 rounded text-xs animate-pulse shadow-[0_0_10px_rgba(234,179,8,0.3)]"
                 >
                   ⚡ GOD MODE
                 </span>
 
                 <div>
-                  <div class="text-sm text-gray-400">{{ signal.symbol }} - {{ signal.timeframe }}</div>
-                  <div class="text-xs text-gray-500">
-                    {{ new Date(signal.timestamp).toLocaleString() }}
-                  </div>
+                  <div class="text-sm font-bold text-gray-200">{{ signal.symbol }}</div>
+                  <div class="text-xs text-gray-500">{{ signal.timeframe }} • {{ new Date(signal.timestamp).toLocaleTimeString() }}</div>
                 </div>
               </div>
             </div>
 
             <div class="text-right">
-              <div class="text-3xl font-bold">{{ signal.confluence_score }}/10</div>
-              <div class="text-xs text-gray-400">Confluence</div>
+              <div class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400">
+                {{ signal.confluence_score }}<span class="text-lg text-gray-600">/10</span>
+              </div>
+              <div class="text-xs text-gray-500 uppercase tracking-wider">Confluence</div>
             </div>
           </div>
 
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 bg-black/20 p-3 rounded-lg">
             <div>
-              <div class="text-xs text-gray-400">Entry Price</div>
-              <div class="text-lg font-semibold">{{ signal.entry_price.toFixed(5) }}</div>
+              <div class="text-xs text-gray-500 uppercase">Entry</div>
+              <div class="text-lg font-mono text-white">{{ signal.entry_price.toFixed(5) }}</div>
             </div>
             <div>
-              <div class="text-xs text-gray-400">Stop Loss</div>
-              <div class="text-lg font-semibold text-red-400">{{ signal.stop_loss.toFixed(5) }}</div>
+              <div class="text-xs text-gray-500 uppercase">Stop Loss</div>
+              <div class="text-lg font-mono text-red-400">{{ signal.stop_loss.toFixed(5) }}</div>
             </div>
             <div>
-              <div class="text-xs text-gray-400">TP1</div>
-              <div class="text-lg font-semibold text-green-400">{{ signal.take_profit_1.toFixed(5) }}</div>
+              <div class="text-xs text-gray-500 uppercase">TP1</div>
+              <div class="text-lg font-mono text-green-400">{{ signal.take_profit_1.toFixed(5) }}</div>
             </div>
             <div>
-              <div class="text-xs text-gray-400">TP2</div>
-              <div class="text-lg font-semibold text-green-400">{{ signal.take_profit_2.toFixed(5) }}</div>
+              <div class="text-xs text-gray-500 uppercase">TP2</div>
+              <div class="text-lg font-mono text-green-400">{{ signal.take_profit_2.toFixed(5) }}</div>
             </div>
           </div>
 
           <div class="mb-4">
-            <div class="text-sm font-semibold text-gray-300 mb-2">Confluence Factors:</div>
+            <div class="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Confluence Factors</div>
             <div class="flex flex-wrap gap-2">
               <span
                 v-for="(score, factor) in signal.score_breakdown"
                 :key="factor"
-                class="badge badge-info"
+                class="badge badge-info backdrop-blur-md"
               >
                 {{ factor }}: +{{ score }}
               </span>
@@ -89,7 +97,7 @@
           <div class="flex justify-end">
             <button
               @click="$emit('execute', signal)"
-              class="btn-primary"
+              class="btn-primary w-full md:w-auto"
             >
               Execute Trade
             </button>

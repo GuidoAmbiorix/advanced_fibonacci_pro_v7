@@ -1,5 +1,11 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-8 relative">
+    <!-- Ambient Background Effects -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+      <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-neon-purple/20 rounded-full blur-[120px] animate-pulse-slow"></div>
+      <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/20 rounded-full blur-[120px] animate-pulse-slow" style="animation-delay: 2s;"></div>
+    </div>
+
     <!-- Top Row: Quick Stats -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
       <StatCard
@@ -35,15 +41,18 @@
       </div>
 
       <!-- Center: Real-time Chart -->
-      <div class="lg:col-span-6 h-full card flex flex-col">
-        <div class="card-header flex justify-between items-center">
-          <h3 class="font-bold text-lg">Live Market Data</h3>
+      <div class="lg:col-span-6 h-full glass-panel flex flex-col overflow-hidden group">
+        <div class="card-header">
+          <h3 class="font-bold text-lg flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
+            Live Market Data
+          </h3>
           <div class="flex space-x-2">
              <span class="badge badge-info">{{ symbol }}</span>
              <span class="badge badge-warning">{{ timeframe }}</span>
           </div>
         </div>
-        <div class="card-body flex-1 relative p-4">
+        <div class="card-body flex-1 relative p-4 bg-black/20">
           <RealTimeChart :symbol="symbol" :timeframe="timeframe" />
         </div>
       </div>

@@ -4,34 +4,44 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-50 font-sans antialiased;
+    @apply bg-black text-slate-100 font-sans antialiased overflow-x-hidden;
+    background-image: 
+      radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%),
+      radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.15), transparent 25%);
+    background-attachment: fixed;
   }
 }
 
 @layer components {
-  /* Cyber-Black Theme Components */
+  /* Liquid Glass Components */
+  
+  .glass-panel {
+    @apply bg-glass-surface backdrop-blur-xl border border-glass-border rounded-2xl shadow-2xl;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
   .btn-primary {
-    @apply px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold tracking-wide shadow-lg shadow-blue-900/20 transition-all duration-200 border border-blue-500/30;
+    @apply px-6 py-2 bg-neon-blue/10 hover:bg-neon-blue/20 text-neon-blue border border-neon-blue/50 rounded-lg font-bold tracking-wide transition-all duration-300 shadow-[0_0_15px_rgba(0,243,255,0.2)] hover:shadow-[0_0_25px_rgba(0,243,255,0.4)];
   }
 
   .btn-secondary {
-    @apply px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold tracking-wide border border-slate-700 transition-all duration-200;
+    @apply px-6 py-2 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-lg font-bold tracking-wide transition-all duration-300 backdrop-blur-sm;
   }
 
   .btn-success {
-    @apply px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold tracking-wide shadow-lg shadow-emerald-900/20 transition-all duration-200 border border-emerald-500/30;
+    @apply px-6 py-2 bg-neon-green/10 hover:bg-neon-green/20 text-neon-green border border-neon-green/50 rounded-lg font-bold tracking-wide transition-all duration-300 shadow-[0_0_15px_rgba(10,255,10,0.2)];
   }
 
   .btn-danger {
-    @apply px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold tracking-wide shadow-lg shadow-red-900/20 transition-all duration-200 border border-red-500/30;
+    @apply px-6 py-2 bg-chart-red/10 hover:bg-chart-red/20 text-chart-red border border-chart-red/50 rounded-lg font-bold tracking-wide transition-all duration-300 shadow-[0_0_15px_rgba(255,10,92,0.2)];
   }
 
   .card {
-    @apply bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl shadow-xl;
+    @apply glass-panel transition-all duration-300 hover:border-glass-highlight;
   }
 
   .card-header {
-    @apply px-6 py-4 border-b border-slate-800 bg-slate-900/50 rounded-t-xl;
+    @apply px-6 py-4 border-b border-glass-border bg-white/5 rounded-t-2xl flex items-center justify-between;
   }
 
   .card-body {
@@ -39,40 +49,40 @@
   }
 
   .input-field {
-    @apply px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200;
+    @apply px-4 py-2 bg-black/30 border border-glass-border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all duration-300 backdrop-blur-sm;
   }
 
   .badge {
-    @apply px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase;
+    @apply px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase backdrop-blur-md border;
   }
 
   .badge-success {
-    @apply bg-emerald-500/10 text-emerald-400 border border-emerald-500/20;
+    @apply bg-neon-green/10 text-neon-green border-neon-green/30 shadow-[0_0_10px_rgba(10,255,10,0.1)];
   }
 
   .badge-danger {
-    @apply bg-red-500/10 text-red-400 border border-red-500/20;
+    @apply bg-chart-red/10 text-chart-red border-chart-red/30 shadow-[0_0_10px_rgba(255,10,92,0.1)];
   }
 
   .badge-warning {
-    @apply bg-yellow-500/10 text-yellow-400 border border-yellow-500/20;
+    @apply bg-yellow-500/10 text-yellow-400 border-yellow-500/30;
   }
 
   .badge-info {
-    @apply bg-blue-500/10 text-blue-400 border border-blue-500/20;
+    @apply bg-neon-blue/10 text-neon-blue border-neon-blue/30 shadow-[0_0_10px_rgba(0,243,255,0.1)];
   }
 
   /* Custom Scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-slate-950;
+    @apply bg-transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-800 rounded-full hover:bg-slate-700;
+    @apply bg-white/10 rounded-full hover:bg-white/20;
   }
 }

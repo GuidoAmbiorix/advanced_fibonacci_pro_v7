@@ -1,8 +1,11 @@
 <template>
-  <div class="card h-full">
-    <div class="card-header flex items-center justify-between">
-      <h2 class="text-xl font-bold">📊 Fundamentals</h2>
-      <div v-if="loading" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+  <div class="glass-panel h-full flex flex-col">
+    <div class="card-header">
+      <h2 class="text-xl font-bold flex items-center gap-2">
+        <span class="text-2xl">📊</span>
+        <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">Fundamentals</span>
+      </h2>
+      <div v-if="loading" class="animate-spin rounded-full h-4 w-4 border-b-2 border-neon-blue"></div>
     </div>
 
     <div class="card-body">
