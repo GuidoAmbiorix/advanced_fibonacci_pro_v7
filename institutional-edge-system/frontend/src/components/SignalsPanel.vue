@@ -1,20 +1,3 @@
-<template>
-  <div class="glass-panel h-full flex flex-col">
-    <div class="card-header">
-      <h2 class="text-xl font-bold flex items-center gap-2">
-        <span class="text-2xl">📡</span> 
-        <span class="bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple">
-          Live Signals
-        </span>
-      </h2>
-      <div class="text-xs text-gray-400 flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-neon-blue animate-pulse"></span>
-        Scanning
-      </div>
-    </div>
-
-    <div class="card-body flex-1 overflow-y-auto custom-scrollbar">
-      <div v-if="signals.length === 0" class="text-center text-gray-400 py-8 flex flex-col items-center justify-center h-full">
         <div class="text-6xl mb-4 opacity-50">📭</div>
         <p class="text-lg">No signals detected</p>
         <p class="text-sm mt-2 text-gray-500">Waiting for high confluence setups...</p>

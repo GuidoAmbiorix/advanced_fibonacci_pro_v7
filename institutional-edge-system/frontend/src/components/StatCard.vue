@@ -1,5 +1,5 @@
 <template>
-  <div class="glass-panel p-4 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] group">
+  <div class="card p-4 transition-all duration-300 hover:scale-105 hover:shadow-card-hover group">
     <div class="flex items-center justify-between">
       <div>
         <div class="text-gray-400 text-sm mb-1 uppercase tracking-wider font-semibold">{{ title }}</div>
