@@ -370,10 +370,11 @@ class TradingBot:
         # Open position
         result = self.mt5_connector.open_position(
             symbol=signal.symbol,
-            order_type=signal.signal_type,
+            order_type=signal.order_type, # Use the order type from signal (MARKET/LIMIT/STOP)
             volume=lot_size,
             stop_loss=signal.stop_loss,
             take_profit=signal.take_profit_1,
+            price=signal.entry_price, # Pass entry price for pending orders
             comment=f"IEP Bot - Conf: {signal.confluence_score}/10"
         )
 

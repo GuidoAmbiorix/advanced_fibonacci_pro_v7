@@ -73,6 +73,7 @@ class TradingSignal:
     ai_recommendation: str = "UNCERTAIN"  # AI recommendation
     fib_level: Optional[str] = None
     fib_zone: Optional[str] = None
+    order_type: str = "MARKET"  # MARKET, BUY_LIMIT, SELL_LIMIT, BUY_STOP, SELL_STOP
 
 
 class TradingEngine:
@@ -121,6 +122,20 @@ class TradingEngine:
         # Phase 1: BOS/CHoCH tracking
         self.last_bos_type: Optional[str] = None
         self.last_bos_bar_index: Optional[int] = None
+
+        # Scoring Weights (Dynamic)
+        self.SCORING_WEIGHTS = {
+            'BOS': 3,
+            'CHOCH': 3,
+            'LIQUIDITY_SWEEP': 3,
+            'ORDER_BLOCK': 2,
+            'FVG': 2,
+            'FIB_GOLDEN': 2,
+            'PREMIUM_DISCOUNT': 2,
+            'TREND_ALIGNMENT': 2,
+            'INDICATORS': 1, # EMA, MACD, Volume, POC
+            'FIB_NORMAL': 1
+        }
 
         logger.info("Trading Engine initialized with config: {}", config)
 
@@ -433,11 +448,16 @@ class TradingEngine:
 
         # Look for new OBs in recent bars
         for i in range(max(2, len(df) - self.ob_lookback), len(df) - 2):
+            # Calculate average body size for displacement check
+            avg_body = abs(df['close'] - df['open']).rolling(window=20).mean().iloc[i]
+            current_body = abs(df.iloc[i+1]['close'] - df.iloc[i+1]['open'])
+            
             # Bullish OB: down candle followed by strong up move
             if (df.iloc[i]['close'] < df.iloc[i]['open'] and  # Down candle
                 df.iloc[i+1]['close'] > df.iloc[i+1]['open'] and  # Up candle
                 df.iloc[i+2]['close'] > df.iloc[i]['high'] and  # Break high
-                df.iloc[i]['volume'] > df.iloc[i]['avg_volume']):  # Volume confirmation
+                df.iloc[i]['volume'] > df.iloc[i]['avg_volume'] and # Volume confirmation
+                current_body > (avg_body * 1.5)): # Displacement check
 
                 ob = OrderBlock(
                     top=df.iloc[i]['high'],
@@ -454,7 +474,8 @@ class TradingEngine:
             if (df.iloc[i]['close'] > df.iloc[i]['open'] and  # Up candle
                 df.iloc[i+1]['close'] < df.iloc[i+1]['open'] and  # Down candle
                 df.iloc[i+2]['close'] < df.iloc[i]['low'] and  # Break low
-                df.iloc[i]['volume'] > df.iloc[i]['avg_volume']):  # Volume confirmation
+                df.iloc[i]['volume'] > df.iloc[i]['avg_volume'] and # Volume confirmation
+                current_body > (avg_body * 1.5)): # Displacement check
 
                 ob = OrderBlock(
                     top=df.iloc[i]['high'],
@@ -488,7 +509,7 @@ class TradingEngine:
         self.bullish_fvgs = [fvg for fvg in self.bullish_fvgs if not fvg.is_filled]
         self.bearish_fvgs = [fvg for fvg in self.bearish_fvgs if not fvg.is_filled]
 
-        fvg_min_size = df.iloc[-1]['atr'] * self.fvg_min_size_atr
+        fvg_min_size = df.iloc[-1]['atr'] * 0.5 # Stricter: Min 0.5 ATR
 
         for i in range(max(2, len(df) - 100), len(df) - 1):
             # Bullish FVG: gap between candle[i-2] high and candle[i] low
@@ -591,19 +612,23 @@ class TradingEngine:
         last_swing_low = self.swing_lows[-1]
         prev_swing_low = self.swing_lows[-2]
         
+        current_close = df.iloc[-1]['close']
+
         # Bullish BOS: Price breaks above most recent swing high (continuation in uptrend)
-        if current_high > last_swing_high.price:
+        # STRICT: Requires CLOSE above swing high, not just wick
+        if current_close > last_swing_high.price:
             result['bos_bullish'] = True
             self.last_bos_type = "BULLISH"
             self.last_bos_bar_index = current_bar
-            logger.info("🔵 Bullish BOS detected - Price broke above {:.5f}", last_swing_high.price)
+            logger.info("🔵 Bullish BOS detected - Price closed above {:.5f}", last_swing_high.price)
             
         # Bearish BOS: Price breaks below most recent swing low (continuation in downtrend)
-        if current_low < last_swing_low.price:
+        # STRICT: Requires CLOSE below swing low
+        if current_close < last_swing_low.price:
             result['bos_bearish'] = True
             self.last_bos_type = "BEARISH"
             self.last_bos_bar_index = current_bar
-            logger.info("🔴 Bearish BOS detected - Price broke below {:.5f}", last_swing_low.price)
+            logger.info("🔴 Bearish BOS detected - Price closed below {:.5f}", last_swing_low.price)
             
         # CHoCH to Bullish: In downtrend, price breaks above previous swing high (trend change signal)
         if not self.trend_bullish and current_high > prev_swing_high.price:
@@ -708,110 +733,103 @@ class TradingEngine:
         current_high = df.iloc[-1]['high']
         atr = df.iloc[-1]['atr']
 
-        # 1. Order Block (+2)
+        # 1. Order Block
         at_bullish_ob = any(ob.bottom <= current_low <= ob.top for ob in self.bullish_obs if not ob.is_mitigated)
         at_bearish_ob = any(ob.bottom <= current_high <= ob.top for ob in self.bearish_obs if not ob.is_mitigated)
 
         if at_bullish_ob:
-            bull_score += 2
-            bull_breakdown['Order Block'] = 2
+            bull_score += self.SCORING_WEIGHTS['ORDER_BLOCK']
+            bull_breakdown['Order Block'] = self.SCORING_WEIGHTS['ORDER_BLOCK']
         if at_bearish_ob:
-            bear_score += 2
-            bear_breakdown['Order Block'] = 2
+            bear_score += self.SCORING_WEIGHTS['ORDER_BLOCK']
+            bear_breakdown['Order Block'] = self.SCORING_WEIGHTS['ORDER_BLOCK']
 
-        # 2. FVG (+2)
+        # 2. FVG
         at_bullish_fvg = any(fvg.bottom <= current_price <= fvg.top for fvg in self.bullish_fvgs if not fvg.is_filled)
         at_bearish_fvg = any(fvg.bottom <= current_price <= fvg.top for fvg in self.bearish_fvgs if not fvg.is_filled)
 
         if at_bullish_fvg:
-            bull_score += 2
-            bull_breakdown['FVG'] = 2
+            bull_score += self.SCORING_WEIGHTS['FVG']
+            bull_breakdown['FVG'] = self.SCORING_WEIGHTS['FVG']
         if at_bearish_fvg:
-            bear_score += 2
-            bear_breakdown['FVG'] = 2
+            bear_score += self.SCORING_WEIGHTS['FVG']
+            bear_breakdown['FVG'] = self.SCORING_WEIGHTS['FVG']
 
-        # 3. Market Structure (+2)
+        # 3. Market Structure
         if self.trend_bullish:
-            bull_score += 2
-            bull_breakdown['Trend'] = 2
+            bull_score += self.SCORING_WEIGHTS['TREND_ALIGNMENT']
+            bull_breakdown['Trend'] = self.SCORING_WEIGHTS['TREND_ALIGNMENT']
         else:
-            bear_score += 2
-            bear_breakdown['Trend'] = 2
+            bear_score += self.SCORING_WEIGHTS['TREND_ALIGNMENT']
+            bear_breakdown['Trend'] = self.SCORING_WEIGHTS['TREND_ALIGNMENT']
 
-        # 4. Premium/Discount Zone (+2)
+        # 4. Premium/Discount Zone
         pd_zone = self._get_premium_discount_zone(df)
         if pd_zone['zone'] == 'DISCOUNT':
-            bull_score += 2
-            bull_breakdown['Discount Zone'] = 2
+            bull_score += self.SCORING_WEIGHTS['PREMIUM_DISCOUNT']
+            bull_breakdown['Discount Zone'] = self.SCORING_WEIGHTS['PREMIUM_DISCOUNT']
         elif pd_zone['zone'] == 'PREMIUM':
-            bear_score += 2
-            bear_breakdown['Premium Zone'] = 2
+            bear_score += self.SCORING_WEIGHTS['PREMIUM_DISCOUNT']
+            bear_breakdown['Premium Zone'] = self.SCORING_WEIGHTS['PREMIUM_DISCOUNT']
 
-        # 5. Liquidity Sweep (+2)
+        # 5. Liquidity Sweep
         bull_sweep, bear_sweep = self._detect_liquidity_sweeps(df)
         if bull_sweep:
-            bull_score += 2
-            bull_breakdown['Liquidity Sweep'] = 2
+            bull_score += self.SCORING_WEIGHTS['LIQUIDITY_SWEEP']
+            bull_breakdown['Liquidity Sweep'] = self.SCORING_WEIGHTS['LIQUIDITY_SWEEP']
         if bear_sweep:
-            bear_score += 2
-            bear_breakdown['Liquidity Sweep'] = 2
+            bear_score += self.SCORING_WEIGHTS['LIQUIDITY_SWEEP']
+            bear_breakdown['Liquidity Sweep'] = self.SCORING_WEIGHTS['LIQUIDITY_SWEEP']
 
-        # 6. POC Proximity (+1)
+        # 6. POC Proximity
         if self.poc_level and abs(current_price - self.poc_level) < atr * 0.5:
-            bull_score += 1
-            bear_score += 1
-            bull_breakdown['Near POC'] = 1
-            bear_breakdown['Near POC'] = 1
+            bull_score += self.SCORING_WEIGHTS['INDICATORS']
+            bear_score += self.SCORING_WEIGHTS['INDICATORS']
+            bull_breakdown['Near POC'] = self.SCORING_WEIGHTS['INDICATORS']
+            bear_breakdown['Near POC'] = self.SCORING_WEIGHTS['INDICATORS']
 
-        # 7. Volume (+1)
+        # 7. Volume
         if df.iloc[-1]['volume_spike']:
             if df.iloc[-1]['close'] > df.iloc[-1]['open']:
-                bull_score += 1
-                bull_breakdown['Volume'] = 1
+                bull_score += self.SCORING_WEIGHTS['INDICATORS']
+                bull_breakdown['Volume'] = self.SCORING_WEIGHTS['INDICATORS']
             else:
-                bear_score += 1
-                bear_breakdown['Volume'] = 1
+                bear_score += self.SCORING_WEIGHTS['INDICATORS']
+                bear_breakdown['Volume'] = self.SCORING_WEIGHTS['INDICATORS']
 
-        # 8. Fibonacci Confluence (+2 for Golden Zone, +1 for other levels)
+        # 8. Fibonacci Confluence
         fib_data = self._calculate_fibonacci_levels(df)
         
-        # Bullish Fib (Retracement from High to Low for buying dip? No, Bullish Retracement is Low to High, buying the pull back)
-        # Wait, standard fib retracement:
-        # Uptrend: Draw from Low to High. Price retraces down to levels.
-        # Downtrend: Draw from High to Low. Price retraces up to levels.
-        
         if fib_data['bullish_level']:
-            score = 2 if fib_data['is_golden_zone'] else 1
+            score = self.SCORING_WEIGHTS['FIB_GOLDEN'] if fib_data['is_golden_zone'] else self.SCORING_WEIGHTS['FIB_NORMAL']
             bull_score += score
             bull_breakdown[f'Fib {fib_data["bullish_level"]}'] = score
             
         if fib_data['bearish_level']:
-            score = 2 if fib_data['is_golden_zone'] else 1
+            score = self.SCORING_WEIGHTS['FIB_GOLDEN'] if fib_data['is_golden_zone'] else self.SCORING_WEIGHTS['FIB_NORMAL']
             bear_score += score
             bear_breakdown[f'Fib {fib_data["bearish_level"]}'] = score
 
-        # 9. BOS/CHoCH Confluence (+2 for BOS, +3 for CHoCH)
-        from app.core.phase1_config import BOS_CONFLUENCE_POINTS, CHOCH_CONFLUENCE_POINTS
-        
+        # 9. BOS/CHoCH Confluence
         # Bullish BOS: Recent break above structure
         if bos_choch_data['bos_bullish'] and bos_choch_data['bos_recent']:
-            bull_score += BOS_CONFLUENCE_POINTS
-            bull_breakdown['BOS Bullish'] = BOS_CONFLUENCE_POINTS
+            bull_score += self.SCORING_WEIGHTS['BOS']
+            bull_breakdown['BOS Bullish'] = self.SCORING_WEIGHTS['BOS']
             
         # Bearish BOS: Recent break below structure
         if bos_choch_data['bos_bearish'] and bos_choch_data['bos_recent']:
-            bear_score += BOS_CONFLUENCE_POINTS
-            bear_breakdown['BOS Bearish'] = BOS_CONFLUENCE_POINTS
+            bear_score += self.SCORING_WEIGHTS['BOS']
+            bear_breakdown['BOS Bearish'] = self.SCORING_WEIGHTS['BOS']
             
         # CHoCH to Bullish: High-quality reversal setup
         if bos_choch_data['choch_to_bullish']:
-            bull_score += CHOCH_CONFLUENCE_POINTS
-            bull_breakdown['CHoCH Reversal'] = CHOCH_CONFLUENCE_POINTS
+            bull_score += self.SCORING_WEIGHTS['CHOCH']
+            bull_breakdown['CHoCH Reversal'] = self.SCORING_WEIGHTS['CHOCH']
             
         # CHoCH to Bearish: High-quality reversal setup
         if bos_choch_data['choch_to_bearish']:
-            bear_score += CHOCH_CONFLUENCE_POINTS
-            bear_breakdown['CHoCH Reversal'] = CHOCH_CONFLUENCE_POINTS
+            bear_score += self.SCORING_WEIGHTS['CHOCH']
+            bear_breakdown['CHoCH Reversal'] = self.SCORING_WEIGHTS['CHOCH']
 
         # Normalize to 0-10 (allow going over 10 slightly with extra confluence, but cap at 10 for standardizing)
         bull_score = min(bull_score, 10)
@@ -909,6 +927,107 @@ class TradingEngine:
         return result
 
 
+    def _calculate_dynamic_sl(self, signal_type: str, entry_price: float, atr: float) -> float:
+        """
+        Calculate Dynamic Stop Loss based on Market Structure
+        Fallback to ATR if no structure found
+        """
+        sl_price = None
+        
+        # Search range for structure (e.g., max 3 ATR away)
+        max_dist = atr * 3.0
+        min_dist = atr * 0.5 # Minimum breathing room
+        
+        if signal_type == "BUY":
+            # 1. Look for nearest Swing Low below entry
+            valid_swings = [s.price for s in self.swing_lows if s.price < entry_price and (entry_price - s.price) < max_dist]
+            if valid_swings:
+                # Use the highest of the valid swing lows (nearest support)
+                structure_sl = max(valid_swings)
+                sl_price = structure_sl - (atr * 0.2) # Small buffer below swing
+                
+            # 2. Look for Bullish OB bottom
+            if not sl_price:
+                valid_obs = [ob.bottom for ob in self.bullish_obs if ob.bottom < entry_price and (entry_price - ob.bottom) < max_dist]
+                if valid_obs:
+                    structure_sl = max(valid_obs)
+                    sl_price = structure_sl - (atr * 0.2)
+                    
+            # Fallback: ATR
+            if not sl_price or (entry_price - sl_price) < min_dist:
+                sl_price = entry_price - (atr * 1.5)
+                
+        else: # SELL
+            # 1. Look for nearest Swing High above entry
+            valid_swings = [s.price for s in self.swing_highs if s.price > entry_price and (s.price - entry_price) < max_dist]
+            if valid_swings:
+                # Use the lowest of the valid swing highs (nearest resistance)
+                structure_sl = min(valid_swings)
+                sl_price = structure_sl + (atr * 0.2) # Small buffer above swing
+                
+            # 2. Look for Bearish OB top
+            if not sl_price:
+                valid_obs = [ob.top for ob in self.bearish_obs if ob.top > entry_price and (ob.top - entry_price) < max_dist]
+                if valid_obs:
+                    structure_sl = min(valid_obs)
+                    sl_price = structure_sl + (atr * 0.2)
+            
+            # Fallback: ATR
+            if not sl_price or (sl_price - entry_price) < min_dist:
+                sl_price = entry_price + (atr * 1.5)
+                
+        return sl_price
+
+
+    def _calculate_limit_entry(self, signal_type: str, current_price: float, atr: float) -> Tuple[float, str]:
+        """
+        Calculate optimal entry price (Limit vs Market)
+        Returns (entry_price, order_type)
+        """
+        # Default to Market
+        entry_price = current_price
+        order_type = "MARKET" # Will be converted to BUY/SELL later
+        
+        # Check for unmitigated Order Blocks nearby
+        if signal_type == "BUY":
+            # Look for OB below current price but close (within 1 ATR)
+            nearby_obs = [ob for ob in self.bullish_obs if ob.top < current_price and (current_price - ob.top) < atr]
+            if nearby_obs:
+                # Entry at OB Top (Retest)
+                best_ob = nearby_obs[-1] # Most recent
+                entry_price = best_ob.top
+                order_type = "BUY_LIMIT"
+                return entry_price, order_type
+                
+            # Check for FVG
+            nearby_fvgs = [fvg for fvg in self.bullish_fvgs if fvg.top < current_price and (current_price - fvg.top) < atr]
+            if nearby_fvgs:
+                # Entry at FVG Top or Midpoint
+                best_fvg = nearby_fvgs[-1]
+                entry_price = best_fvg.top # Aggressive entry at top of gap
+                order_type = "BUY_LIMIT"
+                return entry_price, order_type
+
+        else: # SELL
+            # Look for OB above current price
+            nearby_obs = [ob for ob in self.bearish_obs if ob.bottom > current_price and (ob.bottom - current_price) < atr]
+            if nearby_obs:
+                best_ob = nearby_obs[-1]
+                entry_price = best_ob.bottom
+                order_type = "SELL_LIMIT"
+                return entry_price, order_type
+                
+            # Check for FVG
+            nearby_fvgs = [fvg for fvg in self.bearish_fvgs if fvg.bottom > current_price and (fvg.bottom - current_price) < atr]
+            if nearby_fvgs:
+                best_fvg = nearby_fvgs[-1]
+                entry_price = fvg.bottom
+                order_type = "SELL_LIMIT"
+                return entry_price, order_type
+                
+        return entry_price, order_type
+
+
     def _generate_signals(self, df: pd.DataFrame, confluence_data: Dict) -> List[TradingSignal]:
         """Generate trading signals based on confluence"""
         signals = []
@@ -939,18 +1058,22 @@ class TradingEngine:
 
         # Bull Signal  
         if bull_score >= self.min_confluence_score and self.trend_bullish and higher_tf_allows_buy and (bos_allows_buy or choch_allows_buy):
-            stop_loss = current_price - (atr * 1.5)
-            risk = current_price - stop_loss
+            # Calculate Limit Entry
+            entry_price, order_type = self._calculate_limit_entry("BUY", current_price, atr)
             
-            logger.info(f"DEBUG SL CALC: Price={current_price}, ATR={atr}, SL={stop_loss}, Risk={risk}")
+            # Calculate Dynamic SL
+            stop_loss = self._calculate_dynamic_sl("BUY", entry_price, atr)
+            risk = entry_price - stop_loss
+            
+            logger.info(f"DEBUG SL CALC: Entry={entry_price}, Type={order_type}, SL={stop_loss}, Risk={risk}")
 
             signal = TradingSignal(
                 signal_type="BUY",
-                entry_price=current_price,
+                entry_price=entry_price,
                 stop_loss=stop_loss,
-                take_profit_1=current_price + (risk * 1.5),
-                take_profit_2=current_price + (risk * 3.0),
-                take_profit_3=current_price + (risk * 5.0),
+                take_profit_1=entry_price + (risk * 1.5),
+                take_profit_2=entry_price + (risk * 3.0),
+                take_profit_3=entry_price + (risk * 5.0),
                 confluence_score=bull_score,
                 score_breakdown=confluence_data['bull_breakdown'],
                 timestamp=df.iloc[-1]['time'],
@@ -958,7 +1081,8 @@ class TradingEngine:
                 timeframe=self.config.get('timeframe', 'UNKNOWN'),
                 risk_reward_ratio=3.0,
                 fib_level=confluence_data['fib_data']['bullish_level'],
-                fib_zone="GOLDEN" if confluence_data['fib_data']['is_golden_zone'] else None
+                fib_zone="GOLDEN" if confluence_data['fib_data']['is_golden_zone'] else None,
+                order_type=order_type
             )
 
             # Add AI confidence prediction
@@ -969,7 +1093,7 @@ class TradingEngine:
                         'signal_type': 'BUY',
                         'confluence_score': bull_score,
                         'score_breakdown': confluence_data['bull_breakdown'],
-                        'entry_price': current_price,
+                        'entry_price': entry_price,
                         'stop_loss': stop_loss,
                         'take_profit_1': signal.take_profit_1
                     }
@@ -1000,18 +1124,22 @@ class TradingEngine:
 
         # Bear Signal
         if bear_score >= self.min_confluence_score and not self.trend_bullish and higher_tf_allows_sell and (bos_allows_sell or choch_allows_sell):
-            stop_loss = current_price + (atr * 1.5)
-            risk = stop_loss - current_price
+            # Calculate Limit Entry
+            entry_price, order_type = self._calculate_limit_entry("SELL", current_price, atr)
             
-            logger.info(f"DEBUG SL CALC (SELL): Price={current_price}, ATR={atr}, SL={stop_loss}, Risk={risk}")
+            # Calculate Dynamic SL
+            stop_loss = self._calculate_dynamic_sl("SELL", entry_price, atr)
+            risk = stop_loss - entry_price
+            
+            logger.info(f"DEBUG SL CALC (SELL): Entry={entry_price}, Type={order_type}, SL={stop_loss}, Risk={risk}")
 
             signal = TradingSignal(
                 signal_type="SELL",
-                entry_price=current_price,
+                entry_price=entry_price,
                 stop_loss=stop_loss,
-                take_profit_1=current_price - (risk * 1.5),
-                take_profit_2=current_price - (risk * 3.0),
-                take_profit_3=current_price - (risk * 5.0),
+                take_profit_1=entry_price - (risk * 1.5),
+                take_profit_2=entry_price - (risk * 3.0),
+                take_profit_3=entry_price - (risk * 5.0),
                 confluence_score=bear_score,
                 score_breakdown=confluence_data['bear_breakdown'],
                 timestamp=df.iloc[-1]['time'],
@@ -1019,7 +1147,8 @@ class TradingEngine:
                 timeframe=self.config.get('timeframe', 'UNKNOWN'),
                 risk_reward_ratio=3.0,
                 fib_level=confluence_data['fib_data']['bearish_level'],
-                fib_zone="GOLDEN" if confluence_data['fib_data']['is_golden_zone'] else None
+                fib_zone="GOLDEN" if confluence_data['fib_data']['is_golden_zone'] else None,
+                order_type=order_type
             )
 
             # Add AI confidence prediction

@@ -302,17 +302,19 @@ class MT5Connector:
         volume: float,
         stop_loss: Optional[float] = None,
         take_profit: Optional[float] = None,
+        price: Optional[float] = None,
         comment: str = "Institutional Edge Pro"
     ) -> Optional[Dict]:
         """
-        Open a trading position
+        Open a trading position (Market or Pending)
 
         Args:
             symbol: Trading symbol
-            order_type: "BUY" or "SELL"
+            order_type: "BUY", "SELL", "BUY_LIMIT", "SELL_LIMIT", "BUY_STOP", "SELL_STOP"
             volume: Lot size
             stop_loss: Stop loss price (optional)
             take_profit: Take profit price (optional)
+            price: Entry price (required for pending orders, optional for market)
             comment: Order comment
 
         Returns:
@@ -334,25 +336,50 @@ class MT5Connector:
                     logger.error("Failed to select symbol {}", symbol)
                     return None
 
-            # Get current price
+            # Get current price details
             tick = mt5.symbol_info_tick(symbol)
             if tick is None:
                 logger.error("Failed to get tick for {}", symbol)
                 return None
 
-            # Prepare request
-            order_type_mt5 = mt5.ORDER_TYPE_BUY if order_type == "BUY" else mt5.ORDER_TYPE_SELL
-            price = tick.ask if order_type == "BUY" else tick.bid
+            # Map order types
+            order_type_map = {
+                "BUY": mt5.ORDER_TYPE_BUY,
+                "SELL": mt5.ORDER_TYPE_SELL,
+                "BUY_LIMIT": mt5.ORDER_TYPE_BUY_LIMIT,
+                "SELL_LIMIT": mt5.ORDER_TYPE_SELL_LIMIT,
+                "BUY_STOP": mt5.ORDER_TYPE_BUY_STOP,
+                "SELL_STOP": mt5.ORDER_TYPE_SELL_STOP
+            }
+            
+            order_type_mt5 = order_type_map.get(order_type)
+            if order_type_mt5 is None:
+                logger.error("Invalid order type: {}", order_type)
+                return None
+
+            # Determine execution price
+            is_pending = "LIMIT" in order_type or "STOP" in order_type
+            
+            if is_pending:
+                if price is None:
+                    logger.error("Price is required for pending orders")
+                    return None
+                execution_price = price
+                action = mt5.TRADE_ACTION_PENDING
+            else:
+                # Market execution
+                execution_price = tick.ask if order_type == "BUY" else tick.bid
+                action = mt5.TRADE_ACTION_DEAL
 
             # Determine filling mode
             filling_mode = self._get_filling_mode(symbol)
 
             request = {
-                "action": mt5.TRADE_ACTION_DEAL,
+                "action": action,
                 "symbol": symbol,
                 "volume": volume,
                 "type": order_type_mt5,
-                "price": price,
+                "price": execution_price,
                 "deviation": 20,
                 "magic": 234000,
                 "comment": comment,
