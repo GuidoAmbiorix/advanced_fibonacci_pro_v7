@@ -18,6 +18,7 @@ from app.api.database import SessionLocal
 
 
 from app.services.rabbitmq_service import RabbitMQService
+from app.core.config import settings
 
 class TradingBot:
     """
@@ -37,6 +38,7 @@ class TradingBot:
         self.mt5_connector = mt5_connector
         self.sio = sio
         self.rabbitmq = RabbitMQService()
+        
         self.is_running = False
         self.config: Optional[BotConfig] = None
         self.trading_engine: Optional[TradingEngine] = None
@@ -481,12 +483,31 @@ class TradingBot:
         if not price_info:
             return False
         
-        spread_pips = price_info['spread'] / 0.0001 # Assuming standard pip
-        # For JPY pairs, pip is 0.01, need more robust pip calculation if supporting JPY
+        # Calculate spread in pips/points
+        # Default to standard Forex pip (0.0001)
+        pip_size = 0.0001
         if "JPY" in symbol:
-             spread_pips = price_info['spread'] / 0.01
-
-        return spread_pips <= self.config.max_spread
+            pip_size = 0.01
+        
+        spread_val = price_info['spread'] / pip_size
+        
+        # Check if spread is reasonable for Forex (e.g. < 100 pips)
+        # If it's huge (like 5000), it's likely Crypto or Index priced in USD
+        # In that case, switch to percentage check
+        
+        is_valid = spread_val <= self.config.max_spread
+        
+        # Fallback: If spread in pips is high, check percentage
+        # Allow if spread is less than 0.1% of price (configurable later)
+        if not is_valid:
+            spread_percent = (price_info['spread'] / price_info['ask']) * 100
+            if spread_percent < 0.1: # 0.1% spread is reasonable for Crypto
+                is_valid = True
+            else:
+                # Log the actual values to help debugging
+                logger.warning(f"Spread too high for {symbol}: {spread_val:.1f} pips / {spread_percent:.3f}% > Limit")
+            
+        return is_valid
 
     def _check_trading_hours(self) -> bool:
         """Check if current time is within trading hours"""

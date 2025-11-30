@@ -1057,7 +1057,12 @@ class TradingEngine:
         choch_allows_sell = bos_choch_data.get('choch_to_bearish', False)
 
         # Bull Signal  
-        if bull_score >= self.min_confluence_score and self.trend_bullish and higher_tf_allows_buy and (bos_allows_buy or choch_allows_buy):
+        # RELAXED: Removed strict (bos_allows_buy or choch_allows_buy) requirement
+        # Now allows trades if Score is high AND (Trend is Bullish OR it's a CHoCH Reversal)
+        # This allows OB retests where BOS happened a while ago
+        is_valid_bull_context = self.trend_bullish or choch_allows_buy
+        
+        if bull_score >= self.min_confluence_score and higher_tf_allows_buy and is_valid_bull_context:
             # Calculate Limit Entry
             entry_price, order_type = self._calculate_limit_entry("BUY", current_price, atr)
             
@@ -1123,7 +1128,10 @@ class TradingEngine:
             signals.append(signal)
 
         # Bear Signal
-        if bear_score >= self.min_confluence_score and not self.trend_bullish and higher_tf_allows_sell and (bos_allows_sell or choch_allows_sell):
+        # RELAXED: Removed strict (bos_allows_sell or choch_allows_sell) requirement
+        is_valid_bear_context = (not self.trend_bullish) or choch_allows_sell
+        
+        if bear_score >= self.min_confluence_score and higher_tf_allows_sell and is_valid_bear_context:
             # Calculate Limit Entry
             entry_price, order_type = self._calculate_limit_entry("SELL", current_price, atr)
             
