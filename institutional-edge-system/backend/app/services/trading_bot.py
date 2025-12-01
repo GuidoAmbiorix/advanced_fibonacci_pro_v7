@@ -369,10 +369,14 @@ class TradingBot:
             )
         )
 
+        # Determine correct order type for MT5
+        # If signal says "MARKET", we use the signal direction (BUY/SELL)
+        mt5_order_type = signal.signal_type if signal.order_type == "MARKET" else signal.order_type
+
         # Open position
         result = self.mt5_connector.open_position(
             symbol=signal.symbol,
-            order_type=signal.order_type, # Use the order type from signal (MARKET/LIMIT/STOP)
+            order_type=mt5_order_type,
             volume=lot_size,
             stop_loss=signal.stop_loss,
             take_profit=signal.take_profit_1,
