@@ -1,6 +1,1014 @@
 [
     {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Generator",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Union",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "status",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "status",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "FastAPI",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "status",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "OAuth2PasswordRequestForm",
+        "importPath": "fastapi.security",
+        "description": "fastapi.security",
+        "isExtraImport": true,
+        "detail": "fastapi.security",
+        "documentation": {}
+    },
+    {
+        "label": "OAuth2PasswordBearer",
+        "importPath": "fastapi.security",
+        "description": "fastapi.security",
+        "isExtraImport": true,
+        "detail": "fastapi.security",
+        "documentation": {}
+    },
+    {
+        "label": "OAuth2PasswordBearer",
+        "importPath": "fastapi.security",
+        "description": "fastapi.security",
+        "isExtraImport": true,
+        "detail": "fastapi.security",
+        "documentation": {}
+    },
+    {
+        "label": "OAuth2PasswordRequestForm",
+        "importPath": "fastapi.security",
+        "description": "fastapi.security",
+        "isExtraImport": true,
+        "detail": "fastapi.security",
+        "documentation": {}
+    },
+    {
+        "label": "Session",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "sessionmaker",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "Session",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "Session",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "Session",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "relationship",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "Session",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "sessionmaker",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "database",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
+        "documentation": {}
+    },
+    {
+        "label": "database",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
+        "documentation": {}
+    },
+    {
+        "label": "database",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
+        "documentation": {}
+    },
+    {
+        "label": "database",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
+        "documentation": {}
+    },
+    {
+        "label": "auth",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
+        "documentation": {}
+    },
+    {
+        "label": "stats",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
+        "documentation": {}
+    },
+    {
+        "label": "fundamentals",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
+        "documentation": {}
+    },
+    {
+        "label": "security",
+        "importPath": "app.core",
+        "description": "app.core",
+        "isExtraImport": true,
+        "detail": "app.core",
+        "documentation": {}
+    },
+    {
+        "label": "security",
+        "importPath": "app.core",
+        "description": "app.core",
+        "isExtraImport": true,
+        "detail": "app.core",
+        "documentation": {}
+    },
+    {
+        "label": "security",
+        "importPath": "app.core",
+        "description": "app.core",
+        "isExtraImport": true,
+        "detail": "app.core",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "User",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Base",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "User",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Trade",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "User",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Trade",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Signal",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfig",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Trade",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfig",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Trade",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Signal",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Base",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "User",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfig",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Trade",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfig",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "User",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "schemas",
+        "importPath": "app.schemas",
+        "description": "app.schemas",
+        "isExtraImport": true,
+        "detail": "app.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "schemas",
+        "importPath": "app.schemas",
+        "description": "app.schemas",
+        "isExtraImport": true,
+        "detail": "app.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "schemas",
+        "importPath": "app.schemas",
+        "description": "app.schemas",
+        "isExtraImport": true,
+        "detail": "app.schemas",
+        "documentation": {}
+    },
+    {
         "label": "create_engine",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "func",
         "importPath": "sqlalchemy",
         "description": "sqlalchemy",
         "isExtraImport": true,
@@ -128,363 +1136,43 @@
         "documentation": {}
     },
     {
-        "label": "sessionmaker",
-        "importPath": "sqlalchemy.orm",
-        "description": "sqlalchemy.orm",
+        "label": "jwt",
+        "importPath": "jose",
+        "description": "jose",
         "isExtraImport": true,
-        "detail": "sqlalchemy.orm",
+        "detail": "jose",
         "documentation": {}
     },
     {
-        "label": "Session",
-        "importPath": "sqlalchemy.orm",
-        "description": "sqlalchemy.orm",
+        "label": "JWTError",
+        "importPath": "jose",
+        "description": "jose",
         "isExtraImport": true,
-        "detail": "sqlalchemy.orm",
+        "detail": "jose",
         "documentation": {}
     },
     {
-        "label": "relationship",
-        "importPath": "sqlalchemy.orm",
-        "description": "sqlalchemy.orm",
+        "label": "jwt",
+        "importPath": "jose",
+        "description": "jose",
         "isExtraImport": true,
-        "detail": "sqlalchemy.orm",
+        "detail": "jose",
         "documentation": {}
     },
     {
-        "label": "Session",
-        "importPath": "sqlalchemy.orm",
-        "description": "sqlalchemy.orm",
+        "label": "alphavantage_service",
+        "importPath": "app.services.alphavantage_service",
+        "description": "app.services.alphavantage_service",
         "isExtraImport": true,
-        "detail": "sqlalchemy.orm",
+        "detail": "app.services.alphavantage_service",
         "documentation": {}
     },
     {
-        "label": "sessionmaker",
-        "importPath": "sqlalchemy.orm",
-        "description": "sqlalchemy.orm",
+        "label": "get_current_user",
+        "importPath": "app.api.deps",
+        "description": "app.api.deps",
         "isExtraImport": true,
-        "detail": "sqlalchemy.orm",
-        "documentation": {}
-    },
-    {
-        "label": "Generator",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "List",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Optional",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "List",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Dict",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Tuple",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "List",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Dict",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Optional",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Tuple",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Dict",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Optional",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Tuple",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Optional",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "List",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Dict",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Dict",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Optional",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "List",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Dict",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Optional",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "List",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Dict",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "settings",
-        "importPath": "app.core.config",
-        "description": "app.core.config",
-        "isExtraImport": true,
-        "detail": "app.core.config",
-        "documentation": {}
-    },
-    {
-        "label": "settings",
-        "importPath": "app.core.config",
-        "description": "app.core.config",
-        "isExtraImport": true,
-        "detail": "app.core.config",
-        "documentation": {}
-    },
-    {
-        "label": "settings",
-        "importPath": "app.core.config",
-        "description": "app.core.config",
-        "isExtraImport": true,
-        "detail": "app.core.config",
-        "documentation": {}
-    },
-    {
-        "label": "settings",
-        "importPath": "app.core.config",
-        "description": "app.core.config",
-        "isExtraImport": true,
-        "detail": "app.core.config",
-        "documentation": {}
-    },
-    {
-        "label": "Base",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
-        "label": "Trade",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
-        "label": "Signal",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
-        "label": "BotConfig",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
-        "label": "Trade",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
-        "label": "BotConfig",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
-        "label": "Trade",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
-        "label": "Signal",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
-        "label": "Base",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
-        "label": "User",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
-        "label": "BotConfig",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
-        "label": "Trade",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
+        "detail": "app.api.deps",
         "documentation": {}
     },
     {
@@ -505,115 +1193,19 @@
         "documentation": {}
     },
     {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
         "isExtraImport": true,
-        "detail": "datetime",
+        "detail": "loguru",
         "documentation": {}
     },
     {
-        "label": "timedelta",
-        "importPath": "datetime",
-        "description": "datetime",
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
         "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "time",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "time",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timedelta",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timedelta",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
+        "detail": "loguru",
         "documentation": {}
     },
     {
@@ -706,6 +1298,24 @@
         "documentation": {}
     },
     {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "bcrypt",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "bcrypt",
+        "description": "bcrypt",
+        "detail": "bcrypt",
+        "documentation": {}
+    },
+    {
         "label": "numpy",
         "kind": 6,
         "isExtraImport": true,
@@ -729,15 +1339,6 @@
         "importPath": "pickle",
         "description": "pickle",
         "detail": "pickle",
-        "documentation": {}
-    },
-    {
-        "label": "os",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "os",
-        "description": "os",
-        "detail": "os",
         "documentation": {}
     },
     {
@@ -838,6 +1439,22 @@
         "documentation": {}
     },
     {
+        "label": "SessionLocal",
+        "importPath": "app.api.database",
+        "description": "app.api.database",
+        "isExtraImport": true,
+        "detail": "app.api.database",
+        "documentation": {}
+    },
+    {
+        "label": "init_db",
+        "importPath": "app.api.database",
+        "description": "app.api.database",
+        "isExtraImport": true,
+        "detail": "app.api.database",
+        "documentation": {}
+    },
+    {
         "label": "declarative_base",
         "importPath": "sqlalchemy.ext.declarative",
         "description": "sqlalchemy.ext.declarative",
@@ -870,6 +1487,15 @@
         "documentation": {}
     },
     {
+        "label": "httpx",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "httpx",
+        "description": "httpx",
+        "detail": "httpx",
+        "documentation": {}
+    },
+    {
         "label": "aio_pika",
         "kind": 6,
         "isExtraImport": true,
@@ -897,11 +1523,12 @@
         "documentation": {}
     },
     {
-        "label": "MT5Connector",
-        "importPath": "app.core.mt5_connector",
-        "description": "app.core.mt5_connector",
+        "label": "aiohttp",
+        "kind": 6,
         "isExtraImport": true,
-        "detail": "app.core.mt5_connector",
+        "importPath": "aiohttp",
+        "description": "aiohttp",
+        "detail": "aiohttp",
         "documentation": {}
     },
     {
@@ -926,6 +1553,22 @@
         "description": "app.core.mt5_connector",
         "isExtraImport": true,
         "detail": "app.core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "MT5Connector",
+        "importPath": "app.core.mt5_connector",
+        "description": "app.core.mt5_connector",
+        "isExtraImport": true,
+        "detail": "app.core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "app.core.trading_engine",
+        "description": "app.core.trading_engine",
+        "isExtraImport": true,
+        "detail": "app.core.trading_engine",
         "documentation": {}
     },
     {
@@ -969,75 +1612,11 @@
         "documentation": {}
     },
     {
-        "label": "FastAPI",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "Depends",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "HTTPException",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "status",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
         "label": "CORSMiddleware",
         "importPath": "fastapi.middleware.cors",
         "description": "fastapi.middleware.cors",
         "isExtraImport": true,
         "detail": "fastapi.middleware.cors",
-        "documentation": {}
-    },
-    {
-        "label": "OAuth2PasswordBearer",
-        "importPath": "fastapi.security",
-        "description": "fastapi.security",
-        "isExtraImport": true,
-        "detail": "fastapi.security",
-        "documentation": {}
-    },
-    {
-        "label": "OAuth2PasswordRequestForm",
-        "importPath": "fastapi.security",
-        "description": "fastapi.security",
-        "isExtraImport": true,
-        "detail": "fastapi.security",
-        "documentation": {}
-    },
-    {
-        "label": "schemas",
-        "importPath": "app.schemas",
-        "description": "app.schemas",
-        "isExtraImport": true,
-        "detail": "app.schemas",
-        "documentation": {}
-    },
-    {
-        "label": "database",
-        "importPath": "app.api",
-        "description": "app.api",
-        "isExtraImport": true,
-        "detail": "app.api",
         "documentation": {}
     },
     {
@@ -1047,6 +1626,39 @@
         "importPath": "socketio",
         "description": "socketio",
         "detail": "socketio",
+        "documentation": {}
+    },
+    {
+        "label": "unittest",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "unittest",
+        "description": "unittest",
+        "detail": "unittest",
+        "documentation": {}
+    },
+    {
+        "label": "patch",
+        "importPath": "unittest.mock",
+        "description": "unittest.mock",
+        "isExtraImport": true,
+        "detail": "unittest.mock",
+        "documentation": {}
+    },
+    {
+        "label": "MagicMock",
+        "importPath": "unittest.mock",
+        "description": "unittest.mock",
+        "isExtraImport": true,
+        "detail": "unittest.mock",
+        "documentation": {}
+    },
+    {
+        "label": "TelegramService",
+        "importPath": "app.services.telegram_service",
+        "description": "app.services.telegram_service",
+        "isExtraImport": true,
+        "detail": "app.services.telegram_service",
         "documentation": {}
     },
     {
@@ -1131,6 +1743,33 @@
         "documentation": {}
     },
     {
+        "label": "register_user",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.api.auth",
+        "description": "institutional-edge-system.backend.app.api.auth",
+        "peekOfCode": "def register_user(\n    user_in: schemas.UserCreate,\n    db: Session = Depends(database.get_db)\n) -> Any:\n    \"\"\"\n    Register a new user\n    \"\"\"\n    # Check if user already exists\n    user = db.query(User).filter(User.email == user_in.email).first()\n    if user:",
+        "detail": "institutional-edge-system.backend.app.api.auth",
+        "documentation": {}
+    },
+    {
+        "label": "login_access_token",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.api.auth",
+        "description": "institutional-edge-system.backend.app.api.auth",
+        "peekOfCode": "def login_access_token(\n    form_data: OAuth2PasswordRequestForm = Depends(),\n    db: Session = Depends(database.get_db)\n) -> Any:\n    \"\"\"\n    OAuth2 compatible token login, get an access token for future requests\n    \"\"\"\n    # Authenticate user\n    user = db.query(User).filter(User.username == form_data.username).first()\n    if not user or not security.verify_password(form_data.password, user.hashed_password):",
+        "detail": "institutional-edge-system.backend.app.api.auth",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.api.auth",
+        "description": "institutional-edge-system.backend.app.api.auth",
+        "peekOfCode": "router = APIRouter()\n@router.post(\"/register\", response_model=schemas.UserResponse)\ndef register_user(\n    user_in: schemas.UserCreate,\n    db: Session = Depends(database.get_db)\n) -> Any:\n    \"\"\"\n    Register a new user\n    \"\"\"\n    # Check if user already exists",
+        "detail": "institutional-edge-system.backend.app.api.auth",
+        "documentation": {}
+    },
+    {
         "label": "init_db",
         "kind": 2,
         "importPath": "institutional-edge-system.backend.app.api.database",
@@ -1149,11 +1788,20 @@
         "documentation": {}
     },
     {
+        "label": "database_url",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.api.database",
+        "description": "institutional-edge-system.backend.app.api.database",
+        "peekOfCode": "database_url = settings.DATABASE_URL\nif \"asyncpg\" in database_url:\n    database_url = database_url.replace(\"postgresql+asyncpg://\", \"postgresql+psycopg2://\")\n# Create database engine\nengine = create_engine(\n    database_url,\n    pool_size=settings.DATABASE_POOL_SIZE,\n    max_overflow=settings.DATABASE_MAX_OVERFLOW,\n    pool_pre_ping=True,  # Verify connections before using\n)",
+        "detail": "institutional-edge-system.backend.app.api.database",
+        "documentation": {}
+    },
+    {
         "label": "engine",
         "kind": 5,
         "importPath": "institutional-edge-system.backend.app.api.database",
         "description": "institutional-edge-system.backend.app.api.database",
-        "peekOfCode": "engine = create_engine(\n    settings.DATABASE_URL,\n    pool_size=settings.DATABASE_POOL_SIZE,\n    max_overflow=settings.DATABASE_MAX_OVERFLOW,\n    pool_pre_ping=True,  # Verify connections before using\n)\n# Create session factory\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndef init_db():\n    \"\"\"Initialize database - create all tables\"\"\"",
+        "peekOfCode": "engine = create_engine(\n    database_url,\n    pool_size=settings.DATABASE_POOL_SIZE,\n    max_overflow=settings.DATABASE_MAX_OVERFLOW,\n    pool_pre_ping=True,  # Verify connections before using\n)\n# Create session factory\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndef init_db():\n    \"\"\"Initialize database - create all tables\"\"\"",
         "detail": "institutional-edge-system.backend.app.api.database",
         "documentation": {}
     },
@@ -1164,6 +1812,51 @@
         "description": "institutional-edge-system.backend.app.api.database",
         "peekOfCode": "SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\ndef init_db():\n    \"\"\"Initialize database - create all tables\"\"\"\n    Base.metadata.create_all(bind=engine)\ndef get_db() -> Generator[Session, None, None]:\n    \"\"\"\n    Dependency for getting database session\n    Usage:\n        @app.get(\"/endpoint\")\n        def endpoint(db: Session = Depends(get_db)):",
         "detail": "institutional-edge-system.backend.app.api.database",
+        "documentation": {}
+    },
+    {
+        "label": "oauth2_scheme",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.api.deps",
+        "description": "institutional-edge-system.backend.app.api.deps",
+        "peekOfCode": "oauth2_scheme = OAuth2PasswordBearer(tokenUrl=\"/api/auth/token\")\nasync def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):\n    credentials_exception = HTTPException(\n        status_code=status.HTTP_401_UNAUTHORIZED,\n        detail=\"Could not validate credentials\",\n        headers={\"WWW-Authenticate\": \"Bearer\"},\n    )\n    try:\n        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[security.ALGORITHM])\n        user_id: str = payload.get(\"sub\")",
+        "detail": "institutional-edge-system.backend.app.api.deps",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.api.fundamentals",
+        "description": "institutional-edge-system.backend.app.api.fundamentals",
+        "peekOfCode": "router = APIRouter()\n@router.get(\"/{symbol}\", response_model=Dict)\nasync def get_fundamentals(\n    symbol: str,\n    current_user: Dict = Depends(get_current_user)\n):\n    \"\"\"\n    Get fundamental data for a symbol (Company Overview + Sentiment)\n    \"\"\"\n    overview = await alphavantage_service.get_company_overview(symbol)",
+        "detail": "institutional-edge-system.backend.app.api.fundamentals",
+        "documentation": {}
+    },
+    {
+        "label": "get_performance_metrics",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.api.stats",
+        "description": "institutional-edge-system.backend.app.api.stats",
+        "peekOfCode": "def get_performance_metrics(\n    days: int = 30,\n    db: Session = Depends(database.get_db)\n):\n    \"\"\"\n    Get aggregated performance metrics for the specified period\n    \"\"\"\n    # Calculate start date\n    start_date = datetime.utcnow() - timedelta(days=days)\n    # Query trades",
+        "detail": "institutional-edge-system.backend.app.api.stats",
+        "documentation": {}
+    },
+    {
+        "label": "get_trade_history",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.api.stats",
+        "description": "institutional-edge-system.backend.app.api.stats",
+        "peekOfCode": "def get_trade_history(\n    limit: int = 100,\n    offset: int = 0,\n    symbol: Optional[str] = None,\n    db: Session = Depends(database.get_db)\n):\n    \"\"\"\n    Get paginated trade history\n    \"\"\"\n    query = db.query(Trade).filter(Trade.status == \"CLOSED\")",
+        "detail": "institutional-edge-system.backend.app.api.stats",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.api.stats",
+        "description": "institutional-edge-system.backend.app.api.stats",
+        "peekOfCode": "router = APIRouter()\n@router.get(\"/performance\", response_model=schemas.PerformanceMetricsResponse)\ndef get_performance_metrics(\n    days: int = 30,\n    db: Session = Depends(database.get_db)\n):\n    \"\"\"\n    Get aggregated performance metrics for the specified period\n    \"\"\"\n    # Calculate start date",
+        "detail": "institutional-edge-system.backend.app.api.stats",
         "documentation": {}
     },
     {
@@ -1446,6 +2139,42 @@
         "documentation": {}
     },
     {
+        "label": "verify_password",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.core.security",
+        "description": "institutional-edge-system.backend.app.core.security",
+        "peekOfCode": "def verify_password(plain_password: str, hashed_password: str) -> bool:\n    \"\"\"Verify a password against a hash\"\"\"\n    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))\ndef get_password_hash(password: str) -> str:\n    \"\"\"Hash a password\"\"\"\n    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')\ndef create_access_token(subject: Union[str, Any], expires_delta: Optional[timedelta] = None) -> str:\n    \"\"\"Create a JWT access token\"\"\"\n    if expires_delta:\n        expire = datetime.utcnow() + expires_delta",
+        "detail": "institutional-edge-system.backend.app.core.security",
+        "documentation": {}
+    },
+    {
+        "label": "get_password_hash",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.core.security",
+        "description": "institutional-edge-system.backend.app.core.security",
+        "peekOfCode": "def get_password_hash(password: str) -> str:\n    \"\"\"Hash a password\"\"\"\n    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')\ndef create_access_token(subject: Union[str, Any], expires_delta: Optional[timedelta] = None) -> str:\n    \"\"\"Create a JWT access token\"\"\"\n    if expires_delta:\n        expire = datetime.utcnow() + expires_delta\n    else:\n        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)\n    to_encode = {\"exp\": expire, \"sub\": str(subject)}",
+        "detail": "institutional-edge-system.backend.app.core.security",
+        "documentation": {}
+    },
+    {
+        "label": "create_access_token",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.app.core.security",
+        "description": "institutional-edge-system.backend.app.core.security",
+        "peekOfCode": "def create_access_token(subject: Union[str, Any], expires_delta: Optional[timedelta] = None) -> str:\n    \"\"\"Create a JWT access token\"\"\"\n    if expires_delta:\n        expire = datetime.utcnow() + expires_delta\n    else:\n        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)\n    to_encode = {\"exp\": expire, \"sub\": str(subject)}\n    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)\n    return encoded_jwt",
+        "detail": "institutional-edge-system.backend.app.core.security",
+        "documentation": {}
+    },
+    {
+        "label": "ALGORITHM",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.security",
+        "description": "institutional-edge-system.backend.app.core.security",
+        "peekOfCode": "ALGORITHM = \"HS256\"\ndef verify_password(plain_password: str, hashed_password: str) -> bool:\n    \"\"\"Verify a password against a hash\"\"\"\n    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))\ndef get_password_hash(password: str) -> str:\n    \"\"\"Hash a password\"\"\"\n    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')\ndef create_access_token(subject: Union[str, Any], expires_delta: Optional[timedelta] = None) -> str:\n    \"\"\"Create a JWT access token\"\"\"\n    if expires_delta:",
+        "detail": "institutional-edge-system.backend.app.core.security",
+        "documentation": {}
+    },
+    {
         "label": "OrderBlock",
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.core.trading_engine",
@@ -1639,7 +2368,7 @@
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.schemas.schemas",
         "description": "institutional-edge-system.backend.app.schemas.schemas",
-        "peekOfCode": "class Token(BaseModel):\n    access_token: str\n    token_type: str\n# ============================================================================\n# BOT CONFIG SCHEMAS\n# ============================================================================\nclass BotConfigCreate(BaseModel):\n    name: str\n    mt5_login: Optional[str] = None\n    mt5_server: Optional[str] = None",
+        "peekOfCode": "class Token(BaseModel):\n    access_token: str\n    token_type: str\n# ============================================================================\n# BOT CONFIG SCHEMAS\n# ============================================================================\nclass BotConfigCreate(BaseModel):\n    user_id: int\n    name: str\n    mt5_login: Optional[str] = None",
         "detail": "institutional-edge-system.backend.app.schemas.schemas",
         "documentation": {}
     },
@@ -1648,7 +2377,7 @@
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.schemas.schemas",
         "description": "institutional-edge-system.backend.app.schemas.schemas",
-        "peekOfCode": "class BotConfigCreate(BaseModel):\n    name: str\n    mt5_login: Optional[str] = None\n    mt5_server: Optional[str] = None\n    mt5_password: Optional[str] = None\n    symbol: str = \"EURUSD\"\n    timeframe: str = \"H1\"\n    risk_percent: float = Field(default=2.0, ge=0.5, le=5.0)\n    min_confluence_score: int = Field(default=6, ge=3, le=10)\n    max_trades: int = Field(default=3, ge=1, le=10)",
+        "peekOfCode": "class BotConfigCreate(BaseModel):\n    user_id: int\n    name: str\n    mt5_login: Optional[str] = None\n    mt5_server: Optional[str] = None\n    mt5_password: Optional[str] = None\n    symbol: str = \"EURUSD\"\n    symbol_type: str = \"forex\"\n    timeframe: str = \"H1\"\n    risk_percent: float = Field(default=2.0, ge=0.5, le=5.0)",
         "detail": "institutional-edge-system.backend.app.schemas.schemas",
         "documentation": {}
     },
@@ -1770,12 +2499,39 @@
         "documentation": {}
     },
     {
+        "label": "AlphaVantageService",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.alphavantage_service",
+        "description": "institutional-edge-system.backend.app.services.alphavantage_service",
+        "peekOfCode": "class AlphaVantageService:\n    \"\"\"\n    Service to interact with AlphaVantage API for fundamental data.\n    \"\"\"\n    BASE_URL = \"https://www.alphavantage.co/query\"\n    def __init__(self):\n        self.api_key = settings.ALPHAVANTAGE_API_KEY\n        if not self.api_key:\n            logger.warning(\"AlphaVantage API Key is missing. Fundamental data will not be available.\")\n    async def get_company_overview(self, symbol: str) -> Optional[Dict]:",
+        "detail": "institutional-edge-system.backend.app.services.alphavantage_service",
+        "documentation": {}
+    },
+    {
+        "label": "alphavantage_service",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.services.alphavantage_service",
+        "description": "institutional-edge-system.backend.app.services.alphavantage_service",
+        "peekOfCode": "alphavantage_service = AlphaVantageService()",
+        "detail": "institutional-edge-system.backend.app.services.alphavantage_service",
+        "documentation": {}
+    },
+    {
         "label": "RabbitMQService",
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.services.rabbitmq_service",
         "description": "institutional-edge-system.backend.app.services.rabbitmq_service",
-        "peekOfCode": "class RabbitMQService:\n    def __init__(self):\n        self.connection = None\n        self.channel = None\n        self.exchange = None\n        self.queue_name = \"trade_signals\"\n    async def connect(self):\n        \"\"\"Connect to RabbitMQ\"\"\"\n        try:\n            self.connection = await aio_pika.connect_robust(",
+        "peekOfCode": "class RabbitMQService:\n    def __init__(self):\n        self.connection = None\n        self.channel = None\n        self.exchange = None\n        self.queue_name = \"trade_signals\"\n    async def connect(self, max_retries=5, retry_delay=2):\n        \"\"\"Connect to RabbitMQ with retry logic\"\"\"\n        for attempt in range(max_retries):\n            try:",
         "detail": "institutional-edge-system.backend.app.services.rabbitmq_service",
+        "documentation": {}
+    },
+    {
+        "label": "TelegramService",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.telegram_service",
+        "description": "institutional-edge-system.backend.app.services.telegram_service",
+        "peekOfCode": "class TelegramService:\n    \"\"\"\n    Service for sending Telegram notifications\n    \"\"\"\n    def __init__(self, bot_token: str, chat_id: str):\n        self.bot_token = bot_token\n        self.chat_id = chat_id\n        self.base_url = f\"https://api.telegram.org/bot{bot_token}\"\n    async def send_message(self, message: str) -> bool:\n        \"\"\"",
+        "detail": "institutional-edge-system.backend.app.services.telegram_service",
         "documentation": {}
     },
     {
@@ -1815,29 +2571,11 @@
         "documentation": {}
     },
     {
-        "label": "oauth2_scheme",
-        "kind": 5,
-        "importPath": "institutional-edge-system.backend.app.main",
-        "description": "institutional-edge-system.backend.app.main",
-        "peekOfCode": "oauth2_scheme = OAuth2PasswordBearer(tokenUrl=\"token\")\n# Global instances\nmt5_connector: MT5Connector = None\ntrading_engines: Dict[int, TradingEngine] = {}  # bot_config_id -> TradingEngine\nbot_manager = None  # Manages automated trading bots\n# Socket.IO Setup\nimport socketio\nsio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')\napp = socketio.ASGIApp(sio, app)\n@sio.event",
-        "detail": "institutional-edge-system.backend.app.main",
-        "documentation": {}
-    },
-    {
-        "label": "bot_manager",
-        "kind": 5,
-        "importPath": "institutional-edge-system.backend.app.main",
-        "description": "institutional-edge-system.backend.app.main",
-        "peekOfCode": "bot_manager = None  # Manages automated trading bots\n# Socket.IO Setup\nimport socketio\nsio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')\napp = socketio.ASGIApp(sio, app)\n@sio.event\nasync def connect(sid, environ):\n    logger.info(f\"Socket connected: {sid}\")\n@sio.event\nasync def disconnect(sid):",
-        "detail": "institutional-edge-system.backend.app.main",
-        "documentation": {}
-    },
-    {
         "label": "sio",
         "kind": 5,
         "importPath": "institutional-edge-system.backend.app.main",
         "description": "institutional-edge-system.backend.app.main",
-        "peekOfCode": "sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')\napp = socketio.ASGIApp(sio, app)\n@sio.event\nasync def connect(sid, environ):\n    logger.info(f\"Socket connected: {sid}\")\n@sio.event\nasync def disconnect(sid):\n    logger.info(f\"Socket disconnected: {sid}\")\n# ============================================================================\n# STARTUP & SHUTDOWN",
+        "peekOfCode": "sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')\n@sio.event\nasync def connect(sid, environ):\n    logger.info(f\"Socket connected: {sid}\")\n@sio.event\nasync def disconnect(sid):\n    logger.info(f\"Socket disconnected: {sid}\")\n# ============================================================================\n# STARTUP & SHUTDOWN\n# ============================================================================",
         "detail": "institutional-edge-system.backend.app.main",
         "documentation": {}
     },
@@ -1846,8 +2584,35 @@
         "kind": 5,
         "importPath": "institutional-edge-system.backend.app.main",
         "description": "institutional-edge-system.backend.app.main",
-        "peekOfCode": "app = socketio.ASGIApp(sio, app)\n@sio.event\nasync def connect(sid, environ):\n    logger.info(f\"Socket connected: {sid}\")\n@sio.event\nasync def disconnect(sid):\n    logger.info(f\"Socket disconnected: {sid}\")\n# ============================================================================\n# STARTUP & SHUTDOWN\n# ============================================================================",
+        "peekOfCode": "app = socketio.ASGIApp(sio, app)\nif __name__ == \"__main__\":\n    import uvicorn\n    uvicorn.run(\n        \"main:app\",\n        host=settings.HOST,\n        port=settings.PORT,\n        reload=settings.DEBUG,\n        log_level=settings.LOG_LEVEL.lower()\n    )",
         "detail": "institutional-edge-system.backend.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "create_mock_data",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.tests.test_god_strategy",
+        "description": "institutional-edge-system.backend.tests.test_god_strategy",
+        "peekOfCode": "def create_mock_data(length=200):\n    \"\"\"Create mock OHLCV data with a perfect bullish setup\"\"\"\n    dates = pd.date_range(end=datetime.now(), periods=length, freq='1h')\n    # Create an uptrend\n    close = np.linspace(1.0, 1.1, length)\n    # Add some noise\n    noise = np.random.normal(0, 0.001, length)\n    close += noise\n    # Ensure EMA50 > EMA200 (uptrend)\n    # We'll just make the price rise steadily so EMAs align naturally",
+        "detail": "institutional-edge-system.backend.tests.test_god_strategy",
+        "documentation": {}
+    },
+    {
+        "label": "test_god_strategy",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.tests.test_god_strategy",
+        "description": "institutional-edge-system.backend.tests.test_god_strategy",
+        "peekOfCode": "def test_god_strategy():\n    print(\"Testing God Combination Strategy...\")\n    config = {\n        'symbol': 'TEST',\n        'timeframe': 'H1',\n        'EMA_FAST': 10, # Shorten for test\n        'EMA_SLOW': 20,\n        'min_confluence_score': 0 # We just want to see if logic runs\n    }\n    engine = TradingEngine(config)",
+        "detail": "institutional-edge-system.backend.tests.test_god_strategy",
+        "documentation": {}
+    },
+    {
+        "label": "TestTelegramIntegration",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.tests.test_telegram_integration",
+        "description": "institutional-edge-system.backend.tests.test_telegram_integration",
+        "peekOfCode": "class TestTelegramIntegration(unittest.TestCase):\n    def setUp(self):\n        self.bot_token = \"123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11\"\n        self.chat_id = \"123456789\"\n        self.service = TelegramService(self.bot_token, self.chat_id)\n    @patch('aiohttp.ClientSession.post')\n    def test_send_message_success(self, mock_post):\n        \"\"\"Test successful message sending\"\"\"\n        # Mock response context manager\n        mock_response = MagicMock()",
+        "detail": "institutional-edge-system.backend.tests.test_telegram_integration",
         "documentation": {}
     },
     {
@@ -1875,6 +2640,15 @@
         "description": "institutional-edge-system.backend.run_backend",
         "peekOfCode": "app_dir = Path(__file__).parent / \"app\"\nsys.path.insert(0, str(app_dir))\n# Change to app directory for proper module resolution\nos.chdir(str(app_dir))\n# Now import and run\nif __name__ == \"__main__\":\n    import uvicorn\n    from core.config import settings\n    print(f\"Starting {settings.APP_NAME} v{settings.APP_VERSION}\")\n    print(f\"Server: http://{settings.HOST}:{settings.PORT}\")",
         "detail": "institutional-edge-system.backend.run_backend",
+        "documentation": {}
+    },
+    {
+        "label": "seed_db",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.seed_db",
+        "description": "institutional-edge-system.backend.seed_db",
+        "peekOfCode": "def seed_db():\n    print(\"Initializing database...\")\n    init_db()\n    db = SessionLocal()\n    try:\n        print(\"Checking for existing data...\")\n        # Create default user if not exists\n        user = db.query(User).filter(User.email == \"admin@example.com\").first()\n        if not user:\n            user = User(",
+        "detail": "institutional-edge-system.backend.seed_db",
         "documentation": {}
     },
     {
