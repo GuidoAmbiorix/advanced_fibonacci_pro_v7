@@ -118,23 +118,51 @@ class TradingEngine:
         self.poc_level: Optional[float] = None
         self.vah_level: Optional[float] = None
         self.val_level: Optional[float] = None
+        self.poc_history: List[float] = []  # Track POC movement
 
         # Phase 1: BOS/CHoCH tracking
         self.last_bos_type: Optional[str] = None
         self.last_bos_bar_index: Optional[int] = None
 
-        # Scoring Weights (Dynamic)
+        # Session levels
+        self.asian_high: Optional[float] = None
+        self.asian_low: Optional[float] = None
+        self.london_high: Optional[float] = None
+        self.london_low: Optional[float] = None
+        self.pdh: Optional[float] = None  # Previous Day High
+        self.pdl: Optional[float] = None  # Previous Day Low
+
+        # Scoring Weights (Updated for Pure SMC)
         self.SCORING_WEIGHTS = {
+            # Core Structure (Highest Weight)
             'BOS': 3,
             'CHOCH': 3,
-            'LIQUIDITY_SWEEP': 3,
-            'ORDER_BLOCK': 2,
+            'ORDER_BLOCK': 3,
             'FVG': 2,
+
+            # Liquidity & Manipulation
+            'LIQUIDITY_SWEEP': 2,
+            'STOP_HUNT': 2,
+
+            # Levels & Zones
             'FIB_GOLDEN': 2,
             'PREMIUM_DISCOUNT': 2,
-            'TREND_ALIGNMENT': 2,
-            'INDICATORS': 1, # EMA, MACD, Volume, POC
-            'FIB_NORMAL': 1
+            'SESSION_LEVEL': 1,
+
+            # Volume Confirmation
+            'DELTA_VOLUME': 2,
+            'POC_PROXIMITY': 1,
+            'VOLUME_SPIKE': 1,
+
+            # Divergence (Leading Indicator)
+            'RSI_DIVERGENCE': 2,
+
+            # Multi-Timeframe
+            'HTF_ALIGNMENT': 2,
+
+            # Deprecated (kept for compatibility)
+            'FIB_NORMAL': 1,
+            'TREND_ALIGNMENT': 2
         }
 
         logger.info("Trading Engine initialized with config: {}", config)
@@ -240,150 +268,204 @@ class TradingEngine:
 
 
     def _calculate_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Calculate technical indicators for God Combination"""
+        """Calculate institutional SMC indicators"""
         import ta
-        
-        # 1. Trend: EMA 50 & 200
-        df['ema50'] = ta.trend.ema_indicator(df['close'], window=self.config.get('EMA_FAST', 50))
-        df['ema200'] = ta.trend.ema_indicator(df['close'], window=self.config.get('EMA_SLOW', 200))
-        
-        # 2. Momentum: MACD
-        macd = ta.trend.MACD(df['close'])
-        df['macd'] = macd.macd()
-        df['macd_signal'] = macd.macd_signal()
-        df['macd_hist'] = macd.macd_diff()
-        
-        # 3. Volatility: ATR
-        df['atr'] = ta.volatility.average_true_range(df['high'], df['low'], df['close'], window=self.config.get('ATR_PERIOD', 14))
-        
-        # 4. Volume: OBV
-        df['obv'] = ta.volume.on_balance_volume(df['close'], df['volume'])
-        
-        # Average Volume for other checks
+
+        # ===== CORE SMC INDICATORS =====
+
+        # 1. ATR (Volatility + Position Sizing) - ENHANCED
+        df['atr'] = ta.volatility.average_true_range(
+            df['high'], df['low'], df['close'],
+            window=self.config.get('ATR_PERIOD', 14)
+        )
+
+        # ATR Percentile Rank (know if volatility is high/low)
+        df['atr_rank'] = df['atr'].rolling(100).apply(
+            lambda x: (x.iloc[-1] <= x).sum() / len(x) * 100 if len(x) > 0 else 50
+        )
+
+        # 2. RSI (For Divergence Detection Only)
+        df['rsi'] = ta.momentum.rsi(df['close'], window=14)
+
+        # 3. Volume Analysis
         df['avg_volume'] = df['volume'].rolling(window=20).mean()
         df['volume_spike'] = df['volume'] > (df['avg_volume'] * 1.5)
 
+        # 4. Delta Volume (Buy vs Sell Pressure)
+        df = self._calculate_delta_volume(df)
+
+        # 5. Session Levels (Time-Based Support/Resistance)
+        df = self._mark_session_levels(df)
+
         return df
 
-    def _generate_signals(self, df: pd.DataFrame, confluence_data: Dict) -> List[TradingSignal]:
-        """Generate trading signals based on God Combination Strategy"""
-        signals = []
-        
-        # Get latest data
+    def _calculate_delta_volume(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Calculate buying vs selling pressure
+        Delta = Buy Volume - Sell Volume
+        """
+        # Approximation: Up volume vs Down volume
+        df['up_volume'] = np.where(df['close'] > df['open'], df['volume'], 0)
+        df['down_volume'] = np.where(df['close'] < df['open'], df['volume'], 0)
+
+        # Net buying/selling pressure
+        df['delta_volume'] = df['up_volume'] - df['down_volume']
+
+        # Cumulative delta (institutional footprint)
+        df['cumulative_delta'] = df['delta_volume'].cumsum()
+
+        # Delta moving average
+        df['delta_ma'] = df['delta_volume'].rolling(20).mean()
+
+        return df
+
+    def _mark_session_levels(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Mark key session levels (Asian, London, NY)
+        Institutions respect these levels
+        """
+        # Ensure we have datetime
+        if 'time' in df.columns:
+            df['datetime'] = pd.to_datetime(df['time'])
+            df['hour'] = df['datetime'].dt.hour
+
+            # Asian Session: 00:00 - 08:00 UTC
+            asian_mask = (df['hour'] >= 0) & (df['hour'] < 8)
+            if asian_mask.any():
+                self.asian_high = df[asian_mask]['high'].max()
+                self.asian_low = df[asian_mask]['low'].min()
+
+            # London Session: 08:00 - 16:00 UTC
+            london_mask = (df['hour'] >= 8) & (df['hour'] < 16)
+            if london_mask.any():
+                self.london_high = df[london_mask]['high'].max()
+                self.london_low = df[london_mask]['low'].min()
+
+            # Previous Day High/Low (last 24 bars for H1)
+            if len(df) >= 24:
+                self.pdh = df['high'].iloc[-24:-1].max()
+                self.pdl = df['low'].iloc[-24:-1].min()
+
+        return df
+
+    def _check_session_level_proximity(self, current_price: float, atr: float) -> Dict:
+        """
+        Check if price is near key session levels
+        """
+        levels = {
+            'asian_high': self.asian_high,
+            'asian_low': self.asian_low,
+            'london_high': self.london_high,
+            'london_low': self.london_low,
+            'pdh': self.pdh,
+            'pdl': self.pdl
+        }
+
+        near_levels = {}
+        tolerance = atr * 0.5
+
+        for name, level in levels.items():
+            if level and abs(current_price - level) < tolerance:
+                near_levels[name] = level
+
+        return near_levels
+
+    def _detect_rsi_divergence(self, df: pd.DataFrame) -> Dict:
+        """
+        Detect divergences (leading indicator for reversals)
+        """
+        # Bullish Divergence: Price makes lower low, RSI makes higher low
+        # = Momentum weakening, reversal likely
+
+        # Bearish Divergence: Price makes higher high, RSI makes lower high
+        # = Uptrend losing steam
+
+        if len(self.swing_lows) < 2:
+            return {'bull_div': False, 'bear_div': False}
+
+        bull_div = False
+        bear_div = False
+
+        # Check last 2 swing lows
+        if (self.swing_lows[-1].price < self.swing_lows[-2].price and
+            df.loc[self.swing_lows[-1].bar_index, 'rsi'] >
+            df.loc[self.swing_lows[-2].bar_index, 'rsi']):
+            bull_div = True
+            logger.info("🔵 Bullish RSI Divergence detected")
+
+        # Check last 2 swing highs
+        if len(self.swing_highs) >= 2:
+            if (self.swing_highs[-1].price > self.swing_highs[-2].price and
+                df.loc[self.swing_highs[-1].bar_index, 'rsi'] <
+                df.loc[self.swing_highs[-2].bar_index, 'rsi']):
+                bear_div = True
+                logger.info("🔴 Bearish RSI Divergence detected")
+
+        return {'bull_div': bull_div, 'bear_div': bear_div}
+
+    def _check_volume_confirmation(self, df: pd.DataFrame, signal_type: str) -> bool:
+        """
+        Check if volume supports the signal
+        """
+        current = df.iloc[-1]
+        avg_delta = df['delta_ma'].iloc[-20:].mean()
+
+        if signal_type == "BUY":
+            # Need positive delta (buying pressure)
+            return current['delta_volume'] > 0 and current['delta_volume'] > avg_delta
+        else:
+            # Need negative delta (selling pressure)
+            return current['delta_volume'] < 0 and current['delta_volume'] < avg_delta
+
+    def _detect_stop_hunt(self, df: pd.DataFrame) -> Dict:
+        """
+        Detect classic stop hunts (market maker manipulation)
+
+        Pattern:
+        1. Price spikes through obvious level (triggers stops)
+        2. Immediately reverses
+        3. Strong volume on reversal = liquidity grab
+        """
+        if len(df) < 5:
+            return {'bull_stop_hunt': False, 'bear_stop_hunt': False}
+
         current = df.iloc[-1]
         prev = df.iloc[-2]
-        
-        # --- GOD COMBINATION CHECKS ---
-        
-        # 1. Trend Filter (EMA 50 vs 200)
-        trend_bullish = current['ema50'] > current['ema200']
-        trend_bearish = current['ema50'] < current['ema200']
-        
-        # 2. Momentum (MACD Histogram)
-        momentum_bullish = current['macd_hist'] > prev['macd_hist'] # Rising
-        momentum_bearish = current['macd_hist'] < prev['macd_hist'] # Falling
-        
-        # 3. Volume (OBV)
-        volume_bullish = current['obv'] > prev['obv'] # Rising
-        volume_bearish = current['obv'] < prev['obv'] # Falling
-        
-        # 4. Market Structure (Break + Retest)
-        # We use the BOS/CHoCH data calculated earlier
-        # Ideally, we want a recent BOS followed by a retest of that level
-        # For simplicity in this iteration, we'll use the BOS flags + Price Action
-        
-        structure_bullish = False
-        structure_bearish = False
-        
-        # Check if price is near a key level (Order Block or FVG) which acts as "Retest" support/resistance
-        # AND we have a bullish trend structure
-        
-        # Simplified Structure Check for "God Mode":
-        # Bullish: Price > EMA50 > EMA200 AND Recent Bullish BOS/CHoCH
-        if trend_bullish and (confluence_data['bos_choch_data']['bos_bullish'] or confluence_data['bos_choch_data']['choch_to_bullish']):
-             structure_bullish = True
-             
-        if trend_bearish and (confluence_data['bos_choch_data']['bos_bearish'] or confluence_data['bos_choch_data']['choch_to_bearish']):
-             structure_bearish = True
+        prev2 = df.iloc[-3]
 
-        # --- SIGNAL GENERATION ---
-        
-        signal_type = None
-        score_breakdown = {}
-        confluence_score = 0
-        
-        # BUY LOGIC
-        if trend_bullish and momentum_bullish and volume_bullish:
-            signal_type = "BUY"
-            confluence_score += 5 # Base score for meeting core 3
-            score_breakdown['Trend (EMA)'] = 1
-            score_breakdown['Momentum (MACD)'] = 1
-            score_breakdown['Volume (OBV)'] = 1
-            
-            if structure_bullish:
-                confluence_score += 2
-                score_breakdown['Structure'] = 2
-                
-            # Add existing confluence factors
-            if confluence_data['bull_score'] > 0:
-                confluence_score += min(3, confluence_data['bull_score']) # Cap extra confluence
-                score_breakdown['Extra Confluence'] = min(3, confluence_data['bull_score'])
+        # Bullish stop hunt (sweep low, then rally)
+        bull_hunt = (
+            prev['low'] < prev2['low'] and  # Took out previous low
+            current['close'] > prev['high'] and  # Reversed strongly
+            current['volume'] > current['avg_volume'] * 1.5  # High volume
+        )
 
-        # SELL LOGIC
-        elif trend_bearish and momentum_bearish and volume_bearish:
-            signal_type = "SELL"
-            confluence_score += 5
-            score_breakdown['Trend (EMA)'] = 1
-            score_breakdown['Momentum (MACD)'] = 1
-            score_breakdown['Volume (OBV)'] = 1
-            
-            if structure_bearish:
-                confluence_score += 2
-                score_breakdown['Structure'] = 2
-                
-            if confluence_data['bear_score'] > 0:
-                confluence_score += min(3, confluence_data['bear_score'])
-                score_breakdown['Extra Confluence'] = min(3, confluence_data['bear_score'])
+        # Bearish stop hunt (sweep high, then dump)
+        bear_hunt = (
+            prev['high'] > prev2['high'] and  # Took out previous high
+            current['close'] < prev['low'] and  # Reversed strongly
+            current['volume'] > current['avg_volume'] * 1.5
+        )
 
-        # Create Signal if valid
-        if signal_type and confluence_score >= self.min_confluence_score:
-            atr = current['atr']
-            entry_price = current['close']
-            
-            # ATR-based Risk Management
-            sl_mult = self.config.get('ATR_SL_MULTIPLIER', 1.5)
-            tp_mult = self.config.get('ATR_TP_MULTIPLIER', 3.0)
-            
-            if signal_type == "BUY":
-                stop_loss = entry_price - (atr * sl_mult)
-                take_profit_1 = entry_price + (atr * tp_mult)
-                take_profit_2 = entry_price + (atr * tp_mult * 1.5)
-                take_profit_3 = entry_price + (atr * tp_mult * 2.0)
-            else:
-                stop_loss = entry_price + (atr * sl_mult)
-                take_profit_1 = entry_price - (atr * tp_mult)
-                take_profit_2 = entry_price - (atr * tp_mult * 1.5)
-                take_profit_3 = entry_price - (atr * tp_mult * 2.0)
+        if bull_hunt:
+            logger.info("🎯 Bullish Stop Hunt detected - Liquidity grab complete")
+        if bear_hunt:
+            logger.info("🎯 Bearish Stop Hunt detected - Liquidity grab complete")
 
-            signal = TradingSignal(
-                signal_type=signal_type,
-                entry_price=entry_price,
-                stop_loss=stop_loss,
-                take_profit_1=take_profit_1,
-                take_profit_2=take_profit_2,
-                take_profit_3=take_profit_3,
-                confluence_score=confluence_score,
-                score_breakdown=score_breakdown,
-                timestamp=current['time'],
-                symbol=df.iloc[-1].get('symbol', 'Unknown'), # Assuming symbol is in DF or passed context
-                timeframe=df.iloc[-1].get('timeframe', 'Unknown'),
-                risk_reward_ratio=tp_mult / sl_mult
-            )
-            signals.append(signal)
-            
-            logger.info(f"GOD SIGNAL: {signal_type} Score: {confluence_score} Breakdown: {score_breakdown}")
+        return {'bull_stop_hunt': bull_hunt, 'bear_stop_hunt': bear_hunt}
 
-        return signals
+    def _calculate_vp_trend(self) -> str:
+        """Check if POC is rising or falling"""
+        if len(self.poc_history) < 3:
+            return "NEUTRAL"
+
+        recent_pocs = self.poc_history[-3:]
+        if all(recent_pocs[i] < recent_pocs[i+1] for i in range(len(recent_pocs)-1)):
+            return "RISING"  # Bullish accumulation
+        elif all(recent_pocs[i] > recent_pocs[i+1] for i in range(len(recent_pocs)-1)):
+            return "FALLING"  # Bearish distribution
+        return "NEUTRAL"
+
 
 
     def _detect_swing_points(self, df: pd.DataFrame):
@@ -680,6 +762,11 @@ class TradingEngine:
         max_volume_row = np.argmax(vp_volumes)
         self.poc_level = lowest_price + (max_volume_row * row_height) + (row_height / 2)
 
+        # Track POC history for trend detection
+        self.poc_history.append(self.poc_level)
+        if len(self.poc_history) > 10:
+            self.poc_history = self.poc_history[-10:]
+
         # Calculate Value Area
         total_volume = vp_volumes.sum()
         va_volume = total_volume * (self.value_area_percent / 100)
@@ -722,7 +809,10 @@ class TradingEngine:
 
 
     def _calculate_confluence(self, df: pd.DataFrame, bos_choch_data: Dict) -> Dict:
-        """Calculate confluence scores for both directions"""
+        """
+        Calculate confluence scores for both directions
+        ENHANCED: Pure SMC with institutional indicators
+        """
         bull_score = 0
         bear_score = 0
         bull_breakdown = {}
@@ -733,7 +823,9 @@ class TradingEngine:
         current_high = df.iloc[-1]['high']
         atr = df.iloc[-1]['atr']
 
-        # 1. Order Block
+        # ===== CORE STRUCTURE (Highest Weight) =====
+
+        # 1. Order Block (Weight: 3)
         at_bullish_ob = any(ob.bottom <= current_low <= ob.top for ob in self.bullish_obs if not ob.is_mitigated)
         at_bearish_ob = any(ob.bottom <= current_high <= ob.top for ob in self.bearish_obs if not ob.is_mitigated)
 
@@ -744,7 +836,7 @@ class TradingEngine:
             bear_score += self.SCORING_WEIGHTS['ORDER_BLOCK']
             bear_breakdown['Order Block'] = self.SCORING_WEIGHTS['ORDER_BLOCK']
 
-        # 2. FVG
+        # 2. FVG (Weight: 2)
         at_bullish_fvg = any(fvg.bottom <= current_price <= fvg.top for fvg in self.bullish_fvgs if not fvg.is_filled)
         at_bearish_fvg = any(fvg.bottom <= current_price <= fvg.top for fvg in self.bearish_fvgs if not fvg.is_filled)
 
@@ -755,24 +847,26 @@ class TradingEngine:
             bear_score += self.SCORING_WEIGHTS['FVG']
             bear_breakdown['FVG'] = self.SCORING_WEIGHTS['FVG']
 
-        # 3. Market Structure
-        if self.trend_bullish:
-            bull_score += self.SCORING_WEIGHTS['TREND_ALIGNMENT']
-            bull_breakdown['Trend'] = self.SCORING_WEIGHTS['TREND_ALIGNMENT']
-        else:
-            bear_score += self.SCORING_WEIGHTS['TREND_ALIGNMENT']
-            bear_breakdown['Trend'] = self.SCORING_WEIGHTS['TREND_ALIGNMENT']
+        # 3. BOS/CHoCH (Weight: 3)
+        if bos_choch_data['bos_bullish'] and bos_choch_data['bos_recent']:
+            bull_score += self.SCORING_WEIGHTS['BOS']
+            bull_breakdown['BOS Bullish'] = self.SCORING_WEIGHTS['BOS']
 
-        # 4. Premium/Discount Zone
-        pd_zone = self._get_premium_discount_zone(df)
-        if pd_zone['zone'] == 'DISCOUNT':
-            bull_score += self.SCORING_WEIGHTS['PREMIUM_DISCOUNT']
-            bull_breakdown['Discount Zone'] = self.SCORING_WEIGHTS['PREMIUM_DISCOUNT']
-        elif pd_zone['zone'] == 'PREMIUM':
-            bear_score += self.SCORING_WEIGHTS['PREMIUM_DISCOUNT']
-            bear_breakdown['Premium Zone'] = self.SCORING_WEIGHTS['PREMIUM_DISCOUNT']
+        if bos_choch_data['bos_bearish'] and bos_choch_data['bos_recent']:
+            bear_score += self.SCORING_WEIGHTS['BOS']
+            bear_breakdown['BOS Bearish'] = self.SCORING_WEIGHTS['BOS']
 
-        # 5. Liquidity Sweep
+        if bos_choch_data['choch_to_bullish']:
+            bull_score += self.SCORING_WEIGHTS['CHOCH']
+            bull_breakdown['CHoCH Reversal'] = self.SCORING_WEIGHTS['CHOCH']
+
+        if bos_choch_data['choch_to_bearish']:
+            bear_score += self.SCORING_WEIGHTS['CHOCH']
+            bear_breakdown['CHoCH Reversal'] = self.SCORING_WEIGHTS['CHOCH']
+
+        # ===== LIQUIDITY & MANIPULATION =====
+
+        # 4. Liquidity Sweep (Weight: 2)
         bull_sweep, bear_sweep = self._detect_liquidity_sweeps(df)
         if bull_sweep:
             bull_score += self.SCORING_WEIGHTS['LIQUIDITY_SWEEP']
@@ -781,59 +875,114 @@ class TradingEngine:
             bear_score += self.SCORING_WEIGHTS['LIQUIDITY_SWEEP']
             bear_breakdown['Liquidity Sweep'] = self.SCORING_WEIGHTS['LIQUIDITY_SWEEP']
 
-        # 6. POC Proximity
-        if self.poc_level and abs(current_price - self.poc_level) < atr * 0.5:
-            bull_score += self.SCORING_WEIGHTS['INDICATORS']
-            bear_score += self.SCORING_WEIGHTS['INDICATORS']
-            bull_breakdown['Near POC'] = self.SCORING_WEIGHTS['INDICATORS']
-            bear_breakdown['Near POC'] = self.SCORING_WEIGHTS['INDICATORS']
+        # 5. Stop Hunt (Weight: 2)
+        stop_hunt = self._detect_stop_hunt(df)
+        if stop_hunt['bull_stop_hunt']:
+            bull_score += self.SCORING_WEIGHTS['STOP_HUNT']
+            bull_breakdown['Stop Hunt'] = self.SCORING_WEIGHTS['STOP_HUNT']
+        if stop_hunt['bear_stop_hunt']:
+            bear_score += self.SCORING_WEIGHTS['STOP_HUNT']
+            bear_breakdown['Stop Hunt'] = self.SCORING_WEIGHTS['STOP_HUNT']
 
-        # 7. Volume
-        if df.iloc[-1]['volume_spike']:
-            if df.iloc[-1]['close'] > df.iloc[-1]['open']:
-                bull_score += self.SCORING_WEIGHTS['INDICATORS']
-                bull_breakdown['Volume'] = self.SCORING_WEIGHTS['INDICATORS']
-            else:
-                bear_score += self.SCORING_WEIGHTS['INDICATORS']
-                bear_breakdown['Volume'] = self.SCORING_WEIGHTS['INDICATORS']
+        # ===== LEVELS & ZONES =====
 
-        # 8. Fibonacci Confluence
+        # 6. Fibonacci Confluence (Weight: 2 for golden, 1 for normal)
         fib_data = self._calculate_fibonacci_levels(df)
-        
+
         if fib_data['bullish_level']:
             score = self.SCORING_WEIGHTS['FIB_GOLDEN'] if fib_data['is_golden_zone'] else self.SCORING_WEIGHTS['FIB_NORMAL']
             bull_score += score
             bull_breakdown[f'Fib {fib_data["bullish_level"]}'] = score
-            
+
         if fib_data['bearish_level']:
             score = self.SCORING_WEIGHTS['FIB_GOLDEN'] if fib_data['is_golden_zone'] else self.SCORING_WEIGHTS['FIB_NORMAL']
             bear_score += score
             bear_breakdown[f'Fib {fib_data["bearish_level"]}'] = score
 
-        # 9. BOS/CHoCH Confluence
-        # Bullish BOS: Recent break above structure
-        if bos_choch_data['bos_bullish'] and bos_choch_data['bos_recent']:
-            bull_score += self.SCORING_WEIGHTS['BOS']
-            bull_breakdown['BOS Bullish'] = self.SCORING_WEIGHTS['BOS']
-            
-        # Bearish BOS: Recent break below structure
-        if bos_choch_data['bos_bearish'] and bos_choch_data['bos_recent']:
-            bear_score += self.SCORING_WEIGHTS['BOS']
-            bear_breakdown['BOS Bearish'] = self.SCORING_WEIGHTS['BOS']
-            
-        # CHoCH to Bullish: High-quality reversal setup
-        if bos_choch_data['choch_to_bullish']:
-            bull_score += self.SCORING_WEIGHTS['CHOCH']
-            bull_breakdown['CHoCH Reversal'] = self.SCORING_WEIGHTS['CHOCH']
-            
-        # CHoCH to Bearish: High-quality reversal setup
-        if bos_choch_data['choch_to_bearish']:
-            bear_score += self.SCORING_WEIGHTS['CHOCH']
-            bear_breakdown['CHoCH Reversal'] = self.SCORING_WEIGHTS['CHOCH']
+        # 7. Premium/Discount Zone (Weight: 2)
+        pd_zone = self._get_premium_discount_zone(df)
+        if pd_zone['zone'] == 'DISCOUNT':
+            bull_score += self.SCORING_WEIGHTS['PREMIUM_DISCOUNT']
+            bull_breakdown['Discount Zone'] = self.SCORING_WEIGHTS['PREMIUM_DISCOUNT']
+        elif pd_zone['zone'] == 'PREMIUM':
+            bear_score += self.SCORING_WEIGHTS['PREMIUM_DISCOUNT']
+            bear_breakdown['Premium Zone'] = self.SCORING_WEIGHTS['PREMIUM_DISCOUNT']
 
-        # Normalize to 0-10 (allow going over 10 slightly with extra confluence, but cap at 10 for standardizing)
-        bull_score = min(bull_score, 10)
-        bear_score = min(bear_score, 10)
+        # 8. Session Levels (Weight: 1)
+        near_session_levels = self._check_session_level_proximity(current_price, atr)
+        if near_session_levels:
+            # If price at session low + bullish setup = strong support
+            if any('low' in level for level in near_session_levels):
+                bull_score += self.SCORING_WEIGHTS['SESSION_LEVEL']
+                bull_breakdown['Session Level'] = self.SCORING_WEIGHTS['SESSION_LEVEL']
+
+            # If price at session high + bearish setup = strong resistance
+            if any('high' in level for level in near_session_levels):
+                bear_score += self.SCORING_WEIGHTS['SESSION_LEVEL']
+                bear_breakdown['Session Level'] = self.SCORING_WEIGHTS['SESSION_LEVEL']
+
+        # ===== VOLUME CONFIRMATION =====
+
+        # 9. Delta Volume (Weight: 2)
+        delta_vol_bull = self._check_volume_confirmation(df, "BUY")
+        delta_vol_bear = self._check_volume_confirmation(df, "SELL")
+
+        if delta_vol_bull:
+            bull_score += self.SCORING_WEIGHTS['DELTA_VOLUME']
+            bull_breakdown['Delta Volume'] = self.SCORING_WEIGHTS['DELTA_VOLUME']
+        if delta_vol_bear:
+            bear_score += self.SCORING_WEIGHTS['DELTA_VOLUME']
+            bear_breakdown['Delta Volume'] = self.SCORING_WEIGHTS['DELTA_VOLUME']
+
+        # 10. POC Proximity (Weight: 1)
+        if self.poc_level and abs(current_price - self.poc_level) < atr * 0.5:
+            # Check POC trend direction
+            poc_trend = self._calculate_vp_trend()
+            if poc_trend == "RISING":
+                bull_score += self.SCORING_WEIGHTS['POC_PROXIMITY']
+                bull_breakdown['POC Rising'] = self.SCORING_WEIGHTS['POC_PROXIMITY']
+            elif poc_trend == "FALLING":
+                bear_score += self.SCORING_WEIGHTS['POC_PROXIMITY']
+                bear_breakdown['POC Falling'] = self.SCORING_WEIGHTS['POC_PROXIMITY']
+            else:
+                # Neutral POC = support/resistance
+                bull_score += self.SCORING_WEIGHTS['POC_PROXIMITY']
+                bear_score += self.SCORING_WEIGHTS['POC_PROXIMITY']
+                bull_breakdown['Near POC'] = self.SCORING_WEIGHTS['POC_PROXIMITY']
+                bear_breakdown['Near POC'] = self.SCORING_WEIGHTS['POC_PROXIMITY']
+
+        # 11. Volume Spike (Weight: 1)
+        if df.iloc[-1]['volume_spike']:
+            if df.iloc[-1]['close'] > df.iloc[-1]['open']:
+                bull_score += self.SCORING_WEIGHTS['VOLUME_SPIKE']
+                bull_breakdown['Volume Spike'] = self.SCORING_WEIGHTS['VOLUME_SPIKE']
+            else:
+                bear_score += self.SCORING_WEIGHTS['VOLUME_SPIKE']
+                bear_breakdown['Volume Spike'] = self.SCORING_WEIGHTS['VOLUME_SPIKE']
+
+        # ===== DIVERGENCE (Leading Indicator) =====
+
+        # 12. RSI Divergence (Weight: 2)
+        rsi_div = self._detect_rsi_divergence(df)
+        if rsi_div['bull_div']:
+            bull_score += self.SCORING_WEIGHTS['RSI_DIVERGENCE']
+            bull_breakdown['RSI Divergence'] = self.SCORING_WEIGHTS['RSI_DIVERGENCE']
+        if rsi_div['bear_div']:
+            bear_score += self.SCORING_WEIGHTS['RSI_DIVERGENCE']
+            bear_breakdown['RSI Divergence'] = self.SCORING_WEIGHTS['RSI_DIVERGENCE']
+
+        # ===== MULTI-TIMEFRAME =====
+
+        # 13. HTF Alignment (Weight: 2)
+        if self.higher_tf_trend == "BULLISH":
+            bull_score += self.SCORING_WEIGHTS['HTF_ALIGNMENT']
+            bull_breakdown['HTF Bullish'] = self.SCORING_WEIGHTS['HTF_ALIGNMENT']
+        elif self.higher_tf_trend == "BEARISH":
+            bear_score += self.SCORING_WEIGHTS['HTF_ALIGNMENT']
+            bear_breakdown['HTF Bearish'] = self.SCORING_WEIGHTS['HTF_ALIGNMENT']
+
+        # Don't cap scores - let them reflect true confluence
+        # Maximum possible ~25 points with all confluence
 
         return {
             'bull_score': bull_score,
@@ -849,27 +998,43 @@ class TradingEngine:
         """
         Calculate Fibonacci retracement levels based on recent swings
         Returns dictionary with active levels and zones
+        ENHANCED: ATR-based tolerance + Extension levels for TP targets
         """
         if not self.swing_highs or not self.swing_lows:
-            return {'bullish_level': None, 'bearish_level': None, 'is_golden_zone': False}
+            return {
+                'bullish_level': None,
+                'bearish_level': None,
+                'is_golden_zone': False,
+                'extensions': {}
+            }
 
         current_price = df.iloc[-1]['close']
-        
+        atr = df.iloc[-1]['atr']
+
         # Sort all swings by time to find the last leg
         all_swings = sorted(self.swing_highs + self.swing_lows, key=lambda x: x.bar_index)
-        
+
         if len(all_swings) < 2:
-            return {'bullish_level': None, 'bearish_level': None, 'is_golden_zone': False}
+            return {
+                'bullish_level': None,
+                'bearish_level': None,
+                'is_golden_zone': False,
+                'extensions': {}
+            }
 
         last_swing = all_swings[-1]
         prev_swing = all_swings[-2]
-        
+
         result = {
-            'bullish_level': None, 
-            'bearish_level': None, 
+            'bullish_level': None,
+            'bearish_level': None,
             'is_golden_zone': False,
-            'nearest_level': None
+            'nearest_level': None,
+            'extensions': {}
         }
+
+        # ATR-based tolerance (more dynamic than fixed percentage)
+        tolerance = atr * 0.5  # Half ATR around Fib level
 
         # Identify the last leg direction
         # If last swing was a High, the leg was Up (Low -> High). We look for Bullish Retracement (Dip).
@@ -878,23 +1043,33 @@ class TradingEngine:
             # Retracement: Downwards
             high_price = last_swing.price
             low_price = prev_swing.price
-            
+
             # Validate it was actually a low before
-            if not prev_swing.is_high: 
+            if not prev_swing.is_high:
                 range_price = high_price - low_price
+
+                # Retracement levels
                 fib_levels = {
                     '0.382': high_price - (range_price * 0.382),
                     '0.5': high_price - (range_price * 0.5),
                     '0.618': high_price - (range_price * 0.618),
                     '0.786': high_price - (range_price * 0.786)
                 }
-                
-                # Check proximity
+
+                # Extension levels for TP targets
+                result['extensions'] = {
+                    '1.272': high_price + (range_price * 0.272),
+                    '1.414': high_price + (range_price * 0.414),
+                    '1.618': high_price + (range_price * 0.618),
+                    '2.0': high_price + range_price,
+                    '2.618': high_price + (range_price * 1.618)
+                }
+
+                # Check proximity (ATR-based tolerance)
                 for level_name, price in fib_levels.items():
-                    tolerance = current_price * 0.001 # 0.1% tolerance
                     if abs(current_price - price) < tolerance:
                         result['bullish_level'] = level_name
-                        if level_name in ['0.5', '0.618']:
+                        if level_name in ['0.618', '0.786']:
                             result['is_golden_zone'] = True
                         break
 
@@ -904,26 +1079,36 @@ class TradingEngine:
             # Retracement: Upwards
             low_price = last_swing.price
             high_price = prev_swing.price
-            
+
             # Validate it was actually a high before
             if prev_swing.is_high:
                 range_price = high_price - low_price
+
+                # Retracement levels
                 fib_levels = {
                     '0.382': low_price + (range_price * 0.382),
                     '0.5': low_price + (range_price * 0.5),
                     '0.618': low_price + (range_price * 0.618),
                     '0.786': low_price + (range_price * 0.786)
                 }
-                
-                # Check proximity
+
+                # Extension levels for TP targets
+                result['extensions'] = {
+                    '1.272': low_price - (range_price * 0.272),
+                    '1.414': low_price - (range_price * 0.414),
+                    '1.618': low_price - (range_price * 0.618),
+                    '2.0': low_price - range_price,
+                    '2.618': low_price - (range_price * 1.618)
+                }
+
+                # Check proximity (ATR-based tolerance)
                 for level_name, price in fib_levels.items():
-                    tolerance = current_price * 0.001
                     if abs(current_price - price) < tolerance:
                         result['bearish_level'] = level_name
-                        if level_name in ['0.5', '0.618']:
+                        if level_name in ['0.618', '0.786']:
                             result['is_golden_zone'] = True
                         break
-                    
+
         return result
 
 
@@ -1021,7 +1206,7 @@ class TradingEngine:
             nearby_fvgs = [fvg for fvg in self.bearish_fvgs if fvg.bottom > current_price and (fvg.bottom - current_price) < atr]
             if nearby_fvgs:
                 best_fvg = nearby_fvgs[-1]
-                entry_price = fvg.bottom
+                entry_price = best_fvg.bottom
                 order_type = "SELL_LIMIT"
                 return entry_price, order_type
                 

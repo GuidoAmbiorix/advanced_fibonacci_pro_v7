@@ -64,6 +64,22 @@
         "documentation": {}
     },
     {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
         "label": "datetime",
         "importPath": "datetime",
         "description": "datetime",
@@ -113,6 +129,54 @@
     },
     {
         "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
         "importPath": "datetime",
         "description": "datetime",
         "isExtraImport": true,
@@ -185,6 +249,30 @@
     },
     {
         "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -384,6 +472,14 @@
         "documentation": {}
     },
     {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Dict",
         "importPath": "typing",
         "description": "typing",
@@ -513,6 +609,62 @@
     },
     {
         "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
         "importPath": "fastapi",
         "description": "fastapi",
         "isExtraImport": true,
@@ -648,7 +800,47 @@
         "documentation": {}
     },
     {
+        "label": "Session",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "Session",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "Session",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
         "label": "relationship",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "Session",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "Session",
         "importPath": "sqlalchemy.orm",
         "description": "sqlalchemy.orm",
         "isExtraImport": true,
@@ -669,6 +861,30 @@
         "description": "sqlalchemy.orm",
         "isExtraImport": true,
         "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "database",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
+        "documentation": {}
+    },
+    {
+        "label": "database",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
+        "documentation": {}
+    },
+    {
+        "label": "database",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
         "documentation": {}
     },
     {
@@ -728,11 +944,27 @@
         "documentation": {}
     },
     {
-        "label": "security",
-        "importPath": "app.core",
-        "description": "app.core",
+        "label": "settings",
+        "importPath": "app.api",
+        "description": "app.api",
         "isExtraImport": true,
-        "detail": "app.core",
+        "detail": "app.api",
+        "documentation": {}
+    },
+    {
+        "label": "news",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
+        "documentation": {}
+    },
+    {
+        "label": "logs",
+        "importPath": "app.api",
+        "description": "app.api",
+        "isExtraImport": true,
+        "detail": "app.api",
         "documentation": {}
     },
     {
@@ -749,6 +981,38 @@
         "description": "app.core",
         "isExtraImport": true,
         "detail": "app.core",
+        "documentation": {}
+    },
+    {
+        "label": "security",
+        "importPath": "app.core",
+        "description": "app.core",
+        "isExtraImport": true,
+        "detail": "app.core",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "app.core.config",
+        "description": "app.core.config",
+        "isExtraImport": true,
+        "detail": "app.core.config",
         "documentation": {}
     },
     {
@@ -856,6 +1120,38 @@
         "documentation": {}
     },
     {
+        "label": "ExecutionLog",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "NewsEvent",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfig",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "RiskProfile",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
         "label": "Trade",
         "importPath": "app.models.database",
         "description": "app.models.database",
@@ -889,6 +1185,62 @@
     },
     {
         "label": "BotConfig",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Base",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "ExecutionLog",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Trade",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "MarketRegime",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "NewsEvent",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "BotConfig",
+        "importPath": "app.models.database",
+        "description": "app.models.database",
+        "isExtraImport": true,
+        "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "RiskProfile",
         "importPath": "app.models.database",
         "description": "app.models.database",
         "isExtraImport": true,
@@ -973,6 +1325,14 @@
         "description": "app.models.database",
         "isExtraImport": true,
         "detail": "app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "schemas",
+        "importPath": "app.schemas",
+        "description": "app.schemas",
+        "isExtraImport": true,
+        "detail": "app.schemas",
         "documentation": {}
     },
     {
@@ -1096,6 +1456,78 @@
         "documentation": {}
     },
     {
+        "label": "Column",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "Integer",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "String",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "Float",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "DateTime",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "PrimaryKeyConstraint",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "create_engine",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
         "label": "create_engine",
         "importPath": "sqlalchemy",
         "description": "sqlalchemy",
@@ -1173,6 +1605,14 @@
         "description": "app.api.deps",
         "isExtraImport": true,
         "detail": "app.api.deps",
+        "documentation": {}
+    },
+    {
+        "label": "Celery",
+        "importPath": "celery",
+        "description": "celery",
+        "isExtraImport": true,
+        "detail": "celery",
         "documentation": {}
     },
     {
@@ -1455,6 +1895,22 @@
         "documentation": {}
     },
     {
+        "label": "engine",
+        "importPath": "app.api.database",
+        "description": "app.api.database",
+        "isExtraImport": true,
+        "detail": "app.api.database",
+        "documentation": {}
+    },
+    {
+        "label": "declarative_base",
+        "importPath": "sqlalchemy.ext.declarative",
+        "description": "sqlalchemy.ext.declarative",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.declarative",
+        "documentation": {}
+    },
+    {
         "label": "declarative_base",
         "importPath": "sqlalchemy.ext.declarative",
         "description": "sqlalchemy.ext.declarative",
@@ -1496,6 +1952,88 @@
         "documentation": {}
     },
     {
+        "label": "asyncio",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "asyncio",
+        "description": "asyncio",
+        "detail": "asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "MT5Connector",
+        "importPath": "app.core.mt5_connector",
+        "description": "app.core.mt5_connector",
+        "isExtraImport": true,
+        "detail": "app.core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "MT5Connector",
+        "importPath": "app.core.mt5_connector",
+        "description": "app.core.mt5_connector",
+        "isExtraImport": true,
+        "detail": "app.core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "MT5Connector",
+        "importPath": "app.core.mt5_connector",
+        "description": "app.core.mt5_connector",
+        "isExtraImport": true,
+        "detail": "app.core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "MT5Connector",
+        "importPath": "app.core.mt5_connector",
+        "description": "app.core.mt5_connector",
+        "isExtraImport": true,
+        "detail": "app.core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "MT5Connector",
+        "importPath": "app.core.mt5_connector",
+        "description": "app.core.mt5_connector",
+        "isExtraImport": true,
+        "detail": "app.core.mt5_connector",
+        "documentation": {}
+    },
+    {
+        "label": "logging",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "logging",
+        "description": "logging",
+        "detail": "logging",
+        "documentation": {}
+    },
+    {
+        "label": "ADXIndicator",
+        "importPath": "ta.trend",
+        "description": "ta.trend",
+        "isExtraImport": true,
+        "detail": "ta.trend",
+        "documentation": {}
+    },
+    {
+        "label": "EMAIndicator",
+        "importPath": "ta.trend",
+        "description": "ta.trend",
+        "isExtraImport": true,
+        "detail": "ta.trend",
+        "documentation": {}
+    },
+    {
+        "label": "AverageTrueRange",
+        "importPath": "ta.volatility",
+        "description": "ta.volatility",
+        "isExtraImport": true,
+        "detail": "ta.volatility",
+        "documentation": {}
+    },
+    {
         "label": "aio_pika",
         "kind": 6,
         "isExtraImport": true,
@@ -1514,12 +2052,11 @@
         "documentation": {}
     },
     {
-        "label": "asyncio",
-        "kind": 6,
+        "label": "MarketRegimeDetector",
+        "importPath": "app.services.market_regime",
+        "description": "app.services.market_regime",
         "isExtraImport": true,
-        "importPath": "asyncio",
-        "description": "asyncio",
-        "detail": "asyncio",
+        "detail": "app.services.market_regime",
         "documentation": {}
     },
     {
@@ -1529,38 +2066,6 @@
         "importPath": "aiohttp",
         "description": "aiohttp",
         "detail": "aiohttp",
-        "documentation": {}
-    },
-    {
-        "label": "MT5Connector",
-        "importPath": "app.core.mt5_connector",
-        "description": "app.core.mt5_connector",
-        "isExtraImport": true,
-        "detail": "app.core.mt5_connector",
-        "documentation": {}
-    },
-    {
-        "label": "MT5Connector",
-        "importPath": "app.core.mt5_connector",
-        "description": "app.core.mt5_connector",
-        "isExtraImport": true,
-        "detail": "app.core.mt5_connector",
-        "documentation": {}
-    },
-    {
-        "label": "MT5Connector",
-        "importPath": "app.core.mt5_connector",
-        "description": "app.core.mt5_connector",
-        "isExtraImport": true,
-        "detail": "app.core.mt5_connector",
-        "documentation": {}
-    },
-    {
-        "label": "MT5Connector",
-        "importPath": "app.core.mt5_connector",
-        "description": "app.core.mt5_connector",
-        "isExtraImport": true,
-        "detail": "app.core.mt5_connector",
         "documentation": {}
     },
     {
@@ -1833,6 +2338,33 @@
         "documentation": {}
     },
     {
+        "label": "router",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.api.logs",
+        "description": "institutional-edge-system.backend.app.api.logs",
+        "peekOfCode": "router = APIRouter()\n@router.get(\"/\")\nasync def get_logs(limit: int = 100, symbol: str = None, db: Session = Depends(database.get_db)):\n    query = db.query(ExecutionLog)\n    if symbol:\n        query = query.filter(ExecutionLog.symbol == symbol)\n    logs = query.order_by(ExecutionLog.timestamp.desc()).limit(limit).all()\n    return logs",
+        "detail": "institutional-edge-system.backend.app.api.logs",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.api.news",
+        "description": "institutional-edge-system.backend.app.api.news",
+        "peekOfCode": "router = APIRouter()\n@router.get(\"/events\")\nasync def get_news_events(limit: int = 50, db: Session = Depends(database.get_db)):\n    # Get upcoming and recent events\n    start_date = datetime.utcnow() - timedelta(hours=24)\n    events = db.query(NewsEvent).filter(\n        NewsEvent.date >= start_date\n    ).order_by(NewsEvent.date.asc()).limit(limit).all()\n    return events\n@router.post(\"/refresh\")",
+        "detail": "institutional-edge-system.backend.app.api.news",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.api.settings",
+        "description": "institutional-edge-system.backend.app.api.settings",
+        "peekOfCode": "router = APIRouter()\n@router.get(\"/config/{bot_id}\")\nasync def get_bot_settings(bot_id: int, db: Session = Depends(database.get_db)):\n    config = db.query(BotConfig).filter(BotConfig.id == bot_id).first()\n    if not config:\n        raise HTTPException(status_code=404, detail=\"Bot config not found\")\n    return config\n@router.put(\"/config/{bot_id}\")\nasync def update_bot_settings(bot_id: int, settings: dict, db: Session = Depends(database.get_db)):\n    config = db.query(BotConfig).filter(BotConfig.id == bot_id).first()",
+        "detail": "institutional-edge-system.backend.app.api.settings",
+        "documentation": {}
+    },
+    {
         "label": "get_performance_metrics",
         "kind": 2,
         "importPath": "institutional-edge-system.backend.app.api.stats",
@@ -1857,6 +2389,24 @@
         "description": "institutional-edge-system.backend.app.api.stats",
         "peekOfCode": "router = APIRouter()\n@router.get(\"/performance\", response_model=schemas.PerformanceMetricsResponse)\ndef get_performance_metrics(\n    days: int = 30,\n    db: Session = Depends(database.get_db)\n):\n    \"\"\"\n    Get aggregated performance metrics for the specified period\n    \"\"\"\n    # Calculate start date",
         "detail": "institutional-edge-system.backend.app.api.stats",
+        "documentation": {}
+    },
+    {
+        "label": "celery_app",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.celery_app",
+        "description": "institutional-edge-system.backend.app.core.celery_app",
+        "peekOfCode": "celery_app = Celery(\n    \"worker\",\n    broker=settings.CELERY_BROKER_URL,\n    backend=settings.CELERY_RESULT_BACKEND\n)\ncelery_app.conf.update(\n    task_serializer=\"json\",\n    accept_content=[\"json\"],\n    result_serializer=\"json\",\n    timezone=\"UTC\",",
+        "detail": "institutional-edge-system.backend.app.core.celery_app",
+        "documentation": {}
+    },
+    {
+        "label": "celery_app.conf.task_routes",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.core.celery_app",
+        "description": "institutional-edge-system.backend.app.core.celery_app",
+        "peekOfCode": "celery_app.conf.task_routes = {\n    \"app.worker.test_celery\": \"main-queue\",\n}",
+        "detail": "institutional-edge-system.backend.app.core.celery_app",
         "documentation": {}
     },
     {
@@ -2328,12 +2878,66 @@
         "documentation": {}
     },
     {
+        "label": "MarketRegime",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.models.database",
+        "description": "institutional-edge-system.backend.app.models.database",
+        "peekOfCode": "class MarketRegime(Base):\n    \"\"\"Market Regime Detection History\"\"\"\n    __tablename__ = \"market_regimes\"\n    id = Column(Integer, primary_key=True, index=True)\n    symbol = Column(String, nullable=False, index=True)\n    timeframe = Column(String, nullable=False)\n    regime_type = Column(String, nullable=False)  # TRENDING, RANGING, VOLATILE\n    trend_direction = Column(String, nullable=True) # BULLISH, BEARISH, NEUTRAL\n    volatility_level = Column(String, default=\"NORMAL\") # LOW, NORMAL, HIGH, EXTREME\n    details = Column(JSON, nullable=True)  # ADX, ATR values, etc.",
+        "detail": "institutional-edge-system.backend.app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "NewsEvent",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.models.database",
+        "description": "institutional-edge-system.backend.app.models.database",
+        "peekOfCode": "class NewsEvent(Base):\n    \"\"\"Economic Calendar Events\"\"\"\n    __tablename__ = \"news_events\"\n    id = Column(Integer, primary_key=True, index=True)\n    title = Column(String, nullable=False)\n    country = Column(String, nullable=False)\n    currency = Column(String, nullable=False)\n    impact = Column(String, nullable=False)  # LOW, MEDIUM, HIGH\n    forecast = Column(String, nullable=True)\n    previous = Column(String, nullable=True)",
+        "detail": "institutional-edge-system.backend.app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "ExecutionLog",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.models.database",
+        "description": "institutional-edge-system.backend.app.models.database",
+        "peekOfCode": "class ExecutionLog(Base):\n    \"\"\"Detailed Execution Logs for Debugging & Audit\"\"\"\n    __tablename__ = \"execution_logs\"\n    id = Column(Integer, primary_key=True, index=True)\n    trade_id = Column(Integer, ForeignKey(\"trades.id\"), nullable=True)\n    symbol = Column(String, nullable=False)\n    action = Column(String, nullable=False) # OPEN, CLOSE, MODIFY, ERROR\n    message = Column(String, nullable=False)\n    details = Column(JSON, nullable=True)\n    timestamp = Column(DateTime, default=datetime.utcnow)",
+        "detail": "institutional-edge-system.backend.app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "RiskProfile",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.models.database",
+        "description": "institutional-edge-system.backend.app.models.database",
+        "peekOfCode": "class RiskProfile(Base):\n    \"\"\"Dynamic Risk Profile per Bot/User\"\"\"\n    __tablename__ = \"risk_profiles\"\n    id = Column(Integer, primary_key=True, index=True)\n    bot_config_id = Column(Integer, ForeignKey(\"bot_configs.id\"), nullable=False)\n    current_risk_per_trade = Column(Float, default=1.0)\n    max_daily_drawdown = Column(Float, default=3.0)\n    max_total_drawdown = Column(Float, default=10.0)\n    is_halted = Column(Boolean, default=False)\n    halt_reason = Column(String, nullable=True)",
+        "detail": "institutional-edge-system.backend.app.models.database",
+        "documentation": {}
+    },
+    {
         "label": "Base",
         "kind": 5,
         "importPath": "institutional-edge-system.backend.app.models.database",
         "description": "institutional-edge-system.backend.app.models.database",
         "peekOfCode": "Base = declarative_base()\nclass User(Base):\n    \"\"\"User model for authentication\"\"\"\n    __tablename__ = \"users\"\n    id = Column(Integer, primary_key=True, index=True)\n    email = Column(String, unique=True, index=True, nullable=False)\n    username = Column(String, unique=True, index=True, nullable=False)\n    hashed_password = Column(String, nullable=False)\n    is_active = Column(Boolean, default=True)\n    is_admin = Column(Boolean, default=False)",
         "detail": "institutional-edge-system.backend.app.models.database",
+        "documentation": {}
+    },
+    {
+        "label": "MarketCandle",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.models.timeseries",
+        "description": "institutional-edge-system.backend.app.models.timeseries",
+        "peekOfCode": "class MarketCandle(Base):\n    \"\"\"\n    OHLCV Data stored in TimescaleDB hypertable.\n    \"\"\"\n    __tablename__ = \"market_candles\"\n    time = Column(DateTime, nullable=False, primary_key=True)\n    symbol = Column(String, nullable=False, primary_key=True)\n    timeframe = Column(String, nullable=False, primary_key=True)\n    open = Column(Float, nullable=False)\n    high = Column(Float, nullable=False)",
+        "detail": "institutional-edge-system.backend.app.models.timeseries",
+        "documentation": {}
+    },
+    {
+        "label": "MarketTick",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.models.timeseries",
+        "description": "institutional-edge-system.backend.app.models.timeseries",
+        "peekOfCode": "class MarketTick(Base):\n    \"\"\"\n    Tick data stored in TimescaleDB hypertable.\n    \"\"\"\n    __tablename__ = \"market_ticks\"\n    time = Column(DateTime, nullable=False, primary_key=True)\n    symbol = Column(String, nullable=False, primary_key=True)\n    bid = Column(Float, nullable=False)\n    ask = Column(Float, nullable=False)\n    last = Column(Float, nullable=False)",
+        "detail": "institutional-edge-system.backend.app.models.timeseries",
         "documentation": {}
     },
     {
@@ -2517,12 +3121,66 @@
         "documentation": {}
     },
     {
+        "label": "ExecutionEngine",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.execution_engine",
+        "description": "institutional-edge-system.backend.app.services.execution_engine",
+        "peekOfCode": "class ExecutionEngine:\n    \"\"\"\n    Robust Execution Engine for MT5.\n    Handles:\n    - Order Execution with Retries\n    - Duplicate Check\n    - Logging\n    - Slippage Control\n    \"\"\"\n    def __init__(self, mt5_connector: MT5Connector, db: Session, sio=None):",
+        "detail": "institutional-edge-system.backend.app.services.execution_engine",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.services.execution_engine",
+        "description": "institutional-edge-system.backend.app.services.execution_engine",
+        "peekOfCode": "logger = logging.getLogger(__name__)\nclass ExecutionEngine:\n    \"\"\"\n    Robust Execution Engine for MT5.\n    Handles:\n    - Order Execution with Retries\n    - Duplicate Check\n    - Logging\n    - Slippage Control\n    \"\"\"",
+        "detail": "institutional-edge-system.backend.app.services.execution_engine",
+        "documentation": {}
+    },
+    {
+        "label": "MarketRegimeDetector",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.market_regime",
+        "description": "institutional-edge-system.backend.app.services.market_regime",
+        "peekOfCode": "class MarketRegimeDetector:\n    \"\"\"\n    Detects the current market regime:\n    - TRENDING (Bullish/Bearish)\n    - RANGING\n    - HIGH_VOLATILITY\n    \"\"\"\n    def __init__(self, df: pd.DataFrame):\n        self.df = df\n        self._calculate_indicators()",
+        "detail": "institutional-edge-system.backend.app.services.market_regime",
+        "documentation": {}
+    },
+    {
+        "label": "NewsFilterService",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.news_filter",
+        "description": "institutional-edge-system.backend.app.services.news_filter",
+        "peekOfCode": "class NewsFilterService:\n    \"\"\"\n    Fetches economic news and checks for trading restrictions.\n    \"\"\"\n    def __init__(self, db: Session):\n        self.db = db\n    async def fetch_news(self):\n        \"\"\"\n        Fetch news from external API (e.g., Financial Modeling Prep or similar).\n        For now, we'll use a placeholder or a free endpoint if available.",
+        "detail": "institutional-edge-system.backend.app.services.news_filter",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.app.services.news_filter",
+        "description": "institutional-edge-system.backend.app.services.news_filter",
+        "peekOfCode": "logger = logging.getLogger(__name__)\nclass NewsFilterService:\n    \"\"\"\n    Fetches economic news and checks for trading restrictions.\n    \"\"\"\n    def __init__(self, db: Session):\n        self.db = db\n    async def fetch_news(self):\n        \"\"\"\n        Fetch news from external API (e.g., Financial Modeling Prep or similar).",
+        "detail": "institutional-edge-system.backend.app.services.news_filter",
+        "documentation": {}
+    },
+    {
         "label": "RabbitMQService",
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.services.rabbitmq_service",
         "description": "institutional-edge-system.backend.app.services.rabbitmq_service",
         "peekOfCode": "class RabbitMQService:\n    def __init__(self):\n        self.connection = None\n        self.channel = None\n        self.exchange = None\n        self.queue_name = \"trade_signals\"\n    async def connect(self, max_retries=5, retry_delay=2):\n        \"\"\"Connect to RabbitMQ with retry logic\"\"\"\n        for attempt in range(max_retries):\n            try:",
         "detail": "institutional-edge-system.backend.app.services.rabbitmq_service",
+        "documentation": {}
+    },
+    {
+        "label": "AdaptiveRiskManager",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.risk_manager",
+        "description": "institutional-edge-system.backend.app.services.risk_manager",
+        "peekOfCode": "class AdaptiveRiskManager:\n    \"\"\"\n    Dynamic Risk Management Engine.\n    Adjusts risk based on:\n    - Market Volatility (ATR)\n    - Account Drawdown\n    - Consecutive Losses\n    - Prop Firm Rules\n    \"\"\"\n    def __init__(self, bot_config: BotConfig, account_info: dict):",
+        "detail": "institutional-edge-system.backend.app.services.risk_manager",
         "documentation": {}
     },
     {
@@ -2575,7 +3233,7 @@
         "kind": 5,
         "importPath": "institutional-edge-system.backend.app.main",
         "description": "institutional-edge-system.backend.app.main",
-        "peekOfCode": "sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')\n@sio.event\nasync def connect(sid, environ):\n    logger.info(f\"Socket connected: {sid}\")\n@sio.event\nasync def disconnect(sid):\n    logger.info(f\"Socket disconnected: {sid}\")\n# ============================================================================\n# STARTUP & SHUTDOWN\n# ============================================================================",
+        "peekOfCode": "sio = socketio.AsyncServer(\n    async_mode='asgi', \n    cors_allowed_origins='*',\n    logger=True,\n    engineio_logger=True\n)\n@sio.event\nasync def connect(sid, environ):\n    logger.info(f\"Socket connected: {sid}\")\n    # logger.debug(f\"Socket environ: {environ}\") # Uncomment for verbose header logging",
         "detail": "institutional-edge-system.backend.app.main",
         "documentation": {}
     },
@@ -2616,6 +3274,15 @@
         "documentation": {}
     },
     {
+        "label": "fix_schema",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.fix_db_schema",
+        "description": "institutional-edge-system.backend.fix_db_schema",
+        "peekOfCode": "def fix_schema():\n    # Force sync driver for this script\n    db_url = settings.DATABASE_URL.replace(\"postgresql+asyncpg\", \"postgresql+psycopg2\")\n    print(f\"Connecting to database: {db_url}\")\n    engine = create_engine(db_url)\n    with engine.connect() as conn:\n        print(\"Checking bot_configs table schema...\")\n        # List of columns to check/add\n        columns = [\n            (\"tsl_mode\", \"VARCHAR\"),",
+        "detail": "institutional-edge-system.backend.fix_db_schema",
+        "documentation": {}
+    },
+    {
         "label": "project_root",
         "kind": 5,
         "importPath": "institutional-edge-system.backend.run_backend",
@@ -2649,6 +3316,15 @@
         "description": "institutional-edge-system.backend.seed_db",
         "peekOfCode": "def seed_db():\n    print(\"Initializing database...\")\n    init_db()\n    db = SessionLocal()\n    try:\n        print(\"Checking for existing data...\")\n        # Create default user if not exists\n        user = db.query(User).filter(User.email == \"admin@example.com\").first()\n        if not user:\n            user = User(",
         "detail": "institutional-edge-system.backend.seed_db",
+        "documentation": {}
+    },
+    {
+        "label": "add_column",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.update_schema",
+        "description": "institutional-edge-system.backend.update_schema",
+        "peekOfCode": "def add_column():\n    with engine.connect() as conn:\n        try:\n            # Check if column exists first to avoid error\n            result = conn.execute(text(\"SELECT column_name FROM information_schema.columns WHERE table_name='bot_configs' AND column_name='cooldown_minutes'\"))\n            if result.fetchone():\n                print(\"Column cooldown_minutes already exists.\")\n                return\n            conn.execute(text(\"ALTER TABLE bot_configs ADD COLUMN cooldown_minutes INTEGER DEFAULT 15\"))\n            conn.commit()",
+        "detail": "institutional-edge-system.backend.update_schema",
         "documentation": {}
     },
     {

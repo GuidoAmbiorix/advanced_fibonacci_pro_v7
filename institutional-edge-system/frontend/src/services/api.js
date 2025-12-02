@@ -164,6 +164,27 @@ export default {
     return response.data
   },
 
+  // Settings & Risk
+  async getBotSettings(botId) {
+    const response = await api.get(`/api/settings/config/${botId}`)
+    return response.data
+  },
+
+  async updateBotSettings(botId, settings) {
+    const response = await api.put(`/api/settings/config/${botId}`, settings)
+    return response.data
+  },
+
+  async getRiskProfile(botId) {
+    const response = await api.get(`/api/settings/risk/${botId}`)
+    return response.data
+  },
+
+  async updateRiskProfile(botId, settings) {
+    const response = await api.put(`/api/settings/risk/${botId}`, settings)
+    return response.data
+  },
+
   // Signals
   async getSignals(symbol = null, limit = 50, executedOnly = false) {
     const params = { limit }
@@ -228,8 +249,11 @@ export default {
     }
 
     this.socket = io(API_BASE_URL, {
-      transports: ['websocket', 'polling'],
-      autoConnect: true
+      transports: ['websocket'], // Force WebSocket to avoid polling issues
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
     })
 
     this.socket.on('connect', () => {

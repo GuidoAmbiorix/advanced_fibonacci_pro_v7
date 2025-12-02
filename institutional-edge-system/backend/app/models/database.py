@@ -73,6 +73,7 @@ class BotConfig(Base):
     trading_hours_start = Column(String, default="00:00")
     trading_hours_end = Column(String, default="23:59")
     daily_loss_limit_percent = Column(Float, default=3.0)
+    cooldown_minutes = Column(Integer, default=15)  # Cooldown between trades
 
     # Bot Status
     is_active = Column(Boolean, default=False)
@@ -156,6 +157,7 @@ class Signal(Base):
     zone = Column(String, nullable=True)  # "PREMIUM" or "DISCOUNT"
 
     # Status
+    status = Column(String, default="CREATED")  # CREATED, PENDING, ACTIVE, EXPIRED, CANCELLED, CLOSED
     was_executed = Column(Boolean, default=False)
     trade_id = Column(Integer, ForeignKey("trades.id"), nullable=True)
 
@@ -188,3 +190,72 @@ class PerformanceMetrics(Base):
     profit_factor = Column(Float, default=0.0)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class MarketRegime(Base):
+    """Market Regime Detection History"""
+    __tablename__ = "market_regimes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    symbol = Column(String, nullable=False, index=True)
+    timeframe = Column(String, nullable=False)
+    
+    regime_type = Column(String, nullable=False)  # TRENDING, RANGING, VOLATILE
+    trend_direction = Column(String, nullable=True) # BULLISH, BEARISH, NEUTRAL
+    volatility_level = Column(String, default="NORMAL") # LOW, NORMAL, HIGH, EXTREME
+    
+    details = Column(JSON, nullable=True)  # ADX, ATR values, etc.
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class NewsEvent(Base):
+    """Economic Calendar Events"""
+    __tablename__ = "news_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    country = Column(String, nullable=False)
+    currency = Column(String, nullable=False)
+    impact = Column(String, nullable=False)  # LOW, MEDIUM, HIGH
+    
+    forecast = Column(String, nullable=True)
+    previous = Column(String, nullable=True)
+    actual = Column(String, nullable=True)
+    
+    date = Column(DateTime, nullable=False, index=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ExecutionLog(Base):
+    """Detailed Execution Logs for Debugging & Audit"""
+    __tablename__ = "execution_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    trade_id = Column(Integer, ForeignKey("trades.id"), nullable=True)
+    symbol = Column(String, nullable=False)
+    action = Column(String, nullable=False) # OPEN, CLOSE, MODIFY, ERROR
+    
+    message = Column(String, nullable=False)
+    details = Column(JSON, nullable=True)
+    
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+
+class RiskProfile(Base):
+    """Dynamic Risk Profile per Bot/User"""
+    __tablename__ = "risk_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bot_config_id = Column(Integer, ForeignKey("bot_configs.id"), nullable=False)
+    
+    current_risk_per_trade = Column(Float, default=1.0)
+    max_daily_drawdown = Column(Float, default=3.0)
+    max_total_drawdown = Column(Float, default=10.0)
+    
+    is_halted = Column(Boolean, default=False)
+    halt_reason = Column(String, nullable=True)
+    
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+

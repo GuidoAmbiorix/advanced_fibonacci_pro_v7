@@ -7,7 +7,7 @@ Runs continuous market analysis and executes trades automatically
 
 import asyncio
 from typing import Dict, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from loguru import logger
 
 from app.core.trading_engine import TradingEngine
@@ -283,6 +283,7 @@ class TradingBot:
                     ai_recommendation=sig.ai_recommendation,
                     trend=self.trading_engine.trend_bullish and "BULLISH" or "BEARISH",
                     poc_level=self.trading_engine.poc_level,
+                    status="CREATED",
                     was_executed=False
                 )
                 db.add(signal)
@@ -310,11 +311,31 @@ class TradingBot:
 
     async def _execute_signal(self, signal):
         """Execute a trading signal"""
-        # 0. Check Existing Position
+        # 0. Check Existing Position or Pending Order
         existing_positions = self.mt5_connector.get_open_positions(symbol=signal.symbol)
+        pending_orders = self.mt5_connector.get_pending_orders(symbol=signal.symbol)
+        
         if existing_positions:
             await self._log_activity(f"Position already exists for {signal.symbol}, skipping signal", "warning")
             return
+
+        if pending_orders:
+            await self._log_activity(f"Pending order already exists for {signal.symbol}, skipping signal", "warning")
+            return
+
+        # 0.1 Check DB for Active/Pending Signals
+        db = SessionLocal()
+        try:
+            active_signal = db.query(Signal).filter(
+                Signal.symbol == signal.symbol,
+                Signal.status.in_(["PENDING", "ACTIVE"])
+            ).first()
+            
+            if active_signal:
+                await self._log_activity(f"Signal already active/pending for {signal.symbol} (Status: {active_signal.status}), skipping", "warning")
+                return
+        finally:
+            db.close()
 
         # 1. Check Max Trades
         if self.open_positions_count >= self.config.max_trades:
@@ -334,6 +355,11 @@ class TradingBot:
         # 4. Check Daily Risk
         if not self._check_daily_risk():
             await self._log_activity("Daily risk limit reached, skipping", "warning")
+            return
+
+        # 5. Check Cooldown
+        if not self._check_cooldown(signal.symbol):
+            # Log handled inside _check_cooldown
             return
 
         # Publish to RabbitMQ (Decoupled Execution)
@@ -385,6 +411,30 @@ class TradingBot:
         )
 
         if result and result.get('success'):
+            # Determine status based on order type
+            new_status = "PENDING" if "LIMIT" in mt5_order_type or "STOP" in mt5_order_type else "ACTIVE"
+            
+            # Update Signal status in DB
+            db = SessionLocal()
+            try:
+                # Find the CREATED signal to update
+                # We match by symbol and recent creation time (last 5 mins)
+                db_signal = db.query(Signal).filter(
+                    Signal.symbol == signal.symbol,
+                    Signal.status == "CREATED",
+                    Signal.created_at >= datetime.utcnow() - timedelta(minutes=5)
+                ).order_by(Signal.created_at.desc()).first()
+                
+                if db_signal:
+                    db_signal.status = new_status
+                    db_signal.was_executed = True
+                    db_signal.trade_id = result['ticket'] # Store ticket temporarily or link to Trade ID later
+                    db.commit()
+            except Exception as e:
+                logger.error(f"Failed to update signal status: {e}")
+            finally:
+                db.close()
+
             # Save trade to database
             trade_id = await self._save_trade(signal, result, lot_size)
             self.open_positions_count += 1
@@ -543,6 +593,43 @@ class TradingBot:
             if daily_pnl_percent < -self.config.daily_loss_limit_percent:
                 return False
                 
+            return True
+        finally:
+            db.close()
+
+    def _check_cooldown(self, symbol: str) -> bool:
+        """
+        Check if cooldown period has passed since last closed trade
+        Returns True if safe to trade, False if in cooldown
+        """
+        db = SessionLocal()
+        try:
+            # Get last closed trade for this symbol and user
+            last_trade = db.query(Trade).filter(
+                Trade.user_id == self.config.user_id,
+                Trade.symbol == symbol,
+                Trade.status == "CLOSED"
+            ).order_by(Trade.closed_at.desc()).first()
+
+            if not last_trade or not last_trade.closed_at:
+                return True
+
+            # Calculate time difference
+            now = datetime.utcnow()
+            time_since_close = now - last_trade.closed_at
+            cooldown_delta = timedelta(minutes=self.config.cooldown_minutes)
+
+            if time_since_close < cooldown_delta:
+                remaining = cooldown_delta - time_since_close
+                minutes = int(remaining.total_seconds() // 60)
+                seconds = int(remaining.total_seconds() % 60)
+                
+                logger.info(f"Cooldown active for {symbol}: Wait {minutes}m {seconds}s")
+                return False
+
+            return True
+        except Exception as e:
+            logger.error(f"Error checking cooldown: {e}")
             return True
         finally:
             db.close()

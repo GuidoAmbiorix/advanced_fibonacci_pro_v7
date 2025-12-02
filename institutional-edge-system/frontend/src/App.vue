@@ -1,135 +1,70 @@
 <template>
-  <div class="min-h-screen bg-background font-sans text-text-primary">
-    <!-- Header (Only show if not in stream mode) -->
-    <header v-if="!isStreamMode" class="bg-surface border-b border-slate-200 shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 py-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-4">
-            <h1 class="text-2xl font-black tracking-tighter text-primary">
-              INSTITUTIONAL <span class="text-accent">EDGE</span>
-            </h1>
-            <span class="px-2 py-0.5 rounded text-xs font-bold bg-accent/10 text-accent border border-accent/20">PRO v2.0</span>
-          </div>
+  <div class="min-h-screen bg-background font-sans text-text-primary flex">
+    
+    <!-- Sidebar Navigation -->
+    <aside v-if="!isStreamMode" class="w-64 bg-surface border-r border-slate-200 flex flex-col fixed h-full z-40 transition-all duration-300" :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
+      <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+           <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white font-black text-lg">IE</div>
+           <div class="font-black text-lg tracking-tighter text-primary">INSTITUTIONAL<span class="text-accent">EDGE</span></div>
+        </div>
+        <button @click="isSidebarOpen = false" class="lg:hidden text-slate-400 hover:text-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
 
-          <div class="flex items-center space-x-4">
-            <!-- Privacy Toggle -->
-            <button @click="togglePrivacy" 
-                    class="px-3 py-1 rounded text-xs font-bold transition-colors border"
-                    :class="privacyMode ? 'bg-success/10 text-success border-success/30' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'">
-              {{ privacyMode ? 'PRIVACY ON' : 'PRIVACY OFF' }}
-            </button>
+      <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+        <router-link to="/" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-bold text-sm transition-colors" :class="$route.path === '/' ? 'bg-accent/10 text-accent' : 'text-slate-500 hover:bg-slate-50 hover:text-primary'">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+          <span>Dashboard</span>
+        </router-link>
+        
+        <router-link to="/signals" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-bold text-sm transition-colors" :class="$route.path === '/signals' ? 'bg-accent/10 text-accent' : 'text-slate-500 hover:bg-slate-50 hover:text-primary'">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+          <span>Signals</span>
+        </router-link>
 
-            <!-- Stream Mode Link -->
-            <router-link to="/stream" class="text-slate-400 hover:text-primary transition-colors" title="Open Stream Dashboard">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
-              </svg>
-            </router-link>
+        <router-link to="/settings" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-bold text-sm transition-colors" :class="$route.path === '/settings' ? 'bg-accent/10 text-accent' : 'text-slate-500 hover:bg-slate-50 hover:text-primary'">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          <span>Settings</span>
+        </router-link>
+      </nav>
 
-            <!-- Connection Status -->
-            <div class="flex items-center space-x-2">
-              <div :class="connectionStatus.color" class="w-2.5 h-2.5 rounded-full"></div>
-              <span class="text-sm font-medium text-slate-500">{{ connectionStatus.text }}</span>
-            </div>
-
-            <!-- Account Balance -->
-            <div v-if="accountInfo" class="text-sm font-medium">
-              <span class="text-slate-500">Balance:</span>
-              <span class="text-primary font-bold ml-2">
-                <span v-if="privacyMode">****</span>
-                <span v-else>${{ accountInfo.balance?.toFixed(2) || '0.00' }}</span>
-              </span>
-            </div>
-          </div>
+      <div class="p-4 border-t border-slate-200">
+        <div class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-slate-50 border border-slate-100">
+           <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">U</div>
+           <div class="flex-1 min-w-0">
+             <div class="text-xs font-bold text-primary truncate">User</div>
+             <div class="text-[10px] text-slate-400 truncate">Pro Plan</div>
+           </div>
         </div>
       </div>
-    </header>
+    </aside>
+
+    <!-- Mobile Menu Button -->
+    <button v-if="!isStreamMode && !isSidebarOpen" @click="isSidebarOpen = true" class="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md border border-slate-200 text-slate-500">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+    </button>
 
     <!-- Main Content -->
-    <main :class="{'max-w-7xl mx-auto px-4 py-6': !isStreamMode}">
+    <main class="flex-1 transition-all duration-300" :class="!isStreamMode ? 'lg:ml-64' : ''">
       <router-view :privacy-mode="privacyMode"></router-view>
     </main>
 
-    <!-- Footer (Only show if not in stream mode) -->
-    <footer v-if="!isStreamMode" class="bg-white border-t border-slate-200 mt-12">
-      <div class="max-w-7xl mx-auto px-4 py-6 text-center text-slate-400 text-sm">
-        <p>© 2024 Institutional Edge PRO. Professional Trading System.</p>
-      </div>
-    </footer>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import api from './services/api'
 
 const route = useRoute()
-const accountInfo = ref(null)
-const isConnected = ref(false)
-const ws = ref(null)
 const privacyMode = ref(false)
+const isSidebarOpen = ref(false)
 
 const isStreamMode = computed(() => route.path === '/stream')
-
-const connectionStatus = computed(() => {
-  if (isConnected.value) {
-    return { color: 'bg-green-500', text: 'Connected' }
-  } else {
-    return { color: 'bg-red-500', text: 'Disconnected' }
-  }
-})
 
 function togglePrivacy() {
   privacyMode.value = !privacyMode.value
 }
-
-async function checkConnection() {
-  try {
-    await api.getHealth()
-    isConnected.value = true
-  } catch (error) {
-    isConnected.value = false
-  }
-}
-
-async function loadAccountInfo() {
-  try {
-    accountInfo.value = await api.getAccountInfo()
-  } catch (error) {
-    console.error('Failed to load account info:', error)
-  }
-}
-
-function connectWebSocket() {
-  ws.value = api.initSocket()
-  
-  ws.value.on('account_update', (data) => {
-    if (data && data.data) {
-      accountInfo.value = data.data
-    }
-  })
-
-  ws.value.on('connect_error', (error) => {
-    console.error('WebSocket error:', error)
-    isConnected.value = false
-  })
-}
-
-onMounted(async () => {
-  await checkConnection()
-  if (isConnected.value) {
-    await loadAccountInfo()
-    connectWebSocket()
-  }
-
-  // Check connection every 30 seconds
-  setInterval(checkConnection, 30000)
-})
-
-onUnmounted(() => {
-  if (ws.value) {
-    ws.value.close()
-  }
-})
 </script>

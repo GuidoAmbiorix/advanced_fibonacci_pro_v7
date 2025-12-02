@@ -38,6 +38,10 @@ class TradeManager:
         
         self.partial_tp_on = False
         self.partial_tp_amount = 0.5 # 50%
+
+        # Secure Profit Settings (Break Even Plus)
+        self.secure_profit_trigger = 100 # Points (e.g. 10 pips)
+        self.secure_profit_lock = 10 # Points to lock (e.g. 1 pip)
         
     def update_trades(self, active_trades: List[Dict]):
         """
@@ -82,16 +86,24 @@ class TradeManager:
                 profit_pips = entry_price - current_price
                 r_multiple = profit_pips / risk_pips
                 
-            # 1. Break Even Logic
+            # 1. Secure Profit (Break Even Plus)
+            # Calculate profit in points
+            point = self.mt5_connector.get_symbol_point(symbol) or 0.00001
+            profit_points = profit_pips / point
+            
+            if self.secure_profit_trigger > 0 and profit_points >= self.secure_profit_trigger:
+                self._check_and_secure_profit(trade, profit_points, point)
+
+            # 2. Break Even Logic (R-based)
             # If we are above Trigger R and SL is still at original risk level
             if r_multiple >= self.be_trigger_r:
                 self._check_and_move_to_be(trade, r_multiple, risk_pips)
 
-            # 2. Trailing Stop Loss
+            # 3. Trailing Stop Loss
             if self.use_trailing_sl:
                 self._check_and_trail_sl(trade, r_multiple, risk_pips)
 
-            # 3. Partial Take Profit
+            # 4. Partial Take Profit
             if self.partial_tp_on:
                 self._check_and_partial_close(trade, r_multiple)
                 
@@ -123,6 +135,34 @@ class TradeManager:
             if sl > new_sl or sl == 0:
                 self._modify_position(ticket, new_sl, trade['tp'])
 
+    def _check_and_secure_profit(self, trade: Dict, profit_points: float, point: float):
+        """
+        Secure profit if threshold reached.
+        Example: If profit > 100 points, move SL to Entry + 10 points
+        """
+        ticket = trade['ticket']
+        entry_price = trade['price_open']
+        sl = trade['sl']
+        trade_type = trade['type']
+        
+        lock_amount = self.secure_profit_lock * point
+        
+        new_sl = 0.0
+        is_buy = trade_type == 'BUY' or trade_type == 0
+        
+        if is_buy:
+            new_sl = entry_price + lock_amount
+            # Only move if new SL is better than current SL
+            if new_sl > sl:
+                logger.info(f"Securing profit for {ticket}: Profit {profit_points} pts > {self.secure_profit_trigger}. Moving SL to {new_sl}")
+                self._modify_position(ticket, new_sl, trade['tp'])
+        else:
+            new_sl = entry_price - lock_amount
+            # Only move if new SL is better than current SL (lower for sell)
+            if sl == 0 or new_sl < sl:
+                logger.info(f"Securing profit for {ticket}: Profit {profit_points} pts > {self.secure_profit_trigger}. Moving SL to {new_sl}")
+                self._modify_position(ticket, new_sl, trade['tp'])
+
     def manual_trail_sl(self, ticket: int, distance_r: float = 1.5) -> bool:
         """
         Manually trail SL for a specific trade
@@ -130,8 +170,8 @@ class TradeManager:
         if not self.mt5_connector.connected:
             return False
 
-        positions = self.mt5_connector.get_open_positions()
-        trade = next((p for p in positions if p['ticket'] == ticket), None)
+        # Use get_position instead of iterating all positions
+        trade = self.mt5_connector.get_position(ticket)
         
         if not trade:
             logger.error(f"Trade {ticket} not found for manual TSL")
@@ -205,24 +245,45 @@ class TradeManager:
             return 0.0
 
     def _check_and_trail_sl(self, trade: Dict, r_multiple: float, risk_pips: float):
-        """Check and update Trailing Stop Loss"""
+        """
+        Check and update Trailing Stop Loss (Trigger + Step Logic)
+        """
         ticket = trade['ticket']
         sl = trade['sl']
         trade_type = trade['type']
         current_price = trade['price_current']
         symbol = trade['symbol']
+        entry_price = trade['price_open']
         
-        # 1. Check Activation
+        # 1. Check Activation (Trigger)
+        # If we haven't activated yet, we check if we reached the trigger
+        # We can infer if we activated if SL is better than initial SL? 
+        # Or just strictly follow the rules:
+        
+        # Rule: Activate trailing when profit >= Activation R (e.g. 150 pips)
         if r_multiple < self.tsl_activation_r:
             return
 
-        # 2. Check Step (Only trail if we moved enough from last trail or entry)
-        # This is simplified. Ideally we track 'last_trail_price'. 
-        # For now, we check if current profit > step. 
-        if r_multiple < self.trailing_step_r:
-            return
-
-        # 3. Calculate Trail Distance
+        # 2. Calculate Target SL
+        # Logic: If Profit >= Trigger, Move SL to (Current Price - Distance)
+        # OR Logic: If Profit >= Trigger, Move SL to Fixed Step (e.g. +100 pips)
+        
+        # The user requested: "Trigger + Step Trailing Stop"
+        # Example: Trigger +150 -> Move SL to +100.
+        # Then as price moves, keep SL at distance? Or move in steps?
+        # User said: "Luego el SL sigue moviéndose cada vez que el precio avanza más."
+        # "Este tipo de trailing mantiene siempre aprox. 50 pips de distancia"
+        
+        # So effectively:
+        # Distance = Trigger - Step (e.g. 150 - 100 = 50 pips distance)
+        # Once triggered, we maintain this distance.
+        
+        # Let's calculate the implied distance from config if possible, or use trailing_distance_r
+        # If user sets Trigger=1.5R and Step=1.0R (move to +1R), the distance is 0.5R.
+        
+        # However, we have self.trailing_distance_r in config.
+        # Let's use that as the "Distance to maintain" after trigger.
+        
         trail_distance = 0.0
         
         if self.tsl_mode == "ATR":
@@ -230,25 +291,39 @@ class TradeManager:
             if atr > 0:
                 trail_distance = atr * self.tsl_atr_multiplier
             else:
-                # Fallback to Fixed if ATR fails
                 trail_distance = risk_pips * self.trailing_distance_r
         else:
             # FIXED Mode
+            # If we want to strictly follow "Trigger 150 -> SL 100", the distance is 50.
+            # We should probably use trailing_distance_r as the "distance behind price".
             trail_distance = risk_pips * self.trailing_distance_r
         
         new_sl = 0.0
         is_buy = trade_type == 'BUY' or trade_type == 0
         
         if is_buy: # Buy
-            new_sl = current_price - trail_distance
+            # Target SL = Current Price - Distance
+            potential_new_sl = current_price - trail_distance
+            
+            # Ensure we lock in at least the "Step" profit if we just triggered
+            # (This is implicitly handled if CurrentPrice - Distance >= Entry + Step)
+            
             # Only move SL up
-            if new_sl > sl:
-                self._modify_position(ticket, new_sl, trade['tp'])
+            if potential_new_sl > sl:
+                # Optional: Check if change is significant enough (to avoid spamming modify calls)
+                # e.g. only move if > 1 pip difference
+                point = self.mt5_connector.get_symbol_point(symbol)
+                if (potential_new_sl - sl) > (point * 10): # 1 pip
+                    self._modify_position(ticket, potential_new_sl, trade['tp'])
+                    
         else: # Sell
-            new_sl = current_price + trail_distance
+            potential_new_sl = current_price + trail_distance
+            
             # Only move SL down
-            if new_sl < sl or sl == 0:
-                self._modify_position(ticket, new_sl, trade['tp'])
+            if sl == 0 or potential_new_sl < sl:
+                point = self.mt5_connector.get_symbol_point(symbol)
+                if sl == 0 or (sl - potential_new_sl) > (point * 10):
+                    self._modify_position(ticket, potential_new_sl, trade['tp'])
 
     def _check_and_partial_close(self, trade: Dict, r_multiple: float):
         """Check and execute Partial Take Profit"""

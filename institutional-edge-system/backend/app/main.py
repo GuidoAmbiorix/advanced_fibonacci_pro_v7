@@ -15,7 +15,7 @@ from loguru import logger
 
 from app.core.config import settings
 from app.models.database import Base, User, BotConfig, Trade
-from app.api import database, auth, stats, fundamentals
+from app.api import database, auth, stats, fundamentals, settings as settings_api, news, logs
 from app.core.mt5_connector import MT5Connector
 from app.core.trading_engine import TradingEngine
 from app.schemas import schemas
@@ -43,14 +43,24 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(stats.router, prefix="/api/stats", tags=["stats"])
 app.include_router(fundamentals.router, prefix="/api/fundamentals", tags=["fundamentals"])
+app.include_router(settings_api.router, prefix="/api/settings", tags=["settings"])
+app.include_router(news.router, prefix="/api/news", tags=["news"])
+app.include_router(logs.router, prefix="/api/logs", tags=["logs"])
 
 # Socket.IO Setup
 import socketio
-sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
+# Use explicit list for CORS to be safe, or allow all with more permissive settings
+sio = socketio.AsyncServer(
+    async_mode='asgi', 
+    cors_allowed_origins='*',
+    logger=True,
+    engineio_logger=True
+)
 
 @sio.event
 async def connect(sid, environ):
     logger.info(f"Socket connected: {sid}")
+    # logger.debug(f"Socket environ: {environ}") # Uncomment for verbose header logging
 
 @sio.event
 async def disconnect(sid):
@@ -75,7 +85,40 @@ async def broadcast_market_data():
                 # 2. Get Open Positions
                 positions = mt5_connector.get_open_positions()
                 
-                # 3. Broadcast
+                # 3. Get Current Prices for Running Bots
+                prices = {}
+                if bot_manager:
+                    running_bots = bot_manager.get_running_bots()
+                    # We need to get symbols for these bots. 
+                    # Since bot_manager might not store config details directly accessible here without DB,
+                    # we can iterate unique symbols from open positions or just get all available symbols prices.
+                    # A better approach: Get all symbols from DB that are active.
+                    # For simplicity/performance, let's just get prices for symbols in open positions + selected symbol (if we knew it).
+                    # Let's just get prices for ALL symbols defined in BotConfig (active ones).
+                    
+                    # For now, let's just send prices for symbols that have open positions to ensure PnL updates are smooth,
+                    # and maybe we can accept a client event to subscribe to a specific symbol's price.
+                    # But to keep it simple: Broadcast prices for all symbols in open positions.
+                    
+                    # Get symbols from open positions
+                    symbols_to_fetch = set(p['symbol'] for p in positions)
+                    
+                    # ALSO get symbols from running bots
+                    if bot_manager:
+                        for bot_id, bot_instance in bot_manager.bots.items():
+                            if hasattr(bot_instance, 'config') and hasattr(bot_instance.config, 'symbol'):
+                                symbols_to_fetch.add(bot_instance.config.symbol)
+
+                    # Broadcast prices for all relevant symbols
+                    for symbol in symbols_to_fetch:
+                        tick = mt5_connector.get_current_price(symbol)
+                        if tick:
+                            prices[symbol] = tick
+                            
+                    # Debug log to verify broadcast
+                    # logger.debug(f"Broadcasting prices for: {list(prices.keys())}")
+
+                # 4. Broadcast
                 if account:
                     # Convert datetime objects in positions to strings
                     serializable_positions = []
@@ -85,11 +128,20 @@ async def broadcast_market_data():
                             if isinstance(v, datetime):
                                 pos_dict[k] = v.isoformat()
                         serializable_positions.append(pos_dict)
+                    
+                    # Serialize prices
+                    serializable_prices = {}
+                    for sym, tick in prices.items():
+                        tick_dict = tick.copy()
+                        if isinstance(tick_dict.get('time'), datetime):
+                            tick_dict['time'] = tick_dict['time'].isoformat()
+                        serializable_prices[sym] = tick_dict
 
-                    logger.info(f"Broadcasting market data. Positions: {len(serializable_positions)}") # Debug Log
+                    # logger.info(f"Broadcasting market data. Positions: {len(serializable_positions)}") 
                     await sio.emit('market_update', {
                         'account': account,
                         'positions': serializable_positions,
+                        'prices': serializable_prices,
                         'timestamp': datetime.utcnow().isoformat()
                     })
             else:
@@ -303,6 +355,8 @@ async def get_market_history(symbol: str, timeframe: str, bars: int = 100, symbo
     if not mt5_connector or not mt5_connector.connected:
         raise HTTPException(status_code=503, detail="MT5 not connected")
 
+    logger.info(f"Fetching market history for {symbol} {timeframe}")
+
     # Normalize symbol based on type
     normalized_symbol = mt5_connector.normalize_symbol(symbol, symbol_type)
 
@@ -352,7 +406,7 @@ async def get_available_symbols(db: Session = Depends(database.get_db)):
 @app.get("/api/bots", response_model=List[schemas.BotConfigResponse])
 async def get_all_bots(db: Session = Depends(database.get_db)):
     """Get all bot configurations"""
-    bots = db.query(BotConfig).all()
+    bots = db.query(BotConfig).order_by(BotConfig.id).all()
     return bots
 
 

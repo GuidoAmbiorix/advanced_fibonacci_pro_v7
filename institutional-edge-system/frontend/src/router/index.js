@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ExecutionDashboard from '../components/ExecutionDashboard.vue'
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,13 +19,19 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: ExecutionDashboard,
+      component: () => import('../views/DashboardView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/signals',
       name: 'signals',
       component: () => import('../views/SignalsView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('../views/SettingsView.vue'),
       meta: { requiresAuth: true }
     },
     {

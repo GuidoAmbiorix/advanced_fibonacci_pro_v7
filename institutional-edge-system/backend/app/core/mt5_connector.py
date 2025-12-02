@@ -328,7 +328,6 @@ class MT5Connector:
             # Get symbol info
             symbol_info = mt5.symbol_info(symbol)
             if symbol_info is None:
-                logger.error("Symbol {} not found", symbol)
                 return None
 
             if not symbol_info.visible:
@@ -336,7 +335,7 @@ class MT5Connector:
                     logger.error("Failed to select symbol {}", symbol)
                     return None
 
-            # Get current price details
+            # Get current tick data
             tick = mt5.symbol_info_tick(symbol)
             if tick is None:
                 logger.error("Failed to get tick for {}", symbol)
@@ -545,6 +544,133 @@ class MT5Connector:
         except Exception as e:
             logger.exception("Error getting positions: {}", e)
             return []
+
+
+    def get_pending_orders(self, symbol: Optional[str] = None) -> List[Dict]:
+        """
+        Get all pending orders (LIMIT/STOP)
+        """
+        if not self.connected:
+            return []
+
+        try:
+            if symbol:
+                orders = mt5.orders_get(symbol=symbol)
+            else:
+                orders = mt5.orders_get()
+
+            if orders is None:
+                return []
+
+            result = []
+            for order in orders:
+                result.append({
+                    'ticket': order.ticket,
+                    'symbol': order.symbol,
+                    'type': 'BUY_LIMIT' if order.type == mt5.ORDER_TYPE_BUY_LIMIT else 
+                            'SELL_LIMIT' if order.type == mt5.ORDER_TYPE_SELL_LIMIT else
+                            'BUY_STOP' if order.type == mt5.ORDER_TYPE_BUY_STOP else
+                            'SELL_STOP' if order.type == mt5.ORDER_TYPE_SELL_STOP else 'UNKNOWN',
+                    'volume': order.volume_current,
+                    'price_open': order.price_open,
+                    'price_current': order.price_current,
+                    'sl': order.sl,
+                    'tp': order.tp,
+                    'time': datetime.fromtimestamp(order.time_setup),
+                    'comment': order.comment,
+                })
+
+            return result
+
+        except Exception as e:
+            logger.exception("Error getting pending orders: {}", e)
+            return []
+
+    def get_pending_orders(self, symbol: Optional[str] = None) -> List[Dict]:
+        """
+        Get all pending orders (LIMIT/STOP)
+        """
+        if not self.connected:
+            return []
+
+        try:
+            if symbol:
+                orders = mt5.orders_get(symbol=symbol)
+            else:
+                orders = mt5.orders_get()
+
+            if orders is None:
+                return []
+
+            result = []
+            for order in orders:
+                result.append({
+                    'ticket': order.ticket,
+                    'symbol': order.symbol,
+                    'type': 'BUY_LIMIT' if order.type == mt5.ORDER_TYPE_BUY_LIMIT else 
+                            'SELL_LIMIT' if order.type == mt5.ORDER_TYPE_SELL_LIMIT else
+                            'BUY_STOP' if order.type == mt5.ORDER_TYPE_BUY_STOP else
+                            'SELL_STOP' if order.type == mt5.ORDER_TYPE_SELL_STOP else 'UNKNOWN',
+                    'volume': order.volume_current,
+                    'price_open': order.price_open,
+                    'price_current': order.price_current,
+                    'sl': order.sl,
+                    'tp': order.tp,
+                    'time': datetime.fromtimestamp(order.time_setup),
+                    'comment': order.comment,
+                })
+
+            return result
+
+        except Exception as e:
+            logger.exception("Error getting pending orders: {}", e)
+            return []
+
+    def get_position(self, ticket: int) -> Optional[Dict]:
+        """
+        Get a specific position by ticket
+        """
+        if not self.connected:
+            return None
+            
+        try:
+            positions = mt5.positions_get(ticket=ticket)
+            if positions is None or len(positions) == 0:
+                return None
+                
+            pos = positions[0]
+            return {
+                'ticket': pos.ticket,
+                'symbol': pos.symbol,
+                'type': 'BUY' if pos.type == mt5.ORDER_TYPE_BUY else 'SELL',
+                'volume': pos.volume,
+                'price_open': pos.price_open,
+                'price_current': pos.price_current,
+                'sl': pos.sl,
+                'tp': pos.tp,
+                'profit': pos.profit,
+                'time': datetime.fromtimestamp(pos.time),
+                'comment': pos.comment,
+            }
+        except Exception as e:
+            logger.error(f"Error getting position {ticket}: {e}")
+            return None
+
+
+    def get_symbol_point(self, symbol: str) -> float:
+        """
+        Get point size for a symbol
+        """
+        if not self.connected:
+            return 0.00001
+            
+        try:
+            info = mt5.symbol_info(symbol)
+            if info:
+                return info.point
+            return 0.00001
+        except Exception:
+            return 0.00001
 
 
     def calculate_lot_size(

@@ -114,41 +114,62 @@ const updateChartData = () => {
   
   candlestickSeries.setData(formattedData);
   
-  updateMarkers();
+  updateTradeLines();
 };
 
-const updateMarkers = () => {
-  if (!candlestickSeries || !props.trades) return;
-  
-  const markers = [];
-  
-  props.trades.forEach(trade => {
-    // Only show markers for open trades on this symbol
-    if (trade.symbol !== props.symbol) return;
-    
-    // Entry Marker
-    markers.push({
-      time: new Date().getTime() / 1000, // Ideally this should be trade open time, but for live trades we can use current or last bar time
-      // Since we don't have exact bar time for entry in the trade object easily mapped to chart bars here without lookup,
-      // let's just use the last bar time for "Active" trades visualization
-      position: 'inBar',
-      color: trade.type === 'BUY' ? '#10b981' : '#ef4444',
-      shape: trade.type === 'BUY' ? 'arrowUp' : 'arrowDown',
-      text: `${trade.type} @ ${trade.entry}`,
-    });
-    
-    // We can also add PriceLines for Entry, SL, TP
-    // But lightweight-charts handles markers better for point-in-time
-    // For horizontal lines (SL/TP), we use createPriceLine
+const priceLines = [];
+
+const updateTradeLines = () => {
+  if (!candlestickSeries) return;
+
+  // Clear existing lines
+  priceLines.forEach(line => {
+    candlestickSeries.removePriceLine(line);
   });
-  
-  // Note: Markers require exact time match with a bar. 
-  // For simplicity in this version, we will use PriceLines for active trades instead of markers, 
-  // as markers are better for historical trade history.
-  
-  // Clear existing price lines (not directly supported to "clear all", so we recreate series or track lines)
-  // For now, let's just stick to the basic chart rendering. 
-  // Advanced annotations can be added in v2.
+  priceLines.length = 0; // Clear array
+
+  if (!props.trades) return;
+
+  props.trades.forEach(trade => {
+    if (trade.symbol !== props.symbol) return;
+
+    // Entry Line
+    const entryLine = candlestickSeries.createPriceLine({
+      price: parseFloat(trade.entry),
+      color: trade.type === 'BUY' ? '#3b82f6' : '#f59e0b', // Blue/Orange for entry to distinguish
+      lineWidth: 1,
+      lineStyle: 2, // Dashed
+      axisLabelVisible: true,
+      title: `${trade.type} #${trade.ticket}`,
+    });
+    priceLines.push(entryLine);
+
+    // SL Line
+    if (trade.sl && parseFloat(trade.sl) > 0) {
+      const slLine = candlestickSeries.createPriceLine({
+        price: parseFloat(trade.sl),
+        color: '#ef4444', // Red
+        lineWidth: 2,
+        lineStyle: 0, // Solid
+        axisLabelVisible: true,
+        title: `SL`,
+      });
+      priceLines.push(slLine);
+    }
+
+    // TP Line
+    if (trade.tp && parseFloat(trade.tp) > 0) {
+      const tpLine = candlestickSeries.createPriceLine({
+        price: parseFloat(trade.tp),
+        color: '#10b981', // Green
+        lineWidth: 2,
+        lineStyle: 0, // Solid
+        axisLabelVisible: true,
+        title: `TP`,
+      });
+      priceLines.push(tpLine);
+    }
+  });
 };
 
 // Watchers
@@ -163,9 +184,12 @@ watch(() => props.isDark, (newVal) => {
 });
 
 watch(() => props.trades, () => {
-    // Update price lines logic here if implemented
-    // For now, we rely on the parent to pass data updates
+    updateTradeLines();
 }, { deep: true });
+
+watch(() => props.symbol, () => {
+    updateTradeLines();
+});
 
 
 onMounted(() => {
@@ -179,10 +203,15 @@ onUnmounted(() => {
   }
 });
 
-// Expose chart instance if needed
+const updateCandle = (candle) => {
+  if (!candlestickSeries) return;
+  candlestickSeries.update(candle);
+};
+
+// Expose chart instance and methods
 defineExpose({
   chart,
-  candlestickSeries
+  updateCandle
 });
 </script>
 
