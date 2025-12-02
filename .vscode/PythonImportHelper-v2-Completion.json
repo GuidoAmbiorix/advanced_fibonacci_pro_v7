@@ -80,6 +80,30 @@
         "documentation": {}
     },
     {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
         "label": "timedelta",
         "importPath": "datetime",
         "description": "datetime",
@@ -241,6 +265,14 @@
     },
     {
         "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
         "importPath": "datetime",
         "description": "datetime",
         "isExtraImport": true,
@@ -360,7 +392,63 @@
         "documentation": {}
     },
     {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -1770,11 +1858,19 @@
         "documentation": {}
     },
     {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "loguru",
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
         "documentation": {}
     },
     {
@@ -1879,6 +1975,224 @@
         "description": "loguru",
         "isExtraImport": true,
         "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "time",
+        "description": "time",
+        "detail": "time",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestConfig",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestResults",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestTrade",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestMetrics",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestTrade",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestMetrics",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestTrade",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestMetrics",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestResults",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestTrade",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestConfig",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "DataLoader",
+        "importPath": "app.backtesting.data_loader",
+        "description": "app.backtesting.data_loader",
+        "isExtraImport": true,
+        "detail": "app.backtesting.data_loader",
+        "documentation": {}
+    },
+    {
+        "label": "OrderSimulator",
+        "importPath": "app.backtesting.simulator",
+        "description": "app.backtesting.simulator",
+        "isExtraImport": true,
+        "detail": "app.backtesting.simulator",
+        "documentation": {}
+    },
+    {
+        "label": "MetricsCalculator",
+        "importPath": "app.backtesting.metrics",
+        "description": "app.backtesting.metrics",
+        "isExtraImport": true,
+        "detail": "app.backtesting.metrics",
+        "documentation": {}
+    },
+    {
+        "label": "MetricsCalculator",
+        "importPath": "app.backtesting.metrics",
+        "description": "app.backtesting.metrics",
+        "isExtraImport": true,
+        "detail": "app.backtesting.metrics",
+        "documentation": {}
+    },
+    {
+        "label": "ReportGenerator",
+        "importPath": "app.backtesting.reporter",
+        "description": "app.backtesting.reporter",
+        "isExtraImport": true,
+        "detail": "app.backtesting.reporter",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "app.core.trading_engine",
+        "description": "app.core.trading_engine",
+        "isExtraImport": true,
+        "detail": "app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "app.core.trading_engine",
+        "description": "app.core.trading_engine",
+        "isExtraImport": true,
+        "detail": "app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "app.core.trading_engine",
+        "description": "app.core.trading_engine",
+        "isExtraImport": true,
+        "detail": "app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "app.core.trading_engine",
+        "description": "app.core.trading_engine",
+        "isExtraImport": true,
+        "detail": "app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "numpy",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "numpy",
+        "description": "numpy",
+        "detail": "numpy",
         "documentation": {}
     },
     {
@@ -1906,11 +2220,21 @@
         "documentation": {}
     },
     {
-        "label": "BacktestTrade",
-        "importPath": "app.backtesting.models",
-        "description": "app.backtesting.models",
+        "label": "matplotlib.pyplot",
+        "kind": 6,
         "isExtraImport": true,
-        "detail": "app.backtesting.models",
+        "importPath": "matplotlib.pyplot",
+        "description": "matplotlib.pyplot",
+        "detail": "matplotlib.pyplot",
+        "documentation": {}
+    },
+    {
+        "label": "matplotlib.dates",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "matplotlib.dates",
+        "description": "matplotlib.dates",
+        "detail": "matplotlib.dates",
         "documentation": {}
     },
     {
@@ -1930,15 +2254,6 @@
         "documentation": {}
     },
     {
-        "label": "time",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "time",
-        "description": "time",
-        "detail": "time",
-        "documentation": {}
-    },
-    {
         "label": "os",
         "kind": 6,
         "isExtraImport": true,
@@ -1954,15 +2269,6 @@
         "importPath": "bcrypt",
         "description": "bcrypt",
         "detail": "bcrypt",
-        "documentation": {}
-    },
-    {
-        "label": "numpy",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "numpy",
-        "description": "numpy",
-        "detail": "numpy",
         "documentation": {}
     },
     {
@@ -2214,30 +2520,6 @@
         "documentation": {}
     },
     {
-        "label": "TradingEngine",
-        "importPath": "app.core.trading_engine",
-        "description": "app.core.trading_engine",
-        "isExtraImport": true,
-        "detail": "app.core.trading_engine",
-        "documentation": {}
-    },
-    {
-        "label": "TradingEngine",
-        "importPath": "app.core.trading_engine",
-        "description": "app.core.trading_engine",
-        "isExtraImport": true,
-        "detail": "app.core.trading_engine",
-        "documentation": {}
-    },
-    {
-        "label": "TradingEngine",
-        "importPath": "app.core.trading_engine",
-        "description": "app.core.trading_engine",
-        "isExtraImport": true,
-        "detail": "app.core.trading_engine",
-        "documentation": {}
-    },
-    {
         "label": "TradeManager",
         "importPath": "app.services.trade_manager",
         "description": "app.services.trade_manager",
@@ -2341,6 +2623,14 @@
         "description": "dotenv",
         "isExtraImport": true,
         "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestEngine",
+        "importPath": "app.backtesting.engine",
+        "description": "app.backtesting.engine",
+        "isExtraImport": true,
+        "detail": "app.backtesting.engine",
         "documentation": {}
     },
     {
@@ -2537,6 +2827,24 @@
         "documentation": {}
     },
     {
+        "label": "BacktestEngine",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.backtesting.engine",
+        "description": "institutional-edge-system.backend.app.backtesting.engine",
+        "peekOfCode": "class BacktestEngine:\n    \"\"\"\n    Main backtesting engine\n    Orchestrates:\n    1. Data loading\n    2. Strategy execution\n    3. Order simulation\n    4. Metrics calculation\n    5. Report generation\n    \"\"\"",
+        "detail": "institutional-edge-system.backend.app.backtesting.engine",
+        "documentation": {}
+    },
+    {
+        "label": "MetricsCalculator",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.backtesting.metrics",
+        "description": "institutional-edge-system.backend.app.backtesting.metrics",
+        "peekOfCode": "class MetricsCalculator:\n    \"\"\"Calculate comprehensive trading performance metrics\"\"\"\n    @staticmethod\n    def calculate_all(trades: List[BacktestTrade], initial_balance: float = 10000.0) -> BacktestMetrics:\n        \"\"\"\n        Calculate all metrics from list of closed trades\n        Args:\n            trades: List of closed trades\n            initial_balance: Starting balance\n        Returns:",
+        "detail": "institutional-edge-system.backend.app.backtesting.metrics",
+        "documentation": {}
+    },
+    {
         "label": "BacktestTrade",
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.backtesting.models",
@@ -2570,6 +2878,15 @@
         "description": "institutional-edge-system.backend.app.backtesting.models",
         "peekOfCode": "class BacktestResults:\n    \"\"\"Complete results from backtest run\"\"\"\n    config: BacktestConfig\n    metrics: BacktestMetrics\n    trades: List[BacktestTrade] = field(default_factory=list)\n    equity_curve: List[Dict] = field(default_factory=list)\n    # Metadata\n    start_date: Optional[datetime] = None\n    end_date: Optional[datetime] = None\n    total_bars: int = 0",
         "detail": "institutional-edge-system.backend.app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "ReportGenerator",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.backtesting.reporter",
+        "description": "institutional-edge-system.backend.app.backtesting.reporter",
+        "peekOfCode": "class ReportGenerator:\n    \"\"\"Generate comprehensive backtest reports\"\"\"\n    def __init__(self, output_dir: str = \"reports\"):\n        \"\"\"\n        Initialize report generator\n        Args:\n            output_dir: Directory to save reports\n        \"\"\"\n        self.output_dir = Path(output_dir)\n        self.output_dir.mkdir(parents=True, exist_ok=True)",
+        "detail": "institutional-edge-system.backend.app.backtesting.reporter",
         "documentation": {}
     },
     {
@@ -3497,6 +3814,15 @@
         "description": "institutional-edge-system.backend.run_backend",
         "peekOfCode": "app_dir = Path(__file__).parent / \"app\"\nsys.path.insert(0, str(app_dir))\n# Change to app directory for proper module resolution\nos.chdir(str(app_dir))\n# Now import and run\nif __name__ == \"__main__\":\n    import uvicorn\n    from core.config import settings\n    print(f\"Starting {settings.APP_NAME} v{settings.APP_VERSION}\")\n    print(f\"Server: http://{settings.HOST}:{settings.PORT}\")",
         "detail": "institutional-edge-system.backend.run_backend",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.run_backtest",
+        "description": "institutional-edge-system.backend.run_backtest",
+        "peekOfCode": "def main():\n    \"\"\"Run example backtest\"\"\"\n    # Configure logger\n    logger.add(\n        \"logs/backtest_{time}.log\",\n        rotation=\"1 day\",\n        retention=\"7 days\",\n        level=\"INFO\"\n    )\n    logger.info(\"=\"*70)",
+        "detail": "institutional-edge-system.backend.run_backtest",
         "documentation": {}
     },
     {
