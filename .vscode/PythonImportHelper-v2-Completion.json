@@ -64,6 +64,38 @@
         "documentation": {}
     },
     {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
         "label": "timedelta",
         "importPath": "datetime",
         "description": "datetime",
@@ -289,6 +321,62 @@
     },
     {
         "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -1608,6 +1696,224 @@
         "documentation": {}
     },
     {
+        "label": "pandas",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "pandas",
+        "description": "pandas",
+        "detail": "pandas",
+        "documentation": {}
+    },
+    {
+        "label": "MetaTrader5",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "MetaTrader5",
+        "description": "MetaTrader5",
+        "detail": "MetaTrader5",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestTrade",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
         "label": "Celery",
         "importPath": "celery",
         "description": "celery",
@@ -1621,111 +1927,6 @@
         "description": "pydantic_settings",
         "isExtraImport": true,
         "detail": "pydantic_settings",
-        "documentation": {}
-    },
-    {
-        "label": "pandas",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "pandas",
-        "description": "pandas",
-        "detail": "pandas",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
-        "isExtraImport": true,
-        "detail": "loguru",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
-        "isExtraImport": true,
-        "detail": "loguru",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
-        "isExtraImport": true,
-        "detail": "loguru",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
-        "isExtraImport": true,
-        "detail": "loguru",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
-        "isExtraImport": true,
-        "detail": "loguru",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
-        "isExtraImport": true,
-        "detail": "loguru",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
-        "isExtraImport": true,
-        "detail": "loguru",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
-        "isExtraImport": true,
-        "detail": "loguru",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
-        "isExtraImport": true,
-        "detail": "loguru",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
-        "isExtraImport": true,
-        "detail": "loguru",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
-        "isExtraImport": true,
-        "detail": "loguru",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "importPath": "loguru",
-        "description": "loguru",
-        "isExtraImport": true,
-        "detail": "loguru",
         "documentation": {}
     },
     {
@@ -1765,68 +1966,12 @@
         "documentation": {}
     },
     {
-        "label": "dataclass",
-        "importPath": "dataclasses",
-        "description": "dataclasses",
-        "isExtraImport": true,
-        "detail": "dataclasses",
-        "documentation": {}
-    },
-    {
         "label": "pickle",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "pickle",
         "description": "pickle",
         "detail": "pickle",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
         "documentation": {}
     },
     {
@@ -2223,15 +2368,6 @@
         "documentation": {}
     },
     {
-        "label": "MetaTrader5",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "MetaTrader5",
-        "description": "MetaTrader5",
-        "detail": "MetaTrader5",
-        "documentation": {}
-    },
-    {
         "label": "TradingEngine",
         "importPath": "core.trading_engine",
         "description": "core.trading_engine",
@@ -2389,6 +2525,60 @@
         "description": "institutional-edge-system.backend.app.api.stats",
         "peekOfCode": "router = APIRouter()\n@router.get(\"/performance\", response_model=schemas.PerformanceMetricsResponse)\ndef get_performance_metrics(\n    days: int = 30,\n    db: Session = Depends(database.get_db)\n):\n    \"\"\"\n    Get aggregated performance metrics for the specified period\n    \"\"\"\n    # Calculate start date",
         "detail": "institutional-edge-system.backend.app.api.stats",
+        "documentation": {}
+    },
+    {
+        "label": "DataLoader",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.backtesting.data_loader",
+        "description": "institutional-edge-system.backend.app.backtesting.data_loader",
+        "peekOfCode": "class DataLoader:\n    \"\"\"Load and validate historical market data\"\"\"\n    TIMEFRAME_MAP = {\n        'M1': mt5.TIMEFRAME_M1,\n        'M5': mt5.TIMEFRAME_M5,\n        'M15': mt5.TIMEFRAME_M15,\n        'M30': mt5.TIMEFRAME_M30,\n        'H1': mt5.TIMEFRAME_H1,\n        'H4': mt5.TIMEFRAME_H4,\n        'D1': mt5.TIMEFRAME_D1,",
+        "detail": "institutional-edge-system.backend.app.backtesting.data_loader",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestTrade",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.backtesting.models",
+        "description": "institutional-edge-system.backend.app.backtesting.models",
+        "peekOfCode": "class BacktestTrade:\n    \"\"\"Represents a trade in backtest\"\"\"\n    entry_time: datetime\n    entry_price: float\n    signal_type: str  # \"BUY\" or \"SELL\"\n    volume: float\n    stop_loss: float\n    take_profit: float\n    # Filled on exit\n    exit_time: Optional[datetime] = None",
+        "detail": "institutional-edge-system.backend.app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestMetrics",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.backtesting.models",
+        "description": "institutional-edge-system.backend.app.backtesting.models",
+        "peekOfCode": "class BacktestMetrics:\n    \"\"\"Performance metrics from backtest\"\"\"\n    # Basic stats\n    total_trades: int = 0\n    winning_trades: int = 0\n    losing_trades: int = 0\n    break_even_trades: int = 0\n    # Win/Loss\n    win_rate: float = 0.0\n    loss_rate: float = 0.0",
+        "detail": "institutional-edge-system.backend.app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestConfig",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.backtesting.models",
+        "description": "institutional-edge-system.backend.app.backtesting.models",
+        "peekOfCode": "class BacktestConfig:\n    \"\"\"Configuration for backtest\"\"\"\n    # Account\n    initial_balance: float = 10000.0\n    # Symbol\n    symbol: str = \"EURUSD\"\n    timeframe: str = \"H1\"\n    # Strategy parameters\n    min_confluence_score: int = 7\n    risk_percent: float = 1.0",
+        "detail": "institutional-edge-system.backend.app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestResults",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.backtesting.models",
+        "description": "institutional-edge-system.backend.app.backtesting.models",
+        "peekOfCode": "class BacktestResults:\n    \"\"\"Complete results from backtest run\"\"\"\n    config: BacktestConfig\n    metrics: BacktestMetrics\n    trades: List[BacktestTrade] = field(default_factory=list)\n    equity_curve: List[Dict] = field(default_factory=list)\n    # Metadata\n    start_date: Optional[datetime] = None\n    end_date: Optional[datetime] = None\n    total_bars: int = 0",
+        "detail": "institutional-edge-system.backend.app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "OrderSimulator",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.backtesting.simulator",
+        "description": "institutional-edge-system.backend.app.backtesting.simulator",
+        "peekOfCode": "class OrderSimulator:\n    \"\"\"\n    Simulates realistic order execution\n    Features:\n    - Slippage modeling\n    - Commission calculation\n    - Realistic SL/TP execution (next bar)\n    - Position sizing\n    \"\"\"\n    def __init__(",
+        "detail": "institutional-edge-system.backend.app.backtesting.simulator",
         "documentation": {}
     },
     {
