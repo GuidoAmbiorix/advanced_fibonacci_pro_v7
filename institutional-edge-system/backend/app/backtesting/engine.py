@@ -131,6 +131,8 @@ class BacktestEngine:
             # Get historical window for analysis
             lookback_window = min(500, i)  # Use up to 500 bars
             historical_data = data.iloc[max(0, i - lookback_window):i + 1].copy()
+            # Reset index to avoid index errors in trading engine
+            historical_data = historical_data.reset_index(drop=True)
 
             # Run strategy analysis
             try:
@@ -178,7 +180,9 @@ class BacktestEngine:
                         )
 
             except Exception as e:
+                import traceback
                 logger.error(f"Error analyzing bar {i}: {e}")
+                logger.debug(f"Full traceback: {traceback.format_exc()}")
                 continue
 
             # Track equity
