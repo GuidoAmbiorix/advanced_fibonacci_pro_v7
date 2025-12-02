@@ -142,16 +142,29 @@ class BacktestEngine:
                 # Process signals
                 for signal in analysis.get('signals', []):
                     # Check confluence score
-                    if signal.get('confluence_score', 0) < self.config.min_confluence_score:
+                    # Handle both TradingSignal objects and dicts
+                    if hasattr(signal, 'confluence_score'):
+                        score = signal.confluence_score
+                    elif isinstance(signal, dict):
+                        score = signal.get('confluence_score', 0)
+                    else:
+                        continue
+
+                    if score < self.config.min_confluence_score:
                         continue
 
                     # Check if can open (max trades)
                     if len(self.open_trades) >= self.config.max_trades:
                         break
 
-                    # Execute entry
+                    # Execute entry - convert to dict if it's an object
+                    if hasattr(signal, '__dict__'):
+                        signal_dict = signal.__dict__
+                    else:
+                        signal_dict = signal
+
                     trade = self.simulator.execute_entry(
-                        signal=signal.__dict__ if hasattr(signal, '__dict__') else signal,
+                        signal=signal_dict,
                         current_bar=current_bar,
                         account_balance=self.current_balance,
                         risk_percent=self.config.risk_percent
