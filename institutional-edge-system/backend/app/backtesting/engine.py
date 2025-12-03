@@ -193,9 +193,21 @@ class BacktestEngine:
                 'equity': current_equity
             })
 
-            # Progress logging (every 1000 bars)
-            if (i + 1) % 1000 == 0:
-                logger.info(f"Processed {i+1}/{len(data)} bars...")
+            # Progress logging (every 500 bars for better visibility)
+            if (i + 1) % 500 == 0:
+                progress_pct = ((i + 1) / len(data)) * 100
+                elapsed = time.time() - start_time
+                bars_per_sec = (i + 1) / elapsed if elapsed > 0 else 0
+                eta_seconds = (len(data) - (i + 1)) / bars_per_sec if bars_per_sec > 0 else 0
+                eta_minutes = eta_seconds / 60
+
+                logger.info(
+                    f"Progress: {i+1}/{len(data)} bars ({progress_pct:.1f}%) | "
+                    f"Trades: {len(self.closed_trades)} | "
+                    f"Balance: ${self.current_balance:.2f} | "
+                    f"Speed: {bars_per_sec:.1f} bars/sec | "
+                    f"ETA: {eta_minutes:.1f} min"
+                )
 
         # Force close any remaining open trades
         if self.open_trades and len(data) > 0:

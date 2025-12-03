@@ -288,6 +288,14 @@
         "documentation": {}
     },
     {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
         "label": "timedelta",
         "importPath": "datetime",
         "description": "datetime",
@@ -1874,6 +1882,22 @@
         "documentation": {}
     },
     {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
         "label": "logger",
         "importPath": "loguru",
         "description": "loguru",
@@ -2100,6 +2124,14 @@
     },
     {
         "label": "BacktestTrade",
+        "importPath": "app.backtesting.models",
+        "description": "app.backtesting.models",
+        "isExtraImport": true,
+        "detail": "app.backtesting.models",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestConfig",
         "importPath": "app.backtesting.models",
         "description": "app.backtesting.models",
         "isExtraImport": true,
@@ -2623,6 +2655,14 @@
         "description": "dotenv",
         "isExtraImport": true,
         "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "BacktestEngine",
+        "importPath": "app.backtesting.engine",
+        "description": "app.backtesting.engine",
+        "isExtraImport": true,
+        "detail": "app.backtesting.engine",
         "documentation": {}
     },
     {
@@ -3823,6 +3863,15 @@
         "description": "institutional-edge-system.backend.run_backtest",
         "peekOfCode": "def main():\n    \"\"\"Run example backtest\"\"\"\n    # Configure logger\n    logger.add(\n        \"logs/backtest_{time}.log\",\n        rotation=\"1 day\",\n        retention=\"7 days\",\n        level=\"INFO\"\n    )\n    logger.info(\"=\"*70)",
         "detail": "institutional-edge-system.backend.run_backtest",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "institutional-edge-system.backend.run_backtest_fast",
+        "description": "institutional-edge-system.backend.run_backtest_fast",
+        "peekOfCode": "def main():\n    \"\"\"Run FAST backtest (1 year only)\"\"\"\n    # Configure logger\n    logger.add(\n        \"logs/backtest_{time}.log\",\n        rotation=\"1 day\",\n        retention=\"7 days\",\n        level=\"INFO\"\n    )\n    logger.info(\"=\"*70)",
+        "detail": "institutional-edge-system.backend.run_backtest_fast",
         "documentation": {}
     },
     {
