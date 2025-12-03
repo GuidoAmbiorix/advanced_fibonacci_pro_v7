@@ -21,6 +21,8 @@ from app.backtesting.metrics import MetricsCalculator
 from app.backtesting.reporter import ReportGenerator
 
 from app.core.trading_engine import TradingEngine
+from app.services.risk_manager import AdaptiveRiskManager
+from app.services.portfolio_manager import PortfolioManager, Position
 
 
 class BacktestEngine:
@@ -54,11 +56,17 @@ class BacktestEngine:
         self.closed_trades: List[BacktestTrade] = []
         self.equity_curve: List[dict] = []
         self.current_balance = config.initial_balance
+        self.peak_balance = config.initial_balance  # Track for drawdown
 
         # Trading engine
         self.trading_engine = self._init_trading_engine()
 
+        # Risk Management (same as live trading)
+        self.risk_manager = AdaptiveRiskManager()
+        self.portfolio_manager = PortfolioManager()
+
         logger.info(f"BacktestEngine initialized - {config.symbol} {config.timeframe}")
+        logger.info("✅ Using AdaptiveRiskManager + PortfolioManager (same as live trading)")
 
     def _init_trading_engine(self) -> TradingEngine:
         """Initialize the trading engine with config"""
@@ -159,17 +167,65 @@ class BacktestEngine:
                     if len(self.open_trades) >= self.config.max_trades:
                         break
 
-                    # Execute entry - convert to dict if it's an object
+                    # Convert signal to dict if needed
                     if hasattr(signal, '__dict__'):
                         signal_dict = signal.__dict__
                     else:
                         signal_dict = signal
 
+                    # PROFESSIONAL RISK MANAGEMENT (same as live trading)
+
+                    # STEP 1: Portfolio Manager - Check portfolio-level risk
+                    # Update portfolio with current open positions
+                    self.portfolio_manager.positions.clear()
+                    for open_trade in self.open_trades:
+                        self.portfolio_manager.positions.append(Position(
+                            symbol=open_trade.symbol,
+                            volume=open_trade.volume,
+                            risk_percent=open_trade.risk_percent if hasattr(open_trade, 'risk_percent') else self.config.risk_percent
+                        ))
+
+                    # Check if can open new position
+                    can_open, reason = self.portfolio_manager.can_open_position(
+                        symbol=signal_dict.get('symbol', self.config.symbol),
+                        proposed_risk=self.config.risk_percent,
+                        account_balance=self.current_balance
+                    )
+
+                    if not can_open:
+                        logger.debug(f"Portfolio Manager blocked trade: {reason}")
+                        continue
+
+                    # STEP 2: Adaptive Risk Manager - Calculate dynamic risk
+                    # Update peak balance
+                    if self.current_balance > self.peak_balance:
+                        self.peak_balance = self.current_balance
+
+                    # Calculate current drawdown
+                    current_equity = self._calculate_current_equity(current_bar)
+                    current_dd = ((self.peak_balance - current_equity) / self.peak_balance * 100) if self.peak_balance > 0 else 0.0
+
+                    # Get consecutive losses
+                    consecutive_losses = self._count_consecutive_losses()
+
+                    # Calculate adaptive risk
+                    adaptive_risk_percent, risk_reason = self.risk_manager.calculate_risk_percent(
+                        market_regime="NORMAL",
+                        consecutive_losses=consecutive_losses,
+                        current_volatility_percentile=50,
+                        current_drawdown=current_dd
+                    )
+
+                    if adaptive_risk_percent == 0:
+                        logger.warning(f"🛑 CIRCUIT BREAKER: {risk_reason}")
+                        break  # Stop opening new trades
+
+                    # Execute entry with adaptive risk
                     trade = self.simulator.execute_entry(
                         signal=signal_dict,
                         current_bar=current_bar,
                         account_balance=self.current_balance,
-                        risk_percent=self.config.risk_percent
+                        risk_percent=adaptive_risk_percent  # Use adaptive risk
                     )
 
                     if trade:
@@ -297,6 +353,24 @@ class BacktestEngine:
             equity += trade.pnl
 
         return equity
+
+    def _count_consecutive_losses(self) -> int:
+        """
+        Count consecutive losing trades from most recent
+        Used by AdaptiveRiskManager
+        """
+        if not self.closed_trades:
+            return 0
+
+        consecutive = 0
+        # Iterate backwards through closed trades
+        for trade in reversed(self.closed_trades):
+            if trade.pnl < 0:  # Loss
+                consecutive += 1
+            else:  # Win or breakeven
+                break
+
+        return consecutive
 
     def _create_empty_results(self) -> BacktestResults:
         """Create empty results in case of error"""

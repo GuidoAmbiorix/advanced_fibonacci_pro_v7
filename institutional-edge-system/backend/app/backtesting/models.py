@@ -33,6 +33,7 @@ class BacktestTrade:
     confluence_score: int = 0
     commission: float = 0.0
     slippage_pips: float = 0.0
+    risk_percent: float = 1.0  # Risk % used for this trade (for portfolio tracking)
 
     # Status
     status: str = "OPEN"  # "OPEN", "CLOSED"

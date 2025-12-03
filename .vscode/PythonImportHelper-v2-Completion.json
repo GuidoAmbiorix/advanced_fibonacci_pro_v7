@@ -2219,6 +2219,46 @@
         "documentation": {}
     },
     {
+        "label": "AdaptiveRiskManager",
+        "importPath": "app.services.risk_manager",
+        "description": "app.services.risk_manager",
+        "isExtraImport": true,
+        "detail": "app.services.risk_manager",
+        "documentation": {}
+    },
+    {
+        "label": "AdaptiveRiskManager",
+        "importPath": "app.services.risk_manager",
+        "description": "app.services.risk_manager",
+        "isExtraImport": true,
+        "detail": "app.services.risk_manager",
+        "documentation": {}
+    },
+    {
+        "label": "PortfolioManager",
+        "importPath": "app.services.portfolio_manager",
+        "description": "app.services.portfolio_manager",
+        "isExtraImport": true,
+        "detail": "app.services.portfolio_manager",
+        "documentation": {}
+    },
+    {
+        "label": "Position",
+        "importPath": "app.services.portfolio_manager",
+        "description": "app.services.portfolio_manager",
+        "isExtraImport": true,
+        "detail": "app.services.portfolio_manager",
+        "documentation": {}
+    },
+    {
+        "label": "PortfolioManager",
+        "importPath": "app.services.portfolio_manager",
+        "description": "app.services.portfolio_manager",
+        "isExtraImport": true,
+        "detail": "app.services.portfolio_manager",
+        "documentation": {}
+    },
+    {
         "label": "numpy",
         "kind": 6,
         "isExtraImport": true,

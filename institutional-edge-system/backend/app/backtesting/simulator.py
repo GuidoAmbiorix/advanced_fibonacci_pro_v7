@@ -110,6 +110,7 @@ class OrderSimulator:
                 confluence_score=confluence_score,
                 commission=commission,
                 slippage_pips=self.slippage_pips,
+                risk_percent=risk_percent,  # Store the risk % used
                 status="OPEN"
             )
 
