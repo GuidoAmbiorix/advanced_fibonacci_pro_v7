@@ -13,6 +13,8 @@ from loguru import logger
 from app.core.trading_engine import TradingEngine
 from app.core.mt5_connector import MT5Connector
 from app.services.trade_manager import TradeManager
+from app.services.risk_manager import AdaptiveRiskManager
+from app.services.portfolio_manager import PortfolioManager
 from app.models.database import BotConfig, Trade, Signal
 from app.api.database import SessionLocal
 
@@ -43,6 +45,8 @@ class TradingBot:
         self.config: Optional[BotConfig] = None
         self.trading_engine: Optional[TradingEngine] = None
         self.trade_manager: Optional[TradeManager] = None
+        self.risk_manager: Optional[AdaptiveRiskManager] = None
+        self.portfolio_manager: Optional[PortfolioManager] = None
         self.last_analysis_time: Optional[datetime] = None
         self.open_positions_count = 0
 
@@ -61,23 +65,31 @@ class TradingBot:
 
         # Initialize trading engine
         self._init_trading_engine()
-        
+
         # Initialize trade manager with config
         self.trade_manager = TradeManager(self.mt5_connector)
         self.trade_manager.be_trigger_r = self.config.be_trigger
         self.trade_manager.use_trailing_sl = self.config.trailing_sl
         self.trade_manager.trailing_step_r = self.config.trailing_step
         self.trade_manager.trailing_distance_r = self.config.trailing_distance
-        
+
         # Advanced TSL Config
         self.trade_manager.tsl_mode = self.config.tsl_mode
         self.trade_manager.tsl_activation_r = self.config.tsl_activation_r
         self.trade_manager.tsl_atr_period = self.config.tsl_atr_period
         self.trade_manager.tsl_atr_multiplier = self.config.tsl_atr_multiplier
         self.trade_manager.timeframe = self.config.timeframe
-        
+
         self.trade_manager.partial_tp_on = self.config.partial_tp_on
         self.trade_manager.partial_tp_amount = self.config.partial_tp_amount
+
+        # Initialize Risk Manager (Adaptive)
+        self.risk_manager = AdaptiveRiskManager()
+        logger.info("✅ Adaptive Risk Manager initialized with 1% max risk and tiered DD protection")
+
+        # Initialize Portfolio Manager
+        self.portfolio_manager = PortfolioManager()
+        logger.info("✅ Portfolio Manager initialized with correlation blocking and 6% max portfolio risk")
 
         # Start main loop
         await self._run_loop()
@@ -380,14 +392,77 @@ class TradingBot:
             logger.error("Failed to get account info")
             return
 
-        # Calculate position size
+        account_balance = account_info['balance']
+        account_equity = account_info['equity']
+
+        # STEP 1: Check portfolio-level risk with PortfolioManager
+        # Calculate proposed risk for this trade
         sl_distance = abs(signal.entry_price - signal.stop_loss)
+        base_risk_percent = self.config.risk_percent  # From config (e.g., 1%)
+
+        # Get current open positions for portfolio check
+        open_positions = self.mt5_connector.get_open_positions()
+
+        # Update portfolio manager with current positions
+        self.portfolio_manager.positions.clear()
+        for pos in open_positions:
+            from app.services.portfolio_manager import Position
+            self.portfolio_manager.positions.append(Position(
+                symbol=pos['symbol'],
+                volume=pos['volume'],
+                risk_percent=(pos.get('initial_risk_percent', base_risk_percent))
+            ))
+
+        # Check if can open new position
+        can_open, reason = self.portfolio_manager.can_open_position(
+            symbol=signal.symbol,
+            proposed_risk=base_risk_percent,
+            account_balance=account_balance
+        )
+
+        if not can_open:
+            await self._log_activity(
+                f"🚫 Portfolio Manager blocked trade: {reason}",
+                "warning"
+            )
+            return
+
+        # STEP 2: Calculate adaptive risk using AdaptiveRiskManager
+        # Get drawdown info
+        peak_balance = account_info.get('peak_balance', account_balance)
+        current_dd = ((peak_balance - account_equity) / peak_balance * 100) if peak_balance > 0 else 0.0
+
+        # Get consecutive losses from recent trades
+        consecutive_losses = await self._get_consecutive_losses()
+
+        # Calculate adaptive risk percentage
+        adaptive_risk_percent, risk_reason = self.risk_manager.calculate_risk_percent(
+            market_regime="NORMAL",  # Could be enhanced with market volatility detection
+            consecutive_losses=consecutive_losses,
+            current_volatility_percentile=50,  # Default, could calculate from ATR
+            current_drawdown=current_dd
+        )
+
+        if adaptive_risk_percent == 0:
+            await self._log_activity(
+                f"🛑 CIRCUIT BREAKER: {risk_reason}",
+                "error"
+            )
+            return
+
+        # STEP 3: Calculate lot size with adaptive risk
         lot_size = self.mt5_connector.calculate_lot_size(
             symbol=signal.symbol,
-            risk_percent=self.config.risk_percent,
+            risk_percent=adaptive_risk_percent,  # Use adaptive risk instead of config
             sl_distance=sl_distance,
-            account_balance=account_info['balance']
+            account_balance=account_balance
         )
+
+        # Log risk adjustment
+        if adaptive_risk_percent != base_risk_percent:
+            logger.warning(
+                f"⚠️ Risk adjusted: {base_risk_percent}% → {adaptive_risk_percent}% ({risk_reason})"
+            )
 
         await self._log_activity(
             "Opening {} position: {} lots @ {} (SL: {}, TP: {})".format(
@@ -631,6 +706,37 @@ class TradingBot:
         except Exception as e:
             logger.error(f"Error checking cooldown: {e}")
             return True
+        finally:
+            db.close()
+
+    async def _get_consecutive_losses(self) -> int:
+        """
+        Get count of consecutive losing trades
+        Used by AdaptiveRiskManager to reduce risk after losing streaks
+        """
+        db = SessionLocal()
+        try:
+            # Get recent closed trades ordered by close time descending
+            recent_trades = db.query(Trade).filter(
+                Trade.user_id == self.config.user_id,
+                Trade.status == "CLOSED"
+            ).order_by(Trade.closed_at.desc()).limit(10).all()
+
+            if not recent_trades:
+                return 0
+
+            consecutive_losses = 0
+            for trade in recent_trades:
+                if trade.profit_loss < 0:  # Loss
+                    consecutive_losses += 1
+                else:  # Win or breakeven
+                    break  # Stop counting at first win
+
+            return consecutive_losses
+
+        except Exception as e:
+            logger.exception(f"Error getting consecutive losses: {e}")
+            return 0  # Safe default
         finally:
             db.close()
 
