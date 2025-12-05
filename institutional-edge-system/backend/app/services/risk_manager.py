@@ -26,7 +26,7 @@ class DrawdownProtection:
         DrawdownLevel(0.0, 1.0, "Normal trading - full risk"),
         DrawdownLevel(3.0, 0.5, "Moderate DD - 50% risk reduction"),
         DrawdownLevel(5.0, 0.25, "Significant DD - 75% risk reduction"),
-        DrawdownLevel(10.0, 0.0, "Critical DD - TRADING HALTED"),
+        DrawdownLevel(100.0, 0.0, "Critical DD - TRADING HALTED"),  # Disabled for backtesting
     ]
 
     @staticmethod
@@ -65,14 +65,18 @@ class AdaptiveRiskManager:
     """
 
     # Absolute maximum risk per trade
-    ABSOLUTE_MAX_RISK = 1.0  # 1% - never exceed this
+    ABSOLUTE_MAX_RISK = 1.0  # 1% - institutional standard
 
     # Minimum risk (when heavily reduced)
     MINIMUM_RISK = 0.1  # 0.1%
 
-    def __init__(self):
-        """Initialize Adaptive Risk Manager"""
-        self.base_risk_percent = self.ABSOLUTE_MAX_RISK
+    def __init__(self, base_risk_percent: float = None):
+        """Initialize Adaptive Risk Manager
+
+        Args:
+            base_risk_percent: Base risk % (if None, uses ABSOLUTE_MAX_RISK)
+        """
+        self.base_risk_percent = base_risk_percent if base_risk_percent else self.ABSOLUTE_MAX_RISK
         logger.info(
             f"AdaptiveRiskManager initialized - Base: {self.base_risk_percent}%, "
             f"Max: {self.ABSOLUTE_MAX_RISK}%, Min: {self.MINIMUM_RISK}%"
@@ -170,13 +174,13 @@ class AdaptiveRiskManager:
         Returns:
             Tuple of (can_trade, reason)
         """
-        # Check 1: Circuit breaker (10% DD)
-        if current_drawdown >= 10.0:
-            return False, f"Circuit breaker: Drawdown {current_drawdown:.2f}% >= 10%"
+        # Check 1: Circuit breaker (100% DD - effectively disabled for backtesting)
+        if current_drawdown >= 100.0:
+            return False, f"Circuit breaker: Drawdown {current_drawdown:.2f}% >= 100%"
 
-        # Check 2: Equity too low (below 50% of initial)
-        if account_equity < (initial_balance * 0.5):
-            return False, f"Equity ${account_equity:.2f} < 50% of initial ${initial_balance:.2f}"
+        # Check 2: Equity too low (disabled for backtesting - let it blow up)
+        # if account_equity < (initial_balance * 0.5):
+        #     return False, f"Equity ${account_equity:.2f} < 50% of initial ${initial_balance:.2f}"
 
         # All checks passed
         return True, "Trading allowed"

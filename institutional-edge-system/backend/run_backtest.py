@@ -27,39 +27,40 @@ def main():
     )
 
     logger.info("="*70)
-    logger.info("INSTITUTIONAL EDGE PRO - BACKTEST")
+    logger.info("ADAPTIVE MULTI-STRATEGY ENGINE - BACKTEST")
+    logger.info("Forex Fury + Waka Waka | Professional Grade")
     logger.info("="*70)
 
     # Configure backtest
     config = BacktestConfig(
         # Account
-        initial_balance=10000.0,
+        initial_balance=10.0,  # $10 challenge
 
         # Symbol & Timeframe
         symbol="EURUSD",
-        timeframe="H1",
+        timeframe="H4",  # H4 - Probado y funciona
 
-        # Date range (3 years)
-        start_date=datetime(2021, 1, 1),
+        # Date range (2 years for statistical significance)
+        start_date=datetime(2022, 1, 1),
         end_date=datetime(2023, 12, 31),
 
-        # Strategy parameters
-        min_confluence_score=7,  # Conservative: 7/10
-        risk_percent=1.0,  # 1% risk per trade
-        max_trades=1,  # One trade at a time
+        # Strategy parameters - 30% RIESGO
+        min_confluence_score=7,
+        risk_percent=30.0,  # 30% riesgo = $3 por trade con $10
+        max_trades=1,
 
-        # Trading engine config
-        swing_length=10,
-        ob_lookback=50,
-        fvg_min_size=0.3,
-        vp_lookback=100,
+        # Breakout + Liquidity engine config
+        swing_length=10,  # Swing detection period
+        ob_lookback=50,  # Not used (legacy)
+        fvg_min_size=0.3,  # Not used (legacy)
+        vp_lookback=100,  # Not used (legacy)
 
         # Execution costs
         slippage_pips=1.0,  # 1 pip slippage
         commission_per_lot=7.0,  # $7 per lot roundtrip
 
-        # Advanced (disabled for now)
-        enable_trailing_stop=False,
+        # Advanced
+        enable_trailing_stop=True,  # Breakeven at 1R, lock profit at 2R+
         enable_partial_tp=False,
     )
 

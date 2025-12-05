@@ -25,7 +25,9 @@ class OrderSimulator:
     def __init__(
         self,
         slippage_pips: float = 1.0,
-        commission_per_lot: float = 7.0
+        commission_per_lot: float = 7.0,
+        enable_trailing_stop: bool = False,
+        min_hold_hours: float = 4.0
     ):
         """
         Initialize simulator
@@ -33,14 +35,20 @@ class OrderSimulator:
         Args:
             slippage_pips: Slippage in pips (default 1 pip)
             commission_per_lot: Commission per lot roundtrip (default $7)
+            enable_trailing_stop: Enable trailing stop loss (default False)
+            min_hold_hours: Minimum hold time in hours (default 4.0)
         """
         self.slippage_pips = slippage_pips
         self.commission_per_lot = commission_per_lot
+        self.enable_trailing_stop = enable_trailing_stop
+        self.min_hold_hours = min_hold_hours
 
         logger.info(
             f"OrderSimulator initialized - "
             f"Slippage: {slippage_pips} pips, "
-            f"Commission: ${commission_per_lot}/lot"
+            f"Commission: ${commission_per_lot}/lot, "
+            f"Trailing Stop: {enable_trailing_stop}, "
+            f"Min Hold: {min_hold_hours}h"
         )
 
     def execute_entry(
@@ -68,7 +76,7 @@ class OrderSimulator:
             signal_type = signal['signal_type']  # "BUY" or "SELL"
             entry_price = signal['entry_price']
             stop_loss = signal['stop_loss']
-            take_profit = signal['take_profit_1']  # Use first TP
+            take_profit = signal['take_profit_1']  # Use first TP (1.5R target)
             confluence_score = signal.get('confluence_score', 0)
 
             # Apply slippage (worse fill price)
@@ -88,12 +96,12 @@ class OrderSimulator:
             risk_amount = account_balance * (risk_percent / 100)
             volume = risk_amount / (100000 * sl_distance)  # Forex standard lot
 
-            # Round to 0.01 (standard lot precision)
-            volume = round(volume, 2)
+            # Round to 0.001 (micro lot precision)
+            volume = round(volume, 3)
 
-            # Minimum 0.01 lot
-            if volume < 0.01:
-                volume = 0.01
+            # Minimum 0.001 lot (micro lot)
+            if volume < 0.001:
+                volume = 0.001
 
             # Calculate commission
             commission = volume * self.commission_per_lot
@@ -126,6 +134,76 @@ class OrderSimulator:
             logger.error(f"Error executing entry: {e}")
             return None
 
+    def _update_trailing_stop(self, trade: BacktestTrade, current_price: float) -> bool:
+        """
+        Update trailing stop based on current profit - OPTIMIZED FOR WIN RATE
+
+        Trailing Logic (More Aggressive):
+        - At 0.8R profit: Move SL to breakeven + 0.1R buffer
+        - At 1.5R profit: Move SL to +0.8R (lock partial profit)
+        - At 2R profit: Move SL to +1.2R (lock 1.2R profit)
+
+        Args:
+            trade: Open trade
+            current_price: Current market price
+
+        Returns:
+            True if SL was moved, False otherwise
+        """
+        if not self.enable_trailing_stop:
+            return False
+
+        initial_risk = abs(trade.entry_price - trade.initial_stop_loss)
+        if initial_risk == 0:
+            return False
+
+        # Calculate current profit in R
+        if trade.signal_type == "BUY":
+            profit_r = (current_price - trade.entry_price) / initial_risk
+
+            # Move SL only if it's better than current
+            new_sl = None
+            if profit_r >= 2.0:
+                # Lock +1.2R profit
+                new_sl = trade.entry_price + (initial_risk * 1.2)
+            elif profit_r >= 1.5:
+                # Lock +0.8R profit
+                new_sl = trade.entry_price + (initial_risk * 0.8)
+            elif profit_r >= 0.8:
+                # Move to breakeven with small buffer
+                new_sl = trade.entry_price + (initial_risk * 0.1)
+
+            # Only move SL up, never down
+            if new_sl and new_sl > trade.stop_loss:
+                old_sl = trade.stop_loss
+                trade.stop_loss = new_sl
+                logger.debug(f"Trailing SL updated: {old_sl:.5f} → {new_sl:.5f} (Profit: {profit_r:.2f}R)")
+                return True
+
+        else:  # SELL
+            profit_r = (trade.entry_price - current_price) / initial_risk
+
+            # Move SL only if it's better than current
+            new_sl = None
+            if profit_r >= 2.0:
+                # Lock +1.2R profit
+                new_sl = trade.entry_price - (initial_risk * 1.2)
+            elif profit_r >= 1.5:
+                # Lock +0.8R profit
+                new_sl = trade.entry_price - (initial_risk * 0.8)
+            elif profit_r >= 0.8:
+                # Move to breakeven with small buffer
+                new_sl = trade.entry_price - (initial_risk * 0.1)
+
+            # Only move SL down (better for SELL), never up
+            if new_sl and new_sl < trade.stop_loss:
+                old_sl = trade.stop_loss
+                trade.stop_loss = new_sl
+                logger.debug(f"Trailing SL updated: {old_sl:.5f} → {new_sl:.5f} (Profit: {profit_r:.2f}R)")
+                return True
+
+        return False
+
     def update_position(
         self,
         trade: BacktestTrade,
@@ -144,9 +222,22 @@ class OrderSimulator:
         if trade.status != "OPEN":
             return trade.status
 
-        # Check if SL or TP hit
+        # Calculate time in trade
+        time_in_trade_hours = (current_bar['time'] - trade.entry_time).total_seconds() / 3600
+
+        # Update trailing stop if enabled
+        current_price = current_bar['close']
+        self._update_trailing_stop(trade, current_price)
+
+        # Check if SL or TP hit (but respect minimum hold time)
         bar_high = current_bar['high']
         bar_low = current_bar['low']
+
+        # Skip SL check if below minimum hold time (let trade breathe)
+        if time_in_trade_hours < self.min_hold_hours:
+            # Still open - update floating P&L
+            trade.update_open_pnl(current_price)
+            return "OPEN"
 
         if trade.signal_type == "BUY":
             # Check SL first (more conservative)

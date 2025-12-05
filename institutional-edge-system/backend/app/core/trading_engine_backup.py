@@ -597,11 +597,9 @@ class TradingEngine:
         eql_levels = find_equal_levels(recent_lows, tolerance)
 
         if eqh_levels:
-            eqh_str = ', '.join([f"{eq['price']:.5f}({eq['touches']}x)" for eq in eqh_levels])
-            logger.debug(f"🔺 Found {len(eqh_levels)} EQH level(s): {eqh_str}")
+            logger.debug(f"🔺 Found {len(eqh_levels)} EQH level(s): {[f'{eq[\"price\"]:.5f}({eq[\"touches\"]}x)' for eq in eqh_levels]}")
         if eql_levels:
-            eql_str = ', '.join([f"{eq['price']:.5f}({eq['touches']}x)" for eq in eql_levels])
-            logger.debug(f"🔻 Found {len(eql_levels)} EQL level(s): {eql_str}")
+            logger.debug(f"🔻 Found {len(eql_levels)} EQL level(s): {[f'{eq[\"price\"]:.5f}({eq[\"touches\"]}x)' for eq in eql_levels]}")
 
         return {
             'eqh_levels': eqh_levels,
@@ -1448,48 +1446,17 @@ class TradingEngine:
 
     def _calculate_confluence_enhanced(self, df: pd.DataFrame, bos_choch_data: Dict) -> Dict:
         """
-        FULLY ENHANCED confluence calculation with ALL new factors
-
-        Integrates:
-        - Displacement detection
-        - OB/FVG quality scoring
-        - Market structure quality
-        - Internal vs External liquidity
-        - EQH/EQL detection
-        - Killzones
-        - ATR regime filter
-        - SMT divergence (placeholder)
+        ENHANCED confluence calculation with proper separation
+        Uses new EnhancedConfluenceScorer for better signal quality
 
         Returns separate scores for CONTINUATION vs REVERSAL
         """
         current_price = df.iloc[-1]['close']
         current_low = df.iloc[-1]['low']
         current_high = df.iloc[-1]['high']
-        current_time = df.iloc[-1]['time']
         atr = df.iloc[-1]['atr']
 
-        # ===== RUN ALL DETECTORS =====
-
-        # 🔥 NEW: Displacement
-        displacement = self._detect_displacement(df)
-        has_bull_displacement = displacement['bullish_displacement']
-        has_bear_displacement = displacement['bearish_displacement']
-
-        # 🔥 NEW: EQH/EQL
-        eqh_eql = self._detect_equal_highs_lows(df)
-        has_eqh = len(eqh_eql['eqh_levels']) > 0
-        has_eql = len(eqh_eql['eql_levels']) > 0
-
-        # 🔥 NEW: Killzone
-        killzone = self._is_in_killzone(current_time)
-        in_killzone = killzone['in_killzone']
-
-        # 🔥 NEW: ATR Regime
-        atr_regime = self._check_atr_regime(df)
-        atr_ok = atr_regime['is_suitable']
-
-        # 🔥 NEW: SMT Divergence (placeholder for now)
-        smt = self._detect_smt_divergence(df)
+        # ===== DETECT ALL FACTORS =====
 
         # 1. Structure
         has_bos_bull = bos_choch_data.get('bos_bullish', False) and bos_choch_data.get('bos_recent', False)
@@ -1497,66 +1464,20 @@ class TradingEngine:
         has_choch_bull = bos_choch_data.get('choch_to_bullish', False)
         has_choch_bear = bos_choch_data.get('choch_to_bearish', False)
 
-        # 🔥 NEW: Calculate Market Structure Quality
-        bull_ms_quality = 0
-        bear_ms_quality = 0
-        if has_bos_bull or has_choch_bull:
-            bull_ms_quality = self._calculate_bos_choch_quality(
-                df, len(df) - 1, 'BOS_BULL' if has_bos_bull else 'CHOCH_BULL'
-            )
-        if has_bos_bear or has_choch_bear:
-            bear_ms_quality = self._calculate_bos_choch_quality(
-                df, len(df) - 1, 'BOS_BEAR' if has_bos_bear else 'CHOCH_BEAR'
-            )
+        # 2. Price Action
+        at_bullish_ob = any(ob.bottom <= current_low <= ob.top for ob in self.bullish_obs if not ob.is_mitigated)
+        at_bearish_ob = any(ob.bottom <= current_high <= ob.top for ob in self.bearish_obs if not ob.is_mitigated)
+        at_bullish_fvg = any(fvg.bottom <= current_price <= fvg.top for fvg in self.bullish_fvgs if not fvg.is_filled)
+        at_bearish_fvg = any(fvg.bottom <= current_price <= fvg.top for fvg in self.bearish_fvgs if not fvg.is_filled)
 
-        # 2. Price Action with Quality Scoring
-        bull_ob = None
-        bear_ob = None
-        bull_fvg = None
-        bear_fvg = None
-        bull_ob_quality = 0
-        bear_ob_quality = 0
-        bull_fvg_quality = 0
-        bear_fvg_quality = 0
-
-        # Find OB with quality
-        for ob in self.bullish_obs:
-            if not ob.is_mitigated and ob.bottom <= current_low <= ob.top:
-                bull_ob = ob
-                bull_ob_quality = ob.quality_score if hasattr(ob, 'quality_score') else 0
-                break
-
-        for ob in self.bearish_obs:
-            if not ob.is_mitigated and ob.bottom <= current_high <= ob.top:
-                bear_ob = ob
-                bear_ob_quality = ob.quality_score if hasattr(ob, 'quality_score') else 0
-                break
-
-        # Find FVG with quality
-        for fvg in self.bullish_fvgs:
-            if not fvg.is_filled and fvg.bottom <= current_price <= fvg.top:
-                bull_fvg = fvg
-                bull_fvg_quality = fvg.quality_score if hasattr(fvg, 'quality_score') else 0
-                break
-
-        for fvg in self.bearish_fvgs:
-            if not fvg.is_filled and fvg.bottom <= current_price <= fvg.top:
-                bear_fvg = fvg
-                bear_fvg_quality = fvg.quality_score if hasattr(fvg, 'quality_score') else 0
-                break
-
-        at_bullish_ob = bull_ob is not None
-        at_bearish_ob = bear_ob is not None
-        at_bullish_fvg = bull_fvg is not None
-        at_bearish_fvg = bear_fvg is not None
-
-        # 3. Fibonacci
+        # 3. Fibonacci (Current TF only for now - TODO: add MTF)
         fib_data = self._calculate_fibonacci_levels(df)
         bull_fib_score = 0
         bear_fib_score = 0
 
         if fib_data['bullish_level']:
             is_golden = fib_data['is_golden_zone']
+            # For now, single TF only
             bull_fib_score = self.confluence_scorer.WEIGHTS['FIB_SINGLE_TF']
             if is_golden:
                 bull_fib_score += self.confluence_scorer.WEIGHTS['GOLDEN_POCKET']
@@ -1567,7 +1488,7 @@ class TradingEngine:
             if is_golden:
                 bear_fib_score += self.confluence_scorer.WEIGHTS['GOLDEN_POCKET']
 
-        # Log Fibonacci
+        # Log Fibonacci scoring
         if bull_fib_score > 0:
             level = fib_data.get('bullish_level', 'N/A')
             price = fib_data.get('bullish_price', 0)
@@ -1579,23 +1500,9 @@ class TradingEngine:
             is_golden = fib_data.get('is_golden_zone', False)
             logger.debug(f"🔴 Bear Fibonacci Score: {bear_fib_score} (level: {level}@{price:.5f}, golden: {is_golden})")
 
-        # 4. Liquidity with Internal/External classification
+        # 4. Liquidity
         bull_sweep, bear_sweep = self._detect_liquidity_sweeps(df)
         stop_hunt = self._detect_stop_hunt(df)
-
-        # 🔥 NEW: Classify liquidity type
-        bull_liq_type = "NONE"
-        bear_liq_type = "NONE"
-
-        if bull_sweep and self.swing_lows:
-            last_low = self.swing_lows[-1].price
-            liq_type = self._check_internal_vs_external_liquidity(last_low, df)
-            bull_liq_type = liq_type
-
-        if bear_sweep and self.swing_highs:
-            last_high = self.swing_highs[-1].price
-            liq_type = self._check_internal_vs_external_liquidity(last_high, df)
-            bear_liq_type = liq_type
 
         # 5. Volume
         delta_vol_bull = self._check_volume_confirmation(df, "BUY")
@@ -1640,17 +1547,7 @@ class TradingEngine:
                 poc_rising=poc_rising,
                 htf_aligned=htf_bull,
                 in_discount_zone=in_discount,
-                at_session_level=at_session_low,
-                # 🔥 NEW PARAMETERS
-                has_displacement=has_bull_displacement,
-                ob_quality=bull_ob_quality,
-                fvg_quality=bull_fvg_quality,
-                ms_quality=bull_ms_quality,
-                has_eqh_eql=has_eql,
-                in_killzone=in_killzone,
-                atr_regime_ok=atr_ok,
-                htf_imbalance=False,  # TODO: implement HTF imbalance detection
-                liquidity_type=bull_liq_type
+                at_session_level=at_session_low
             )
 
         # Bullish REVERSAL (CHoCH + liquidity grab)
@@ -1664,17 +1561,7 @@ class TradingEngine:
                 has_stop_hunt=stop_hunt.get('bull_stop_hunt', False),
                 has_delta_volume=delta_vol_bull,
                 htf_aligned=htf_bull,
-                in_correct_zone=in_discount,
-                # 🔥 NEW PARAMETERS
-                has_displacement=has_bull_displacement,
-                ob_quality=bull_ob_quality,
-                fvg_quality=bull_fvg_quality,
-                ms_quality=bull_ms_quality,
-                has_eqh_eql=has_eql,
-                in_killzone=in_killzone,
-                atr_regime_ok=atr_ok,
-                htf_imbalance=False,
-                liquidity_type=bull_liq_type
+                in_correct_zone=in_discount
             )
 
         # ===== SCORE BEARISH SIGNALS =====
@@ -1692,20 +1579,10 @@ class TradingEngine:
                 has_delta_volume=delta_vol_bear,
                 has_volume_spike=has_volume_spike,
                 at_poc=at_poc,
-                poc_rising=poc_falling,
+                poc_rising=poc_falling,  # For bearish, want falling POC
                 htf_aligned=htf_bear,
-                in_discount_zone=in_premium,
-                at_session_level=at_session_high,
-                # 🔥 NEW PARAMETERS
-                has_displacement=has_bear_displacement,
-                ob_quality=bear_ob_quality,
-                fvg_quality=bear_fvg_quality,
-                ms_quality=bear_ms_quality,
-                has_eqh_eql=has_eqh,
-                in_killzone=in_killzone,
-                atr_regime_ok=atr_ok,
-                htf_imbalance=False,
-                liquidity_type=bear_liq_type
+                in_discount_zone=in_premium,  # For bearish, want premium zone
+                at_session_level=at_session_high
             )
 
         # Bearish REVERSAL (CHoCH + liquidity grab)
@@ -1719,122 +1596,63 @@ class TradingEngine:
                 has_stop_hunt=stop_hunt.get('bear_stop_hunt', False),
                 has_delta_volume=delta_vol_bear,
                 htf_aligned=htf_bear,
-                in_correct_zone=in_premium,
-                # 🔥 NEW PARAMETERS
-                has_displacement=has_bear_displacement,
-                ob_quality=bear_ob_quality,
-                fvg_quality=bear_fvg_quality,
-                ms_quality=bear_ms_quality,
-                has_eqh_eql=has_eqh,
-                in_killzone=in_killzone,
-                atr_regime_ok=atr_ok,
-                htf_imbalance=False,
-                liquidity_type=bear_liq_type
+                in_correct_zone=in_premium
             )
 
-        # ===== PICK BEST VALID SIGNAL =====
+        # ===== PICK BEST SIGNAL FOR EACH DIRECTION =====
 
-        all_signals = []
+        # Bullish: Pick continuation or reversal (whichever is valid and higher)
+        bull_score = 0
+        bull_breakdown = {}
+        bull_trade_type = ""
 
-        # Check bull continuation
         if bull_continuation:
             is_valid, reason = bull_continuation.is_valid()
             logger.debug(f"🔵 Bull CONTINUATION: score={bull_continuation.total_score}, valid={is_valid}, reason={reason}, factors={bull_continuation.factors}")
-            if is_valid:
-                all_signals.append({
-                    'type': 'BUY',
-                    'trade_type': 'CONTINUATION',
-                    'score': bull_continuation.total_score,
-                    'breakdown': bull_continuation
-                })
 
-        # Check bull reversal
+        if bull_continuation and bull_continuation.is_valid()[0]:
+            if not bull_reversal or bull_continuation.total_score >= (bull_reversal.total_score if bull_reversal.is_valid()[0] else 0):
+                bull_score = bull_continuation.total_score
+                bull_breakdown = bull_continuation.factors
+                bull_trade_type = "CONTINUATION"
+
         if bull_reversal:
             is_valid, reason = bull_reversal.is_valid()
             logger.debug(f"🔵 Bull REVERSAL: score={bull_reversal.total_score}, valid={is_valid}, reason={reason}, factors={bull_reversal.factors}")
-            if is_valid:
-                all_signals.append({
-                    'type': 'BUY',
-                    'trade_type': 'REVERSAL',
-                    'score': bull_reversal.total_score,
-                    'breakdown': bull_reversal
-                })
 
-        # Check bear continuation
-        if bear_continuation:
-            is_valid, reason = bear_continuation.is_valid()
-            logger.debug(f"🔴 Bear CONTINUATION: score={bear_continuation.total_score}, valid={is_valid}, reason={reason}, factors={bear_continuation.factors}")
-            if is_valid:
-                all_signals.append({
-                    'type': 'SELL',
-                    'trade_type': 'CONTINUATION',
-                    'score': bear_continuation.total_score,
-                    'breakdown': bear_continuation
-                })
-
-        # Check bear reversal
-        if bear_reversal:
-            is_valid, reason = bear_reversal.is_valid()
-            logger.debug(f"🔴 Bear REVERSAL: score={bear_reversal.total_score}, valid={is_valid}, reason={reason}, factors={bear_reversal.factors}")
-            if is_valid:
-                all_signals.append({
-                    'type': 'SELL',
-                    'trade_type': 'REVERSAL',
-                    'score': bear_reversal.total_score,
-                    'breakdown': bear_reversal
-                })
-
-        # Pick highest score
-        if not all_signals:
-            return {
-                'bull_score': 0,
-                'bear_score': 0,
-                'bias': 'NEUTRAL',
-                'signals': [],
-                'bull_breakdown': {},
-                'bear_breakdown': {},
-                'fib_data': fib_data,
-                'bos_choch_data': bos_choch_data
-            }
-
-        # Sort by score descending
-        all_signals.sort(key=lambda x: x['score'], reverse=True)
-        best_signal = all_signals[0]
-
-        # Extract scores and breakdowns
-        bull_score = 0
-        bear_score = 0
-        bull_breakdown = {}
-        bear_breakdown = {}
-
-        if bull_continuation and bull_continuation.is_valid()[0]:
-            bull_score = bull_continuation.total_score
-            bull_breakdown = bull_continuation.factors
         if bull_reversal and bull_reversal.is_valid()[0]:
-            bull_score = max(bull_score, bull_reversal.total_score)
-            if bull_reversal.total_score > bull_continuation.total_score if bull_continuation else 0:
+            if bull_reversal.total_score > bull_score:
+                bull_score = bull_reversal.total_score
                 bull_breakdown = bull_reversal.factors
+                bull_trade_type = "REVERSAL"
+
+        # Bearish: Pick continuation or reversal (whichever is valid and higher)
+        bear_score = 0
+        bear_breakdown = {}
+        bear_trade_type = ""
 
         if bear_continuation and bear_continuation.is_valid()[0]:
-            bear_score = bear_continuation.total_score
-            bear_breakdown = bear_continuation.factors
+            if not bear_reversal or bear_continuation.total_score >= (bear_reversal.total_score if bear_reversal.is_valid()[0] else 0):
+                bear_score = bear_continuation.total_score
+                bear_breakdown = bear_continuation.factors
+                bear_trade_type = "CONTINUATION"
+
         if bear_reversal and bear_reversal.is_valid()[0]:
-            bear_score = max(bear_score, bear_reversal.total_score)
-            if bear_reversal.total_score > bear_continuation.total_score if bear_continuation else 0:
+            if bear_reversal.total_score > bear_score:
+                bear_score = bear_reversal.total_score
                 bear_breakdown = bear_reversal.factors
+                bear_trade_type = "REVERSAL"
 
         return {
             'bull_score': bull_score,
             'bear_score': bear_score,
-            'bias': best_signal['type'],
-            'signals': all_signals,
-            'best_signal': best_signal,
             'bull_breakdown': bull_breakdown,
             'bear_breakdown': bear_breakdown,
+            'bull_trade_type': bull_trade_type,
+            'bear_trade_type': bear_trade_type,
             'fib_data': fib_data,
             'bos_choch_data': bos_choch_data
         }
-
 
     def _calculate_fibonacci_levels(self, df: pd.DataFrame) -> Dict:
         """

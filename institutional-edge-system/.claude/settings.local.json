@@ -3,7 +3,8 @@
     "allow": [
       "Bash(docker-compose logs:*)",
       "Bash(curl:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

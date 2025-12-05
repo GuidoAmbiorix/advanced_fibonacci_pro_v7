@@ -16,6 +16,7 @@ class BacktestTrade:
     volume: float
     stop_loss: float
     take_profit: float
+    initial_stop_loss: Optional[float] = None  # Original SL for R calculation
 
     # Filled on exit
     exit_time: Optional[datetime] = None
@@ -43,6 +44,10 @@ class BacktestTrade:
         if self.ticket == 0:
             self.ticket = id(self)  # Use object id as ticket
 
+        # Store initial SL if not set
+        if self.initial_stop_loss is None:
+            self.initial_stop_loss = self.stop_loss
+
     def close(self, exit_time: datetime, exit_price: float, exit_reason: str):
         """Close the trade and calculate P&L"""
         self.exit_time = exit_time
@@ -65,10 +70,10 @@ class BacktestTrade:
         # Subtract commission
         self.pnl -= self.commission
 
-        # Calculate R multiple
-        sl_distance = abs(self.entry_price - self.stop_loss)
-        if sl_distance > 0:
-            self.return_r = price_diff / sl_distance
+        # Calculate R multiple (use INITIAL SL for accurate R calculation)
+        initial_sl_distance = abs(self.entry_price - self.initial_stop_loss)
+        if initial_sl_distance > 0:
+            self.return_r = price_diff / initial_sl_distance
 
     def update_open_pnl(self, current_price: float):
         """Update P&L for open position"""

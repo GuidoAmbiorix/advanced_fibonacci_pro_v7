@@ -120,7 +120,55 @@
         "documentation": {}
     },
     {
+        "label": "time",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
         "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
         "importPath": "datetime",
         "description": "datetime",
         "isExtraImport": true,
@@ -480,7 +528,135 @@
         "documentation": {}
     },
     {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -576,6 +752,38 @@
         "documentation": {}
     },
     {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Dict",
         "importPath": "typing",
         "description": "typing",
@@ -648,7 +856,31 @@
         "documentation": {}
     },
     {
-        "label": "Optional",
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -1416,22 +1648,6 @@
         "documentation": {}
     },
     {
-        "label": "BotConfig",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
-        "label": "RiskProfile",
-        "importPath": "app.models.database",
-        "description": "app.models.database",
-        "isExtraImport": true,
-        "detail": "app.models.database",
-        "documentation": {}
-    },
-    {
         "label": "Trade",
         "importPath": "app.models.database",
         "description": "app.models.database",
@@ -2042,6 +2258,62 @@
         "documentation": {}
     },
     {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "importPath": "loguru",
+        "description": "loguru",
+        "isExtraImport": true,
+        "detail": "loguru",
+        "documentation": {}
+    },
+    {
         "label": "time",
         "kind": 6,
         "isExtraImport": true,
@@ -2187,35 +2459,11 @@
         "documentation": {}
     },
     {
-        "label": "TradingEngine",
-        "importPath": "app.core.trading_engine",
-        "description": "app.core.trading_engine",
+        "label": "AdaptiveMultiStrategyEngine",
+        "importPath": "app.core.adaptive_multi_strategy_engine",
+        "description": "app.core.adaptive_multi_strategy_engine",
         "isExtraImport": true,
-        "detail": "app.core.trading_engine",
-        "documentation": {}
-    },
-    {
-        "label": "TradingEngine",
-        "importPath": "app.core.trading_engine",
-        "description": "app.core.trading_engine",
-        "isExtraImport": true,
-        "detail": "app.core.trading_engine",
-        "documentation": {}
-    },
-    {
-        "label": "TradingEngine",
-        "importPath": "app.core.trading_engine",
-        "description": "app.core.trading_engine",
-        "isExtraImport": true,
-        "detail": "app.core.trading_engine",
-        "documentation": {}
-    },
-    {
-        "label": "TradingEngine",
-        "importPath": "app.core.trading_engine",
-        "description": "app.core.trading_engine",
-        "isExtraImport": true,
-        "detail": "app.core.trading_engine",
+        "detail": "app.core.adaptive_multi_strategy_engine",
         "documentation": {}
     },
     {
@@ -2292,6 +2540,70 @@
         "documentation": {}
     },
     {
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
         "label": "matplotlib.pyplot",
         "kind": 6,
         "isExtraImport": true,
@@ -2307,6 +2619,14 @@
         "importPath": "matplotlib.dates",
         "description": "matplotlib.dates",
         "detail": "matplotlib.dates",
+        "documentation": {}
+    },
+    {
+        "label": "Enum",
+        "importPath": "enum",
+        "description": "enum",
+        "isExtraImport": true,
+        "detail": "enum",
         "documentation": {}
     },
     {
@@ -2341,6 +2661,38 @@
         "importPath": "bcrypt",
         "description": "bcrypt",
         "detail": "bcrypt",
+        "documentation": {}
+    },
+    {
+        "label": "EnhancedConfluenceScorer",
+        "importPath": "app.core.confluence_system",
+        "description": "app.core.confluence_system",
+        "isExtraImport": true,
+        "detail": "app.core.confluence_system",
+        "documentation": {}
+    },
+    {
+        "label": "ConfluenceBreakdown",
+        "importPath": "app.core.confluence_system",
+        "description": "app.core.confluence_system",
+        "isExtraImport": true,
+        "detail": "app.core.confluence_system",
+        "documentation": {}
+    },
+    {
+        "label": "EnhancedConfluenceScorer",
+        "importPath": "app.core.confluence_system",
+        "description": "app.core.confluence_system",
+        "isExtraImport": true,
+        "detail": "app.core.confluence_system",
+        "documentation": {}
+    },
+    {
+        "label": "ConfluenceBreakdown",
+        "importPath": "app.core.confluence_system",
+        "description": "app.core.confluence_system",
+        "isExtraImport": true,
+        "detail": "app.core.confluence_system",
         "documentation": {}
     },
     {
@@ -2575,20 +2927,36 @@
         "documentation": {}
     },
     {
-        "label": "MarketRegimeDetector",
-        "importPath": "app.services.market_regime",
-        "description": "app.services.market_regime",
-        "isExtraImport": true,
-        "detail": "app.services.market_regime",
-        "documentation": {}
-    },
-    {
         "label": "aiohttp",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "aiohttp",
         "description": "aiohttp",
         "detail": "aiohttp",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "app.core.trading_engine",
+        "description": "app.core.trading_engine",
+        "isExtraImport": true,
+        "detail": "app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "app.core.trading_engine",
+        "description": "app.core.trading_engine",
+        "isExtraImport": true,
+        "detail": "app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "importPath": "app.core.trading_engine",
+        "description": "app.core.trading_engine",
+        "isExtraImport": true,
+        "detail": "app.core.trading_engine",
         "documentation": {}
     },
     {
@@ -2929,7 +3297,7 @@
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.backtesting.models",
         "description": "institutional-edge-system.backend.app.backtesting.models",
-        "peekOfCode": "class BacktestTrade:\n    \"\"\"Represents a trade in backtest\"\"\"\n    entry_time: datetime\n    entry_price: float\n    signal_type: str  # \"BUY\" or \"SELL\"\n    volume: float\n    stop_loss: float\n    take_profit: float\n    # Filled on exit\n    exit_time: Optional[datetime] = None",
+        "peekOfCode": "class BacktestTrade:\n    \"\"\"Represents a trade in backtest\"\"\"\n    entry_time: datetime\n    entry_price: float\n    signal_type: str  # \"BUY\" or \"SELL\"\n    volume: float\n    stop_loss: float\n    take_profit: float\n    initial_stop_loss: Optional[float] = None  # Original SL for R calculation\n    # Filled on exit",
         "detail": "institutional-edge-system.backend.app.backtesting.models",
         "documentation": {}
     },
@@ -2979,6 +3347,87 @@
         "documentation": {}
     },
     {
+        "label": "MarketRegime",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "description": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "peekOfCode": "class MarketRegime(Enum):\n    \"\"\"Market regime classification\"\"\"\n    TRENDING = \"TRENDING\"\n    RANGING = \"RANGING\"\n    BREAKOUT = \"BREAKOUT\"\n    VOLATILE = \"VOLATILE\"\nclass StrategyType(Enum):\n    \"\"\"Available trading strategies\"\"\"\n    TREND_FOLLOWING = \"TREND_FOLLOWING\"\n    RANGE_SCALPING = \"RANGE_SCALPING\"",
+        "detail": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "documentation": {}
+    },
+    {
+        "label": "StrategyType",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "description": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "peekOfCode": "class StrategyType(Enum):\n    \"\"\"Available trading strategies\"\"\"\n    TREND_FOLLOWING = \"TREND_FOLLOWING\"\n    RANGE_SCALPING = \"RANGE_SCALPING\"\n    BREAKOUT_MOMENTUM = \"BREAKOUT_MOMENTUM\"\n@dataclass\nclass GridLevel:\n    \"\"\"Grid recovery level\"\"\"\n    price: float\n    distance_atr: float",
+        "detail": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "documentation": {}
+    },
+    {
+        "label": "GridLevel",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "description": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "peekOfCode": "class GridLevel:\n    \"\"\"Grid recovery level\"\"\"\n    price: float\n    distance_atr: float\n    filled: bool = False\n    entry_time: Optional[datetime] = None\n@dataclass\nclass AdaptiveSignal:\n    \"\"\"Trading signal with strategy context\"\"\"\n    entry_price: float",
+        "detail": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "documentation": {}
+    },
+    {
+        "label": "AdaptiveSignal",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "description": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "peekOfCode": "class AdaptiveSignal:\n    \"\"\"Trading signal with strategy context\"\"\"\n    entry_price: float\n    stop_loss: float\n    take_profit: float\n    direction: str  # \"BUY\" or \"SELL\"\n    strategy_type: StrategyType\n    market_regime: MarketRegime\n    score: float\n    confidence: float  # 0-1",
+        "detail": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "documentation": {}
+    },
+    {
+        "label": "AdaptiveMultiStrategyEngine",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "description": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "peekOfCode": "class AdaptiveMultiStrategyEngine:\n    \"\"\"\n    Multi-Strategy Adaptive Trading Engine\n    Combines:\n    - Forex Fury: Adaptive strategy selection\n    - Waka Waka: Grid recovery system\n    - Smart risk management\n    \"\"\"\n    def __init__(self, config: Dict):\n        \"\"\"",
+        "detail": "institutional-edge-system.backend.app.core.adaptive_multi_strategy_engine",
+        "documentation": {}
+    },
+    {
+        "label": "SwingPoint",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.breakout_liquidity_engine",
+        "description": "institutional-edge-system.backend.app.core.breakout_liquidity_engine",
+        "peekOfCode": "class SwingPoint:\n    \"\"\"Swing High/Low structure\"\"\"\n    price: float\n    time: datetime\n    bar_index: int\n    is_high: bool  # True = High, False = Low\n@dataclass\nclass LiquiditySweep:\n    \"\"\"Liquidity sweep structure\"\"\"\n    price: float",
+        "detail": "institutional-edge-system.backend.app.core.breakout_liquidity_engine",
+        "documentation": {}
+    },
+    {
+        "label": "LiquiditySweep",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.breakout_liquidity_engine",
+        "description": "institutional-edge-system.backend.app.core.breakout_liquidity_engine",
+        "peekOfCode": "class LiquiditySweep:\n    \"\"\"Liquidity sweep structure\"\"\"\n    price: float\n    time: datetime\n    direction: str  # \"BULLISH\" or \"BEARISH\"\n    sweep_type: str  # \"INTERNAL\" or \"EXTERNAL\"\n    distance_pips: float\n    volume_percentile: float\n    score: int  # 1-5\n@dataclass",
+        "detail": "institutional-edge-system.backend.app.core.breakout_liquidity_engine",
+        "documentation": {}
+    },
+    {
+        "label": "BreakoutSignal",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.breakout_liquidity_engine",
+        "description": "institutional-edge-system.backend.app.core.breakout_liquidity_engine",
+        "peekOfCode": "class BreakoutSignal:\n    \"\"\"Breakout signal structure\"\"\"\n    entry_price: float\n    stop_loss: float\n    take_profit: float\n    direction: str  # \"BUY\" or \"SELL\"\n    signal_type: str  # \"BREAKOUT_RETEST\"\n    score: int\n    breakdown: Dict\n    timestamp: datetime",
+        "detail": "institutional-edge-system.backend.app.core.breakout_liquidity_engine",
+        "documentation": {}
+    },
+    {
+        "label": "BreakoutLiquidityEngine",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.breakout_liquidity_engine",
+        "description": "institutional-edge-system.backend.app.core.breakout_liquidity_engine",
+        "peekOfCode": "class BreakoutLiquidityEngine:\n    \"\"\"\n    Breakout + Liquidity Trading Engine\n    100% Quantifiable - Zero Ambiguity\n    \"\"\"\n    def __init__(self, config: Dict):\n        \"\"\"\n        Initialize engine\n        Args:\n            config: Engine configuration",
+        "detail": "institutional-edge-system.backend.app.core.breakout_liquidity_engine",
+        "documentation": {}
+    },
+    {
         "label": "celery_app",
         "kind": 5,
         "importPath": "institutional-edge-system.backend.app.core.celery_app",
@@ -3012,6 +3461,42 @@
         "description": "institutional-edge-system.backend.app.core.config",
         "peekOfCode": "settings = Settings()",
         "detail": "institutional-edge-system.backend.app.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "ConfluenceBreakdown",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.confluence_system",
+        "description": "institutional-edge-system.backend.app.core.confluence_system",
+        "peekOfCode": "class ConfluenceBreakdown:\n    \"\"\"Detailed breakdown of confluence score by category\"\"\"\n    # Core structure (MANDATORY)\n    structure_score: int = 0\n    structure_type: str = \"\"  # \"BOS\", \"CHOCH\", or \"\"\n    # Categories\n    price_action_score: int = 0\n    fibonacci_score: int = 0\n    volume_score: int = 0\n    liquidity_score: int = 0",
+        "detail": "institutional-edge-system.backend.app.core.confluence_system",
+        "documentation": {}
+    },
+    {
+        "label": "EnhancedConfluenceScorer",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.confluence_system",
+        "description": "institutional-edge-system.backend.app.core.confluence_system",
+        "peekOfCode": "class EnhancedConfluenceScorer:\n    \"\"\"\n    Enhanced confluence scoring with proper separation and validation\n    Improvements:\n    1. Separates continuation vs reversal signals\n    2. Multi-timeframe Fibonacci confluence\n    3. Golden Pocket detection (0.618-0.786)\n    4. Category-based minimum requirements\n    5. Proper weight distribution\n    \"\"\"",
+        "detail": "institutional-edge-system.backend.app.core.confluence_system",
+        "documentation": {}
+    },
+    {
+        "label": "ConfluenceBreakdown",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.confluence_system_backup",
+        "description": "institutional-edge-system.backend.app.core.confluence_system_backup",
+        "peekOfCode": "class ConfluenceBreakdown:\n    \"\"\"Detailed breakdown of confluence score by category\"\"\"\n    # Core structure (MANDATORY)\n    structure_score: int = 0\n    structure_type: str = \"\"  # \"BOS\", \"CHOCH\", or \"\"\n    # Categories\n    price_action_score: int = 0\n    fibonacci_score: int = 0\n    volume_score: int = 0\n    liquidity_score: int = 0",
+        "detail": "institutional-edge-system.backend.app.core.confluence_system_backup",
+        "documentation": {}
+    },
+    {
+        "label": "EnhancedConfluenceScorer",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.confluence_system_backup",
+        "description": "institutional-edge-system.backend.app.core.confluence_system_backup",
+        "peekOfCode": "class EnhancedConfluenceScorer:\n    \"\"\"\n    Enhanced confluence scoring with proper separation and validation\n    Improvements:\n    1. Separates continuation vs reversal signals\n    2. Multi-timeframe Fibonacci confluence\n    3. Golden Pocket detection (0.618-0.786)\n    4. Category-based minimum requirements\n    5. Proper weight distribution\n    \"\"\"",
+        "detail": "institutional-edge-system.backend.app.core.confluence_system_backup",
         "documentation": {}
     },
     {
@@ -3316,7 +3801,7 @@
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.core.trading_engine",
         "description": "institutional-edge-system.backend.app.core.trading_engine",
-        "peekOfCode": "class OrderBlock:\n    \"\"\"Order Block structure\"\"\"\n    top: float\n    bottom: float\n    start_time: datetime\n    is_bullish: bool\n    is_mitigated: bool\n    volume: float\n    bar_index: int\n@dataclass",
+        "peekOfCode": "class OrderBlock:\n    \"\"\"Order Block structure with quality scoring\"\"\"\n    top: float\n    bottom: float\n    start_time: datetime\n    is_bullish: bool\n    is_mitigated: bool\n    volume: float\n    bar_index: int\n    # Quality scoring (0-5)",
         "detail": "institutional-edge-system.backend.app.core.trading_engine",
         "documentation": {}
     },
@@ -3325,7 +3810,7 @@
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.core.trading_engine",
         "description": "institutional-edge-system.backend.app.core.trading_engine",
-        "peekOfCode": "class FairValueGap:\n    \"\"\"Fair Value Gap structure\"\"\"\n    top: float\n    bottom: float\n    start_time: datetime\n    is_bullish: bool\n    is_filled: bool\n    bar_index: int\n@dataclass\nclass SwingPoint:",
+        "peekOfCode": "class FairValueGap:\n    \"\"\"Fair Value Gap structure with quality scoring\"\"\"\n    top: float\n    bottom: float\n    start_time: datetime\n    is_bullish: bool\n    is_filled: bool\n    bar_index: int\n    # Quality scoring (0-5)\n    quality_score: int = 0",
         "detail": "institutional-edge-system.backend.app.core.trading_engine",
         "documentation": {}
     },
@@ -3354,6 +3839,51 @@
         "description": "institutional-edge-system.backend.app.core.trading_engine",
         "peekOfCode": "class TradingEngine:\n    \"\"\"\n    Core Trading Engine implementing Institutional Edge Pro logic\n    \"\"\"\n    def __init__(self, config: Dict):\n        \"\"\"\n        Initialize Trading Engine\n        Args:\n            config: Configuration dictionary with trading parameters\n        \"\"\"",
         "detail": "institutional-edge-system.backend.app.core.trading_engine",
+        "documentation": {}
+    },
+    {
+        "label": "OrderBlock",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "description": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "peekOfCode": "class OrderBlock:\n    \"\"\"Order Block structure with quality scoring\"\"\"\n    top: float\n    bottom: float\n    start_time: datetime\n    is_bullish: bool\n    is_mitigated: bool\n    volume: float\n    bar_index: int\n    # Quality scoring (0-5)",
+        "detail": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "documentation": {}
+    },
+    {
+        "label": "FairValueGap",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "description": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "peekOfCode": "class FairValueGap:\n    \"\"\"Fair Value Gap structure with quality scoring\"\"\"\n    top: float\n    bottom: float\n    start_time: datetime\n    is_bullish: bool\n    is_filled: bool\n    bar_index: int\n    # Quality scoring (0-5)\n    quality_score: int = 0",
+        "detail": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "documentation": {}
+    },
+    {
+        "label": "SwingPoint",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "description": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "peekOfCode": "class SwingPoint:\n    \"\"\"Swing High/Low structure\"\"\"\n    price: float\n    time: datetime\n    is_high: bool\n    bar_index: int\n@dataclass\nclass TradingSignal:\n    \"\"\"Trading Signal with full context\"\"\"\n    signal_type: str  # \"BUY\" or \"SELL\"",
+        "detail": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "documentation": {}
+    },
+    {
+        "label": "TradingSignal",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "description": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "peekOfCode": "class TradingSignal:\n    \"\"\"Trading Signal with full context\"\"\"\n    signal_type: str  # \"BUY\" or \"SELL\"\n    entry_price: float\n    stop_loss: float\n    take_profit_1: float\n    take_profit_2: float\n    take_profit_3: float\n    confluence_score: int\n    score_breakdown: Dict[str, int]",
+        "detail": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "documentation": {}
+    },
+    {
+        "label": "TradingEngine",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "description": "institutional-edge-system.backend.app.core.trading_engine_backup",
+        "peekOfCode": "class TradingEngine:\n    \"\"\"\n    Core Trading Engine implementing Institutional Edge Pro logic\n    \"\"\"\n    def __init__(self, config: Dict):\n        \"\"\"\n        Initialize Trading Engine\n        Args:\n            config: Configuration dictionary with trading parameters\n        \"\"\"",
+        "detail": "institutional-edge-system.backend.app.core.trading_engine_backup",
         "documentation": {}
     },
     {
@@ -3753,6 +4283,24 @@
         "documentation": {}
     },
     {
+        "label": "Position",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.portfolio_manager",
+        "description": "institutional-edge-system.backend.app.services.portfolio_manager",
+        "peekOfCode": "class Position:\n    \"\"\"Represents an open position\"\"\"\n    symbol: str\n    volume: float\n    risk_percent: float  # Risk % for this position\nclass PortfolioManager:\n    \"\"\"\n    Portfolio-level risk management\n    Features:\n    - Maximum total portfolio risk limit",
+        "detail": "institutional-edge-system.backend.app.services.portfolio_manager",
+        "documentation": {}
+    },
+    {
+        "label": "PortfolioManager",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.portfolio_manager",
+        "description": "institutional-edge-system.backend.app.services.portfolio_manager",
+        "peekOfCode": "class PortfolioManager:\n    \"\"\"\n    Portfolio-level risk management\n    Features:\n    - Maximum total portfolio risk limit\n    - Correlation-based position blocking\n    - Position concentration limits\n    \"\"\"\n    # Correlation matrix for major pairs\n    # Values range from -1 (inverse) to +1 (same direction)",
+        "detail": "institutional-edge-system.backend.app.services.portfolio_manager",
+        "documentation": {}
+    },
+    {
         "label": "RabbitMQService",
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.services.rabbitmq_service",
@@ -3762,11 +4310,29 @@
         "documentation": {}
     },
     {
+        "label": "DrawdownLevel",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.risk_manager",
+        "description": "institutional-edge-system.backend.app.services.risk_manager",
+        "peekOfCode": "class DrawdownLevel:\n    \"\"\"Drawdown threshold and risk multiplier\"\"\"\n    threshold_percent: float  # DD threshold\n    risk_multiplier: float    # Risk multiplier at this level\n    description: str          # Human-readable description\nclass DrawdownProtection:\n    \"\"\"\n    Tiered drawdown protection system\n    Progressively reduces risk as drawdown increases\n    \"\"\"",
+        "detail": "institutional-edge-system.backend.app.services.risk_manager",
+        "documentation": {}
+    },
+    {
+        "label": "DrawdownProtection",
+        "kind": 6,
+        "importPath": "institutional-edge-system.backend.app.services.risk_manager",
+        "description": "institutional-edge-system.backend.app.services.risk_manager",
+        "peekOfCode": "class DrawdownProtection:\n    \"\"\"\n    Tiered drawdown protection system\n    Progressively reduces risk as drawdown increases\n    \"\"\"\n    LEVELS = [\n        DrawdownLevel(0.0, 1.0, \"Normal trading - full risk\"),\n        DrawdownLevel(3.0, 0.5, \"Moderate DD - 50% risk reduction\"),\n        DrawdownLevel(5.0, 0.25, \"Significant DD - 75% risk reduction\"),\n        DrawdownLevel(100.0, 0.0, \"Critical DD - TRADING HALTED\"),  # Disabled for backtesting",
+        "detail": "institutional-edge-system.backend.app.services.risk_manager",
+        "documentation": {}
+    },
+    {
         "label": "AdaptiveRiskManager",
         "kind": 6,
         "importPath": "institutional-edge-system.backend.app.services.risk_manager",
         "description": "institutional-edge-system.backend.app.services.risk_manager",
-        "peekOfCode": "class AdaptiveRiskManager:\n    \"\"\"\n    Dynamic Risk Management Engine.\n    Adjusts risk based on:\n    - Market Volatility (ATR)\n    - Account Drawdown\n    - Consecutive Losses\n    - Prop Firm Rules\n    \"\"\"\n    def __init__(self, bot_config: BotConfig, account_info: dict):",
+        "peekOfCode": "class AdaptiveRiskManager:\n    \"\"\"\n    Adaptive Risk Management System\n    Features:\n    - Base risk: 1% maximum (institutional standard)\n    - Tiered drawdown protection (3%, 5%, 10% thresholds)\n    - Consecutive loss reduction\n    - Volatility-based adjustment\n    - Circuit breaker at 10% DD\n    \"\"\"",
         "detail": "institutional-edge-system.backend.app.services.risk_manager",
         "documentation": {}
     },
@@ -3858,6 +4424,132 @@
         "description": "institutional-edge-system.backend.tests.test_telegram_integration",
         "peekOfCode": "class TestTelegramIntegration(unittest.TestCase):\n    def setUp(self):\n        self.bot_token = \"123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11\"\n        self.chat_id = \"123456789\"\n        self.service = TelegramService(self.bot_token, self.chat_id)\n    @patch('aiohttp.ClientSession.post')\n    def test_send_message_success(self, mock_post):\n        \"\"\"Test successful message sending\"\"\"\n        # Mock response context manager\n        mock_response = MagicMock()",
         "detail": "institutional-edge-system.backend.tests.test_telegram_integration",
+        "documentation": {}
+    },
+    {
+        "label": "df",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "df = pd.read_csv('reports/backtest_EURUSD_H1_trades.csv')\nprint('='*70)\nprint('ANÁLISIS DETALLADO DEL TRADING ENGINE')\nprint('='*70)\nprint()\n# 1. Performance por Confluence Score\nprint('1. PERFORMANCE POR CONFLUENCE SCORE:')\nprint('-'*70)\nfor score in sorted(df['confluence_score'].unique()):\n    subset = df[df['confluence_score'] == score]",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "winners",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "winners = df[df['pnl'] > 0]\nlosers = df[df['pnl'] < 0]\nprint(f'Winners: {len(winners):3d} | Avg: ${winners[\"pnl\"].mean():7.2f} | Avg R: {winners[\"return_r\"].mean():5.2f}')\nprint(f'Losers:  {len(losers):3d} | Avg: ${losers[\"pnl\"].mean():7.2f} | Avg R: {losers[\"return_r\"].mean():5.2f}')\nprint()\n# 5. Análisis de Stop Loss\nprint('5. ANÁLISIS DE STOP LOSS:')\nprint('-'*70)\nsl_trades = df[df['exit_reason'] == 'SL']\nsl_r_values = sl_trades['return_r']",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "losers",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "losers = df[df['pnl'] < 0]\nprint(f'Winners: {len(winners):3d} | Avg: ${winners[\"pnl\"].mean():7.2f} | Avg R: {winners[\"return_r\"].mean():5.2f}')\nprint(f'Losers:  {len(losers):3d} | Avg: ${losers[\"pnl\"].mean():7.2f} | Avg R: {losers[\"return_r\"].mean():5.2f}')\nprint()\n# 5. Análisis de Stop Loss\nprint('5. ANÁLISIS DE STOP LOSS:')\nprint('-'*70)\nsl_trades = df[df['exit_reason'] == 'SL']\nsl_r_values = sl_trades['return_r']\nprint(f'Total SL hits: {len(sl_trades)}')",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "sl_trades",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "sl_trades = df[df['exit_reason'] == 'SL']\nsl_r_values = sl_trades['return_r']\nprint(f'Total SL hits: {len(sl_trades)}')\nprint(f'Promedio R en SL: {sl_r_values.mean():.2f}')\nprint(f'Std Dev R en SL: {sl_r_values.std():.2f}')\nprint(f'Min R en SL: {sl_r_values.min():.2f}')\nprint(f'Max R en SL: {sl_r_values.max():.2f}')\nprint()\n# 6. Análisis de Take Profit\nprint('6. ANÁLISIS DE TAKE PROFIT:')",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "sl_r_values",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "sl_r_values = sl_trades['return_r']\nprint(f'Total SL hits: {len(sl_trades)}')\nprint(f'Promedio R en SL: {sl_r_values.mean():.2f}')\nprint(f'Std Dev R en SL: {sl_r_values.std():.2f}')\nprint(f'Min R en SL: {sl_r_values.min():.2f}')\nprint(f'Max R en SL: {sl_r_values.max():.2f}')\nprint()\n# 6. Análisis de Take Profit\nprint('6. ANÁLISIS DE TAKE PROFIT:')\nprint('-'*70)",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "tp_trades",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "tp_trades = df[df['exit_reason'] == 'TP']\ntp_r_values = tp_trades['return_r']\nprint(f'Total TP hits: {len(tp_trades)}')\nprint(f'Promedio R en TP: {tp_r_values.mean():.2f}')\nprint(f'Std Dev R en TP: {tp_r_values.std():.2f}')\nprint(f'Min R en TP: {tp_r_values.min():.2f}')\nprint(f'Max R en TP: {tp_r_values.max():.2f}')\nprint()\n# 7. Confluence alta vs baja\nprint('7. CONFLUENCE ALTA vs BAJA:')",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "tp_r_values",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "tp_r_values = tp_trades['return_r']\nprint(f'Total TP hits: {len(tp_trades)}')\nprint(f'Promedio R en TP: {tp_r_values.mean():.2f}')\nprint(f'Std Dev R en TP: {tp_r_values.std():.2f}')\nprint(f'Min R en TP: {tp_r_values.min():.2f}')\nprint(f'Max R en TP: {tp_r_values.max():.2f}')\nprint()\n# 7. Confluence alta vs baja\nprint('7. CONFLUENCE ALTA vs BAJA:')\nprint('-'*70)",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "high_conf",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "high_conf = df[df['confluence_score'] >= 9]\nlow_conf = df[df['confluence_score'] <= 8]\nprint(f'Conf 9-11: {len(high_conf):3d} trades | WR: {(high_conf[\"pnl\"]>0).sum()/len(high_conf)*100:5.1f}% | Avg R: {high_conf[\"return_r\"].mean():5.2f}')\nprint(f'Conf 7-8:  {len(low_conf):3d} trades | WR: {(low_conf[\"pnl\"]>0).sum()/len(low_conf)*100:5.1f}% | Avg R: {low_conf[\"return_r\"].mean():5.2f}')\nprint()\n# 8. Análisis de duración\nprint('8. DURACIÓN DE TRADES:')\nprint('-'*70)\nprint(f'Duración promedio winners: {winners[\"duration_hours\"].mean():.1f} horas')\nprint(f'Duración promedio losers:  {losers[\"duration_hours\"].mean():.1f} horas')",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "low_conf",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "low_conf = df[df['confluence_score'] <= 8]\nprint(f'Conf 9-11: {len(high_conf):3d} trades | WR: {(high_conf[\"pnl\"]>0).sum()/len(high_conf)*100:5.1f}% | Avg R: {high_conf[\"return_r\"].mean():5.2f}')\nprint(f'Conf 7-8:  {len(low_conf):3d} trades | WR: {(low_conf[\"pnl\"]>0).sum()/len(low_conf)*100:5.1f}% | Avg R: {low_conf[\"return_r\"].mean():5.2f}')\nprint()\n# 8. Análisis de duración\nprint('8. DURACIÓN DE TRADES:')\nprint('-'*70)\nprint(f'Duración promedio winners: {winners[\"duration_hours\"].mean():.1f} horas')\nprint(f'Duración promedio losers:  {losers[\"duration_hours\"].mean():.1f} horas')\nprint(f'Duración promedio TP:      {tp_trades[\"duration_hours\"].mean():.1f} horas')",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "tp_count",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "tp_count = len(tp_trades)\nsl_count = len(sl_trades)\nif tp_count < sl_count:\n    print(f'⚠️  Más SL ({sl_count}) que TP ({tp_count}) → TPs muy lejos o SLs muy cerca')\nelse:\n    print(f'✅ Balance razonable: {tp_count} TP vs {sl_count} SL')\n# Check R:R\navg_tp_r = tp_r_values.mean()\nif avg_tp_r < 1.5:\n    print(f'⚠️  TP promedio {avg_tp_r:.2f}R es bajo → Necesitas usar TP2 o TP3')",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "sl_count",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "sl_count = len(sl_trades)\nif tp_count < sl_count:\n    print(f'⚠️  Más SL ({sl_count}) que TP ({tp_count}) → TPs muy lejos o SLs muy cerca')\nelse:\n    print(f'✅ Balance razonable: {tp_count} TP vs {sl_count} SL')\n# Check R:R\navg_tp_r = tp_r_values.mean()\nif avg_tp_r < 1.5:\n    print(f'⚠️  TP promedio {avg_tp_r:.2f}R es bajo → Necesitas usar TP2 o TP3')\nelse:",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "avg_tp_r",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "avg_tp_r = tp_r_values.mean()\nif avg_tp_r < 1.5:\n    print(f'⚠️  TP promedio {avg_tp_r:.2f}R es bajo → Necesitas usar TP2 o TP3')\nelse:\n    print(f'✅ TP promedio {avg_tp_r:.2f}R es razonable')\n# Check BUY vs SELL\nbuy_wr = (df[df['type']=='BUY']['pnl']>0).sum() / len(df[df['type']=='BUY']) * 100\nsell_wr = (df[df['type']=='SELL']['pnl']>0).sum() / len(df[df['type']=='SELL']) * 100\nif abs(buy_wr - sell_wr) > 10:\n    better = 'BUY' if buy_wr > sell_wr else 'SELL'",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "buy_wr",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "buy_wr = (df[df['type']=='BUY']['pnl']>0).sum() / len(df[df['type']=='BUY']) * 100\nsell_wr = (df[df['type']=='SELL']['pnl']>0).sum() / len(df[df['type']=='SELL']) * 100\nif abs(buy_wr - sell_wr) > 10:\n    better = 'BUY' if buy_wr > sell_wr else 'SELL'\n    print(f'⚠️  {better} tiene significativamente mejor WR → Considerar solo {better}')\nelse:\n    print('✅ BUY y SELL tienen performance similar')\nprint()\nprint('='*70)",
+        "detail": "institutional-edge-system.backend.analyze_trades",
+        "documentation": {}
+    },
+    {
+        "label": "sell_wr",
+        "kind": 5,
+        "importPath": "institutional-edge-system.backend.analyze_trades",
+        "description": "institutional-edge-system.backend.analyze_trades",
+        "peekOfCode": "sell_wr = (df[df['type']=='SELL']['pnl']>0).sum() / len(df[df['type']=='SELL']) * 100\nif abs(buy_wr - sell_wr) > 10:\n    better = 'BUY' if buy_wr > sell_wr else 'SELL'\n    print(f'⚠️  {better} tiene significativamente mejor WR → Considerar solo {better}')\nelse:\n    print('✅ BUY y SELL tienen performance similar')\nprint()\nprint('='*70)",
+        "detail": "institutional-edge-system.backend.analyze_trades",
         "documentation": {}
     },
     {

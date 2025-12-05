@@ -20,7 +20,7 @@ from app.backtesting.simulator import OrderSimulator
 from app.backtesting.metrics import MetricsCalculator
 from app.backtesting.reporter import ReportGenerator
 
-from app.core.trading_engine import TradingEngine
+from app.core.adaptive_multi_strategy_engine import AdaptiveMultiStrategyEngine
 from app.services.risk_manager import AdaptiveRiskManager
 from app.services.portfolio_manager import PortfolioManager, Position
 
@@ -48,7 +48,9 @@ class BacktestEngine:
         self.data_loader = DataLoader()
         self.simulator = OrderSimulator(
             slippage_pips=config.slippage_pips,
-            commission_per_lot=config.commission_per_lot
+            commission_per_lot=config.commission_per_lot,
+            enable_trailing_stop=config.enable_trailing_stop,
+            min_hold_hours=4.0  # Minimum 4-hour hold time
         )
 
         # Trading state
@@ -62,25 +64,24 @@ class BacktestEngine:
         self.trading_engine = self._init_trading_engine()
 
         # Risk Management (same as live trading)
-        self.risk_manager = AdaptiveRiskManager()
-        self.portfolio_manager = PortfolioManager()
+        self.risk_manager = AdaptiveRiskManager(base_risk_percent=config.risk_percent)
+        self.portfolio_manager = PortfolioManager(max_portfolio_risk=100.0)  # Allow aggressive testing
 
         logger.info(f"BacktestEngine initialized - {config.symbol} {config.timeframe}")
         logger.info("✅ Using AdaptiveRiskManager + PortfolioManager (same as live trading)")
 
-    def _init_trading_engine(self) -> TradingEngine:
-        """Initialize the trading engine with config"""
+    def _init_trading_engine(self) -> AdaptiveMultiStrategyEngine:
+        """Initialize the Adaptive Multi-Strategy engine"""
         engine_config = {
             'symbol': self.config.symbol,
             'timeframe': self.config.timeframe,
-            'swing_length': self.config.swing_length,
-            'ob_lookback': self.config.ob_lookback,
-            'fvg_min_size': self.config.fvg_min_size,
-            'min_confluence_score': self.config.min_confluence_score,
-            'vp_lookback': self.config.vp_lookback,
+            'initial_balance': self.config.initial_balance,
+            'max_risk_per_trade': 50.0,  # Max 50% risk (for aggressive testing)
+            'enable_grid_recovery': True,  # Waka Waka style
+            'grid_levels': 3,  # 3 recovery levels
         }
 
-        return TradingEngine(engine_config)
+        return AdaptiveMultiStrategyEngine(engine_config)
 
     def run(
         self,
@@ -114,6 +115,24 @@ class BacktestEngine:
 
         logger.info(f"Backtesting on {len(data)} bars")
 
+        # Load H4 data for higher timeframe filter
+        h4_data = None
+        try:
+            logger.info("Loading H4 data for higher timeframe filter...")
+            h4_data = self.data_loader.load_and_validate(
+                symbol=self.config.symbol,
+                timeframe='H4',
+                start_date=start_date or self.config.start_date,
+                end_date=end_date or self.config.end_date,
+                source='mt5'
+            )
+            if h4_data is not None:
+                logger.info(f"Loaded {len(h4_data)} H4 bars for trend filtering")
+            else:
+                logger.warning("H4 data not available - will trade without HTF filter")
+        except Exception as e:
+            logger.warning(f"Could not load H4 data: {e} - continuing without HTF filter")
+
         # Initialize equity curve
         self.equity_curve.append({
             'time': data.iloc[0]['time'] if len(data) > 0 else None,
@@ -142,36 +161,56 @@ class BacktestEngine:
             # Reset index to avoid index errors in trading engine
             historical_data = historical_data.reset_index(drop=True)
 
+            # Get H4 data up to current time (for trend filter)
+            h4_historical = None
+            if h4_data is not None:
+                current_time = current_bar['time']
+                # Get H4 bars up to current H1 bar time
+                h4_mask = h4_data['time'] <= current_time
+                h4_historical = h4_data[h4_mask].copy()
+                if len(h4_historical) > 0:
+                    h4_historical = h4_historical.reset_index(drop=True)
+
             # Run strategy analysis
             try:
-                analysis = self.trading_engine.analyze(historical_data, df_higher_tf=None)
+                analysis = self.trading_engine.analyze(historical_data, df_higher_tf=h4_historical)
 
                 if 'error' in analysis:
                     continue
 
-                # Process signals
+                # Process signals from Adaptive Multi-Strategy Engine
                 for signal in analysis.get('signals', []):
-                    # Check confluence score
-                    # Handle both TradingSignal objects and dicts
-                    if hasattr(signal, 'confluence_score'):
-                        score = signal.confluence_score
-                    elif isinstance(signal, dict):
-                        score = signal.get('confluence_score', 0)
+                    # AdaptiveSignal has .score and .confidence attributes
+                    if hasattr(signal, 'score'):
+                        score = signal.score
+                        confidence = getattr(signal, 'confidence', 1.0)
                     else:
                         continue
 
+                    # Filter by minimum score
+                    # Note: Each strategy has fixed scores (Trend=8, Range=7, Breakout=9)
                     if score < self.config.min_confluence_score:
+                        logger.debug(f"Signal rejected: score {score} < {self.config.min_confluence_score}")
+                        continue
+
+                    # Additional filter: confidence threshold (LOW for debugging)
+                    if confidence < 0.1:  # Very low threshold for debugging
+                        logger.debug(f"Signal rejected: low confidence {confidence:.2f}")
                         continue
 
                     # Check if can open (max trades)
                     if len(self.open_trades) >= self.config.max_trades:
                         break
 
-                    # Convert signal to dict if needed
-                    if hasattr(signal, '__dict__'):
-                        signal_dict = signal.__dict__
-                    else:
-                        signal_dict = signal
+                    # Convert BreakoutSignal to dict for simulator
+                    signal_dict = {
+                        'symbol': self.config.symbol,
+                        'signal_type': signal.direction,  # "BUY" or "SELL"
+                        'entry_price': signal.entry_price,
+                        'stop_loss': signal.stop_loss,
+                        'take_profit_1': signal.take_profit,
+                        'confluence_score': signal.score,
+                    }
 
                     # PROFESSIONAL RISK MANAGEMENT (same as live trading)
 
