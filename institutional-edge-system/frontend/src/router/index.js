@@ -39,6 +39,12 @@ const router = createRouter({
       name: 'performance',
       component: () => import('../views/PerformanceView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/backtest',
+      name: 'backtest',
+      component: () => import('../views/BacktestView.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 })

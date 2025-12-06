@@ -1,0 +1,2 @@
+entry_time,exit_time,symbol,type,entry_price,exit_price,exit_reason,volume,pnl,pnl_pips,return_r,confluence_score,duration_hours
+2022-01-25 16:00:00,2022-01-26 20:00:00,USDJPY,SELL,113.83489999999999,114.62576954900413,SL,0.001,-79.09395490041425,-7908.695490041424,-1.0001264590930812,9.5,28.0

@@ -15,31 +15,37 @@ from app.backtesting.models import BacktestConfig
 from loguru import logger
 
 # Symbols to test
-SYMBOLS = ["EURUSD", "XAUUSD", "USDJPY", "GBPUSD"]
+SYMBOLS = ["EURUSD", "USDCAD", "USDJPY", "GBPUSD"]
 
 def run_backtest_for_symbol(symbol: str) -> dict:
     """Run backtest for a single symbol and return results"""
     
     config = BacktestConfig(
-        initial_balance=10.0,
+        initial_balance=20.0,
         symbol=symbol,
-        timeframe="H4",
+        timeframe="H1",
         start_date=datetime(2022, 1, 1),
         end_date=datetime(2023, 12, 31),
         min_confluence_score=7,
         risk_percent=3.0,
-        max_trades=1,
+        max_trades=3,
         swing_length=10,
         ob_lookback=50,
         fvg_min_size=0.3,
         vp_lookback=100,
         slippage_pips=1.0,
+        scalping_mode=False,
     )
     
     engine = BacktestEngine(config)
     
     try:
         results = engine.run()
+        
+        # Generate report files
+        report_name = f"backtest_{symbol}_{config.timeframe}"
+        engine.generate_report(results, report_name=report_name)
+        
         return results
     except Exception as e:
         logger.error(f"Error running {symbol}: {e}")
@@ -48,8 +54,8 @@ def run_backtest_for_symbol(symbol: str) -> dict:
 
 def main():
     print("=" * 70)
-    print("  COMPARATIVA MULTI-SYMBOL - H4 - 2 AÑOS (2022-2023)")
-    print("  Capital: $10 | Riesgo: 3%")
+    print("  COMPARATIVA MULTI-SYMBOL - H1 SWING - 2 AÑOS (2022-2023)")
+    print("  Capital: $20 | Riesgo: 3% | Mode: SWING")
     print("=" * 70)
     print()
     
@@ -63,7 +69,7 @@ def main():
             all_results[symbol] = results
             
             # Read trades from CSV
-            trades_file = f"reports/backtest_{symbol}_H4_trades.csv"
+            trades_file = f"reports/backtest_{symbol}_H1_trades.csv"
             try:
                 with open(trades_file, 'r') as f:
                     trades = list(csv.DictReader(f))

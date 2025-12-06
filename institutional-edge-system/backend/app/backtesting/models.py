@@ -26,7 +26,9 @@ class BacktestTrade:
     # P&L
     pnl: float = 0.0
     pnl_pips: float = 0.0
+    pnl_pips: float = 0.0
     return_r: float = 0.0  # Return in R multiples
+    balance_after: float = 0.0  # Balance after this trade
 
     # Trade details
     ticket: int = 0
@@ -176,6 +178,11 @@ class BacktestConfig:
     # Advanced
     enable_trailing_stop: bool = False
     enable_partial_tp: bool = False
+    enable_partial_tp: bool = False
+    scalping_mode: bool = False  # Enable high frequency scalping
+    enable_vwap_strategy: bool = True  # Enable VWAP Scalping
+    enable_stoch_strategy: bool = True  # Enable Stochastic Momentum
+    enable_institutional_strategy: bool = True  # Enable Liquidity Sweeps & Order Flow
 
 
 @dataclass

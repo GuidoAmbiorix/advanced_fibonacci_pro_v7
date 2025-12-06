@@ -10,7 +10,7 @@ from typing import Dict, Optional
 from datetime import datetime, timedelta
 from loguru import logger
 
-from app.core.trading_engine import TradingEngine
+from app.core.adaptive_multi_strategy_engine import AdaptiveMultiStrategyEngine
 from app.core.mt5_connector import MT5Connector
 from app.services.trade_manager import TradeManager
 from app.services.risk_manager import AdaptiveRiskManager
@@ -43,7 +43,7 @@ class TradingBot:
         
         self.is_running = False
         self.config: Optional[BotConfig] = None
-        self.trading_engine: Optional[TradingEngine] = None
+        self.trading_engine: Optional[AdaptiveMultiStrategyEngine] = None
         self.trade_manager: Optional[TradeManager] = None
         self.risk_manager: Optional[AdaptiveRiskManager] = None
         self.portfolio_manager: Optional[PortfolioManager] = None
@@ -141,9 +141,20 @@ class TradingBot:
 
     def _init_trading_engine(self):
         """Initialize the trading engine with config"""
+        
+        # Infer scalping mode from timeframe
+        is_scalping = self.config.timeframe in ['M1', 'M5', 'M15']
+        
         engine_config = {
             'symbol': self.config.symbol,
             'timeframe': self.config.timeframe,
+            'initial_balance': 1000.0, # Default for live bot internal tracking
+            'max_risk_per_trade': self.config.risk_percent,
+            'enable_grid_recovery': True, # Default enabled for now
+            'grid_levels': 3,
+            'scalping_mode': is_scalping,
+            
+            # Legacy params mapping (if needed by Adaptive Engine internals)
             'swing_length': self.config.swing_length,
             'ob_lookback': self.config.ob_lookback,
             'fvg_min_size': self.config.fvg_min_size,
@@ -151,8 +162,8 @@ class TradingBot:
             'vp_lookback': self.config.vp_lookback,
         }
 
-        self.trading_engine = TradingEngine(engine_config)
-        logger.info("Trading engine initialized")
+        self.trading_engine = AdaptiveMultiStrategyEngine(engine_config)
+        logger.info(f"Adaptive Trading Engine initialized (Scalping: {is_scalping})")
 
     async def _run_loop(self):
         """Main trading loop"""

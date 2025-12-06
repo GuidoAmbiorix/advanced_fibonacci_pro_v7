@@ -79,6 +79,7 @@ class BacktestEngine:
             'max_risk_per_trade': 50.0,  # Max 50% risk (for aggressive testing)
             'enable_grid_recovery': True,  # Waka Waka style
             'grid_levels': 3,  # 3 recovery levels
+            'scalping_mode': self.config.scalping_mode,
         }
 
         return AdaptiveMultiStrategyEngine(engine_config)
@@ -87,7 +88,9 @@ class BacktestEngine:
         self,
         data: Optional[pd.DataFrame] = None,
         start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
+        end_date: Optional[datetime] = None,
+        on_progress = None, # Callback(progress_pct, stats_dict)
+        on_trade = None     # Callback(trade_dict)
     ) -> BacktestResults:
         """
         Run backtest
@@ -132,6 +135,10 @@ class BacktestEngine:
                 logger.warning("H4 data not available - will trade without HTF filter")
         except Exception as e:
             logger.warning(f"Could not load H4 data: {e} - continuing without HTF filter")
+
+        # Store callbacks for use in other methods
+        self.on_trade_callback = on_trade
+        self.on_progress_callback = on_progress
 
         # Initialize equity curve
         self.equity_curve.append({
@@ -273,6 +280,20 @@ class BacktestEngine:
                             f"[{current_bar['time']}] Opened {trade.signal_type} "
                             f"@ {trade.entry_price:.5f}, Score: {trade.confluence_score}/10"
                         )
+                        
+                        # Emit trade event
+                        if on_trade:
+                            try:
+                                on_trade({
+                                    'type': 'OPEN',
+                                    'symbol': trade.symbol,
+                                    'trade_type': trade.signal_type,
+                                    'price': trade.entry_price,
+                                    'time': str(current_bar['time']),
+                                    'volume': trade.volume
+                                })
+                            except Exception as e:
+                                logger.error(f"Error in on_trade callback: {e}")
 
             except Exception as e:
                 import traceback
@@ -303,6 +324,18 @@ class BacktestEngine:
                     f"Speed: {bars_per_sec:.1f} bars/sec | "
                     f"ETA: {eta_minutes:.1f} min"
                 )
+                
+                # Emit progress event
+                if on_progress:
+                    try:
+                        on_progress(progress_pct, {
+                            'balance': self.current_balance,
+                            'equity': current_equity,
+                            'trades': len(self.closed_trades),
+                            'current_time': str(current_bar['time'])
+                        })
+                    except Exception as e:
+                        logger.error(f"Error in on_progress callback: {e}")
 
         # Force close any remaining open trades
         if self.open_trades and len(data) > 0:
@@ -375,13 +408,25 @@ class BacktestEngine:
 
                 # Update balance
                 self.current_balance += trade.pnl
+                trade.balance_after = self.current_balance
 
-                # Log
-                win_loss = "WIN" if trade.pnl > 0 else "LOSS"
-                logger.debug(
-                    f"[{current_bar['time']}] {win_loss}: {trade.signal_type} closed "
-                    f"@ {trade.exit_price:.5f}, P&L: ${trade.pnl:.2f} ({trade.return_r:.2f}R)"
-                )
+                # Emit trade close event
+                if hasattr(self, 'on_trade_callback') and self.on_trade_callback:
+                    try:
+                        self.on_trade_callback({
+                            'type': 'CLOSE',
+                            'symbol': trade.symbol,
+                            'trade_type': trade.signal_type,
+                            'price': trade.exit_price,
+                            'entry_price': trade.entry_price,
+                            'time': str(current_bar['time']),
+                            'pnl': trade.pnl,
+                            'return_r': trade.return_r,
+                            'balance': self.current_balance
+                        })
+                    except Exception as e:
+                        logger.error(f"Error in on_trade callback (CLOSE): {e}")
+
 
     def _calculate_current_equity(self, current_bar: pd.Series) -> float:
         """Calculate current equity including open trades"""

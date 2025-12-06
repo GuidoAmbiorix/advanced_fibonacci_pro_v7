@@ -259,3 +259,62 @@ class RiskProfile(Base):
     
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+
+class BacktestSession(Base):
+    """Backtest Execution Session"""
+    __tablename__ = "backtest_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) # Optional for now
+    
+    # Configuration
+    symbol = Column(String, nullable=False)
+    timeframe = Column(String, nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+    initial_balance = Column(Float, nullable=False)
+    strategy_config = Column(JSON, nullable=True) # Full config used
+    
+    # Results
+    final_balance = Column(Float, nullable=True)
+    total_trades = Column(Integer, default=0)
+    win_rate = Column(Float, default=0.0)
+    profit_factor = Column(Float, default=0.0)
+    max_drawdown = Column(Float, default=0.0)
+    net_profit = Column(Float, default=0.0)
+    
+    status = Column(String, default="RUNNING") # RUNNING, COMPLETED, FAILED
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    trades = relationship("BacktestTrade", back_populates="session", cascade="all, delete-orphan")
+
+
+class BacktestTrade(Base):
+    """Individual Trade in a Backtest"""
+    __tablename__ = "backtest_trades"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("backtest_sessions.id"), nullable=False)
+    
+    symbol = Column(String, nullable=False)
+    trade_type = Column(String, nullable=False) # BUY, SELL
+    
+    entry_time = Column(DateTime, nullable=False)
+    exit_time = Column(DateTime, nullable=True)
+    
+    entry_price = Column(Float, nullable=False)
+    exit_price = Column(Float, nullable=True)
+    
+    stop_loss = Column(Float, nullable=True)
+    take_profit = Column(Float, nullable=True)
+    
+    volume = Column(Float, default=0.0)
+    profit = Column(Float, default=0.0)
+    balance_after = Column(Float, default=0.0) # Balance after this trade
+    
+    confluence_score = Column(Integer, default=0)
+    
+    session = relationship("BacktestSession", back_populates="trades")
+
+
