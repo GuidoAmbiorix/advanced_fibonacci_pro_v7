@@ -65,7 +65,7 @@ class AdaptiveRiskManager:
     """
 
     # Absolute maximum risk per trade
-    ABSOLUTE_MAX_RISK = 1.0  # 1% - institutional standard
+    ABSOLUTE_MAX_RISK = 5.0  # Increased to 5% to allow user flexibility
 
     # Minimum risk (when heavily reduced)
     MINIMUM_RISK = 0.1  # 0.1%
