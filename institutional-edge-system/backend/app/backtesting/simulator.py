@@ -9,6 +9,11 @@ from typing import Optional, Dict
 from loguru import logger
 
 from app.backtesting.models import BacktestTrade
+from app.core.adaptive_multi_strategy_engine import (
+    DynamicTrailingStopManager,
+    TrailingStopConfig,
+    TrailingStopMode
+)
 
 
 class OrderSimulator:
@@ -27,7 +32,15 @@ class OrderSimulator:
         slippage_pips: float = 1.0,
         commission_per_lot: float = 7.0,
         enable_trailing_stop: bool = False,
-        min_hold_hours: float = 4.0
+        min_hold_hours: float = 4.0,
+        tsl_mode: str = "TIERED",  # FIXED, ATR, CHANDELIER, TIERED, SWING, PSAR
+        tsl_activation_r: float = 0.0,
+        tsl_atr_multiplier: float = 1.5,
+        tsl_chandelier_period: int = 22,
+        tsl_chandelier_mult: float = 3.0,
+        tsl_swing_lookback: int = 10,
+        tsl_psar_af_start: float = 0.02,
+        tsl_psar_af_max: float = 0.20
     ):
         """
         Initialize simulator
@@ -37,17 +50,48 @@ class OrderSimulator:
             commission_per_lot: Commission per lot roundtrip (default $7)
             enable_trailing_stop: Enable trailing stop loss (default False)
             min_hold_hours: Minimum hold time in hours (default 4.0)
+            tsl_mode: Trailing stop mode - FIXED, ATR, CHANDELIER, TIERED, SWING, PSAR
+            tsl_activation_r: R-profit required to activate trailing (0 = immediate)
+            tsl_atr_multiplier: ATR multiplier for ATR mode
+            tsl_chandelier_period: Lookback period for Chandelier Exit
+            tsl_chandelier_mult: ATR multiplier for Chandelier Exit
+            tsl_swing_lookback: Lookback bars for Swing-based trailing
+            tsl_psar_af_start: Initial acceleration factor for Parabolic SAR
+            tsl_psar_af_max: Maximum acceleration factor for Parabolic SAR
         """
         self.slippage_pips = slippage_pips
         self.commission_per_lot = commission_per_lot
         self.enable_trailing_stop = enable_trailing_stop
         self.min_hold_hours = min_hold_hours
+        self.tsl_mode = tsl_mode
+
+        # Initialize Dynamic Trailing Stop Manager
+        mode_map = {
+            "FIXED": TrailingStopMode.FIXED,
+            "ATR": TrailingStopMode.ATR,
+            "CHANDELIER": TrailingStopMode.CHANDELIER,
+            "TIERED": TrailingStopMode.TIERED,
+            "SWING": TrailingStopMode.SWING,
+            "PSAR": TrailingStopMode.PSAR,
+        }
+        
+        config = TrailingStopConfig(
+            mode=mode_map.get(tsl_mode.upper(), TrailingStopMode.TIERED),
+            activation_r=tsl_activation_r,
+            atr_multiplier=tsl_atr_multiplier,
+            chandelier_period=tsl_chandelier_period,
+            chandelier_atr_mult=tsl_chandelier_mult,
+            swing_lookback=tsl_swing_lookback,
+            psar_af_start=tsl_psar_af_start,
+            psar_af_max=tsl_psar_af_max,
+        )
+        self.tsl_manager = DynamicTrailingStopManager(config)
 
         logger.info(
             f"OrderSimulator initialized - "
             f"Slippage: {slippage_pips} pips, "
             f"Commission: ${commission_per_lot}/lot, "
-            f"Trailing Stop: {enable_trailing_stop}, "
+            f"Trailing Stop: {enable_trailing_stop} ({tsl_mode}), "
             f"Min Hold: {min_hold_hours}h"
         )
 
@@ -134,18 +178,21 @@ class OrderSimulator:
             logger.error(f"Error executing entry: {e}")
             return None
 
-    def _update_trailing_stop(self, trade: BacktestTrade, current_price: float) -> bool:
+    def _update_trailing_stop(
+        self, 
+        trade: BacktestTrade, 
+        current_price: float,
+        df: pd.DataFrame = None
+    ) -> bool:
         """
-        Update trailing stop based on current profit - OPTIMIZED FOR WIN RATE
-
-        Trailing Logic (More Aggressive):
-        - At 0.8R profit: Move SL to breakeven + 0.1R buffer
-        - At 1.5R profit: Move SL to +0.8R (lock partial profit)
-        - At 2R profit: Move SL to +1.2R (lock 1.2R profit)
-
+        Update trailing stop using DynamicTrailingStopManager
+        
+        Supports modes: FIXED, ATR, CHANDELIER, TIERED, SWING, PSAR
+        
         Args:
             trade: Open trade
             current_price: Current market price
+            df: Optional OHLCV DataFrame for advanced modes (Chandelier, Swing, PSAR)
 
         Returns:
             True if SL was moved, False otherwise
@@ -156,24 +203,55 @@ class OrderSimulator:
         initial_risk = abs(trade.entry_price - trade.initial_stop_loss)
         if initial_risk == 0:
             return False
-
-        # Calculate current profit in R
-        if trade.signal_type == "BUY":
+            
+        direction = trade.signal_type  # "BUY" or "SELL"
+        
+        # If we have a DataFrame, use advanced trailing modes
+        if df is not None and len(df) > 0:
+            new_sl = self.tsl_manager.calculate_new_stop_loss(
+                df=df,
+                entry_price=trade.entry_price,
+                current_price=current_price,
+                current_sl=trade.stop_loss,
+                direction=direction,
+                initial_sl=trade.initial_stop_loss
+            )
+            
+            if new_sl is not None:
+                if direction == "BUY" and new_sl > trade.stop_loss:
+                    old_sl = trade.stop_loss
+                    trade.stop_loss = new_sl
+                    logger.debug(f"TSL [{self.tsl_mode}] BUY: {old_sl:.5f} → {new_sl:.5f}")
+                    return True
+                elif direction == "SELL" and (trade.stop_loss == 0 or new_sl < trade.stop_loss):
+                    old_sl = trade.stop_loss
+                    trade.stop_loss = new_sl
+                    logger.debug(f"TSL [{self.tsl_mode}] SELL: {old_sl:.5f} → {new_sl:.5f}")
+                    return True
+            return False
+        
+        # Fallback to legacy tiered trailing when no DataFrame available
+        return self._legacy_tiered_trail(trade, current_price, initial_risk, direction)
+    
+    def _legacy_tiered_trail(
+        self, 
+        trade: BacktestTrade, 
+        current_price: float,
+        initial_risk: float,
+        direction: str
+    ) -> bool:
+        """Legacy tiered trailing stop (used when no DataFrame available)"""
+        if direction == "BUY":
             profit_r = (current_price - trade.entry_price) / initial_risk
 
-            # Move SL only if it's better than current
             new_sl = None
             if profit_r >= 2.0:
-                # Lock +1.2R profit
                 new_sl = trade.entry_price + (initial_risk * 1.2)
             elif profit_r >= 1.5:
-                # Lock +0.8R profit
                 new_sl = trade.entry_price + (initial_risk * 0.8)
             elif profit_r >= 0.8:
-                # Move to breakeven with small buffer
                 new_sl = trade.entry_price + (initial_risk * 0.1)
 
-            # Only move SL up, never down
             if new_sl and new_sl > trade.stop_loss:
                 old_sl = trade.stop_loss
                 trade.stop_loss = new_sl
@@ -183,19 +261,14 @@ class OrderSimulator:
         else:  # SELL
             profit_r = (trade.entry_price - current_price) / initial_risk
 
-            # Move SL only if it's better than current
             new_sl = None
             if profit_r >= 2.0:
-                # Lock +1.2R profit
                 new_sl = trade.entry_price - (initial_risk * 1.2)
             elif profit_r >= 1.5:
-                # Lock +0.8R profit
                 new_sl = trade.entry_price - (initial_risk * 0.8)
             elif profit_r >= 0.8:
-                # Move to breakeven with small buffer
                 new_sl = trade.entry_price - (initial_risk * 0.1)
 
-            # Only move SL down (better for SELL), never up
             if new_sl and new_sl < trade.stop_loss:
                 old_sl = trade.stop_loss
                 trade.stop_loss = new_sl
@@ -228,6 +301,44 @@ class OrderSimulator:
         # Update trailing stop if enabled
         current_price = current_bar['close']
         self._update_trailing_stop(trade, current_price)
+
+        # ============================================
+        # FAST PARTIAL TP AT 0.5R (NEW - 80%+ WR Strategy)
+        # Close 50% at +0.5R, move SL to BE, let runner continue
+        # ============================================
+        if not trade.partial_tp_taken:
+            initial_risk = abs(trade.entry_price - trade.initial_stop_loss)
+            if initial_risk > 0:
+                if trade.signal_type == "BUY":
+                    profit_r = (current_price - trade.entry_price) / initial_risk
+                else:  # SELL
+                    profit_r = (trade.entry_price - current_price) / initial_risk
+                
+                # If profit reaches 0.5R, take partial!
+                if profit_r >= 0.5:
+                    # Store original volume for tracking
+                    if trade.original_volume == 0:
+                        trade.original_volume = trade.volume
+                    
+                    # Calculate partial PnL (50% of position)
+                    partial_pnl = (trade.volume * 0.5) * 100000 * abs(current_price - trade.entry_price)
+                    trade.partial_tp_pnl = partial_pnl
+                    
+                    # Reduce volume by 50% (runner continues)
+                    trade.volume = trade.volume * 0.5
+                    
+                    # Move SL to breakeven (entry + small buffer for spread)
+                    if trade.signal_type == "BUY":
+                        new_sl = trade.entry_price + (initial_risk * 0.05)  # Entry + 5% buffer
+                        if new_sl > trade.stop_loss:
+                            trade.stop_loss = new_sl
+                    else:  # SELL
+                        new_sl = trade.entry_price - (initial_risk * 0.05)  # Entry - 5% buffer
+                        if new_sl < trade.stop_loss:
+                            trade.stop_loss = new_sl
+                    
+                    trade.partial_tp_taken = True
+                    logger.info(f"🎯 FAST TP1 @ +0.5R: Closed 50%, PnL=${partial_pnl:.2f}, SL→BE")
 
         # Check if SL or TP hit (but respect minimum hold time)
         bar_high = current_bar['high']

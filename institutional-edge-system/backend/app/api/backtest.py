@@ -25,6 +25,12 @@ class BacktestRequest(BaseModel):
     risk_percent: float = 1.0
     strategy_mode: str = "SWING" # SWING, SCALP
     use_adx_filter: bool = True
+    # Trailing Stop Loss Settings
+    enable_trailing_stop: bool = False
+    tsl_mode: str = "TIERED"  # FIXED, ATR, CHANDELIER, TIERED, SWING, PSAR
+    tsl_activation_r: float = 0.0
+    # Signal Quality
+    min_confluence_score: int = 7  # 3-10, higher = stronger signals only
     
 class BacktestResponse(BaseModel):
     session_id: int
@@ -70,8 +76,12 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             initial_balance=request.initial_balance,
             risk_percent=request.risk_percent,
             scalping_mode=(request.strategy_mode == "SCALP"),
-            # Add other defaults
-            min_confluence_score=7,
+            # Trailing Stop Loss
+            enable_trailing_stop=request.enable_trailing_stop,
+            tsl_mode=request.tsl_mode,
+            tsl_activation_r=request.tsl_activation_r,
+            # Signal Quality & Limits
+            min_confluence_score=request.min_confluence_score,
             max_trades=3 if request.strategy_mode == "SWING" else 5
         )
         

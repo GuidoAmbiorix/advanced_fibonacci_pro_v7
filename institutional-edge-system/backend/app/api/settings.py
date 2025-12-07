@@ -28,7 +28,7 @@ async def update_bot_settings(bot_id: int, settings: dict, db: Session = Depends
     db.refresh(config)
     return config
 
-@router.get("/risk/{bot_id}")
+@router.get("/risk/{bot_id}", response_model=schemas.RiskProfile)
 async def get_risk_profile(bot_id: int, db: Session = Depends(database.get_db)):
     profile = db.query(RiskProfile).filter(RiskProfile.bot_config_id == bot_id).first()
     if not profile:
@@ -39,7 +39,7 @@ async def get_risk_profile(bot_id: int, db: Session = Depends(database.get_db)):
         db.refresh(profile)
     return profile
 
-@router.put("/risk/{bot_id}")
+@router.put("/risk/{bot_id}", response_model=schemas.RiskProfile)
 async def update_risk_profile(bot_id: int, settings: dict, db: Session = Depends(database.get_db)):
     profile = db.query(RiskProfile).filter(RiskProfile.bot_config_id == bot_id).first()
     if not profile:

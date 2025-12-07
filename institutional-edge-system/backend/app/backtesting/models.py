@@ -38,6 +38,11 @@ class BacktestTrade:
     slippage_pips: float = 0.0
     risk_percent: float = 1.0  # Risk % used for this trade (for portfolio tracking)
 
+    # Partial TP (NEW - for 80%+ WR scalping)
+    partial_tp_taken: bool = False  # Has fast TP1 been taken?
+    partial_tp_pnl: float = 0.0  # PnL from partial close
+    original_volume: float = 0.0  # Original volume before partial close
+
     # Status
     status: str = "OPEN"  # "OPEN", "CLOSED"
 
@@ -67,7 +72,12 @@ class BacktestTrade:
         self.pnl_pips = price_diff / 0.0001
 
         # P&L in currency (Forex: lots * 100,000 * price_diff)
+        # Use current volume (may be 50% if partial TP was taken)
         self.pnl = self.volume * 100000 * price_diff
+        
+        # Add partial TP PnL if it was taken (50% closed at +0.5R)
+        if self.partial_tp_taken and self.partial_tp_pnl > 0:
+            self.pnl += self.partial_tp_pnl
 
         # Subtract commission
         self.pnl -= self.commission
@@ -183,6 +193,10 @@ class BacktestConfig:
     enable_vwap_strategy: bool = True  # Enable VWAP Scalping
     enable_stoch_strategy: bool = True  # Enable Stochastic Momentum
     enable_institutional_strategy: bool = True  # Enable Liquidity Sweeps & Order Flow
+    
+    # Trailing Stop Loss Settings
+    tsl_mode: str = "TIERED"  # FIXED, ATR, CHANDELIER, TIERED, SWING, PSAR
+    tsl_activation_r: float = 0.0  # R-profit required to activate trailing
 
 
 @dataclass

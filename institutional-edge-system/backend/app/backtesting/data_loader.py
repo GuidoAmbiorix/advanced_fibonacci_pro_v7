@@ -62,6 +62,17 @@ class DataLoader:
             logger.error(f"Invalid timeframe: {timeframe}")
             return None
 
+        # Ensure symbol is selected in Market Watch
+        if not mt5.symbol_select(symbol, True):
+            logger.error(f"Failed to select symbol {symbol} in MT5")
+            return None
+
+        # Ensure dates are naive (MT5 preference)
+        if start_date.tzinfo is not None:
+            start_date = start_date.replace(tzinfo=None)
+        if end_date.tzinfo is not None:
+            end_date = end_date.replace(tzinfo=None)
+
         # Fetch data
         try:
             rates = mt5.copy_rates_range(
@@ -72,7 +83,8 @@ class DataLoader:
             )
 
             if rates is None or len(rates) == 0:
-                logger.error(f"No data received from MT5 for {symbol}")
+                error = mt5.last_error()
+                logger.error(f"No data received from MT5 for {symbol}. Error: {error}")
                 return None
 
             # Convert to DataFrame

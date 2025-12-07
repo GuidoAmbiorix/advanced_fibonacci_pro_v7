@@ -120,6 +120,72 @@
                         <input type="checkbox" v-model="config.enable_institutional_strategy" class="form-checkbox h-4 w-4 text-yellow-500 bg-gray-900 border-gray-700 rounded">
                         <span class="text-sm text-yellow-400 font-bold">Enable Institutional Sweep 💎</span>
                     </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" v-model="config.enable_fibonacci_strategy" class="form-checkbox h-4 w-4 text-green-500 bg-gray-900 border-gray-700 rounded">
+                        <span class="text-sm text-green-400">Enable Fibonacci Scalp 📐</span>
+                    </label>
+                </div>
+             </div>
+
+             <!-- Trailing Stop Loss Settings -->
+             <div class="pt-3 border-t border-gray-700">
+                <h3 class="text-sm font-semibold text-gray-300 mb-3">🎯 Trailing Stop Loss</h3>
+                
+                <label class="flex items-center space-x-2 cursor-pointer mb-3">
+                  <input type="checkbox" v-model="config.enable_trailing_stop" class="form-checkbox h-4 w-4 text-green-600 bg-gray-900 border-gray-700 rounded">
+                  <span class="text-sm text-gray-300">Enable Trailing Stop</span>
+                </label>
+
+                <div v-if="config.enable_trailing_stop" class="space-y-3">
+                  <!-- TSL Mode -->
+                  <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">TSL Mode</label>
+                    <select v-model="config.tsl_mode" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500 focus:outline-none text-sm">
+                      <option value="FIXED">Fixed R-Distance</option>
+                      <option value="ATR">ATR Dynamic</option>
+                      <option value="CHANDELIER">Chandelier Exit 📈</option>
+                      <option value="TIERED">Tiered Profit Protection</option>
+                      <option value="SWING">Swing-Based</option>
+                      <option value="PSAR">Parabolic SAR</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">
+                      {{ getTslModeDescription(config.tsl_mode) }}
+                    </p>
+                  </div>
+
+                  <!-- TSL Activation R -->
+                  <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Activation (R-profit)</label>
+                    <input type="number" v-model.number="config.tsl_activation_r" step="0.1" min="0" max="3" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500 focus:outline-none text-sm">
+                    <p class="text-xs text-gray-500 mt-1">0 = immediate, 1.0 = after 1R profit</p>
+                  </div>
+                </div>
+             </div>
+
+             <!-- Signal Quality Settings -->
+             <div class="pt-3 border-t border-gray-700">
+                <h3 class="text-sm font-semibold text-gray-300 mb-3">📊 Signal Quality</h3>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-400 mb-1">
+                    Min Confluence Score: <span class="text-white font-bold">{{ config.min_confluence_score }}</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    v-model.number="config.min_confluence_score" 
+                    min="3" 
+                    max="10" 
+                    step="1" 
+                    class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  >
+                  <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>3 (All)</span>
+                    <span>7 (Medium)</span>
+                    <span>10 (Elite)</span>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-2">
+                    {{ getConfluenceDescription(config.min_confluence_score) }}
+                  </p>
                 </div>
              </div>
 
@@ -264,7 +330,14 @@ const config = ref({
   use_adx_filter: true,
   enable_vwap_strategy: true,
   enable_stoch_strategy: true,
-  enable_institutional_strategy: true
+  enable_institutional_strategy: true,
+  enable_fibonacci_strategy: true,  // NEW: Fibonacci Golden Zone Scalping
+  // Trailing Stop Loss Settings
+  enable_trailing_stop: true,
+  tsl_mode: 'TIERED',
+  tsl_activation_r: 0.0,
+  // Signal Quality
+  min_confluence_score: 7
 })
 
 // Methods
@@ -372,6 +445,27 @@ const getPfColor = (pf) => {
   if (pf >= 1.5) return 'text-green-400'
   if (pf >= 1.0) return 'text-blue-400'
   return 'text-red-400'
+}
+
+const getTslModeDescription = (mode) => {
+  const descriptions = {
+    'FIXED': 'Trail at fixed R-multiple distance from price',
+    'ATR': 'Trail at ATR × Multiplier (adapts to volatility)',
+    'CHANDELIER': 'Trail from highest high/lowest low using ATR',
+    'TIERED': 'Lock profit at 0.8R→BE, 1.5R→+0.8R, 2R→+1.2R',
+    'SWING': 'Trail behind recent swing highs/lows',
+    'PSAR': 'Parabolic SAR with accelerating factor'
+  }
+  return descriptions[mode] || ''
+}
+
+const getConfluenceDescription = (score) => {
+  if (score >= 10) return '💎 Elite only - Institutional Sweep signals'
+  if (score >= 9) return '⭐ Strong signals - Trend Following + Institutional'
+  if (score >= 8) return '📈 Good signals - VWAP + Breakout included'
+  if (score >= 7) return '📊 Medium signals - Range + most strategies'
+  if (score >= 5) return '⚠️ Includes weak signals - more trades, lower quality'
+  return '❌ All signals - high risk, many false positives'
 }
 
 // Init

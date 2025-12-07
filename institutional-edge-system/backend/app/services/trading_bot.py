@@ -160,6 +160,13 @@ class TradingBot:
             'fvg_min_size': self.config.fvg_min_size,
             'min_confluence_score': self.config.min_confluence_score,
             'vp_lookback': self.config.vp_lookback,
+            
+            # Strategy Selection (NEW)
+            'use_adx_filter': self.config.use_adx_filter,
+            'enable_vwap_strategy': self.config.enable_vwap_strategy,
+            'enable_stoch_strategy': self.config.enable_stoch_strategy,
+            'enable_institutional_strategy': self.config.enable_institutional_strategy,
+            'enable_fibonacci_strategy': self.config.enable_fibonacci_strategy,
         }
 
         self.trading_engine = AdaptiveMultiStrategyEngine(engine_config)

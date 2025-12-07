@@ -50,7 +50,9 @@ class BacktestEngine:
             slippage_pips=config.slippage_pips,
             commission_per_lot=config.commission_per_lot,
             enable_trailing_stop=config.enable_trailing_stop,
-            min_hold_hours=4.0  # Minimum 4-hour hold time
+            min_hold_hours=4.0,  # Minimum 4-hour hold time
+            tsl_mode=config.tsl_mode,
+            tsl_activation_r=config.tsl_activation_r
         )
 
         # Trading state

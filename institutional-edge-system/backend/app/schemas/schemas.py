@@ -61,6 +61,11 @@ class BotConfigCreate(BaseModel):
     ob_lookback: int = Field(default=50, ge=10, le=100)
     fvg_min_size: float = Field(default=0.3, ge=0.1, le=2.0)
     vp_lookback: int = Field(default=100, ge=20, le=500)
+    use_adx_filter: bool = True
+    enable_vwap_strategy: bool = True
+    enable_stoch_strategy: bool = True
+    enable_institutional_strategy: bool = True
+    enable_fibonacci_strategy: bool = True
     be_trigger: float = Field(default=1.0, ge=0.5, le=5.0)
     trailing_sl: bool = False
     trailing_step: float = Field(default=1.0, ge=0.5, le=5.0)
@@ -84,6 +89,11 @@ class BotConfigUpdate(BaseModel):
     risk_percent: Optional[float] = Field(default=None, ge=0.5, le=5.0)
     min_confluence_score: Optional[int] = Field(default=None, ge=3, le=10)
     max_trades: Optional[int] = Field(default=None, ge=1, le=10)
+    use_adx_filter: Optional[bool] = None
+    enable_vwap_strategy: Optional[bool] = None
+    enable_stoch_strategy: Optional[bool] = None
+    enable_institutional_strategy: Optional[bool] = None
+    enable_fibonacci_strategy: Optional[bool] = None
     be_trigger: Optional[float] = Field(default=None, ge=0.5, le=5.0)
     trailing_sl: Optional[bool] = None
     trailing_step: Optional[float] = Field(default=None, ge=0.5, le=5.0)
@@ -110,6 +120,11 @@ class BotConfigResponse(BaseModel):
     risk_percent: float
     min_confluence_score: int
     max_trades: int
+    use_adx_filter: bool
+    enable_vwap_strategy: bool
+    enable_stoch_strategy: bool
+    enable_institutional_strategy: bool
+    enable_fibonacci_strategy: bool
     be_trigger: float
     trailing_sl: bool
     trailing_step: float
@@ -126,6 +141,23 @@ class BotConfigResponse(BaseModel):
     daily_loss_limit_percent: float
     is_active: bool
     created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class RiskProfile(BaseModel):
+    id: int
+    bot_config_id: int
+    volatility_adjustment: bool
+    dd_protection: bool
+    max_daily_loss: float
+    max_total_dd: float
+    profit_target: float
+    current_risk_per_trade: float
+    is_halted: bool
+    halt_reason: Optional[str] = None
     updated_at: datetime
 
     class Config:

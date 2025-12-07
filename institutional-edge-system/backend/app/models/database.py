@@ -56,15 +56,36 @@ class BotConfig(Base):
     fvg_min_size = Column(Float, default=0.3)
     vp_lookback = Column(Integer, default=100)
 
+    # Strategy Selection (NEW)
+    use_adx_filter = Column(Boolean, default=True)
+    enable_vwap_strategy = Column(Boolean, default=True)
+    enable_stoch_strategy = Column(Boolean, default=True)
+    enable_institutional_strategy = Column(Boolean, default=True)
+    enable_fibonacci_strategy = Column(Boolean, default=True)
+
     # Trade Management Settings
     be_trigger = Column(Float, default=1.0)  # R-multiple to move to BE
     trailing_sl = Column(Boolean, default=False)
     trailing_step = Column(Float, default=1.0)  # R-multiple for trailing step
     trailing_distance = Column(Float, default=1.5)  # R-multiple distance for TSL
-    tsl_mode = Column(String, default="FIXED") # "FIXED", "ATR", "SWING"
+    tsl_mode = Column(String, default="FIXED") # FIXED, ATR, CHANDELIER, TIERED, SWING, PSAR
     tsl_activation_r = Column(Float, default=0.0) # Profit R required to activate TSL
     tsl_atr_period = Column(Integer, default=14)
     tsl_atr_multiplier = Column(Float, default=1.5)
+    
+    # Chandelier Exit settings
+    tsl_chandelier_period = Column(Integer, default=22)
+    tsl_chandelier_mult = Column(Float, default=3.0)
+    
+    # Swing-based settings
+    tsl_swing_lookback = Column(Integer, default=10)
+    tsl_swing_buffer_atr = Column(Float, default=0.5)
+    
+    # Parabolic SAR settings  
+    tsl_psar_af_start = Column(Float, default=0.02)
+    tsl_psar_af_increment = Column(Float, default=0.02)
+    tsl_psar_af_max = Column(Float, default=0.20)
+    
     partial_tp_on = Column(Boolean, default=False)
     partial_tp_amount = Column(Float, default=0.5)  # 0.5 = 50%
 
@@ -84,6 +105,33 @@ class BotConfig(Base):
 
     # Relationships
     user = relationship("User", back_populates="bot_configs")
+    risk_profile = relationship("RiskProfile", uselist=False, back_populates="bot_config", cascade="all, delete-orphan")
+
+
+class RiskProfile(Base):
+    """Advanced Risk Management Settings"""
+    __tablename__ = "risk_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bot_config_id = Column(Integer, ForeignKey("bot_configs.id"), nullable=False, unique=True)
+    
+    # Dynamic Risk
+    volatility_adjustment = Column(Boolean, default=True)  # Reduce risk if ATR > 1.5x
+    dd_protection = Column(Boolean, default=True)  # Halve risk if DD > 5%
+    
+    # Prop Firm Rules
+    max_daily_loss = Column(Float, default=3.0)
+    max_total_dd = Column(Float, default=10.0)
+    profit_target = Column(Float, default=10.0)
+    
+    # State
+    current_risk_per_trade = Column(Float, default=1.0)
+    is_halted = Column(Boolean, default=False)
+    halt_reason = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    bot_config = relationship("BotConfig", back_populates="risk_profile")
 
 
 class Trade(Base):
@@ -243,21 +291,7 @@ class ExecutionLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 
-class RiskProfile(Base):
-    """Dynamic Risk Profile per Bot/User"""
-    __tablename__ = "risk_profiles"
 
-    id = Column(Integer, primary_key=True, index=True)
-    bot_config_id = Column(Integer, ForeignKey("bot_configs.id"), nullable=False)
-    
-    current_risk_per_trade = Column(Float, default=1.0)
-    max_daily_drawdown = Column(Float, default=3.0)
-    max_total_drawdown = Column(Float, default=10.0)
-    
-    is_halted = Column(Boolean, default=False)
-    halt_reason = Column(String, nullable=True)
-    
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class BacktestSession(Base):

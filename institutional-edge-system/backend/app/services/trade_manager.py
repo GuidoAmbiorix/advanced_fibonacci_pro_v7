@@ -6,8 +6,14 @@ Manages open positions: Break Even, Trailing SL, Partial Close
 """
 
 from typing import Dict, Optional, List
+import pandas as pd
 from loguru import logger
 from app.core.mt5_connector import MT5Connector
+from app.core.adaptive_multi_strategy_engine import (
+    DynamicTrailingStopManager, 
+    TrailingStopConfig, 
+    TrailingStopMode
+)
 from app.models.database import Trade
 from app.api.database import SessionLocal
 
@@ -30,11 +36,24 @@ class TradeManager:
         self.trailing_distance_r = 1.5 # Default distance
         
         # Advanced TSL Settings
-        self.tsl_mode = "FIXED" # FIXED, ATR, SWING
+        self.tsl_mode = "FIXED" # FIXED, ATR, CHANDELIER, TIERED, SWING, PSAR
         self.tsl_activation_r = 0.0 # Profit R required to activate
         self.tsl_atr_period = 14
         self.tsl_atr_multiplier = 1.5
         self.timeframe = "H1" # Default timeframe for ATR
+        
+        # Chandelier Exit settings
+        self.tsl_chandelier_period = 22
+        self.tsl_chandelier_mult = 3.0
+        
+        # Swing-based settings
+        self.tsl_swing_lookback = 10
+        self.tsl_swing_buffer_atr = 0.5
+        
+        # Parabolic SAR settings
+        self.tsl_psar_af_start = 0.02
+        self.tsl_psar_af_increment = 0.02
+        self.tsl_psar_af_max = 0.20
         
         self.partial_tp_on = False
         self.partial_tp_amount = 0.5 # 50%
@@ -42,6 +61,41 @@ class TradeManager:
         # Secure Profit Settings (Break Even Plus)
         self.secure_profit_trigger = 100 # Points (e.g. 10 pips)
         self.secure_profit_lock = 10 # Points to lock (e.g. 1 pip)
+        
+        # Initialize Dynamic Trailing Stop Manager
+        self._init_tsl_manager()
+        
+    def _init_tsl_manager(self):
+        """Initialize the Dynamic Trailing Stop Manager with current config"""
+        try:
+            mode_map = {
+                "FIXED": TrailingStopMode.FIXED,
+                "ATR": TrailingStopMode.ATR,
+                "CHANDELIER": TrailingStopMode.CHANDELIER,
+                "TIERED": TrailingStopMode.TIERED,
+                "SWING": TrailingStopMode.SWING,
+                "PSAR": TrailingStopMode.PSAR,
+            }
+            tsl_mode = mode_map.get(self.tsl_mode.upper(), TrailingStopMode.FIXED)
+            
+            config = TrailingStopConfig(
+                mode=tsl_mode,
+                activation_r=self.tsl_activation_r,
+                atr_period=self.tsl_atr_period,
+                atr_multiplier=self.tsl_atr_multiplier,
+                chandelier_period=self.tsl_chandelier_period,
+                chandelier_atr_mult=self.tsl_chandelier_mult,
+                swing_lookback=self.tsl_swing_lookback,
+                swing_buffer_atr=self.tsl_swing_buffer_atr,
+                psar_af_start=self.tsl_psar_af_start,
+                psar_af_increment=self.tsl_psar_af_increment,
+                psar_af_max=self.tsl_psar_af_max,
+            )
+            self.tsl_manager = DynamicTrailingStopManager(config)
+            logger.info(f"TSL Manager initialized with mode: {tsl_mode.value}")
+        except Exception as e:
+            logger.error(f"Error initializing TSL Manager: {e}")
+            self.tsl_manager = DynamicTrailingStopManager()
         
     def update_trades(self, active_trades: List[Dict]):
         """
@@ -246,7 +300,9 @@ class TradeManager:
 
     def _check_and_trail_sl(self, trade: Dict, r_multiple: float, risk_pips: float):
         """
-        Check and update Trailing Stop Loss (Trigger + Step Logic)
+        Check and update Trailing Stop Loss using DynamicTrailingStopManager
+        
+        Supports modes: FIXED, ATR, CHANDELIER, TIERED, SWING, PSAR
         """
         ticket = trade['ticket']
         sl = trade['sl']
@@ -255,75 +311,108 @@ class TradeManager:
         symbol = trade['symbol']
         entry_price = trade['price_open']
         
-        # 1. Check Activation (Trigger)
-        # If we haven't activated yet, we check if we reached the trigger
-        # We can infer if we activated if SL is better than initial SL? 
-        # Or just strictly follow the rules:
+        # Determine direction
+        is_buy = trade_type == 'BUY' or trade_type == 0
+        direction = "BUY" if is_buy else "SELL"
         
-        # Rule: Activate trailing when profit >= Activation R (e.g. 150 pips)
+        # Get OHLCV data for advanced trailing modes
+        df = self._get_ohlcv_with_atr(symbol)
+        if df is None:
+            # Fallback to simple fixed trailing if no data
+            return self._fallback_fixed_trail(trade, r_multiple, risk_pips)
+        
+        # Get initial SL from database for accurate R calculation
+        initial_sl = self._get_initial_sl(ticket, entry_price, sl, direction)
+        
+        # Calculate new SL using the advanced manager
+        new_sl = self.tsl_manager.calculate_new_stop_loss(
+            df=df,
+            entry_price=entry_price,
+            current_price=current_price,
+            current_sl=sl,
+            direction=direction,
+            initial_sl=initial_sl
+        )
+        
+        if new_sl is not None:
+            # Check minimum pip difference to avoid spam
+            point = self.mt5_connector.get_symbol_point(symbol) or 0.00001
+            min_diff = point * 10  # 1 pip minimum change
+            
+            if is_buy:
+                if (new_sl - sl) > min_diff:
+                    logger.info(f"📈 TSL [{self.tsl_mode}] BUY: Moving SL {sl:.5f} → {new_sl:.5f}")
+                    self._modify_position(ticket, new_sl, trade['tp'])
+            else:
+                if sl == 0 or (sl - new_sl) > min_diff:
+                    logger.info(f"📉 TSL [{self.tsl_mode}] SELL: Moving SL {sl:.5f} → {new_sl:.5f}")
+                    self._modify_position(ticket, new_sl, trade['tp'])
+    
+    def _get_ohlcv_with_atr(self, symbol: str):
+        """Get OHLCV data with ATR calculated for TSL manager"""
+        try:
+            # Get enough bars for Chandelier (22), ATR (14), and swing (10) calculations
+            bars_needed = max(self.tsl_chandelier_period, self.tsl_atr_period, self.tsl_swing_lookback) + 20
+            df = self.mt5_connector.get_ohlcv_data(symbol, self.timeframe, bars_needed)
+            
+            if df is None or len(df) < 20:
+                return None
+                
+            # Calculate ATR if not present
+            if 'atr' not in df.columns:
+                df['tr'] = pd.DataFrame({
+                    'h-l': df['high'] - df['low'],
+                    'h-pc': abs(df['high'] - df['close'].shift(1)),
+                    'l-pc': abs(df['low'] - df['close'].shift(1))
+                }).max(axis=1)
+                df['atr'] = df['tr'].rolling(window=self.tsl_atr_period).mean()
+                
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error getting OHLCV data for TSL: {e}")
+            return None
+    
+    def _get_initial_sl(self, ticket: int, entry_price: float, current_sl: float, direction: str) -> float:
+        """Get initial stop loss from database for R calculations"""
+        try:
+            db = SessionLocal()
+            db_trade = db.query(Trade).filter(Trade.ticket == ticket).first()
+            db.close()
+            
+            if db_trade and db_trade.stop_loss:
+                return db_trade.stop_loss
+        except Exception as e:
+            logger.debug(f"Could not get initial SL from DB: {e}")
+            
+        return current_sl
+    
+    def _fallback_fixed_trail(self, trade: Dict, r_multiple: float, risk_pips: float):
+        """Fallback to simple fixed trailing when OHLCV data unavailable"""
         if r_multiple < self.tsl_activation_r:
             return
-
-        # 2. Calculate Target SL
-        # Logic: If Profit >= Trigger, Move SL to (Current Price - Distance)
-        # OR Logic: If Profit >= Trigger, Move SL to Fixed Step (e.g. +100 pips)
+            
+        ticket = trade['ticket']
+        sl = trade['sl']
+        trade_type = trade['type']
+        current_price = trade['price_current']
+        symbol = trade['symbol']
         
-        # The user requested: "Trigger + Step Trailing Stop"
-        # Example: Trigger +150 -> Move SL to +100.
-        # Then as price moves, keep SL at distance? Or move in steps?
-        # User said: "Luego el SL sigue moviéndose cada vez que el precio avanza más."
-        # "Este tipo de trailing mantiene siempre aprox. 50 pips de distancia"
-        
-        # So effectively:
-        # Distance = Trigger - Step (e.g. 150 - 100 = 50 pips distance)
-        # Once triggered, we maintain this distance.
-        
-        # Let's calculate the implied distance from config if possible, or use trailing_distance_r
-        # If user sets Trigger=1.5R and Step=1.0R (move to +1R), the distance is 0.5R.
-        
-        # However, we have self.trailing_distance_r in config.
-        # Let's use that as the "Distance to maintain" after trigger.
-        
-        trail_distance = 0.0
-        
-        if self.tsl_mode == "ATR":
-            atr = self._calculate_atr(symbol)
-            if atr > 0:
-                trail_distance = atr * self.tsl_atr_multiplier
-            else:
-                trail_distance = risk_pips * self.trailing_distance_r
-        else:
-            # FIXED Mode
-            # If we want to strictly follow "Trigger 150 -> SL 100", the distance is 50.
-            # We should probably use trailing_distance_r as the "distance behind price".
-            trail_distance = risk_pips * self.trailing_distance_r
-        
-        new_sl = 0.0
+        trail_distance = risk_pips * self.trailing_distance_r
         is_buy = trade_type == 'BUY' or trade_type == 0
         
-        if is_buy: # Buy
-            # Target SL = Current Price - Distance
-            potential_new_sl = current_price - trail_distance
-            
-            # Ensure we lock in at least the "Step" profit if we just triggered
-            # (This is implicitly handled if CurrentPrice - Distance >= Entry + Step)
-            
-            # Only move SL up
-            if potential_new_sl > sl:
-                # Optional: Check if change is significant enough (to avoid spamming modify calls)
-                # e.g. only move if > 1 pip difference
+        if is_buy:
+            new_sl = current_price - trail_distance
+            if new_sl > sl:
                 point = self.mt5_connector.get_symbol_point(symbol)
-                if (potential_new_sl - sl) > (point * 10): # 1 pip
-                    self._modify_position(ticket, potential_new_sl, trade['tp'])
-                    
-        else: # Sell
-            potential_new_sl = current_price + trail_distance
-            
-            # Only move SL down
-            if sl == 0 or potential_new_sl < sl:
+                if (new_sl - sl) > (point * 10):
+                    self._modify_position(ticket, new_sl, trade['tp'])
+        else:
+            new_sl = current_price + trail_distance
+            if sl == 0 or new_sl < sl:
                 point = self.mt5_connector.get_symbol_point(symbol)
-                if sl == 0 or (sl - potential_new_sl) > (point * 10):
-                    self._modify_position(ticket, potential_new_sl, trade['tp'])
+                if sl == 0 or (sl - new_sl) > (point * 10):
+                    self._modify_position(ticket, new_sl, trade['tp'])
 
     def _check_and_partial_close(self, trade: Dict, r_multiple: float):
         """Check and execute Partial Take Profit"""
