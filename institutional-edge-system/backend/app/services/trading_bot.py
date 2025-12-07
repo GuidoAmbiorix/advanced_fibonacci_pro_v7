@@ -15,6 +15,7 @@ from app.core.mt5_connector import MT5Connector
 from app.services.trade_manager import TradeManager
 from app.services.risk_manager import AdaptiveRiskManager
 from app.services.portfolio_manager import PortfolioManager
+from app.services.discord_service import DiscordService
 from app.models.database import BotConfig, Trade, Signal
 from app.api.database import SessionLocal
 
@@ -39,7 +40,9 @@ class TradingBot:
         self.bot_config_id = bot_config_id
         self.mt5_connector = mt5_connector
         self.sio = sio
+        self.sio = sio
         self.rabbitmq = RabbitMQService()
+        self.discord = DiscordService()
         
         self.is_running = False
         self.config: Optional[BotConfig] = None
@@ -332,6 +335,19 @@ class TradingBot:
                     'confluence_score': sig.confluence_score,
                     'created_at': datetime.utcnow().isoformat()
                 })
+
+                # Send Discord Alert
+                await self.discord.send_signal_alert({
+                    'symbol': sig.symbol,
+                    'direction': sig.signal_type,
+                    'strategy_type': sig.strategy_type.value if sig.strategy_type else 'UNKNOWN',
+                    'entry_price': sig.entry_price,
+                    'stop_loss': sig.stop_loss,
+                    'take_profit': sig.take_profit_2,
+                    'confidence': sig.ai_confidence,
+                    'score': sig.confluence_score,
+                    'timestamp': datetime.utcnow().strftime("%H:%M:%S")
+                })
                 
         except Exception as e:
             logger.exception("Error saving signals: {}", e)
@@ -583,7 +599,6 @@ class TradingBot:
             db.add(trade)
             db.commit()
             db.refresh(trade)
-            db.refresh(trade)
             logger.info("Trade saved to database - ID: {}", trade.id)
             
             # Emit event
@@ -596,6 +611,15 @@ class TradingBot:
                 'sl': trade.stop_loss,
                 'tp': trade.take_profit_1,
                 'pnl': 0.0
+            })
+
+            # Send Discord Alert
+            await self.discord.send_trade_alert({
+                'symbol': trade.symbol,
+                'type': trade.trade_type,
+                'volume': trade.volume,
+                'entry': trade.entry_price,
+                'ticket': trade.ticket
             })
             
             return trade.id

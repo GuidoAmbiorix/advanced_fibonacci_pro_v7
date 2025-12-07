@@ -8,6 +8,8 @@ from datetime import datetime
 from typing import Optional, List
 from loguru import logger
 import time
+import asyncio
+from app.services.discord_service import DiscordService
 
 from app.backtesting.models import (
     BacktestConfig,
@@ -73,6 +75,7 @@ class BacktestEngine:
 
         logger.info(f"BacktestEngine initialized - {config.symbol} {config.timeframe}")
         logger.info("✅ Using AdaptiveRiskManager + PortfolioManager (same as live trading)")
+        self.discord = DiscordService()
 
     def _init_trading_engine(self) -> AdaptiveMultiStrategyEngine:
         """Initialize the Adaptive Multi-Strategy engine"""
@@ -498,6 +501,14 @@ class BacktestEngine:
         verdict = "✅ PASS" if is_passing else "❌ FAIL"
         logger.info(f"VERDICT: {verdict}")
         logger.info("")
+
+        # Send Discord Alert
+        try:
+            asyncio.run(self.discord.send_backtest_summary(m))
+        except Exception as e:
+            # If loop is already running (e.g. inside another async context), we might need a different approach
+            # But BacktestEngine.run is typically blocking/sync.
+            logger.warning(f"Could not send Discord alert: {e}")
 
     def generate_report(
         self,

@@ -613,6 +613,9 @@ class AdaptiveMultiStrategyEngine:
         """
         if len(df) < 100:
             return {'signals': [], 'message': 'Insufficient data'}
+        
+        # Calculate HTF trend once
+        h4_trend = self._check_higher_tf_trend(df_higher_tf)
 
         # Calculate indicators if not present
         df = self._ensure_indicators(df)
@@ -634,28 +637,28 @@ class AdaptiveMultiStrategyEngine:
                 inst_signal = self._liquidity_sweep_signal(df, df_higher_tf)
                 if inst_signal:
                     logger.info(f"⚡ Institutional Sweep Signal: {inst_signal.direction} @ {inst_signal.entry_price}")
-                    return self._wrap_signal(inst_signal, regime, strategy_type)
+                    return self._wrap_signal(inst_signal, regime, strategy_type, df, h4_trend)
 
             # 2. VWAP Scalping
             if self.enable_vwap_strategy:
                 vwap_signal = self._vwap_scalping_signal(df)
                 if vwap_signal:
                     logger.info(f"⚡ VWAP Scalping Signal: {vwap_signal.direction} @ {vwap_signal.entry_price}")
-                    return self._wrap_signal(vwap_signal, regime, strategy_type)
+                    return self._wrap_signal(vwap_signal, regime, strategy_type, df, h4_trend)
 
             # 3. Stochastic Momentum
             if self.enable_stoch_strategy:
                 stoch_signal = self._stochastic_momentum_signal(df)
                 if stoch_signal:
                     logger.info(f"⚡ Stochastic Momentum Signal: {stoch_signal.direction} @ {stoch_signal.entry_price}")
-                    return self._wrap_signal(stoch_signal, regime, strategy_type)
+                    return self._wrap_signal(stoch_signal, regime, strategy_type, df, h4_trend)
 
             # 4. Fibonacci Golden Zone Scalping (NEW)
             if self.enable_fibonacci_strategy:
                 fib_signal = self._fibonacci_scalping_signal(df, df_higher_tf)
                 if fib_signal:
                     logger.info(f"📐 Fibonacci Scalp Signal: {fib_signal.direction} @ {fib_signal.entry_price}")
-                    return self._wrap_signal(fib_signal, regime, strategy_type)
+                    return self._wrap_signal(fib_signal, regime, strategy_type, df, h4_trend)
 
             # 5. Fallback to standard scalping (ONLY if no other strategy is enabled)
             # If any specialized strategy is enabled, we DO NOT want the generic fallback
@@ -663,7 +666,7 @@ class AdaptiveMultiStrategyEngine:
                 scalp_signal = self._scalping_signal(df)
                 if scalp_signal:
                     logger.info(f"⚡ Scalping Signal: {scalp_signal.direction} @ {scalp_signal.entry_price}")
-                    return self._wrap_signal(scalp_signal, regime, strategy_type)
+                    return self._wrap_signal(scalp_signal, regime, strategy_type, df, h4_trend)
 
         elif strategy_type == StrategyType.TREND_FOLLOWING:
             signal = self._trend_following_signal(df, df_higher_tf)
@@ -672,36 +675,45 @@ class AdaptiveMultiStrategyEngine:
         elif strategy_type == StrategyType.BREAKOUT_MOMENTUM:
             signal = self._breakout_momentum_signal(df, df_higher_tf)
 
-        return self._wrap_signal(signal, regime, strategy_type)
+        return self._wrap_signal(signal, regime, strategy_type, df, h4_trend)
 
-    def _wrap_signal(self, signal, regime, strategy_type):
+    def _wrap_signal(self, signal, regime, strategy_type, df=None, h4_trend="NEUTRAL"):
         """Helper to wrap signal in response dict"""
+        
+        # 0. Global RSI Filter (Safety Net)
+        if signal and df is not None and strategy_type != StrategyType.BREAKOUT_MOMENTUM:
+            current_rsi = df['rsi'].iloc[-1]
+            if signal.direction == "BUY" and current_rsi > 70:
+                logger.info(f"🛑 Global RSI Filter: BUY rejected (RSI {current_rsi:.1f} > 70)")
+                return None
+            if signal.direction == "SELL" and current_rsi < 30:
+                logger.info(f"🛑 Global RSI Filter: SELL rejected (RSI {current_rsi:.1f} < 30)")
+                return None
+
         # 4. Apply adaptive risk management
         if signal:
             signal.risk_percent = self._calculate_adaptive_risk()
 
-            # Add grid recovery if enabled
-            if self.enable_grid_recovery:
-                signal.enable_grid = True
-                # Need to calculate ATR for grid levels
-                # Assuming df has 'atr' column from _ensure_indicators
-                # But signal object doesn't have reference to df.
-                # We can recalculate or pass it.
-                # For simplicity, let's assume we can get ATR from the signal metadata or context if needed,
-                # but _calculate_grid_levels needs ATR.
-                # Let's pass ATR to _calculate_grid_levels.
-                # We don't have ATR here easily without the DF.
-                # Let's just return the signal and let the caller handle execution details if needed,
-                # or better, fix _calculate_grid_levels call.
-                pass 
-
         signals = [signal] if signal else []
+        
+        # Calculate confluence scores for logging/frontend
+        bull_score = 0.0
+        bear_score = 0.0
+        
+        if signal:
+            if signal.direction == "BUY":
+                bull_score = signal.score
+            elif signal.direction == "SELL":
+                bear_score = signal.score
 
         return {
             'signals': signals,
             'market_regime': regime.value,
             'strategy_used': strategy_type.value if strategy_type else None,
-            'win_streak': self.win_streak
+            'win_streak': self.win_streak,
+            'higher_tf_trend': h4_trend,
+            'bull_confluence_score': bull_score,
+            'bear_confluence_score': bear_score
         }
 
     def _ensure_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -752,6 +764,26 @@ class AdaptiveMultiStrategyEngine:
         high_14 = df['high'].rolling(window=14).max()
         df['stoch_k'] = 100 * (df['close'] - low_14) / (high_14 - low_14)
         df['stoch_d'] = df['stoch_k'].rolling(window=3).mean()
+
+        # Calculate MFI (Money Flow Index)
+        if 'mfi' not in df.columns:
+            typical_price = (df['high'] + df['low'] + df['close']) / 3
+            raw_money_flow = typical_price * df['volume']
+            
+            positive_flow = pd.Series(0.0, index=df.index)
+            negative_flow = pd.Series(0.0, index=df.index)
+            
+            # Vectorized calculation for speed
+            diff = typical_price.diff()
+            positive_flow[diff > 0] = raw_money_flow[diff > 0]
+            negative_flow[diff < 0] = raw_money_flow[diff < 0]
+            
+            period = 14
+            positive_mf = positive_flow.rolling(window=period).sum()
+            negative_mf = negative_flow.rolling(window=period).sum()
+            
+            mfi = 100 - (100 / (1 + (positive_mf / negative_mf)))
+            df['mfi'] = mfi.fillna(50) # Default to 50 if NaN
 
         return df
 
@@ -2025,6 +2057,10 @@ class AdaptiveMultiStrategyEngine:
             # 5. FVG (Bonus - tighter entry if present)
             has_bullish_fvg = fvg is not None and fvg['type'] == 'BULLISH'
             
+            # 6. MFI Confirmation (Institutional Volume)
+            mfi = current.get('mfi', 50)
+            mfi_oversold = mfi < 20
+
             # Entry: MSS + CVD confirmed (FVG is bonus)
             if mss_confirmed and (cvd_rising or has_bullish_fvg):
                 entry = price
@@ -2037,8 +2073,10 @@ class AdaptiveMultiStrategyEngine:
                 take_profit = poc if poc > entry else entry + (entry - stop_loss) * 2.0
                 
                 logger.info(f"💎 ICT BULLISH SWEEP @ {entry:.5f}")
-                logger.info(f"   MSS: ✅, FVG: {'✅' if has_bullish_fvg else '❌'}, CVD: {'✅' if cvd_rising else '❌'}")
+                logger.info(f"   MSS: ✅, FVG: {'✅' if has_bullish_fvg else '❌'}, CVD: {'✅' if cvd_rising else '❌'}, MFI: {mfi:.1f}")
                 
+                score = 9.9 if mfi_oversold else 9.8
+
                 return AdaptiveSignal(
                     entry_price=entry,
                     stop_loss=stop_loss,
@@ -2046,10 +2084,10 @@ class AdaptiveMultiStrategyEngine:
                     direction="BUY",
                     strategy_type=StrategyType.BREAKOUT_MOMENTUM,
                     market_regime=MarketRegime.VOLATILE,
-                    score=9.8,
-                    confidence=0.92 if has_bullish_fvg else 0.85,
+                    score=score,
+                    confidence=0.95 if mfi_oversold else (0.92 if has_bullish_fvg else 0.85),
                     timestamp=current['time'],
-                    metadata={'type': 'ICT_SWEEP', 'mss': True, 'fvg': has_bullish_fvg, 'poc': poc}
+                    metadata={'type': 'ICT_SWEEP', 'mss': True, 'fvg': has_bullish_fvg, 'poc': poc, 'mfi': mfi}
                 )
 
         # BEARISH SWEEP (Sweep High + Close Low)
@@ -2085,6 +2123,10 @@ class AdaptiveMultiStrategyEngine:
             # 5. FVG (Bonus - tighter entry if present)
             has_bearish_fvg = fvg is not None and fvg['type'] == 'BEARISH'
             
+            # 6. MFI Confirmation (Institutional Volume)
+            mfi = current.get('mfi', 50)
+            mfi_overbought = mfi > 80
+
             # Entry: MSS + CVD confirmed (FVG is bonus)
             if mss_confirmed and (cvd_falling or has_bearish_fvg):
                 entry = price
@@ -2097,8 +2139,10 @@ class AdaptiveMultiStrategyEngine:
                 take_profit = poc if poc < entry else entry - (stop_loss - entry) * 2.0
                 
                 logger.info(f"💎 ICT BEARISH SWEEP @ {entry:.5f}")
-                logger.info(f"   MSS: ✅, FVG: {'✅' if has_bearish_fvg else '❌'}, CVD: {'✅' if cvd_falling else '❌'}")
+                logger.info(f"   MSS: ✅, FVG: {'✅' if has_bearish_fvg else '❌'}, CVD: {'✅' if cvd_falling else '❌'}, MFI: {mfi:.1f}")
                 
+                score = 9.9 if mfi_overbought else 9.8
+
                 return AdaptiveSignal(
                     entry_price=entry,
                     stop_loss=stop_loss,
@@ -2106,10 +2150,10 @@ class AdaptiveMultiStrategyEngine:
                     direction="SELL",
                     strategy_type=StrategyType.BREAKOUT_MOMENTUM,
                     market_regime=self.current_regime,
-                    score=9.8,
-                    confidence=0.92 if has_bearish_fvg else 0.85,
+                    score=score,
+                    confidence=0.95 if mfi_overbought else (0.92 if has_bearish_fvg else 0.85),
                     timestamp=current['time'],
-                    metadata={'type': 'ICT_SWEEP', 'mss': True, 'fvg': has_bearish_fvg, 'poc': poc}
+                    metadata={'type': 'ICT_SWEEP', 'mss': True, 'fvg': has_bearish_fvg, 'poc': poc, 'mfi': mfi}
                 )
 
         return None

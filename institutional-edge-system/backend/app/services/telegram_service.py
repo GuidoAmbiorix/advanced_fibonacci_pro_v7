@@ -1,63 +1,91 @@
+"""
+Telegram Notification Service
+Sends real-time alerts for signals, trades, and backtest results.
+"""
 
-import aiohttp
+import httpx
+import asyncio
+from typing import Dict, Optional
 from loguru import logger
-from typing import Optional
+from app.core.config import settings
 
 class TelegramService:
-    """
-    Service for sending Telegram notifications
-    """
-    def __init__(self, bot_token: str, chat_id: str):
-        self.bot_token = bot_token
-        self.chat_id = chat_id
-        self.base_url = f"https://api.telegram.org/bot{bot_token}"
+    def __init__(self):
+        self.token = settings.TELEGRAM_BOT_TOKEN
+        self.chat_id = settings.TELEGRAM_CHAT_ID
+        self.base_url = f"https://api.telegram.org/bot{self.token}"
+        self.enabled = bool(self.token and self.chat_id)
 
-    async def send_message(self, message: str) -> bool:
-        """
-        Send a text message to the configured chat
-        """
-        if not self.bot_token or not self.chat_id:
-            logger.warning("Telegram credentials not configured")
-            return False
+        if not self.enabled:
+            logger.warning("Telegram Service disabled: Missing token or chat_id")
+        else:
+            logger.info("Telegram Service initialized")
+
+    async def send_message(self, text: str):
+        """Send a raw text message to Telegram"""
+        if not self.enabled:
+            return
 
         try:
-            url = f"{self.base_url}/sendMessage"
-            payload = {
-                "chat_id": self.chat_id,
-                "text": message,
-                "parse_mode": "HTML"
-            }
-
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload) as response:
-                    if response.status == 200:
-                        logger.info("Telegram message sent successfully")
-                        return True
-                    else:
-                        error_text = await response.text()
-                        logger.error(f"Failed to send Telegram message: {error_text}")
-                        return False
-
+            async with httpx.AsyncClient() as client:
+                payload = {
+                    "chat_id": self.chat_id,
+                    "text": text,
+                    "parse_mode": "Markdown"
+                }
+                response = await client.post(f"{self.base_url}/sendMessage", json=payload)
+                response.raise_for_status()
         except Exception as e:
-            logger.error(f"Error sending Telegram message: {e}")
-            return False
+            logger.error(f"Failed to send Telegram message: {e}")
 
-    async def send_trade_notification(self, trade_data: dict):
-        """
-        Format and send a trade notification
-        """
-        emoji = "🟢" if trade_data.get('type') == 'BUY' else "🔴"
+    async def send_signal_alert(self, signal: Dict):
+        """Send a formatted alert for a new trading signal"""
+        if not self.enabled:
+            return
+
+        # Emoji based on direction
+        icon = "🟢" if signal.get('direction') == "BUY" else "🔴"
         
         message = (
-            f"{emoji} <b>New Trade Executed</b>\n\n"
-            f"<b>Symbol:</b> {trade_data.get('symbol')}\n"
-            f"<b>Type:</b> {trade_data.get('type')}\n"
-            f"<b>Entry:</b> {trade_data.get('entry_price')}\n"
-            f"<b>SL:</b> {trade_data.get('stop_loss')}\n"
-            f"<b>TP1:</b> {trade_data.get('take_profit')}\n"
-            f"<b>Volume:</b> {trade_data.get('volume')}\n"
-            f"<b>Confluence:</b> {trade_data.get('confluence_score')}/10\n"
-            f"<b>Time:</b> {trade_data.get('time')}\n"
+            f"{icon} **NEW SIGNAL: {signal.get('symbol')}**\n"
+            f"Type: {signal.get('direction')} ({signal.get('strategy_type')})\n"
+            f"Entry: `{signal.get('entry_price')}`\n"
+            f"SL: `{signal.get('stop_loss')}`\n"
+            f"TP: `{signal.get('take_profit')}`\n"
+            f"Confidence: {signal.get('confidence', 0)*100:.1f}%\n"
+            f"Score: {signal.get('score', 0)}/10\n"
+            f"Time: {signal.get('timestamp')}"
         )
-        
+        await self.send_message(message)
+
+    async def send_trade_alert(self, trade: Dict):
+        """Send a formatted alert for an executed trade"""
+        if not self.enabled:
+            return
+
+        icon = "🚀"
+        message = (
+            f"{icon} **TRADE EXECUTED**\n"
+            f"Symbol: {trade.get('symbol')}\n"
+            f"Type: {trade.get('type')}\n"
+            f"Volume: {trade.get('volume')} lots\n"
+            f"Price: `{trade.get('entry')}`\n"
+            f"Ticket: `{trade.get('ticket')}`"
+        )
+        await self.send_message(message)
+
+    async def send_backtest_summary(self, metrics):
+        """Send a summary of backtest results"""
+        if not self.enabled:
+            return
+
+        icon = "✅" if metrics.net_profit > 0 else "❌"
+        message = (
+            f"{icon} **BACKTEST COMPLETE**\n"
+            f"Net Profit: ${metrics.net_profit:.2f}\n"
+            f"Win Rate: {metrics.win_rate:.1f}%\n"
+            f"Profit Factor: {metrics.profit_factor:.2f}\n"
+            f"Drawdown: {metrics.max_drawdown_percent:.1f}%\n"
+            f"Total Trades: {metrics.total_trades}"
+        )
         await self.send_message(message)

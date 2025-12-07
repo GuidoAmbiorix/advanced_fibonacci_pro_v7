@@ -74,6 +74,14 @@ class Settings(BaseSettings):
     # Alerts
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_CHAT_ID: str = ""
+    
+    # Discord (Webhook)
+    DISCORD_WEBHOOK_URL: str = ""
+    DISCORD_WEBHOOK_SIGNALS_URL: str = ""
+    
+    # WhatsApp (CallMeBot)
+    WHATSAPP_PHONE: str = ""
+    WHATSAPP_API_KEY: str = ""
     ENABLE_EMAIL_ALERTS: bool = False
     EMAIL_HOST: str = ""
     EMAIL_PORT: int = 587
