@@ -40,7 +40,9 @@ class OrderSimulator:
         tsl_chandelier_mult: float = 3.0,
         tsl_swing_lookback: int = 10,
         tsl_psar_af_start: float = 0.02,
-        tsl_psar_af_max: float = 0.20
+        tsl_psar_af_max: float = 0.20,
+        partial_tp_on: bool = False,
+        partial_tp_amount: float = 0.5
     ):
         """
         Initialize simulator
@@ -58,12 +60,16 @@ class OrderSimulator:
             tsl_swing_lookback: Lookback bars for Swing-based trailing
             tsl_psar_af_start: Initial acceleration factor for Parabolic SAR
             tsl_psar_af_max: Maximum acceleration factor for Parabolic SAR
+            partial_tp_on: Enable partial take profit
+            partial_tp_amount: Amount to close (0.1 - 1.0)
         """
         self.slippage_pips = slippage_pips
         self.commission_per_lot = commission_per_lot
         self.enable_trailing_stop = enable_trailing_stop
         self.min_hold_hours = min_hold_hours
         self.tsl_mode = tsl_mode
+        self.partial_tp_on = partial_tp_on
+        self.partial_tp_amount = partial_tp_amount
 
         # Initialize Dynamic Trailing Stop Manager
         mode_map = {
@@ -303,10 +309,10 @@ class OrderSimulator:
         self._update_trailing_stop(trade, current_price)
 
         # ============================================
-        # FAST PARTIAL TP AT 0.5R (NEW - 80%+ WR Strategy)
-        # Close 50% at +0.5R, move SL to BE, let runner continue
+        # PARTIAL TP (Configurable)
+        # Close X% at +0.5R, move SL to BE, let runner continue
         # ============================================
-        if not trade.partial_tp_taken:
+        if self.partial_tp_on and not trade.partial_tp_taken:
             initial_risk = abs(trade.entry_price - trade.initial_stop_loss)
             if initial_risk > 0:
                 if trade.signal_type == "BUY":
@@ -314,18 +320,19 @@ class OrderSimulator:
                 else:  # SELL
                     profit_r = (trade.entry_price - current_price) / initial_risk
                 
-                # If profit reaches 0.5R, take partial!
+                # If profit reaches 0.5R (Hardcoded trigger for now, could be configurable), take partial!
                 if profit_r >= 0.5:
                     # Store original volume for tracking
                     if trade.original_volume == 0:
                         trade.original_volume = trade.volume
                     
-                    # Calculate partial PnL (50% of position)
-                    partial_pnl = (trade.volume * 0.5) * 100000 * abs(current_price - trade.entry_price)
+                    # Calculate partial PnL (percentage of position)
+                    partial_volume = trade.volume * self.partial_tp_amount
+                    partial_pnl = partial_volume * 100000 * abs(current_price - trade.entry_price)
                     trade.partial_tp_pnl = partial_pnl
                     
-                    # Reduce volume by 50% (runner continues)
-                    trade.volume = trade.volume * 0.5
+                    # Reduce volume by partial amount (runner continues)
+                    trade.volume = trade.volume * (1.0 - self.partial_tp_amount)
                     
                     # Move SL to breakeven (entry + small buffer for spread)
                     if trade.signal_type == "BUY":
@@ -338,7 +345,7 @@ class OrderSimulator:
                             trade.stop_loss = new_sl
                     
                     trade.partial_tp_taken = True
-                    logger.info(f"🎯 FAST TP1 @ +0.5R: Closed 50%, PnL=${partial_pnl:.2f}, SL→BE")
+                    logger.info(f"🎯 PARTIAL TP @ +0.5R: Closed {self.partial_tp_amount*100:.0f}%, PnL=${partial_pnl:.2f}, SL→BE")
 
         # Check if SL or TP hit (but respect minimum hold time)
         bar_high = current_bar['high']

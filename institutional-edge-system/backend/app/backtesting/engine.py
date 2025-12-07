@@ -52,7 +52,9 @@ class BacktestEngine:
             enable_trailing_stop=config.enable_trailing_stop,
             min_hold_hours=4.0,  # Minimum 4-hour hold time
             tsl_mode=config.tsl_mode,
-            tsl_activation_r=config.tsl_activation_r
+            tsl_activation_r=config.tsl_activation_r,
+            partial_tp_on=config.partial_tp_on,
+            partial_tp_amount=config.partial_tp_amount
         )
 
         # Trading state

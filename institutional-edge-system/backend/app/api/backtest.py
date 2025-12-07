@@ -29,6 +29,9 @@ class BacktestRequest(BaseModel):
     enable_trailing_stop: bool = False
     tsl_mode: str = "TIERED"  # FIXED, ATR, CHANDELIER, TIERED, SWING, PSAR
     tsl_activation_r: float = 0.0
+    # Partial Take Profit
+    partial_tp_on: bool = False
+    partial_tp_amount: float = 0.5
     # Signal Quality
     min_confluence_score: int = 7  # 3-10, higher = stronger signals only
     
@@ -80,6 +83,9 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             enable_trailing_stop=request.enable_trailing_stop,
             tsl_mode=request.tsl_mode,
             tsl_activation_r=request.tsl_activation_r,
+            # Partial Take Profit
+            partial_tp_on=request.partial_tp_on,
+            partial_tp_amount=request.partial_tp_amount,
             # Signal Quality & Limits
             min_confluence_score=request.min_confluence_score,
             max_trades=3 if request.strategy_mode == "SWING" else 5

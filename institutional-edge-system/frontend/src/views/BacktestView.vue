@@ -161,6 +161,22 @@
                   </div>
                 </div>
              </div>
+             
+             <!-- Partial Take Profit -->
+             <div class="pt-3 border-t border-gray-700">
+                <h3 class="text-sm font-semibold text-gray-300 mb-3">Partial Take Profit</h3>
+                
+                <label class="flex items-center space-x-2 cursor-pointer mb-3">
+                  <input type="checkbox" v-model="config.partial_tp_on" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-900 border-gray-700 rounded">
+                  <span class="text-sm text-gray-300">Enable Partial TP</span>
+                </label>
+
+                <div v-if="config.partial_tp_on">
+                   <label class="block text-sm font-medium text-gray-400 mb-1">Amount (0.1 - 1.0)</label>
+                   <input type="number" v-model.number="config.partial_tp_amount" step="0.1" max="1.0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm">
+                   <p class="text-xs text-gray-500 mt-1">Percentage of position to close (e.g., 0.5 = 50%)</p>
+                </div>
+             </div>
 
              <!-- Signal Quality Settings -->
              <div class="pt-3 border-t border-gray-700">
@@ -336,6 +352,9 @@ const config = ref({
   enable_trailing_stop: true,
   tsl_mode: 'TIERED',
   tsl_activation_r: 0.0,
+  // Partial Take Profit
+  partial_tp_on: false,
+  partial_tp_amount: 0.5,
   // Signal Quality
   min_confluence_score: 7
 })

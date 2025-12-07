@@ -187,8 +187,8 @@ class BacktestConfig:
 
     # Advanced
     enable_trailing_stop: bool = False
-    enable_partial_tp: bool = False
-    enable_partial_tp: bool = False
+    partial_tp_on: bool = False
+    partial_tp_amount: float = 0.5
     scalping_mode: bool = False  # Enable high frequency scalping
     enable_vwap_strategy: bool = True  # Enable VWAP Scalping
     enable_stoch_strategy: bool = True  # Enable Stochastic Momentum
