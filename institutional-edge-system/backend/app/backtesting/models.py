@@ -190,13 +190,31 @@ class BacktestConfig:
     partial_tp_on: bool = False
     partial_tp_amount: float = 0.5
     scalping_mode: bool = False  # Enable high frequency scalping
+    use_adx_filter: bool = True  # Enable ADX Trend Filter
     enable_vwap_strategy: bool = True  # Enable VWAP Scalping
     enable_stoch_strategy: bool = True  # Enable Stochastic Momentum
     enable_institutional_strategy: bool = True  # Enable Liquidity Sweeps & Order Flow
+    enable_fibonacci_strategy: bool = True  # Enable Fibonacci Golden Zone Scalping
+    
+    # RSI Settings
+    rsi_period: int = 14
+    rsi_overbought: int = 70
+    rsi_oversold: int = 30
     
     # Trailing Stop Loss Settings
     tsl_mode: str = "TIERED"  # FIXED, ATR, CHANDELIER, TIERED, SWING, PSAR
     tsl_activation_r: float = 0.0  # R-profit required to activate trailing
+    
+    # Advanced TSL Parameters
+    tsl_atr_period: int = 14
+    tsl_atr_multiplier: float = 1.5
+    tsl_chandelier_period: int = 22
+    tsl_chandelier_mult: float = 3.0
+    tsl_swing_lookback: int = 10
+    tsl_swing_buffer_atr: float = 0.5
+    tsl_psar_af_start: float = 0.02
+    tsl_psar_af_increment: float = 0.02
+    tsl_psar_af_max: float = 0.20
 
 
 @dataclass

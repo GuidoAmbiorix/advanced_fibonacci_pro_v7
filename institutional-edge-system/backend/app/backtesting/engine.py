@@ -87,6 +87,17 @@ class BacktestEngine:
             'enable_grid_recovery': True,  # Waka Waka style
             'grid_levels': 3,  # 3 recovery levels
             'scalping_mode': self.config.scalping_mode,
+            'min_confluence_score': self.config.min_confluence_score,
+            'use_adx_filter': self.config.use_adx_filter,
+            'enable_vwap_strategy': self.config.enable_vwap_strategy,
+            'enable_stoch_strategy': self.config.enable_stoch_strategy,
+            'enable_institutional_strategy': self.config.enable_institutional_strategy,
+            'enable_fibonacci_strategy': self.config.enable_fibonacci_strategy,
+            
+            # RSI Settings
+            'rsi_period': self.config.rsi_period,
+            'rsi_overbought': self.config.rsi_overbought,
+            'rsi_oversold': self.config.rsi_oversold,
         }
 
         return AdaptiveMultiStrategyEngine(engine_config)

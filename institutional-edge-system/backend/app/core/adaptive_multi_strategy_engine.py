@@ -530,6 +530,8 @@ class GridLevel:
 @dataclass
 class AdaptiveSignal:
     """Trading signal with strategy context"""
+    symbol: str
+    timeframe: str
     entry_price: float
     stop_loss: float
     take_profit: float
@@ -596,6 +598,15 @@ class AdaptiveMultiStrategyEngine:
         self.win_streak = 0
         self.total_trades = 0
         self.winning_trades = 0
+        
+        # Market Analysis State
+        self.current_regime = MarketRegime.RANGING
+        self.poc_level = 0.0 # Point of Control from Volume Profile
+        
+        # RSI Settings
+        self.rsi_period = config.get('rsi_period', 14)
+        self.rsi_overbought = config.get('rsi_overbought', 70)
+        self.rsi_oversold = config.get('rsi_oversold', 30)
 
         # State
         self.current_regime = None
@@ -619,6 +630,7 @@ class AdaptiveMultiStrategyEngine:
 
         # Calculate indicators if not present
         df = self._ensure_indicators(df)
+        self.analyzed_df = df # Store for debugging
 
         # 1. Detect market regime
         regime = self._detect_market_regime(df)
@@ -677,6 +689,65 @@ class AdaptiveMultiStrategyEngine:
 
         return self._wrap_signal(signal, regime, strategy_type, df, h4_trend)
 
+    def _calculate_market_condition_score(self, df: pd.DataFrame) -> tuple[float, float]:
+        """
+        Calculate a baseline "Market Condition Score" (0-10) for Bullish and Bearish bias.
+        This allows the user to see how close the market is to a setup, even if no signal is triggered.
+        """
+        if len(df) < 50:
+            return 0.0, 0.0
+
+        current = df.iloc[-1]
+        
+        # 1. Trend Score (Max 4.0)
+        bull_trend = 0.0
+        bear_trend = 0.0
+        
+        ema_20 = current['ema_20']
+        ema_50 = current['ema_50']
+        ema_200 = current['ema_200']
+        price = current['close']
+        
+        # Bullish Trend
+        if price > ema_20: bull_trend += 1.0
+        if ema_20 > ema_50: bull_trend += 1.5
+        if ema_50 > ema_200: bull_trend += 1.5
+        
+        # Bearish Trend
+        if price < ema_20: bear_trend += 1.0
+        if ema_20 < ema_50: bear_trend += 1.5
+        if ema_50 < ema_200: bear_trend += 1.5
+        
+        # 2. Momentum Score (Max 4.0)
+        bull_mom = 0.0
+        bear_mom = 0.0
+        
+        rsi = current['rsi']
+        macd_hist = current['macd_histogram']
+        
+        # Bullish Momentum
+        if rsi > 50: bull_mom += 1.0
+        if rsi > 60: bull_mom += 1.0
+        if macd_hist > 0: bull_mom += 1.0
+        if macd_hist > df.iloc[-2]['macd_histogram']: bull_mom += 1.0 # Rising
+        
+        # Bearish Momentum
+        if rsi < 50: bear_mom += 1.0
+        if rsi < 40: bear_mom += 1.0
+        if macd_hist < 0: bear_mom += 1.0
+        if macd_hist < df.iloc[-2]['macd_histogram']: bear_mom += 1.0 # Falling
+        
+        # 3. Volume/Volatility Score (Max 2.0)
+        vol_score = 0.0
+        if current['volume_ratio'] > 1.0: vol_score += 1.0
+        if 'adx' in current and current['adx'] > 25: vol_score += 1.0
+        
+        # Total Scores
+        total_bull = min(10.0, bull_trend + bull_mom + vol_score)
+        total_bear = min(10.0, bear_trend + bear_mom + vol_score)
+        
+        return round(total_bull, 1), round(total_bear, 1)
+
     def _wrap_signal(self, signal, regime, strategy_type, df=None, h4_trend="NEUTRAL"):
         """Helper to wrap signal in response dict"""
         
@@ -696,17 +767,21 @@ class AdaptiveMultiStrategyEngine:
 
         signals = [signal] if signal else []
         
-        # Calculate confluence scores for logging/frontend
-        bull_score = 0.0
-        bear_score = 0.0
+        # Calculate baseline market condition scores
+        bull_score, bear_score = 0.0, 0.0
+        if df is not None:
+            bull_score, bear_score = self._calculate_market_condition_score(df)
         
+        # If we have a signal, its specific score takes precedence if higher
         if signal:
             if signal.direction == "BUY":
-                bull_score = signal.score
+                bull_score = max(bull_score, signal.score)
             elif signal.direction == "SELL":
-                bear_score = signal.score
+                bear_score = max(bear_score, signal.score)
 
         return {
+            'symbol': self.symbol,
+            'timeframe': self.timeframe,
             'signals': signals,
             'market_regime': regime.value,
             'strategy_used': strategy_type.value if strategy_type else None,
@@ -740,7 +815,8 @@ class AdaptiveMultiStrategyEngine:
         df = self._calculate_adx(df)
 
         # RSI
-        df['rsi'] = self._calculate_rsi(df['close'], 14)
+        # RSI
+        df['rsi'] = self._calculate_rsi(df['close'], self.rsi_period)
 
         # Bollinger Bands
         df['bb_middle'] = df['close'].rolling(window=20).mean()
@@ -1229,8 +1305,8 @@ class AdaptiveMultiStrategyEngine:
         near_ema20 = abs(price - ema_20) < atr * 1.0  # 1 ATR distance
 
         # RSI momentum - H4 (above/below 50)
-        rsi_bullish = rsi > 50 and rsi < 70  # Bullish momentum
-        rsi_bearish = rsi < 50 and rsi > 30  # Bearish momentum
+        rsi_bullish = rsi > 50 and rsi < self.rsi_overbought  # Bullish momentum
+        rsi_bearish = rsi < 50 and rsi > self.rsi_oversold  # Bearish momentum
 
         # Volume confirmation - H4
         volume_ok = volume_ratio > 0.8  # Decent volume
@@ -1297,6 +1373,8 @@ class AdaptiveMultiStrategyEngine:
             logger.info(f"   RSI={rsi:.1f}, MACD={macd_hist:.6f}, ADX={adx:.1f}")
 
             return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
                 entry_price=entry,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
@@ -1339,6 +1417,8 @@ class AdaptiveMultiStrategyEngine:
                 logger.info(f"   ✅ Bearish candlestick pattern confirmed!")
 
             return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
                 entry_price=entry,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
@@ -1398,7 +1478,10 @@ class AdaptiveMultiStrategyEngine:
         stoch_oversold = stoch_k < 20 and stoch_k > prev_stoch  # Stochastic oversold and turning
         bullish_candle = self._is_bullish_engulfing(current, prev) or self._is_bullish_pinbar(current)
         
-        if price <= bb_lower and rsi < 20 and macd_turning_up and stoch_oversold:
+        # Use stricter RSI for range scalping (e.g. 20 if oversold is 30)
+        rsi_strict_oversold = max(5, self.rsi_oversold - 10)
+        
+        if price <= bb_lower and rsi < rsi_strict_oversold and macd_turning_up and stoch_oversold:
             entry = price
             stop_loss = bb_lower - (atr * 1.0)  # Very tight stop for range trades
             # Conservative target: 66% of way to middle (safer exit)
@@ -1413,6 +1496,8 @@ class AdaptiveMultiStrategyEngine:
                 logger.info(f"   ✅ Bullish candlestick confirmed!")
 
             return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
                 entry_price=entry,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
@@ -1430,7 +1515,10 @@ class AdaptiveMultiStrategyEngine:
         stoch_overbought = stoch_k > 80 and stoch_k < prev_stoch  # Stochastic overbought and turning
         bearish_candle = self._is_bearish_engulfing(current, prev) or self._is_bearish_pinbar(current)
         
-        if price >= bb_upper and rsi > 80 and macd_turning_down and stoch_overbought:
+        # Use stricter RSI for range scalping (e.g. 80 if overbought is 70)
+        rsi_strict_overbought = min(95, self.rsi_overbought + 10)
+
+        if price >= bb_upper and rsi > rsi_strict_overbought and macd_turning_down and stoch_overbought:
             entry = price
             stop_loss = bb_upper + (atr * 1.0)  # Very tight stop for range trades
             # Conservative target: 66% of way to middle
@@ -1444,6 +1532,8 @@ class AdaptiveMultiStrategyEngine:
                 logger.info(f"   ✅ Bearish candlestick confirmed!")
 
             return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
                 entry_price=entry,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
@@ -1493,6 +1583,8 @@ class AdaptiveMultiStrategyEngine:
 
         if signal_type:
             return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
                 entry_price=current['close'],
                 stop_loss=sl,
                 take_profit=tp,
@@ -1545,6 +1637,8 @@ class AdaptiveMultiStrategyEngine:
 
         if signal_type:
             return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
                 entry_price=current_price,
                 stop_loss=sl,
                 take_profit=tp,
@@ -1631,6 +1725,8 @@ class AdaptiveMultiStrategyEngine:
             logger.info(f"   RSI={rsi:.1f}, Trend=UP, SL={stop_loss:.5f}, TP={take_profit:.5f}")
             
             return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
                 entry_price=entry,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
@@ -1680,6 +1776,8 @@ class AdaptiveMultiStrategyEngine:
             logger.info(f"   RSI={rsi:.1f}, Trend=DOWN, SL={stop_loss:.5f}, TP={take_profit:.5f}")
             
             return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
                 entry_price=entry,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
@@ -1738,6 +1836,8 @@ class AdaptiveMultiStrategyEngine:
             take_profit = entry + (atr * 2.0)  # Increased to 2.0 RR
             
             return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
                 entry_price=entry,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
@@ -1758,6 +1858,8 @@ class AdaptiveMultiStrategyEngine:
             take_profit = entry - (atr * 2.0)  # Increased to 2.0 RR
             
             return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
                 entry_price=entry,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
@@ -1848,6 +1950,8 @@ class AdaptiveMultiStrategyEngine:
             logger.info(f"   Volume={volume_ratio:.2f}x, MACD={macd_hist:.6f}, Stoch={stoch_k:.1f}, ADX={adx:.1f}")
 
             return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
                 entry_price=entry,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
@@ -1876,6 +1980,8 @@ class AdaptiveMultiStrategyEngine:
             logger.info(f"   Volume={volume_ratio:.2f}x, MACD={macd_hist:.6f}, Stoch={stoch_k:.1f}, ADX={adx:.1f}")
 
             return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
                 entry_price=entry,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
@@ -1998,6 +2104,7 @@ class AdaptiveMultiStrategyEngine:
         cvd = self._calculate_cvd(df)
         vp = self._calculate_volume_profile(df)
         poc = vp['poc']
+        self.poc_level = poc # Update engine state
         
         price = current['close']
         high = current['high']
@@ -2078,6 +2185,8 @@ class AdaptiveMultiStrategyEngine:
                 score = 9.9 if mfi_oversold else 9.8
 
                 return AdaptiveSignal(
+                    symbol=self.symbol,
+                    timeframe=self.timeframe,
                     entry_price=entry,
                     stop_loss=stop_loss,
                     take_profit=take_profit,
@@ -2144,6 +2253,8 @@ class AdaptiveMultiStrategyEngine:
                 score = 9.9 if mfi_overbought else 9.8
 
                 return AdaptiveSignal(
+                    symbol=self.symbol,
+                    timeframe=self.timeframe,
                     entry_price=entry,
                     stop_loss=stop_loss,
                     take_profit=take_profit,

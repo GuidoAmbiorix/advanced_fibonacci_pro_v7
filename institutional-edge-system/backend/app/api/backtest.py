@@ -25,10 +25,29 @@ class BacktestRequest(BaseModel):
     risk_percent: float = 1.0
     strategy_mode: str = "SWING" # SWING, SCALP
     use_adx_filter: bool = True
+    # Strategy Selection
+    enable_vwap_strategy: bool = True
+    enable_stoch_strategy: bool = True
+    enable_institutional_strategy: bool = True
+    enable_fibonacci_strategy: bool = True
+    # RSI Settings
+    rsi_period: int = 14
+    rsi_overbought: int = 70
+    rsi_oversold: int = 30
     # Trailing Stop Loss Settings
     enable_trailing_stop: bool = False
     tsl_mode: str = "TIERED"  # FIXED, ATR, CHANDELIER, TIERED, SWING, PSAR
     tsl_activation_r: float = 0.0
+    # Advanced TSL Parameters
+    tsl_atr_period: int = 14
+    tsl_atr_multiplier: float = 1.5
+    tsl_chandelier_period: int = 22
+    tsl_chandelier_mult: float = 3.0
+    tsl_swing_lookback: int = 10
+    tsl_swing_buffer_atr: float = 0.5
+    tsl_psar_af_start: float = 0.02
+    tsl_psar_af_increment: float = 0.02
+    tsl_psar_af_max: float = 0.20
     # Partial Take Profit
     partial_tp_on: bool = False
     partial_tp_amount: float = 0.5
@@ -79,10 +98,30 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             initial_balance=request.initial_balance,
             risk_percent=request.risk_percent,
             scalping_mode=(request.strategy_mode == "SCALP"),
+            # Strategy Selection
+            use_adx_filter=request.use_adx_filter,
+            enable_vwap_strategy=request.enable_vwap_strategy,
+            enable_stoch_strategy=request.enable_stoch_strategy,
+            enable_institutional_strategy=request.enable_institutional_strategy,
+            enable_fibonacci_strategy=request.enable_fibonacci_strategy,
+            # RSI Settings
+            rsi_period=request.rsi_period,
+            rsi_overbought=request.rsi_overbought,
+            rsi_oversold=request.rsi_oversold,
             # Trailing Stop Loss
             enable_trailing_stop=request.enable_trailing_stop,
             tsl_mode=request.tsl_mode,
             tsl_activation_r=request.tsl_activation_r,
+            # Advanced TSL Parameters
+            tsl_atr_period=request.tsl_atr_period,
+            tsl_atr_multiplier=request.tsl_atr_multiplier,
+            tsl_chandelier_period=request.tsl_chandelier_period,
+            tsl_chandelier_mult=request.tsl_chandelier_mult,
+            tsl_swing_lookback=request.tsl_swing_lookback,
+            tsl_swing_buffer_atr=request.tsl_swing_buffer_atr,
+            tsl_psar_af_start=request.tsl_psar_af_start,
+            tsl_psar_af_increment=request.tsl_psar_af_increment,
+            tsl_psar_af_max=request.tsl_psar_af_max,
             # Partial Take Profit
             partial_tp_on=request.partial_tp_on,
             partial_tp_amount=request.partial_tp_amount,

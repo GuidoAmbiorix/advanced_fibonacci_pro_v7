@@ -61,7 +61,13 @@ class BotConfig(Base):
     enable_vwap_strategy = Column(Boolean, default=True)
     enable_stoch_strategy = Column(Boolean, default=True)
     enable_institutional_strategy = Column(Boolean, default=True)
+    enable_institutional_strategy = Column(Boolean, default=True)
     enable_fibonacci_strategy = Column(Boolean, default=True)
+
+    # RSI Settings (NEW)
+    rsi_period = Column(Integer, default=14)
+    rsi_overbought = Column(Integer, default=70)
+    rsi_oversold = Column(Integer, default=30)
 
     # Trade Management Settings
     be_trigger = Column(Float, default=1.0)  # R-multiple to move to BE

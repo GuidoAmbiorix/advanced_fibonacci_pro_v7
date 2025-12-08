@@ -66,6 +66,9 @@ class BotConfigCreate(BaseModel):
     enable_stoch_strategy: bool = True
     enable_institutional_strategy: bool = True
     enable_fibonacci_strategy: bool = True
+    rsi_period: int = Field(default=14, ge=2, le=50)
+    rsi_overbought: int = Field(default=70, ge=50, le=95)
+    rsi_oversold: int = Field(default=30, ge=5, le=50)
     be_trigger: float = Field(default=1.0, ge=0.5, le=5.0)
     trailing_sl: bool = False
     trailing_step: float = Field(default=1.0, ge=0.5, le=5.0)
@@ -74,6 +77,13 @@ class BotConfigCreate(BaseModel):
     tsl_activation_r: float = Field(default=0.0, ge=0.0, le=10.0)
     tsl_atr_period: int = Field(default=14, ge=1, le=50)
     tsl_atr_multiplier: float = Field(default=1.5, ge=0.1, le=5.0)
+    tsl_chandelier_period: Optional[int] = Field(default=22, ge=1, le=50)
+    tsl_chandelier_mult: Optional[float] = Field(default=3.0, ge=0.1, le=10.0)
+    tsl_swing_lookback: Optional[int] = Field(default=10, ge=2, le=50)
+    tsl_swing_buffer_atr: Optional[float] = Field(default=0.5, ge=0.1, le=5.0)
+    tsl_psar_af_start: Optional[float] = Field(default=0.02, ge=0.001, le=0.5)
+    tsl_psar_af_increment: Optional[float] = Field(default=0.02, ge=0.001, le=0.5)
+    tsl_psar_af_max: Optional[float] = Field(default=0.20, ge=0.01, le=1.0)
     partial_tp_on: bool = False
     partial_tp_amount: float = Field(default=0.5, ge=0.1, le=1.0)
     max_spread: float = Field(default=2.0, ge=0.1, le=10.0)
@@ -94,6 +104,9 @@ class BotConfigUpdate(BaseModel):
     enable_stoch_strategy: Optional[bool] = None
     enable_institutional_strategy: Optional[bool] = None
     enable_fibonacci_strategy: Optional[bool] = None
+    rsi_period: Optional[int] = Field(default=None, ge=2, le=50)
+    rsi_overbought: Optional[int] = Field(default=None, ge=50, le=95)
+    rsi_oversold: Optional[int] = Field(default=None, ge=5, le=50)
     be_trigger: Optional[float] = Field(default=None, ge=0.5, le=5.0)
     trailing_sl: Optional[bool] = None
     trailing_step: Optional[float] = Field(default=None, ge=0.5, le=5.0)
@@ -102,6 +115,13 @@ class BotConfigUpdate(BaseModel):
     tsl_activation_r: Optional[float] = Field(default=None, ge=0.0, le=10.0)
     tsl_atr_period: Optional[int] = Field(default=None, ge=1, le=50)
     tsl_atr_multiplier: Optional[float] = Field(default=None, ge=0.1, le=5.0)
+    tsl_chandelier_period: Optional[int] = Field(default=None, ge=1, le=50)
+    tsl_chandelier_mult: Optional[float] = Field(default=None, ge=0.1, le=10.0)
+    tsl_swing_lookback: Optional[int] = Field(default=None, ge=2, le=50)
+    tsl_swing_buffer_atr: Optional[float] = Field(default=None, ge=0.1, le=5.0)
+    tsl_psar_af_start: Optional[float] = Field(default=None, ge=0.001, le=0.5)
+    tsl_psar_af_increment: Optional[float] = Field(default=None, ge=0.001, le=0.5)
+    tsl_psar_af_max: Optional[float] = Field(default=None, ge=0.01, le=1.0)
     partial_tp_on: Optional[bool] = None
     partial_tp_amount: Optional[float] = Field(default=None, ge=0.1, le=1.0)
     max_spread: Optional[float] = Field(default=None, ge=0.1, le=10.0)
@@ -125,6 +145,9 @@ class BotConfigResponse(BaseModel):
     enable_stoch_strategy: bool
     enable_institutional_strategy: bool
     enable_fibonacci_strategy: bool
+    rsi_period: int
+    rsi_overbought: int
+    rsi_oversold: int
     be_trigger: float
     trailing_sl: bool
     trailing_step: float

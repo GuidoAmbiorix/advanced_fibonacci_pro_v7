@@ -112,3 +112,37 @@ class DiscordService:
             "footer": {"text": "Institutional Edge Pro"}
         }
         await self.send_message(embed=embed)
+
+    async def send_market_status_update(self, analysis: Dict):
+        """Send a rich embed with current market status"""
+        if not self.enabled:
+            return
+
+        # Color: Grey (Neutral) by default
+        color = 0x808080
+        
+        bull_score = analysis.get('bull_confluence_score', 0)
+        bear_score = analysis.get('bear_confluence_score', 0)
+        
+        # Determine color based on dominant bias
+        if bull_score > bear_score and bull_score >= 5.0:
+            color = 0x00FF00 # Green
+        elif bear_score > bull_score and bear_score >= 5.0:
+            color = 0xFF0000 # Red
+
+        embed = {
+            "title": "📊 MARKET STATUS UPDATE",
+            "description": f"Analysis for **{analysis.get('symbol', 'UNKNOWN')}** ({analysis.get('timeframe', 'UNKNOWN')})",
+            "color": color,
+            "fields": [
+                {"name": "Regime", "value": f"{analysis.get('market_regime', 'UNKNOWN')}", "inline": True},
+                {"name": "Trend (H4)", "value": f"{analysis.get('higher_tf_trend', 'UNKNOWN')}", "inline": True},
+                {"name": "\u200b", "value": "\u200b", "inline": True}, # Spacer
+                {"name": "Bull Score", "value": f"**{bull_score:.1f}/10**", "inline": True},
+                {"name": "Bear Score", "value": f"**{bear_score:.1f}/10**", "inline": True},
+                {"name": "Signals", "value": f"{len(analysis.get('signals', []))}", "inline": True}
+            ],
+            "footer": {"text": f"Institutional Edge Pro • {datetime.utcnow().strftime('%H:%M UTC')}"}
+        }
+        # Send to main webhook (not signals channel)
+        await self.send_message(embed=embed)

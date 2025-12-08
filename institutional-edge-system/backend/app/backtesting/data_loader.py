@@ -68,41 +68,70 @@ class DataLoader:
             return None
 
         # Ensure dates are naive (MT5 preference)
+        # MT5 usually expects local time or server time. 
+        # If we have UTC, we should convert to naive.
         if start_date.tzinfo is not None:
             start_date = start_date.replace(tzinfo=None)
         if end_date.tzinfo is not None:
             end_date = end_date.replace(tzinfo=None)
+            
+        logger.info(f"Requesting MT5 data for {symbol} {timeframe} from {start_date} to {end_date}")
 
-        # Fetch data
-        try:
-            rates = mt5.copy_rates_range(
-                symbol,
-                mt5_timeframe,
-                start_date,
-                end_date
-            )
-
-            if rates is None or len(rates) == 0:
-                error = mt5.last_error()
-                logger.error(f"No data received from MT5 for {symbol}. Error: {error}")
-                return None
-
-            # Convert to DataFrame
-            df = pd.DataFrame(rates)
-
-            # Convert time to datetime
-            df['time'] = pd.to_datetime(df['time'], unit='s')
-
-            # Select and rename columns
-            df = df[['time', 'open', 'high', 'low', 'close', 'tick_volume']]
-            df.rename(columns={'tick_volume': 'volume'}, inplace=True)
-
-            logger.info(f"Loaded {len(df)} bars from MT5")
-            return df
-
-        except Exception as e:
-            logger.error(f"Error loading from MT5: {e}")
+        # Fetch data in chunks (monthly) to avoid timeouts/limits
+        chunks = []
+        current_start = start_date
+        
+        while current_start < end_date:
+            current_end = min(current_start + timedelta(days=30), end_date)
+            logger.info(f"Fetching chunk: {current_start} to {current_end}")
+            
+            try:
+                rates = mt5.copy_rates_range(
+                    symbol,
+                    mt5_timeframe,
+                    current_start,
+                    current_end
+                )
+                
+                if rates is not None and len(rates) > 0:
+                    chunks.append(rates)
+                else:
+                    error = mt5.last_error()
+                    if error[0] != 1: # 1 = No data, which is fine for some chunks
+                        logger.warning(f"Chunk failed or empty: {error}")
+                        
+            except Exception as e:
+                logger.error(f"Error fetching chunk: {e}")
+                
+            current_start = current_end
+            
+        if not chunks:
+            logger.error(f"No data received from MT5 for {symbol} after all chunks.")
             return None
+
+        # Concatenate all chunks into a single numpy structured array
+        import numpy as np
+        all_rates = np.concatenate(chunks)
+
+        # Convert to DataFrame (preserves structured array fields as columns)
+        df = pd.DataFrame(all_rates)
+        
+        # Drop duplicates if any (from chunk overlaps if logic wasn't perfect, though here it is)
+        df.drop_duplicates(subset=['time'], inplace=True)
+
+        # Convert time to datetime
+        df['time'] = pd.to_datetime(df['time'], unit='s')
+
+        # Select and rename columns
+        df = df[['time', 'open', 'high', 'low', 'close', 'tick_volume']]
+        df.rename(columns={'tick_volume': 'volume'}, inplace=True)
+        
+        # Sort by time
+        df.sort_values('time', inplace=True)
+        df.reset_index(drop=True, inplace=True)
+
+        logger.info(f"Loaded {len(df)} bars from MT5 (Total)")
+        return df
 
     def load_from_csv(
         self,

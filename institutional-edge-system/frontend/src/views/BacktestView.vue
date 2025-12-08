@@ -38,6 +38,10 @@
                 <option value="GBPUSD">GBPUSD</option>
                 <option value="USDJPY">USDJPY</option>
                 <option value="USDCAD">USDCAD</option>
+                <option value="EURCHF">EURCHF</option>
+                <option value="USDCHF">USDCHF</option>
+                <option value="AUDNZD">AUDNZD</option>
+                <option value="EURGBP">EURGBP</option>
                 <option value="BTCUSD">BTCUSD</option>
                 <option value="ETHUSD">ETHUSD</option>
               </select>
@@ -175,6 +179,25 @@
                    <label class="block text-sm font-medium text-gray-400 mb-1">Amount (0.1 - 1.0)</label>
                    <input type="number" v-model.number="config.partial_tp_amount" step="0.1" max="1.0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm">
                    <p class="text-xs text-gray-500 mt-1">Percentage of position to close (e.g., 0.5 = 50%)</p>
+                </div>
+             </div>
+
+             <!-- RSI Settings -->
+             <div class="pt-3 border-t border-gray-700">
+                <h3 class="text-sm font-semibold text-gray-300 mb-3">📉 RSI Configuration</h3>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Period</label>
+                        <input type="number" v-model.number="config.rsi_period" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Overbought</label>
+                        <input type="number" v-model.number="config.rsi_overbought" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Oversold</label>
+                        <input type="number" v-model.number="config.rsi_oversold" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm">
+                    </div>
                 </div>
              </div>
 
@@ -348,6 +371,10 @@ const config = ref({
   enable_stoch_strategy: true,
   enable_institutional_strategy: true,
   enable_fibonacci_strategy: true,  // NEW: Fibonacci Golden Zone Scalping
+  // RSI Defaults
+  rsi_period: 14,
+  rsi_overbought: 70,
+  rsi_oversold: 30,
   // Trailing Stop Loss Settings
   enable_trailing_stop: true,
   tsl_mode: 'TIERED',

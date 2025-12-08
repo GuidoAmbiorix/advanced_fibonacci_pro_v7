@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     MT5_PASSWORD: str = ""
     MT5_SERVER: str = ""
     MT5_PATH: str = ""
+    MT5_SYMBOL_SUFFIX: str = ""  # e.g. "m" for EURUSDm
 
     # Trading Parameters
     DEFAULT_SYMBOL: str = "EURUSD"

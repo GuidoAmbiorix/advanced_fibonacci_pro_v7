@@ -169,7 +169,13 @@ class TradingBot:
             'enable_vwap_strategy': self.config.enable_vwap_strategy,
             'enable_stoch_strategy': self.config.enable_stoch_strategy,
             'enable_institutional_strategy': self.config.enable_institutional_strategy,
+            'enable_institutional_strategy': self.config.enable_institutional_strategy,
             'enable_fibonacci_strategy': self.config.enable_fibonacci_strategy,
+            
+            # RSI Settings
+            'rsi_period': self.config.rsi_period,
+            'rsi_overbought': self.config.rsi_overbought,
+            'rsi_oversold': self.config.rsi_oversold,
         }
 
         self.trading_engine = AdaptiveMultiStrategyEngine(engine_config)
@@ -271,6 +277,9 @@ class TradingBot:
             )
         )
 
+        # Send Market Status Update to Discord
+        await self.discord.send_market_status_update(analysis)
+
         # Save signals to database
         await self._save_signals(analysis['signals'])
 
@@ -306,15 +315,15 @@ class TradingBot:
                 signal = Signal(
                     symbol=sig.symbol,
                     timeframe=sig.timeframe,
-                    signal_type=sig.signal_type,
+                    signal_type=sig.direction,  # Mapped from direction
                     price=sig.entry_price,
                     stop_loss=sig.stop_loss,
-                    take_profit=sig.take_profit_2,
-                    confluence_score=sig.confluence_score,
-                    score_breakdown=sig.score_breakdown,
-                    ai_confidence=sig.ai_confidence,
-                    ai_recommendation=sig.ai_recommendation,
-                    trend=self.trading_engine.trend_bullish and "BULLISH" or "BEARISH",
+                    take_profit=sig.take_profit, # Mapped from take_profit
+                    confluence_score=sig.score,  # Mapped from score
+                    score_breakdown=sig.metadata, # Mapped from metadata
+                    ai_confidence=sig.confidence,
+                    ai_recommendation="TRADE" if sig.confidence > 0.7 else "HOLD",
+                    trend=self.trading_engine.current_regime.value, # Use regime instead of trend_bullish
                     poc_level=self.trading_engine.poc_level,
                     status="CREATED",
                     was_executed=False
@@ -328,24 +337,24 @@ class TradingBot:
             for sig in signals:
                 await self.sio.emit('signal_generated', {
                     'symbol': sig.symbol,
-                    'signal_type': sig.signal_type,
+                    'signal_type': sig.direction, # Fixed
                     'price': sig.entry_price,
                     'stop_loss': sig.stop_loss,
-                    'take_profit': sig.take_profit_2,
-                    'confluence_score': sig.confluence_score,
+                    'take_profit': sig.take_profit, # Fixed
+                    'confluence_score': sig.score, # Fixed
                     'created_at': datetime.utcnow().isoformat()
                 })
 
                 # Send Discord Alert
                 await self.discord.send_signal_alert({
                     'symbol': sig.symbol,
-                    'direction': sig.signal_type,
+                    'direction': sig.direction, # Fixed
                     'strategy_type': sig.strategy_type.value if sig.strategy_type else 'UNKNOWN',
                     'entry_price': sig.entry_price,
                     'stop_loss': sig.stop_loss,
-                    'take_profit': sig.take_profit_2,
-                    'confidence': sig.ai_confidence,
-                    'score': sig.confluence_score,
+                    'take_profit': sig.take_profit, # Fixed
+                    'confidence': sig.confidence, # Fixed
+                    'score': sig.score, # Fixed
                     'timestamp': datetime.utcnow().strftime("%H:%M:%S")
                 })
                 
@@ -411,12 +420,12 @@ class TradingBot:
         # Publish to RabbitMQ (Decoupled Execution)
         await self.rabbitmq.publish_signal({
             "symbol": signal.symbol,
-            "signal_type": signal.signal_type,
+            "signal_type": signal.direction, # Fixed
             "entry_price": signal.entry_price,
             "stop_loss": signal.stop_loss,
-            "take_profit": signal.take_profit_1,
+            "take_profit": signal.take_profit, # Fixed
             "risk_percent": self.config.risk_percent,
-            "confluence_score": signal.confluence_score,
+            "confluence_score": signal.score, # Fixed
             "bot_config_id": self.bot_config_id
         })
 
@@ -500,13 +509,13 @@ class TradingBot:
 
         await self._log_activity(
             "Opening {} position: {} lots @ {} (SL: {}, TP: {})".format(
-                signal.signal_type, lot_size, signal.entry_price, signal.stop_loss, signal.take_profit_1
+                signal.direction, lot_size, signal.entry_price, signal.stop_loss, signal.take_profit
             )
         )
 
         # Determine correct order type for MT5
         # If signal says "MARKET", we use the signal direction (BUY/SELL)
-        mt5_order_type = signal.signal_type if signal.order_type == "MARKET" else signal.order_type
+        mt5_order_type = signal.direction
 
         # Open position
         result = self.mt5_connector.open_position(
@@ -514,9 +523,9 @@ class TradingBot:
             order_type=mt5_order_type,
             volume=lot_size,
             stop_loss=signal.stop_loss,
-            take_profit=signal.take_profit_1,
+            take_profit=signal.take_profit,
             price=signal.entry_price, # Pass entry price for pending orders
-            comment=f"IEP Bot - Conf: {signal.confluence_score}/10"
+            comment=f"IEP Bot - Conf: {signal.score}/10"
         )
 
         if result and result.get('success'):

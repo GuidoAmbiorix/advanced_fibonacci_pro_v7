@@ -21,6 +21,10 @@ async def update_bot_settings(bot_id: int, settings: dict, db: Session = Depends
         raise HTTPException(status_code=404, detail="Bot config not found")
     
     for key, value in settings.items():
+        # Skip primary key and foreign keys
+        if key in ['id', 'user_id']:
+            continue
+
         if hasattr(config, key):
             setattr(config, key, value)
             
@@ -47,6 +51,10 @@ async def update_risk_profile(bot_id: int, settings: dict, db: Session = Depends
         db.add(profile)
     
     for key, value in settings.items():
+        # Skip primary key and foreign keys
+        if key in ['id', 'bot_config_id']:
+            continue
+            
         if hasattr(profile, key):
             setattr(profile, key, value)
             

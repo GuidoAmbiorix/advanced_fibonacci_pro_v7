@@ -107,6 +107,25 @@
             </label>
         </div>
 
+        <!-- RSI Settings -->
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
+            <h4 class="font-medium text-slate-700 mb-2">RSI Configuration 📉</h4>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Period</label>
+                    <input type="number" v-model.number="config.rsi_period" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Overbought</label>
+                    <input type="number" v-model.number="config.rsi_overbought" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Oversold</label>
+                    <input type="number" v-model.number="config.rsi_oversold" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+            </div>
+        </div>
+
         <!-- Signal Quality -->
         <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
             <h4 class="font-medium text-slate-700 mb-4">Signal Quality Filter</h4>
@@ -213,6 +232,42 @@
                   <input type="number" v-model.number="config.tsl_atr_multiplier" step="0.1" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
                 </div>
              </div>
+
+             <div v-if="config.tsl_mode === 'CHANDELIER'" class="contents">
+                <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Chandelier Period</label>
+                  <input type="number" v-model.number="config.tsl_chandelier_period" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+                 <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Multiplier</label>
+                  <input type="number" v-model.number="config.tsl_chandelier_mult" step="0.1" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+             </div>
+
+             <div v-if="config.tsl_mode === 'SWING'" class="contents">
+                <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Swing Lookback</label>
+                  <input type="number" v-model.number="config.tsl_swing_lookback" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+                 <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Buffer (ATR)</label>
+                  <input type="number" v-model.number="config.tsl_swing_buffer_atr" step="0.1" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+             </div>
+
+             <div v-if="config.tsl_mode === 'PSAR'" class="contents">
+                <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Start / Increment</label>
+                  <div class="flex space-x-2">
+                      <input type="number" v-model.number="config.tsl_psar_af_start" step="0.01" placeholder="Start" class="w-1/2 bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                      <input type="number" v-model.number="config.tsl_psar_af_increment" step="0.01" placeholder="Inc" class="w-1/2 bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                  </div>
+                </div>
+                 <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Max AF</label>
+                  <input type="number" v-model.number="config.tsl_psar_af_max" step="0.01" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+             </div>
           </div>
         </div>
 
@@ -295,6 +350,13 @@ const config = ref({
   trailing_distance: 1.0,
   tsl_atr_period: 14,
   tsl_atr_multiplier: 1.5,
+  tsl_chandelier_period: 22,
+  tsl_chandelier_mult: 3.0,
+  tsl_swing_lookback: 10,
+  tsl_swing_buffer_atr: 0.5,
+  tsl_psar_af_start: 0.02,
+  tsl_psar_af_increment: 0.02,
+  tsl_psar_af_max: 0.20,
   partial_tp_on: false,
   partial_tp_amount: 0.5,
   // Strategy Defaults
@@ -303,6 +365,10 @@ const config = ref({
   enable_stoch_strategy: true,
   enable_institutional_strategy: true,
   enable_fibonacci_strategy: true,
+  // RSI Defaults
+  rsi_period: 14,
+  rsi_overbought: 70,
+  rsi_oversold: 30,
   min_confluence_score: 7
 })
 

@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from loguru import logger
 import time
 import os
+from app.core.config import settings
 
 try:
     import MetaTrader5 as mt5
@@ -65,22 +66,33 @@ class MT5Connector:
                 'MN1': 43200,
             }
 
-    def normalize_symbol(self, symbol: str, symbol_type: str = "forex") -> str:
+    def _normalize_symbol(self, symbol: str) -> str:
         """
-        Normalize symbol based on type
-        For crypto symbols, ensure they have # prefix
-
-        Args:
-            symbol: Raw symbol name (e.g., "BTCUSD" or "#BTCUSD")
-            symbol_type: Type of symbol ("forex" or "crypto")
-
-        Returns:
-            Normalized symbol for MT5
+        Normalize symbol name by handling broker suffixes.
+        Example: EURUSD -> EURUSDm if configured.
         """
-        if symbol_type == "crypto":
-            # Add # prefix if not present
-            if not symbol.startswith("#"):
-                return f"#{symbol}"
+        if not self.connected:
+            return symbol
+            
+        # 1. Check if symbol exists as is
+        if mt5.symbol_info(symbol) is not None:
+            # logger.debug(f"Symbol {symbol} found as is")
+            return symbol
+            
+        # 2. Try appending suffix if configured
+        suffix = settings.MT5_SYMBOL_SUFFIX
+        if suffix and not symbol.endswith(suffix):
+            suffixed_symbol = f"{symbol}{suffix}"
+            info = mt5.symbol_info(suffixed_symbol)
+            
+            if info is not None:
+                logger.info(f"Symbol {symbol} resolved to {suffixed_symbol}")
+                return suffixed_symbol
+            else:
+                logger.warning(f"Symbol {suffixed_symbol} not found (Suffix: {suffix})")
+                
+        # 3. Return original if nothing matches (let caller handle error)
+        logger.warning(f"Could not normalize symbol {symbol}. Suffix: {suffix}")
         return symbol
 
 
@@ -171,6 +183,9 @@ class MT5Connector:
             logger.error("Not connected to MT5")
             return None
 
+        # Normalize symbol
+        symbol = self._normalize_symbol(symbol)
+
         try:
             # Get MT5 timeframe constant
             mt5_timeframe = self.timeframe_map.get(timeframe)
@@ -214,10 +229,24 @@ class MT5Connector:
         if not self.connected:
             return None
 
+        # Normalize symbol
+        symbol = self._normalize_symbol(symbol)
+
         try:
             tick = mt5.symbol_info_tick(symbol)
+            
+            # Self-healing: If tick is None, try to select the symbol and retry
             if tick is None:
-                logger.error("Failed to get tick for {}", symbol)
+                if mt5.symbol_select(symbol, True):
+                    tick = mt5.symbol_info_tick(symbol)
+            
+            if tick is None:
+                # Check if it's a valid symbol at all
+                info = mt5.symbol_info(symbol)
+                if info is None:
+                    logger.error(f"Symbol {symbol} not found in MT5")
+                else:
+                    logger.error(f"Failed to get tick for {symbol} (Market might be closed)")
                 return None
 
             return {
@@ -323,6 +352,9 @@ class MT5Connector:
         if not self.connected:
             logger.error("Not connected to MT5")
             return None
+
+        # Normalize symbol
+        symbol = self._normalize_symbol(symbol)
 
         try:
             # Get symbol info
@@ -586,46 +618,6 @@ class MT5Connector:
             logger.exception("Error getting pending orders: {}", e)
             return []
 
-    def get_pending_orders(self, symbol: Optional[str] = None) -> List[Dict]:
-        """
-        Get all pending orders (LIMIT/STOP)
-        """
-        if not self.connected:
-            return []
-
-        try:
-            if symbol:
-                orders = mt5.orders_get(symbol=symbol)
-            else:
-                orders = mt5.orders_get()
-
-            if orders is None:
-                return []
-
-            result = []
-            for order in orders:
-                result.append({
-                    'ticket': order.ticket,
-                    'symbol': order.symbol,
-                    'type': 'BUY_LIMIT' if order.type == mt5.ORDER_TYPE_BUY_LIMIT else 
-                            'SELL_LIMIT' if order.type == mt5.ORDER_TYPE_SELL_LIMIT else
-                            'BUY_STOP' if order.type == mt5.ORDER_TYPE_BUY_STOP else
-                            'SELL_STOP' if order.type == mt5.ORDER_TYPE_SELL_STOP else 'UNKNOWN',
-                    'volume': order.volume_current,
-                    'price_open': order.price_open,
-                    'price_current': order.price_current,
-                    'sl': order.sl,
-                    'tp': order.tp,
-                    'time': datetime.fromtimestamp(order.time_setup),
-                    'comment': order.comment,
-                })
-
-            return result
-
-        except Exception as e:
-            logger.exception("Error getting pending orders: {}", e)
-            return []
-
     def get_position(self, ticket: int) -> Optional[Dict]:
         """
         Get a specific position by ticket
@@ -664,6 +656,9 @@ class MT5Connector:
         if not self.connected:
             return 0.00001
             
+        # Normalize symbol
+        symbol = self._normalize_symbol(symbol)
+        
         try:
             info = mt5.symbol_info(symbol)
             if info:
@@ -692,6 +687,9 @@ class MT5Connector:
         Returns:
             Calculated lot size
         """
+        # Normalize symbol
+        symbol = self._normalize_symbol(symbol)
+
         try:
             symbol_info = mt5.symbol_info(symbol)
             if symbol_info is None:
@@ -753,6 +751,7 @@ class MT5Connector:
         except Exception as e:
             logger.exception("Error checking market status: {}", e)
             return False
+
     def get_all_symbols(self) -> List[Dict]:
         """
         Get all symbols available in the terminal
