@@ -27,6 +27,7 @@ from enum import Enum
 from loguru import logger
 from app.core.strategies.sq_3_29_162 import SQStrategy_3_29_162
 from app.core.news_filter import NewsFilter  # Elite Upgrade
+from app.core.confluence_system import EnhancedConfluenceScorer  # Phase 3 Brain
 
 
 class TrailingStopMode(Enum):
@@ -563,6 +564,9 @@ class AdaptiveMultiStrategyEngine:
         # News Filter (Elite Upgrade)
         self.news_filter = NewsFilter()
 
+        # Phase 3: The Brain (Confluence System)
+        self.confluence_scorer = EnhancedConfluenceScorer()
+
 
 
         # Strategy selection thresholds
@@ -829,6 +833,20 @@ class AdaptiveMultiStrategyEngine:
         # 4. Apply adaptive risk management
         if signal:
             signal.risk_percent = self._calculate_adaptive_risk()
+            
+            # PHASE 4: SMART RECOVERY WIRING
+            # Replace fixed grid with SMC Fibs
+            if self.enable_grid_recovery and df is not None:
+                smart_levels = self._calculate_smart_recovery(df, signal.entry_price, signal.direction)
+                if smart_levels:
+                    signal.grid_levels = smart_levels
+                    # logger.info(f"🧠 Smart Recovery: {len(smart_levels)} levels generated (Fib 61.8/78.6)")
+                else:
+                    # Fallback to Fixed if no structure found? 
+                    # User requested "Sustituye", so we preferably stick to smart or nothing.
+                    # But for safety, maybe a simplified fixed fallback if range is tiny?
+                    # For now, strictly Structual.
+                    signal.grid_levels = [] # No smart levels found = No grid gamble
 
         signals = [signal] if signal else []
         
@@ -2118,6 +2136,49 @@ class AdaptiveMultiStrategyEngine:
         return None
 
 
+    def _calculate_displacement(self, df: pd.DataFrame, period: int = 20) -> bool:
+        """
+        Check for displacement (institutional impulse)
+        Logic: Current candle body > 1.5x Average Body of last 'period' candles
+        OR Volume > 1.5x Average Volume
+        """
+        current = df.iloc[-1]
+        body = abs(current['close'] - current['open'])
+        
+        # Average body of last N candles
+        avg_body = (df['close'] - df['open']).abs().rolling(window=period).mean().iloc[-1]
+        
+        # Check for size displacement
+        is_large_candle = body > (avg_body * 1.5)
+        
+        # Check for volume displacement (if volume available)
+        avg_vol = df['volume'].rolling(window=period).mean().iloc[-1]
+        is_high_vol = current['volume'] > (avg_vol * 1.5)
+        
+        return is_large_candle or is_high_vol
+
+    def _detect_ob_quality(self, df: pd.DataFrame, index: int = -1) -> int:
+        """
+        Score Order Block Quality (1-5)
+        
+        Logic for Quality:
+        1. Strong Move Away (Displacement present?)
+        2. Freshness (Has price revisited?) - Simplified assumption for now
+        3. FVG Creation (Did it leave a gap?)
+        """
+        score = 1
+        
+        # Check if FVG was created recently (Strong confirmation of OB quality)
+        fvg = self._detect_fair_value_gap(df, lookback=5)
+        if fvg:
+            score += 2
+        
+        # Check if the move has displacement
+        if self._calculate_displacement(df):
+            score += 2
+            
+        return score
+
     def _calculate_cvd(self, data: pd.DataFrame) -> pd.Series:
         """
         Calculate Cumulative Volume Delta (CVD) Approximation
@@ -2253,140 +2314,138 @@ class AdaptiveMultiStrategyEngine:
         fvg = self._detect_fair_value_gap(df, lookback=7)
         
         # BULLISH SWEEP (Sweep Low + Close High)
-        # Logic: Price dipped below swing_low but closed above it
         swept_low = low < swing_low and price > swing_low
         
         if swept_low:
-            # Confirmations
-            # 1. Trend: Must be Bullish or Neutral (Counter-trend sweeps are risky)
-            if h4_trend == "BEARISH":
-                return None
+            # 1. H4 Trend Filter
+            if h4_trend == "BEARISH": return None
             
-            # 2. Market Structure Shift (CRITICAL - ICT Confirmation)
+            # 2. MSS (CHoCH)
             mss_confirmed = self._detect_market_structure_shift(df, "BUY")
-            if not mss_confirmed:
-                return None  # MSS is REQUIRED
             
-            # 3. CVD Delta Direction (HARD FILTER - NEW for 80%+ WR)
-            # For BUY: CVD must be positive (buying pressure > selling)
-            # AND must be rising (momentum confirmation)
+            # 3. CVD
             cvd_delta = cvd.iloc[-1] - cvd.iloc[-2]
-            cvd_positive = cvd.iloc[-1] > 0  # Positive cumulative buying pressure
-            cvd_rising = cvd_delta > 0  # Momentum increasing
-            cvd_confirmed = cvd_positive and cvd_rising
+            cvd_confirmed = (cvd.iloc[-1] > 0) and (cvd_delta > 0)
             
-            if not cvd_confirmed:
-                logger.debug(f"BUY rejected: CVD not confirmed (delta={cvd_delta:.2f}, positive={cvd_positive})")
-                return None  # CVD is now REQUIRED, not optional
-            
-            # 4. Volume Spike
-            vol_spike = current['volume_ratio'] > 1.5
-            
-            # 5. FVG (Bonus - tighter entry if present)
+            # 4. FVG
             has_bullish_fvg = fvg is not None and fvg['type'] == 'BULLISH'
             
-            # 6. MFI Confirmation (Institutional Volume)
-            mfi = current.get('mfi', 50)
-            mfi_oversold = mfi < 20
+            # ============================================
+            # PHASE 3: THE BRAIN INTEGRATION
+            # ============================================
+            breakdown = self.confluence_scorer.score_reversal(
+                has_choch=mss_confirmed,
+                at_ob=False, # Simpler OB assumed
+                at_fvg=has_bullish_fvg,
+                fib_score=0, # Not primary factor here
+                has_liquidity_sweep=True, # We swept low!
+                has_stop_hunt=True,
+                has_delta_volume=cvd_confirmed,
+                htf_aligned=(h4_trend == "BULLISH"),
+                in_correct_zone=False, # Todo: Premium/Discount
+                has_displacement=self._calculate_displacement(df),
+                ob_quality=self._detect_ob_quality(df),
+                fvg_quality=5 if has_bullish_fvg else 0,
+                ms_quality=4 if mss_confirmed else 0,
+                has_eqh_eql=False,
+                in_killzone=True, # Validated earlier
+                atr_regime_ok=True, # Validated earlier
+                liquidity_type="EXTERNAL" # Swing Lows are classic External Liquidity
+            )
+            
+            is_valid, reason = breakdown.is_valid()
+            
+            if not is_valid:
+                 logger.debug(f"BUY Rejected by Brain: {reason} (Score: {breakdown.total_score})")
+                 return None
 
-            # Entry: MSS + CVD confirmed (FVG is bonus)
-            if mss_confirmed and (cvd_rising or has_bullish_fvg):
-                entry = price
-                # Use dynamic SL buffer
-                if has_bullish_fvg:
-                    stop_loss = fvg['bottom'] - (current['atr'] * self.sl_atr_multiplier * 0.5)
-                else:
-                    stop_loss = low - (current['atr'] * self.sl_atr_multiplier)
-                
-                take_profit = entry + (entry - stop_loss) * self.risk_reward_ratio  # Dynamic R/R
-                
-                logger.info(f"💎 ICT BULLISH SWEEP @ {entry:.5f}")
-                logger.info(f"   MSS: ✅, FVG: {'✅' if has_bullish_fvg else '❌'}, CVD: {'✅' if cvd_rising else '❌'}, MFI: {mfi:.1f}")
-                
-                score = 9.9 if mfi_oversold else 9.8
-
-                return AdaptiveSignal(
-                    symbol=self.symbol,
-                    timeframe=self.timeframe,
-                    entry_price=entry,
-                    stop_loss=stop_loss,
-                    take_profit=take_profit,
-                    direction="BUY",
-                    strategy_type=StrategyType.BREAKOUT_MOMENTUM,
-                    market_regime=MarketRegime.VOLATILE,
-                    score=score,
-                    confidence=0.95 if mfi_oversold else (0.92 if has_bullish_fvg else 0.85),
-                    timestamp=current['time'],
-                    metadata={'type': 'ICT_SWEEP', 'mss': True, 'fvg': has_bullish_fvg, 'poc': poc, 'mfi': mfi}
-                )
+            # Entry Logic
+            entry = price
+            if has_bullish_fvg:
+                stop_loss = fvg['bottom'] - (current['atr'] * self.sl_atr_multiplier * 0.5)
+            else:
+                stop_loss = low - (current['atr'] * self.sl_atr_multiplier)
+            
+            take_profit = entry + (entry - stop_loss) * self.risk_reward_ratio
+            
+            # Generate Signal
+            return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
+                entry_price=entry,
+                stop_loss=stop_loss,
+                take_profit=take_profit,
+                direction="BUY",
+                strategy_type=StrategyType.BREAKOUT_MOMENTUM,
+                market_regime=MarketRegime.VOLATILE,
+                score=float(breakdown.total_score), # Use Confluence Score
+                confidence=min(breakdown.total_score / 15.0, 0.99),
+                timestamp=current['time'],
+                metadata={'type': 'ICT_SWEEP', 'brain_reason': reason, 'score': breakdown.total_score}
+            )
 
         # BEARISH SWEEP (Sweep High + Close Low)
-        # Logic: Price spiked above swing_high but closed below it
         swept_high = high > swing_high and price < swing_high
         
         if swept_high:
-            # Confirmations
-            # 1. Trend: Must be Bearish or Neutral
-            if h4_trend == "BULLISH":
-                return None
+            if h4_trend == "BULLISH": return None
             
-            # 2. Market Structure Shift (CRITICAL - ICT Confirmation)
             mss_confirmed = self._detect_market_structure_shift(df, "SELL")
-            if not mss_confirmed:
-                return None  # MSS is REQUIRED
             
-            # 3. CVD Delta Direction (HARD FILTER - NEW for 80%+ WR)
-            # For SELL: CVD must be negative (selling pressure > buying)
-            # AND must be falling (momentum increasing bearishly)
             cvd_delta = cvd.iloc[-1] - cvd.iloc[-2]
-            cvd_negative = cvd.iloc[-1] < 0  # Negative cumulative = selling pressure dominates
-            cvd_falling = cvd_delta < 0  # Bearish momentum increasing
-            cvd_confirmed = cvd_negative and cvd_falling
+            cvd_confirmed = (cvd.iloc[-1] < 0) and (cvd_delta < 0)
             
-            if not cvd_confirmed:
-                logger.debug(f"SELL rejected: CVD not confirmed (delta={cvd_delta:.2f}, negative={cvd_negative})")
-                return None  # CVD is now REQUIRED
-            
-            # 4. Volume Spike
-            vol_spike = current['volume_ratio'] > 1.5
-            
-            # 5. FVG (Bonus - tighter entry if present)
             has_bearish_fvg = fvg is not None and fvg['type'] == 'BEARISH'
             
-            # 6. MFI Confirmation (Institutional Volume)
-            mfi = current.get('mfi', 50)
-            mfi_overbought = mfi > 80
+            # PHASE 3: THE BRAIN INTEGRATION
+            breakdown = self.confluence_scorer.score_reversal(
+                has_choch=mss_confirmed,
+                at_ob=False,
+                at_fvg=has_bearish_fvg,
+                fib_score=0,
+                has_liquidity_sweep=True,
+                has_stop_hunt=True,
+                has_delta_volume=cvd_confirmed,
+                htf_aligned=(h4_trend == "BEARISH"),
+                in_correct_zone=False,
+                has_displacement=self._calculate_displacement(df),
+                ob_quality=self._detect_ob_quality(df),
+                fvg_quality=5 if has_bearish_fvg else 0,
+                ms_quality=4 if mss_confirmed else 0,
+                has_eqh_eql=False,
+                in_killzone=True,
+                atr_regime_ok=True,
+                liquidity_type="EXTERNAL"
+            )
+            
+            is_valid, reason = breakdown.is_valid()
+            
+            if not is_valid:
+                 logger.debug(f"SELL Rejected by Brain: {reason} (Score: {breakdown.total_score})")
+                 return None
 
-            # Entry: MSS + CVD confirmed (FVG is bonus)
-            if mss_confirmed and (cvd_falling or has_bearish_fvg):
-                entry = price
-                # Use dynamic SL buffer
-                if has_bearish_fvg:
-                    stop_loss = fvg['top'] + (current['atr'] * self.sl_atr_multiplier * 0.5)
-                else:
-                    stop_loss = high + (current['atr'] * self.sl_atr_multiplier)
-                
-                take_profit = entry - (stop_loss - entry) * self.risk_reward_ratio  # Dynamic R/R
-                
-                logger.info(f"💎 ICT BEARISH SWEEP @ {entry:.5f}")
-                logger.info(f"   MSS: ✅, FVG: {'✅' if has_bearish_fvg else '❌'}, CVD: {'✅' if cvd_falling else '❌'}, MFI: {mfi:.1f}")
-                
-                score = 9.9 if mfi_overbought else 9.8
-
-                return AdaptiveSignal(
-                    symbol=self.symbol,
-                    timeframe=self.timeframe,
-                    entry_price=entry,
-                    stop_loss=stop_loss,
-                    take_profit=take_profit,
-                    direction="SELL",
-                    strategy_type=StrategyType.BREAKOUT_MOMENTUM,
-                    market_regime=self.current_regime,
-                    score=score,
-                    confidence=0.95 if mfi_overbought else (0.92 if has_bearish_fvg else 0.85),
-                    timestamp=current['time'],
-                    metadata={'type': 'ICT_SWEEP', 'mss': True, 'fvg': has_bearish_fvg, 'poc': poc, 'mfi': mfi}
-                )
+            entry = price
+            if has_bearish_fvg:
+                stop_loss = fvg['top'] + (current['atr'] * self.sl_atr_multiplier * 0.5)
+            else:
+                stop_loss = high + (current['atr'] * self.sl_atr_multiplier)
+            
+            take_profit = entry - (stop_loss - entry) * self.risk_reward_ratio
+            
+            return AdaptiveSignal(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
+                entry_price=entry,
+                stop_loss=stop_loss,
+                take_profit=take_profit,
+                direction="SELL",
+                strategy_type=StrategyType.BREAKOUT_MOMENTUM,
+                market_regime=MarketRegime.VOLATILE,
+                score=float(breakdown.total_score),
+                confidence=min(breakdown.total_score / 15.0, 0.99),
+                timestamp=current['time'],
+                metadata={'type': 'ICT_SWEEP', 'brain_reason': reason, 'score': breakdown.total_score}
+            )
 
         return None
 
@@ -2418,6 +2477,71 @@ class AdaptiveMultiStrategyEngine:
         # Cap at max risk
         return min(risk, self.max_risk_per_trade)
 
+
+    def _calculate_smart_recovery(
+        self,
+        df: pd.DataFrame,
+        entry_price: float,
+        direction: str
+    ) -> List[GridLevel]:
+        """
+        PHASE 4: SMART RECOVERY (SMC/Fibonacci)
+        
+        Logic:
+        1. Find Structural Anchor (Swing Low for BUY, Swing High for SELL)
+        2. Calculate Fibonacci Retracement Levels (61.8% and 78.6%)
+        3. Place recovery orders at these "Discount" prices
+        4. Hard Stop is placed beyond the Anchor (Structure Invalidation)
+        """
+        if not self.enable_grid_recovery:
+            return []
+            
+        lookback = 50
+        if len(df) < lookback: return []
+        
+        subset = df.iloc[-lookback:]
+        
+        grid_levels = []
+        
+        if direction == "BUY":
+            # Anchor: Lowest Low in recent history
+            anchor_low = subset['low'].min()
+            range_height = entry_price - anchor_low
+            
+            if range_height <= 0: return []
+            
+            # Level 1: Golden Zone (61.8% Retracement)
+            # Price needs to DROP 61.8% of the move up
+            lvl_618 = entry_price - (range_height * 0.618)
+            
+            # Level 2: OTE (78.6% Retracement)
+            lvl_786 = entry_price - (range_height * 0.786)
+            
+            # Safety check: Levels must be below entry
+            if lvl_618 < entry_price:
+                grid_levels.append(GridLevel(price=lvl_618, distance_atr=0, metadata={'type': 'FIB_618'}))
+            if lvl_786 < entry_price:
+                grid_levels.append(GridLevel(price=lvl_786, distance_atr=0, metadata={'type': 'FIB_786'}))
+                
+        else: # SELL
+            # Anchor: Highest High
+            anchor_high = subset['high'].max()
+            range_height = anchor_high - entry_price
+            
+            if range_height <= 0: return []
+            
+            # Level 1: Golden Zone (Price goes UP 61.8% of the drop)
+            lvl_618 = entry_price + (range_height * 0.618)
+            
+            # Level 2: OTE
+            lvl_786 = entry_price + (range_height * 0.786)
+            
+            if lvl_618 > entry_price:
+                 grid_levels.append(GridLevel(price=lvl_618, distance_atr=0, metadata={'type': 'FIB_618'}))
+            if lvl_786 > entry_price:
+                 grid_levels.append(GridLevel(price=lvl_786, distance_atr=0, metadata={'type': 'FIB_786'}))
+                 
+        return grid_levels
 
     def _calculate_grid_levels(
         self,

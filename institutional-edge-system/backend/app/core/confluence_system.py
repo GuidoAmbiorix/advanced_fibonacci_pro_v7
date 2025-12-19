@@ -89,27 +89,46 @@ class ConfluenceBreakdown:
             if self.structure_type != "CHOCH":
                 return False, "Reversal requires CHoCH, not BOS"
 
+            # ---------------------------------------------------------
+            # VULNERABILITY FIX: Mandatory Liquidty Sweep
+            # ---------------------------------------------------------
+            if 'External Liquidity' not in self.factors:
+                 return False, "Reversal REJECTED: Mandatory External Liquidity Sweep missing"
+
             # Reversals need STRONG confluence (at least 2 of 3):
-            # 1. Liquidity sweep (preferably external)
+            # 1. Liquidity sweep (Checked above as mandatory)
             # 2. Fibonacci level
             # 3. Displacement
-
-            factors_present = 0
-            if self.liquidity_score > 0:
-                factors_present += 1
+            
+            # Check others
+            factors_present = 1 # We know we have External Liquidity
             if self.fibonacci_score > 0:
                 factors_present += 1
             if 'Displacement' in self.factors:
                 factors_present += 1
 
             if factors_present < 2:
-                return False, "Reversal needs 2+ of: liquidity/fibonacci/displacement"
+                return False, "Reversal needs Liquidity + (Fib or Displacement)"
 
             # Higher minimum score for reversals
             min_score = 8
+            
+            # ---------------------------------------------------------
+            # ANALYSIS PARALYSIS FIX: Core Mandatory Factors
+            # ---------------------------------------------------------
+            # If we have the "Holy Trinity" (HTF + PA + Killzone), we relax the score
+            has_core_factors = (
+                'HTF Aligned' in self.factors and 
+                ('Order Block' in self.factors or 'FVG' in self.factors or 'HQ Order Block' in self.factors) and
+                'Killzone' in self.factors
+            )
+            
+            if has_core_factors:
+                 min_score = 6 # Relaxed from 8
+                 # logger.debug("Core Factors met: Score requirement relaxed to 6")
 
             if self.total_score < min_score:
-                return False, f"Reversal score {self.total_score} < {min_score} minimum"
+                return False, f"Reversal score {self.total_score} < {min_score} minimum (Core Met: {has_core_factors})"
 
             return True, "Valid reversal setup"
 

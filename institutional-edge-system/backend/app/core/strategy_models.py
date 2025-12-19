@@ -25,6 +25,7 @@ class GridLevel:
     distance_atr: float
     filled: bool = False
     entry_time: Optional[datetime] = None
+    metadata: Dict = field(default_factory=dict)
 
 
 @dataclass
