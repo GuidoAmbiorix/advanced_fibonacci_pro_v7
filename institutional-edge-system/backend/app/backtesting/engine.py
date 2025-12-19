@@ -23,6 +23,7 @@ from app.backtesting.metrics import MetricsCalculator
 from app.backtesting.reporter import ReportGenerator
 
 from app.core.adaptive_multi_strategy_engine import AdaptiveMultiStrategyEngine
+from app.core.strategy_factory import StrategyFactory
 from app.services.risk_manager import AdaptiveRiskManager
 from app.services.portfolio_manager import PortfolioManager, Position
 
@@ -47,12 +48,17 @@ class BacktestEngine:
             config: Backtest configuration
         """
         self.config = config
-        self.data_loader = DataLoader()
+        self.data_loader = DataLoader()  # Restored: needed for loading data
+        
+        # Determine min hold time based on mode
+        # Scalping: 15 min (0.25h), Swing: 4 hours
+        min_hold = 0.25 if config.scalping_mode else 4.0
+        
         self.simulator = OrderSimulator(
             slippage_pips=config.slippage_pips,
             commission_per_lot=config.commission_per_lot,
             enable_trailing_stop=config.enable_trailing_stop,
-            min_hold_hours=4.0,  # Minimum 4-hour hold time
+            min_hold_hours=min_hold,  # Dynamic based on mode
             tsl_mode=config.tsl_mode,
             tsl_activation_r=config.tsl_activation_r,
             partial_tp_on=config.partial_tp_on,
@@ -93,14 +99,19 @@ class BacktestEngine:
             'enable_stoch_strategy': self.config.enable_stoch_strategy,
             'enable_institutional_strategy': self.config.enable_institutional_strategy,
             'enable_fibonacci_strategy': self.config.enable_fibonacci_strategy,
+            'enable_strategy_3_29_162': self.config.enable_strategy_3_29_162,
             
             # RSI Settings
             'rsi_period': self.config.rsi_period,
             'rsi_overbought': self.config.rsi_overbought,
             'rsi_oversold': self.config.rsi_oversold,
+            
+            # Scalping SL/TP Configuration (NEW)
+            'sl_atr_multiplier': self.config.sl_atr_multiplier,
+            'tp_ratio': self.config.tp_ratio,
         }
 
-        return AdaptiveMultiStrategyEngine(engine_config)
+        return StrategyFactory.create_strategy(engine_config)
 
     def run(
         self,
@@ -136,23 +147,24 @@ class BacktestEngine:
 
         logger.info(f"Backtesting on {len(data)} bars")
 
-        # Load H4 data for higher timeframe filter
-        h4_data = None
+        # Load higher timeframe data for trend confirmation filter
+        htf_data = None
+        htf_name = self.config.confirmation_timeframe
         try:
-            logger.info("Loading H4 data for higher timeframe filter...")
-            h4_data = self.data_loader.load_and_validate(
+            logger.info(f"Loading {htf_name} data for higher timeframe filter...")
+            htf_data = self.data_loader.load_and_validate(
                 symbol=self.config.symbol,
-                timeframe='H4',
+                timeframe=htf_name,
                 start_date=start_date or self.config.start_date,
                 end_date=end_date or self.config.end_date,
                 source='mt5'
             )
-            if h4_data is not None:
-                logger.info(f"Loaded {len(h4_data)} H4 bars for trend filtering")
+            if htf_data is not None:
+                logger.info(f"Loaded {len(htf_data)} {htf_name} bars for trend filtering")
             else:
-                logger.warning("H4 data not available - will trade without HTF filter")
+                logger.warning(f"{htf_name} data not available - will trade without HTF filter")
         except Exception as e:
-            logger.warning(f"Could not load H4 data: {e} - continuing without HTF filter")
+            logger.warning(f"Could not load {htf_name} data: {e} - continuing without HTF filter")
 
         # Store callbacks for use in other methods
         self.on_trade_callback = on_trade
@@ -166,11 +178,30 @@ class BacktestEngine:
         })
 
         # Main backtest loop
+        peak_equity = self.current_balance  # Track highest equity
+        trading_halted_dd = False  # Drawdown circuit breaker flag
+        
         for i in range(len(data)):
             current_bar = data.iloc[i]
 
             # Update open positions
             self._update_open_positions(current_bar)
+            
+            # Track peak equity and current drawdown
+            if self.current_balance > peak_equity:
+                peak_equity = self.current_balance
+            
+            current_drawdown_pct = ((peak_equity - self.current_balance) / peak_equity * 100) if peak_equity > 0 else 0
+            
+            # DRAWDOWN CIRCUIT BREAKER - Halt trading when limit reached
+            if not trading_halted_dd and self.config.max_drawdown_percent > 0:
+                if current_drawdown_pct >= self.config.max_drawdown_percent:
+                    trading_halted_dd = True
+                    logger.warning(f"⛔ DRAWDOWN BREAKER: {current_drawdown_pct:.1f}% >= {self.config.max_drawdown_percent}% limit - Trading stopped!")
+            
+            # Skip new trades if halted by drawdown
+            if trading_halted_dd:
+                continue
 
             # Check if can open new trades
             if len(self.open_trades) >= self.config.max_trades:
@@ -186,19 +217,19 @@ class BacktestEngine:
             # Reset index to avoid index errors in trading engine
             historical_data = historical_data.reset_index(drop=True)
 
-            # Get H4 data up to current time (for trend filter)
-            h4_historical = None
-            if h4_data is not None:
+            # Get HTF data up to current time (for trend filter)
+            htf_historical = None
+            if htf_data is not None:
                 current_time = current_bar['time']
-                # Get H4 bars up to current H1 bar time
-                h4_mask = h4_data['time'] <= current_time
-                h4_historical = h4_data[h4_mask].copy()
-                if len(h4_historical) > 0:
-                    h4_historical = h4_historical.reset_index(drop=True)
+                # Get HTF bars up to current execution bar time
+                htf_mask = htf_data['time'] <= current_time
+                htf_historical = htf_data[htf_mask].copy()
+                if len(htf_historical) > 0:
+                    htf_historical = htf_historical.reset_index(drop=True)
 
             # Run strategy analysis
             try:
-                analysis = self.trading_engine.analyze(historical_data, df_higher_tf=h4_historical)
+                analysis = self.trading_engine.analyze(historical_data, df_higher_tf=htf_historical)
 
                 if 'error' in analysis:
                     continue
@@ -260,7 +291,7 @@ class BacktestEngine:
                         logger.debug(f"Portfolio Manager blocked trade: {reason}")
                         continue
 
-                    # STEP 2: Adaptive Risk Manager - Calculate dynamic risk
+                    # STEP 2: Risk Manager - Calculate risk (consecutive losses only)
                     # Update peak balance
                     if self.current_balance > self.peak_balance:
                         self.peak_balance = self.current_balance
@@ -437,6 +468,8 @@ class BacktestEngine:
                             'trade_type': trade.signal_type,
                             'price': trade.exit_price,
                             'entry_price': trade.entry_price,
+                            'entry_time': str(trade.entry_time),  # NEW: for duration calculation
+                            'exit_time': str(trade.exit_time),    # NEW: for duration calculation
                             'time': str(current_bar['time']),
                             'pnl': trade.pnl,
                             'return_r': trade.return_r,

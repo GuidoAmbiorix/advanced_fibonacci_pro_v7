@@ -25,6 +25,7 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 from loguru import logger
+from app.core.strategies.sq_3_29_162 import SQStrategy_3_29_162
 
 
 class TrailingStopMode(Enum):
@@ -503,55 +504,7 @@ class DynamicTrailingStopManager:
 
 
 
-class MarketRegime(Enum):
-    """Market regime classification"""
-    TRENDING = "TRENDING"
-    RANGING = "RANGING"
-    BREAKOUT = "BREAKOUT"
-    VOLATILE = "VOLATILE"
-
-
-class StrategyType(Enum):
-    """Available trading strategies"""
-    TREND_FOLLOWING = "TREND_FOLLOWING"
-    RANGE_SCALPING = "RANGE_SCALPING"
-    BREAKOUT_MOMENTUM = "BREAKOUT_MOMENTUM"
-
-
-@dataclass
-class GridLevel:
-    """Grid recovery level"""
-    price: float
-    distance_atr: float
-    filled: bool = False
-    entry_time: Optional[datetime] = None
-
-
-@dataclass
-class AdaptiveSignal:
-    """Trading signal with strategy context"""
-    symbol: str
-    timeframe: str
-    entry_price: float
-    stop_loss: float
-    take_profit: float
-    direction: str  # "BUY" or "SELL"
-    strategy_type: StrategyType
-    market_regime: MarketRegime
-    score: float
-    confidence: float  # 0-1
-
-    # Grid recovery
-    enable_grid: bool = False
-    grid_levels: List[GridLevel] = field(default_factory=list)
-
-    # Risk
-    risk_percent: float = 1.0
-    position_size: float = 0.0
-
-    # Context
-    timestamp: datetime = None
-    metadata: Dict = field(default_factory=dict)
+from app.core.strategy_models import MarketRegime, StrategyType, GridLevel, AdaptiveSignal
 
 
 class AdaptiveMultiStrategyEngine:
@@ -588,6 +541,11 @@ class AdaptiveMultiStrategyEngine:
         self.enable_stoch_strategy = config.get('enable_stoch_strategy', True)
         self.enable_institutional_strategy = config.get('enable_institutional_strategy', True)
         self.enable_fibonacci_strategy = config.get('enable_fibonacci_strategy', True)  # NEW
+        self.enable_strategy_3_29_162 = config.get('enable_strategy_3_29_162', True)  # SQ Strategy
+        
+        # Initialize Sub-Strategies
+        if self.enable_strategy_3_29_162:
+            self.sq_strategy_engine = SQStrategy_3_29_162(config)
 
         # Strategy selection thresholds
         self.adx_trending_threshold = 25
@@ -607,6 +565,10 @@ class AdaptiveMultiStrategyEngine:
         self.rsi_period = config.get('rsi_period', 14)
         self.rsi_overbought = config.get('rsi_overbought', 70)
         self.rsi_oversold = config.get('rsi_oversold', 30)
+        
+        # Stop Loss Configuration (NEW - for tighter scalping stops)
+        self.sl_atr_multiplier = config.get('sl_atr_multiplier', 0.75 if self.scalping_mode else 1.5)
+        self.tp_ratio = config.get('tp_ratio', 1.0 if self.scalping_mode else 1.5)
 
         # State
         self.current_regime = None
@@ -672,9 +634,19 @@ class AdaptiveMultiStrategyEngine:
                     logger.info(f"📐 Fibonacci Scalp Signal: {fib_signal.direction} @ {fib_signal.entry_price}")
                     return self._wrap_signal(fib_signal, regime, strategy_type, df, h4_trend)
 
-            # 5. Fallback to standard scalping (ONLY if no other strategy is enabled)
+            # 5. SQ Strategy 3.29.162 (Rolling VWAP Crossover)
+            if self.enable_strategy_3_29_162:
+                # Use dedicated engine
+                sq_analysis = self.sq_strategy_engine.analyze(df)
+                for sq_signal in sq_analysis.get('signals', []):
+                    # Wrap and return first valid signal (or collect all if engine supported it)
+                    # For now engine returns one decision per step usually, but we support list
+                    logger.info(f"🧬 SQ Strategy 3.29.162 Signal: {sq_signal.direction} @ {sq_signal.entry_price}")
+                    return self._wrap_signal(sq_signal, regime, strategy_type, df, h4_trend)
+
+            # 6. Fallback to standard scalping (ONLY if no other strategy is enabled)
             # If any specialized strategy is enabled, we DO NOT want the generic fallback
-            if not (self.enable_institutional_strategy or self.enable_vwap_strategy or self.enable_stoch_strategy or self.enable_fibonacci_strategy):
+            if not (self.enable_institutional_strategy or self.enable_vwap_strategy or self.enable_stoch_strategy or self.enable_fibonacci_strategy or self.enable_strategy_3_29_162):
                 scalp_signal = self._scalping_signal(df)
                 if scalp_signal:
                     logger.info(f"⚡ Scalping Signal: {scalp_signal.direction} @ {scalp_signal.entry_price}")
@@ -922,6 +894,8 @@ class AdaptiveMultiStrategyEngine:
         v = data['volume'].values
         tp = (data['high'] + data['low'] + data['close']) / 3
         return pd.Series((tp * v).cumsum() / v.cumsum(), index=data.index)
+
+
 
 
     def _detect_market_regime(self, df: pd.DataFrame) -> MarketRegime:
@@ -1362,8 +1336,8 @@ class AdaptiveMultiStrategyEngine:
             candle_bonus = 0.2 if bullish_candle else 0.0
             
             entry = price
-            stop_loss = ema_50 - (atr * 1.5)  # 1.5 ATR stop
-            take_profit = entry + (abs(entry - stop_loss) * 1.5)  # 1.5R target
+            stop_loss = ema_50 - (atr * self.sl_atr_multiplier)  # Dynamic ATR stop
+            take_profit = entry + (abs(entry - stop_loss) * self.tp_ratio)  # Dynamic R target
 
             stoch_k = current['stoch_k']
             base_confidence = 0.7
@@ -1403,8 +1377,8 @@ class AdaptiveMultiStrategyEngine:
             candle_bonus = 0.2 if bearish_candle else 0.0
             
             entry = price
-            stop_loss = ema_50 + (atr * 1.5)  # Tighter stop: 1.5 ATR
-            take_profit = entry - (abs(stop_loss - entry) * 1.5)  # 1.5R target for higher win rate
+            stop_loss = ema_50 + (atr * self.sl_atr_multiplier)  # Dynamic ATR stop
+            take_profit = entry - (abs(stop_loss - entry) * self.tp_ratio)  # Dynamic R target
 
             # High confidence due to triple confirmation
             stoch_k = current['stoch_k']
@@ -1550,10 +1524,10 @@ class AdaptiveMultiStrategyEngine:
 
     def _vwap_scalping_signal(self, data: pd.DataFrame) -> Optional[AdaptiveSignal]:
         """
-        Institutional VWAP Scalping Strategy
+        Institutional VWAP Scalping Strategy - WITH TREND FILTER
         Logic:
-        - BUY: Price < VWAP (Undervalued) AND Price <= Lower BB AND RSI < 30 (Oversold)
-        - SELL: Price > VWAP (Overvalued) AND Price >= Upper BB AND RSI > 70 (Overbought)
+        - BUY: Uptrend (EMA20 > EMA50) + Price < VWAP + Price <= Lower BB + RSI < 30
+        - SELL: Downtrend (EMA20 < EMA50) + Price > VWAP + Price >= Upper BB + RSI > 70
         """
         if len(data) < 50:
             return None
@@ -1566,20 +1540,26 @@ class AdaptiveMultiStrategyEngine:
         upper_bb = data.iloc[-1]['bb_upper']
         lower_bb = data.iloc[-1]['bb_lower']
         atr = data.iloc[-1]['atr']
+        
+        # STRONG TREND FILTER - Only trade with the trend
+        ema_20 = current['ema_20']
+        ema_50 = current['ema_50']
+        uptrend = ema_20 > ema_50
+        downtrend = ema_20 < ema_50
 
         signal_type = None
         
-        # BUY Logic
-        if current['close'] < vwap and current['close'] <= lower_bb and rsi < 30:
+        # BUY Logic - MUST be in uptrend
+        if uptrend and current['close'] < vwap and current['close'] <= lower_bb and rsi < 30:
             signal_type = "BUY"
-            sl = current['close'] - (2.0 * atr)
-            tp = current['close'] + (3.0 * atr) # Aim for mean reversion to VWAP/Upper BB
+            sl = current['close'] - (self.sl_atr_multiplier * atr)
+            tp = current['close'] + (self.tp_ratio * self.sl_atr_multiplier * atr)
 
-        # SELL Logic
-        elif current['close'] > vwap and current['close'] >= upper_bb and rsi > 70:
+        # SELL Logic - MUST be in downtrend
+        elif downtrend and current['close'] > vwap and current['close'] >= upper_bb and rsi > 70:
             signal_type = "SELL"
-            sl = current['close'] + (2.0 * atr)
-            tp = current['close'] - (3.0 * atr)
+            sl = current['close'] + (self.sl_atr_multiplier * atr)
+            tp = current['close'] - (self.tp_ratio * self.sl_atr_multiplier * atr)
 
         if signal_type:
             return AdaptiveSignal(
@@ -1593,8 +1573,8 @@ class AdaptiveMultiStrategyEngine:
                 market_regime=MarketRegime.RANGING,
                 score=8.5,
                 confidence=0.85,
-                risk_percent=1.0, # Conservative for scalping
-                metadata={'strategy': 'VWAP_SCALP', 'rsi': rsi, 'vwap': vwap}
+                risk_percent=1.0,
+                metadata={'strategy': 'VWAP_SCALP', 'rsi': rsi, 'vwap': vwap, 'trend': 'UP' if uptrend else 'DOWN'}
             )
         return None
 
@@ -1616,24 +1596,28 @@ class AdaptiveMultiStrategyEngine:
         current_d = data.iloc[-1]['stoch_d']
         prev_d = data.iloc[-2]['stoch_d']
         
-        # EMA Trend Filter
+        # STRONG TREND FILTER - EMA20 vs EMA50
+        ema_20 = data.iloc[-1]['ema_20']
         ema_50 = data.iloc[-1]['ema_50']
         current_price = data.iloc[-1]['close']
         atr = data.iloc[-1]['atr']
+        
+        uptrend = ema_20 > ema_50
+        downtrend = ema_20 < ema_50
 
         signal_type = None
 
-        # BUY: Cross UP below 20 + Uptrend
-        if (prev_k < prev_d) and (current_k > current_d) and (current_k < 20) and (current_price > ema_50):
+        # BUY: Cross UP below 20 + STRONG Uptrend (EMA20 > EMA50)
+        if uptrend and (prev_k < prev_d) and (current_k > current_d) and (current_k < 20):
             signal_type = "BUY"
-            sl = current_price - (1.5 * atr)
-            tp = current_price + (2.5 * atr)
+            sl = current_price - (self.sl_atr_multiplier * atr)
+            tp = current_price + (self.tp_ratio * self.sl_atr_multiplier * atr)
 
-        # SELL: Cross DOWN above 80 + Downtrend
-        elif (prev_k > prev_d) and (current_k < current_d) and (current_k > 80) and (current_price < ema_50):
+        # SELL: Cross DOWN above 80 + STRONG Downtrend (EMA20 < EMA50)
+        elif downtrend and (prev_k > prev_d) and (current_k < current_d) and (current_k > 80):
             signal_type = "SELL"
-            sl = current_price + (1.5 * atr)
-            tp = current_price - (2.5 * atr)
+            sl = current_price + (self.sl_atr_multiplier * atr)
+            tp = current_price - (self.tp_ratio * self.sl_atr_multiplier * atr)
 
         if signal_type:
             return AdaptiveSignal(
@@ -1718,8 +1702,8 @@ class AdaptiveMultiStrategyEngine:
                 return None
             
             entry = price
-            stop_loss = fib_786 - (atr * 0.5)  # Below 78.6% with buffer
-            take_profit = swing_high  # Target 100% (previous swing high)
+            stop_loss = fib_786 - (atr * self.sl_atr_multiplier)  # Below 78.6% with dynamic buffer
+            take_profit = entry + (abs(entry - stop_loss) * self.tp_ratio)  # Dynamic TP ratio
             
             logger.info(f"📐 FIBONACCI BUY @ {entry:.5f} (Golden Zone: {fib_50:.5f}-{fib_618:.5f})")
             logger.info(f"   RSI={rsi:.1f}, Trend=UP, SL={stop_loss:.5f}, TP={take_profit:.5f}")
@@ -1769,8 +1753,8 @@ class AdaptiveMultiStrategyEngine:
             entry = price
             # For SELL, SL above 78.6% from top
             fib_sell_786 = swing_high - (swing_range * 0.214)  # 78.6% from top = 21.4% from bottom
-            stop_loss = fib_sell_786 + (atr * 0.5)
-            take_profit = swing_low  # Target previous swing low
+            stop_loss = fib_sell_786 + (atr * self.sl_atr_multiplier)  # Dynamic buffer
+            take_profit = entry - (abs(stop_loss - entry) * self.tp_ratio)  # Dynamic TP
             
             logger.info(f"📐 FIBONACCI SELL @ {entry:.5f} (Golden Zone: {fib_sell_618:.5f}-{fib_sell_50:.5f})")
             logger.info(f"   RSI={rsi:.1f}, Trend=DOWN, SL={stop_loss:.5f}, TP={take_profit:.5f}")
@@ -1832,8 +1816,8 @@ class AdaptiveMultiStrategyEngine:
         # Price above EMA20 + RSI oversold (pullback)
         if price > ema_20 and rsi_7 < 30:
             entry = price
-            stop_loss = entry - (atr * 1.0)
-            take_profit = entry + (atr * 2.0)  # Increased to 2.0 RR
+            stop_loss = entry - (atr * self.sl_atr_multiplier)
+            take_profit = entry + (atr * self.sl_atr_multiplier * self.tp_ratio)
             
             return AdaptiveSignal(
                 symbol=self.symbol,
@@ -1854,8 +1838,8 @@ class AdaptiveMultiStrategyEngine:
         # Price below EMA20 + RSI overbought (pullback)
         if price < ema_20 and rsi_7 > 70:
             entry = price
-            stop_loss = entry + (atr * 1.0)
-            take_profit = entry - (atr * 2.0)  # Increased to 2.0 RR
+            stop_loss = entry + (atr * self.sl_atr_multiplier)
+            take_profit = entry - (atr * self.sl_atr_multiplier * self.tp_ratio)
             
             return AdaptiveSignal(
                 symbol=self.symbol,
@@ -2124,8 +2108,8 @@ class AdaptiveMultiStrategyEngine:
         if atr_price_ratio > 0.009:
             logger.debug(f"Scalp rejected: Too volatile (ATR/Price={atr_price_ratio:.4f} > 0.009)")
             return None
-        if atr_price_ratio < 0.002:
-            logger.debug(f"Scalp rejected: Too quiet (ATR/Price={atr_price_ratio:.4f} < 0.002)")
+        if atr_price_ratio < 0.001:
+            logger.debug(f"Scalp rejected: Too quiet (ATR/Price={atr_price_ratio:.4f} < 0.001)")
             return None
         
         # B. Detect Fair Value Gap (Entry Zone)
@@ -2171,13 +2155,13 @@ class AdaptiveMultiStrategyEngine:
             # Entry: MSS + CVD confirmed (FVG is bonus)
             if mss_confirmed and (cvd_rising or has_bullish_fvg):
                 entry = price
-                # If FVG exists, use its bottom as more precise stop
+                # Use dynamic SL buffer
                 if has_bullish_fvg:
-                    stop_loss = fvg['bottom'] - (current['atr'] * 0.5)
+                    stop_loss = fvg['bottom'] - (current['atr'] * self.sl_atr_multiplier * 0.5)
                 else:
-                    stop_loss = low - (current['atr'] * 1.0)
+                    stop_loss = low - (current['atr'] * self.sl_atr_multiplier)
                 
-                take_profit = poc if poc > entry else entry + (entry - stop_loss) * 2.0
+                take_profit = entry + (entry - stop_loss) * self.tp_ratio  # Dynamic TP
                 
                 logger.info(f"💎 ICT BULLISH SWEEP @ {entry:.5f}")
                 logger.info(f"   MSS: ✅, FVG: {'✅' if has_bullish_fvg else '❌'}, CVD: {'✅' if cvd_rising else '❌'}, MFI: {mfi:.1f}")
@@ -2239,13 +2223,13 @@ class AdaptiveMultiStrategyEngine:
             # Entry: MSS + CVD confirmed (FVG is bonus)
             if mss_confirmed and (cvd_falling or has_bearish_fvg):
                 entry = price
-                # If FVG exists, use its top as more precise stop
+                # Use dynamic SL buffer
                 if has_bearish_fvg:
-                    stop_loss = fvg['top'] + (current['atr'] * 0.5)
+                    stop_loss = fvg['top'] + (current['atr'] * self.sl_atr_multiplier * 0.5)
                 else:
-                    stop_loss = high + (current['atr'] * 1.0)
+                    stop_loss = high + (current['atr'] * self.sl_atr_multiplier)
                 
-                take_profit = poc if poc < entry else entry - (stop_loss - entry) * 2.0
+                take_profit = entry - (stop_loss - entry) * self.tp_ratio  # Dynamic TP
                 
                 logger.info(f"💎 ICT BEARISH SWEEP @ {entry:.5f}")
                 logger.info(f"   MSS: ✅, FVG: {'✅' if has_bearish_fvg else '❌'}, CVD: {'✅' if cvd_falling else '❌'}, MFI: {mfi:.1f}")

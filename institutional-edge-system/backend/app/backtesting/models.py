@@ -162,9 +162,10 @@ class BacktestConfig:
     # Account
     initial_balance: float = 10000.0
 
-    # Symbol
+    # Symbol & Timeframe
     symbol: str = "EURUSD"
-    timeframe: str = "H1"
+    timeframe: str = "H1"  # Execution timeframe (M1, M5, M15, H1, H4, D1)
+    confirmation_timeframe: str = "H4"  # HTF for trend confirmation (should be higher than timeframe)
 
     # Strategy parameters
     min_confluence_score: int = 7
@@ -190,11 +191,18 @@ class BacktestConfig:
     partial_tp_on: bool = False
     partial_tp_amount: float = 0.5
     scalping_mode: bool = False  # Enable high frequency scalping
+    
+    # Scalping TP/SL Configuration (for faster trades)
+    tp_ratio: float = 1.5  # Take Profit as multiple of risk (1.5 = 1.5R). Use 1.0 for scalping
+    sl_atr_multiplier: float = 1.5  # SL distance = ATR * multiplier. Use 1.0 for tighter stops
+    max_trade_duration_hours: float = 0.0  # Force close after X hours. 0 = disabled. Use 0.5-2 for scalping
+    
     use_adx_filter: bool = True  # Enable ADX Trend Filter
     enable_vwap_strategy: bool = True  # Enable VWAP Scalping
     enable_stoch_strategy: bool = True  # Enable Stochastic Momentum
     enable_institutional_strategy: bool = True  # Enable Liquidity Sweeps & Order Flow
     enable_fibonacci_strategy: bool = True  # Enable Fibonacci Golden Zone Scalping
+    enable_strategy_3_29_162: bool = True  # Enable SQ Strategy 3.29.162
     
     # RSI Settings
     rsi_period: int = 14
@@ -215,6 +223,9 @@ class BacktestConfig:
     tsl_psar_af_start: float = 0.02
     tsl_psar_af_increment: float = 0.02
     tsl_psar_af_max: float = 0.20
+    
+    # Drawdown Protection
+    max_drawdown_percent: float = 15.0  # Stop trading if drawdown exceeds 15%
 
 
 @dataclass

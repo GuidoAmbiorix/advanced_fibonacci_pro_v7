@@ -155,33 +155,6 @@
         </div>
       </div>
       <div v-if="currentTab === 'risk'" class="space-y-6">
-        <h3 class="text-lg font-semibold text-slate-700">Adaptive Risk Manager</h3>
-        
-        <!-- Dynamic Risk Toggles -->
-        <div class="space-y-4 border-b border-slate-100 pb-6">
-          <div class="flex items-center justify-between p-4 bg-slate-50 rounded">
-            <div>
-              <p class="font-medium text-slate-700">Volatility Adjustment</p>
-              <p class="text-sm text-slate-500">Reduce risk during high volatility (ATR > 1.5x Avg)</p>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" v-model="risk.volatility_adjustment" class="sr-only peer">
-              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
-            </label>
-          </div>
-          
-          <div class="flex items-center justify-between p-4 bg-slate-50 rounded">
-            <div>
-              <p class="font-medium text-slate-700">Drawdown Protection</p>
-              <p class="text-sm text-slate-500">Halve risk if Drawdown > 5%</p>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" v-model="risk.dd_protection" class="sr-only peer">
-              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
-            </label>
-          </div>
-        </div>
-
         <h3 class="text-lg font-semibold text-slate-700">Trade Management</h3>
         
         <!-- Trailing Stop Loss -->
@@ -372,10 +345,7 @@ const config = ref({
   min_confluence_score: 7
 })
 
-const risk = ref({
-  volatility_adjustment: true,
-  dd_protection: true
-})
+const risk = ref({})
 
 const news = ref({
   avoid_high_impact: true

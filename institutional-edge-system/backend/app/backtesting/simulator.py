@@ -7,8 +7,8 @@ import pandas as pd
 from datetime import datetime
 from typing import Optional, Dict
 from loguru import logger
-
 from app.backtesting.models import BacktestTrade
+from app.core.instrument_config import get_instrument_profile
 from app.core.adaptive_multi_strategy_engine import (
     DynamicTrailingStopManager,
     TrailingStopConfig,
@@ -129,8 +129,12 @@ class OrderSimulator:
             take_profit = signal['take_profit_1']  # Use first TP (1.5R target)
             confluence_score = signal.get('confluence_score', 0)
 
+            # Get symbol-specific profile for pip size and lot sizing
+            profile = get_instrument_profile(symbol)
+            pip_size = profile.pip_size
+
             # Apply slippage (worse fill price)
-            slippage_amount = self.slippage_pips * 0.0001  # Convert pips to price
+            slippage_amount = self.slippage_pips * pip_size  # Use symbol-specific pip size
             if signal_type == "BUY":
                 entry_price += slippage_amount  # Buy at higher price
             else:  # SELL
@@ -142,9 +146,14 @@ class OrderSimulator:
                 logger.warning("SL distance is zero, cannot calculate position size")
                 return None
 
-            # Calculate lot size based on risk
-            risk_amount = account_balance * (risk_percent / 100)
-            volume = risk_amount / (100000 * sl_distance)  # Forex standard lot
+            # Apply risk multiplier for high-volatility instruments (e.g., Gold)
+            adjusted_risk = risk_percent * profile.risk_multiplier
+            risk_amount = account_balance * (adjusted_risk / 100)
+            
+            # Calculate lot size using symbol-specific parameters
+            # Formula: Risk$ / (SL_pips * pip_value_per_lot)
+            sl_pips = sl_distance / pip_size
+            volume = risk_amount / (sl_pips * profile.pip_value_per_lot)
 
             # Round to 0.001 (micro lot precision)
             volume = round(volume, 3)
@@ -362,8 +371,9 @@ class OrderSimulator:
             if bar_low <= trade.stop_loss:
                 # SL hit
                 exit_price = trade.stop_loss
-                # Apply slippage (worse exit)
-                exit_price -= self.slippage_pips * 0.0001
+                # Apply slippage (worse exit) using symbol-specific pip size
+                profile = get_instrument_profile(trade.symbol)
+                exit_price -= self.slippage_pips * profile.pip_size
 
                 trade.close(
                     exit_time=current_bar['time'],
@@ -377,8 +387,9 @@ class OrderSimulator:
             if bar_high >= trade.take_profit:
                 # TP hit
                 exit_price = trade.take_profit
-                # Apply slippage (worse exit)
-                exit_price -= self.slippage_pips * 0.0001
+                # Apply slippage (worse exit) using symbol-specific pip size
+                profile = get_instrument_profile(trade.symbol)
+                exit_price -= self.slippage_pips * profile.pip_size
 
                 trade.close(
                     exit_time=current_bar['time'],
@@ -393,8 +404,9 @@ class OrderSimulator:
             if bar_high >= trade.stop_loss:
                 # SL hit
                 exit_price = trade.stop_loss
-                # Apply slippage (worse exit)
-                exit_price += self.slippage_pips * 0.0001
+                # Apply slippage (worse exit) using symbol-specific pip size
+                profile = get_instrument_profile(trade.symbol)
+                exit_price += self.slippage_pips * profile.pip_size
 
                 trade.close(
                     exit_time=current_bar['time'],
@@ -408,8 +420,9 @@ class OrderSimulator:
             if bar_low <= trade.take_profit:
                 # TP hit
                 exit_price = trade.take_profit
-                # Apply slippage (worse exit)
-                exit_price += self.slippage_pips * 0.0001
+                # Apply slippage (worse exit) using symbol-specific pip size
+                profile = get_instrument_profile(trade.symbol)
+                exit_price += self.slippage_pips * profile.pip_size
 
                 trade.close(
                     exit_time=current_bar['time'],
@@ -444,11 +457,12 @@ class OrderSimulator:
 
         exit_price = current_bar['close']
 
-        # Apply slippage
+        # Apply slippage using symbol-specific pip size
+        profile = get_instrument_profile(trade.symbol)
         if trade.signal_type == "BUY":
-            exit_price -= self.slippage_pips * 0.0001
+            exit_price -= self.slippage_pips * profile.pip_size
         else:
-            exit_price += self.slippage_pips * 0.0001
+            exit_price += self.slippage_pips * profile.pip_size
 
         trade.close(
             exit_time=current_bar['time'],

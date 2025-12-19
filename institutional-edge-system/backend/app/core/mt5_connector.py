@@ -95,6 +95,20 @@ class MT5Connector:
         logger.warning(f"Could not normalize symbol {symbol}. Suffix: {suffix}")
         return symbol
 
+    def normalize_symbol(self, symbol: str, symbol_type: str = "forex") -> str:
+        """
+        Public method to normalize symbol name.
+        Handles broker suffixes and symbol type variations.
+        
+        Args:
+            symbol: Trading symbol (e.g., "EURUSD")
+            symbol_type: Type of symbol ("forex", "crypto", "index", etc.)
+            
+        Returns:
+            Normalized symbol name that exists in MT5
+        """
+        return self._normalize_symbol(symbol)
+
 
     def connect(self) -> bool:
         """

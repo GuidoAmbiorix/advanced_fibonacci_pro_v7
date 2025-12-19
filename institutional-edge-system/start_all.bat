@@ -77,19 +77,30 @@ echo Waiting 5 seconds for services to initialize...
 timeout /t 5 /nobreak >nul
 
 echo.
-echo [2/4] Launching Backend API (Local)...
+echo [2/6] Ensuring default user exists in database...
+echo --------------------------------------------------
+cd backend
+python ensure_user.py
+echo.
+echo [3/6] Creating Gold Scalper Pro bot...
+echo --------------------------------------
+python create_gold_bot.py
+cd ..
+
+echo.
+echo [4/6] Launching Backend API (Local)...
 echo --------------------------------------
 start "Institutional Edge - Backend" cmd /k "run_backend.bat"
 
 echo.
-echo [3/4] Launching Frontend (Local)...
+echo [5/6] Launching Frontend (Local)...
 echo -----------------------------------
 cd frontend
 start "Institutional Edge - Frontend" cmd /k "npm run dev"
 cd ..
 
 echo.
-echo [4/4] Launching Trade Worker (Local)...
+echo [6/6] Launching Trade Worker (Local)...
 echo ---------------------------------------
 start "Institutional Edge - Worker" cmd /k "run_worker.bat"
 
@@ -146,19 +157,26 @@ echo Waiting 5 seconds for services to initialize...
 timeout /t 5 /nobreak >nul
 
 echo.
-echo [2/4] Launching Backend API (Local)...
+echo [2/5] Ensuring default user exists in database...
+echo --------------------------------------------------
+cd backend
+python ensure_user.py
+cd ..
+
+echo.
+echo [3/5] Launching Backend API (Local)...
 echo --------------------------------------
 start "Institutional Edge - Backend" cmd /k "run_backend.bat"
 
 echo.
-echo [3/4] Launching Frontend (Local)...
+echo [4/5] Launching Frontend (Local)...
 echo -----------------------------------
 cd frontend
 start "Institutional Edge - Frontend" cmd /k "npm run dev"
 cd ..
 
 echo.
-echo [4/4] Launching Trade Worker (Local)...
+echo [5/5] Launching Trade Worker (Local)...
 echo ---------------------------------------
 start "Institutional Edge - Worker" cmd /k "run_worker.bat"
 

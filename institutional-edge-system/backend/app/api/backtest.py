@@ -19,6 +19,7 @@ router = APIRouter()
 class BacktestRequest(BaseModel):
     symbol: str
     timeframe: str
+    confirmation_timeframe: Optional[str] = None  # Higher TF for trend confirmation (auto-set if None)
     start_date: datetime
     end_date: datetime
     initial_balance: float = 1000.0
@@ -30,6 +31,7 @@ class BacktestRequest(BaseModel):
     enable_stoch_strategy: bool = True
     enable_institutional_strategy: bool = True
     enable_fibonacci_strategy: bool = True
+    enable_strategy_3_29_162: bool = True
     # RSI Settings
     rsi_period: int = 14
     rsi_overbought: int = 70
@@ -51,6 +53,10 @@ class BacktestRequest(BaseModel):
     # Partial Take Profit
     partial_tp_on: bool = False
     partial_tp_amount: float = 0.5
+    # Scalping TP/SL Configuration
+    tp_ratio: float = 1.5  # Use 1.0-1.2 for faster scalping
+    sl_atr_multiplier: float = 1.5  # Use 1.0 for tighter SL
+    max_trade_duration_hours: float = 0.0  # 0 = disabled, 0.5-2 for scalping
     # Signal Quality
     min_confluence_score: int = 7  # 3-10, higher = stronger signals only
     
@@ -90,9 +96,21 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             return
             
         # 2. Configure Engine
+        # Auto-detect confirmation timeframe if not provided
+        htf_map = {
+            'M1': 'M5',
+            'M5': 'M15', 
+            'M15': 'H1',
+            'H1': 'H4',
+            'H4': 'D1',
+            'D1': 'W1'
+        }
+        confirmation_tf = request.confirmation_timeframe or htf_map.get(request.timeframe, 'H4')
+        
         config = BacktestConfig(
             symbol=request.symbol,
             timeframe=request.timeframe,
+            confirmation_timeframe=confirmation_tf,  # NEW: HTF for trend confirmation
             start_date=request.start_date,
             end_date=request.end_date,
             initial_balance=request.initial_balance,
@@ -104,6 +122,7 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             enable_stoch_strategy=request.enable_stoch_strategy,
             enable_institutional_strategy=request.enable_institutional_strategy,
             enable_fibonacci_strategy=request.enable_fibonacci_strategy,
+            enable_strategy_3_29_162=request.enable_strategy_3_29_162,
             # RSI Settings
             rsi_period=request.rsi_period,
             rsi_overbought=request.rsi_overbought,
@@ -125,6 +144,10 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             # Partial Take Profit
             partial_tp_on=request.partial_tp_on,
             partial_tp_amount=request.partial_tp_amount,
+            # Scalping TP/SL Configuration
+            tp_ratio=request.tp_ratio,
+            sl_atr_multiplier=request.sl_atr_multiplier,
+            max_trade_duration_hours=request.max_trade_duration_hours,
             # Signal Quality & Limits
             min_confluence_score=request.min_confluence_score,
             max_trades=3 if request.strategy_mode == "SWING" else 5

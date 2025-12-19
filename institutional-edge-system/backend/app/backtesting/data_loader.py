@@ -337,6 +337,62 @@ class DataLoader:
             logger.error(f"Error saving to CSV: {e}")
             return False
 
+    def resample_to_higher_tf(self, df: pd.DataFrame, target_tf: str) -> Optional[pd.DataFrame]:
+        """
+        Resample lower timeframe data to higher timeframe.
+        This avoids loading multiple datasets from MT5 for performance.
+        
+        Example conversions:
+        - M1 -> M5: '5min'
+        - M1 -> M15: '15min'
+        - M5 -> H1: '1h'
+        
+        Args:
+            df: DataFrame with lower timeframe data
+            target_tf: Target timeframe string (M5, M15, M30, H1, H4, D1)
+            
+        Returns:
+            Resampled DataFrame or None if invalid target
+        """
+        resample_map = {
+            'M1': '1min',
+            'M5': '5min',
+            'M15': '15min',
+            'M30': '30min',
+            'H1': '1h',
+            'H4': '4h',
+            'D1': '1D'
+        }
+        
+        freq = resample_map.get(target_tf)
+        if not freq:
+            logger.error(f"Invalid target timeframe for resampling: {target_tf}")
+            return None
+        
+        try:
+            # Ensure time column is the index for resampling
+            df_copy = df.copy()
+            df_copy.set_index('time', inplace=True)
+            
+            # Resample OHLCV data
+            df_resampled = df_copy.resample(freq).agg({
+                'open': 'first',
+                'high': 'max',
+                'low': 'min',
+                'close': 'last',
+                'volume': 'sum'
+            }).dropna()
+            
+            # Reset index to get time back as a column
+            df_resampled.reset_index(inplace=True)
+            
+            logger.info(f"Resampled {len(df)} bars to {len(df_resampled)} {target_tf} bars")
+            return df_resampled
+            
+        except Exception as e:
+            logger.error(f"Error resampling data: {e}")
+            return None
+
     def get_data_info(self, df: pd.DataFrame) -> dict:
         """Get summary info about loaded data"""
         if df is None or len(df) == 0:

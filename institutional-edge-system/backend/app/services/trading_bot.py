@@ -10,6 +10,7 @@ from typing import Dict, Optional
 from datetime import datetime, timedelta
 from loguru import logger
 
+from app.core.strategy_factory import StrategyFactory
 from app.core.adaptive_multi_strategy_engine import AdaptiveMultiStrategyEngine
 from app.core.mt5_connector import MT5Connector
 from app.services.trade_manager import TradeManager
@@ -85,10 +86,14 @@ class TradingBot:
 
         self.trade_manager.partial_tp_on = self.config.partial_tp_on
         self.trade_manager.partial_tp_amount = self.config.partial_tp_amount
+        
+        # Re-initialize TSL Manager with loaded config (important!)
+        self.trade_manager._init_tsl_manager()
+        logger.info(f"Trade Manager configured: TSL={self.config.tsl_mode}, Trailing={self.config.trailing_sl}, PartialTP={self.config.partial_tp_on}")
 
-        # Initialize Risk Manager (Adaptive)
+        # Initialize Risk Manager
         self.risk_manager = AdaptiveRiskManager()
-        logger.info("✅ Adaptive Risk Manager initialized with 1% max risk and tiered DD protection")
+        logger.info("✅ Risk Manager initialized")
 
         # Initialize Portfolio Manager
         self.portfolio_manager = PortfolioManager()
@@ -178,7 +183,7 @@ class TradingBot:
             'rsi_oversold': self.config.rsi_oversold,
         }
 
-        self.trading_engine = AdaptiveMultiStrategyEngine(engine_config)
+        self.trading_engine = StrategyFactory.create_strategy(engine_config)
         logger.info(f"Adaptive Trading Engine initialized (Scalping: {is_scalping})")
 
     async def _run_loop(self):

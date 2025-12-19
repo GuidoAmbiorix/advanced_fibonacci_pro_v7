@@ -1,6 +1,7 @@
 """
 Discord Notification Service
 Sends real-time rich alerts via Discord Webhooks.
+Includes rate limiting to avoid 429 errors.
 """
 
 import httpx
@@ -11,42 +12,88 @@ from datetime import datetime
 from app.core.config import settings
 
 class DiscordService:
+    # Rate limiting settings
+    MIN_MESSAGE_INTERVAL = 5.0  # Minimum seconds between messages
+    MAX_RETRIES = 3
+    RETRY_BASE_DELAY = 2.0  # Base delay for exponential backoff
+    MIN_SIGNAL_SCORE = 7  # Only send signals with score >= 7
+
     def __init__(self):
         self.webhook_url = settings.DISCORD_WEBHOOK_URL
         self.signals_webhook_url = settings.DISCORD_WEBHOOK_SIGNALS_URL or self.webhook_url
         
         self.enabled = bool(self.webhook_url)
+        self._last_message_time: float = 0  # Track last message time
 
         if not self.enabled:
             logger.warning("Discord Service disabled: Missing DISCORD_WEBHOOK_URL")
         else:
-            logger.info("Discord Service initialized")
+            logger.info("Discord Service initialized (Rate limit: 1 msg per {}s)".format(self.MIN_MESSAGE_INTERVAL))
             if self.signals_webhook_url != self.webhook_url:
                 logger.info("✅ Separate Signals Channel Configured")
 
+    async def _wait_for_rate_limit(self):
+        """Wait if we're sending messages too fast"""
+        import time
+        now = time.time()
+        elapsed = now - self._last_message_time
+        if elapsed < self.MIN_MESSAGE_INTERVAL:
+            wait_time = self.MIN_MESSAGE_INTERVAL - elapsed
+            logger.debug(f"Rate limiting: waiting {wait_time:.1f}s before Discord message")
+            await asyncio.sleep(wait_time)
+        self._last_message_time = time.time()
+
     async def send_message(self, content: str = None, embed: Dict = None, webhook_url: str = None):
-        """Send a message to Discord"""
+        """Send a message to Discord with rate limiting and retry logic"""
         if not self.enabled:
             return
 
         target_url = webhook_url or self.webhook_url
 
-        try:
-            async with httpx.AsyncClient() as client:
-                payload = {}
-                if content:
-                    payload["content"] = content
-                if embed:
-                    payload["embeds"] = [embed]
+        # Apply rate limiting
+        await self._wait_for_rate_limit()
 
-                response = await client.post(target_url, json=payload)
-                response.raise_for_status()
-        except Exception as e:
-            logger.error(f"Failed to send Discord message: {e}")
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                async with httpx.AsyncClient() as client:
+                    payload = {}
+                    if content:
+                        payload["content"] = content
+                    if embed:
+                        payload["embeds"] = [embed]
+
+                    response = await client.post(target_url, json=payload)
+                    
+                    # Handle rate limiting (429)
+                    if response.status_code == 429:
+                        retry_after = float(response.headers.get("Retry-After", self.RETRY_BASE_DELAY * (2 ** attempt)))
+                        logger.warning(f"Discord rate limited (429). Retry after {retry_after}s (attempt {attempt + 1}/{self.MAX_RETRIES})")
+                        await asyncio.sleep(retry_after)
+                        continue
+                    
+                    response.raise_for_status()
+                    return  # Success
+
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429:
+                    # Already handled above, but just in case
+                    await asyncio.sleep(self.RETRY_BASE_DELAY * (2 ** attempt))
+                    continue
+                logger.error(f"Discord HTTP error: {e}")
+                break
+            except Exception as e:
+                logger.error(f"Failed to send Discord message: {e}")
+                break
 
     async def send_signal_alert(self, signal: Dict):
-        """Send a rich embed for a new trading signal"""
+        """Send a rich embed for a new trading signal (only high-quality signals)"""
         if not self.enabled:
+            return
+
+        # Only send alerts for high-quality signals (score >= MIN_SIGNAL_SCORE)
+        score = signal.get('score', 0)
+        if score < self.MIN_SIGNAL_SCORE:
+            logger.debug(f"Skipping Discord alert for low-score signal: {score}/10 < {self.MIN_SIGNAL_SCORE}")
             return
 
         # Color: Green for BUY, Red for SELL
@@ -114,8 +161,14 @@ class DiscordService:
         await self.send_message(embed=embed)
 
     async def send_market_status_update(self, analysis: Dict):
-        """Send a rich embed with current market status"""
+        """Send a rich embed with current market status (only when signals exist)"""
         if not self.enabled:
+            return
+
+        # Only send market status if there are signals to reduce spam
+        signals = analysis.get('signals', [])
+        if len(signals) == 0:
+            logger.debug("Skipping market status update - no signals")
             return
 
         # Color: Grey (Neutral) by default

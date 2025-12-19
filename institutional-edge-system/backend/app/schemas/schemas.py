@@ -173,8 +173,6 @@ class BotConfigResponse(BaseModel):
 class RiskProfile(BaseModel):
     id: int
     bot_config_id: int
-    volatility_adjustment: bool
-    dd_protection: bool
     max_daily_loss: float
     max_total_dd: float
     profit_target: float

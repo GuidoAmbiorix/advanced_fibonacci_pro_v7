@@ -28,7 +28,7 @@ def main():
 
     logger.info("="*70)
     logger.info("ADAPTIVE MULTI-STRATEGY ENGINE - BACKTEST")
-    logger.info("Forex Fury + Waka Waka | Professional Grade")
+    logger.info("M1 Execution + M5 Confirmation | Scalping Mode")
     logger.info("="*70)
 
     # Configure backtest
@@ -36,13 +36,14 @@ def main():
         # Account
         initial_balance=10.0,  # $10 challenge
 
-        # Symbol & Timeframe
+        # Symbol & Timeframe - SCALPING MODE
         symbol="EURUSD",
-        timeframe="H4",  # H4 - Probado y funciona
+        timeframe="M1",  # M1 - Scalping rápido
+        confirmation_timeframe="M5",  # Confirmación en 5 minutos
 
-        # Date range (2 years for statistical significance)
-        start_date=datetime(2022, 1, 1),
-        end_date=datetime(2023, 12, 31),
+        # Date range (1 month for M1 testing - ~43,200 bars)
+        start_date=datetime(2024, 10, 1),
+        end_date=datetime(2024, 10, 31),
 
         # Strategy parameters - 30% RIESGO
         min_confluence_score=7,
@@ -55,13 +56,14 @@ def main():
         fvg_min_size=0.3,  # Not used (legacy)
         vp_lookback=100,  # Not used (legacy)
 
-        # Execution costs
-        slippage_pips=1.0,  # 1 pip slippage
+        # Execution costs (tighter for M1 scalping)
+        slippage_pips=0.5,  # 0.5 pip slippage for faster fills
         commission_per_lot=7.0,  # $7 per lot roundtrip
 
-        # Advanced
+        # Advanced - Enable scalping mode
         enable_trailing_stop=True,  # Breakeven at 1R, lock profit at 2R+
-        enable_partial_tp=False,
+        partial_tp_on=False,
+        scalping_mode=True,  # Enable for M1
     )
 
     # Create engine
