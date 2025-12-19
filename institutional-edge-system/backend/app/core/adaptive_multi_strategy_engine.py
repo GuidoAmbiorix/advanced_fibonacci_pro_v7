@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from loguru import logger
 from app.core.strategies.sq_3_29_162 import SQStrategy_3_29_162
+from app.core.news_filter import NewsFilter  # Elite Upgrade
 
 
 class TrailingStopMode(Enum):
@@ -559,6 +560,11 @@ class AdaptiveMultiStrategyEngine:
         if self.enable_strategy_3_29_162:
             self.sq_strategy_engine = SQStrategy_3_29_162(config)
 
+        # News Filter (Elite Upgrade)
+        self.news_filter = NewsFilter()
+
+
+
         # Strategy selection thresholds
         self.adx_trending_threshold = 25
         self.atr_ratio_low = 0.8
@@ -605,18 +611,34 @@ class AdaptiveMultiStrategyEngine:
 
     def _check_funding_rules(self, timestamp: datetime) -> Tuple[bool, str]:
         """
-        Check if we are allowed to trade based on Funding Firm Rules
+        Check if we are allowed to trade based on Funding Firm Rules & Macro News
         
         Rules:
         1. Max Total Loss: 10%
-        2. Max Daily Loss: 5%
+        2. Max Daily Loss: 5% (Circuit breaker at 2.5%)
         3. Schedule: Mon-Fri, 01:00 AM - 12:00 PM (Noon)
+        4. Macro News: No trading 30 mins before high impact events
         """
+        # 0. News Filter (Circuit Breaker)
+        # Note: We skip this if backtesting (timestamp is historic) unless we mock NewsFilter
+        # Ideally NewsFilter should handle historical data check if implemented, currently it checks LIVE.
+        # For safety in live trading:
+        if self.news_filter.should_block_trade(current_time=timestamp):
+             return False, "NEWS FILTER: High Impact Event Imminent"
+
         # 1. Check Max Total Loss (10%)
         # Assuming initial_balance is the starting account size
         total_loss_pct = (self.initial_balance - self.current_equity) / self.initial_balance
         if total_loss_pct >= self.max_drawdown_limit:
             return False, f"MAX DRAWDOWN HIT: {total_loss_pct:.1%} >= {self.max_drawdown_limit:.1%}"
+            
+        # 1.1 Daily Circuit Breaker (Half risk at Equit drop)
+        # TODO: Implement dynamic risk adjustment based on daily loss here later
+        
+        # 2. Check Daily Loss (5%)
+        daily_loss_pct = (self.start_of_day_balance - self.current_equity) / self.start_of_day_balance
+        if daily_loss_pct >= self.daily_loss_limit:
+             return False, f"DAILY LOSS LIMIT HIT: {daily_loss_pct:.1%} >= {self.daily_loss_limit:.1%}"
             
         # 2. Check Daily Loss (5%)
         # Daily loss is based on Start of Day Balance
@@ -913,6 +935,48 @@ class AdaptiveMultiStrategyEngine:
              v = df['volume'].values
              tp = (df['high'] + df['low'] + df['close']) / 3
              df['vwap'] = pd.Series((tp * v).cumsum() / v.cumsum(), index=df.index)
+
+        # ============================================
+        # ELITE UPGRADES: KER & RVOL
+        # ============================================
+        
+        # Kaufman Efficiency Ratio (KER)
+        # ER = Change / Volatility
+        if 'ker' not in df.columns:
+            n_er = 10
+            change = df['close'].diff(n_er).abs()
+            volatility = df['close'].diff(1).abs().rolling(window=n_er).sum()
+            df['ker'] = (change / volatility).fillna(0)
+        
+        # Relative Volume (RVOL)
+        if 'rvol' not in df.columns:
+            # Simple approximation: Current Vol / SMA(50) of Vol
+            # For true intraday seasonality, we'd need grouping by hour
+            df['vol_period_avg'] = df['volume'].rolling(window=50).mean()
+            df['rvol'] = (df['volume'] / df['vol_period_avg']).fillna(1.0)
+            
+        return df
+
+        # ============================================
+        # ELITE UPGRADES: KER & RVOL
+        # ============================================
+        
+        # Kaufman Efficiency Ratio (KER)
+        # ER = Change / Volatility
+        n_er = 10
+        change = df['close'].diff(n_er).abs()
+        volatility = df['close'].diff(1).abs().rolling(window=n_er).sum()
+        df['ker'] = change / volatility
+        df['ker'] = df['ker'].fillna(0)
+        
+        # Relative Volume (RVOL)
+        # Using a simple rolling mean as a proxy for "average volume for this time" 
+        # (True hourly seasonality requires complex data grouping, this is a robust approximation)
+        df['vol_period_avg'] = df['volume'].rolling(window=50).mean() # 50 periods average
+        df['rvol'] = df['volume'] / df['vol_period_avg']
+        df['rvol'] = df['rvol'].fillna(1.0)
+
+        return df
 
         return df
 
