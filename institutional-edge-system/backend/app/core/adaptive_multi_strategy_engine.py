@@ -614,8 +614,8 @@ class AdaptiveMultiStrategyEngine:
         Check if we are allowed to trade based on Funding Firm Rules & Macro News
         
         Rules:
-        1. Max Total Loss: 10%
-        2. Max Daily Loss: 5% (Circuit breaker at 2.5%)
+        1. Max Total Loss: 7%
+        2. Max Daily Loss: 3.5% (Circuit breaker at 1.75%)
         3. Schedule: Mon-Fri, 01:00 AM - 12:00 PM (Noon)
         4. Macro News: No trading 30 mins before high impact events
         """
