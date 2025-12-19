@@ -51,20 +51,28 @@ class NewsFilter:
             
         date_str = target_date.strftime("%d/%m/%Y")
         
+        # Calculate next day for to_date (investpy requires distinct dates)
+        next_day = target_date + datetime.timedelta(days=1)
+        next_day_str = next_day.strftime("%d/%m/%Y")
+        
         # Check if we already have data for this date in memory (simple optimization)
         if hasattr(self, '_current_date_cache') and self._current_date_cache == date_str and self.high_impact_events:
             return
 
         try:
             # Fetch calendar
+            # ERR#0032 Fix: to_date must be > from_date
             df = investpy.news.economic_calendar(
                 countries=['United States', 'Euro Zone'],
                 importances=['high'],
                 from_date=date_str,
-                to_date=date_str
+                to_date=next_day_str
             )
             
             if df is not None and not df.empty:
+                # Filter to only keep events for the target date
+                df = df[df['date'] == date_str]
+                
                 self.high_impact_events = df.to_dict('records')
                 self._current_date_cache = date_str
                 logger.info(f"Fetched {len(self.high_impact_events)} events for {date_str}")

@@ -275,7 +275,21 @@ def run_backtest_wrapper(session_id: int, request: BacktestRequest, loop: asynci
 async def get_backtest_history(limit: int = 20, db: Session = Depends(database.get_db)):
     """Get recent backtest sessions"""
     sessions = db.query(BacktestSession).order_by(BacktestSession.created_at.desc()).limit(limit).all()
-    return sessions
+    
+    # Sanitize for JSON (handle infinity from DB)
+    sanitized_sessions = []
+    for s in sessions:
+        # Convert to dict to avoid SQLAlchemy state issues if we modified objects directly
+        # But we can try modifying if detached or just careful. 
+        # Safest is to handle at serialization or just patch the object if it's transient here.
+        if s.profit_factor == float('inf'):
+            s.profit_factor = 999.0
+        if s.profit_factor == float('-inf'): # unlikely for PF
+            s.profit_factor = 0.0
+            
+        sanitized_sessions.append(s)
+        
+    return sanitized_sessions
 
 @router.get("/{session_id}")
 async def get_backtest_details(session_id: int, db: Session = Depends(database.get_db)):
@@ -284,6 +298,9 @@ async def get_backtest_details(session_id: int, db: Session = Depends(database.g
     if not session:
         raise HTTPException(status_code=404, detail="Backtest session not found")
         
+    if session.profit_factor == float('inf'):
+         session.profit_factor = 999.0
+         
     return {
         "session": session,
         "trades": session.trades

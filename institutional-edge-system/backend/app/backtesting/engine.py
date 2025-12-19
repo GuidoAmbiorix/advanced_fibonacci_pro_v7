@@ -249,6 +249,12 @@ class BacktestEngine:
                         logger.debug(f"Signal rejected: score {score} < {self.config.min_confluence_score}")
                         continue
 
+                    # Filter: Min Volume Check (Debug for low trade counts)
+                    # We can't easily check volume here without calling risk manager, but we can check if risk is tiny
+                    if self.config.risk_percent < 0.01:
+                         logger.warning(f"⚠️ Very low risk percent ({self.config.risk_percent}%) might result in 0 volume trades!")
+
+
                     # Additional filter: confidence threshold (LOW for debugging)
                     if confidence < 0.1:  # Very low threshold for debugging
                         logger.debug(f"Signal rejected: low confidence {confidence:.2f}")
@@ -300,8 +306,9 @@ class BacktestEngine:
                     current_equity = self._calculate_current_equity(current_bar)
                     current_dd = ((self.peak_balance - current_equity) / self.peak_balance * 100) if self.peak_balance > 0 else 0.0
 
-                    # Get consecutive losses
-                    consecutive_losses = self._count_consecutive_losses()
+                    # Get consecutive losses (DAILY RESET - only counts today's losses)
+                    current_trading_date = current_bar['time'].date() if hasattr(current_bar['time'], 'date') else None
+                    consecutive_losses = self._count_consecutive_losses(current_date=current_trading_date)
 
                     # Calculate adaptive risk
                     adaptive_risk_percent, risk_reason = self.risk_manager.calculate_risk_percent(
@@ -322,6 +329,10 @@ class BacktestEngine:
                         account_balance=self.current_balance,
                         risk_percent=adaptive_risk_percent  # Use adaptive risk
                     )
+                    
+                    if trade is None:
+                         logger.warning(f"⚠️ Trade rejected by simulator (likely 0 volume). Check Risk % or Balance.")
+
 
                     if trade:
                         self.open_trades.append(trade)
@@ -420,6 +431,18 @@ class BacktestEngine:
         logger.info("BACKTEST COMPLETE")
         logger.info("="*60)
 
+        # Send final progress update (100%)
+        if self.on_progress_callback:
+            try:
+                self.on_progress_callback(100.0, {
+                    'balance': self.current_balance,
+                    'equity': self.current_balance,
+                    'trades': len(self.closed_trades),
+                    'current_time': "COMPLETE"
+                })
+            except Exception as e:
+                logger.error(f"Error in on_progress callback (100%): {e}")
+
         return results
 
     def _load_data(
@@ -489,10 +512,10 @@ class BacktestEngine:
 
         return equity
 
-    def _count_consecutive_losses(self) -> int:
+    def _count_consecutive_losses(self, current_date=None) -> int:
         """
-        Count consecutive losing trades from most recent
-        Used by AdaptiveRiskManager
+        Count consecutive losing trades from most recent ON THE SAME DAY
+        Resets at midnight - used by AdaptiveRiskManager for daily loss limits
         """
         if not self.closed_trades:
             return 0
@@ -500,6 +523,12 @@ class BacktestEngine:
         consecutive = 0
         # Iterate backwards through closed trades
         for trade in reversed(self.closed_trades):
+            # Only count trades from the same calendar day
+            if current_date and trade.exit_time:
+                trade_date = trade.exit_time.date() if hasattr(trade.exit_time, 'date') else None
+                if trade_date and trade_date != current_date:
+                    break  # Stop counting when we hit a different day
+            
             if trade.pnl < 0:  # Loss
                 consecutive += 1
             else:  # Win or breakeven
@@ -544,6 +573,15 @@ class BacktestEngine:
 
         verdict = "✅ PASS" if is_passing else "❌ FAIL"
         logger.info(f"VERDICT: {verdict}")
+        
+        if not is_passing:
+             logger.info("Failure Reasons:")
+             if m.total_trades < 50: logger.info(f" - Not enough trades: {m.total_trades} < 50")
+             if m.win_rate < 45.0: logger.info(f" - Win rate too low: {m.win_rate:.1f}% < 45.0%")
+             if m.profit_factor < 1.5: logger.info(f" - Profit Factor too low: {m.profit_factor:.2f} < 1.5")
+             if m.max_drawdown_percent >= 15.0: logger.info(f" - Drawdown too high: {m.max_drawdown_percent:.2f}% >= 15.0%")
+             if m.average_rr < 2.0: logger.info(f" - Avg R:R too low: {m.average_rr:.2f} < 2.0")
+            
         logger.info("")
 
         # Send Discord Alert

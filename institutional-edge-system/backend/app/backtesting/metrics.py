@@ -63,7 +63,8 @@ class MetricsCalculator:
         if metrics.total_loss > 0:
             metrics.profit_factor = metrics.total_profit / metrics.total_loss
         else:
-            metrics.profit_factor = float('inf') if metrics.total_profit > 0 else 0
+            # avoiding float('inf') for JSON serialization
+            metrics.profit_factor = 999.0 if metrics.total_profit > 0 else 0
 
         # Averages
         if wins:

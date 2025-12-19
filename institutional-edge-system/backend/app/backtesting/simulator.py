@@ -142,9 +142,13 @@ class OrderSimulator:
 
             # Calculate position size
             sl_distance = abs(entry_price - stop_loss)
-            if sl_distance == 0:
-                logger.warning("SL distance is zero, cannot calculate position size")
-                return None
+            
+            # Enforce minimum SL distance for calculation (safety clamp)
+            # Prevent massive volume on tiny ATRs (e.g. < 3 pips)
+            min_sl_pips = 3.0
+            min_sl_distance = min_sl_pips * pip_size
+            
+            calc_sl_distance = max(sl_distance, min_sl_distance)
 
             # Apply risk multiplier for high-volatility instruments (e.g., Gold)
             adjusted_risk = risk_percent * profile.risk_multiplier
@@ -152,12 +156,16 @@ class OrderSimulator:
             
             # Calculate lot size using symbol-specific parameters
             # Formula: Risk$ / (SL_pips * pip_value_per_lot)
-            sl_pips = sl_distance / pip_size
+            sl_pips = calc_sl_distance / pip_size
             volume = risk_amount / (sl_pips * profile.pip_value_per_lot)
 
             # Round to 0.001 (micro lot precision)
             volume = round(volume, 3)
-
+            
+            # DEBUG JPY CALC
+            if "JPY" in symbol:
+                logger.info(f"JPY CALC: Risk%={risk_percent}, Risk$={risk_amount}, SL_dist={sl_distance}, Clamped_SL={calc_sl_distance}, SL_pips={sl_pips}, Vol={volume}")
+                
             # Minimum 0.001 lot (micro lot)
             if volume < 0.001:
                 volume = 0.001
@@ -375,10 +383,15 @@ class OrderSimulator:
                 profile = get_instrument_profile(trade.symbol)
                 exit_price -= self.slippage_pips * profile.pip_size
 
+                # Use symbol profile for PnL calc
+                profile = get_instrument_profile(trade.symbol)
+                
                 trade.close(
                     exit_time=current_bar['time'],
                     exit_price=exit_price,
-                    exit_reason="SL"
+                    exit_reason="SL",
+                    pip_size=profile.pip_size,
+                    pip_value=profile.pip_value_per_lot
                 )
                 logger.debug(f"BUY trade {trade.ticket} hit SL @ {exit_price:.5f}")
                 return "CLOSED_SL"
@@ -391,10 +404,15 @@ class OrderSimulator:
                 profile = get_instrument_profile(trade.symbol)
                 exit_price -= self.slippage_pips * profile.pip_size
 
+                # Use symbol profile for PnL calc
+                profile = get_instrument_profile(trade.symbol)
+                
                 trade.close(
                     exit_time=current_bar['time'],
                     exit_price=exit_price,
-                    exit_reason="TP"
+                    exit_reason="TP",
+                    pip_size=profile.pip_size,
+                    pip_value=profile.pip_value_per_lot
                 )
                 logger.debug(f"BUY trade {trade.ticket} hit TP @ {exit_price:.5f}, P&L: ${trade.pnl:.2f}")
                 return "CLOSED_TP"
@@ -408,10 +426,15 @@ class OrderSimulator:
                 profile = get_instrument_profile(trade.symbol)
                 exit_price += self.slippage_pips * profile.pip_size
 
+                # Use symbol profile for PnL calc
+                profile = get_instrument_profile(trade.symbol)
+
                 trade.close(
                     exit_time=current_bar['time'],
                     exit_price=exit_price,
-                    exit_reason="SL"
+                    exit_reason="SL",
+                    pip_size=profile.pip_size,
+                    pip_value=profile.pip_value_per_lot
                 )
                 logger.debug(f"SELL trade {trade.ticket} hit SL @ {exit_price:.5f}")
                 return "CLOSED_SL"
@@ -424,10 +447,15 @@ class OrderSimulator:
                 profile = get_instrument_profile(trade.symbol)
                 exit_price += self.slippage_pips * profile.pip_size
 
+                # Use symbol profile for PnL calc
+                profile = get_instrument_profile(trade.symbol)
+
                 trade.close(
                     exit_time=current_bar['time'],
                     exit_price=exit_price,
-                    exit_reason="TP"
+                    exit_reason="TP",
+                    pip_size=profile.pip_size,
+                    pip_value=profile.pip_value_per_lot
                 )
                 logger.debug(f"SELL trade {trade.ticket} hit TP @ {exit_price:.5f}, P&L: ${trade.pnl:.2f}")
                 return "CLOSED_TP"
@@ -458,6 +486,7 @@ class OrderSimulator:
         exit_price = current_bar['close']
 
         # Apply slippage using symbol-specific pip size
+        # Apply slippage using symbol-specific pip size
         profile = get_instrument_profile(trade.symbol)
         if trade.signal_type == "BUY":
             exit_price -= self.slippage_pips * profile.pip_size
@@ -467,7 +496,9 @@ class OrderSimulator:
         trade.close(
             exit_time=current_bar['time'],
             exit_price=exit_price,
-            exit_reason=reason
+            exit_reason=reason,
+            pip_size=profile.pip_size,
+            pip_value=profile.pip_value_per_lot
         )
 
         logger.debug(f"Force closed trade {trade.ticket} @ {exit_price:.5f}, Reason: {reason}")

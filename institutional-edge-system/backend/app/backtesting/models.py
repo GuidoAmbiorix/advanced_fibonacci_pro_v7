@@ -55,7 +55,7 @@ class BacktestTrade:
         if self.initial_stop_loss is None:
             self.initial_stop_loss = self.stop_loss
 
-    def close(self, exit_time: datetime, exit_price: float, exit_reason: str):
+    def close(self, exit_time: datetime, exit_price: float, exit_reason: str, pip_size: float = 0.0001, pip_value: float = 10.0):
         """Close the trade and calculate P&L"""
         self.exit_time = exit_time
         self.exit_price = exit_price
@@ -68,12 +68,12 @@ class BacktestTrade:
         else:  # SELL
             price_diff = self.entry_price - exit_price
 
-        # P&L in pips (for EURUSD, 1 pip = 0.0001)
-        self.pnl_pips = price_diff / 0.0001
+        # P&L in pips
+        self.pnl_pips = price_diff / pip_size if pip_size > 0 else 0
 
-        # P&L in currency (Forex: lots * 100,000 * price_diff)
-        # Use current volume (may be 50% if partial TP was taken)
-        self.pnl = self.volume * 100000 * price_diff
+        # P&L in currency
+        # Formula: (Price Diff / Pip Size) * Pip Value * Volume
+        self.pnl = self.pnl_pips * pip_value * self.volume
         
         # Add partial TP PnL if it was taken (50% closed at +0.5R)
         if self.partial_tp_taken and self.partial_tp_pnl > 0:

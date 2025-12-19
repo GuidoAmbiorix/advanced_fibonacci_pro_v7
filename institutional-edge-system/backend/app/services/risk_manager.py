@@ -20,8 +20,8 @@ class AdaptiveRiskManager:
     # Absolute maximum risk per trade
     ABSOLUTE_MAX_RISK = 5.0  # 5% max
 
-    # Minimum risk (when heavily reduced)
-    MINIMUM_RISK = 0.1  # 0.1%
+    # Minimum risk (when heavily reduced) - lowered for backtesting flexibility
+    MINIMUM_RISK = 0.001  # 0.001%
 
     def __init__(self, base_risk_percent: float = None):
         """Initialize Risk Manager

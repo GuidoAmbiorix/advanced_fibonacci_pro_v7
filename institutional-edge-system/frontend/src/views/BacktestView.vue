@@ -35,6 +35,7 @@
               <label class="block text-sm font-medium text-gray-400 mb-1">Symbol</label>
               <select v-model="config.symbol" @change="onSymbolChange" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
                 <!-- 10 Stable Forex Pairs (Lower Volatility) -->
+                <option value="GBPJPY">GBP/JPY - The Beast 😈</option>
                 <option value="EURCHF">EUR/CHF - Most Stable</option>
                 <option value="USDCHF">USD/CHF - Safe Haven</option>
                 <option value="EURGBP">EUR/GBP - European Stable</option>
@@ -420,38 +421,38 @@ const history = ref([])
 const trades = ref([])
 const results = ref({})
 
-// Config - GOLD WINNING CONFIGURATION (+$7.1M, 63% WR)
+// Config - GBP/JPY "THE BEAST" SCALPING CONFIGURATION
 const config = ref({
-  symbol: 'XAUUSD',  // GOLD - winning symbol
+  symbol: 'GBPJPY',  // GBP/JPY - High Volatility + Technical Respect
   timeframe: 'M5',
   confirmation_timeframe: null,  // Auto (M15)
   strategy_mode: 'SCALP',
-  start_date: '2024-10-01',
-  end_date: '2024-10-04',  // 4 days like winning test
+  start_date: '2024-01-01',
+  end_date: '2024-04-10',
   initial_balance: 1000,
-  risk_percent: 0.001,  // CRITICAL: 0.001% for Gold
-  use_adx_filter: false,  // OFF for winning config
+  risk_percent: 1.0,  // 1% Risk
+  use_adx_filter: true,  // ON - GBP/JPY trends hard, we want to catch those moves
   enable_vwap_strategy: true,  // ON
   enable_stoch_strategy: true,  // ON
-  enable_institutional_strategy: true,  // ON for Gold
-  enable_fibonacci_strategy: true,  // ON for Gold
-  // RSI Defaults
-  rsi_period: 14,
-  rsi_overbought: 70,
-  rsi_oversold: 30,
-  // Trailing Stop Loss - ATR mode for Gold (adapts to volatility)
+  enable_institutional_strategy: true,  // ON
+  enable_fibonacci_strategy: true,  // ON
+  // RSI Defaults (Faster for Scalping)
+  rsi_period: 9,      // Speed up RSI for M5
+  rsi_overbought: 75, // Higher threshold
+  rsi_oversold: 25,   // Lower threshold
+  // Trailing Stop Loss
   enable_trailing_stop: true,
-  tsl_mode: 'ATR',  // ATR recommended for Gold scalping
+  tsl_mode: 'TIERED',
   tsl_activation_r: 0.0,
-  // Partial Take Profit - ON 100%
+  // Partial Take Profit
   partial_tp_on: true,
-  partial_tp_amount: 1.0,  // 100% (winning config)
-  // WINNING SCALPING SETTINGS
-  tp_ratio: 2.0,  // 2.0R (winning)
-  sl_atr_multiplier: 1.0,  // 1.0 ATR (winning)
-  max_trade_duration_hours: 0,  // No limit (winning)
+  partial_tp_amount: 1.0,  
+  // SCALPING SETTINGS
+  tp_ratio: 2.0,  // 2.0R (Let GBP/JPY run)
+  sl_atr_multiplier: 1.5,  // 1.5x ATR (Avoid common stop hunts)
+  max_trade_duration_hours: 0,  // No limit
   // Signal Quality
-  min_confluence_score: 5  // Lower for more signals
+  min_confluence_score: 7  // Medium/High quality
 })
 
 // High-volatility symbol detection
