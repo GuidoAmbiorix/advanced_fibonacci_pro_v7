@@ -541,7 +541,19 @@ class AdaptiveMultiStrategyEngine:
         self.enable_stoch_strategy = config.get('enable_stoch_strategy', True)
         self.enable_institutional_strategy = config.get('enable_institutional_strategy', True)
         self.enable_fibonacci_strategy = config.get('enable_fibonacci_strategy', True)  # NEW
+        self.enable_fibonacci_strategy = config.get('enable_fibonacci_strategy', True)  # NEW
         self.enable_strategy_3_29_162 = config.get('enable_strategy_3_29_162', True)  # SQ Strategy
+        
+        # Funding Firm Rules
+        self.max_drawdown_limit = config.get('max_drawdown_limit', 0.10)  # 10% Max Total Loss
+        self.daily_loss_limit = config.get('daily_loss_limit', 0.05)      # 5% Max Daily Loss
+        self.risk_reward_ratio = config.get('risk_reward_ratio', 1.5)     # Dynamic R/R (default 1:1.5)
+        
+        # Account State for Rules
+        self.start_of_day_balance = config.get('initial_balance', 10.0) # Will be updated via update_account_metrics
+        self.current_balance = self.start_of_day_balance
+        self.current_equity = self.start_of_day_balance
+        self.high_water_mark = self.start_of_day_balance
         
         # Initialize Sub-Strategies
         if self.enable_strategy_3_29_162:
@@ -568,7 +580,7 @@ class AdaptiveMultiStrategyEngine:
         
         # Stop Loss Configuration (NEW - for tighter scalping stops)
         self.sl_atr_multiplier = config.get('sl_atr_multiplier', 0.75 if self.scalping_mode else 1.5)
-        self.tp_ratio = config.get('tp_ratio', 1.0 if self.scalping_mode else 1.5)
+        self.tp_ratio = config.get('tp_ratio', self.risk_reward_ratio if hasattr(self, 'risk_reward_ratio') else 1.5)
 
         # State
         self.current_regime = None
@@ -576,6 +588,55 @@ class AdaptiveMultiStrategyEngine:
 
         logger.info(f"AdaptiveMultiStrategyEngine initialized - {self.symbol} {self.timeframe}")
         logger.info(f"Grid Recovery: {self.enable_grid_recovery}, Scalping Mode: {self.scalping_mode}")
+        logger.info(f"Funding Rules: Max DD={self.max_drawdown_limit:.1%}, Daily Limit={self.daily_loss_limit:.1%}, R/R=1:{self.risk_reward_ratio}")
+
+    def update_account_metrics(self, balance: float, equity: float, start_of_day_balance: Optional[float] = None):
+        """
+        Update account metrics to enforce funding rules
+        """
+        self.current_balance = balance
+        self.current_equity = equity
+        if start_of_day_balance:
+            self.start_of_day_balance = start_of_day_balance
+            
+        # Update High Water Mark for Trailing Drawdown (if needed, but rule is usually static 10% of initial)
+        # For simple "Max Loss 10%", it's usually based on Initial Balance.
+        # If it's trailing, we'd update self.high_water_mark = max(self.high_water_mark, balance)
+
+    def _check_funding_rules(self, timestamp: datetime) -> Tuple[bool, str]:
+        """
+        Check if we are allowed to trade based on Funding Firm Rules
+        
+        Rules:
+        1. Max Total Loss: 10%
+        2. Max Daily Loss: 5%
+        3. Schedule: Mon-Fri, 01:00 AM - 12:00 PM (Noon)
+        """
+        # 1. Check Max Total Loss (10%)
+        # Assuming initial_balance is the starting account size
+        total_loss_pct = (self.initial_balance - self.current_equity) / self.initial_balance
+        if total_loss_pct >= self.max_drawdown_limit:
+            return False, f"MAX DRAWDOWN HIT: {total_loss_pct:.1%} >= {self.max_drawdown_limit:.1%}"
+            
+        # 2. Check Daily Loss (5%)
+        # Daily loss is based on Start of Day Balance
+        daily_loss_pct = (self.start_of_day_balance - self.current_equity) / self.start_of_day_balance
+        if daily_loss_pct >= self.daily_loss_limit:
+            return False, f"DAILY LOSS LIMIT HIT: {daily_loss_pct:.1%} >= {self.daily_loss_limit:.1%}"
+            
+        # 3. Check Schedule (Mon-Fri, 01:00 - 12:00)
+        # 0 = Monday, 4 = Friday, 5 = Saturday, 6 = Sunday
+        weekday = timestamp.weekday()
+        hour = timestamp.hour
+        
+        if weekday > 4: # Saturday or Sunday
+            return False, "Weekend - Trading Disabled"
+            
+        # Allowed: 01:00 to 11:59 (Stop at 12:00 sharp)
+        if not (1 <= hour < 12):
+             return False, f"Outside Trading Hours (01:00-12:00): Current hour {hour}"
+             
+        return True, "OK"
 
 
     def analyze(self, df: pd.DataFrame, df_higher_tf: Optional[pd.DataFrame] = None) -> Dict:
@@ -597,6 +658,16 @@ class AdaptiveMultiStrategyEngine:
         # 1. Detect market regime
         regime = self._detect_market_regime(df)
         self.current_regime = regime
+
+        # 1.5 Check Funding Rules (CRITICAL)
+        current_time = df.iloc[-1]['time']
+        if isinstance(current_time, str):
+            current_time = pd.to_datetime(current_time) # Ensure datetime object
+            
+        allowed, reason = self._check_funding_rules(current_time)
+        if not allowed:
+            logger.warning(f"⛔ Funding Rule Stop: {reason}")
+            return {'signals': [], 'message': f'Funding Rule Stop: {reason}'}
 
         # 2. Select optimal strategy
         strategy_type = self._select_strategy(regime, df)
@@ -832,6 +903,16 @@ class AdaptiveMultiStrategyEngine:
             
             mfi = 100 - (100 / (1 + (positive_mf / negative_mf)))
             df['mfi'] = mfi.fillna(50) # Default to 50 if NaN
+
+        # Centralized fast RSI for scalping
+        if 'rsi_7' not in df.columns:
+            df['rsi_7'] = self._calculate_rsi(df['close'], 7)
+
+        # Centralized VWAP
+        if 'vwap' not in df.columns:
+             v = df['volume'].values
+             tp = (df['high'] + df['low'] + df['close']) / 3
+             df['vwap'] = pd.Series((tp * v).cumsum() / v.cumsum(), index=df.index)
 
         return df
 
@@ -1230,10 +1311,15 @@ class AdaptiveMultiStrategyEngine:
         """
         try:
             hour = timestamp.hour
-            # Trade during London and NY sessions only
-            return 7 <= hour <= 21
+            weekday = timestamp.weekday()
+            
+            # Funding Rule: Mon-Fri, 01:00 - 12:00 ONLY
+            if weekday > 4: return False # Weekend
+            if 1 <= hour < 12: return True
+            
+            return False
         except:
-            return True
+            return False
 
     def _trend_following_signal(
         self,
@@ -1266,86 +1352,69 @@ class AdaptiveMultiStrategyEngine:
         atr = current['atr']
 
         # ============================================
-        # SESSION FILTER - Re-enabled for H4
+        # CORE VS BOOSTER LOGIC (Hierarchy)
         # ============================================
-        if not self._is_valid_session(current['time']):
-            return None
-
-        # Check for uptrend
+        
+        # 1. CORE (REQUIRED) - If these fail, NO TRADE
+        if not self._is_valid_session(current['time']): return None
+        
+        # Calculate needed variables locally if not already present
         uptrend = ema_20 > ema_50
         downtrend = ema_20 < ema_50
-
-        # Pullback to EMA20 - H4 settings
-        near_ema20 = abs(price - ema_20) < atr * 1.0  # 1 ATR distance
-
-        # RSI momentum - H4 (above/below 50)
-        rsi_bullish = rsi > 50 and rsi < self.rsi_overbought  # Bullish momentum
-        rsi_bearish = rsi < 50 and rsi > self.rsi_oversold  # Bearish momentum
-
-        # Volume confirmation - H4
-        volume_ok = volume_ratio > 0.8  # Decent volume
-
-        # ============================================
-        # MACD CONFIRMATION (NEW - Key for improving win rate)
-        # ============================================
-        macd_hist = current['macd_histogram']
-        prev_macd_hist = prev['macd_histogram']
+        near_ema20 = abs(price - ema_20) < atr * 1.5 
+        volume_ok = volume_ratio > 0.8
         
-        # MACD must agree with direction AND be strengthening
-        macd_bullish = macd_hist > 0 and macd_hist > prev_macd_hist  # Positive and rising
-        macd_bearish = macd_hist < 0 and macd_hist < prev_macd_hist  # Negative and falling
-
-        # ============================================
-        # HIGHER TIMEFRAME FILTER (CRITICAL)
-        # ============================================
-        h4_trend = self._check_higher_tf_trend(df_higher_tf)
-
-        # Log H4 trend for debugging
-        if h4_trend != "NEUTRAL":
-            logger.debug(f"H4 Trend Filter: {h4_trend}")
-
-        # ============================================
-        # 80% WIN RATE REQUIREMENTS (Triple Confirmation + Candlestick)
-        # ============================================
+        if not volume_ok: return None 
         
-        # ADX Trend Strength - H4 settings
-        adx = current['adx']
-        adx_strong = adx > 15  # Moderate trend for H4
+        # Trend check
+        is_bullish_setup = uptrend and near_ema20
+        is_bearish_setup = downtrend and near_ema20
         
-        # Triple confirmation check
-        triple_buy = self._triple_confirmation(current, prev, "BUY")
-        triple_sell = self._triple_confirmation(current, prev, "SELL")
-        
-        # Candlestick pattern confirmation
-        bullish_candle = self._is_bullish_engulfing(current, prev) or self._is_bullish_pinbar(current)
-        bearish_candle = self._is_bearish_engulfing(current, prev) or self._is_bearish_pinbar(current)
+        if not (is_bullish_setup or is_bearish_setup):
+            return None
 
-        # BULLISH SIGNAL - H4 optimized (dual confirmation: RSI + MACD)
-        # Requires: Uptrend + Near EMA + Volume + RSI ok + MACD rising
+        # 2. BOOSTERS (CONFIDENCE) - Add to score
+        score = 5.0 # Base score
+        
+        # Momentum Boosters
         macd_hist = current['macd_histogram']
         prev_macd_hist = prev['macd_histogram']
         macd_rising = macd_hist > prev_macd_hist
+        macd_falling = macd_hist < prev_macd_hist
         
-        if uptrend and near_ema20 and volume_ok and rsi_bullish and macd_rising:
-            # H4 trend filter
-            if h4_trend == "BEARISH":
-                logger.debug(f"BUY signal rejected: H4 trend is BEARISH")
+        # Adx/Rsi setup
+        adx = current['adx']
+        adx_strong = adx > 15
+        rsi_bullish = rsi > 50
+        rsi_bearish = rsi < 50
+        
+        # HTF
+        h4_trend = self._check_higher_tf_trend(df_higher_tf)
+        
+        # Candles
+        bullish_candle = self._is_bullish_engulfing(current, prev)
+        bearish_candle = self._is_bearish_engulfing(current, prev)
+
+        if is_bullish_setup:
+            if h4_trend == "BEARISH": return None # Hard HTF Filter
+            
+            if rsi_bullish: score += 1.5
+            if macd_rising: score += 1.5
+            if macd_hist > 0: score += 1.0 # Positive Momentum
+            if bullish_candle: score += 1.0
+            if adx_strong: score += 0.5
+            
+            # Confidence Threshold (e.g. 7.0 needed)
+            if score < 7.0:
+                logger.debug(f"BUY Loop: Low Score {score}/10")
                 return None
-            
-            # Candlestick confirmation bonus (not required but adds confidence)
-            candle_bonus = 0.2 if bullish_candle else 0.0
-            
+                
             entry = price
-            stop_loss = ema_50 - (atr * self.sl_atr_multiplier)  # Dynamic ATR stop
-            take_profit = entry + (abs(entry - stop_loss) * self.tp_ratio)  # Dynamic R target
-
-            stoch_k = current['stoch_k']
-            base_confidence = 0.7
-            confidence = min(base_confidence + candle_bonus, 1.0)
-
-            logger.info(f"🎯 BUY SIGNAL @ {entry:.5f}")
-            logger.info(f"   RSI={rsi:.1f}, MACD={macd_hist:.6f}, ADX={adx:.1f}")
-
+            stop_loss = ema_50 - (atr * self.sl_atr_multiplier)
+            take_profit = entry + (abs(entry - stop_loss) * self.risk_reward_ratio)
+            
+            confidence = min(score / 10.0, 0.95)
+            
             return AdaptiveSignal(
                 symbol=self.symbol,
                 timeframe=self.timeframe,
@@ -1355,41 +1424,30 @@ class AdaptiveMultiStrategyEngine:
                 direction="BUY",
                 strategy_type=StrategyType.TREND_FOLLOWING,
                 market_regime=self.current_regime,
-                score=9.5,
+                score=score,
                 confidence=confidence,
                 timestamp=current['time'],
-                metadata={
-                    'ema_20': ema_20, 'ema_50': ema_50, 'rsi': rsi, 
-                    'macd': macd_hist, 'stoch_k': stoch_k, 'adx': adx,
-                    'bullish_candle': bullish_candle
-                }
+                metadata={'rsi': rsi, 'macd': macd_hist, 'score': score}
             )
 
-        # BEARISH SIGNAL - H4 optimized
-        macd_falling = macd_hist < prev_macd_hist
-        if downtrend and near_ema20 and volume_ok and rsi_bearish and macd_falling:
-            # H4 trend filter
-            if h4_trend == "BULLISH":
-                logger.debug(f"SELL signal rejected: H4 trend is BULLISH")
-                return None
+        elif is_bearish_setup:
+            if h4_trend == "BULLISH": return None
             
-            # Candlestick confirmation bonus
-            candle_bonus = 0.2 if bearish_candle else 0.0
+            if rsi_bearish: score += 1.5
+            if macd_falling: score += 1.5
+            if macd_hist < 0: score += 1.0
+            if bearish_candle: score += 1.0
+            if adx_strong: score += 0.5
             
+            if score < 7.0:
+                 return None
+                 
             entry = price
-            stop_loss = ema_50 + (atr * self.sl_atr_multiplier)  # Dynamic ATR stop
-            take_profit = entry - (abs(stop_loss - entry) * self.tp_ratio)  # Dynamic R target
-
-            # High confidence due to triple confirmation
-            stoch_k = current['stoch_k']
-            base_confidence = 0.7
-            confidence = min(base_confidence + candle_bonus, 1.0)
-
-            logger.info(f"🎯 HIGH PROBABILITY SELL @ {entry:.5f} (Triple Confirmed)")
-            logger.info(f"   RSI={rsi:.1f}, MACD={macd_hist:.6f}, Stoch={stoch_k:.1f}, ADX={adx:.1f}")
-            if bearish_candle:
-                logger.info(f"   ✅ Bearish candlestick pattern confirmed!")
-
+            stop_loss = ema_50 + (atr * self.sl_atr_multiplier)
+            take_profit = entry - (abs(stop_loss - entry) * self.risk_reward_ratio)
+            
+            confidence = min(score / 10.0, 0.95)
+            
             return AdaptiveSignal(
                 symbol=self.symbol,
                 timeframe=self.timeframe,
@@ -1399,14 +1457,10 @@ class AdaptiveMultiStrategyEngine:
                 direction="SELL",
                 strategy_type=StrategyType.TREND_FOLLOWING,
                 market_regime=self.current_regime,
-                score=9.5,  # Very high score with triple confirmation
+                score=score,
                 confidence=confidence,
                 timestamp=current['time'],
-                metadata={
-                    'ema_20': ema_20, 'ema_50': ema_50, 'rsi': rsi, 
-                    'macd': macd_hist, 'stoch_k': stoch_k, 'adx': adx,
-                    'bearish_candle': bearish_candle
-                }
+                metadata={'rsi': rsi, 'macd': macd_hist, 'score': score}
             )
 
         return None
@@ -1534,12 +1588,12 @@ class AdaptiveMultiStrategyEngine:
 
         current = data.iloc[-1]
         
-        # Calculate Indicators
-        vwap = self._calculate_vwap(data).iloc[-1]
-        rsi = data.iloc[-1]['rsi']
-        upper_bb = data.iloc[-1]['bb_upper']
-        lower_bb = data.iloc[-1]['bb_lower']
-        atr = data.iloc[-1]['atr']
+        # Calculate Indicators (Centralized)
+        vwap = current['vwap']
+        rsi = current['rsi']
+        upper_bb = current['bb_upper']
+        lower_bb = current['bb_lower']
+        atr = current['atr']
         
         # STRONG TREND FILTER - Only trade with the trend
         ema_20 = current['ema_20']
@@ -1553,13 +1607,13 @@ class AdaptiveMultiStrategyEngine:
         if uptrend and current['close'] < vwap and current['close'] <= lower_bb and rsi < 30:
             signal_type = "BUY"
             sl = current['close'] - (self.sl_atr_multiplier * atr)
-            tp = current['close'] + (self.tp_ratio * self.sl_atr_multiplier * atr)
+            tp = current['close'] + (self.sl_atr_multiplier * atr * self.risk_reward_ratio)
 
         # SELL Logic - MUST be in downtrend
         elif downtrend and current['close'] > vwap and current['close'] >= upper_bb and rsi > 70:
             signal_type = "SELL"
             sl = current['close'] + (self.sl_atr_multiplier * atr)
-            tp = current['close'] - (self.tp_ratio * self.sl_atr_multiplier * atr)
+            tp = current['close'] - (self.sl_atr_multiplier * atr * self.risk_reward_ratio)
 
         if signal_type:
             return AdaptiveSignal(
@@ -1611,13 +1665,13 @@ class AdaptiveMultiStrategyEngine:
         if uptrend and (prev_k < prev_d) and (current_k > current_d) and (current_k < 20):
             signal_type = "BUY"
             sl = current_price - (self.sl_atr_multiplier * atr)
-            tp = current_price + (self.tp_ratio * self.sl_atr_multiplier * atr)
+            tp = current_price + (self.sl_atr_multiplier * atr * self.risk_reward_ratio)
 
         # SELL: Cross DOWN above 80 + STRONG Downtrend (EMA20 < EMA50)
         elif downtrend and (prev_k > prev_d) and (current_k < current_d) and (current_k > 80):
             signal_type = "SELL"
             sl = current_price + (self.sl_atr_multiplier * atr)
-            tp = current_price - (self.tp_ratio * self.sl_atr_multiplier * atr)
+            tp = current_price - (self.sl_atr_multiplier * atr * self.risk_reward_ratio)
 
         if signal_type:
             return AdaptiveSignal(
@@ -1703,7 +1757,7 @@ class AdaptiveMultiStrategyEngine:
             
             entry = price
             stop_loss = fib_786 - (atr * self.sl_atr_multiplier)  # Below 78.6% with dynamic buffer
-            take_profit = entry + (abs(entry - stop_loss) * self.tp_ratio)  # Dynamic TP ratio
+            take_profit = entry + (abs(entry - stop_loss) * self.risk_reward_ratio)  # Dynamic R/R
             
             logger.info(f"📐 FIBONACCI BUY @ {entry:.5f} (Golden Zone: {fib_50:.5f}-{fib_618:.5f})")
             logger.info(f"   RSI={rsi:.1f}, Trend=UP, SL={stop_loss:.5f}, TP={take_profit:.5f}")
@@ -1754,7 +1808,7 @@ class AdaptiveMultiStrategyEngine:
             # For SELL, SL above 78.6% from top
             fib_sell_786 = swing_high - (swing_range * 0.214)  # 78.6% from top = 21.4% from bottom
             stop_loss = fib_sell_786 + (atr * self.sl_atr_multiplier)  # Dynamic buffer
-            take_profit = entry - (abs(stop_loss - entry) * self.tp_ratio)  # Dynamic TP
+            take_profit = entry - (abs(stop_loss - entry) * self.risk_reward_ratio)  # Dynamic R/R
             
             logger.info(f"📐 FIBONACCI SELL @ {entry:.5f} (Golden Zone: {fib_sell_618:.5f}-{fib_sell_50:.5f})")
             logger.info(f"   RSI={rsi:.1f}, Trend=DOWN, SL={stop_loss:.5f}, TP={take_profit:.5f}")
@@ -1793,12 +1847,12 @@ class AdaptiveMultiStrategyEngine:
         """
         current = df.iloc[-1]
         
-        # Calculate fast RSI if not present
-        if 'rsi_7' not in df.columns:
-            df['rsi_7'] = self._calculate_rsi(df['close'], 7)
-            current = df.iloc[-1]
-            
+        # Indicators (Centralized)
         price = current['close']
+        ema_20 = current['ema_20']
+        rsi_7 = current['rsi_7']
+        atr = current['atr']
+        adx = current['adx']
         ema_20 = current['ema_20']
         rsi_7 = current['rsi_7']
         atr = current['atr']
@@ -1808,8 +1862,10 @@ class AdaptiveMultiStrategyEngine:
         if not self._is_valid_session(current['time']):
             return None
             
-        # Trend Strength Filter (Avoid chop) - Increased for quality
-        if adx < 25:
+        # Trend Strength Filter (Avoid chop) - Reduced for scalping reactivity
+        # Was ADX < 25 return None. Now we allow it but maybe lower confidence.
+        # Scalping needs volatility, but not necessarily a long term trend.
+        if adx < 15: # Lowered from 25
             return None
 
         # BUY SCALP
@@ -1817,7 +1873,7 @@ class AdaptiveMultiStrategyEngine:
         if price > ema_20 and rsi_7 < 30:
             entry = price
             stop_loss = entry - (atr * self.sl_atr_multiplier)
-            take_profit = entry + (atr * self.sl_atr_multiplier * self.tp_ratio)
+            take_profit = entry + (atr * self.sl_atr_multiplier * self.risk_reward_ratio)
             
             return AdaptiveSignal(
                 symbol=self.symbol,
@@ -1839,7 +1895,7 @@ class AdaptiveMultiStrategyEngine:
         if price < ema_20 and rsi_7 > 70:
             entry = price
             stop_loss = entry + (atr * self.sl_atr_multiplier)
-            take_profit = entry - (atr * self.sl_atr_multiplier * self.tp_ratio)
+            take_profit = entry - (atr * self.sl_atr_multiplier * self.risk_reward_ratio)
             
             return AdaptiveSignal(
                 symbol=self.symbol,
@@ -1917,22 +1973,38 @@ class AdaptiveMultiStrategyEngine:
         # Check H4 trend for breakouts
         h4_trend = self._check_higher_tf_trend(df_higher_tf)
 
-        # BULLISH BREAKOUT: All confirmations required
-        if price > recent_high and volume_spike and macd_hist > 0 and stoch_bullish and adx_strong:
-            # FILTER: Only take bullish breakout if H4 is BULLISH or NEUTRAL
-            if h4_trend == "BEARISH":
-                logger.debug(f"Bullish breakout rejected: H4 trend is BEARISH")
-                return None
+        # ============================================
+        # CORE VS BOOSTER LOGIC (Breakout)
+        # ============================================
+        
+        # 1. CORE (REQUIRED)
+        if not self._is_valid_session(current['time']): return None
+        
+        # Price breakout check
+        is_bullish_break = price > recent_high
+        is_bearish_break = price < recent_low
+        
+        if not (is_bullish_break or is_bearish_break): return None
+        
+        # 2. BOOSTERS
+        score = 5.0
+        
+        if is_bullish_break:
+            if h4_trend == "BEARISH": return None
+            
+            if volume_spike: score += 1.5
+            elif volume_ratio > 1.2: score += 0.5
+            
+            if macd_hist > 0: score += 1.0
+            if stoch_bullish: score += 1.0
+            if adx_strong: score += 1.0
+            
+            if score < 7.0: return None
+            
             entry = price
-            stop_loss = recent_high - (atr * 0.8)  # Tighter stop for breakouts
-            take_profit = entry + (range_size * 1.2)  # Very conservative: 1.2x range for high win rate
-
-            # Very high confidence with all confirmations
-            confidence = min(0.8 + (volume_ratio - 2.2) * 0.1, 0.95)
-
-            logger.info(f"🎯 HIGH PROB BREAKOUT BUY @ {entry:.5f}")
-            logger.info(f"   Volume={volume_ratio:.2f}x, MACD={macd_hist:.6f}, Stoch={stoch_k:.1f}, ADX={adx:.1f}")
-
+            stop_loss = recent_high - (atr * 0.8)
+            take_profit = entry + (range_size * 1.2)
+            
             return AdaptiveSignal(
                 symbol=self.symbol,
                 timeframe=self.timeframe,
@@ -1942,27 +2014,28 @@ class AdaptiveMultiStrategyEngine:
                 direction="BUY",
                 strategy_type=StrategyType.BREAKOUT_MOMENTUM,
                 market_regime=self.current_regime,
-                score=9.5,  # Very high score
-                confidence=confidence,
+                score=score,
+                confidence=min(score/10.0, 0.95),
                 timestamp=current['time'],
-                metadata={'volume_ratio': volume_ratio, 'macd': macd_hist, 'stoch_k': stoch_k, 'adx': adx}
+                metadata={'score': score, 'vol': volume_ratio}
             )
 
-        # BEARISH BREAKOUT: All confirmations required
-        if price < recent_low and volume_spike and macd_hist < 0 and stoch_bearish and adx_strong:
-            # FILTER: Only take bearish breakout if H4 is BEARISH or NEUTRAL
-            if h4_trend == "BULLISH":
-                logger.debug(f"Bearish breakout rejected: H4 trend is BULLISH")
-                return None
+        elif is_bearish_break:
+            if h4_trend == "BULLISH": return None
+            
+            if volume_spike: score += 1.5
+            elif volume_ratio > 1.2: score += 0.5
+            
+            if macd_hist < 0: score += 1.0
+            if stoch_bearish: score += 1.0
+            if adx_strong: score += 1.0
+            
+            if score < 7.0: return None
+            
             entry = price
-            stop_loss = recent_low + (atr * 0.8)  # Tighter stop for breakouts
-            take_profit = entry - (range_size * 1.2)  # Very conservative: 1.2x range
-
-            confidence = min(0.8 + (volume_ratio - 2.2) * 0.1, 0.95)
-
-            logger.info(f"🎯 HIGH PROB BREAKOUT SELL @ {entry:.5f}")
-            logger.info(f"   Volume={volume_ratio:.2f}x, MACD={macd_hist:.6f}, Stoch={stoch_k:.1f}, ADX={adx:.1f}")
-
+            stop_loss = recent_low + (atr * 0.8)
+            take_profit = entry - (range_size * 1.2)
+            
             return AdaptiveSignal(
                 symbol=self.symbol,
                 timeframe=self.timeframe,
@@ -1972,10 +2045,10 @@ class AdaptiveMultiStrategyEngine:
                 direction="SELL",
                 strategy_type=StrategyType.BREAKOUT_MOMENTUM,
                 market_regime=self.current_regime,
-                score=9.5,
-                confidence=confidence,
+                score=score,
+                confidence=min(score/10.0, 0.95),
                 timestamp=current['time'],
-                metadata={'volume_ratio': volume_ratio, 'macd': macd_hist, 'stoch_k': stoch_k, 'adx': adx}
+                metadata={'score': score, 'vol': volume_ratio}
             )
 
         return None
@@ -2161,7 +2234,7 @@ class AdaptiveMultiStrategyEngine:
                 else:
                     stop_loss = low - (current['atr'] * self.sl_atr_multiplier)
                 
-                take_profit = entry + (entry - stop_loss) * self.tp_ratio  # Dynamic TP
+                take_profit = entry + (entry - stop_loss) * self.risk_reward_ratio  # Dynamic R/R
                 
                 logger.info(f"💎 ICT BULLISH SWEEP @ {entry:.5f}")
                 logger.info(f"   MSS: ✅, FVG: {'✅' if has_bullish_fvg else '❌'}, CVD: {'✅' if cvd_rising else '❌'}, MFI: {mfi:.1f}")
@@ -2229,7 +2302,7 @@ class AdaptiveMultiStrategyEngine:
                 else:
                     stop_loss = high + (current['atr'] * self.sl_atr_multiplier)
                 
-                take_profit = entry - (stop_loss - entry) * self.tp_ratio  # Dynamic TP
+                take_profit = entry - (stop_loss - entry) * self.risk_reward_ratio  # Dynamic R/R
                 
                 logger.info(f"💎 ICT BEARISH SWEEP @ {entry:.5f}")
                 logger.info(f"   MSS: ✅, FVG: {'✅' if has_bearish_fvg else '❌'}, CVD: {'✅' if cvd_falling else '❌'}, MFI: {mfi:.1f}")

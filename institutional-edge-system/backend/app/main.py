@@ -51,7 +51,7 @@ app.include_router(market.router, prefix="/api/market", tags=["market"])
 
 # Socket.IO Setup
 import socketio
-from app.core.socket import sio
+from app.core.socket_server import sio
 
 # ============================================================================
 # STARTUP & SHUTDOWN

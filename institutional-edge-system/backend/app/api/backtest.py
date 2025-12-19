@@ -9,7 +9,7 @@ from app.api import database
 from app.models.database import BacktestSession, BacktestTrade
 from app.backtesting.engine import BacktestEngine
 from app.backtesting.models import BacktestConfig
-from app.core.socket import sio
+from app.core.socket_server import sio
 from loguru import logger
 import asyncio
 
