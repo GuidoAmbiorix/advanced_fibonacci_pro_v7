@@ -21,10 +21,12 @@ except ImportError:
     ML_AVAILABLE = False
     logger.warning("ML module not available - AI predictions disabled")
 
+from app.core.confluence_system import EnhancedConfluenceScorer, ConfluenceBreakdown
+
 
 @dataclass
 class OrderBlock:
-    """Order Block structure"""
+    """Order Block structure with quality scoring"""
     top: float
     bottom: float
     start_time: datetime
@@ -32,17 +34,27 @@ class OrderBlock:
     is_mitigated: bool
     volume: float
     bar_index: int
+    # Quality scoring (0-5)
+    quality_score: int = 0
+    has_displacement: bool = False
+    wick_ratio: float = 0.0  # Wick size / total range
+    volume_percentile: float = 0.0
 
 
 @dataclass
 class FairValueGap:
-    """Fair Value Gap structure"""
+    """Fair Value Gap structure with quality scoring"""
     top: float
     bottom: float
     start_time: datetime
     is_bullish: bool
     is_filled: bool
     bar_index: int
+    # Quality scoring (0-5)
+    quality_score: int = 0
+    is_htf: bool = False  # From H4/D1
+    has_displacement: bool = False
+    size_in_atr: float = 0.0
 
 
 @dataclass
@@ -132,7 +144,11 @@ class TradingEngine:
         self.pdh: Optional[float] = None  # Previous Day High
         self.pdl: Optional[float] = None  # Previous Day Low
 
-        # Scoring Weights (Updated for Pure SMC)
+        # Initialize Enhanced Confluence Scorer (NEW!)
+        self.confluence_scorer = EnhancedConfluenceScorer()
+        self.use_enhanced_confluence = config.get('use_enhanced_confluence', True)
+
+        # Scoring Weights (OLD - Deprecated, kept for compatibility)
         self.SCORING_WEIGHTS = {
             # Core Structure (Highest Weight)
             'BOS': 3,
@@ -206,7 +222,14 @@ class TradingEngine:
         self._calculate_volume_profile(df)
 
         # Calculate confluence and generate signals
-        confluence_data = self._calculate_confluence(df, bos_choch_data)
+        # Use ENHANCED confluence if enabled
+        if self.use_enhanced_confluence:
+            confluence_data = self._calculate_confluence_enhanced(df, bos_choch_data)
+            logger.debug("Using ENHANCED confluence scoring")
+        else:
+            confluence_data = self._calculate_confluence(df, bos_choch_data)
+            logger.debug("Using OLD confluence scoring")
+
         signals = self._generate_signals(df, confluence_data)
 
         return {
@@ -454,6 +477,261 @@ class TradingEngine:
 
         return {'bull_stop_hunt': bull_hunt, 'bear_stop_hunt': bear_hunt}
 
+    def _detect_displacement(self, df: pd.DataFrame) -> Dict:
+        """
+        Detect institutional displacement (strong impulse moves)
+
+        Displacement = Large candle body (>1.5 ATR) + High volume
+        Indicates real institutional activity, not retail noise
+
+        Source: LuxAlgo ICT Concepts, MentFX SMC Playbook
+        Returns: Dict with bullish/bearish displacement + strength
+        """
+        if len(df) < 2:
+            return {
+                'bullish_displacement': False,
+                'bearish_displacement': False,
+                'strength': 0.0
+            }
+
+        current = df.iloc[-1]
+        atr = current['atr']
+
+        # Calculate candle body size
+        body_size = abs(current['close'] - current['open'])
+        total_range = current['high'] - current['low']
+
+        # Displacement criteria
+        is_large_body = body_size > (atr * 1.5)  # Strong impulse
+        is_high_volume = current['volume'] > df['volume'].quantile(0.80)  # Top 20% volume
+        body_dominance = body_size / total_range if total_range > 0 else 0
+        is_dominant_body = body_dominance > 0.65  # Body > 65% of total range
+
+        # Determine direction
+        is_bullish = current['close'] > current['open']
+        is_bearish = current['close'] < current['open']
+
+        # Valid displacement requires all criteria
+        bullish_disp = is_bullish and is_large_body and is_high_volume and is_dominant_body
+        bearish_disp = is_bearish and is_large_body and is_high_volume and is_dominant_body
+
+        # Calculate strength (for weighting)
+        strength = (body_size / atr) if atr > 0 else 0
+
+        if bullish_disp:
+            logger.debug(f"🚀 Bullish DISPLACEMENT: {body_size/atr:.2f}x ATR, vol={current['volume']:.0f}")
+        if bearish_disp:
+            logger.debug(f"🔻 Bearish DISPLACEMENT: {body_size/atr:.2f}x ATR, vol={current['volume']:.0f}")
+
+        return {
+            'bullish_displacement': bullish_disp,
+            'bearish_displacement': bearish_disp,
+            'strength': strength,
+            'body_ratio': body_dominance
+        }
+
+    def _detect_equal_highs_lows(self, df: pd.DataFrame, tolerance_atr: float = 0.3) -> Dict:
+        """
+        Detect Equal Highs (EQH) and Equal Lows (EQL) - engineered liquidity
+
+        EQH/EQL = Multiple touches at same level (±tolerance)
+        These are liquidity pools that smart money targets for sweeps
+
+        Source: ICT, Smart Money Concepts
+        Returns: Dict with EQH/EQL levels and touch counts
+        """
+        if len(df) < 20:
+            return {'eqh_levels': [], 'eql_levels': []}
+
+        atr = df.iloc[-1]['atr']
+        tolerance = atr * tolerance_atr
+
+        # Get recent swing highs and lows (last 50 bars)
+        lookback = min(50, len(df))
+        recent_highs = []
+        recent_lows = []
+
+        for i in range(len(df) - lookback, len(df)):
+            if i < self.swing_length or i >= len(df) - self.swing_length:
+                continue
+
+            bar = df.iloc[i]
+            is_swing_high = all(bar['high'] >= df.iloc[i-self.swing_length:i+self.swing_length+1]['high'])
+            is_swing_low = all(bar['low'] <= df.iloc[i-self.swing_length:i+self.swing_length+1]['low'])
+
+            if is_swing_high:
+                recent_highs.append(bar['high'])
+            if is_swing_low:
+                recent_lows.append(bar['low'])
+
+        # Find equal levels (clustered touches)
+        def find_equal_levels(levels, tolerance):
+            if not levels:
+                return []
+
+            equal_groups = []
+            sorted_levels = sorted(levels)
+
+            current_group = [sorted_levels[0]]
+            for level in sorted_levels[1:]:
+                if abs(level - current_group[0]) <= tolerance:
+                    current_group.append(level)
+                else:
+                    if len(current_group) >= 2:  # At least 2 touches
+                        equal_groups.append({
+                            'price': sum(current_group) / len(current_group),
+                            'touches': len(current_group)
+                        })
+                    current_group = [level]
+
+            # Don't forget last group
+            if len(current_group) >= 2:
+                equal_groups.append({
+                    'price': sum(current_group) / len(current_group),
+                    'touches': len(current_group)
+                })
+
+            return equal_groups
+
+        eqh_levels = find_equal_levels(recent_highs, tolerance)
+        eql_levels = find_equal_levels(recent_lows, tolerance)
+
+        if eqh_levels:
+            eqh_str = ', '.join([f"{eq['price']:.5f}({eq['touches']}x)" for eq in eqh_levels])
+            logger.debug(f"🔺 Found {len(eqh_levels)} EQH level(s): {eqh_str}")
+        if eql_levels:
+            eql_str = ', '.join([f"{eq['price']:.5f}({eq['touches']}x)" for eq in eql_levels])
+            logger.debug(f"🔻 Found {len(eql_levels)} EQL level(s): {eql_str}")
+
+        return {
+            'eqh_levels': eqh_levels,
+            'eql_levels': eql_levels
+        }
+
+    def _check_internal_vs_external_liquidity(self, swept_level: float, df: pd.DataFrame) -> str:
+        """
+        Classify liquidity sweep as INTERNAL (weak) or EXTERNAL (strong)
+
+        Internal = Recent small swing (last 10-20 bars, <50 pips)
+        External = Major HTF swing (50+ bars ago, >100 pips range)
+
+        Only external liquidity sweeps are valid for reversals
+
+        Source: ICT Liquidity Concepts, MentFX
+        """
+        current_price = df.iloc[-1]['close']
+        atr = df.iloc[-1]['atr']
+
+        # Find the swing that was swept
+        lookback_short = 20  # Internal
+        lookback_long = 100  # External
+
+        # Check if swept level is from recent price action (internal)
+        recent_range = df.iloc[-lookback_short:][['high', 'low']].values.flatten()
+        is_internal = any(abs(swept_level - price) < atr * 0.5 for price in recent_range)
+
+        if is_internal:
+            # Verify it's actually small range
+            recent_high = df.iloc[-lookback_short:]['high'].max()
+            recent_low = df.iloc[-lookback_short:]['low'].min()
+            range_pips = (recent_high - recent_low) / 0.0001  # EURUSD pips
+
+            if range_pips < 50:  # Small internal range
+                return "INTERNAL"
+
+        # Check if it's a major HTF level (external)
+        htf_range = df.iloc[-lookback_long:][['high', 'low']].values.flatten()
+        is_external = any(abs(swept_level - price) < atr * 0.5 for price in htf_range)
+
+        if is_external:
+            return "EXTERNAL"
+
+        return "UNKNOWN"
+
+    def _is_in_killzone(self, current_time: datetime) -> Dict:
+        """
+        Check if current time is within ICT Killzones (high probability trading windows)
+
+        Killzones (EST/NYC time):
+        - London Killzone: 02:00-05:00 (Asian-London transition)
+        - NY AM Killzone: 08:30-11:00 (NY open)
+        - NY PM Killzone: 13:00-15:00 (Lunch + PM session)
+
+        Source: ICT, Smart Money Concepts
+        Win rate drops 10-15% outside killzones
+        """
+        # Convert to UTC hour (assuming input is UTC)
+        utc_hour = current_time.hour
+        utc_minute = current_time.minute
+
+        # EST = UTC - 5 (standard) or UTC - 4 (daylight)
+        # Simplified: use UTC - 5
+        est_hour = (utc_hour - 5) % 24
+
+        # London Killzone: 02:00-05:00 EST = 07:00-10:00 UTC
+        in_london_kz = 7 <= utc_hour < 10
+
+        # NY AM Killzone: 08:30-11:00 EST = 13:30-16:00 UTC
+        in_ny_am_kz = (utc_hour == 13 and utc_minute >= 30) or (14 <= utc_hour < 16)
+
+        # NY PM Killzone: 13:00-15:00 EST = 18:00-20:00 UTC
+        in_ny_pm_kz = 18 <= utc_hour < 20
+
+        in_any_killzone = in_london_kz or in_ny_am_kz or in_ny_pm_kz
+
+        killzone_name = ""
+        if in_london_kz:
+            killzone_name = "LONDON"
+        elif in_ny_am_kz:
+            killzone_name = "NY_AM"
+        elif in_ny_pm_kz:
+            killzone_name = "NY_PM"
+
+        return {
+            'in_killzone': in_any_killzone,
+            'killzone_name': killzone_name,
+            'in_london': in_london_kz,
+            'in_ny_am': in_ny_am_kz,
+            'in_ny_pm': in_ny_pm_kz
+        }
+
+    def _check_atr_regime(self, df: pd.DataFrame) -> Dict:
+        """
+        Check if market volatility is suitable for trading
+
+        Low ATR = ranging/dead market (avoid trading)
+        Normal/High ATR = trending market (good for SMC)
+
+        Filter: Only trade when ATR > 1.0x SMA(ATR, 20)
+        """
+        if len(df) < 20:
+            return {'is_suitable': True, 'regime': 'UNKNOWN'}
+
+        current_atr = df.iloc[-1]['atr']
+        atr_sma = df['atr'].iloc[-20:].mean()
+
+        atr_ratio = current_atr / atr_sma if atr_sma > 0 else 1.0
+
+        # Classify regime
+        if atr_ratio < 0.8:
+            regime = "DEAD"  # Very low volatility
+            is_suitable = False
+        elif atr_ratio < 1.0:
+            regime = "LOW"  # Below average
+            is_suitable = False
+        elif atr_ratio <= 1.3:
+            regime = "NORMAL"  # Good
+            is_suitable = True
+        else:
+            regime = "HIGH"  # High volatility (good but manage risk)
+            is_suitable = True
+
+        return {
+            'is_suitable': is_suitable,
+            'regime': regime,
+            'atr_ratio': atr_ratio
+        }
+
     def _calculate_vp_trend(self) -> str:
         """Check if POC is rising or falling"""
         if len(self.poc_history) < 3:
@@ -466,7 +744,182 @@ class TradingEngine:
             return "FALLING"  # Bearish distribution
         return "NEUTRAL"
 
+    def _calculate_ob_quality(self, ob: OrderBlock, df: pd.DataFrame, bar_idx: int) -> int:
+        """
+        Calculate Order Block quality score (0-5)
 
+        Quality factors:
+        - Fresh (not mitigated): +2
+        - Small wick ratio (<20%): +1
+        - High volume (>70th percentile): +1
+        - Followed by displacement: +1
+        - Strong body dominance: +1 (optional bonus)
+
+        Source: MentFX Institutional Playbook, LuxAlgo
+        """
+        quality = 0
+
+        # Factor 1: Fresh OB (not mitigated)
+        if not ob.is_mitigated:
+            quality += 2
+
+        # Factor 2: Small wicks (clean OB)
+        total_range = ob.top - ob.bottom
+        if total_range > 0:
+            # Estimate wick from bar data
+            bar = df.iloc[bar_idx]
+            if ob.is_bullish:
+                lower_wick = bar['low'] - bar['open']
+                upper_wick = bar['high'] - bar['close']
+            else:
+                lower_wick = bar['open'] - bar['low']
+                upper_wick = bar['close'] - bar['high']
+
+            total_wick = abs(lower_wick) + abs(upper_wick)
+            wick_ratio = total_wick / total_range if total_range > 0 else 1.0
+
+            if wick_ratio < 0.20:  # Wicks < 20% of range
+                quality += 1
+
+        # Factor 3: High volume
+        vol_percentile = (df.iloc[:bar_idx+1]['volume'] < ob.volume).sum() / len(df.iloc[:bar_idx+1]) * 100
+        if vol_percentile > 70:
+            quality += 1
+
+        # Factor 4: Followed by displacement (check next 1-3 bars)
+        has_displacement = False
+        for i in range(bar_idx + 1, min(bar_idx + 4, len(df))):
+            next_bar = df.iloc[i]
+            body_size = abs(next_bar['close'] - next_bar['open'])
+            atr = next_bar['atr']
+            if body_size > atr * 1.5:
+                has_displacement = True
+                break
+
+        if has_displacement:
+            quality += 1
+
+        return min(quality, 5)  # Cap at 5
+
+    def _calculate_fvg_quality(self, fvg: FairValueGap, df: pd.DataFrame, bar_idx: int) -> int:
+        """
+        Calculate Fair Value Gap quality score (0-5)
+
+        Quality factors:
+        - Fresh (unfilled): +2
+        - Large size (>1.0 ATR): +2
+        - HTF aligned: +1
+        - Followed by displacement: +1
+
+        Source: ICT FVG concepts, Smart Money
+        """
+        quality = 0
+
+        # Factor 1: Fresh FVG
+        if not fvg.is_filled:
+            quality += 2
+
+        # Factor 2: Large FVG (significant imbalance)
+        fvg_size = fvg.top - fvg.bottom
+        atr = df.iloc[bar_idx]['atr']
+        size_in_atr = fvg_size / atr if atr > 0 else 0
+
+        if size_in_atr > 1.0:  # > 1 ATR
+            quality += 2
+        elif size_in_atr > 0.5:  # > 0.5 ATR
+            quality += 1
+
+        # Factor 3: Followed by displacement
+        has_displacement = False
+        for i in range(bar_idx + 1, min(bar_idx + 4, len(df))):
+            next_bar = df.iloc[i]
+            body_size = abs(next_bar['close'] - next_bar['open'])
+            atr_next = next_bar['atr']
+            if body_size > atr_next * 1.5:
+                has_displacement = True
+                break
+
+        if has_displacement:
+            quality += 1
+
+        return min(quality, 5)  # Cap at 5
+
+    def _calculate_bos_choch_quality(self, df: pd.DataFrame, break_bar_idx: int, break_type: str) -> int:
+        """
+        Calculate Market Structure break quality (0-5)
+
+        Quality factors for BOS/CHoCH:
+        - Clean close beyond level (not just wick): +2
+        - Accompanied by displacement: +2
+        - High volume: +1
+        - Body > 50% of candle range: +1
+
+        Source: ICT Market Structure, MentFX
+        """
+        if break_bar_idx >= len(df):
+            return 0
+
+        quality = 0
+        break_bar = df.iloc[break_bar_idx]
+
+        # Factor 1: Clean close (body breaks, not just wick)
+        body_close = break_bar['close']
+        body_open = break_bar['open']
+
+        # For bullish break, close should be high
+        # For bearish break, close should be low
+        candle_range = break_bar['high'] - break_bar['low']
+        if candle_range > 0:
+            if break_type in ['BOS_BULL', 'CHOCH_BULL']:
+                close_position = (break_bar['close'] - break_bar['low']) / candle_range
+            else:
+                close_position = (break_bar['high'] - break_bar['close']) / candle_range
+
+            if close_position > 0.5:  # Close in top 50% of range
+                quality += 2
+
+        # Factor 2: Displacement (large body)
+        body_size = abs(break_bar['close'] - break_bar['open'])
+        atr = break_bar['atr']
+        if body_size > atr * 1.5:
+            quality += 2
+
+        # Factor 3: High volume
+        if break_bar['volume'] > break_bar['avg_volume'] * 1.3:
+            quality += 1
+
+        # Factor 4: Body dominance
+        body_ratio = body_size / candle_range if candle_range > 0 else 0
+        if body_ratio > 0.65:
+            quality += 1
+
+        return min(quality, 5)
+
+    def _detect_smt_divergence(self, df: pd.DataFrame, correlated_symbol_df: Optional[pd.DataFrame] = None) -> Dict:
+        """
+        Detect Smart Money Tool (SMT) Divergence
+
+        SMT Divergence = Correlated pairs making opposite moves
+        Example: EURUSD makes LL but GBPUSD does NOT = bullish divergence
+
+        This is one of ICT's most powerful tools for filtering false breaks
+
+        Source: ICT SMT Concepts
+        Impact: Reduces false BOS/CHOCH by 30%
+
+        Note: Requires correlated pair data (future enhancement)
+        For now, returns placeholder
+        """
+        # TODO: Implement when multi-symbol data available
+        # For EURUSD, would check: GBPUSD, USDCHF, DXY
+
+        # Placeholder implementation
+        return {
+            'has_bullish_smt': False,
+            'has_bearish_smt': False,
+            'smt_strength': 0,
+            'note': 'SMT requires correlated symbol data (not yet implemented)'
+        }
 
     def _detect_swing_points(self, df: pd.DataFrame):
         """Detect swing highs and lows"""
@@ -993,18 +1446,408 @@ class TradingEngine:
             'bos_choch_data': bos_choch_data
         }
 
+    def _calculate_confluence_enhanced(self, df: pd.DataFrame, bos_choch_data: Dict) -> Dict:
+        """
+        FULLY ENHANCED confluence calculation with ALL new factors
+
+        Integrates:
+        - Displacement detection
+        - OB/FVG quality scoring
+        - Market structure quality
+        - Internal vs External liquidity
+        - EQH/EQL detection
+        - Killzones
+        - ATR regime filter
+        - SMT divergence (placeholder)
+
+        Returns separate scores for CONTINUATION vs REVERSAL
+        """
+        current_price = df.iloc[-1]['close']
+        current_low = df.iloc[-1]['low']
+        current_high = df.iloc[-1]['high']
+        current_time = df.iloc[-1]['time']
+        atr = df.iloc[-1]['atr']
+
+        # ===== RUN ALL DETECTORS =====
+
+        # 🔥 NEW: Displacement
+        displacement = self._detect_displacement(df)
+        has_bull_displacement = displacement['bullish_displacement']
+        has_bear_displacement = displacement['bearish_displacement']
+
+        # 🔥 NEW: EQH/EQL
+        eqh_eql = self._detect_equal_highs_lows(df)
+        has_eqh = len(eqh_eql['eqh_levels']) > 0
+        has_eql = len(eqh_eql['eql_levels']) > 0
+
+        # 🔥 NEW: Killzone
+        killzone = self._is_in_killzone(current_time)
+        in_killzone = killzone['in_killzone']
+
+        # 🔥 NEW: ATR Regime
+        atr_regime = self._check_atr_regime(df)
+        atr_ok = atr_regime['is_suitable']
+
+        # 🔥 NEW: SMT Divergence (placeholder for now)
+        smt = self._detect_smt_divergence(df)
+
+        # 1. Structure
+        has_bos_bull = bos_choch_data.get('bos_bullish', False) and bos_choch_data.get('bos_recent', False)
+        has_bos_bear = bos_choch_data.get('bos_bearish', False) and bos_choch_data.get('bos_recent', False)
+        has_choch_bull = bos_choch_data.get('choch_to_bullish', False)
+        has_choch_bear = bos_choch_data.get('choch_to_bearish', False)
+
+        # 🔥 NEW: Calculate Market Structure Quality
+        bull_ms_quality = 0
+        bear_ms_quality = 0
+        if has_bos_bull or has_choch_bull:
+            bull_ms_quality = self._calculate_bos_choch_quality(
+                df, len(df) - 1, 'BOS_BULL' if has_bos_bull else 'CHOCH_BULL'
+            )
+        if has_bos_bear or has_choch_bear:
+            bear_ms_quality = self._calculate_bos_choch_quality(
+                df, len(df) - 1, 'BOS_BEAR' if has_bos_bear else 'CHOCH_BEAR'
+            )
+
+        # 2. Price Action with Quality Scoring
+        bull_ob = None
+        bear_ob = None
+        bull_fvg = None
+        bear_fvg = None
+        bull_ob_quality = 0
+        bear_ob_quality = 0
+        bull_fvg_quality = 0
+        bear_fvg_quality = 0
+
+        # Find OB with quality
+        for ob in self.bullish_obs:
+            if not ob.is_mitigated and ob.bottom <= current_low <= ob.top:
+                bull_ob = ob
+                bull_ob_quality = ob.quality_score if hasattr(ob, 'quality_score') else 0
+                break
+
+        for ob in self.bearish_obs:
+            if not ob.is_mitigated and ob.bottom <= current_high <= ob.top:
+                bear_ob = ob
+                bear_ob_quality = ob.quality_score if hasattr(ob, 'quality_score') else 0
+                break
+
+        # Find FVG with quality
+        for fvg in self.bullish_fvgs:
+            if not fvg.is_filled and fvg.bottom <= current_price <= fvg.top:
+                bull_fvg = fvg
+                bull_fvg_quality = fvg.quality_score if hasattr(fvg, 'quality_score') else 0
+                break
+
+        for fvg in self.bearish_fvgs:
+            if not fvg.is_filled and fvg.bottom <= current_price <= fvg.top:
+                bear_fvg = fvg
+                bear_fvg_quality = fvg.quality_score if hasattr(fvg, 'quality_score') else 0
+                break
+
+        at_bullish_ob = bull_ob is not None
+        at_bearish_ob = bear_ob is not None
+        at_bullish_fvg = bull_fvg is not None
+        at_bearish_fvg = bear_fvg is not None
+
+        # 3. Fibonacci
+        fib_data = self._calculate_fibonacci_levels(df)
+        bull_fib_score = 0
+        bear_fib_score = 0
+
+        if fib_data['bullish_level']:
+            is_golden = fib_data['is_golden_zone']
+            bull_fib_score = self.confluence_scorer.WEIGHTS['FIB_SINGLE_TF']
+            if is_golden:
+                bull_fib_score += self.confluence_scorer.WEIGHTS['GOLDEN_POCKET']
+
+        if fib_data['bearish_level']:
+            is_golden = fib_data['is_golden_zone']
+            bear_fib_score = self.confluence_scorer.WEIGHTS['FIB_SINGLE_TF']
+            if is_golden:
+                bear_fib_score += self.confluence_scorer.WEIGHTS['GOLDEN_POCKET']
+
+        # Log Fibonacci
+        if bull_fib_score > 0:
+            level = fib_data.get('bullish_level', 'N/A')
+            price = fib_data.get('bullish_price', 0)
+            is_golden = fib_data.get('is_golden_zone', False)
+            logger.debug(f"🟢 Bull Fibonacci Score: {bull_fib_score} (level: {level}@{price:.5f}, golden: {is_golden})")
+        if bear_fib_score > 0:
+            level = fib_data.get('bearish_level', 'N/A')
+            price = fib_data.get('bearish_price', 0)
+            is_golden = fib_data.get('is_golden_zone', False)
+            logger.debug(f"🔴 Bear Fibonacci Score: {bear_fib_score} (level: {level}@{price:.5f}, golden: {is_golden})")
+
+        # 4. Liquidity with Internal/External classification
+        bull_sweep, bear_sweep = self._detect_liquidity_sweeps(df)
+        stop_hunt = self._detect_stop_hunt(df)
+
+        # 🔥 NEW: Classify liquidity type
+        bull_liq_type = "NONE"
+        bear_liq_type = "NONE"
+
+        if bull_sweep and self.swing_lows:
+            last_low = self.swing_lows[-1].price
+            liq_type = self._check_internal_vs_external_liquidity(last_low, df)
+            bull_liq_type = liq_type
+
+        if bear_sweep and self.swing_highs:
+            last_high = self.swing_highs[-1].price
+            liq_type = self._check_internal_vs_external_liquidity(last_high, df)
+            bear_liq_type = liq_type
+
+        # 5. Volume
+        delta_vol_bull = self._check_volume_confirmation(df, "BUY")
+        delta_vol_bear = self._check_volume_confirmation(df, "SELL")
+        has_volume_spike = df.iloc[-1]['volume_spike']
+
+        # 6. POC
+        poc_trend = self._calculate_vp_trend()
+        at_poc = self.poc_level and abs(current_price - self.poc_level) < atr * 0.5
+        poc_rising = poc_trend == "RISING"
+        poc_falling = poc_trend == "FALLING"
+
+        # 7. HTF Alignment
+        htf_bull = self.higher_tf_trend == "BULLISH"
+        htf_bear = self.higher_tf_trend == "BEARISH"
+
+        # 8. Zones
+        pd_zone = self._get_premium_discount_zone(df)
+        in_discount = pd_zone['zone'] == 'DISCOUNT'
+        in_premium = pd_zone['zone'] == 'PREMIUM'
+
+        # 9. Session Levels
+        near_session_levels = self._check_session_level_proximity(current_price, atr)
+        at_session_low = any('low' in level for level in near_session_levels) if near_session_levels else False
+        at_session_high = any('high' in level for level in near_session_levels) if near_session_levels else False
+
+        # ===== SCORE BULLISH SIGNALS =====
+
+        bull_continuation = None
+        bull_reversal = None
+
+        # Bullish CONTINUATION (BOS + retracement)
+        if has_bos_bull or self.trend_bullish:
+            bull_continuation = self.confluence_scorer.score_continuation(
+                has_bos=has_bos_bull,
+                at_ob=at_bullish_ob,
+                at_fvg=at_bullish_fvg,
+                fib_score=bull_fib_score,
+                has_delta_volume=delta_vol_bull,
+                has_volume_spike=has_volume_spike,
+                at_poc=at_poc,
+                poc_rising=poc_rising,
+                htf_aligned=htf_bull,
+                in_discount_zone=in_discount,
+                at_session_level=at_session_low,
+                # 🔥 NEW PARAMETERS
+                has_displacement=has_bull_displacement,
+                ob_quality=bull_ob_quality,
+                fvg_quality=bull_fvg_quality,
+                ms_quality=bull_ms_quality,
+                has_eqh_eql=has_eql,
+                in_killzone=in_killzone,
+                atr_regime_ok=atr_ok,
+                htf_imbalance=False,  # TODO: implement HTF imbalance detection
+                liquidity_type=bull_liq_type
+            )
+
+        # Bullish REVERSAL (CHoCH + liquidity grab)
+        if has_choch_bull:
+            bull_reversal = self.confluence_scorer.score_reversal(
+                has_choch=has_choch_bull,
+                at_ob=at_bullish_ob,
+                at_fvg=at_bullish_fvg,
+                fib_score=bull_fib_score,
+                has_liquidity_sweep=bull_sweep,
+                has_stop_hunt=stop_hunt.get('bull_stop_hunt', False),
+                has_delta_volume=delta_vol_bull,
+                htf_aligned=htf_bull,
+                in_correct_zone=in_discount,
+                # 🔥 NEW PARAMETERS
+                has_displacement=has_bull_displacement,
+                ob_quality=bull_ob_quality,
+                fvg_quality=bull_fvg_quality,
+                ms_quality=bull_ms_quality,
+                has_eqh_eql=has_eql,
+                in_killzone=in_killzone,
+                atr_regime_ok=atr_ok,
+                htf_imbalance=False,
+                liquidity_type=bull_liq_type
+            )
+
+        # ===== SCORE BEARISH SIGNALS =====
+
+        bear_continuation = None
+        bear_reversal = None
+
+        # Bearish CONTINUATION (BOS + retracement)
+        if has_bos_bear or (not self.trend_bullish):
+            bear_continuation = self.confluence_scorer.score_continuation(
+                has_bos=has_bos_bear,
+                at_ob=at_bearish_ob,
+                at_fvg=at_bearish_fvg,
+                fib_score=bear_fib_score,
+                has_delta_volume=delta_vol_bear,
+                has_volume_spike=has_volume_spike,
+                at_poc=at_poc,
+                poc_rising=poc_falling,
+                htf_aligned=htf_bear,
+                in_discount_zone=in_premium,
+                at_session_level=at_session_high,
+                # 🔥 NEW PARAMETERS
+                has_displacement=has_bear_displacement,
+                ob_quality=bear_ob_quality,
+                fvg_quality=bear_fvg_quality,
+                ms_quality=bear_ms_quality,
+                has_eqh_eql=has_eqh,
+                in_killzone=in_killzone,
+                atr_regime_ok=atr_ok,
+                htf_imbalance=False,
+                liquidity_type=bear_liq_type
+            )
+
+        # Bearish REVERSAL (CHoCH + liquidity grab)
+        if has_choch_bear:
+            bear_reversal = self.confluence_scorer.score_reversal(
+                has_choch=has_choch_bear,
+                at_ob=at_bearish_ob,
+                at_fvg=at_bearish_fvg,
+                fib_score=bear_fib_score,
+                has_liquidity_sweep=bear_sweep,
+                has_stop_hunt=stop_hunt.get('bear_stop_hunt', False),
+                has_delta_volume=delta_vol_bear,
+                htf_aligned=htf_bear,
+                in_correct_zone=in_premium,
+                # 🔥 NEW PARAMETERS
+                has_displacement=has_bear_displacement,
+                ob_quality=bear_ob_quality,
+                fvg_quality=bear_fvg_quality,
+                ms_quality=bear_ms_quality,
+                has_eqh_eql=has_eqh,
+                in_killzone=in_killzone,
+                atr_regime_ok=atr_ok,
+                htf_imbalance=False,
+                liquidity_type=bear_liq_type
+            )
+
+        # ===== PICK BEST VALID SIGNAL =====
+
+        all_signals = []
+
+        # Check bull continuation
+        if bull_continuation:
+            is_valid, reason = bull_continuation.is_valid()
+            logger.debug(f"🔵 Bull CONTINUATION: score={bull_continuation.total_score}, valid={is_valid}, reason={reason}, factors={bull_continuation.factors}")
+            if is_valid:
+                all_signals.append({
+                    'type': 'BUY',
+                    'trade_type': 'CONTINUATION',
+                    'score': bull_continuation.total_score,
+                    'breakdown': bull_continuation
+                })
+
+        # Check bull reversal
+        if bull_reversal:
+            is_valid, reason = bull_reversal.is_valid()
+            logger.debug(f"🔵 Bull REVERSAL: score={bull_reversal.total_score}, valid={is_valid}, reason={reason}, factors={bull_reversal.factors}")
+            if is_valid:
+                all_signals.append({
+                    'type': 'BUY',
+                    'trade_type': 'REVERSAL',
+                    'score': bull_reversal.total_score,
+                    'breakdown': bull_reversal
+                })
+
+        # Check bear continuation
+        if bear_continuation:
+            is_valid, reason = bear_continuation.is_valid()
+            logger.debug(f"🔴 Bear CONTINUATION: score={bear_continuation.total_score}, valid={is_valid}, reason={reason}, factors={bear_continuation.factors}")
+            if is_valid:
+                all_signals.append({
+                    'type': 'SELL',
+                    'trade_type': 'CONTINUATION',
+                    'score': bear_continuation.total_score,
+                    'breakdown': bear_continuation
+                })
+
+        # Check bear reversal
+        if bear_reversal:
+            is_valid, reason = bear_reversal.is_valid()
+            logger.debug(f"🔴 Bear REVERSAL: score={bear_reversal.total_score}, valid={is_valid}, reason={reason}, factors={bear_reversal.factors}")
+            if is_valid:
+                all_signals.append({
+                    'type': 'SELL',
+                    'trade_type': 'REVERSAL',
+                    'score': bear_reversal.total_score,
+                    'breakdown': bear_reversal
+                })
+
+        # Pick highest score
+        if not all_signals:
+            return {
+                'bull_score': 0,
+                'bear_score': 0,
+                'bias': 'NEUTRAL',
+                'signals': [],
+                'bull_breakdown': {},
+                'bear_breakdown': {},
+                'fib_data': fib_data,
+                'bos_choch_data': bos_choch_data
+            }
+
+        # Sort by score descending
+        all_signals.sort(key=lambda x: x['score'], reverse=True)
+        best_signal = all_signals[0]
+
+        # Extract scores and breakdowns
+        bull_score = 0
+        bear_score = 0
+        bull_breakdown = {}
+        bear_breakdown = {}
+
+        if bull_continuation and bull_continuation.is_valid()[0]:
+            bull_score = bull_continuation.total_score
+            bull_breakdown = bull_continuation.factors
+        if bull_reversal and bull_reversal.is_valid()[0]:
+            bull_score = max(bull_score, bull_reversal.total_score)
+            if bull_reversal.total_score > bull_continuation.total_score if bull_continuation else 0:
+                bull_breakdown = bull_reversal.factors
+
+        if bear_continuation and bear_continuation.is_valid()[0]:
+            bear_score = bear_continuation.total_score
+            bear_breakdown = bear_continuation.factors
+        if bear_reversal and bear_reversal.is_valid()[0]:
+            bear_score = max(bear_score, bear_reversal.total_score)
+            if bear_reversal.total_score > bear_continuation.total_score if bear_continuation else 0:
+                bear_breakdown = bear_reversal.factors
+
+        return {
+            'bull_score': bull_score,
+            'bear_score': bear_score,
+            'bias': best_signal['type'],
+            'signals': all_signals,
+            'best_signal': best_signal,
+            'bull_breakdown': bull_breakdown,
+            'bear_breakdown': bear_breakdown,
+            'fib_data': fib_data,
+            'bos_choch_data': bos_choch_data
+        }
+
 
     def _calculate_fibonacci_levels(self, df: pd.DataFrame) -> Dict:
         """
         Calculate Fibonacci retracement levels based on recent swings
-        Returns dictionary with active levels and zones
-        ENHANCED: ATR-based tolerance + Extension levels for TP targets
+        FIXED: More lenient tolerance and better swing detection
         """
         if not self.swing_highs or not self.swing_lows:
             return {
                 'bullish_level': None,
                 'bearish_level': None,
                 'is_golden_zone': False,
+                'bullish_price': None,
+                'bearish_price': None,
                 'extensions': {}
             }
 
@@ -1019,6 +1862,8 @@ class TradingEngine:
                 'bullish_level': None,
                 'bearish_level': None,
                 'is_golden_zone': False,
+                'bullish_price': None,
+                'bearish_price': None,
                 'extensions': {}
             }
 
@@ -1029,12 +1874,22 @@ class TradingEngine:
             'bullish_level': None,
             'bearish_level': None,
             'is_golden_zone': False,
+            'bullish_price': None,
+            'bearish_price': None,
             'nearest_level': None,
             'extensions': {}
         }
 
-        # ATR-based tolerance (more dynamic than fixed percentage)
-        tolerance = atr * 0.5  # Half ATR around Fib level
+        # RELAXED tolerance: 1 ATR around Fib level (was 0.5 ATR)
+        tolerance = atr * 1.0
+
+        # Log swing analysis
+        logger.debug(
+            f"📊 Fibonacci Analysis: price={current_price:.5f}, "
+            f"last_swing={'HIGH' if last_swing.is_high else 'LOW'}@{last_swing.price:.5f}, "
+            f"prev_swing={'HIGH' if prev_swing.is_high else 'LOW'}@{prev_swing.price:.5f}, "
+            f"tolerance={tolerance:.5f}"
+        )
 
         # Identify the last leg direction
         # If last swing was a High, the leg was Up (Low -> High). We look for Bullish Retracement (Dip).
@@ -1065,13 +1920,23 @@ class TradingEngine:
                     '2.618': high_price + (range_price * 1.618)
                 }
 
-                # Check proximity (ATR-based tolerance)
+                # Log calculated levels
+                logger.debug(f"📊 Bullish Fib Levels: {', '.join([f'{k}={v:.5f}' for k, v in fib_levels.items()])}")
+
+                # Check proximity (RELAXED tolerance)
                 for level_name, price in fib_levels.items():
                     if abs(current_price - price) < tolerance:
                         result['bullish_level'] = level_name
+                        result['bullish_price'] = price
                         if level_name in ['0.618', '0.786']:
                             result['is_golden_zone'] = True
+                        logger.debug(f"✅ Bullish Fibonacci MATCH: {level_name} @ {price:.5f} (current: {current_price:.5f}, diff: {abs(current_price - price):.5f}, tolerance: {tolerance:.5f})")
                         break
+
+                # Log if no match found
+                if not result['bullish_level']:
+                    nearest = min(fib_levels.items(), key=lambda x: abs(current_price - x[1]))
+                    logger.debug(f"❌ No Bullish Fib match. Nearest: {nearest[0]}@{nearest[1]:.5f}, diff={abs(current_price - nearest[1]):.5f} > tolerance={tolerance:.5f}")
 
         # If last swing was a Low, the leg was Down (High -> Low). We look for Bearish Retracement (Rally).
         else:
@@ -1101,13 +1966,23 @@ class TradingEngine:
                     '2.618': low_price - (range_price * 1.618)
                 }
 
-                # Check proximity (ATR-based tolerance)
+                # Log calculated levels
+                logger.debug(f"📊 Bearish Fib Levels: {', '.join([f'{k}={v:.5f}' for k, v in fib_levels.items()])}")
+
+                # Check proximity (RELAXED tolerance)
                 for level_name, price in fib_levels.items():
                     if abs(current_price - price) < tolerance:
                         result['bearish_level'] = level_name
+                        result['bearish_price'] = price
                         if level_name in ['0.618', '0.786']:
                             result['is_golden_zone'] = True
+                        logger.debug(f"✅ Bearish Fibonacci MATCH: {level_name} @ {price:.5f} (current: {current_price:.5f}, diff: {abs(current_price - price):.5f}, tolerance: {tolerance:.5f})")
                         break
+
+                # Log if no match found
+                if not result['bearish_level']:
+                    nearest = min(fib_levels.items(), key=lambda x: abs(current_price - x[1]))
+                    logger.debug(f"❌ No Bearish Fib match. Nearest: {nearest[0]}@{nearest[1]:.5f}, diff={abs(current_price - nearest[1]):.5f} > tolerance={tolerance:.5f}")
 
         return result
 
@@ -1303,12 +2178,14 @@ class TradingEngine:
                     signal.ai_confidence = ai_confidence
                     signal.ai_recommendation = ai_recommendation
 
-                    logger.info("✅ BUY signal generated - Confluence: {}/10, AI: {:.1f}% ({})",
-                               bull_score, ai_confidence, ai_recommendation)
+                    trade_type_info = f" [{confluence_data.get('bull_trade_type', '')}]" if 'bull_trade_type' in confluence_data else ""
+                    logger.info("✅ BUY signal generated{} - Confluence: {}/10, AI: {:.1f}% ({})",
+                               trade_type_info, bull_score, ai_confidence, ai_recommendation)
                 except Exception as e:
                     logger.error("AI prediction error: {}", e)
             else:
-                logger.info("✅ BUY signal generated with higher TF confirmation")
+                trade_type_info = f" [{confluence_data.get('bull_trade_type', '')}]" if 'bull_trade_type' in confluence_data else ""
+                logger.info("✅ BUY signal generated{} with higher TF confirmation", trade_type_info)
 
             signals.append(signal)
 

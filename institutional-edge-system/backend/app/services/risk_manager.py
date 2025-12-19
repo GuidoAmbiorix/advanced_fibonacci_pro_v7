@@ -1,120 +1,183 @@
-from app.models.database import BotConfig, RiskProfile
-from app.services.market_regime import MarketRegimeDetector
-from typing import Optional
+"""
+Risk Manager
+Simplified risk calculation - user controls risk directly
+"""
+
+from typing import Tuple
+from loguru import logger
+
 
 class AdaptiveRiskManager:
     """
-    Dynamic Risk Management Engine.
-    Adjusts risk based on:
-    - Market Volatility (ATR)
-    - Account Drawdown
-    - Consecutive Losses
-    - Prop Firm Rules
+    Simplified Risk Management System
+
+    Features:
+    - Uses configured base risk directly
+    - Consecutive loss reduction (safety feature)
+    - No automatic volatility or drawdown adjustments
     """
 
-    def __init__(self, bot_config: BotConfig, account_info: dict):
-        self.config = bot_config
-        self.account = account_info
-        self.base_risk_percent = bot_config.risk_percent
+    # Absolute maximum risk per trade
+    ABSOLUTE_MAX_RISK = 5.0  # 5% max
 
-    def calculate_risk_percent(self, market_regime: dict, consecutive_losses: int = 0) -> float:
+    # Minimum risk (when heavily reduced)
+    MINIMUM_RISK = 0.1  # 0.1%
+
+    def __init__(self, base_risk_percent: float = None):
+        """Initialize Risk Manager
+
+        Args:
+            base_risk_percent: Base risk % (if None, uses ABSOLUTE_MAX_RISK)
         """
-        Calculate the actual risk percentage for the next trade.
+        self.base_risk_percent = base_risk_percent if base_risk_percent else self.ABSOLUTE_MAX_RISK
+        logger.info(
+            f"RiskManager initialized - Base: {self.base_risk_percent}%, "
+            f"Max: {self.ABSOLUTE_MAX_RISK}%, Min: {self.MINIMUM_RISK}%"
+        )
+
+    def calculate_risk_percent(
+        self,
+        market_regime: str = "NORMAL",
+        consecutive_losses: int = 0,
+        current_volatility_percentile: float = 50.0,
+        current_drawdown: float = 0.0
+    ) -> Tuple[float, str]:
+        """
+        Calculate risk percentage for next trade
+
+        Args:
+            market_regime: Market regime (unused, kept for API compatibility)
+            consecutive_losses: Number of consecutive losing trades
+            current_volatility_percentile: Unused (kept for API compatibility)
+            current_drawdown: Unused (kept for API compatibility)
+
+        Returns:
+            Tuple of (risk_percent, reason)
         """
         risk = self.base_risk_percent
+        adjustments = []
 
-        # 1. Volatility Adjustment
-        if market_regime['volatility'] == 'HIGH':
-            risk *= 0.5  # Halve risk in high volatility
-        elif market_regime['volatility'] == 'EXTREME':
-            risk *= 0.25 # Quarter risk in extreme volatility
-        
-        # 2. Drawdown Adjustment
-        # Calculate current drawdown
-        balance = self.account.get('balance', 0)
-        equity = self.account.get('equity', 0)
-        
-        # Simple DD calculation based on equity vs balance (or high water mark if we tracked it)
-        # Assuming balance is the reference for now.
-        if balance > 0:
-            current_dd_percent = ((balance - equity) / balance) * 100
-            
-            # If in significant DD, reduce risk
-            if current_dd_percent > 5.0:
-                risk *= 0.5
-        
-        # 3. Streak Adjustment (Martingale/Anti-Martingale logic could go here)
-        # For safety, reduce risk after 2 consecutive losses
-        if consecutive_losses >= 2:
-            risk *= 0.5
+        # Only apply consecutive losses reduction (basic safety)
+        if consecutive_losses >= 5:
+            risk *= 0.25  # 75% reduction after 5 losses
+            adjustments.append(f"{consecutive_losses} losses → 75% reduction")
+        elif consecutive_losses >= 3:
+            risk *= 0.5  # 50% reduction after 3 losses
+            adjustments.append(f"{consecutive_losses} losses → 50% reduction")
+        elif consecutive_losses >= 2:
+            risk *= 0.75  # 25% reduction after 2 losses
+            adjustments.append(f"{consecutive_losses} losses → 25% reduction")
 
-        # 4. Hard Limits
-        risk = min(risk, self.config.max_risk_percent or 5.0)
-        risk = max(risk, 0.1) # Minimum 0.1% risk
+        # Apply absolute limits
+        risk = min(risk, self.ABSOLUTE_MAX_RISK)
+        risk = max(risk, self.MINIMUM_RISK)
 
-        return round(risk, 2)
+        # Round to 2 decimals
+        risk = round(risk, 2)
 
-    def calculate_lot_size(self, risk_percent: float, stop_loss_price: float, entry_price: float, symbol_type: str = "forex") -> float:
-        """
-        Calculate position size based on risk amount and SL distance.
-        """
-        balance = self.account.get('balance', 0)
-        risk_amount = balance * (risk_percent / 100)
-        
-        if entry_price == stop_loss_price:
-            return 0.0
-            
-        sl_distance = abs(entry_price - stop_loss_price)
-        
-        # Standard Lot Value calculation
-        # Forex: 1 Lot = 100,000 units. Pip value depends on pair.
-        # This is a simplified calculation. Ideally, use MT5 symbol info.
-        
-        # Approximation for Forex (USD quote currency)
-        if symbol_type == "forex":
-            # Assuming standard lot size 100000
-            # Risk = Lots * 100000 * SL_Distance
-            # Lots = Risk / (100000 * SL_Distance)
-            lots = risk_amount / (100000 * sl_distance)
-        
-        elif symbol_type == "crypto":
-            # Crypto: 1 Lot = 1 Coin usually
-            # Risk = Lots * SL_Distance
-            lots = risk_amount / sl_distance
-            
-        elif symbol_type == "indices":
-             # Indices: Contract size varies (e.g. 10, 20, 50)
-             # Assuming 1 for simplicity, needs symbol info
-             lots = risk_amount / sl_distance
-
+        # Build reason string
+        if adjustments:
+            reason = " | ".join(adjustments)
         else:
-            lots = 0.01
+            reason = "Base risk - no adjustments"
 
-        return round(lots, 2)
+        return risk, reason
 
-    def check_prop_firm_rules(self, daily_loss: float, total_loss: float) -> dict:
+    def should_trade(
+        self,
+        current_drawdown: float,
+        account_equity: float,
+        initial_balance: float
+    ) -> Tuple[bool, str]:
         """
-        Check if trading should be halted due to Prop Firm rules.
-        """
-        balance = self.account.get('balance', 0)
-        if balance == 0:
-             return {"allowed": False, "reason": "Zero Balance"}
+        Determine if trading should be allowed
 
-        # Daily Loss Limit
-        daily_loss_percent = (daily_loss / balance) * 100
-        if daily_loss_percent >= self.config.daily_loss_limit_percent:
-            return {
-                "allowed": False, 
-                "reason": f"Daily Loss Limit Reached ({daily_loss_percent:.2f}% >= {self.config.daily_loss_limit_percent}%)"
-            }
+        Args:
+            current_drawdown: Current DD percentage
+            account_equity: Current account equity
+            initial_balance: Initial account balance
+
+        Returns:
+            Tuple of (can_trade, reason)
+        """
+        # Check 1: Circuit breaker (100% DD - effectively disabled for backtesting)
+        if current_drawdown >= 100.0:
+            return False, f"Circuit breaker: Drawdown {current_drawdown:.2f}% >= 100%"
+
+        # Check 2: Equity too low (disabled for backtesting - let it blow up)
+        # if account_equity < (initial_balance * 0.5):
+        #     return False, f"Equity ${account_equity:.2f} < 50% of initial ${initial_balance:.2f}"
+
+        # All checks passed
+        return True, "Trading allowed"
+
+    def get_max_position_size(
+        self,
+        account_balance: float,
+        risk_percent: float,
+        sl_distance: float,
+        symbol: str = "EURUSD"
+    ) -> float:
+        """
+        Calculate maximum position size in lots using symbol-specific parameters.
+
+        Args:
+            account_balance: Account balance
+            risk_percent: Risk percentage to use
+            sl_distance: Stop loss distance in price units
+            symbol: Trading symbol (determines pip size and value)
+
+        Returns:
+            Position size in lots
+        """
+        from app.core.instrument_config import get_instrument_profile
+        
+        profile = get_instrument_profile(symbol)
+        pip_size = profile.pip_size
+        pip_value = profile.pip_value_per_lot
+        
+        # Apply risk multiplier for high-volatility instruments
+        adjusted_risk = risk_percent * profile.risk_multiplier
+        risk_amount = account_balance * (adjusted_risk / 100.0)
+
+        if sl_distance == 0:
+            return 0.0
+
+        # Convert SL distance to pips using symbol-specific pip size
+        sl_pips = sl_distance / pip_size
+
+        # Calculate lot size: Risk Amount / (SL in pips * pip value)
+        lot_size = risk_amount / (sl_pips * pip_value)
+
+        # Round to 2 decimals (standard lot precision)
+        lot_size = round(lot_size, 2)
+
+        # Minimum lot size
+        if lot_size < 0.01:
+            lot_size = 0.01
+
+        return lot_size
+
+    def get_adjusted_risk_for_symbol(
+        self,
+        base_risk: float,
+        symbol: str
+    ) -> float:
+        """
+        Get risk percentage adjusted for symbol volatility.
+        
+        Args:
+            base_risk: Base risk percentage from config
+            symbol: Trading symbol
             
-        # Total Drawdown Limit (e.g. 10%)
-        # Assuming total_loss is passed correctly
-        total_dd_percent = (total_loss / balance) * 100
-        if total_dd_percent >= 10.0: # Hardcoded 10% for now, should be in config
-             return {
-                "allowed": False, 
-                "reason": f"Max Total Drawdown Reached ({total_dd_percent:.2f}%)"
-            }
-            
-        return {"allowed": True, "reason": "OK"}
+        Returns:
+            Adjusted risk percentage
+        """
+        from app.core.instrument_config import get_instrument_profile
+        
+        profile = get_instrument_profile(symbol)
+        adjusted_risk = base_risk * profile.risk_multiplier
+        
+        # Round to 2 decimals
+        return round(adjusted_risk, 2)
+

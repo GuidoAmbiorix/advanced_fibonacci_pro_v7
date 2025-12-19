@@ -42,12 +42,12 @@ class BotConfig(Base):
     mt5_server = Column(String)
     mt5_password_encrypted = Column(String)  # Encrypted
 
-    # Trading Parameters
-    symbol = Column(String, default="EURUSD")
+    # Trading Parameters - GOLD WINNING CONFIG
+    symbol = Column(String, default="XAUUSD")  # Gold - best performer
     symbol_type = Column(String, default="forex")  # "forex" or "crypto"
-    timeframe = Column(String, default="H1")
-    risk_percent = Column(Float, default=2.0)
-    min_confluence_score = Column(Integer, default=6)
+    timeframe = Column(String, default="M5")  # M5 for Gold scalping
+    risk_percent = Column(Float, default=0.001)  # 0.001% for Gold (critical)
+    min_confluence_score = Column(Integer, default=5)  # Lower for more signals
     max_trades = Column(Integer, default=3)
 
     # Smart Money Settings
@@ -56,17 +56,48 @@ class BotConfig(Base):
     fvg_min_size = Column(Float, default=0.3)
     vp_lookback = Column(Integer, default=100)
 
-    # Trade Management Settings
+    # Strategy Selection - ALL ON for Gold
+    use_adx_filter = Column(Boolean, default=False)  # OFF for Gold winning
+    enable_vwap_strategy = Column(Boolean, default=True)
+    enable_stoch_strategy = Column(Boolean, default=True)
+    enable_institutional_strategy = Column(Boolean, default=True)
+    enable_fibonacci_strategy = Column(Boolean, default=True)
+
+    # RSI Settings (NEW)
+    rsi_period = Column(Integer, default=14)
+    rsi_overbought = Column(Integer, default=70)
+    rsi_oversold = Column(Integer, default=30)
+
+    # Trade Management Settings - GOLD WINNING
     be_trigger = Column(Float, default=1.0)  # R-multiple to move to BE
-    trailing_sl = Column(Boolean, default=False)
+    trailing_sl = Column(Boolean, default=True)  # ON for Gold
     trailing_step = Column(Float, default=1.0)  # R-multiple for trailing step
     trailing_distance = Column(Float, default=1.5)  # R-multiple distance for TSL
-    tsl_mode = Column(String, default="FIXED") # "FIXED", "ATR", "SWING"
-    tsl_activation_r = Column(Float, default=0.0) # Profit R required to activate TSL
+    tsl_mode = Column(String, default="ATR")  # ATR recommended for Gold
+    tsl_activation_r = Column(Float, default=0.0)  # Immediate activation
     tsl_atr_period = Column(Integer, default=14)
     tsl_atr_multiplier = Column(Float, default=1.5)
-    partial_tp_on = Column(Boolean, default=False)
-    partial_tp_amount = Column(Float, default=0.5)  # 0.5 = 50%
+    
+    # Chandelier Exit settings
+    tsl_chandelier_period = Column(Integer, default=22)
+    tsl_chandelier_mult = Column(Float, default=3.0)
+    
+    # Swing-based settings
+    tsl_swing_lookback = Column(Integer, default=10)
+    tsl_swing_buffer_atr = Column(Float, default=0.5)
+    
+    # Parabolic SAR settings  
+    tsl_psar_af_start = Column(Float, default=0.02)
+    tsl_psar_af_increment = Column(Float, default=0.02)
+    tsl_psar_af_max = Column(Float, default=0.20)
+    # Partial TP - GOLD WINNING (100%)
+    partial_tp_on = Column(Boolean, default=True)  # ON for Gold
+    partial_tp_amount = Column(Float, default=1.0)  # 100% = full close at TP
+    
+    # Scalping Speed Settings - GOLD WINNING
+    tp_ratio = Column(Float, default=2.0)  # Take Profit as R multiple (2.0 = 2R)
+    sl_atr_multiplier = Column(Float, default=1.0)  # SL distance = ATR * multiplier
+    max_trade_duration_hours = Column(Float, default=0.0)  # 0 = no limit
 
     # Risk & Filters
     max_spread = Column(Float, default=2.0)  # Max spread in pips
@@ -84,6 +115,29 @@ class BotConfig(Base):
 
     # Relationships
     user = relationship("User", back_populates="bot_configs")
+    risk_profile = relationship("RiskProfile", uselist=False, back_populates="bot_config", cascade="all, delete-orphan")
+
+
+class RiskProfile(Base):
+    """Risk Management Settings"""
+    __tablename__ = "risk_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bot_config_id = Column(Integer, ForeignKey("bot_configs.id"), nullable=False, unique=True)
+    
+    # Prop Firm Rules
+    max_daily_loss = Column(Float, default=3.0)
+    max_total_dd = Column(Float, default=10.0)
+    profit_target = Column(Float, default=10.0)
+    
+    # State
+    current_risk_per_trade = Column(Float, default=1.0)
+    is_halted = Column(Boolean, default=False)
+    halt_reason = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    bot_config = relationship("BotConfig", back_populates="risk_profile")
 
 
 class Trade(Base):
@@ -243,19 +297,64 @@ class ExecutionLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 
-class RiskProfile(Base):
-    """Dynamic Risk Profile per Bot/User"""
-    __tablename__ = "risk_profiles"
+
+
+
+class BacktestSession(Base):
+    """Backtest Execution Session"""
+    __tablename__ = "backtest_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    bot_config_id = Column(Integer, ForeignKey("bot_configs.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) # Optional for now
     
-    current_risk_per_trade = Column(Float, default=1.0)
-    max_daily_drawdown = Column(Float, default=3.0)
-    max_total_drawdown = Column(Float, default=10.0)
+    # Configuration
+    symbol = Column(String, nullable=False)
+    timeframe = Column(String, nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+    initial_balance = Column(Float, nullable=False)
+    strategy_config = Column(JSON, nullable=True) # Full config used
     
-    is_halted = Column(Boolean, default=False)
-    halt_reason = Column(String, nullable=True)
+    # Results
+    final_balance = Column(Float, nullable=True)
+    total_trades = Column(Integer, default=0)
+    win_rate = Column(Float, default=0.0)
+    profit_factor = Column(Float, default=0.0)
+    max_drawdown = Column(Float, default=0.0)
+    net_profit = Column(Float, default=0.0)
     
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    status = Column(String, default="RUNNING") # RUNNING, COMPLETED, FAILED
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    trades = relationship("BacktestTrade", back_populates="session", cascade="all, delete-orphan")
+
+
+class BacktestTrade(Base):
+    """Individual Trade in a Backtest"""
+    __tablename__ = "backtest_trades"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("backtest_sessions.id"), nullable=False)
+    
+    symbol = Column(String, nullable=False)
+    trade_type = Column(String, nullable=False) # BUY, SELL
+    
+    entry_time = Column(DateTime, nullable=False)
+    exit_time = Column(DateTime, nullable=True)
+    
+    entry_price = Column(Float, nullable=False)
+    exit_price = Column(Float, nullable=True)
+    
+    stop_loss = Column(Float, nullable=True)
+    take_profit = Column(Float, nullable=True)
+    
+    volume = Column(Float, default=0.0)
+    profit = Column(Float, default=0.0)
+    balance_after = Column(Float, default=0.0) # Balance after this trade
+    
+    confluence_score = Column(Integer, default=0)
+    
+    session = relationship("BacktestSession", back_populates="trades")
+
 

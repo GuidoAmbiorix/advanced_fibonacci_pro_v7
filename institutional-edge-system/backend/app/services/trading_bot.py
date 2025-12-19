@@ -10,9 +10,13 @@ from typing import Dict, Optional
 from datetime import datetime, timedelta
 from loguru import logger
 
-from app.core.trading_engine import TradingEngine
+from app.core.strategy_factory import StrategyFactory
+from app.core.adaptive_multi_strategy_engine import AdaptiveMultiStrategyEngine
 from app.core.mt5_connector import MT5Connector
 from app.services.trade_manager import TradeManager
+from app.services.risk_manager import AdaptiveRiskManager
+from app.services.portfolio_manager import PortfolioManager
+from app.services.discord_service import DiscordService
 from app.models.database import BotConfig, Trade, Signal
 from app.api.database import SessionLocal
 
@@ -37,12 +41,16 @@ class TradingBot:
         self.bot_config_id = bot_config_id
         self.mt5_connector = mt5_connector
         self.sio = sio
+        self.sio = sio
         self.rabbitmq = RabbitMQService()
+        self.discord = DiscordService()
         
         self.is_running = False
         self.config: Optional[BotConfig] = None
-        self.trading_engine: Optional[TradingEngine] = None
+        self.trading_engine: Optional[AdaptiveMultiStrategyEngine] = None
         self.trade_manager: Optional[TradeManager] = None
+        self.risk_manager: Optional[AdaptiveRiskManager] = None
+        self.portfolio_manager: Optional[PortfolioManager] = None
         self.last_analysis_time: Optional[datetime] = None
         self.open_positions_count = 0
 
@@ -61,23 +69,35 @@ class TradingBot:
 
         # Initialize trading engine
         self._init_trading_engine()
-        
+
         # Initialize trade manager with config
         self.trade_manager = TradeManager(self.mt5_connector)
         self.trade_manager.be_trigger_r = self.config.be_trigger
         self.trade_manager.use_trailing_sl = self.config.trailing_sl
         self.trade_manager.trailing_step_r = self.config.trailing_step
         self.trade_manager.trailing_distance_r = self.config.trailing_distance
-        
+
         # Advanced TSL Config
         self.trade_manager.tsl_mode = self.config.tsl_mode
         self.trade_manager.tsl_activation_r = self.config.tsl_activation_r
         self.trade_manager.tsl_atr_period = self.config.tsl_atr_period
         self.trade_manager.tsl_atr_multiplier = self.config.tsl_atr_multiplier
         self.trade_manager.timeframe = self.config.timeframe
-        
+
         self.trade_manager.partial_tp_on = self.config.partial_tp_on
         self.trade_manager.partial_tp_amount = self.config.partial_tp_amount
+        
+        # Re-initialize TSL Manager with loaded config (important!)
+        self.trade_manager._init_tsl_manager()
+        logger.info(f"Trade Manager configured: TSL={self.config.tsl_mode}, Trailing={self.config.trailing_sl}, PartialTP={self.config.partial_tp_on}")
+
+        # Initialize Risk Manager
+        self.risk_manager = AdaptiveRiskManager()
+        logger.info("✅ Risk Manager initialized")
+
+        # Initialize Portfolio Manager
+        self.portfolio_manager = PortfolioManager()
+        logger.info("✅ Portfolio Manager initialized with correlation blocking and 6% max portfolio risk")
 
         # Start main loop
         await self._run_loop()
@@ -129,18 +149,42 @@ class TradingBot:
 
     def _init_trading_engine(self):
         """Initialize the trading engine with config"""
+        
+        # Infer scalping mode from timeframe
+        is_scalping = self.config.timeframe in ['M1', 'M5', 'M15']
+        
         engine_config = {
             'symbol': self.config.symbol,
             'timeframe': self.config.timeframe,
+            'initial_balance': 1000.0, # Default for live bot internal tracking
+            'max_risk_per_trade': self.config.risk_percent,
+            'enable_grid_recovery': True, # Default enabled for now
+            'grid_levels': 3,
+            'scalping_mode': is_scalping,
+            
+            # Legacy params mapping (if needed by Adaptive Engine internals)
             'swing_length': self.config.swing_length,
             'ob_lookback': self.config.ob_lookback,
             'fvg_min_size': self.config.fvg_min_size,
             'min_confluence_score': self.config.min_confluence_score,
             'vp_lookback': self.config.vp_lookback,
+            
+            # Strategy Selection (NEW)
+            'use_adx_filter': self.config.use_adx_filter,
+            'enable_vwap_strategy': self.config.enable_vwap_strategy,
+            'enable_stoch_strategy': self.config.enable_stoch_strategy,
+            'enable_institutional_strategy': self.config.enable_institutional_strategy,
+            'enable_institutional_strategy': self.config.enable_institutional_strategy,
+            'enable_fibonacci_strategy': self.config.enable_fibonacci_strategy,
+            
+            # RSI Settings
+            'rsi_period': self.config.rsi_period,
+            'rsi_overbought': self.config.rsi_overbought,
+            'rsi_oversold': self.config.rsi_oversold,
         }
 
-        self.trading_engine = TradingEngine(engine_config)
-        logger.info("Trading engine initialized")
+        self.trading_engine = StrategyFactory.create_strategy(engine_config)
+        logger.info(f"Adaptive Trading Engine initialized (Scalping: {is_scalping})")
 
     async def _run_loop(self):
         """Main trading loop"""
@@ -238,6 +282,9 @@ class TradingBot:
             )
         )
 
+        # Send Market Status Update to Discord
+        await self.discord.send_market_status_update(analysis)
+
         # Save signals to database
         await self._save_signals(analysis['signals'])
 
@@ -273,15 +320,15 @@ class TradingBot:
                 signal = Signal(
                     symbol=sig.symbol,
                     timeframe=sig.timeframe,
-                    signal_type=sig.signal_type,
+                    signal_type=sig.direction,  # Mapped from direction
                     price=sig.entry_price,
                     stop_loss=sig.stop_loss,
-                    take_profit=sig.take_profit_2,
-                    confluence_score=sig.confluence_score,
-                    score_breakdown=sig.score_breakdown,
-                    ai_confidence=sig.ai_confidence,
-                    ai_recommendation=sig.ai_recommendation,
-                    trend=self.trading_engine.trend_bullish and "BULLISH" or "BEARISH",
+                    take_profit=sig.take_profit, # Mapped from take_profit
+                    confluence_score=sig.score,  # Mapped from score
+                    score_breakdown=sig.metadata, # Mapped from metadata
+                    ai_confidence=sig.confidence,
+                    ai_recommendation="TRADE" if sig.confidence > 0.7 else "HOLD",
+                    trend=self.trading_engine.current_regime.value, # Use regime instead of trend_bullish
                     poc_level=self.trading_engine.poc_level,
                     status="CREATED",
                     was_executed=False
@@ -295,12 +342,25 @@ class TradingBot:
             for sig in signals:
                 await self.sio.emit('signal_generated', {
                     'symbol': sig.symbol,
-                    'signal_type': sig.signal_type,
+                    'signal_type': sig.direction, # Fixed
                     'price': sig.entry_price,
                     'stop_loss': sig.stop_loss,
-                    'take_profit': sig.take_profit_2,
-                    'confluence_score': sig.confluence_score,
+                    'take_profit': sig.take_profit, # Fixed
+                    'confluence_score': sig.score, # Fixed
                     'created_at': datetime.utcnow().isoformat()
+                })
+
+                # Send Discord Alert
+                await self.discord.send_signal_alert({
+                    'symbol': sig.symbol,
+                    'direction': sig.direction, # Fixed
+                    'strategy_type': sig.strategy_type.value if sig.strategy_type else 'UNKNOWN',
+                    'entry_price': sig.entry_price,
+                    'stop_loss': sig.stop_loss,
+                    'take_profit': sig.take_profit, # Fixed
+                    'confidence': sig.confidence, # Fixed
+                    'score': sig.score, # Fixed
+                    'timestamp': datetime.utcnow().strftime("%H:%M:%S")
                 })
                 
         except Exception as e:
@@ -365,12 +425,12 @@ class TradingBot:
         # Publish to RabbitMQ (Decoupled Execution)
         await self.rabbitmq.publish_signal({
             "symbol": signal.symbol,
-            "signal_type": signal.signal_type,
+            "signal_type": signal.direction, # Fixed
             "entry_price": signal.entry_price,
             "stop_loss": signal.stop_loss,
-            "take_profit": signal.take_profit_1,
+            "take_profit": signal.take_profit, # Fixed
             "risk_percent": self.config.risk_percent,
-            "confluence_score": signal.confluence_score,
+            "confluence_score": signal.score, # Fixed
             "bot_config_id": self.bot_config_id
         })
 
@@ -380,24 +440,87 @@ class TradingBot:
             logger.error("Failed to get account info")
             return
 
-        # Calculate position size
+        account_balance = account_info['balance']
+        account_equity = account_info['equity']
+
+        # STEP 1: Check portfolio-level risk with PortfolioManager
+        # Calculate proposed risk for this trade
         sl_distance = abs(signal.entry_price - signal.stop_loss)
+        base_risk_percent = self.config.risk_percent  # From config (e.g., 1%)
+
+        # Get current open positions for portfolio check
+        open_positions = self.mt5_connector.get_open_positions()
+
+        # Update portfolio manager with current positions
+        self.portfolio_manager.positions.clear()
+        for pos in open_positions:
+            from app.services.portfolio_manager import Position
+            self.portfolio_manager.positions.append(Position(
+                symbol=pos['symbol'],
+                volume=pos['volume'],
+                risk_percent=(pos.get('initial_risk_percent', base_risk_percent))
+            ))
+
+        # Check if can open new position
+        can_open, reason = self.portfolio_manager.can_open_position(
+            symbol=signal.symbol,
+            proposed_risk=base_risk_percent,
+            account_balance=account_balance
+        )
+
+        if not can_open:
+            await self._log_activity(
+                f"🚫 Portfolio Manager blocked trade: {reason}",
+                "warning"
+            )
+            return
+
+        # STEP 2: Calculate adaptive risk using AdaptiveRiskManager
+        # Get drawdown info
+        peak_balance = account_info.get('peak_balance', account_balance)
+        current_dd = ((peak_balance - account_equity) / peak_balance * 100) if peak_balance > 0 else 0.0
+
+        # Get consecutive losses from recent trades
+        consecutive_losses = await self._get_consecutive_losses()
+
+        # Calculate adaptive risk percentage
+        adaptive_risk_percent, risk_reason = self.risk_manager.calculate_risk_percent(
+            market_regime="NORMAL",  # Could be enhanced with market volatility detection
+            consecutive_losses=consecutive_losses,
+            current_volatility_percentile=50,  # Default, could calculate from ATR
+            current_drawdown=current_dd
+        )
+
+        if adaptive_risk_percent == 0:
+            await self._log_activity(
+                f"🛑 CIRCUIT BREAKER: {risk_reason}",
+                "error"
+            )
+            return
+
+        # STEP 3: Calculate lot size with adaptive risk
         lot_size = self.mt5_connector.calculate_lot_size(
             symbol=signal.symbol,
-            risk_percent=self.config.risk_percent,
+            risk_percent=adaptive_risk_percent,  # Use adaptive risk instead of config
             sl_distance=sl_distance,
-            account_balance=account_info['balance']
+            account_balance=account_balance
         )
+
+        # Log risk adjustment
+        if adaptive_risk_percent != base_risk_percent:
+            logger.warning(
+                f"⚠️ Risk adjusted: {base_risk_percent}% → {adaptive_risk_percent}% ({risk_reason})"
+            )
 
         await self._log_activity(
             "Opening {} position: {} lots @ {} (SL: {}, TP: {})".format(
-                signal.signal_type, lot_size, signal.entry_price, signal.stop_loss, signal.take_profit_1
+                signal.direction, lot_size, signal.entry_price, signal.stop_loss, signal.take_profit
             )
         )
 
         # Determine correct order type for MT5
         # If signal says "MARKET", we use the signal direction (BUY/SELL)
-        mt5_order_type = signal.signal_type if signal.order_type == "MARKET" else signal.order_type
+        mt5_order_type = signal.direction
 
         # Open position
         result = self.mt5_connector.open_position(
@@ -405,9 +528,9 @@ class TradingBot:
             order_type=mt5_order_type,
             volume=lot_size,
             stop_loss=signal.stop_loss,
-            take_profit=signal.take_profit_1,
+            take_profit=signal.take_profit,
             price=signal.entry_price, # Pass entry price for pending orders
-            comment=f"IEP Bot - Conf: {signal.confluence_score}/10"
+            comment=f"IEP Bot - Conf: {signal.score}/10"
         )
 
         if result and result.get('success'):
@@ -490,7 +613,6 @@ class TradingBot:
             db.add(trade)
             db.commit()
             db.refresh(trade)
-            db.refresh(trade)
             logger.info("Trade saved to database - ID: {}", trade.id)
             
             # Emit event
@@ -503,6 +625,15 @@ class TradingBot:
                 'sl': trade.stop_loss,
                 'tp': trade.take_profit_1,
                 'pnl': 0.0
+            })
+
+            # Send Discord Alert
+            await self.discord.send_trade_alert({
+                'symbol': trade.symbol,
+                'type': trade.trade_type,
+                'volume': trade.volume,
+                'entry': trade.entry_price,
+                'ticket': trade.ticket
             })
             
             return trade.id
@@ -631,6 +762,37 @@ class TradingBot:
         except Exception as e:
             logger.error(f"Error checking cooldown: {e}")
             return True
+        finally:
+            db.close()
+
+    async def _get_consecutive_losses(self) -> int:
+        """
+        Get count of consecutive losing trades
+        Used by AdaptiveRiskManager to reduce risk after losing streaks
+        """
+        db = SessionLocal()
+        try:
+            # Get recent closed trades ordered by close time descending
+            recent_trades = db.query(Trade).filter(
+                Trade.user_id == self.config.user_id,
+                Trade.status == "CLOSED"
+            ).order_by(Trade.closed_at.desc()).limit(10).all()
+
+            if not recent_trades:
+                return 0
+
+            consecutive_losses = 0
+            for trade in recent_trades:
+                if trade.profit_loss < 0:  # Loss
+                    consecutive_losses += 1
+                else:  # Win or breakeven
+                    break  # Stop counting at first win
+
+            return consecutive_losses
+
+        except Exception as e:
+            logger.exception(f"Error getting consecutive losses: {e}")
+            return 0  # Safe default
         finally:
             db.close()
 

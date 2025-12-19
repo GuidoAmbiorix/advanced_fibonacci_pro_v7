@@ -7,8 +7,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, defineProps } from 'vue';
-import { createChart, CandlestickSeries } from 'lightweight-charts';
+import { ref, onMounted, onUnmounted, watch, defineProps, nextTick } from 'vue';
+import * as LightweightCharts from 'lightweight-charts';
 
 const props = defineProps({
   data: {
@@ -33,12 +33,13 @@ const chartContainer = ref(null);
 let chart = null;
 let candlestickSeries = null;
 let volumeSeries = null;
+let resizeObserver = null;
 
 // Chart Options
 const getChartOptions = (isDark) => {
   return {
     layout: {
-      background: { type: 'solid', color: isDark ? '#1e293b' : '#ffffff' }, // Slate-800 or White
+      background: { type: 'solid', color: isDark ? '#1e293b' : '#ffffff' },
       textColor: isDark ? '#94a3b8' : '#333333',
     },
     grid: {
@@ -46,7 +47,7 @@ const getChartOptions = (isDark) => {
       horzLines: { color: isDark ? '#334155' : '#e1e1e1' },
     },
     crosshair: {
-      mode: 1, // CrosshairMode.Normal
+      mode: LightweightCharts.CrosshairMode.Normal,
     },
     rightPriceScale: {
       borderColor: isDark ? '#475569' : '#cccccc',
@@ -59,60 +60,102 @@ const getChartOptions = (isDark) => {
   };
 };
 
-const initChart = () => {
-  if (!chartContainer.value) return;
-
-  chart = createChart(chartContainer.value, {
-    ...getChartOptions(props.isDark),
-    width: chartContainer.value.clientWidth,
-    height: chartContainer.value.clientHeight,
-  });
-
-  // Candlestick Series - v5 API uses addSeries
-  candlestickSeries = chart.addSeries(CandlestickSeries, {
-    upColor: '#10b981',
-    downColor: '#ef4444',
-    borderVisible: false,
-    wickUpColor: '#10b981',
-    wickDownColor: '#ef4444',
-  });
-
-  // Volume Series (Optional, add later if needed)
-  
-  // Initial Data
-  if (props.data.length > 0) {
-    updateChartData();
+const initChart = async () => {
+  if (!chartContainer.value) {
+    console.error('TradingChart: Container not available');
+    return;
   }
 
-  // Resize Observer
-  const resizeObserver = new ResizeObserver(entries => {
-    if (entries.length === 0 || entries[0].target !== chartContainer.value) { return; }
-    const newRect = entries[0].contentRect;
-    chart.applyOptions({ width: newRect.width, height: newRect.height });
-  });
-  resizeObserver.observe(chartContainer.value);
+  // Wait for next tick to ensure container has dimensions
+  await nextTick();
+
+  const containerWidth = chartContainer.value.clientWidth;
+  const containerHeight = chartContainer.value.clientHeight;
+
+  console.log('TradingChart: Initializing chart with dimensions:', containerWidth, 'x', containerHeight);
+
+  if (containerWidth === 0 || containerHeight === 0) {
+    console.warn('TradingChart: Container has zero dimensions, retrying...');
+    setTimeout(initChart, 100);
+    return;
+  }
+
+  try {
+    chart = LightweightCharts.createChart(chartContainer.value, {
+      ...getChartOptions(props.isDark),
+      width: containerWidth,
+      height: containerHeight,
+    });
+
+    // Candlestick Series - v5 API
+    candlestickSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
+      upColor: '#10b981',
+      downColor: '#ef4444',
+      borderVisible: false,
+      wickUpColor: '#10b981',
+      wickDownColor: '#ef4444',
+    });
+
+    console.log('TradingChart: Chart and series created successfully');
+
+    // Initial Data
+    if (props.data && props.data.length > 0) {
+      updateChartData();
+    }
+
+    // Resize Observer
+    resizeObserver = new ResizeObserver(entries => {
+      if (!chart || entries.length === 0 || entries[0].target !== chartContainer.value) return;
+      const newRect = entries[0].contentRect;
+      if (newRect.width > 0 && newRect.height > 0) {
+        chart.applyOptions({ width: newRect.width, height: newRect.height });
+      }
+    });
+    resizeObserver.observe(chartContainer.value);
+  } catch (error) {
+    console.error('TradingChart: Error initializing chart:', error);
+  }
 };
 
 const updateChartData = () => {
-  if (!candlestickSeries || !props.data) return;
+  if (!candlestickSeries) {
+    console.warn('TradingChart: Series not initialized yet');
+    return;
+  }
+  
+  if (!props.data || props.data.length === 0) {
+    console.warn('TradingChart: No data to display');
+    return;
+  }
+
+  console.log('TradingChart: Processing', props.data.length, 'candles');
   
   // Format data for lightweight-charts
-  // Expected: { time: '2019-04-11', open: 80.01, high: 96.63, low: 76.6, close: 88.65 }
-  // Our API returns: { time: 'ISO', open, high, low, close, volume }
-  // We need to convert time to unix timestamp (seconds)
+  const formattedData = props.data
+    .map(d => {
+      const timestamp = new Date(d.time).getTime() / 1000;
+      return {
+        time: timestamp,
+        open: Number(d.open),
+        high: Number(d.high),
+        low: Number(d.low),
+        close: Number(d.close)
+      };
+    })
+    .filter(d => !isNaN(d.time) && !isNaN(d.open) && !isNaN(d.high) && !isNaN(d.low) && !isNaN(d.close));
   
-  const formattedData = props.data.map(d => ({
-    time: new Date(d.time).getTime() / 1000,
-    open: d.open,
-    high: d.high,
-    low: d.low,
-    close: d.close
-  }));
-  
-  // Sort by time just in case
+  // Sort by time
   formattedData.sort((a, b) => a.time - b.time);
   
-  candlestickSeries.setData(formattedData);
+  console.log('TradingChart: Setting', formattedData.length, 'valid candles. First:', formattedData[0], 'Last:', formattedData[formattedData.length - 1]);
+  
+  try {
+    candlestickSeries.setData(formattedData);
+    chart.timeScale().fitContent();
+    console.log('TradingChart: Data set successfully');
+  } catch (error) {
+    console.error('TradingChart: Error setting data:', error);
+  }
   
   updateTradeLines();
 };

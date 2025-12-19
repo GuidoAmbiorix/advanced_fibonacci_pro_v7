@@ -15,7 +15,7 @@ from loguru import logger
 
 from app.core.config import settings
 from app.models.database import Base, User, BotConfig, Trade
-from app.api import database, auth, stats, fundamentals, settings as settings_api, news, logs
+from app.api import database, auth, stats, fundamentals, settings as settings_api, news, logs, backtest, market
 from app.core.mt5_connector import MT5Connector
 from app.core.trading_engine import TradingEngine
 from app.schemas import schemas
@@ -46,25 +46,12 @@ app.include_router(fundamentals.router, prefix="/api/fundamentals", tags=["funda
 app.include_router(settings_api.router, prefix="/api/settings", tags=["settings"])
 app.include_router(news.router, prefix="/api/news", tags=["news"])
 app.include_router(logs.router, prefix="/api/logs", tags=["logs"])
+app.include_router(backtest.router, prefix="/api/backtest", tags=["backtest"])
+app.include_router(market.router, prefix="/api/market", tags=["market"])
 
 # Socket.IO Setup
 import socketio
-# Use explicit list for CORS to be safe, or allow all with more permissive settings
-sio = socketio.AsyncServer(
-    async_mode='asgi', 
-    cors_allowed_origins='*',
-    logger=True,
-    engineio_logger=True
-)
-
-@sio.event
-async def connect(sid, environ):
-    logger.info(f"Socket connected: {sid}")
-    # logger.debug(f"Socket environ: {environ}") # Uncomment for verbose header logging
-
-@sio.event
-async def disconnect(sid):
-    logger.info(f"Socket disconnected: {sid}")
+from app.core.socket import sio
 
 # ============================================================================
 # STARTUP & SHUTDOWN

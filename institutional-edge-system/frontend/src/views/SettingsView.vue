@@ -8,6 +8,9 @@
             {{ bot.name }} ({{ bot.symbol }})
           </option>
         </select>
+        <button type="button" @click.prevent="createNewBot" class="px-3 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition-colors text-sm font-medium">
+          ➕ New Bot
+        </button>
         <button type="button" @click.prevent="saveSettings" class="px-4 py-2 bg-accent text-white rounded hover:bg-accent/90 transition-colors">
           Save Changes
         </button>
@@ -59,35 +62,99 @@
         </div>
       </div>
 
-      <!-- Risk Settings -->
-      <div v-if="currentTab === 'risk'" class="space-y-6">
-        <h3 class="text-lg font-semibold text-slate-700">Adaptive Risk Manager</h3>
+      <!-- Strategy Settings -->
+      <div v-if="currentTab === 'strategy'" class="space-y-6">
+        <h3 class="text-lg font-semibold text-slate-700">Strategy Configuration</h3>
         
-        <!-- Dynamic Risk Toggles -->
-        <div class="space-y-4 border-b border-slate-100 pb-6">
-          <div class="flex items-center justify-between p-4 bg-slate-50 rounded">
-            <div>
-              <p class="font-medium text-slate-700">Volatility Adjustment</p>
-              <p class="text-sm text-slate-500">Reduce risk during high volatility (ATR > 1.5x Avg)</p>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" v-model="risk.volatility_adjustment" class="sr-only peer">
-              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+        <!-- Strategy Selection -->
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
+            <h4 class="font-medium text-slate-700 mb-2">Active Strategies</h4>
+            
+            <label class="flex items-center space-x-3 cursor-pointer p-2 hover:bg-slate-100 rounded transition-colors">
+                <input type="checkbox" v-model="config.use_adx_filter" class="form-checkbox h-5 w-5 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500">
+                <div>
+                    <span class="text-sm font-medium text-slate-700 block">Use ADX Filter (>25)</span>
+                    <span class="text-xs text-slate-500">Only trade when trend is strong</span>
+                </div>
             </label>
-          </div>
-          
-          <div class="flex items-center justify-between p-4 bg-slate-50 rounded">
-            <div>
-              <p class="font-medium text-slate-700">Drawdown Protection</p>
-              <p class="text-sm text-slate-500">Halve risk if Drawdown > 5%</p>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" v-model="risk.dd_protection" class="sr-only peer">
-              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+
+            <div class="border-t border-slate-200 my-2"></div>
+
+            <label class="flex items-center space-x-3 cursor-pointer p-2 hover:bg-slate-100 rounded transition-colors">
+                <input type="checkbox" v-model="config.enable_vwap_strategy" class="form-checkbox h-5 w-5 text-purple-600 bg-white border-slate-300 rounded focus:ring-purple-500">
+                <span class="text-sm font-medium text-slate-700">Enable VWAP Scalp</span>
             </label>
-          </div>
+
+            <label class="flex items-center space-x-3 cursor-pointer p-2 hover:bg-slate-100 rounded transition-colors">
+                <input type="checkbox" v-model="config.enable_stoch_strategy" class="form-checkbox h-5 w-5 text-purple-600 bg-white border-slate-300 rounded focus:ring-purple-500">
+                <span class="text-sm font-medium text-slate-700">Enable Stoch Momentum</span>
+            </label>
+
+            <label class="flex items-center space-x-3 cursor-pointer p-2 hover:bg-slate-100 rounded transition-colors">
+                <input type="checkbox" v-model="config.enable_institutional_strategy" class="form-checkbox h-5 w-5 text-yellow-500 bg-white border-slate-300 rounded focus:ring-yellow-500">
+                <div>
+                    <span class="text-sm font-bold text-yellow-600 block">Enable Institutional Sweep 💎</span>
+                    <span class="text-xs text-slate-500">High probability liquidity sweeps (Score 9.8)</span>
+                </div>
+            </label>
+
+            <label class="flex items-center space-x-3 cursor-pointer p-2 hover:bg-slate-100 rounded transition-colors">
+                <input type="checkbox" v-model="config.enable_fibonacci_strategy" class="form-checkbox h-5 w-5 text-green-500 bg-white border-slate-300 rounded focus:ring-green-500">
+                <div>
+                    <span class="text-sm font-medium text-green-600 block">Enable Fibonacci Scalp 📐</span>
+                    <span class="text-xs text-slate-500">Golden Zone (50-61.8%) retracements (Score 8.5)</span>
+                </div>
+            </label>
         </div>
 
+        <!-- RSI Settings -->
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
+            <h4 class="font-medium text-slate-700 mb-2">RSI Configuration 📉</h4>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Period</label>
+                    <input type="number" v-model.number="config.rsi_period" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Overbought</label>
+                    <input type="number" v-model.number="config.rsi_overbought" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Oversold</label>
+                    <input type="number" v-model.number="config.rsi_oversold" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+            </div>
+        </div>
+
+        <!-- Signal Quality -->
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h4 class="font-medium text-slate-700 mb-4">Signal Quality Filter</h4>
+            
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label class="text-sm font-medium text-slate-600">Min Confluence Score: <span class="text-accent font-bold">{{ config.min_confluence_score }}</span></label>
+                    </div>
+                    <input type="range" v-model.number="config.min_confluence_score" min="3" max="10" step="1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-accent">
+                    <div class="flex justify-between text-xs text-slate-400 mt-1">
+                        <span>3 (All)</span>
+                        <span>7 (Medium)</span>
+                        <span>10 (Elite)</span>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-blue-50 border border-blue-100 rounded text-sm text-blue-800">
+                    <p class="font-bold mb-1">Score Guide:</p>
+                    <ul class="list-disc pl-4 space-y-1 text-xs">
+                        <li><strong>7+</strong>: Range + VWAP + Stoch + Fib + Institutional</li>
+                        <li><strong>8+</strong>: Fibonacci (8.5) + Institutional (9.8) ⭐ <span class="text-blue-600 font-bold">(Recommended)</span></li>
+                        <li><strong>9+</strong>: Only Institutional Sweep (9.8)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+      </div>
+      <div v-if="currentTab === 'risk'" class="space-y-6">
         <h3 class="text-lg font-semibold text-slate-700">Trade Management</h3>
         
         <!-- Trailing Stop Loss -->
@@ -106,6 +173,10 @@
                <select v-model="config.tsl_mode" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
                  <option value="FIXED">Fixed Distance</option>
                  <option value="ATR">ATR Dynamic</option>
+                 <option value="CHANDELIER">Chandelier Exit 📈</option>
+                 <option value="TIERED">Tiered Profit Protection</option>
+                 <option value="SWING">Swing-Based</option>
+                 <option value="PSAR">Parabolic SAR</option>
                </select>
              </div>
              <div>
@@ -132,6 +203,42 @@
                  <div>
                   <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">ATR Multiplier</label>
                   <input type="number" v-model.number="config.tsl_atr_multiplier" step="0.1" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+             </div>
+
+             <div v-if="config.tsl_mode === 'CHANDELIER'" class="contents">
+                <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Chandelier Period</label>
+                  <input type="number" v-model.number="config.tsl_chandelier_period" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+                 <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Multiplier</label>
+                  <input type="number" v-model.number="config.tsl_chandelier_mult" step="0.1" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+             </div>
+
+             <div v-if="config.tsl_mode === 'SWING'" class="contents">
+                <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Swing Lookback</label>
+                  <input type="number" v-model.number="config.tsl_swing_lookback" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+                 <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Buffer (ATR)</label>
+                  <input type="number" v-model.number="config.tsl_swing_buffer_atr" step="0.1" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                </div>
+             </div>
+
+             <div v-if="config.tsl_mode === 'PSAR'" class="contents">
+                <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Start / Increment</label>
+                  <div class="flex space-x-2">
+                      <input type="number" v-model.number="config.tsl_psar_af_start" step="0.01" placeholder="Start" class="w-1/2 bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                      <input type="number" v-model.number="config.tsl_psar_af_increment" step="0.01" placeholder="Inc" class="w-1/2 bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
+                  </div>
+                </div>
+                 <div>
+                  <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Max AF</label>
+                  <input type="number" v-model.number="config.tsl_psar_af_max" step="0.01" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm focus:border-accent outline-none">
                 </div>
              </div>
           </div>
@@ -198,6 +305,7 @@ import api from '../services/api'
 const currentTab = ref('general')
 const tabs = [
   { id: 'general', label: 'General' },
+  { id: 'strategy', label: 'Strategy 🧠' },
   { id: 'risk', label: 'Risk Manager' },
   { id: 'news', label: 'News Filter' },
   { id: 'prop', label: 'Prop Firm' }
@@ -215,14 +323,29 @@ const config = ref({
   trailing_distance: 1.0,
   tsl_atr_period: 14,
   tsl_atr_multiplier: 1.5,
+  tsl_chandelier_period: 22,
+  tsl_chandelier_mult: 3.0,
+  tsl_swing_lookback: 10,
+  tsl_swing_buffer_atr: 0.5,
+  tsl_psar_af_start: 0.02,
+  tsl_psar_af_increment: 0.02,
+  tsl_psar_af_max: 0.20,
   partial_tp_on: false,
-  partial_tp_amount: 0.5
+  partial_tp_amount: 0.5,
+  // Strategy Defaults
+  use_adx_filter: true,
+  enable_vwap_strategy: true,
+  enable_stoch_strategy: true,
+  enable_institutional_strategy: true,
+  enable_fibonacci_strategy: true,
+  // RSI Defaults
+  rsi_period: 14,
+  rsi_overbought: 70,
+  rsi_oversold: 30,
+  min_confluence_score: 7
 })
 
-const risk = ref({
-  volatility_adjustment: true,
-  dd_protection: true
-})
+const risk = ref({})
 
 const news = ref({
   avoid_high_impact: true
@@ -290,6 +413,50 @@ async function saveSettings() {
   } catch (e) {
     console.error("Error saving settings", e)
     alert('Failed to save settings.')
+  }
+}
+
+async function createNewBot() {
+  const symbol = prompt("Enter Symbol (e.g. EURUSD):", "EURUSD");
+  if (!symbol) return;
+  
+  try {
+    // Get user ID from local storage
+    const userStr = localStorage.getItem('user');
+    let userId = 1;
+    if (userStr) {
+        try {
+            const u = JSON.parse(userStr);
+            if (u.id) userId = u.id;
+        } catch (e) {
+            console.error("Invalid user in localstorage", e);
+        }
+    }
+    
+    const payload = {
+      user_id: Number(userId),
+      name: `${symbol.toUpperCase()} Bot`,
+      symbol: symbol.toUpperCase(),
+      symbol_type: 'forex',
+      timeframe: 'H1'
+    };
+    
+    console.log("Creating bot with payload:", payload);
+    
+    const newBot = await api.createBotConfig(payload);
+    
+    // Refresh list
+    await loadSettings();
+    currentBotId.value = newBot.id;
+    // Load the new settings
+    const botConfig = await api.getBotSettings(newBot.id);
+    Object.assign(config.value, botConfig);
+    
+    alert(`Bot for ${symbol.toUpperCase()} created!`);
+  } catch (e) {
+    console.error("Error creating bot", e);
+    const msg = e.response?.data?.detail || e.message || "Failed to create bot";
+    alert(`Error creating bot: ${JSON.stringify(msg)}`);
   }
 }
 

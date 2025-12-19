@@ -305,10 +305,26 @@ const loadData = async () => {
 };
 
 const updateChart = async () => {
+    console.log('DashboardView: Fetching chart data for', selectedSymbol.value, selectedTimeframe.value);
     try {
-        const data = await api.getMarketHistory(selectedSymbol.value, selectedTimeframe.value);
-        if (data.data) chartData.value = data.data;
-    } catch (e) { console.error(e); }
+        const response = await api.getMarketHistory(selectedSymbol.value, selectedTimeframe.value);
+        console.log('DashboardView: Full API response:', response);
+        
+        // Handle both possible response structures
+        const candleData = response.data || response;
+        
+        if (candleData && Array.isArray(candleData) && candleData.length > 0) {
+            console.log('DashboardView: Setting', candleData.length, 'candles to chart');
+            chartData.value = candleData;
+        } else if (response.data && Array.isArray(response.data)) {
+            console.log('DashboardView: Setting', response.data.length, 'candles from response.data');
+            chartData.value = response.data;
+        } else {
+            console.warn('DashboardView: Unexpected response structure:', response);
+        }
+    } catch (e) { 
+        console.error('DashboardView: Chart data fetch error:', e); 
+    }
 };
 
 const onSymbolChange = () => {
