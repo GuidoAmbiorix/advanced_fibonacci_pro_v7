@@ -19,8 +19,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('../views/DashboardView.vue'),
-      meta: { requiresAuth: true }
+      redirect: '/backtest'  // Redirect to Trading view
     },
     {
       path: '/signals',
@@ -44,6 +43,12 @@ const router = createRouter({
       path: '/backtest',
       name: 'backtest',
       component: () => import('../views/BacktestView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/accounts',
+      name: 'accounts',
+      component: () => import('../views/AccountsView.vue'),
       meta: { requiresAuth: true }
     }
   ]

@@ -62,3 +62,17 @@ async def get_market_history(
             record['time'] = record['time'].isoformat()
             
     return records
+
+
+@router.get("/positions")
+async def get_open_positions():
+    """
+    Get all open positions from MT5
+    """
+    # Ensure connection
+    if not connector.connected:
+        connector.connect()
+    
+    positions = connector.get_open_positions()
+    
+    return positions

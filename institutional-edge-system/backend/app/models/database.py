@@ -27,6 +27,42 @@ class User(Base):
     # Relationships
     bot_configs = relationship("BotConfig", back_populates="user")
     trades = relationship("Trade", back_populates="user")
+    mt5_accounts = relationship("MT5Account", back_populates="user")
+
+
+class MT5Account(Base):
+    """MT5 trading account with prop firm rules"""
+    __tablename__ = "mt5_accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    # Account identification
+    name = Column(String, nullable=False)  # "FundedPips Demo", "HFM Live"
+    login = Column(String, nullable=False)  # MT5 login number
+    password_encrypted = Column(String, nullable=False)  # Fernet encrypted
+    server = Column(String, nullable=False)  # "HFMarketsGlobal-Demo"
+    
+    # MT5 symbol configuration
+    symbol_prefix = Column(String, default="")  # "#" for HFM crypto
+    symbol_suffix = Column(String, default="")  # "m" for some brokers
+    
+    # Account type
+    account_type = Column(String, default="demo")  # "demo" | "live" | "prop"
+    
+    # FundedPips Prop Firm Rules
+    max_drawdown_percent = Column(Float, default=8.0)   # 8% max total DD
+    max_daily_dd_percent = Column(Float, default=3.0)   # 3% max daily DD
+    starting_balance = Column(Float, default=0.0)       # Track from start
+    daily_starting_balance = Column(Float, default=0.0) # Reset daily
+    
+    # Status
+    is_active = Column(Boolean, default=False)  # Only ONE active at a time
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_connected = Column(DateTime, nullable=True)
+    
+    # Relationship
+    user = relationship("User", back_populates="mt5_accounts")
 
 
 class BotConfig(Base):

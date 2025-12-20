@@ -123,6 +123,8 @@ SYMBOL_PROFILES: Dict[str, InstrumentProfile] = {
     # Crypto
     "BTCUSD": CRYPTO_PROFILE,
     "BTCUSDm": CRYPTO_PROFILE,
+    "#BTC": CRYPTO_PROFILE,      # HFM format
+    "#BTCUSD": CRYPTO_PROFILE,   # HFM format with USD
     "ETHUSD": CRYPTO_PROFILE,
     "ETHUSDm": CRYPTO_PROFILE,
     

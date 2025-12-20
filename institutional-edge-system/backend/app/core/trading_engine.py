@@ -1735,10 +1735,11 @@ class TradingEngine:
         # ===== PICK BEST VALID SIGNAL =====
 
         all_signals = []
+        min_score = self.min_confluence_score  # From config
 
         # Check bull continuation
         if bull_continuation:
-            is_valid, reason = bull_continuation.is_valid()
+            is_valid, reason = bull_continuation.is_valid(min_score_override=min_score)
             logger.debug(f"🔵 Bull CONTINUATION: score={bull_continuation.total_score}, valid={is_valid}, reason={reason}, factors={bull_continuation.factors}")
             if is_valid:
                 all_signals.append({
@@ -1750,7 +1751,7 @@ class TradingEngine:
 
         # Check bull reversal
         if bull_reversal:
-            is_valid, reason = bull_reversal.is_valid()
+            is_valid, reason = bull_reversal.is_valid(min_score_override=min_score)
             logger.debug(f"🔵 Bull REVERSAL: score={bull_reversal.total_score}, valid={is_valid}, reason={reason}, factors={bull_reversal.factors}")
             if is_valid:
                 all_signals.append({
@@ -1762,7 +1763,7 @@ class TradingEngine:
 
         # Check bear continuation
         if bear_continuation:
-            is_valid, reason = bear_continuation.is_valid()
+            is_valid, reason = bear_continuation.is_valid(min_score_override=min_score)
             logger.debug(f"🔴 Bear CONTINUATION: score={bear_continuation.total_score}, valid={is_valid}, reason={reason}, factors={bear_continuation.factors}")
             if is_valid:
                 all_signals.append({
@@ -1774,7 +1775,7 @@ class TradingEngine:
 
         # Check bear reversal
         if bear_reversal:
-            is_valid, reason = bear_reversal.is_valid()
+            is_valid, reason = bear_reversal.is_valid(min_score_override=min_score)
             logger.debug(f"🔴 Bear REVERSAL: score={bear_reversal.total_score}, valid={is_valid}, reason={reason}, factors={bear_reversal.factors}")
             if is_valid:
                 all_signals.append({
@@ -1807,18 +1808,18 @@ class TradingEngine:
         bull_breakdown = {}
         bear_breakdown = {}
 
-        if bull_continuation and bull_continuation.is_valid()[0]:
+        if bull_continuation and bull_continuation.is_valid(min_score_override=min_score)[0]:
             bull_score = bull_continuation.total_score
             bull_breakdown = bull_continuation.factors
-        if bull_reversal and bull_reversal.is_valid()[0]:
+        if bull_reversal and bull_reversal.is_valid(min_score_override=min_score)[0]:
             bull_score = max(bull_score, bull_reversal.total_score)
             if bull_reversal.total_score > bull_continuation.total_score if bull_continuation else 0:
                 bull_breakdown = bull_reversal.factors
 
-        if bear_continuation and bear_continuation.is_valid()[0]:
+        if bear_continuation and bear_continuation.is_valid(min_score_override=min_score)[0]:
             bear_score = bear_continuation.total_score
             bear_breakdown = bear_continuation.factors
-        if bear_reversal and bear_reversal.is_valid()[0]:
+        if bear_reversal and bear_reversal.is_valid(min_score_override=min_score)[0]:
             bear_score = max(bear_score, bear_reversal.total_score)
             if bear_reversal.total_score > bear_continuation.total_score if bear_continuation else 0:
                 bear_breakdown = bear_reversal.factors

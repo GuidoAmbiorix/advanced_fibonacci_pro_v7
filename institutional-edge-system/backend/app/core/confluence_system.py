@@ -45,10 +45,13 @@ class ConfluenceBreakdown:
             self.zone_score
         )
 
-    def is_valid(self) -> Tuple[bool, str]:
+    def is_valid(self, min_score_override: int = None) -> Tuple[bool, str]:
         """
         Validate if this is a tradeable signal
 
+        Args:
+            min_score_override: Optional minimum score override from slot config
+        
         Returns:
             Tuple of (is_valid, reason)
         """
@@ -75,9 +78,12 @@ class ConfluenceBreakdown:
             if not has_setup:
                 return False, "Continuation needs price action OR fibonacci OR displacement"
 
-            # Dynamic threshold based on factors present
-            # If has displacement, allow lower score (displacement is strong)
-            min_score = 7 if 'Displacement' not in self.factors else 6
+            # Use override if provided, otherwise use defaults
+            if min_score_override is not None:
+                min_score = min_score_override
+            else:
+                # Dynamic threshold based on factors present
+                min_score = 7 if 'Displacement' not in self.factors else 6
 
             if self.total_score < min_score:
                 return False, f"Continuation score {self.total_score} < {min_score} minimum"
@@ -110,8 +116,11 @@ class ConfluenceBreakdown:
             if factors_present < 2:
                 return False, "Reversal needs Liquidity + (Fib or Displacement)"
 
-            # Higher minimum score for reversals
-            min_score = 8
+            # Higher minimum score for reversals, but use override if provided
+            if min_score_override is not None:
+                min_score = min_score_override
+            else:
+                min_score = 8
             
             # ---------------------------------------------------------
             # ANALYSIS PARALYSIS FIX: Core Mandatory Factors
@@ -123,9 +132,8 @@ class ConfluenceBreakdown:
                 'Killzone' in self.factors
             )
             
-            if has_core_factors:
+            if has_core_factors and min_score_override is None:
                  min_score = 6 # Relaxed from 8
-                 # logger.debug("Core Factors met: Score requirement relaxed to 6")
 
             if self.total_score < min_score:
                 return False, f"Reversal score {self.total_score} < {min_score} minimum (Core Met: {has_core_factors})"

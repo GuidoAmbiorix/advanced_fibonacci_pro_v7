@@ -1,19 +1,97 @@
 <template>
   <div class="p-6 space-y-6">
+    <!-- Mode Toggle Header -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 p-4 mb-4">
+      <div class="flex justify-between items-center">
+        <!-- Mode Toggle -->
+        <div class="flex items-center space-x-2">
+          <button 
+            @click="tradingMode = 'backtest'"
+            class="px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+            :class="tradingMode === 'backtest' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'"
+          >
+            📊 BACKTEST
+          </button>
+          <button 
+            @click="tradingMode = 'live'"
+            class="px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+            :class="tradingMode === 'live' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'"
+          >
+            🔴 LIVE
+          </button>
+        </div>
+
+        <!-- DD Status (Live mode only) -->
+        <div v-if="tradingMode === 'live' && activeAccount" class="flex items-center space-x-4">
+          <div class="flex items-center space-x-2">
+            <span class="text-xs text-gray-500">DD:</span>
+            <span class="text-sm font-bold" :class="riskStatus.total_dd_percent > 5 ? 'text-red-400' : 'text-green-400'">
+              {{ riskStatus.total_dd_percent?.toFixed(1) || 0 }}%/{{ activeAccount?.max_drawdown_percent || 8 }}%
+            </span>
+          </div>
+          <div class="text-gray-600">|</div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs text-gray-500">Daily:</span>
+            <span class="text-sm font-bold" :class="riskStatus.daily_dd_percent > 2 ? 'text-orange-400' : 'text-green-400'">
+              {{ riskStatus.daily_dd_percent?.toFixed(1) || 0 }}%/{{ activeAccount?.max_daily_dd_percent || 3 }}%
+            </span>
+          </div>
+        </div>
+
+        <!-- Account Selector -->
+        <div class="flex items-center space-x-3">
+          <select 
+            v-model="selectedAccountId"
+            @change="onAccountChange"
+            class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none"
+            :disabled="tradingMode === 'backtest'"
+          >
+            <option :value="null">Select Account</option>
+            <option v-for="acc in accounts" :key="acc.id" :value="acc.id">
+              {{ acc.name }} ({{ acc.account_type }})
+            </option>
+          </select>
+          <router-link 
+            to="/accounts"
+            class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
+          >
+            + Manage
+          </router-link>
+        </div>
+      </div>
+    </div>
+
     <!-- Header -->
     <div class="flex justify-between items-center">
       <div>
-        <h1 class="text-2xl font-bold text-white">Strategy Backtester</h1>
-        <p class="text-gray-400">Test strategies with historical data before going live</p>
+        <h1 class="text-2xl font-bold text-white">{{ tradingMode === 'backtest' ? 'Strategy Backtester' : '🔴 Live Trading' }}</h1>
+        <p class="text-gray-400">{{ tradingMode === 'backtest' ? 'Test strategies with historical data before going live' : 'Trading live with real money - FundedPips rules active' }}</p>
       </div>
       <div class="flex space-x-3">
         <button 
           @click="runBacktest" 
-          :disabled="isRunning"
-          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="isRunning || (tradingMode === 'live' && !activeAccount)"
+          class="px-4 py-2 text-white rounded-lg font-medium flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          :class="tradingMode === 'backtest' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'"
         >
-          <span v-if="isRunning" class="mr-2 animate-spin">⟳</span>
-          {{ isRunning ? `Running (${progress}%)` : 'Run Backtest' }}
+          <span v-if="isRunning && tradingMode === 'backtest'" class="mr-2 animate-spin">⟳</span>
+          {{ isRunning ? (tradingMode === 'backtest' ? `Running (${progress}%)` : '🔴 Trading Active') : (tradingMode === 'backtest' ? 'Run Backtest' : 'Start Trading') }}
+        </button>
+        <!-- Stop Trading Button (Live mode only) -->
+        <button 
+          v-if="tradingMode === 'live' && isRunning"
+          @click="stopLiveTrading"
+          class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium flex items-center transition-colors"
+        >
+          ⏹️ Stop All
+        </button>
+        <!-- Load Positions Button (Live mode only) -->
+        <button 
+          v-if="tradingMode === 'live'"
+          @click="loadOpenPositions"
+          class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium flex items-center transition-colors"
+        >
+          🔄 Load Positions
         </button>
       </div>
     </div>
@@ -198,8 +276,8 @@
     </div>
 
 
-    <!-- Portfolio Settings (Shared: Dates + Balance) -->
-    <div class="bg-gray-800 rounded-xl border border-gray-700 p-4 mb-6">
+    <!-- Portfolio Settings (Shared: Dates + Balance) - BACKTEST ONLY -->
+    <div v-if="tradingMode === 'backtest'" class="bg-gray-800 rounded-xl border border-gray-700 p-4 mb-6">
       <div class="flex justify-between items-center mb-3">
         <h3 class="text-sm font-semibold text-gray-300">📅 Portfolio Settings</h3>
         <span class="text-xs text-gray-500">Shared across all slots</span>
@@ -223,11 +301,70 @@
       </div>
     </div>
 
+    <!-- Live Account Info (LIVE MODE ONLY) -->
+    <div v-if="tradingMode === 'live'" class="bg-gradient-to-r from-red-900/30 to-orange-900/30 rounded-xl border border-red-700 p-4 mb-6">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-sm font-semibold text-red-300">🔴 Live Account Info</h3>
+        <span v-if="activeAccount" class="text-xs text-gray-400">Connected to {{ activeAccount.name }}</span>
+        <span v-else class="text-xs text-red-400">⚠️ No account selected</span>
+      </div>
+      
+      <div v-if="activeAccount" class="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <!-- Account Balance -->
+        <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">💰 Balance</div>
+          <div class="text-lg font-bold text-green-400">${{ (activeAccount.starting_balance || 10000).toLocaleString() }}</div>
+        </div>
+        <!-- Login -->
+        <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">🔑 Login</div>
+          <div class="text-sm font-bold text-white">{{ activeAccount.login }}</div>
+        </div>
+        <!-- Server -->
+        <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">🖥️ Server</div>
+          <div class="text-xs font-bold text-white truncate">{{ activeAccount.server }}</div>
+        </div>
+        <!-- Total DD -->
+        <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">📉 Max DD</div>
+          <div class="text-lg font-bold" :class="riskStatus.total_dd_percent > 5 ? 'text-red-400' : 'text-green-400'">
+            {{ riskStatus.total_dd_percent?.toFixed(1) || 0 }}% / {{ activeAccount.max_drawdown_percent }}%
+          </div>
+        </div>
+        <!-- Daily DD -->
+        <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">📊 Daily DD</div>
+          <div class="text-lg font-bold" :class="riskStatus.daily_dd_percent > 2 ? 'text-orange-400' : 'text-green-400'">
+            {{ riskStatus.daily_dd_percent?.toFixed(1) || 0 }}% / {{ activeAccount.max_daily_dd_percent }}%
+          </div>
+        </div>
+        <!-- Account Type -->
+        <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">📋 Type</div>
+          <div class="text-sm font-bold uppercase" 
+               :class="{
+                 'text-blue-400': activeAccount.account_type === 'demo',
+                 'text-green-400': activeAccount.account_type === 'live',
+                 'text-purple-400': activeAccount.account_type === 'prop'
+               }">
+            {{ activeAccount.account_type }}
+          </div>
+        </div>
+      </div>
+      
+      <div v-else class="text-center py-6 text-gray-500">
+        <div class="text-3xl mb-2">💳</div>
+        <p>Please select an account from the dropdown above to start live trading.</p>
+        <router-link to="/accounts" class="text-blue-400 hover:underline mt-2 inline-block">+ Add Account</router-link>
+      </div>
+    </div>
+
     <!-- Results Dashboard - Full Width -->
     <div class="space-y-4">
       
-      <!-- PORTFOLIO COMBINED SUMMARY -->
-      <div class="bg-gradient-to-r from-blue-900/40 to-purple-900/40 rounded-xl border border-blue-700 p-4">
+      <!-- PORTFOLIO COMBINED SUMMARY - BACKTEST ONLY -->
+      <div v-if="tradingMode === 'backtest'" class="bg-gradient-to-r from-blue-900/40 to-purple-900/40 rounded-xl border border-blue-700 p-4">
         <div class="flex justify-between items-center mb-3">
           <h3 class="font-semibold text-white text-lg">📊 Portfolio Summary</h3>
           <span class="text-xs text-gray-400">Combined results from all {{ slots.filter(s => s.enabled).length }} slots</span>
@@ -398,9 +535,99 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import socket from '../services/socket'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 // State
 const isRunning = ref(false)  // Global running state (any slot running)
 const history = ref([])
+
+// Trading Mode State
+const tradingMode = ref('backtest')  // 'backtest' or 'live'
+const accounts = ref([])
+const selectedAccountId = ref(null)
+const activeAccount = computed(() => accounts.value.find(a => a.id === selectedAccountId.value))
+const riskStatus = ref({ total_dd_percent: 0, daily_dd_percent: 0 })
+
+// Fetch accounts for live trading
+const fetchAccounts = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/api/accounts/`)
+    accounts.value = response.data
+    // Auto-select active account
+    const active = accounts.value.find(a => a.is_active)
+    if (active) {
+      selectedAccountId.value = active.id
+    }
+  } catch (error) {
+    console.error('Failed to fetch accounts:', error)
+  }
+}
+
+const onAccountChange = async () => {
+  if (selectedAccountId.value && tradingMode.value === 'live') {
+    try {
+      await axios.post(`${API_URL}/api/accounts/${selectedAccountId.value}/connect`)
+      await fetchAccounts()
+    } catch (error) {
+      console.error('Failed to connect account:', error)
+    }
+  }
+}
+
+// Stop all live trading sessions
+const stopLiveTrading = async () => {
+  try {
+    await axios.post(`${API_URL}/api/trading/stop-all`)
+    console.log('🛑 Stopped all live trading sessions')
+    isRunning.value = false
+    
+    // Reset slot states
+    slots.value.forEach(slot => {
+      slot.isRunning = false
+      slot.sessionId = null
+    })
+  } catch (error) {
+    console.error('Failed to stop trading:', error)
+  }
+}
+
+// Load open positions from MT5 and display in table
+const loadOpenPositions = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/api/market/positions`)
+    const positions = response.data
+    
+    console.log('📊 Loaded positions:', positions)
+    
+    // Add each position to the trades table
+    positions.forEach(pos => {
+      const tradeObj = {
+        id: pos.ticket,
+        symbol: pos.symbol,
+        entry_time: pos.open_time,
+        exit_time: null,  // Still open
+        trade_type: pos.type,  // 0=BUY, 1=SELL
+        entry_price: pos.open_price,
+        exit_price: null,
+        stop_loss: pos.sl,
+        take_profit: pos.tp,
+        volume: pos.volume,
+        profit: pos.profit,
+        status: 'OPEN'
+      }
+      
+      // Only add if not already in trades
+      const exists = trades.value.find(t => t.id === pos.ticket)
+      if (!exists) {
+        trades.value.unshift(tradeObj)
+      }
+    })
+    
+    console.log('✅ Loaded', positions.length, 'open positions')
+  } catch (error) {
+    console.error('Failed to load positions:', error)
+  }
+}
 
 // SYMBOL PRESETS - Complete configurations per symbol (based on research)
 const symbolPresets = {
@@ -462,10 +689,19 @@ const symbolPresets = {
     name: 'EUR/CHF', emoji: '🇨🇭', volatility: 'LOW',
     timeframe: 'M15', tsl_mode: 'OFF',
     risk_percent: 1.5, tp_ratio: 1.5, sl_atr_multiplier: 0.75, 
-    rsi_period: 14, rsi_overbought: 65, rsi_oversold: 35, min_confluence: 5, max_duration: 0,
+    rsi_period: 14, rsi_overbought: 65, rsi_oversold: 35, min_confluence: 5, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: false, enable_fibonacci: true,
     direction: 'BOTH',  // Range trading pair, both directions work
     description: 'Range Trading ↔️ Both directions - Low volatility' 
+  },
+  '#BTCUSD': { 
+    name: 'Bitcoin', emoji: '₿', volatility: 'EXTREME',
+    timeframe: 'M15', tsl_mode: 'TIERED',
+    risk_percent: 0.5, tp_ratio: 2.0, sl_atr_multiplier: 2.0,  // Wide stops for crypto volatility
+    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 5, max_duration: 2,
+    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BOTH',  // High volatility = trade both directions
+    description: 'Bitcoin ₿ Extreme volatility - Wide stops, fast moves' 
   }
 }
 
@@ -500,7 +736,7 @@ const slots = ref([
   { id: 2, symbol: 'USDJPY', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     ...symbolPresets['USDJPY'] },  // BUY_ONLY - Carry trade
   { id: 3, symbol: 'AUDJPY', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    ...symbolPresets['AUDJPY'] }   // BUY_ONLY - Carry trade
+    ...symbolPresets['AUDJPY'] }   // AUDJPY - Carry trade
 ])
 
 // Portfolio Synergy Settings
@@ -657,6 +893,12 @@ const runBacktest = async () => {
     return
   }
   
+  // Check if live mode requires active account
+  if (tradingMode.value === 'live' && !activeAccount.value) {
+    alert('Please select an account to start live trading')
+    return
+  }
+  
   isRunning.value = true
   
   // Reset all enabled slots
@@ -673,57 +915,117 @@ const runBacktest = async () => {
   progress.value = 0
   
   try {
-    // Connect socket if not connected
+    // Connect socket and WAIT for it to be connected before starting
     if (!socket.connected) {
       socket.connect()
+      // Wait for socket to actually connect (up to 3 seconds)
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Socket connection timeout'))
+        }, 3000)
+        
+        socket.once('connect', () => {
+          clearTimeout(timeout)
+          console.log('✅ Socket connected for live trading')
+          resolve()
+        })
+        
+        // If already connected, resolve immediately
+        if (socket.connected) {
+          clearTimeout(timeout)
+          resolve()
+        }
+      })
     }
     
-    // Start backtests for all enabled slots in parallel
-    const promises = enabledSlots.map(async (slot) => {
-      // Merge shared config with slot-specific overrides
-      const payload = {
-        // Symbol and direction from slot
-        symbol: slot.symbol,
-        direction_filter: slot.direction,
-        // Slot-specific settings (override shared)
-        risk_percent: slot.risk_percent,
-        tp_ratio: slot.tp_ratio,
-        sl_atr_multiplier: slot.sl_atr_multiplier,
-        enable_vwap_strategy: slot.enable_vwap,
-        enable_stoch_strategy: slot.enable_stoch,
-        enable_institutional_strategy: slot.enable_institutional,
-        enable_fibonacci_strategy: slot.enable_fibonacci,
-        // Slot-specific timeframe and TSL (FULL INDEPENDENCE)
-        timeframe: slot.timeframe,
-        tsl_mode: slot.tsl_mode,
-        // Portfolio-level shared settings
-        confirmation_timeframe: null,  // Auto-detect
-        strategy_mode: ['M1', 'M5', 'M15'].includes(slot.timeframe) ? 'SCALP' : 'SWING',
-        initial_balance: sharedConfig.value.initial_balance,
-        use_adx_filter: false,
-        rsi_period: 14,
-        rsi_overbought: 70,
-        rsi_oversold: 30,
-        enable_trailing_stop: slot.tsl_mode !== 'OFF',
-        tsl_activation_r: 0.0,
-        partial_tp_on: true,
-        partial_tp_amount: 1.0,
-        max_trade_duration_hours: slot.max_duration || 2,  // Use slot's max duration, default 2 hours
-        min_confluence_score: 5,
-        start_date: new Date(sharedConfig.value.start_date).toISOString(),
-        end_date: new Date(sharedConfig.value.end_date).toISOString()
-      }
+    // LIVE MODE - Start real trading
+    if (tradingMode.value === 'live') {
+      console.log('🔴 Starting LIVE TRADING mode...')
       
-      const response = await axios.post('http://localhost:8000/api/backtest/run', payload)
-      slot.sessionId = response.data.session_id
-      return response
-    })
-    
-    await Promise.all(promises)
+      const promises = enabledSlots.map(async (slot) => {
+        // Build symbol - don't add prefix if symbol already has it
+        const prefix = activeAccount.value?.symbol_prefix || ''
+        const suffix = activeAccount.value?.symbol_suffix || ''
+        let symbol = slot.symbol
+        if (prefix && !symbol.startsWith(prefix)) {
+          symbol = prefix + symbol
+        }
+        if (suffix && !symbol.endsWith(suffix)) {
+          symbol = symbol + suffix
+        }
+        
+        const payload = {
+          symbol: symbol,
+          direction_filter: slot.direction,
+          risk_percent: slot.risk_percent,
+          tp_ratio: slot.tp_ratio,
+          sl_atr_multiplier: slot.sl_atr_multiplier,
+          tsl_mode: slot.tsl_mode,
+          timeframe: slot.timeframe,
+          max_trade_duration_hours: slot.max_duration || 2,
+          min_confluence_score: 5,
+          account_id: activeAccount.value?.id
+        }
+        
+        // Call live trading API
+        const response = await axios.post(`${API_URL}/api/trading/start`, payload)
+        slot.sessionId = response.data.session_id
+        return response
+      })
+      
+      await Promise.all(promises)
+      console.log('🔴 Live trading started for', enabledSlots.length, 'slots')
+      
+    } else {
+      // BACKTEST MODE - Run simulation
+      console.log('📊 Starting BACKTEST mode...')
+      
+      const promises = enabledSlots.map(async (slot) => {
+        // Merge shared config with slot-specific overrides
+        const payload = {
+          // Symbol and direction from slot
+          symbol: slot.symbol,
+          direction_filter: slot.direction,
+          // Slot-specific settings (override shared)
+          risk_percent: slot.risk_percent,
+          tp_ratio: slot.tp_ratio,
+          sl_atr_multiplier: slot.sl_atr_multiplier,
+          enable_vwap_strategy: slot.enable_vwap,
+          enable_stoch_strategy: slot.enable_stoch,
+          enable_institutional_strategy: slot.enable_institutional,
+          enable_fibonacci_strategy: slot.enable_fibonacci,
+          // Slot-specific timeframe and TSL (FULL INDEPENDENCE)
+          timeframe: slot.timeframe,
+          tsl_mode: slot.tsl_mode,
+          // Portfolio-level shared settings
+          confirmation_timeframe: null,  // Auto-detect
+          strategy_mode: ['M1', 'M5', 'M15'].includes(slot.timeframe) ? 'SCALP' : 'SWING',
+          initial_balance: sharedConfig.value.initial_balance,
+          use_adx_filter: false,
+          rsi_period: 14,
+          rsi_overbought: 70,
+          rsi_oversold: 30,
+          enable_trailing_stop: slot.tsl_mode !== 'OFF',
+          tsl_activation_r: 0.0,
+          partial_tp_on: true,
+          partial_tp_amount: 1.0,
+          max_trade_duration_hours: slot.max_duration || 2,
+          min_confluence_score: 5,
+          start_date: new Date(sharedConfig.value.start_date).toISOString(),
+          end_date: new Date(sharedConfig.value.end_date).toISOString()
+        }
+        
+        const response = await axios.post(`${API_URL}/api/backtest/run`, payload)
+        slot.sessionId = response.data.session_id
+        return response
+      })
+      
+      await Promise.all(promises)
+    }
     
   } catch (error) {
-    console.error('Backtest failed:', error)
-    alert('Failed to start backtest: ' + error.message)
+    console.error('Trading failed:', error)
+    alert('Failed to start: ' + (error.response?.data?.detail || error.message))
     isRunning.value = false
     enabledSlots.forEach(slot => slot.isRunning = false)
   }
@@ -801,6 +1103,38 @@ const setupSocketListeners = () => {
         if (Object.keys(results.value).length === 0) {
             results.value = data.results
         }
+    })
+    
+    // 🔴 LIVE TRADING: Handle real-time trade updates
+    socket.on('live_trade_opened', (trade) => {
+        console.log('🔴 Live trade opened:', trade)
+        
+        // Find the slot by session_id
+        const slot = slots.value.find(s => s.sessionId === trade.session_id)
+        
+        const tradeObj = {
+            id: trade.ticket,
+            symbol: trade.symbol,
+            entry_time: trade.opened_at,
+            exit_time: null,  // Still open
+            trade_type: trade.type,
+            entry_price: trade.entry_price,
+            exit_price: null,  // Still open
+            stop_loss: trade.stop_loss,
+            take_profit: trade.take_profit,
+            volume: trade.volume,
+            profit: 0,  // Unknown until closed
+            status: 'OPEN'
+        }
+        
+        // Add to slot's trades
+        if (slot) {
+            if (!slot.trades) slot.trades = []
+            slot.trades.unshift(tradeObj)
+        }
+        
+        // Add to legacy trades for combined view
+        trades.value.unshift(tradeObj)
     })
 }
 
@@ -895,11 +1229,13 @@ const getConfluenceDescription = (score) => {
 onMounted(() => {
   fetchHistory()
   setupSocketListeners()
+  fetchAccounts()  // Load accounts for live trading mode
 })
 
 onUnmounted(() => {
     socket.off('backtest_progress')
     socket.off('backtest_trade')
     socket.off('backtest_complete')
+    socket.off('live_trade_opened')
 })
 </script>
