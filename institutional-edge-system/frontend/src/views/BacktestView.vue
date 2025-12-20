@@ -408,7 +408,7 @@ const symbolPresets = {
     name: 'GBP/JPY', emoji: '😈', volatility: 'HIGH',
     timeframe: 'M5', tsl_mode: 'TIERED',
     risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
-    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 5, max_duration: 0,
+    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 5, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Trade both directions for more opportunities
     description: 'The Beast 🔥 High volatility, strong trends' 
@@ -417,7 +417,7 @@ const symbolPresets = {
     name: 'EUR/USD', emoji: '💶', volatility: 'LOW',
     timeframe: 'M5', tsl_mode: 'ATR',
     risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.0, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 0,
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Most liquid, ranges well both directions
     description: 'Most liquid - Tight stops, trade both directions' 
@@ -426,7 +426,7 @@ const symbolPresets = {
     name: 'XAU/USD', emoji: '🥇', volatility: 'EXTREME',
     timeframe: 'M5', tsl_mode: 'TIERED',
     risk_percent: 0.5, tp_ratio: 1.5, sl_atr_multiplier: 2.0, 
-    rsi_period: 9, rsi_overbought: 80, rsi_oversold: 20, min_confluence: 5, max_duration: 0,
+    rsi_period: 9, rsi_overbought: 80, rsi_oversold: 20, min_confluence: 5, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Trade both directions for more opportunities
     description: 'Gold 🥇 Extreme volatility - Wider stops' 
@@ -435,7 +435,7 @@ const symbolPresets = {
     name: 'USD/JPY', emoji: '🇯🇵', volatility: 'MEDIUM',
     timeframe: 'M5', tsl_mode: 'ATR',
     risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.0, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 0,
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Trade both directions for more opportunities
     description: 'Smooth trends - Tight SL, let profits run' 
@@ -444,7 +444,7 @@ const symbolPresets = {
     name: 'AUD/JPY', emoji: '🦘', volatility: 'MEDIUM',
     timeframe: 'M15', tsl_mode: 'TIERED',
     risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.5, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 0,
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 2,
     enable_vwap: true, enable_stoch: false, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Trade both directions for more opportunities
     description: 'Carry trade pair - Positive swap on long' 
@@ -453,7 +453,7 @@ const symbolPresets = {
     name: 'NZD/JPY', emoji: '🥝', volatility: 'MEDIUM',
     timeframe: 'M15', tsl_mode: 'TIERED',
     risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.5, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 0,
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 2,
     enable_vwap: true, enable_stoch: false, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Trade both directions for more opportunities
     description: 'Carry trade pair - Positive swap on long' 
@@ -708,7 +708,7 @@ const runBacktest = async () => {
         tsl_activation_r: 0.0,
         partial_tp_on: true,
         partial_tp_amount: 1.0,
-        max_trade_duration_hours: 0,
+        max_trade_duration_hours: slot.max_duration || 2,  // Use slot's max duration, default 2 hours
         min_confluence_score: 5,
         start_date: new Date(sharedConfig.value.start_date).toISOString(),
         end_date: new Date(sharedConfig.value.end_date).toISOString()
