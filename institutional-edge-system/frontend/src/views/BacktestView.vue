@@ -18,442 +18,582 @@
       </div>
     </div>
 
-    <!-- Progress Bar -->
+    <!-- MULTI-SYMBOL SLOTS (PORTFOLIO BOT) -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 p-4 mb-6">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-sm font-semibold text-gray-300">🎯 Portfolio Slots</h3>
+        <div class="flex items-center space-x-3">
+          <span class="text-xs text-gray-500">Max Risk: {{ portfolioSynergy.max_risk }}%</span>
+          <span class="text-xs text-gray-500">|</span>
+          <span class="text-xs text-gray-500">Max Pos/Symbol: {{ portfolioSynergy.max_positions }}</span>
+        </div>
+      </div>
+      
+      <!-- 4 Slot Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div v-for="slot in slots" :key="slot.id" 
+             class="bg-gray-900 rounded-lg border transition-all"
+             :class="slot.enabled ? 'border-blue-500' : 'border-gray-700 opacity-60'">
+          
+          <!-- Slot Header -->
+          <div class="p-3 flex justify-between items-center border-b border-gray-700">
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" v-model="slot.enabled" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-800 border-gray-600 rounded">
+              <span class="text-sm font-semibold text-white">Slot {{ slot.id + 1 }}</span>
+            </label>
+            <button @click="slot.expanded = !slot.expanded" class="text-gray-400 hover:text-white text-xs">
+              {{ slot.expanded ? '▲' : '▼' }}
+            </button>
+          </div>
+          
+          <!-- Symbol + Direction (always visible) -->
+          <div class="p-3 space-y-2">
+            <select v-model="slot.symbol" :disabled="!slot.enabled" 
+                    @change="applySymbolPreset(slot)"
+                    class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-sm disabled:opacity-50">
+              <option v-for="(preset, sym) in symbolPresets" :key="sym" :value="sym">
+                {{ preset.emoji }} {{ preset.name }}
+              </option>
+            </select>
+            <!-- Symbol Info -->
+            <div v-if="symbolPresets[slot.symbol]" class="text-[10px] text-gray-500 px-1">
+              {{ symbolPresets[slot.symbol].description }}
+              <span class="ml-1 px-1 rounded" 
+                    :class="symbolPresets[slot.symbol].volatility === 'EXTREME' ? 'bg-red-900 text-red-400' :
+                            symbolPresets[slot.symbol].volatility === 'HIGH' ? 'bg-orange-900 text-orange-400' :
+                            symbolPresets[slot.symbol].volatility === 'MEDIUM' ? 'bg-yellow-900 text-yellow-400' :
+                            'bg-green-900 text-green-400'">
+                {{ symbolPresets[slot.symbol].volatility }}
+              </span>
+            </div>
+            <select v-model="slot.direction" :disabled="!slot.enabled"
+                    class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs disabled:opacity-50"
+                    :class="slot.direction === 'BUY_ONLY' ? 'text-green-400' : slot.direction === 'SELL_ONLY' ? 'text-red-400' : 'text-gray-300'">
+              <option value="BOTH">↕️ Both</option>
+              <option value="BUY_ONLY">🟢 Buy Only</option>
+              <option value="SELL_ONLY">🔴 Sell Only</option>
+            </select>
+          </div>
+          
+          <!-- Expandable Config (FULL INDEPENDENCE) -->
+          <div v-if="slot.expanded && slot.enabled" class="p-3 border-t border-gray-700 space-y-3 bg-gray-850">
+            <!-- Row 1: Timeframe + TSL -->
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] text-gray-500">Timeframe</label>
+                <select v-model="slot.timeframe" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                  <option value="M1">M1</option>
+                  <option value="M5">M5</option>
+                  <option value="M15">M15</option>
+                  <option value="H1">H1</option>
+                  <option value="H4">H4</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-[10px] text-gray-500">TSL Mode</label>
+                <select v-model="slot.tsl_mode" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                  <option value="OFF">Off</option>
+                  <option value="ATR">ATR</option>
+                  <option value="TIERED">Tiered</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- Row 2: Risk/TP/SL -->
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="text-[10px] text-gray-500">Risk%</label>
+                <input type="number" v-model.number="slot.risk_percent" step="0.5" min="0.1" max="5" 
+                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+              </div>
+              <div>
+                <label class="text-[10px] text-gray-500">TP R</label>
+                <input type="number" v-model.number="slot.tp_ratio" step="0.5" min="1" max="5" 
+                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+              </div>
+              <div>
+                <label class="text-[10px] text-gray-500">SL ATR</label>
+                <input type="number" v-model.number="slot.sl_atr_multiplier" step="0.5" min="0.5" max="3" 
+                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+              </div>
+            </div>
+            
+            <!-- Row 3: RSI Settings -->
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="text-[10px] text-gray-500">RSI Period</label>
+                <input type="number" v-model.number="slot.rsi_period" min="5" max="21" 
+                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+              </div>
+              <div>
+                <label class="text-[10px] text-gray-500">RSI OB</label>
+                <input type="number" v-model.number="slot.rsi_overbought" min="60" max="90" 
+                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+              </div>
+              <div>
+                <label class="text-[10px] text-gray-500">RSI OS</label>
+                <input type="number" v-model.number="slot.rsi_oversold" min="10" max="40" 
+                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+              </div>
+            </div>
+            
+            <!-- Row 4: Min Confluence + Max Hours -->
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] text-gray-500">Min Confluence</label>
+                <input type="number" v-model.number="slot.min_confluence" min="3" max="10" 
+                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+              </div>
+              <div>
+                <label class="text-[10px] text-gray-500">Max Hours (0=∞)</label>
+                <input type="number" v-model.number="slot.max_duration" min="0" max="48" 
+                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+              </div>
+            </div>
+            
+            <!-- Row 5: Strategies -->
+            <div class="grid grid-cols-2 gap-1 text-[10px]">
+              <label class="flex items-center space-x-1">
+                <input type="checkbox" v-model="slot.enable_vwap" class="h-3 w-3">
+                <span class="text-gray-400">VWAP</span>
+              </label>
+              <label class="flex items-center space-x-1">
+                <input type="checkbox" v-model="slot.enable_stoch" class="h-3 w-3">
+                <span class="text-gray-400">Stoch</span>
+              </label>
+              <label class="flex items-center space-x-1">
+                <input type="checkbox" v-model="slot.enable_institutional" class="h-3 w-3">
+                <span class="text-gray-400">Inst.</span>
+              </label>
+              <label class="flex items-center space-x-1">
+                <input type="checkbox" v-model="slot.enable_fibonacci" class="h-3 w-3">
+                <span class="text-gray-400">Fib</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Progress / Results -->
+          <div class="p-2 border-t border-gray-700">
+            <div v-if="slot.isRunning" class="flex items-center space-x-2">
+              <div class="flex-1 bg-gray-700 rounded-full h-1.5">
+                <div class="bg-blue-500 h-1.5 rounded-full transition-all" :style="{ width: slot.progress + '%' }"></div>
+              </div>
+              <span class="text-xs text-blue-400">{{ slot.progress }}%</span>
+            </div>
+            <div v-else-if="slot.results?.win_rate" class="flex justify-between text-xs">
+              <span :class="slot.results.net_profit >= 0 ? 'text-green-400' : 'text-red-400'">
+                {{ slot.results.net_profit >= 0 ? '+' : '' }}${{ slot.results.net_profit?.toFixed(0) }}
+              </span>
+              <span class="text-gray-500">WR: {{ slot.results.win_rate?.toFixed(0) }}%</span>
+            </div>
+            <div v-else class="text-xs text-gray-600 text-center">Ready</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legacy Progress Bar (for single run compatibility) -->
     <div v-if="isRunning" class="w-full bg-gray-700 rounded-full h-2.5 mb-6">
       <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" :style="{ width: progress + '%' }"></div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Configuration Panel -->
-      <div class="lg:col-span-1 space-y-6">
-        <div class="bg-gray-800 rounded-xl border border-gray-700 p-5">
-          <h2 class="text-lg font-semibold text-white mb-4">Configuration</h2>
-          
-          <div class="space-y-4">
-            <!-- Symbol -->
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Symbol</label>
-              <select v-model="config.symbol" @change="onSymbolChange" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                <!-- 10 Stable Forex Pairs (Lower Volatility) -->
-                <option value="GBPJPY">GBP/JPY - The Beast 😈</option>
-                <option value="EURCHF">EUR/CHF - Most Stable</option>
-                <option value="USDCHF">USD/CHF - Safe Haven</option>
-                <option value="EURGBP">EUR/GBP - European Stable</option>
-                <option value="AUDNZD">AUD/NZD - Pacific Low Vol</option>
-                <option value="EURNZD">EUR/NZD - Moderate Stable</option>
-                <option value="AUDCAD">AUD/CAD - Commodity Smooth</option>
-                <option value="NZDCAD">NZD/CAD - Low Fakeouts</option>
-                <option value="USDSGD">USD/SGD - Tight Control</option>
-                <option value="USDHKD">USD/HKD - Pegged Micro</option>
-                <option value="CADCHF">CAD/CHF - Calm Pair</option>
-                <option value="XAUUSD">XAU/USD - Gold 🥇</option>
-              </select>
-              
-              <!-- Gold Warning Banner -->
-              <div v-if="config.symbol === 'XAUUSD'" class="mt-2 p-2 bg-yellow-900/30 rounded border border-yellow-600">
-                <div class="flex items-center space-x-2">
-                  <span class="text-lg">⚠️</span>
-                  <div>
-                    <p class="text-yellow-400 text-xs font-bold">Gold (High Volatility)</p>
-                    <p class="text-yellow-500 text-[10px]">Risk auto-reduced to 0.5%. Wider spreads expected (30-50 pips).</p>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            <!-- Timeframe -->
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Timeframe</label>
-              <select v-model="config.timeframe" @change="onTimeframeChange" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                <option value="M1">M1 (1 Minute) ⚡</option>
-                <option value="M5">M5 (5 Minutes) ⚡</option>
-                <option value="M15">M15 (15 Minutes)</option>
-                <option value="H1">H1 (1 Hour)</option>
-                <option value="H4">H4 (4 Hours)</option>
-                <option value="D1">D1 (Daily)</option>
-              </select>
-            </div>
-
-            <!-- Confirmation Timeframe (for M1/M5 scalping) -->
-            <div v-if="['M1', 'M5', 'M15'].includes(config.timeframe)">
-              <label class="block text-sm font-medium text-gray-400 mb-1">Confirmation TF</label>
-              <select v-model="config.confirmation_timeframe" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none">
-                <option :value="null">Auto ({{ getAutoHTF(config.timeframe) }})</option>
-                <option value="M5" v-if="config.timeframe === 'M1'">M5</option>
-                <option value="M15">M15</option>
-                <option value="H1">H1</option>
-                <option value="H4">H4</option>
-              </select>
-              <p class="text-xs text-gray-500 mt-1">Higher timeframe for trend confirmation</p>
-            </div>
-
-            <!-- Strategy Mode -->
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Strategy Mode</label>
-              <div class="grid grid-cols-2 gap-2">
-                <button 
-                  @click="config.strategy_mode = 'SWING'"
-                  :class="config.strategy_mode === 'SWING' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-900 border-gray-700 text-gray-400 hover:bg-gray-800'"
-                  class="px-3 py-2 rounded-lg border text-sm font-medium transition-colors"
-                >
-                  Swing (H1+)
-                </button>
-                <button 
-                  @click="config.strategy_mode = 'SCALP'"
-                  :class="config.strategy_mode === 'SCALP' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-gray-900 border-gray-700 text-gray-400 hover:bg-gray-800'"
-                  class="px-3 py-2 rounded-lg border text-sm font-medium transition-colors"
-                >
-                  Scalp (M15)
-                </button>
-              </div>
-            </div>
-
-            <!-- Date Range -->
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Start Date</label>
-                <input type="date" v-model="config.start_date" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">End Date</label>
-                <input type="date" v-model="config.end_date" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-              </div>
-            </div>
-
-            <!-- Balance & Risk -->
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Start Balance ($)</label>
-                <input type="number" v-model.number="config.initial_balance" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Risk per Trade (%)</label>
-                <input type="number" v-model.number="config.risk_percent" step="0.001" min="0.001" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-              </div>
-            </div>
-            
-            <!-- Advanced Options -->
-             <div class="pt-2 border-t border-gray-700">
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" v-model="config.use_adx_filter" class="form-checkbox h-4 w-4 text-blue-600 bg-gray-900 border-gray-700 rounded">
-                  <span class="text-sm text-gray-300">Use ADX Filter (>25)</span>
-                </label>
-                <div v-if="config.strategy_mode === 'SCALP'" class="mt-2 space-y-2">
-                    <label class="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" v-model="config.enable_vwap_strategy" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-900 border-gray-700 rounded">
-                        <span class="text-sm text-gray-300">Enable VWAP Scalp</span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" v-model="config.enable_stoch_strategy" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-900 border-gray-700 rounded">
-                        <span class="text-sm text-gray-300">Enable Stoch Momentum</span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" v-model="config.enable_institutional_strategy" class="form-checkbox h-4 w-4 text-yellow-500 bg-gray-900 border-gray-700 rounded">
-                        <span class="text-sm text-yellow-400 font-bold">Enable Institutional Sweep 💎</span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" v-model="config.enable_fibonacci_strategy" class="form-checkbox h-4 w-4 text-green-500 bg-gray-900 border-gray-700 rounded">
-                        <span class="text-sm text-green-400">Enable Fibonacci Scalp 📐</span>
-                    </label>
-                </div>
-             </div>
-
-             <!-- Trailing Stop Loss Settings -->
-             <div class="pt-3 border-t border-gray-700">
-                <h3 class="text-sm font-semibold text-gray-300 mb-3">🎯 Trailing Stop Loss</h3>
-                
-                <label class="flex items-center space-x-2 cursor-pointer mb-3">
-                  <input type="checkbox" v-model="config.enable_trailing_stop" class="form-checkbox h-4 w-4 text-green-600 bg-gray-900 border-gray-700 rounded">
-                  <span class="text-sm text-gray-300">Enable Trailing Stop</span>
-                </label>
-
-                <div v-if="config.enable_trailing_stop" class="space-y-3">
-                  <!-- TSL Mode -->
-                  <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">TSL Mode</label>
-                    <select v-model="config.tsl_mode" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500 focus:outline-none text-sm">
-                      <option value="FIXED">Fixed R-Distance</option>
-                      <option value="ATR">ATR Dynamic</option>
-                      <option value="CHANDELIER">Chandelier Exit 📈</option>
-                      <option value="TIERED">Tiered Profit Protection</option>
-                      <option value="SWING">Swing-Based</option>
-                      <option value="PSAR">Parabolic SAR</option>
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">
-                      {{ getTslModeDescription(config.tsl_mode) }}
-                    </p>
-                  </div>
-
-                  <!-- TSL Activation R -->
-                  <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">Activation (R-profit)</label>
-                    <input type="number" v-model.number="config.tsl_activation_r" step="0.1" min="0" max="3" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500 focus:outline-none text-sm">
-                    <p class="text-xs text-gray-500 mt-1">0 = immediate, 1.0 = after 1R profit</p>
-                  </div>
-                </div>
-             </div>
-             
-             <!-- Partial Take Profit -->
-             <div class="pt-3 border-t border-gray-700">
-                <h3 class="text-sm font-semibold text-gray-300 mb-3">Partial Take Profit</h3>
-                
-                <label class="flex items-center space-x-2 cursor-pointer mb-3">
-                  <input type="checkbox" v-model="config.partial_tp_on" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-900 border-gray-700 rounded">
-                  <span class="text-sm text-gray-300">Enable Partial TP</span>
-                </label>
-
-                <div v-if="config.partial_tp_on">
-                   <label class="block text-sm font-medium text-gray-400 mb-1">Amount (0.1 - 1.0)</label>
-                   <input type="number" v-model.number="config.partial_tp_amount" step="0.1" max="1.0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm">
-                   <p class="text-xs text-gray-500 mt-1">Percentage of position to close (e.g., 0.5 = 50%)</p>
-                </div>
-             </div>
-
-             <!-- Scalping Speed Settings (Only show for SCALP mode) -->
-             <div v-if="config.strategy_mode === 'SCALP'" class="pt-3 border-t border-gray-700 bg-purple-900/20 -mx-5 px-5 py-3 rounded-b-xl">
-                <h3 class="text-sm font-semibold text-purple-300 mb-3">⚡ Scalping Speed Settings</h3>
-                
-                <div class="grid grid-cols-3 gap-3">
-                  <!-- TP Ratio -->
-                  <div>
-                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">TP Ratio</label>
-                    <input type="number" v-model.number="config.tp_ratio" step="0.1" min="0.5" max="3" class="w-full bg-gray-900 border border-purple-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm">
-                    <p class="text-[10px] text-gray-500 mt-1">1.0 = Fast TP</p>
-                  </div>
-                  <!-- SL ATR Mult -->
-                  <div>
-                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">SL × ATR</label>
-                    <input type="number" v-model.number="config.sl_atr_multiplier" step="0.1" min="0.5" max="3" class="w-full bg-gray-900 border border-purple-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm">
-                    <p class="text-[10px] text-gray-500 mt-1">1.0 = Tight SL</p>
-                  </div>
-                  <!-- Max Duration -->
-                  <div>
-                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Max Hours</label>
-                    <input type="number" v-model.number="config.max_trade_duration_hours" step="0.5" min="0" max="24" class="w-full bg-gray-900 border border-purple-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm">
-                    <p class="text-[10px] text-gray-500 mt-1">0 = No limit</p>
-                  </div>
-                </div>
-                <p class="text-xs text-purple-400 mt-2">💡 For fastest trades: TP 1.0, SL 1.0, Max 1h</p>
-             </div>
-
-             <!-- RSI Settings -->
-             <div class="pt-3 border-t border-gray-700">
-                <h3 class="text-sm font-semibold text-gray-300 mb-3">📉 RSI Configuration</h3>
-                <div class="grid grid-cols-3 gap-4">
-                    <div>
-                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Period</label>
-                        <input type="number" v-model.number="config.rsi_period" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm">
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Overbought</label>
-                        <input type="number" v-model.number="config.rsi_overbought" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm">
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Oversold</label>
-                        <input type="number" v-model.number="config.rsi_oversold" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-sm">
-                    </div>
-                </div>
-             </div>
-
-             <!-- Signal Quality Settings -->
-             <div class="pt-3 border-t border-gray-700">
-                <h3 class="text-sm font-semibold text-gray-300 mb-3">📊 Signal Quality</h3>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-400 mb-1">
-                    Min Confluence Score: <span class="text-white font-bold">{{ config.min_confluence_score }}</span>
-                  </label>
-                  <input 
-                    type="range" 
-                    v-model.number="config.min_confluence_score" 
-                    min="3" 
-                    max="10" 
-                    step="1" 
-                    class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                  >
-                  <div class="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>3 (All)</span>
-                    <span>7 (Medium)</span>
-                    <span>10 (Elite)</span>
-                  </div>
-                  <p class="text-xs text-gray-500 mt-2">
-                    {{ getConfluenceDescription(config.min_confluence_score) }}
-                  </p>
-                </div>
-             </div>
-
-          </div>
+    <!-- Portfolio Settings (Shared: Dates + Balance) -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 p-4 mb-6">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-sm font-semibold text-gray-300">📅 Portfolio Settings</h3>
+        <span class="text-xs text-gray-500">Shared across all slots</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">Start Date</label>
+          <input type="date" v-model="sharedConfig.start_date" 
+                 class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm">
         </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">End Date</label>
+          <input type="date" v-model="sharedConfig.end_date" 
+                 class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">Start Balance ($)</label>
+          <input type="number" v-model.number="sharedConfig.initial_balance" min="100" step="100"
+                 class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm">
+        </div>
+      </div>
+    </div>
 
-        <!-- Recent History -->
-        <div class="bg-gray-800 rounded-xl border border-gray-700 p-5">
-          <h2 class="text-lg font-semibold text-white mb-4">Recent Tests</h2>
-          <div class="space-y-3">
-            <div v-if="history.length === 0" class="text-center text-gray-500 py-4">
-              No recent backtests
+    <!-- Results Dashboard - Full Width -->
+    <div class="space-y-4">
+      
+      <!-- PORTFOLIO COMBINED SUMMARY -->
+      <div class="bg-gradient-to-r from-blue-900/40 to-purple-900/40 rounded-xl border border-blue-700 p-4">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="font-semibold text-white text-lg">📊 Portfolio Summary</h3>
+          <span class="text-xs text-gray-400">Combined results from all {{ slots.filter(s => s.enabled).length }} slots</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <!-- Total Net Profit -->
+          <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+            <div class="text-xs text-gray-500 mb-1">💰 Net Profit</div>
+            <div class="text-xl font-bold" :class="portfolioMetrics.netProfit >= 0 ? 'text-green-400' : 'text-red-400'">
+              {{ portfolioMetrics.netProfit >= 0 ? '+' : '' }}${{ portfolioMetrics.netProfit.toFixed(0) }}
             </div>
-            <div 
-              v-for="session in history" 
-              :key="session.id"
-              @click="loadSession(session.id)"
-              class="p-3 bg-gray-900 rounded-lg border border-gray-700 hover:border-blue-500 cursor-pointer transition-colors"
-            >
-              <div class="flex justify-between items-start mb-1">
-                <span class="font-medium text-white">{{ session.symbol }}</span>
-                <span 
-                  class="text-xs px-2 py-0.5 rounded"
-                  :class="session.net_profit >= 0 ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'"
-                >
-                  {{ session.net_profit >= 0 ? '+' : '' }}${{ session.net_profit?.toFixed(2) }}
-                </span>
-              </div>
-              <div class="flex justify-between text-xs text-gray-400">
-                <span>{{ session.timeframe }} • {{ session.total_trades }} Trades</span>
-                <span>PF: {{ session.profit_factor?.toFixed(2) }}</span>
-              </div>
+          </div>
+          <!-- Combined Win Rate -->
+          <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+            <div class="text-xs text-gray-500 mb-1">🎯 Win Rate</div>
+            <div class="text-xl font-bold" :class="portfolioMetrics.winRate >= 50 ? 'text-green-400' : 'text-yellow-400'">
+              {{ portfolioMetrics.winRate.toFixed(1) }}%
+            </div>
+          </div>
+          <!-- Max Drawdown -->
+          <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+            <div class="text-xs text-gray-500 mb-1">📉 Max DD</div>
+            <div class="text-xl font-bold text-red-400">{{ portfolioMetrics.maxDrawdown.toFixed(1) }}%</div>
+          </div>
+          <!-- Total Trades -->
+          <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+            <div class="text-xs text-gray-500 mb-1">📈 Total Trades</div>
+            <div class="text-xl font-bold text-white">{{ portfolioMetrics.totalTrades }}</div>
+          </div>
+          <!-- Average Profit Factor -->
+          <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+            <div class="text-xs text-gray-500 mb-1">⚖️ Profit Factor</div>
+            <div class="text-xl font-bold" :class="portfolioMetrics.profitFactor >= 1.5 ? 'text-green-400' : 'text-yellow-400'">
+              {{ portfolioMetrics.profitFactor.toFixed(2) }}
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Results Dashboard -->
-      <div class="lg:col-span-2 space-y-6">
-        <!-- Key Metrics -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
-            <div class="text-sm text-gray-400 mb-1">Net Profit</div>
-            <div class="text-2xl font-bold" :class="results.net_profit >= 0 ? 'text-green-400' : 'text-red-400'">
-              {{ results.net_profit ? (results.net_profit >= 0 ? '+' : '') + '$' + results.net_profit.toFixed(2) : '-' }}
+      
+      <!-- Per-Slot Results Grid (2x2) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div v-for="slot in slots.filter(s => s.enabled)" :key="'result-' + slot.id" 
+               class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+            <!-- Slot Header with Symbol + Progress -->
+            <div class="p-3 border-b border-gray-700 flex justify-between items-center">
+              <div class="flex items-center space-x-2">
+                <span class="text-white font-semibold">{{ slot.symbol }}</span>
+                <span class="text-xs px-2 py-0.5 rounded"
+                      :class="slot.direction === 'BUY_ONLY' ? 'bg-green-900 text-green-400' : 
+                              slot.direction === 'SELL_ONLY' ? 'bg-red-900 text-red-400' : 
+                              'bg-gray-700 text-gray-400'">
+                  {{ slot.direction === 'BUY_ONLY' ? '🟢 BUY' : slot.direction === 'SELL_ONLY' ? '🔴 SELL' : '↕️' }}
+                </span>
+              </div>
+              <div v-if="slot.isRunning" class="flex items-center space-x-2">
+                <div class="w-20 bg-gray-700 rounded-full h-2">
+                  <div class="bg-blue-500 h-2 rounded-full transition-all" :style="{ width: slot.progress + '%' }"></div>
+                </div>
+                <span class="text-xs text-blue-400">{{ slot.progress }}%</span>
+              </div>
+              <span v-else-if="slot.results?.total_trades" class="text-xs text-gray-500">
+                {{ slot.results.total_trades }} trades
+              </span>
             </div>
-          </div>
-          <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
-            <div class="text-sm text-gray-400 mb-1">Win Rate</div>
-            <div class="text-2xl font-bold text-white">
-              {{ results.win_rate ? results.win_rate.toFixed(1) + '%' : '-' }}
+            
+            <!-- Slot Metrics Row -->
+            <div class="grid grid-cols-4 gap-2 p-3 bg-gray-850">
+              <div class="text-center">
+                <div class="text-[10px] text-gray-500">Net</div>
+                <div class="text-sm font-bold" :class="(slot.results?.net_profit || 0) >= 0 ? 'text-green-400' : 'text-red-400'">
+                  {{ slot.results?.net_profit ? (slot.results.net_profit >= 0 ? '+' : '') + '$' + slot.results.net_profit.toFixed(0) : '-' }}
+                </div>
+              </div>
+              <div class="text-center">
+                <div class="text-[10px] text-gray-500">WR</div>
+                <div class="text-sm font-bold text-white">{{ slot.results?.win_rate ? slot.results.win_rate.toFixed(0) + '%' : '-' }}</div>
+              </div>
+              <div class="text-center">
+                <div class="text-[10px] text-gray-500">PF</div>
+                <div class="text-sm font-bold" :class="(slot.results?.profit_factor || 0) >= 1.5 ? 'text-green-400' : 'text-yellow-400'">
+                  {{ slot.results?.profit_factor ? slot.results.profit_factor.toFixed(2) : '-' }}
+                </div>
+              </div>
+              <div class="text-center">
+                <div class="text-[10px] text-gray-500">DD</div>
+                <div class="text-sm font-bold text-red-400">{{ slot.results?.max_drawdown ? slot.results.max_drawdown.toFixed(0) + '%' : '-' }}</div>
+              </div>
             </div>
-          </div>
-          <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
-            <div class="text-sm text-gray-400 mb-1">Profit Factor</div>
-            <div class="text-2xl font-bold" :class="getPfColor(results.profit_factor)">
-              {{ results.profit_factor ? results.profit_factor.toFixed(2) : '-' }}
-            </div>
-          </div>
-          <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
-            <div class="text-sm text-gray-400 mb-1">Max Drawdown</div>
-            <div class="text-2xl font-bold text-red-400">
-              {{ results.max_drawdown ? results.max_drawdown.toFixed(1) + '%' : '-' }}
+            
+            <!-- Slot Mini Trade Table (last 5 trades) -->
+            <div class="max-h-40 overflow-y-auto">
+              <table class="w-full text-xs">
+                <thead class="bg-gray-900 text-gray-500 sticky top-0">
+                  <tr>
+                    <th class="px-2 py-1 text-left">Time</th>
+                    <th class="px-2 py-1">Type</th>
+                    <th class="px-2 py-1 text-right">P/L</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700">
+                  <tr v-if="slot.trades.length === 0">
+                    <td colspan="3" class="px-2 py-3 text-center text-gray-600">Waiting...</td>
+                  </tr>
+                  <tr v-for="trade in slot.trades.slice(0, 5)" :key="trade.id" class="text-gray-400">
+                    <td class="px-2 py-1">{{ formatDateTime(trade.exit_time) }}</td>
+                    <td class="px-2 py-1 text-center">
+                      <span :class="trade.trade_type === 'BUY' ? 'text-green-400' : 'text-red-400'">{{ trade.trade_type }}</span>
+                    </td>
+                    <td class="px-2 py-1 text-right font-medium" :class="trade.profit >= 0 ? 'text-green-400' : 'text-red-400'">
+                      {{ trade.profit >= 0 ? '+' : '' }}${{ trade.profit?.toFixed(0) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
 
-        <!-- Equity Curve Placeholder (Future Implementation) -->
-        <div class="bg-gray-800 rounded-xl border border-gray-700 p-5 h-64 flex items-center justify-center">
-            <div class="text-center">
-                <p class="text-gray-500">Equity Curve Chart</p>
-                <p class="text-xs text-gray-600">(Coming Soon)</p>
-            </div>
-        </div>
-
-        <!-- Trade List -->
+        <!-- Combined Trade History (All Slots) -->
         <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-          <div class="p-4 border-b border-gray-700">
-            <h3 class="font-semibold text-white">Trade History</h3>
+          <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+            <h3 class="font-semibold text-white">📋 All Trades</h3>
+            <span class="text-xs text-gray-500">{{ trades.length }} total</span>
           </div>
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto max-h-64">
             <table class="w-full text-left text-sm">
-              <thead class="bg-gray-900 text-gray-400">
+              <thead class="bg-gray-900 text-gray-400 sticky top-0">
                 <tr>
-                  <th class="px-3 py-3">Open Time</th>
-                  <th class="px-3 py-3">Close Time</th>
-                  <th class="px-3 py-3">Duration</th>
-                  <th class="px-3 py-3">Type</th>
-                  <th class="px-3 py-3">Entry</th>
-                  <th class="px-3 py-3">Exit</th>
-                  <th class="px-3 py-3">Profit</th>
-                  <th class="px-3 py-3">Balance</th>
+                  <th class="px-3 py-2">Symbol</th>
+                  <th class="px-3 py-2">Time</th>
+                  <th class="px-3 py-2">Duration</th>
+                  <th class="px-3 py-2">Type</th>
+                  <th class="px-3 py-2 text-right">Profit</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-700">
                 <tr v-if="trades.length === 0">
-                    <td colspan="8" class="px-4 py-8 text-center text-gray-500">No trades to display</td>
+                  <td colspan="5" class="px-4 py-6 text-center text-gray-500">No trades yet</td>
                 </tr>
-                <tr v-for="trade in trades" :key="trade.id" class="hover:bg-gray-750">
-                  <td class="px-3 py-3 text-gray-400 text-xs">{{ formatDateTime(trade.entry_time) }}</td>
-                  <td class="px-3 py-3 text-gray-400 text-xs">{{ formatDateTime(trade.exit_time) }}</td>
-                  <td class="px-3 py-3 text-xs">
+                <tr v-for="trade in trades.slice(0, 20)" :key="trade.id" class="hover:bg-gray-750">
+                  <td class="px-3 py-2 text-gray-300 text-xs">{{ trade.symbol || '-' }}</td>
+                  <td class="px-3 py-2 text-gray-400 text-xs">{{ formatDateTime(trade.exit_time) }}</td>
+                  <td class="px-3 py-2 text-xs">
                     <span :class="getDurationColor(trade.entry_time, trade.exit_time)">
                       {{ formatDuration(trade.entry_time, trade.exit_time) }}
                     </span>
                   </td>
-                  <td class="px-3 py-3">
-                    <span 
-                      class="px-2 py-0.5 rounded text-xs font-medium"
-                      :class="trade.trade_type === 'BUY' ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'"
-                    >
+                  <td class="px-3 py-2">
+                    <span class="px-2 py-0.5 rounded text-xs font-medium"
+                          :class="trade.trade_type === 'BUY' ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'">
                       {{ trade.trade_type }}
                     </span>
                   </td>
-                  <td class="px-3 py-3 text-gray-300 text-xs">{{ trade.entry_price?.toFixed(5) }}</td>
-                  <td class="px-3 py-3 text-gray-300 text-xs">{{ trade.exit_price?.toFixed(5) }}</td>
-                  <td class="px-3 py-3 font-medium text-sm" :class="trade.profit >= 0 ? 'text-green-400' : 'text-red-400'">
+                  <td class="px-3 py-2 text-right font-medium" :class="trade.profit >= 0 ? 'text-green-400' : 'text-red-400'">
                     {{ trade.profit >= 0 ? '+' : '' }}${{ trade.profit?.toFixed(2) }}
                   </td>
-                  <td class="px-3 py-3 text-gray-300">${{ trade.balance_after?.toFixed(2) }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import socket from '../services/socket'
 
 // State
-const isRunning = ref(false)
-const progress = ref(0)
+const isRunning = ref(false)  // Global running state (any slot running)
 const history = ref([])
-const trades = ref([])
-const results = ref({})
 
-// Config - GBP/JPY "THE BEAST" SCALPING CONFIGURATION
-const config = ref({
-  symbol: 'GBPJPY',  // GBP/JPY - High Volatility + Technical Respect
+// SYMBOL PRESETS - Complete configurations per symbol (based on research)
+const symbolPresets = {
+  'GBPJPY': { 
+    name: 'GBP/JPY', emoji: '😈', volatility: 'HIGH',
+    timeframe: 'M5', tsl_mode: 'TIERED',
+    risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
+    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 5, max_duration: 0,
+    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BUY_ONLY',  // Carry trade: Buy GBP (5.25%) vs Sell JPY (0.25%)
+    description: 'The Beast 🔥 Carry trade long - Strong GBP/JPY rate differential' 
+  },
+  'EURUSD': { 
+    name: 'EUR/USD', emoji: '💶', volatility: 'LOW',
+    timeframe: 'M5', tsl_mode: 'ATR',
+    risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.0, 
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 0,
+    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BOTH',  // Most liquid, ranges well both directions
+    description: 'Most liquid - Tight stops, trade both directions' 
+  },
+  'XAUUSD': { 
+    name: 'XAU/USD', emoji: '🥇', volatility: 'EXTREME',
+    timeframe: 'M5', tsl_mode: 'TIERED',
+    risk_percent: 0.5, tp_ratio: 1.5, sl_atr_multiplier: 2.0, 
+    rsi_period: 9, rsi_overbought: 80, rsi_oversold: 20, min_confluence: 5, max_duration: 0,
+    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BUY_ONLY',  // Safe haven + Fed rate cuts = Gold bullish
+    description: 'Gold Safe Haven 🛡️ Buy only - Fed easing cycle' 
+  },
+  'USDJPY': { 
+    name: 'USD/JPY', emoji: '🇯🇵', volatility: 'MEDIUM',
+    timeframe: 'M5', tsl_mode: 'ATR',
+    risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.0, 
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 0,
+    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BUY_ONLY',  // Carry trade: Buy USD (5.33%) vs Sell JPY (0.25%)
+    description: 'Carry Trade 📈 Buy only - USD/JPY yield differential' 
+  },
+  'AUDJPY': { 
+    name: 'AUD/JPY', emoji: '🦘', volatility: 'MEDIUM',
+    timeframe: 'M15', tsl_mode: 'TIERED',
+    risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.5, 
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 0,
+    enable_vwap: true, enable_stoch: false, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BUY_ONLY',  // Carry trade: Buy AUD (4.1%) vs Sell JPY (0.25%)
+    description: 'Carry Trade 📈 Buy only - Positive AUD swap' 
+  },
+  'NZDJPY': { 
+    name: 'NZD/JPY', emoji: '🥝', volatility: 'MEDIUM',
+    timeframe: 'M15', tsl_mode: 'TIERED',
+    risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.5, 
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 0,
+    enable_vwap: true, enable_stoch: false, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BUY_ONLY',  // Carry trade: Buy NZD (5.5%) vs Sell JPY (0.25%)
+    description: 'Carry Trade 📈 Buy only - Positive NZD swap' 
+  },
+  'EURCHF': { 
+    name: 'EUR/CHF', emoji: '🇨🇭', volatility: 'LOW',
+    timeframe: 'M15', tsl_mode: 'OFF',
+    risk_percent: 1.5, tp_ratio: 1.5, sl_atr_multiplier: 0.75, 
+    rsi_period: 14, rsi_overbought: 65, rsi_oversold: 35, min_confluence: 5, max_duration: 0,
+    enable_vwap: true, enable_stoch: true, enable_institutional: false, enable_fibonacci: true,
+    direction: 'BOTH',  // Range trading pair, both directions work
+    description: 'Range Trading ↔️ Both directions - Low volatility' 
+  }
+}
+
+// Apply preset when symbol changes
+const applySymbolPreset = (slot) => {
+  const preset = symbolPresets[slot.symbol]
+  if (preset) {
+    slot.timeframe = preset.timeframe
+    slot.tsl_mode = preset.tsl_mode
+    slot.risk_percent = preset.risk_percent
+    slot.tp_ratio = preset.tp_ratio
+    slot.sl_atr_multiplier = preset.sl_atr_multiplier
+    slot.rsi_period = preset.rsi_period
+    slot.rsi_overbought = preset.rsi_overbought
+    slot.rsi_oversold = preset.rsi_oversold
+    slot.min_confluence = preset.min_confluence
+    slot.max_duration = preset.max_duration
+    slot.enable_vwap = preset.enable_vwap
+    slot.enable_stoch = preset.enable_stoch
+    slot.enable_institutional = preset.enable_institutional
+    slot.enable_fibonacci = preset.enable_fibonacci
+    slot.direction = preset.direction  // Apply researched direction bias
+  }
+}
+
+// MULTI-SYMBOL SLOTS - All enabled with researched optimal configs
+const slots = ref([
+  { id: 0, symbol: 'GBPJPY', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    ...symbolPresets['GBPJPY'] },  // BUY_ONLY - Carry trade
+  { id: 1, symbol: 'XAUUSD', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    ...symbolPresets['XAUUSD'] },  // BUY_ONLY - Safe haven
+  { id: 2, symbol: 'USDJPY', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    ...symbolPresets['USDJPY'] },  // BUY_ONLY - Carry trade
+  { id: 3, symbol: 'AUDJPY', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    ...symbolPresets['AUDJPY'] }   // BUY_ONLY - Carry trade
+])
+
+// Portfolio Synergy Settings
+const portfolioSynergy = ref({
+  max_risk: 4.0,  // Max combined risk across all slots
+  max_positions: 2  // Max positions per symbol
+})
+
+// PORTFOLIO COMBINED METRICS (computed from all enabled slots)
+const portfolioMetrics = computed(() => {
+  const enabledSlots = slots.value.filter(s => s.enabled && s.results)
+  
+  // Sum up all metrics
+  let totalNetProfit = 0
+  let totalTrades = 0
+  let totalWins = 0
+  let totalGrossProfit = 0
+  let totalGrossLoss = 0
+  let maxDrawdown = 0
+  
+  enabledSlots.forEach(slot => {
+    if (slot.results?.net_profit !== undefined) {
+      totalNetProfit += slot.results.net_profit
+    }
+    if (slot.results?.total_trades) {
+      totalTrades += slot.results.total_trades
+      // Estimate wins from win rate
+      totalWins += Math.round(slot.results.total_trades * (slot.results.win_rate || 0) / 100)
+    }
+    if (slot.results?.gross_profit) {
+      totalGrossProfit += slot.results.gross_profit
+    }
+    if (slot.results?.gross_loss) {
+      totalGrossLoss += Math.abs(slot.results.gross_loss)
+    }
+    if (slot.results?.max_drawdown && slot.results.max_drawdown > maxDrawdown) {
+      maxDrawdown = slot.results.max_drawdown  // Take worst drawdown
+    }
+  })
+  
+  // Calculate combined metrics
+  const winRate = totalTrades > 0 ? (totalWins / totalTrades * 100) : 0
+  const profitFactor = totalGrossLoss > 0 ? (totalGrossProfit / totalGrossLoss) : 0
+  
+  return {
+    netProfit: totalNetProfit,
+    winRate: winRate,
+    maxDrawdown: maxDrawdown,
+    totalTrades: totalTrades,
+    profitFactor: profitFactor
+  }
+})
+
+// SHARED CONFIG (applies to all slots)
+const sharedConfig = ref({
   timeframe: 'M5',
-  confirmation_timeframe: null,  // Auto (M15)
+  confirmation_timeframe: null,
   strategy_mode: 'SCALP',
   start_date: '2024-01-01',
   end_date: '2024-04-10',
   initial_balance: 1000,
-  risk_percent: 1.0,  // 1% Risk
-  use_adx_filter: true,  // ON - GBP/JPY trends hard, we want to catch those moves
-  enable_vwap_strategy: true,  // ON
-  enable_stoch_strategy: true,  // ON
-  enable_institutional_strategy: true,  // ON
-  enable_fibonacci_strategy: true,  // ON
-  // RSI Defaults (Faster for Scalping)
-  rsi_period: 9,      // Speed up RSI for M5
-  rsi_overbought: 75, // Higher threshold
-  rsi_oversold: 25,   // Lower threshold
-  // Trailing Stop Loss
+  risk_percent: 1.0,
+  use_adx_filter: true,
+  enable_vwap_strategy: true,
+  enable_stoch_strategy: true,
+  enable_institutional_strategy: true,
+  enable_fibonacci_strategy: true,
+  // RSI
+  rsi_period: 9,
+  rsi_overbought: 75,
+  rsi_oversold: 25,
+  // TSL
   enable_trailing_stop: true,
   tsl_mode: 'TIERED',
   tsl_activation_r: 0.0,
-  // Partial Take Profit
+  // Partial TP
   partial_tp_on: true,
-  partial_tp_amount: 1.0,  
-  // SCALPING SETTINGS
-  tp_ratio: 2.0,  // 2.0R (Let GBP/JPY run)
-  sl_atr_multiplier: 1.5,  // 1.5x ATR (Avoid common stop hunts)
-  max_trade_duration_hours: 0,  // No limit
-  // Signal Quality
-  min_confluence_score: 7  // Medium/High quality
+  partial_tp_amount: 1.0,
+  // Scalping
+  tp_ratio: 2.0,
+  sl_atr_multiplier: 1.5,
+  max_trade_duration_hours: 0,
+  min_confluence_score: 7
 })
+
+// Legacy single-slot references for backward compatibility
+const config = ref({
+  symbol: 'GBPJPY',
+  ...sharedConfig.value
+})
+const progress = ref(0)
+const results = ref({})
+const trades = ref([])
 
 // High-volatility symbol detection
 const HIGH_VOLATILITY_SYMBOLS = ['XAUUSD', 'BTCUSD', 'ETHUSD']
@@ -510,74 +650,157 @@ const getAutoHTF = (tf) => {
 
 // Methods
 const runBacktest = async () => {
+  // Get enabled slots
+  const enabledSlots = slots.value.filter(s => s.enabled)
+  if (enabledSlots.length === 0) {
+    alert('Please enable at least one slot')
+    return
+  }
+  
   isRunning.value = true
+  
+  // Reset all enabled slots
+  enabledSlots.forEach(slot => {
+    slot.isRunning = true
+    slot.progress = 0
+    slot.results = {}
+    slot.trades = []
+  })
+  
+  // Also reset legacy state
   trades.value = []
   results.value = {}
+  progress.value = 0
   
   try {
-    // Convert dates to ISO strings
-    const payload = {
-      ...config.value,
-      start_date: new Date(config.value.start_date).toISOString(),
-      end_date: new Date(config.value.end_date).toISOString()
-    }
-    
-    const response = await axios.post('http://localhost:8000/api/backtest/run', payload)
-    const sessionId = response.data.session_id
-    
     // Connect socket if not connected
     if (!socket.connected) {
-        socket.connect()
+      socket.connect()
     }
+    
+    // Start backtests for all enabled slots in parallel
+    const promises = enabledSlots.map(async (slot) => {
+      // Merge shared config with slot-specific overrides
+      const payload = {
+        // Symbol and direction from slot
+        symbol: slot.symbol,
+        direction_filter: slot.direction,
+        // Slot-specific settings (override shared)
+        risk_percent: slot.risk_percent,
+        tp_ratio: slot.tp_ratio,
+        sl_atr_multiplier: slot.sl_atr_multiplier,
+        enable_vwap_strategy: slot.enable_vwap,
+        enable_stoch_strategy: slot.enable_stoch,
+        enable_institutional_strategy: slot.enable_institutional,
+        enable_fibonacci_strategy: slot.enable_fibonacci,
+        // Slot-specific timeframe and TSL (FULL INDEPENDENCE)
+        timeframe: slot.timeframe,
+        tsl_mode: slot.tsl_mode,
+        // Portfolio-level shared settings
+        confirmation_timeframe: null,  // Auto-detect
+        strategy_mode: ['M1', 'M5', 'M15'].includes(slot.timeframe) ? 'SCALP' : 'SWING',
+        initial_balance: sharedConfig.value.initial_balance,
+        use_adx_filter: false,
+        rsi_period: 14,
+        rsi_overbought: 70,
+        rsi_oversold: 30,
+        enable_trailing_stop: slot.tsl_mode !== 'OFF',
+        tsl_activation_r: 0.0,
+        partial_tp_on: true,
+        partial_tp_amount: 1.0,
+        max_trade_duration_hours: 0,
+        min_confluence_score: 5,
+        start_date: new Date(sharedConfig.value.start_date).toISOString(),
+        end_date: new Date(sharedConfig.value.end_date).toISOString()
+      }
+      
+      const response = await axios.post('http://localhost:8000/api/backtest/run', payload)
+      slot.sessionId = response.data.session_id
+      return response
+    })
+    
+    await Promise.all(promises)
     
   } catch (error) {
     console.error('Backtest failed:', error)
-    alert('Failed to start backtest')
+    alert('Failed to start backtest: ' + error.message)
     isRunning.value = false
+    enabledSlots.forEach(slot => slot.isRunning = false)
   }
 }
 
 // Socket Event Listeners
 const setupSocketListeners = () => {
     socket.on('backtest_progress', (data) => {
-        progress.value = Math.round(data.progress)
-        
-        // Update live stats if available
-        if (data.stats) {
-            results.value = {
-                ...results.value,
-                net_profit: data.stats.balance - config.value.initial_balance,
-                total_trades: data.stats.trades,
-                // Calculate other metrics roughly or wait for completion
+        // Find slot by session_id
+        const slot = slots.value.find(s => s.sessionId === data.session_id)
+        if (slot) {
+            slot.progress = Math.round(data.progress)
+            if (data.stats) {
+                slot.results = {
+                    ...slot.results,
+                    net_profit: data.stats.balance - sharedConfig.value.initial_balance,
+                    total_trades: data.stats.trades,
+                }
             }
+        }
+        // Also update legacy progress (average of all running slots)
+        const runningSlots = slots.value.filter(s => s.isRunning)
+        if (runningSlots.length > 0) {
+            progress.value = Math.round(runningSlots.reduce((sum, s) => sum + s.progress, 0) / runningSlots.length)
         }
     })
 
     socket.on('backtest_trade', (data) => {
         const trade = data.trade
+        const slot = slots.value.find(s => s.sessionId === data.session_id)
+        
         if (trade.type === 'CLOSE') {
-            // Add to trades list with full timing info
-            trades.value.unshift({
-                id: Date.now(), // Temp ID
-                entry_time: trade.entry_time,  // From callback
-                exit_time: trade.exit_time,    // From callback
+            const tradeObj = {
+                id: Date.now() + Math.random(),
+                symbol: slot?.symbol || '-',  // Include symbol for combined table
+                entry_time: trade.entry_time,
+                exit_time: trade.exit_time,
                 trade_type: trade.trade_type,
                 entry_price: trade.entry_price,
                 exit_price: trade.price,
                 profit: trade.pnl,
                 balance_after: trade.balance
-            })
+            }
             
-            // Update balance in results
-            results.value.net_profit = trade.balance - config.value.initial_balance
+            // Add to slot's trades
+            if (slot) {
+                slot.trades.unshift(tradeObj)
+                slot.results.net_profit = trade.balance - sharedConfig.value.initial_balance
+            }
+            
+            // Also add to legacy trades
+            trades.value.unshift(tradeObj)
+            results.value.net_profit = trade.balance - sharedConfig.value.initial_balance
         }
     })
 
     socket.on('backtest_complete', (data) => {
-        isRunning.value = false
-        progress.value = 100
-        results.value = data.results
-        fetchHistory()
+        // Find and update the specific slot
+        const slot = slots.value.find(s => s.sessionId === data.session_id)
+        if (slot) {
+            slot.isRunning = false
+            slot.progress = 100
+            slot.results = data.results
+        }
+        
+        // Check if all slots are done
+        const anyRunning = slots.value.some(s => s.isRunning)
+        if (!anyRunning) {
+            isRunning.value = false
+            progress.value = 100
+            fetchHistory()
+        }
+        
+        // Update legacy results with first completed slot
+        if (Object.keys(results.value).length === 0) {
+            results.value = data.results
+        }
     })
 }
 

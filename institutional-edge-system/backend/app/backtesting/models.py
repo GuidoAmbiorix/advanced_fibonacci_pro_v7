@@ -156,6 +156,54 @@ class BacktestMetrics:
 
 
 @dataclass
+class SlotConfig:
+    """Configuration for a single slot in multi-slot backtesting - FULL INDEPENDENCE"""
+    slot_number: int = 1  # 1, 2, 3, 4
+    enabled: bool = True
+    
+    # Symbol & Direction
+    symbol: str = "GBPJPY"
+    direction_filter: str = "BOTH"  # BOTH, BUY_ONLY, SELL_ONLY
+    
+    # Timeframe (per-slot)
+    timeframe: str = "M5"
+    confirmation_timeframe: Optional[str] = None
+    
+    # Risk & TP/SL
+    risk_percent: float = 1.0
+    tp_ratio: float = 1.5
+    sl_atr_multiplier: float = 1.5
+    
+    # Strategies
+    use_adx_filter: bool = False
+    enable_vwap_strategy: bool = True
+    enable_stoch_strategy: bool = True
+    enable_institutional_strategy: bool = True
+    enable_fibonacci_strategy: bool = True
+    
+    # RSI
+    rsi_period: int = 14
+    rsi_overbought: int = 70
+    rsi_oversold: int = 30
+    
+    # Trailing Stop Loss
+    enable_trailing_stop: bool = True
+    tsl_mode: str = "TIERED"  # OFF, ATR, TIERED
+    tsl_activation_r: float = 0.0
+    
+    # Partial Take Profit
+    partial_tp_on: bool = True
+    partial_tp_amount: float = 1.0
+    
+    # Scalping Settings
+    max_trade_duration_hours: float = 0.0
+    min_confluence_score: int = 7
+    
+    # MT5 Tracking
+    magic_number: Optional[int] = None
+
+
+@dataclass
 class BacktestConfig:
     """Configuration for backtest"""
 
@@ -171,6 +219,7 @@ class BacktestConfig:
     min_confluence_score: int = 7
     risk_percent: float = 1.0
     max_trades: int = 1
+    direction_filter: str = "BOTH"  # "BOTH", "BUY_ONLY", "SELL_ONLY"
 
     # Trading engine config
     swing_length: int = 10
@@ -226,6 +275,11 @@ class BacktestConfig:
     
     # Drawdown Protection
     max_drawdown_percent: float = 15.0  # Stop trading if drawdown exceeds 15%
+    
+    # PORTFOLIO MULTI-SLOT CONFIGURATION (NEW)
+    slots: List[SlotConfig] = field(default_factory=list)  # List of slot configs
+    max_portfolio_risk_percent: float = 4.0  # Max combined risk across all slots
+    max_positions_per_symbol: int = 2  # Limit concurrent positions per symbol
 
 
 @dataclass

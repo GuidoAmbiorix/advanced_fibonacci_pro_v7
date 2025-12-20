@@ -259,6 +259,14 @@ class BacktestEngine:
                     if confidence < 0.1:  # Very low threshold for debugging
                         logger.debug(f"Signal rejected: low confidence {confidence:.2f}")
                         continue
+                    
+                    # DIRECTION FILTER: BUY_ONLY / SELL_ONLY
+                    if self.config.direction_filter == "BUY_ONLY" and signal.direction != "BUY":
+                        logger.debug(f"Signal rejected: SELL signal blocked by BUY_ONLY filter")
+                        continue
+                    if self.config.direction_filter == "SELL_ONLY" and signal.direction != "SELL":
+                        logger.debug(f"Signal rejected: BUY signal blocked by SELL_ONLY filter")
+                        continue
 
                     # Check if can open (max trades)
                     if len(self.open_trades) >= self.config.max_trades:

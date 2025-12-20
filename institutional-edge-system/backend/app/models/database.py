@@ -109,6 +109,10 @@ class BotConfig(Base):
     # Bot Status
     is_active = Column(Boolean, default=False)
     last_signal_time = Column(DateTime, nullable=True)
+    
+    # Portfolio Synergy Settings (NEW)
+    max_portfolio_risk_percent = Column(Float, default=4.0)  # Max combined risk across all slots
+    max_positions_per_symbol = Column(Integer, default=2)    # Limit concurrent positions per symbol
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -116,6 +120,63 @@ class BotConfig(Base):
     # Relationships
     user = relationship("User", back_populates="bot_configs")
     risk_profile = relationship("RiskProfile", uselist=False, back_populates="bot_config", cascade="all, delete-orphan")
+    slots = relationship("BotSlot", back_populates="bot_config", cascade="all, delete-orphan")
+
+
+class BotSlot(Base):
+    """Individual slot in a portfolio bot - each with independent configuration"""
+    __tablename__ = "bot_slots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bot_config_id = Column(Integer, ForeignKey("bot_configs.id"), nullable=False)
+    slot_number = Column(Integer, nullable=False)  # 1, 2, 3, 4
+    enabled = Column(Boolean, default=True)
+    
+    # Symbol & Direction
+    symbol = Column(String, nullable=False, default="GBPJPY")
+    direction_filter = Column(String, default="BOTH")  # BOTH, BUY_ONLY, SELL_ONLY
+    
+    # Timeframe (per-slot)
+    timeframe = Column(String, default="M5")
+    confirmation_timeframe = Column(String, nullable=True)  # Auto if null
+    
+    # Risk & TP/SL
+    risk_percent = Column(Float, default=1.0)
+    tp_ratio = Column(Float, default=1.5)
+    sl_atr_multiplier = Column(Float, default=1.5)
+    
+    # Strategies
+    use_adx_filter = Column(Boolean, default=False)
+    enable_vwap_strategy = Column(Boolean, default=True)
+    enable_stoch_strategy = Column(Boolean, default=True)
+    enable_institutional_strategy = Column(Boolean, default=True)
+    enable_fibonacci_strategy = Column(Boolean, default=True)
+    
+    # RSI
+    rsi_period = Column(Integer, default=14)
+    rsi_overbought = Column(Integer, default=70)
+    rsi_oversold = Column(Integer, default=30)
+    
+    # Trailing Stop Loss (per-slot)
+    enable_trailing_stop = Column(Boolean, default=True)
+    tsl_mode = Column(String, default="TIERED")  # OFF, ATR, TIERED
+    tsl_activation_r = Column(Float, default=0.0)
+    
+    # Partial Take Profit
+    partial_tp_on = Column(Boolean, default=True)
+    partial_tp_amount = Column(Float, default=1.0)
+    
+    # Scalping Settings
+    max_trade_duration_hours = Column(Float, default=0.0)  # 0 = no limit
+    min_confluence_score = Column(Integer, default=7)
+    
+    # MT5 Tracking
+    magic_number = Column(Integer, unique=True, nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    bot_config = relationship("BotConfig", back_populates="slots")
 
 
 class RiskProfile(Base):

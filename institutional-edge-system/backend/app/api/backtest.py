@@ -25,6 +25,7 @@ class BacktestRequest(BaseModel):
     initial_balance: float = 1000.0
     risk_percent: float = 1.0
     strategy_mode: str = "SWING" # SWING, SCALP
+    direction_filter: str = "BOTH"  # "BOTH", "BUY_ONLY", "SELL_ONLY"
     use_adx_filter: bool = True
     # Strategy Selection
     enable_vwap_strategy: bool = True
@@ -116,6 +117,7 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             initial_balance=request.initial_balance,
             risk_percent=request.risk_percent,
             scalping_mode=(request.strategy_mode == "SCALP"),
+            direction_filter=request.direction_filter,  # BUY_ONLY / SELL_ONLY / BOTH
             # Strategy Selection
             use_adx_filter=request.use_adx_filter,
             enable_vwap_strategy=request.enable_vwap_strategy,
