@@ -240,6 +240,7 @@ class BacktestConfig:
     partial_tp_on: bool = False
     partial_tp_amount: float = 0.5
     scalping_mode: bool = False  # Enable high frequency scalping
+    use_compounding: bool = False  # False = use initial_balance for sizing (realistic), True = use current balance (exponential growth)
     
     # Scalping TP/SL Configuration (for faster trades)
     tp_ratio: float = 1.5  # Take Profit as multiple of risk (1.5 = 1.5R). Use 1.0 for scalping

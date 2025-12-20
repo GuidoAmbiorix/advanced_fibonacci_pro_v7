@@ -410,8 +410,8 @@ const symbolPresets = {
     risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
     rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 5, max_duration: 0,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BUY_ONLY',  // Carry trade: Buy GBP (5.25%) vs Sell JPY (0.25%)
-    description: 'The Beast 🔥 Carry trade long - Strong GBP/JPY rate differential' 
+    direction: 'BOTH',  // Trade both directions for more opportunities
+    description: 'The Beast 🔥 High volatility, strong trends' 
   },
   'EURUSD': { 
     name: 'EUR/USD', emoji: '💶', volatility: 'LOW',
@@ -428,8 +428,8 @@ const symbolPresets = {
     risk_percent: 0.5, tp_ratio: 1.5, sl_atr_multiplier: 2.0, 
     rsi_period: 9, rsi_overbought: 80, rsi_oversold: 20, min_confluence: 5, max_duration: 0,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BUY_ONLY',  // Safe haven + Fed rate cuts = Gold bullish
-    description: 'Gold Safe Haven 🛡️ Buy only - Fed easing cycle' 
+    direction: 'BOTH',  // Trade both directions for more opportunities
+    description: 'Gold 🥇 Extreme volatility - Wider stops' 
   },
   'USDJPY': { 
     name: 'USD/JPY', emoji: '🇯🇵', volatility: 'MEDIUM',
@@ -437,8 +437,8 @@ const symbolPresets = {
     risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.0, 
     rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 0,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BUY_ONLY',  // Carry trade: Buy USD (5.33%) vs Sell JPY (0.25%)
-    description: 'Carry Trade 📈 Buy only - USD/JPY yield differential' 
+    direction: 'BOTH',  // Trade both directions for more opportunities
+    description: 'Smooth trends - Tight SL, let profits run' 
   },
   'AUDJPY': { 
     name: 'AUD/JPY', emoji: '🦘', volatility: 'MEDIUM',
@@ -446,8 +446,8 @@ const symbolPresets = {
     risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.5, 
     rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 0,
     enable_vwap: true, enable_stoch: false, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BUY_ONLY',  // Carry trade: Buy AUD (4.1%) vs Sell JPY (0.25%)
-    description: 'Carry Trade 📈 Buy only - Positive AUD swap' 
+    direction: 'BOTH',  // Trade both directions for more opportunities
+    description: 'Carry trade pair - Positive swap on long' 
   },
   'NZDJPY': { 
     name: 'NZD/JPY', emoji: '🥝', volatility: 'MEDIUM',
@@ -455,8 +455,8 @@ const symbolPresets = {
     risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.5, 
     rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 0,
     enable_vwap: true, enable_stoch: false, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BUY_ONLY',  // Carry trade: Buy NZD (5.5%) vs Sell JPY (0.25%)
-    description: 'Carry Trade 📈 Buy only - Positive NZD swap' 
+    direction: 'BOTH',  // Trade both directions for more opportunities
+    description: 'Carry trade pair - Positive swap on long' 
   },
   'EURCHF': { 
     name: 'EUR/CHF', emoji: '🇨🇭', volatility: 'LOW',

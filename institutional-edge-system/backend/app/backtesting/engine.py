@@ -331,10 +331,12 @@ class BacktestEngine:
                         break  # Stop opening new trades
 
                     # Execute entry with adaptive risk
+                    # Use initial_balance for position sizing unless compounding is enabled
+                    sizing_balance = self.current_balance if self.config.use_compounding else self.config.initial_balance
                     trade = self.simulator.execute_entry(
                         signal=signal_dict,
                         current_bar=current_bar,
-                        account_balance=self.current_balance,
+                        account_balance=sizing_balance,
                         risk_percent=adaptive_risk_percent  # Use adaptive risk
                     )
                     
