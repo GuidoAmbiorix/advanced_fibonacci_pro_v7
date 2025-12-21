@@ -343,6 +343,9 @@ class OrderSimulator:
                     if trade.original_volume == 0:
                         trade.original_volume = trade.volume
                     
+                    # Calculate partial volume
+                    partial_volume = trade.volume * self.partial_tp_amount
+
                     # Calculate partial PnL using correct instrument profile (fixes JPY scaling issue)
                     profile = get_instrument_profile(trade.symbol)
                     partial_pips = abs(current_price - trade.entry_price) / profile.pip_size
