@@ -77,7 +77,7 @@
           <span v-if="isRunning && tradingMode === 'backtest'" class="mr-2 animate-spin">⟳</span>
           {{ isRunning ? (tradingMode === 'backtest' ? `Running (${progress}%)` : '🔴 Trading Active') : (tradingMode === 'backtest' ? 'Run Backtest' : 'Start Trading') }}
         </button>
-        <!-- Stop Trading Button (Live mode only) -->
+         <!-- Stop Trading Button (Live mode only) -->
         <button 
           v-if="tradingMode === 'live' && isRunning"
           @click="stopLiveTrading"
@@ -92,6 +92,15 @@
           class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium flex items-center transition-colors"
         >
           🔄 Load Positions
+        </button>
+        <!-- Export CSV Button (Backtest mode only) -->
+        <button 
+          v-if="tradingMode === 'backtest'"
+          @click="exportPortfolioCSV"
+          :disabled="portfolioMetrics.totalTrades === 0"
+          class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium flex items-center transition-colors disabled:opacity-50"
+        >
+          📄 Export CSV
         </button>
       </div>
     </div>
@@ -404,6 +413,43 @@
         </div>
       </div>
       
+      <!-- Correlation & Risk Analysis Row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <!-- Correlation Heatmap -->
+        <CorrelationHeatmap :symbols="enabledSymbols" />
+        
+        <!-- Portfolio Risk Summary -->
+        <div class="bg-gray-800 rounded-xl border border-gray-700 p-4">
+          <h3 class="text-sm font-semibold text-gray-300 mb-3">⚠️ Portfolio Risk</h3>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-gray-500">Potential Risk</span>
+                <span class="text-white">{{ totalPotentialRisk.toFixed(1) }}% / {{ portfolioSynergy.max_risk }}%</span>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-2">
+                <div 
+                  class="h-2 rounded-full transition-all"
+                  :class="totalPotentialRisk > portfolioSynergy.max_risk ? 'bg-red-500' : totalPotentialRisk > portfolioSynergy.max_risk * 0.8 ? 'bg-yellow-500' : 'bg-green-500'"
+                  :style="{ width: Math.min(totalPotentialRisk / portfolioSynergy.max_risk * 100, 100) + '%' }"
+                ></div>
+              </div>
+              <div class="text-xs text-gray-600 mt-1">Active: {{ totalActiveRisk.toFixed(1) }}%</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="bg-gray-900 rounded p-2">
+                <div class="text-gray-500">{{ tradingMode === 'live' ? 'Open Positions' : 'Total Trades' }}</div>
+                <div class="text-lg font-bold text-white">{{ tradingMode === 'live' ? openPositionCount : portfolioMetrics.totalTrades }}</div>
+              </div>
+              <div class="bg-gray-900 rounded p-2">
+                <div class="text-gray-500">Active Slots</div>
+                <div class="text-lg font-bold text-blue-400">{{ slots.filter(s => s.enabled).length }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <!-- Per-Slot Results Grid (2x2) -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div v-for="slot in slots.filter(s => s.enabled)" :key="'result-' + slot.id" 
@@ -534,6 +580,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import socket from '../services/socket'
+import CorrelationHeatmap from '../components/CorrelationHeatmap.vue'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -635,16 +682,16 @@ const symbolPresets = {
     name: 'GBP/JPY', emoji: '😈', volatility: 'HIGH',
     timeframe: 'M5', tsl_mode: 'TIERED',
     risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
-    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 5, max_duration: 2,
+    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 7, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Trade both directions for more opportunities
     description: 'The Beast 🔥 High volatility, strong trends' 
   },
   'EURUSD': { 
     name: 'EUR/USD', emoji: '💶', volatility: 'LOW',
-    timeframe: 'M5', tsl_mode: 'ATR',
+    timeframe: 'M5', tsl_mode: 'TIERED',
     risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.0, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 2,
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Most liquid, ranges well both directions
     description: 'Most liquid - Tight stops, trade both directions' 
@@ -653,16 +700,16 @@ const symbolPresets = {
     name: 'XAU/USD', emoji: '🥇', volatility: 'EXTREME',
     timeframe: 'M5', tsl_mode: 'TIERED',
     risk_percent: 0.5, tp_ratio: 1.5, sl_atr_multiplier: 2.0, 
-    rsi_period: 9, rsi_overbought: 80, rsi_oversold: 20, min_confluence: 5, max_duration: 2,
+    rsi_period: 9, rsi_overbought: 80, rsi_oversold: 20, min_confluence: 7, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Trade both directions for more opportunities
     description: 'Gold 🥇 Extreme volatility - Wider stops' 
   },
   'USDJPY': { 
     name: 'USD/JPY', emoji: '🇯🇵', volatility: 'MEDIUM',
-    timeframe: 'M5', tsl_mode: 'ATR',
+    timeframe: 'M5', tsl_mode: 'TIERED',
     risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.0, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 2,
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Trade both directions for more opportunities
     description: 'Smooth trends - Tight SL, let profits run' 
@@ -671,7 +718,7 @@ const symbolPresets = {
     name: 'AUD/JPY', emoji: '🦘', volatility: 'MEDIUM',
     timeframe: 'M15', tsl_mode: 'TIERED',
     risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.5, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 2,
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
     enable_vwap: true, enable_stoch: false, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Trade both directions for more opportunities
     description: 'Carry trade pair - Positive swap on long' 
@@ -680,7 +727,7 @@ const symbolPresets = {
     name: 'NZD/JPY', emoji: '🥝', volatility: 'MEDIUM',
     timeframe: 'M15', tsl_mode: 'TIERED',
     risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.5, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 5, max_duration: 2,
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
     enable_vwap: true, enable_stoch: false, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Trade both directions for more opportunities
     description: 'Carry trade pair - Positive swap on long' 
@@ -689,16 +736,54 @@ const symbolPresets = {
     name: 'EUR/CHF', emoji: '🇨🇭', volatility: 'LOW',
     timeframe: 'M15', tsl_mode: 'OFF',
     risk_percent: 1.5, tp_ratio: 1.5, sl_atr_multiplier: 0.75, 
-    rsi_period: 14, rsi_overbought: 65, rsi_oversold: 35, min_confluence: 5, max_duration: 2,
+    rsi_period: 14, rsi_overbought: 65, rsi_oversold: 35, min_confluence: 7, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: false, enable_fibonacci: true,
     direction: 'BOTH',  // Range trading pair, both directions work
     description: 'Range Trading ↔️ Both directions - Low volatility' 
+  },
+  // ===== NEW PAIRS (Researched optimal settings 2024) =====
+  'EURJPY': { 
+    name: 'EUR/JPY', emoji: '🇪🇺🇯🇵', volatility: 'HIGH',
+    timeframe: 'M5', tsl_mode: 'TIERED',  // High volatility needs tiered protection
+    risk_percent: 0.75, tp_ratio: 2.0, sl_atr_multiplier: 1.5,  // Medium-tight stops
+    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 7, max_duration: 2,
+    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BOTH',  // High volatility cross - trade both directions
+    description: 'EUR/JPY 🔥 High volatility cross - Fast moves' 
+  },
+  'USDCHF': { 
+    name: 'USD/CHF', emoji: '🇺🇸🇨🇭', volatility: 'LOW',
+    timeframe: 'M5', tsl_mode: 'TIERED',  // Low volatility, TIERED mode
+    risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.0,  // Tight stops for range trading
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
+    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BOTH',  // Range pair, mirrors EURUSD inversely
+    description: 'USD/CHF ↔️ Range trading - Mirrors EURUSD' 
+  },
+  // ===== LOW CORRELATION PAIRS FOR DIVERSIFICATION =====
+  'AUDUSD': { 
+    name: 'AUD/USD', emoji: '🦘', volatility: 'MEDIUM',
+    timeframe: 'M5', tsl_mode: 'TIERED',  // Commodity pair, moderate volatility
+    risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.5,  // Medium stops
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
+    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BOTH',  // Commodity currency, moves independently of EUR/JPY
+    description: 'AUD/USD 🦘 Commodity pair - Low correlation with majors' 
+  },
+  'USDCAD': { 
+    name: 'USD/CAD', emoji: '🍁', volatility: 'MEDIUM',
+    timeframe: 'M5', tsl_mode: 'TIERED',  // Oil-linked, moderate volatility
+    risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.5,  // Medium stops
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
+    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BOTH',  // Oil-linked, different drivers from EUR/JPY pairs
+    description: 'USD/CAD 🍁 Oil-linked - Independent of European pairs' 
   },
   '#BTCUSD': { 
     name: 'Bitcoin', emoji: '₿', volatility: 'EXTREME',
     timeframe: 'M15', tsl_mode: 'TIERED',
     risk_percent: 0.5, tp_ratio: 2.0, sl_atr_multiplier: 2.0,  // Wide stops for crypto volatility
-    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 5, max_duration: 2,
+    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 7, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // High volatility = trade both directions
     description: 'Bitcoin ₿ Extreme volatility - Wide stops, fast moves' 
@@ -727,16 +812,20 @@ const applySymbolPreset = (slot) => {
   }
 }
 
-// MULTI-SYMBOL SLOTS - All enabled with researched optimal configs
+// MULTI-SYMBOL SLOTS - Optimized for stability (M15 + H1 Conf + Wide Stops + NO Partial TP)
 const slots = ref([
-  { id: 0, symbol: 'GBPJPY', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    ...symbolPresets['GBPJPY'] },  // BUY_ONLY - Carry trade
-  { id: 1, symbol: 'XAUUSD', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    ...symbolPresets['XAUUSD'] },  // BUY_ONLY - Safe haven
-  { id: 2, symbol: 'USDJPY', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    ...symbolPresets['USDJPY'] },  // BUY_ONLY - Carry trade
-  { id: 3, symbol: 'AUDJPY', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    ...symbolPresets['AUDJPY'] }   // AUDJPY - Carry trade
+  { id: 0, symbol: 'EURUSD', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    // 💶 EURUSD: min_confluence: 7 for stronger signals
+    ...symbolPresets['EURUSD'], risk_percent: 0.75, timeframe: 'M15', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'M15 Trend + H1 Conf + Wide Stops' },  
+  { id: 1, symbol: 'USDJPY', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    // 🇯🇵 USDJPY: min_confluence: 7
+    ...symbolPresets['USDJPY'], risk_percent: 0.5, timeframe: 'M15', tp_ratio: 3.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'M15 Trend + H1 Conf (Low Risk)' },  
+  { id: 2, symbol: 'AUDUSD', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    // 🦘 AUDUSD: min_confluence: 7
+    ...symbolPresets['AUDUSD'], risk_percent: 0.75, timeframe: 'M15', tp_ratio: 2.5, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'M15 Trend + H1 Conf + Wide Stops' },  
+  { id: 3, symbol: 'USDCAD', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    // 🍁 USDCAD: min_confluence: 7
+    ...symbolPresets['USDCAD'], risk_percent: 0.75, timeframe: 'M15', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'M15 Trend + H1 Conf + Wide Stops' }   
 ])
 
 // Portfolio Synergy Settings
@@ -745,9 +834,35 @@ const portfolioSynergy = ref({
   max_positions: 2  // Max positions per symbol
 })
 
+// Computed: Enabled symbols for correlation matrix
+const enabledSymbols = computed(() => {
+  return slots.value.filter(s => s.enabled).map(s => s.symbol)
+})
+
+// Computed: Total active risk (sum of risk % for slots with open positions)
+const totalActiveRisk = computed(() => {
+  return slots.value
+    .filter(s => s.enabled && s.trades.some(t => t.status === 'OPEN' || !t.exit_time))
+    .reduce((sum, s) => sum + (s.risk_percent || 1.0), 0)
+})
+
+// Computed: Total potential risk (sum of risk % for all enabled slots)
+const totalPotentialRisk = computed(() => {
+  return slots.value
+    .filter(s => s.enabled)
+    .reduce((sum, s) => sum + (s.risk_percent || 1.0), 0)
+})
+
+// Computed: Open position count
+const openPositionCount = computed(() => {
+  return slots.value.reduce((count, s) => {
+    return count + s.trades.filter(t => t.status === 'OPEN' || !t.exit_time).length
+  }, 0)
+})
+
 // PORTFOLIO COMBINED METRICS (computed from all enabled slots)
 const portfolioMetrics = computed(() => {
-  const enabledSlots = slots.value.filter(s => s.enabled && s.results)
+  const enabledSlots = slots.value.filter(s => s.enabled)
   
   // Sum up all metrics
   let totalNetProfit = 0
@@ -758,28 +873,59 @@ const portfolioMetrics = computed(() => {
   let maxDrawdown = 0
   
   enabledSlots.forEach(slot => {
-    if (slot.results?.net_profit !== undefined) {
-      totalNetProfit += slot.results.net_profit
-    }
-    if (slot.results?.total_trades) {
-      totalTrades += slot.results.total_trades
-      // Estimate wins from win rate
-      totalWins += Math.round(slot.results.total_trades * (slot.results.win_rate || 0) / 100)
-    }
-    if (slot.results?.gross_profit) {
-      totalGrossProfit += slot.results.gross_profit
-    }
-    if (slot.results?.gross_loss) {
-      totalGrossLoss += Math.abs(slot.results.gross_loss)
-    }
-    if (slot.results?.max_drawdown && slot.results.max_drawdown > maxDrawdown) {
-      maxDrawdown = slot.results.max_drawdown  // Take worst drawdown
+    // Prefer results if available (finalized stats), otherwise calc from trades
+    const hasResults = slot.results && slot.results.total_trades !== undefined
+    
+    if (hasResults) {
+      if (slot.results.total_trades) {
+        totalTrades += slot.results.total_trades
+        totalWins += Math.round(slot.results.total_trades * (slot.results.win_rate || 0) / 100)
+      }
+      if (slot.results.net_profit !== undefined) totalNetProfit += slot.results.net_profit
+      if (slot.results.gross_profit) totalGrossProfit += slot.results.gross_profit
+      if (slot.results.gross_loss) totalGrossLoss += Math.abs(slot.results.gross_loss)
+      if (slot.results.max_drawdown && slot.results.max_drawdown > maxDrawdown) {
+        maxDrawdown = slot.results.max_drawdown
+      }
+    } else if (slot.trades && slot.trades.length > 0) {
+      // Fallback: Real-time calculation from trades list
+      const closedTrades = slot.trades.filter(t => t.exit_time || t.status === 'CLOSED')
+      
+      totalTrades += closedTrades.length
+      totalWins += closedTrades.filter(t => (t.profit || 0) > 0).length
+      totalNetProfit += closedTrades.reduce((sum, t) => sum + (t.profit || 0), 0)
+      
+      let runningBalance = 0
+      let peakBalance = 0
+      let currentDrawdown = 0
+      let slotMaxDrawdown = 0
+      
+      closedTrades.forEach(t => {
+        const profit = t.profit || 0
+        if (profit > 0) totalGrossProfit += profit
+        else totalGrossLoss += Math.abs(profit)
+        
+        // Calculate Max DD from trade sequence
+        runningBalance += profit
+        if (runningBalance > peakBalance) peakBalance = runningBalance
+        const dd = peakBalance - runningBalance
+        if (dd > slotMaxDrawdown) slotMaxDrawdown = dd
+      })
+      
+      // Convert absolute DD to approx % (assuming 10k or initial balance basis - simplistic for fallback)
+      // Ideally backend sends this, but for fallback we take the largest absolute drop
+      if (slotMaxDrawdown > 0) {
+         // Use a rough estimate if balance div not available, or just track largest absolute drop
+         // For portfolio view, we can track max relative DD if we knew starting balance
+         // Here we'll just use the largest DD found this session
+         if (slotMaxDrawdown > maxDrawdown) maxDrawdown = slotMaxDrawdown 
+      }
     }
   })
   
   // Calculate combined metrics
   const winRate = totalTrades > 0 ? (totalWins / totalTrades * 100) : 0
-  const profitFactor = totalGrossLoss > 0 ? (totalGrossProfit / totalGrossLoss) : 0
+  const profitFactor = totalGrossLoss > 0 ? (totalGrossProfit / totalGrossLoss) : (totalGrossProfit > 0 ? 999 : 0)
   
   return {
     netProfit: totalNetProfit,
@@ -1231,6 +1377,62 @@ onMounted(() => {
   setupSocketListeners()
   fetchAccounts()  // Load accounts for live trading mode
 })
+
+// Export combined portfolio trades to CSV
+const exportPortfolioCSV = () => {
+  // 1. Gather all trades from enabled slots
+  const allTrades = []
+  slots.value.filter(s => s.enabled).forEach(slot => {
+    if (slot.trades && slot.trades.length > 0) {
+      slot.trades.forEach(trade => {
+        allTrades.push({
+          ...trade,
+          symbol: slot.symbol,
+          slot_id: slot.id
+        })
+      })
+    }
+  })
+  
+  if (allTrades.length === 0) {
+    alert('No trades to export.')
+    return
+  }
+  
+  // 2. Sort by entry time
+  allTrades.sort((a, b) => new Date(a.entry_time) - new Date(b.entry_time))
+  
+  // 3. Generate CSV content
+  const headers = ['Symbol', 'Ticket', 'Type', 'Entry Time', 'Exit Time', 'Entry Price', 'Exit Price', 'Profit', 'Duration (min)', 'Confluence']
+  const rows = allTrades.map(t => [
+    t.symbol,
+    t.ticket || '',
+    t.trade_type,
+    t.entry_time,
+    t.exit_time || 'OPEN',
+    t.entry_price,
+    t.exit_price || '',
+    (t.profit || 0).toFixed(2),
+    t.duration || '',
+    t.confluence_score || ''
+  ])
+  
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.join(','))
+  ].join('\n')
+  
+  // 4. Download file
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  link.setAttribute('href', url)
+  link.setAttribute('download', `portfolio_backtest_${new Date().toISOString().slice(0,10)}.csv`)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
 
 onUnmounted(() => {
     socket.off('backtest_progress')

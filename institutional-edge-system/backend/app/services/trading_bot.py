@@ -695,9 +695,11 @@ class TradingBot:
         return is_valid
 
     def _check_trading_hours(self) -> bool:
-        """Check if current time is within trading hours"""
-        now = datetime.utcnow().strftime("%H:%M")
-        return self.config.trading_hours_start <= now <= self.config.trading_hours_end
+        """Check if current day is a weekday (Monday-Friday). No hour restrictions."""
+        now = datetime.utcnow()
+        # Monday=0, Tuesday=1, ..., Friday=4, Saturday=5, Sunday=6
+        is_weekday = now.weekday() < 5  # 0-4 are weekdays
+        return is_weekday
 
     def _check_daily_risk(self) -> bool:
         """Check if daily loss limit has been reached"""

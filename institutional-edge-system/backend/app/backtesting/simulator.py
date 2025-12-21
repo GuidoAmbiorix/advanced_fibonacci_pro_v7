@@ -271,8 +271,8 @@ class OrderSimulator:
             if profit_r >= 2.0:
                 new_sl = trade.entry_price + (initial_risk * 1.2)
             elif profit_r >= 1.5:
-                new_sl = trade.entry_price + (initial_risk * 0.8)
-            elif profit_r >= 0.8:
+                new_sl = trade.entry_price + (initial_risk * 0.5)
+            elif profit_r >= 1.0:
                 new_sl = trade.entry_price + (initial_risk * 0.1)
 
             if new_sl and new_sl > trade.stop_loss:
@@ -337,15 +337,16 @@ class OrderSimulator:
                 else:  # SELL
                     profit_r = (trade.entry_price - current_price) / initial_risk
                 
-                # If profit reaches 0.5R (Hardcoded trigger for now, could be configurable), take partial!
-                if profit_r >= 0.5:
+                # If profit reaches 1.0R (Improved trigger to let trade develop), take partial!
+                if profit_r >= 1.0:
                     # Store original volume for tracking
                     if trade.original_volume == 0:
                         trade.original_volume = trade.volume
                     
-                    # Calculate partial PnL (percentage of position)
-                    partial_volume = trade.volume * self.partial_tp_amount
-                    partial_pnl = partial_volume * 100000 * abs(current_price - trade.entry_price)
+                    # Calculate partial PnL using correct instrument profile (fixes JPY scaling issue)
+                    profile = get_instrument_profile(trade.symbol)
+                    partial_pips = abs(current_price - trade.entry_price) / profile.pip_size
+                    partial_pnl = partial_pips * profile.pip_value_per_lot * partial_volume
                     trade.partial_tp_pnl = partial_pnl
                     
                     # Reduce volume by partial amount (runner continues)

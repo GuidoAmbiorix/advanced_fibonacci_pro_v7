@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from app.core.strategies.base import BaseStrategy
 from app.core.adaptive_multi_strategy_engine import AdaptiveMultiStrategyEngine
-from app.core.strategies.sq_3_29_162 import SQStrategy_3_29_162
+
 
 class StrategyFactory:
     """

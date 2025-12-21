@@ -25,7 +25,7 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 from loguru import logger
-from app.core.strategies.sq_3_29_162 import SQStrategy_3_29_162
+
 from app.core.news_filter import NewsFilter  # Elite Upgrade
 from app.core.confluence_system import EnhancedConfluenceScorer  # Phase 3 Brain
 
@@ -65,9 +65,9 @@ class TrailingStopConfig:
     
     # Tiered levels (R-profit -> Lock R)
     tiered_levels: Dict = field(default_factory=lambda: {
-        0.8: 0.1,   # At 0.8R profit, lock 0.1R (breakeven+)
-        1.5: 0.8,   # At 1.5R profit, lock 0.8R
-        2.0: 1.2,   # At 2.0R profit, lock 1.2R
+        1.0: 0.1,   # At 1.0R profit, lock 0.1R (Delayed BE to let trade breathe)
+        1.5: 0.5,   # At 1.5R profit, lock 0.5R (Secure half risk)
+        2.0: 1.2,   # At 2.0R profit, lock 1.2R (Secure 1R+)
         3.0: 2.0,   # At 3.0R profit, lock 2.0R
         4.0: 3.0,   # At 4.0R profit, lock 3.0R
     })
@@ -543,9 +543,7 @@ class AdaptiveMultiStrategyEngine:
         self.enable_stoch_strategy = config.get('enable_stoch_strategy', True)
         self.enable_institutional_strategy = config.get('enable_institutional_strategy', True)
         self.enable_fibonacci_strategy = config.get('enable_fibonacci_strategy', True)  # NEW
-        self.enable_fibonacci_strategy = config.get('enable_fibonacci_strategy', True)  # NEW
-        self.enable_strategy_3_29_162 = config.get('enable_strategy_3_29_162', True)  # SQ Strategy
-        
+
         # Funding Firm Rules
         self.max_drawdown_limit = config.get('max_drawdown_limit', 0.10)  # 10% Max Total Loss
         self.daily_loss_limit = config.get('daily_loss_limit', 0.05)      # 5% Max Daily Loss
@@ -556,10 +554,6 @@ class AdaptiveMultiStrategyEngine:
         self.current_balance = self.start_of_day_balance
         self.current_equity = self.start_of_day_balance
         self.high_water_mark = self.start_of_day_balance
-        
-        # Initialize Sub-Strategies
-        if self.enable_strategy_3_29_162:
-            self.sq_strategy_engine = SQStrategy_3_29_162(config)
 
         # News Filter (Elite Upgrade)
         self.news_filter = NewsFilter()
@@ -650,17 +644,14 @@ class AdaptiveMultiStrategyEngine:
         if daily_loss_pct >= self.daily_loss_limit:
             return False, f"DAILY LOSS LIMIT HIT: {daily_loss_pct:.1%} >= {self.daily_loss_limit:.1%}"
             
-        # 3. Check Schedule (Mon-Fri, 01:00 - 12:00)
+        # 3. Check Schedule (Mon-Fri only, no hour restrictions)
         # 0 = Monday, 4 = Friday, 5 = Saturday, 6 = Sunday
         weekday = timestamp.weekday()
-        hour = timestamp.hour
         
         if weekday > 4: # Saturday or Sunday
             return False, "Weekend - Trading Disabled"
-            
-        # Allowed: 01:00 to 11:59 (Stop at 12:00 sharp)
-        if not (1 <= hour < 12):
-             return False, f"Outside Trading Hours (01:00-12:00): Current hour {hour}"
+        
+        # No hour restrictions - trade 24h Monday to Friday
              
         return True, "OK"
 
@@ -731,19 +722,9 @@ class AdaptiveMultiStrategyEngine:
                     logger.info(f"📐 Fibonacci Scalp Signal: {fib_signal.direction} @ {fib_signal.entry_price}")
                     return self._wrap_signal(fib_signal, regime, strategy_type, df, h4_trend)
 
-            # 5. SQ Strategy 3.29.162 (Rolling VWAP Crossover)
-            if self.enable_strategy_3_29_162:
-                # Use dedicated engine
-                sq_analysis = self.sq_strategy_engine.analyze(df)
-                for sq_signal in sq_analysis.get('signals', []):
-                    # Wrap and return first valid signal (or collect all if engine supported it)
-                    # For now engine returns one decision per step usually, but we support list
-                    logger.info(f"🧬 SQ Strategy 3.29.162 Signal: {sq_signal.direction} @ {sq_signal.entry_price}")
-                    return self._wrap_signal(sq_signal, regime, strategy_type, df, h4_trend)
-
-            # 6. Fallback to standard scalping (ONLY if no other strategy is enabled)
+            # 5. Fallback to standard scalping (ONLY if no other strategy is enabled)
             # If any specialized strategy is enabled, we DO NOT want the generic fallback
-            if not (self.enable_institutional_strategy or self.enable_vwap_strategy or self.enable_stoch_strategy or self.enable_fibonacci_strategy or self.enable_strategy_3_29_162):
+            if not (self.enable_institutional_strategy or self.enable_vwap_strategy or self.enable_stoch_strategy or self.enable_fibonacci_strategy):
                 scalp_signal = self._scalping_signal(df)
                 if scalp_signal:
                     logger.info(f"⚡ Scalping Signal: {scalp_signal.direction} @ {scalp_signal.entry_price}")
