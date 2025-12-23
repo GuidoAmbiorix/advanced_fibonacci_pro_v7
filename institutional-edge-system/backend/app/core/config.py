@@ -28,11 +28,13 @@ class Settings(BaseSettings):
     MT5_PATH: str = ""
     MT5_SYMBOL_SUFFIX: str = ""  # e.g. "m" for EURUSDm
 
-    # Trading Parameters
-    DEFAULT_SYMBOL: str = "EURUSD"
-    DEFAULT_TIMEFRAME: str = "H1"
-    DEFAULT_RISK_PERCENT: float = 2.0
+    # Trading Defaults
+    DEFAULT_SYMBOL: str = "EURJPY"  # Non-USD Cross Pair Default
+    DEFAULT_TIMEFRAME: str = "M5"
+    DEFAULT_RISK_PERCENT: float = 1.0
     MAX_RISK_PERCENT: float = 5.0
+    MAX_DRAWDOWN_PERCENT: float = 7.0  # Max Total Drawdown
+    MAX_DAILY_LOSS_PERCENT: float = 3.0 # Max Daily Loss
     MIN_CONFLUENCE_SCORE: int = 6
 
     # Database

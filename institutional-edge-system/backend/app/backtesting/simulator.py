@@ -40,9 +40,10 @@ class OrderSimulator:
         tsl_chandelier_mult: float = 3.0,
         tsl_swing_lookback: int = 10,
         tsl_psar_af_start: float = 0.02,
-        tsl_psar_af_max: float = 0.20,
+        tsl_psar_af_max: float = 0.2,
         partial_tp_on: bool = False,
-        partial_tp_amount: float = 0.5
+        partial_tp_amount: float = 0.5,
+        max_trade_duration_hours: float = 0.0
     ):
         """
         Initialize simulator
@@ -62,6 +63,7 @@ class OrderSimulator:
             tsl_psar_af_max: Maximum acceleration factor for Parabolic SAR
             partial_tp_on: Enable partial take profit
             partial_tp_amount: Amount to close (0.1 - 1.0)
+            max_trade_duration_hours: Maximum trade duration in hours (0 = disable)
         """
         self.slippage_pips = slippage_pips
         self.commission_per_lot = commission_per_lot
@@ -70,6 +72,7 @@ class OrderSimulator:
         self.tsl_mode = tsl_mode
         self.partial_tp_on = partial_tp_on
         self.partial_tp_amount = partial_tp_amount
+        self.max_trade_duration_hours = max_trade_duration_hours
 
         # Initialize Dynamic Trailing Stop Manager
         mode_map = {
@@ -372,6 +375,24 @@ class OrderSimulator:
         bar_high = current_bar['high']
         bar_low = current_bar['low']
 
+        # 0. Check Max Duration (TIME_EXIT)
+        if self.max_trade_duration_hours > 0:
+             # logger.debug(f"Checking Duration: {time_in_trade_hours:.2f}h vs Limit {self.max_trade_duration_hours}h")
+             if time_in_trade_hours >= self.max_trade_duration_hours:
+                # Force Close
+                profile = get_instrument_profile(trade.symbol)
+                exit_price = current_price # Market Exit
+                
+                trade.close(
+                    exit_time=current_bar['time'],
+                    exit_price=exit_price,
+                    exit_reason="TIME_EXIT",
+                    pip_size=profile.pip_size,
+                    pip_value=profile.pip_value_per_lot
+                )
+                logger.info(f"⌛ Trade {trade.ticket} closed due to MAX DURATION ({time_in_trade_hours:.2f}h >= {self.max_trade_duration_hours}h)")
+                return "CLOSED_TIME"
+
         # Skip SL check if below minimum hold time (let trade breathe)
         if time_in_trade_hours < self.min_hold_hours:
             # Still open - update floating P&L
@@ -402,7 +423,21 @@ class OrderSimulator:
 
             # Check TP
             if bar_high >= trade.take_profit:
-                # TP hit
+                # DYNAMIC TP EXTENSION LOGIC (Smart Runner)
+                # If using ATR mode, extend TP instead of closing
+                if self.tsl_mode == "ATR":
+                     # Extend TP by another 1.0R distance
+                     initial_risk = abs(trade.entry_price - trade.initial_stop_loss)
+                     trade.take_profit += initial_risk  # Push TP up (for BUY)
+                     
+                     logger.info(f"🚀 BUY TP Reached! Extending TP to {trade.take_profit:.5f} to catch more moves (Runner Mode)")
+                     
+                     # Force TSL update immediately
+                     self._update_trailing_stop(trade, current_price, None)
+                     # Continue trade
+                     return "OPEN"
+
+                # Standard Fixed TP Close
                 exit_price = trade.take_profit
                 # Apply slippage (worse exit) using symbol-specific pip size
                 profile = get_instrument_profile(trade.symbol)
@@ -445,7 +480,25 @@ class OrderSimulator:
 
             # Check TP
             if bar_low <= trade.take_profit:
-                # TP hit
+                # DYNAMIC TP EXTENSION LOGIC (Smart Runner)
+                # If using ATR mode, we want to let winners run!
+                # Instead of closing at TP, we EXTEND TP and tighten SL
+                if self.tsl_mode == "ATR":
+                     # Extend TP by another 1.0R distance
+                     initial_risk = abs(trade.entry_price - trade.initial_stop_loss)
+                     trade.take_profit -= initial_risk  # Push TP down (for SELL)
+                     
+                     # Tighten SL to lock banks (e.g. at old TP price - small buffer)
+                     # Or rely on standard TSL to catch up
+                     # For now, let's just extend TP to allow running
+                     logger.info(f"🚀 SELL TP Reached! Extending TP to {trade.take_profit:.5f} to catch more moves (Runner Mode)")
+                     
+                     # Force TSL update immediately
+                     self._update_trailing_stop(trade, current_price, None)
+                     # Continue trade
+                     return "OPEN"
+
+                # Standard Fixed TP Close
                 exit_price = trade.take_profit
                 # Apply slippage (worse exit) using symbol-specific pip size
                 profile = get_instrument_profile(trade.symbol)
@@ -467,7 +520,14 @@ class OrderSimulator:
         # Still open - update floating P&L
         current_price = current_bar['close']
         trade.update_open_pnl(current_price)
-
+        
+        # BUY LOGIC TP EXTENSION (Mirrored)
+        # We need to apply this to the BUY block similarly but the above block was huge, so handled separately in logic flow.
+        # Wait, the above block was ONLY SELL. I need to apply to BUY as well.
+        # Check Lines 403-422 for BUY TP logic. I must verify if I covered it.
+        # The replacement actually starts at the SELL block (line 424).
+        # Need to re-read to patch BUY as well.
+        
         return "OPEN"
 
     def force_close(

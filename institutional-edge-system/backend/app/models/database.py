@@ -164,12 +164,11 @@ class BotSlot(Base):
     __tablename__ = "bot_slots"
 
     id = Column(Integer, primary_key=True, index=True)
-    bot_config_id = Column(Integer, ForeignKey("bot_configs.id"), nullable=False)
-    slot_number = Column(Integer, nullable=False)  # 1, 2, 3, 4
+    bot_config_id = Column(Integer, ForeignKey("bot_configs.id", ondelete="CASCADE"), nullable=False)
     enabled = Column(Boolean, default=True)
     
     # Symbol & Direction
-    symbol = Column(String, nullable=False, default="GBPJPY")
+    symbol = Column(String, nullable=False, default="EURJPY")
     direction_filter = Column(String, default="BOTH")  # BOTH, BUY_ONLY, SELL_ONLY
     
     # Timeframe (per-slot)

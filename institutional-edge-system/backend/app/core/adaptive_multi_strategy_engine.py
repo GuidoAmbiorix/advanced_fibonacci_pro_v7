@@ -545,8 +545,8 @@ class AdaptiveMultiStrategyEngine:
         self.enable_fibonacci_strategy = config.get('enable_fibonacci_strategy', True)  # NEW
 
         # Funding Firm Rules
-        self.max_drawdown_limit = config.get('max_drawdown_limit', 0.10)  # 10% Max Total Loss
-        self.daily_loss_limit = config.get('daily_loss_limit', 0.05)      # 5% Max Daily Loss
+        self.max_drawdown_limit = config.get('max_drawdown_limit', 0.07)  # 7% Max Total Loss (User Rule)
+        self.daily_loss_limit = config.get('daily_loss_limit', 0.03)      # 3% Max Daily Loss (User Rule)
         self.risk_reward_ratio = config.get('risk_reward_ratio', 1.5)     # Dynamic R/R (default 1:1.5)
         
         # Account State for Rules
@@ -651,7 +651,10 @@ class AdaptiveMultiStrategyEngine:
         if weekday > 4: # Saturday or Sunday
             return False, "Weekend - Trading Disabled"
         
-        # No hour restrictions - trade 24h Monday to Friday
+        # 4. Check Hours (00:00 - 12:00)
+        # Assuming timestamp is localized or UTC properly. User wants 12am-12pm.
+        if not (0 <= timestamp.hour < 12):
+             return False, f"Outside Trading Hours ({timestamp.hour:02d}:{timestamp.minute:02d})"
              
         return True, "OK"
 

@@ -417,6 +417,11 @@ class TradingBot:
             await self._log_activity("Daily risk limit reached, skipping", "warning")
             return
 
+        # 5. Check Total Drawdown (Account Protection)
+        if not self._check_total_drawdown():
+            await self._log_activity("Max total drawdown limit reached, skipping", "warning")
+            return
+
         # 5. Check Cooldown
         if not self._check_cooldown(signal.symbol):
             # Log handled inside _check_cooldown
@@ -695,11 +700,31 @@ class TradingBot:
         return is_valid
 
     def _check_trading_hours(self) -> bool:
-        """Check if current day is a weekday (Monday-Friday). No hour restrictions."""
-        now = datetime.utcnow()
+        """Check if current day is a weekday (Monday-Friday) and within trading ours (00:00 - 12:00) LOCAL TIME (UTC-4)."""
+        # Align with User's Local Time (UTC-4)
+        utc_now = datetime.utcnow()
+        local_now = utc_now - timedelta(hours=4)
+        
+        # Log for verification
+        # logger.info(f"🕒 Time Check: UTC={utc_now.strftime('%H:%M')} | Local(UTC-4)={local_now.strftime('%H:%M')}")
+        
         # Monday=0, Tuesday=1, ..., Friday=4, Saturday=5, Sunday=6
-        is_weekday = now.weekday() < 5  # 0-4 are weekdays
-        return is_weekday
+        is_weekday = local_now.weekday() < 5  # 0-4 are weekdays
+        
+        # Check time: 00:00 (12 AM) to 12:00 (12 PM)
+        is_within_hours = 0 <= local_now.hour < 12
+        
+        if is_within_hours and is_weekday:
+             return True
+             
+        # Fallback Log
+        if not is_within_hours:
+             # Only log warning if hours are completely wrong (e.g. trading attempted)
+             # logger.warning(f"⛔ Outside Trading Hours: {local_now.strftime('%H:%M')} (Limit 00-12)")
+             pass
+             
+        return False
+
 
     def _check_daily_risk(self) -> bool:
         """Check if daily loss limit has been reached"""
@@ -727,8 +752,40 @@ class TradingBot:
                 return False
                 
             return True
+        except Exception as e:
+            logger.error(f"Error checking daily risk: {e}")
+            return False
         finally:
             db.close()
+
+    def _check_total_drawdown(self) -> bool:
+        """
+        Check if Total Drawdown Limit is reached.
+        Uses Equity vs Balance (Open Drawdown) check.
+        Values from settings.MAX_DRAWDOWN_PERCENT (default 7.0).
+        """
+        account_info = self.mt5_connector.get_account_info()
+        if not account_info:
+            return True # Fail safe
+
+        balance = account_info['balance']
+        equity = account_info['equity']
+        
+        if balance <= 0:
+            return True
+
+        # Calculate current open drawdown percentage
+        # (Balance - Equity) / Balance * 100
+        # If Equity > Balance, DD is 0
+        current_dd_percent = max(0.0, (balance - equity) / balance * 100)
+        
+        limit = getattr(settings, "MAX_DRAWDOWN_PERCENT", 7.0)
+        
+        if current_dd_percent >= limit:
+            logger.warning(f"Total Drawdown {current_dd_percent:.2f}% >= Limit {limit}%")
+            return False
+            
+        return True
 
     def _check_cooldown(self, symbol: str) -> bool:
         """

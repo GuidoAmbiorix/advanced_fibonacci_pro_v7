@@ -7,11 +7,16 @@ import sys
 from pathlib import Path
 
 # Setup paths
-project_root = Path(__file__).parent
-backend_path = project_root / "backend" / "app"
-sys.path.insert(0, str(backend_path))
+# Setup paths
+project_root = Path(__file__).parent.parent
+# IMPORTANT: point to backend so we can import 'app.models.database' or just 'models.database'
+# If backend/app is in path, then 'models.database' works if run from there
+# Let's add 'backend/app' to path to make imports like 'from models.database' work 
+# assuming 'models' is a folder inside 'app'
+backend_app_path = project_root / "backend" / "app"
+sys.path.insert(0, str(backend_app_path))
 
-# Set working directory
+# Set working directory to project root
 os.chdir(str(project_root))
 
 from sqlalchemy import create_engine
@@ -40,62 +45,104 @@ try:
         print("[ERROR] Admin user not found. Run init_database.py first.")
         sys.exit(1)
 
-    # Create bot configurations
-    bots = [
-        {
-            "name": "Bitcoin Alpha",
-            "symbol": "BTCUSD",
-            "symbol_type": "crypto",
-            "timeframe": "H1",
-            "risk_percent": 2.0,
-            "min_confluence_score": 6,
-            "max_trades": 3,
-        },
-        {
-            "name": "EURUSD Trader",
-            "symbol": "EURUSD",
-            "symbol_type": "forex",
-            "timeframe": "H1",
-            "risk_percent": 2.0,
-            "min_confluence_score": 6,
-            "max_trades": 3,
-        },
-        {
-            "name": "GBPUSD Trader",
-            "symbol": "GBPUSD",
-            "symbol_type": "forex",
-            "timeframe": "H1",
-            "risk_percent": 2.0,
-            "min_confluence_score": 6,
-            "max_trades": 3,
-        },
-        {
-            "name": "Ethereum Pro",
-            "symbol": "ETHUSD",
-            "symbol_type": "crypto",
-            "timeframe": "H1",
-            "risk_percent": 2.0,
-            "min_confluence_score": 6,
-            "max_trades": 3,
-        },
-    ]
 
-    for bot_data in bots:
-        # Check if bot already exists
-        existing = db.query(BotConfig).filter(
-            BotConfig.user_id == admin.id,
-            BotConfig.symbol == bot_data["symbol"]
-        ).first()
 
-        if not existing:
-            bot = BotConfig(
-                user_id=admin.id,
-                **bot_data
+    # Create Main Portfolio Bot
+    main_bot_name = "Institutional Scalper"
+    
+    # Check if main bot exists
+    existing_bot = db.query(BotConfig).filter(
+        BotConfig.user_id == admin.id,
+        BotConfig.name == main_bot_name
+    ).first()
+
+    if not existing_bot:
+        # Create the Container Bot Configuration
+        bot = BotConfig(
+            user_id=admin.id,
+            name=main_bot_name,
+            symbol="XAUUSD", # Primary Display Symbol
+            symbol_type="commodities",
+            timeframe="M5",
+            risk_percent=1.0, # Default Per-Trade Risk (will be overriden by slots if needed)
+            max_portfolio_risk_percent=4.0, # Max Risk: 4%
+            max_positions_per_symbol=2,     # Max Pos/Symbol: 2
+            
+            min_confluence_score=6,
+            max_trades=10, 
+            
+            # Global Winning Params (Defaults)
+            tp_ratio=2.0,
+            sl_atr_multiplier=1.5,
+            tsl_mode="ATR",
+            partial_tp_on=True,
+            max_trade_duration_hours=4.0, 
+        )
+        db.add(bot)
+        db.commit() # Commit to get ID
+        db.refresh(bot)
+        print(f"[OK] Created Main Bot: {bot.name}")
+        
+        # Define Slot Configurations
+        slots_config = [
+            {
+                "slot_number": 1,
+                "symbol": "EURJPY", # The Beast (Cross)
+                "timeframe": "M5",
+                "risk_percent": 0.75,
+                "tp_ratio": 2.0,
+                "sl_atr_multiplier": 1.5,
+                "min_confluence_score": 7,
+                "tsl_mode": "ATR",
+                "enabled": True
+            },
+            {
+                "slot_number": 2,
+                "symbol": "GBPJPY", # The Dragon (Cross)
+                "timeframe": "M5",
+                "risk_percent": 0.75,
+                "tp_ratio": 2.0,
+                "sl_atr_multiplier": 1.5,
+                "min_confluence_score": 7,
+                "tsl_mode": "ATR",
+                "enabled": True
+            },
+            {
+                "slot_number": 3,
+                "symbol": "EURGBP", # The Channel (Cross)
+                "timeframe": "M5",
+                "risk_percent": 1.0,
+                "tp_ratio": 1.5,
+                "sl_atr_multiplier": 1.0,
+                "min_confluence_score": 7,
+                "tsl_mode": "ATR",
+                "enabled": True
+            },
+            {
+                "slot_number": 4,
+                "symbol": "AUDJPY", # Risk Proxy (Cross)
+                "timeframe": "M5",
+                "risk_percent": 0.75,
+                "tp_ratio": 2.0,
+                "sl_atr_multiplier": 1.5,
+                "min_confluence_score": 7,
+                "tsl_mode": "ATR",
+                "enabled": True
+            }
+        ]
+
+        # Create Slots
+        from models.database import BotSlot
+        for slot_data in slots_config:
+            slot = BotSlot(
+                bot_config_id=bot.id,
+                **slot_data
             )
-            db.add(bot)
-            print(f"[OK] Created bot: {bot_data['name']} ({bot_data['symbol']})")
-        else:
-            print(f"[INFO] Bot for {bot_data['symbol']} already exists")
+            db.add(slot)
+            print(f"   [+] Added Slot {slot_data['slot_number']}: {slot_data['symbol']}")
+
+    else:
+        print(f"[INFO] Bot '{main_bot_name}' already exists")
 
     db.commit()
 

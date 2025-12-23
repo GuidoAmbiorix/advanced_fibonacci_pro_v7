@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, Dict
-from datetime import datetime
+from datetime import datetime, timedelta
 from loguru import logger
 import uuid
 import asyncio
@@ -86,6 +86,18 @@ class LiveTradingSession:
         
         while self.is_running:
             try:
+                # 0. Check Trading Hours (UTC-4: 00:00 - 12:00)
+                utc_now = datetime.utcnow()
+                local_now = utc_now - timedelta(hours=4)
+                
+                if not (0 <= local_now.hour < 12):
+                    # Log every loop (1 min) so user can see it
+                    logger.warning(f"⛔ {self.session_id}: Outside Trading Hours: {local_now.strftime('%H:%M')} (Limit 00-12 Local)")
+                    
+                    # Wait and skip
+                    await asyncio.sleep(60)
+                    continue
+
                 # 1. Check prop firm limits
                 account_info = self.mt5.get_account_info()
                 if account_info:

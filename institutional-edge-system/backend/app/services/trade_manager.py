@@ -160,6 +160,11 @@ class TradeManager:
             # 4. Partial Take Profit
             if self.partial_tp_on:
                 self._check_and_partial_close(trade, r_multiple)
+
+            # 5. DYNAMIC TP EXTENSION (Smart Runner)
+            # If enabled (via ATR mode) and price is near TP, extend it!
+            if self.tsl_mode == "ATR":
+                 self._check_tp_extension(trade, risk_pips)
                 
         except Exception as e:
             logger.error(f"Error managing trade {trade.get('ticket')}: {e}")
@@ -470,4 +475,66 @@ class TradeManager:
             logger.info(f"✅ SL moved for trade {ticket}")
         else:
             logger.error(f"❌ Failed to move SL for trade {ticket}")
+
+    def _check_tp_extension(self, trade: Dict, risk_pips: float):
+        """
+        Check if we should extend TP (Smart Runner Mode)
+        
+        Logic:
+        - If price is within 10% of TP distance
+        - Extend TP by 1R
+        - Tighten SL to lock gains
+        """
+        try:
+            ticket = trade['ticket']
+            current_price = trade['price_current']
+            entry_price = trade['price_open']
+            tp = trade['tp']
+            sl = trade['sl']
+            trade_type = trade['type']
+            
+            if tp == 0: return
+            
+            is_buy = trade_type == 'BUY' or trade_type == 0
+            
+            # Calculate distance to TP
+            if is_buy:
+                dist_to_tp = tp - current_price
+                full_tp_dist = tp - entry_price
+            else:
+                dist_to_tp = current_price - tp
+                full_tp_dist = entry_price - tp
+                
+            if full_tp_dist <= 0: return # Should not happen
+            
+            pct_remaining = dist_to_tp / full_tp_dist
+            
+            # If we are within 10% of TP (90% of move done)
+            if 0 < pct_remaining < 0.10:
+                logger.info(f"🚀 Trade {ticket} approaching TP! (90% done). Activating Smart Runner extension.")
+                
+                point = self.mt5_connector.get_symbol_point(trade['symbol']) or 0.00001
+                risk_amt = risk_pips * point if hasattr(self, 'risk_pips') else abs(entry_price - sl) # Approximate risk amount price diff
+                
+                # Extend TP by 1.0R (Risk Amount)
+                # But risk_pips is in PIPS, need PRICE
+                # Let's use the risk price distance we calculated: risk_pips * point
+                # Wait, risk_pips passed in is actually PRICE DIFFERENCE (see line 128: abs(entry-sl))
+                # So risk_pips IS the price difference.
+                risk_price_dist = risk_pips 
+                
+                new_tp = 0.0
+                if is_buy:
+                    new_tp = tp + risk_price_dist
+                    # Tighten SL to previous TP - buffer? Or just force TSL update.
+                    # Standard TSL logic will catch up SL.
+                else:
+                    new_tp = tp - risk_price_dist
+                    
+                logger.info(f"🚀 Extending TP from {tp} to {new_tp} to catching more trend.")
+                self._modify_position(ticket, sl, new_tp)
+                
+        except Exception as e:
+            logger.error(f"Error in TP extension for {trade.get('ticket')}: {e}")
+
 

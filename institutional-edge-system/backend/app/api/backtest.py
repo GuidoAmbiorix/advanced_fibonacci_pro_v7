@@ -22,7 +22,7 @@ class BacktestRequest(BaseModel):
     confirmation_timeframe: Optional[str] = None  # Higher TF for trend confirmation (auto-set if None)
     start_date: datetime
     end_date: datetime
-    initial_balance: float = 1000.0
+    initial_balance: float = 100000.0
     risk_percent: float = 1.0
     strategy_mode: str = "SWING" # SWING, SCALP
     direction_filter: str = "BOTH"  # "BOTH", "BUY_ONLY", "SELL_ONLY"
@@ -250,14 +250,12 @@ async def run_backtest(
     # But for simplicity in this setup, we'll let the task create its own or pass the ID
     # Ideally, use a proper task queue (Celery/RabbitMQ), but BackgroundTasks works for simple cases
     
-    # Note: Passing 'db' here is risky if the request closes. 
-    # Better to create a new session inside the task.
-    # We will modify the task to create its own session.
-    
     # Get current event loop to pass to background task
     loop = asyncio.get_running_loop()
     
     background_tasks.add_task(run_backtest_wrapper, new_session.id, request, loop)
+    
+    logger.info(f"🚀 Backtest started: {new_session.id} for {request.symbol} with MaxDuration={request.max_trade_duration_hours}h")
     
     return {
         "session_id": new_session.id,

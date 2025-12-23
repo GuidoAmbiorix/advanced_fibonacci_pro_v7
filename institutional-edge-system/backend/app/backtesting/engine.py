@@ -62,7 +62,8 @@ class BacktestEngine:
             tsl_mode=config.tsl_mode,
             tsl_activation_r=config.tsl_activation_r,
             partial_tp_on=config.partial_tp_on,
-            partial_tp_amount=config.partial_tp_amount
+            partial_tp_amount=config.partial_tp_amount,
+            max_trade_duration_hours=config.max_trade_duration_hours
         )
 
         # Trading state

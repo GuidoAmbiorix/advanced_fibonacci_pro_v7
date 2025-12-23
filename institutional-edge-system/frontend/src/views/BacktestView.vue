@@ -110,6 +110,13 @@
       <div class="flex justify-between items-center mb-3">
         <h3 class="text-sm font-semibold text-gray-300">🎯 Portfolio Slots</h3>
         <div class="flex items-center space-x-3">
+          <!-- Start Balance Input -->
+          <div class="flex items-center space-x-1 bg-gray-900 rounded px-2 py-1 border border-gray-700">
+            <span class="text-[10px] text-gray-500">Capital $</span>
+            <input type="number" v-model.number="sharedConfig.initial_balance" 
+                   class="bg-transparent text-xs text-white w-16 focus:outline-none text-right">
+          </div>
+          <span class="text-xs text-gray-500">|</span>
           <span class="text-xs text-gray-500">Max Risk: {{ portfolioSynergy.max_risk }}%</span>
           <span class="text-xs text-gray-500">|</span>
           <span class="text-xs text-gray-500">Max Pos/Symbol: {{ portfolioSynergy.max_positions }}</span>
@@ -689,7 +696,7 @@ const symbolPresets = {
   },
   'EURUSD': { 
     name: 'EUR/USD', emoji: '💶', volatility: 'LOW',
-    timeframe: 'M5', tsl_mode: 'TIERED',
+    timeframe: 'M5', tsl_mode: 'ATR',
     risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.0, 
     rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
@@ -698,16 +705,16 @@ const symbolPresets = {
   },
   'XAUUSD': { 
     name: 'XAU/USD', emoji: '🥇', volatility: 'EXTREME',
-    timeframe: 'M5', tsl_mode: 'TIERED',
+    timeframe: 'M5', tsl_mode: 'ATR',
     risk_percent: 0.5, tp_ratio: 1.5, sl_atr_multiplier: 2.0, 
-    rsi_period: 9, rsi_overbought: 80, rsi_oversold: 20, min_confluence: 7, max_duration: 2,
+    rsi_period: 9, rsi_overbought: 80, rsi_oversold: 20, min_confluence: 5, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Trade both directions for more opportunities
     description: 'Gold 🥇 Extreme volatility - Wider stops' 
   },
   'USDJPY': { 
     name: 'USD/JPY', emoji: '🇯🇵', volatility: 'MEDIUM',
-    timeframe: 'M5', tsl_mode: 'TIERED',
+    timeframe: 'M5', tsl_mode: 'ATR',
     risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.0, 
     rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
@@ -716,8 +723,8 @@ const symbolPresets = {
   },
   'AUDJPY': { 
     name: 'AUD/JPY', emoji: '🦘', volatility: 'MEDIUM',
-    timeframe: 'M15', tsl_mode: 'TIERED',
-    risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.5, 
+    timeframe: 'M5', tsl_mode: 'ATR',
+    risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
     rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
     enable_vwap: true, enable_stoch: false, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // Trade both directions for more opportunities
@@ -740,6 +747,15 @@ const symbolPresets = {
     enable_vwap: true, enable_stoch: true, enable_institutional: false, enable_fibonacci: true,
     direction: 'BOTH',  // Range trading pair, both directions work
     description: 'Range Trading ↔️ Both directions - Low volatility' 
+  },
+  'EURGBP': { 
+    name: 'EUR/GBP', emoji: '💶💷', volatility: 'LOW',
+    timeframe: 'M5', tsl_mode: 'ATR',
+    risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.0, 
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
+    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BOTH',
+    description: 'Channel 💶💷 Range trading - Low volatility' 
   },
   // ===== NEW PAIRS (Researched optimal settings 2024) =====
   'EURJPY': { 
@@ -787,6 +803,15 @@ const symbolPresets = {
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
     direction: 'BOTH',  // High volatility = trade both directions
     description: 'Bitcoin ₿ Extreme volatility - Wide stops, fast moves' 
+  },
+  'GBPUSD': { 
+    name: 'GBP/USD', emoji: '💷', volatility: 'MEDIUM',
+    timeframe: 'M5', tsl_mode: 'ATR',
+    risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.2, 
+    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
+    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
+    direction: 'BOTH',
+    description: 'Cable 💷 Strong trends - Liquid pair' 
   }
 }
 
@@ -814,18 +839,30 @@ const applySymbolPreset = (slot) => {
 
 // MULTI-SYMBOL SLOTS - Optimized for stability (M15 + H1 Conf + Wide Stops + NO Partial TP)
 const slots = ref([
-  { id: 0, symbol: 'EURUSD', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    // 💶 EURUSD: min_confluence: 7 for stronger signals
-    ...symbolPresets['EURUSD'], risk_percent: 0.75, timeframe: 'M15', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'M15 Trend + H1 Conf + Wide Stops' },  
-  { id: 1, symbol: 'USDJPY', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    // 🇯🇵 USDJPY: min_confluence: 7
-    ...symbolPresets['USDJPY'], risk_percent: 0.5, timeframe: 'M15', tp_ratio: 3.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'M15 Trend + H1 Conf (Low Risk)' },  
-  { id: 2, symbol: 'AUDUSD', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    // 🦘 AUDUSD: min_confluence: 7
-    ...symbolPresets['AUDUSD'], risk_percent: 0.75, timeframe: 'M15', tp_ratio: 2.5, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'M15 Trend + H1 Conf + Wide Stops' },  
-  { id: 3, symbol: 'USDCAD', enabled: true, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    // 🍁 USDCAD: min_confluence: 7
-    ...symbolPresets['USDCAD'], risk_percent: 0.75, timeframe: 'M15', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'M15 Trend + H1 Conf + Wide Stops' }   
+  { id: 0, symbol: 'EURJPY', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    // 🇪🇺🇯🇵 EURJPY: The Beast (Momentum)
+    ...symbolPresets['EURJPY'], 
+    risk_percent: 0.75, timeframe: 'M15', 
+    tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
+    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25,
+    tsl_activation_r: 0.5, // Breathing room
+    max_duration: 4, // Max hold 4 hours
+    partial_tp_on: false, min_confluence_score: 7, description: 'The Beast Cross (M15 Momentum)' },  
+  { id: 1, symbol: 'GBPJPY', enabled: false, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    // 💷🇯🇵 GBPJPY: The Dragon
+    ...symbolPresets['GBPJPY'], risk_percent: 0.75, timeframe: 'M5', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'The Dragon Scalper' },  
+  { id: 2, symbol: 'EURGBP', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    // 💶💷 EURGBP: The Channel (Range)
+    ...symbolPresets['EURGBP'], 
+    risk_percent: 1.0, timeframe: 'M15', 
+    tp_ratio: 1.5, sl_atr_multiplier: 1.0, 
+    rsi_period: 14, rsi_overbought: 65, rsi_oversold: 35,
+    tsl_activation_r: 0.5, // Breathing room
+    max_duration: 4, // Max hold 4 hours
+    partial_tp_on: false, min_confluence_score: 7, description: 'Channel Scalper (M15 Range)' },  
+  { id: 3, symbol: 'AUDJPY', enabled: false, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    // 🦘🇯🇵 AUDJPY: Risk Proxy
+    ...symbolPresets['AUDJPY'], risk_percent: 0.75, timeframe: 'M5', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'Risk Proxy Scalper' }   
 ])
 
 // Portfolio Synergy Settings
@@ -943,7 +980,7 @@ const sharedConfig = ref({
   strategy_mode: 'SCALP',
   start_date: '2024-01-01',
   end_date: '2024-04-10',
-  initial_balance: 1000,
+  initial_balance: 100000,
   risk_percent: 1.0,
   use_adx_filter: true,
   enable_vwap_strategy: true,
