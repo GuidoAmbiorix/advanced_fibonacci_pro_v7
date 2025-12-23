@@ -16,3 +16,9 @@ async def connect(sid, environ):
 @sio.event
 async def disconnect(sid):
     logger.info(f"Socket disconnected: {sid}")
+
+@sio.event
+async def ping(sid):
+    """Heartbeat handler - respond with pong"""
+    await sio.emit('pong', room=sid)
+

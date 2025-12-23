@@ -15,7 +15,7 @@ from loguru import logger
 
 from app.core.config import settings
 from app.models.database import Base, User, BotConfig, Trade
-from app.api import database, auth, stats, fundamentals, settings as settings_api, news, logs, backtest, market, accounts, trading, portfolio
+from app.api import database, auth, stats, fundamentals, settings as settings_api, news, logs, backtest, market, accounts, trading, portfolio, slots
 from app.core.mt5_connector import MT5Connector
 from app.core.trading_engine import TradingEngine
 from app.schemas import schemas
@@ -51,6 +51,7 @@ app.include_router(market.router, prefix="/api/market", tags=["market"])
 app.include_router(accounts.router, prefix="/api/accounts", tags=["accounts"])
 app.include_router(trading.router, prefix="/api/trading", tags=["trading"])
 app.include_router(portfolio.router, prefix="/api/portfolio", tags=["portfolio"])
+app.include_router(slots.router, prefix="/api/slots", tags=["slots"])
 
 # Socket.IO Setup
 import socketio
