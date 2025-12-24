@@ -186,6 +186,12 @@ class BotSlot(Base):
     enable_stoch_strategy = Column(Boolean, default=True)
     enable_institutional_strategy = Column(Boolean, default=True)
     enable_fibonacci_strategy = Column(Boolean, default=True)
+    use_h1_trend_filter = Column(Boolean, default=False)
+    
+    # Stochastic & VWAP Specifics
+    stoch_k_period = Column(Integer, default=14)
+    stoch_d_period = Column(Integer, default=3)
+    vwap_use_trend_filter = Column(Boolean, default=True) # Set False for Range
     
     # RSI
     rsi_period = Column(Integer, default=14)

@@ -24,7 +24,8 @@ from app.models.database import MT5Account, BotSlot
 from app.core.crypto import decrypt_password
 from app.core.prop_firm_manager import PropFirmManager
 from app.core.mt5_connector import MT5Connector
-from app.core.trading_engine import TradingEngine
+from app.core.mt5_connector import MT5Connector
+from app.core.adaptive_multi_strategy_engine import AdaptiveMultiStrategyEngine
 from app.core.risk_controls import get_risk_controls, RiskControls
 from app.core.socket_server import sio
 
@@ -49,7 +50,7 @@ class TradingStartRequest(BaseModel):
     tsl_mode: str = "TIERED"
     timeframe: str = "M5"
     max_trade_duration_hours: int = 2
-    min_confluence_score: int = 5
+    min_confluence_score: int = 7
     # Enhanced options
     enable_partial_tp: bool = True
     partial_tp_percent: float = 50.0
@@ -94,16 +95,12 @@ class LiveTradingSession:
         
         # Initialize trading engine
         is_scalping = config['timeframe'] in ['M1', 'M5', 'M15']
-        self.engine = TradingEngine({
-            'symbol': config['symbol'],
-            'timeframe': config['timeframe'],
-            'initial_balance': account.starting_balance,
-            'max_risk_per_trade': config['risk_percent'],
-            'scalping_mode': is_scalping,
-            'min_confluence_score': config['min_confluence_score'],
-            'tp_ratio': config['tp_ratio'],
-            'sl_atr_multiplier': config['sl_atr_multiplier'],
-        })
+        # Initialize trading engine (Adaptive Multi-Strategy)
+        engine_config = config.copy()
+        engine_config['initial_balance'] = account.starting_balance
+        engine_config['max_risk_per_trade'] = config['risk_percent']
+        
+        self.engine = AdaptiveMultiStrategyEngine(engine_config)
     
     async def run(self):
         """Main trading loop with enhanced features"""
@@ -496,6 +493,15 @@ async def start_trading(
             'rsi_period': slot.rsi_period,
             'rsi_overbought': slot.rsi_overbought,
             'rsi_oversold': slot.rsi_oversold,
+            'rsi_period': slot.rsi_period,
+            'rsi_overbought': slot.rsi_overbought,
+            'rsi_oversold': slot.rsi_oversold,
+            # Enhanced Params (Adaptive Engine)
+            'use_adx_filter': slot.use_adx_filter,
+            'use_h1_trend_filter': slot.use_h1_trend_filter,
+            'stoch_k_period': slot.stoch_k_period,
+            'stoch_d_period': slot.stoch_d_period,
+            'vwap_use_trend_filter': slot.vwap_use_trend_filter,
         }
         logger.info(f"📦 Loaded slot {slot.id} config for {slot.symbol}")
     else:

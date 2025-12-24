@@ -264,7 +264,7 @@
                : 'bg-gray-900/50 border-gray-700/50 opacity-60'">
           
           <!-- Slot glow effect when enabled -->
-          <div v-if="slot.enabled" class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div v-if="slot.enabled" class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
           
           <!-- Slot Header -->
           <div class="relative z-10 p-3 flex justify-between items-center border-b border-gray-700/50">
@@ -1005,24 +1005,27 @@ const slots = ref([
   { id: 0, symbol: 'EURJPY', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     // 🇪🇺🇯🇵 EURJPY: The Beast (Momentum)
     ...symbolPresets['EURJPY'], 
-    risk_percent: 0.75, timeframe: 'M15', 
-    tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
+    risk_percent: 0.5, timeframe: 'H1', 
+    tp_ratio: 2.0, sl_atr_multiplier: 1.2, 
     rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25,
-    tsl_activation_r: 0.5, // Breathing room
+    tsl_mode: 'TIERED', use_h1_trend_filter: true, // ✅ Momentum: H1 Filter ON
+    tsl_activation_r: 1.0, // Activate at 1R
     max_duration: 4, // Max hold 4 hours
-    partial_tp_on: false, min_confluence_score: 7, description: 'The Beast Cross (M15 Momentum)' },  
+    partial_tp_on: false, min_confluence_score: 7, description: 'The Beast Cross (H1 Momentum - Safe Mode)' },  
   { id: 1, symbol: 'GBPJPY', enabled: false, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     // 💷🇯🇵 GBPJPY: The Dragon
     ...symbolPresets['GBPJPY'], risk_percent: 0.75, timeframe: 'M5', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'The Dragon Scalper' },  
   { id: 2, symbol: 'EURGBP', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     // 💶💷 EURGBP: The Channel (Range)
     ...symbolPresets['EURGBP'], 
-    risk_percent: 1.0, timeframe: 'M15', 
-    tp_ratio: 1.5, sl_atr_multiplier: 1.0, 
-    rsi_period: 14, rsi_overbought: 65, rsi_oversold: 35,
-    tsl_activation_r: 0.5, // Breathing room
+    risk_percent: 0.7, timeframe: 'H1', 
+    tp_ratio: 1.4, sl_atr_multiplier: 1.2, 
+    rsi_period: 14, rsi_overbought: 60, rsi_oversold: 40,
+    tsl_mode: 'ATR', tsl_atr_multiplier: 0.8, // Light trail
+    use_h1_trend_filter: false, // ❌ Range: H1 Filter OFF
+    stoch_k_period: 9, stoch_d_period: 3, vwap_use_trend_filter: false, // Range Settings
     max_duration: 4, // Max hold 4 hours
-    partial_tp_on: false, min_confluence_score: 7, description: 'Channel Scalper (M15 Range)' },  
+    partial_tp_on: false, min_confluence_score: 7, description: 'Channel Scalper (H1 Range - Safe Mode)' },  
   { id: 3, symbol: 'AUDJPY', enabled: false, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     // 🦘🇯🇵 AUDJPY: Risk Proxy
     ...symbolPresets['AUDJPY'], risk_percent: 0.75, timeframe: 'M5', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'Risk Proxy Scalper' }   
@@ -1347,16 +1350,25 @@ const runBacktest = async () => {
           confirmation_timeframe: null,  // Auto-detect
           strategy_mode: ['M1', 'M5', 'M15'].includes(slot.timeframe) ? 'SCALP' : 'SWING',
           initial_balance: sharedConfig.value.initial_balance,
-          use_adx_filter: false,
-          rsi_period: 14,
-          rsi_overbought: 70,
-          rsi_oversold: 30,
+          use_adx_filter: slot.use_adx_filter !== undefined ? slot.use_adx_filter : true,
+          use_h1_trend_filter: slot.use_h1_trend_filter !== undefined ? slot.use_h1_trend_filter : false,
+          
+          // New Stoch/VWAP
+          stoch_k_period: slot.stoch_k_period || 14,
+          stoch_d_period: slot.stoch_d_period || 3,
+          vwap_use_trend_filter: slot.vwap_use_trend_filter !== undefined ? slot.vwap_use_trend_filter : true,
+
+          rsi_period: slot.rsi_period || 14,
+          rsi_overbought: slot.rsi_overbought || 70,
+          rsi_oversold: slot.rsi_oversold || 30,
           enable_trailing_stop: slot.tsl_mode !== 'OFF',
-          tsl_activation_r: 0.0,
-          partial_tp_on: true,
+          tsl_mode: slot.tsl_mode,
+          tsl_atr_multiplier: slot.tsl_atr_multiplier || 1.5,
+          tsl_activation_r: slot.tsl_activation_r || 0.0, 
+          partial_tp_on: slot.partial_tp_on !== undefined ? slot.partial_tp_on : true,
           partial_tp_amount: 1.0,
           max_trade_duration_hours: slot.max_duration || 2,
-          min_confluence_score: 5,
+          min_confluence_score: slot.min_confluence || 5,
           start_date: new Date(sharedConfig.value.start_date).toISOString(),
           end_date: new Date(sharedConfig.value.end_date).toISOString()
         }

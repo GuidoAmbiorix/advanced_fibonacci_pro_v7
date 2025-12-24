@@ -543,7 +543,12 @@ class AdaptiveMultiStrategyEngine:
         self.enable_stoch_strategy = config.get('enable_stoch_strategy', True)
         self.enable_institutional_strategy = config.get('enable_institutional_strategy', True)
         self.enable_fibonacci_strategy = config.get('enable_fibonacci_strategy', True)  # NEW
-
+        self.use_h1_trend_filter = config.get('use_h1_trend_filter', False)
+        
+        # New Range Strat Params
+        self.stoch_k_period = config.get('stoch_k_period', 14)
+        self.stoch_d_period = config.get('stoch_d_period', 3)
+        self.vwap_use_trend_filter = config.get('vwap_use_trend_filter', True)
         # Funding Firm Rules
         self.max_drawdown_limit = config.get('max_drawdown_limit', 0.07)  # 7% Max Total Loss (User Rule)
         self.daily_loss_limit = config.get('daily_loss_limit', 0.03)      # 3% Max Daily Loss (User Rule)
@@ -902,11 +907,11 @@ class AdaptiveMultiStrategyEngine:
         df['macd_signal'] = df['macd_line'].ewm(span=9, adjust=False).mean()
         df['macd_histogram'] = df['macd_line'] - df['macd_signal']
 
-        # Stochastic Oscillator (14, 3, 3) - For triple confirmation
-        low_14 = df['low'].rolling(window=14).min()
-        high_14 = df['high'].rolling(window=14).max()
-        df['stoch_k'] = 100 * (df['close'] - low_14) / (high_14 - low_14)
-        df['stoch_d'] = df['stoch_k'].rolling(window=3).mean()
+        # Stochastic Oscillator (Configurable)
+        low_stoch = df['low'].rolling(window=self.stoch_k_period).min()
+        high_stoch = df['high'].rolling(window=self.stoch_k_period).max()
+        df['stoch_k'] = 100 * (df['close'] - low_stoch) / (high_stoch - low_stoch)
+        df['stoch_d'] = df['stoch_k'].rolling(window=self.stoch_d_period).mean()
 
         # Calculate MFI (Money Flow Index)
         if 'mfi' not in df.columns:
@@ -1664,8 +1669,15 @@ class AdaptiveMultiStrategyEngine:
         # STRONG TREND FILTER - Only trade with the trend
         ema_20 = current['ema_20']
         ema_50 = current['ema_50']
-        uptrend = ema_20 > ema_50
-        downtrend = ema_20 < ema_50
+        
+        # Trend check logic (Configurable)
+        if self.vwap_use_trend_filter:
+            uptrend = ema_20 > ema_50
+            downtrend = ema_20 < ema_50
+        else:
+            # RANGE MODE: Trend direction irrelevant, trade mean reversion
+            uptrend = True  # Enable buys
+            downtrend = True # Enable sells
 
         signal_type = None
         

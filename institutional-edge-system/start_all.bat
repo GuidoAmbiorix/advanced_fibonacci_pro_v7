@@ -82,9 +82,9 @@ echo --------------------------------------------------
 cd backend
 python ensure_user.py
 echo.
-echo [3/6] Creating Gold Scalper Pro bot...
+echo [3/6] Creating Intraday Portfolio (Safe Mode)...
 echo --------------------------------------
-python create_gold_bot.py
+python create_intraday_bot.py
 cd ..
 
 echo.
