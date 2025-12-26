@@ -52,6 +52,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
+
+
 REM 5. Wait for Health
 echo [5/5] Waiting for services to initialize...
 timeout /t 5 /nobreak >nul
