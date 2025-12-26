@@ -42,11 +42,16 @@ class TradingBot:
         self.mt5_connector = mt5_connector
         self.sio = sio
         self.sio = sio
+
         self.rabbitmq = RabbitMQService()
         self.discord = DiscordService()
         
         self.is_running = False
         self.config: Optional[BotConfig] = None
+        
+        # Multi-Account Workers
+        self.workers = {} # {account_id: {'process': Process, 'queues': (cmd, resp)}}
+        
         self.trading_engine: Optional[AdaptiveMultiStrategyEngine] = None
         self.trade_manager: Optional[TradeManager] = None
         self.risk_manager: Optional[AdaptiveRiskManager] = None
@@ -69,9 +74,14 @@ class TradingBot:
 
         # Initialize trading engine
         self._init_trading_engine()
+        
+        # Initialize Workers for MULTI-ACCOUNT Support
+        self._init_workers()
 
-        # Initialize trade manager with config
+        # Initialize trade manager (Primary for Analysis context)
+        # Note: In multi-account, TradeManager primarily tracks 'Master' or aggregates data
         self.trade_manager = TradeManager(self.mt5_connector)
+        # ... (rest of init kept for backward compat or master logic)
         self.trade_manager.be_trigger_r = self.config.be_trigger
         self.trade_manager.use_trailing_sl = self.config.trailing_sl
         self.trade_manager.trailing_step_r = self.config.trailing_step
@@ -83,21 +93,17 @@ class TradingBot:
         self.trade_manager.tsl_atr_period = self.config.tsl_atr_period
         self.trade_manager.tsl_atr_multiplier = self.config.tsl_atr_multiplier
         self.trade_manager.timeframe = self.config.timeframe
-
         self.trade_manager.partial_tp_on = self.config.partial_tp_on
         self.trade_manager.partial_tp_amount = self.config.partial_tp_amount
         
-        # Re-initialize TSL Manager with loaded config (important!)
         self.trade_manager._init_tsl_manager()
-        logger.info(f"Trade Manager configured: TSL={self.config.tsl_mode}, Trailing={self.config.trailing_sl}, PartialTP={self.config.partial_tp_on}")
+        logger.info(f"Trade Manager configured: TSL={self.config.tsl_mode}")
 
         # Initialize Risk Manager
         self.risk_manager = AdaptiveRiskManager()
-        logger.info("✅ Risk Manager initialized")
-
+        
         # Initialize Portfolio Manager
         self.portfolio_manager = PortfolioManager()
-        logger.info("✅ Portfolio Manager initialized with correlation blocking and 6% max portfolio risk")
 
         # Start main loop
         await self._run_loop()
@@ -106,30 +112,99 @@ class TradingBot:
         """Stop the trading bot"""
         self.is_running = False
         await self.rabbitmq.close()
+        
+        # Stop Workers
+        self._stop_workers()
+        
         logger.info("Stopping trading bot {}", self.bot_config_id)
 
-    # ... (rest of methods) ...
+    def _init_workers(self):
+        """Spawn AccountWorker processes for each linked account"""
+        from app.services.account_worker import AccountWorker
+        import multiprocessing
+        
+        db = SessionLocal()
+        try:
+            # Refresh config to get accounts
+            config = db.query(BotConfig).filter(BotConfig.id == self.bot_config_id).first()
+            if not config.accounts:
+                logger.warning("No accounts linked to this bot! Running in Analysis-Only mode.")
+                return
+
+            for account in config.accounts:
+                worker_id = f"Bot{self.bot_config_id}-Acc{account.id}"
+                
+                # Setup Communication Queues
+                cmd_q = multiprocessing.Queue()
+                resp_q = multiprocessing.Queue()
+                
+                # Account Config Payload
+                acc_config = {
+                    "login": account.login,
+                    "password": account.password_encrypted, # Decrypt if needed
+                    "server": account.server,
+                    "terminal_path": account.terminal_path
+                }
+                
+                # Spawn Process
+                p = AccountWorker(worker_id, acc_config, cmd_q, resp_q)
+                p.start()
+                
+                self.workers[account.id] = {
+                    "process": p,
+                    "cmd": cmd_q,
+                    "resp": resp_q
+                }
+                logger.info(f"Spawned Worker for Account {account.login} (PID: {p.pid})")
+                
+        except Exception as e:
+            logger.error(f"Failed to init workers: {e}")
+        finally:
+            db.close()
+
+    def _stop_workers(self):
+        """Gracefully stop all workers"""
+        for acc_id, w_data in self.workers.items():
+            try:
+                w_data['cmd'].put({'type': 'STOP'})
+                w_data['process'].join(timeout=3)
+                if w_data['process'].is_alive():
+                    w_data['process'].terminate()
+            except Exception as e:
+                logger.error(f"Error stopping worker {acc_id}: {e}")
+        self.workers.clear()
 
     async def _execute_signal(self, signal):
-        """Execute a trading signal"""
+        """Execute a trading signal on ALL connected accounts"""
         
         # ... (checks) ...
 
-        # Publish to RabbitMQ for execution
-        signal_data = {
-            "symbol": signal.symbol,
-            "signal_type": signal.signal_type,
-            "entry_price": signal.entry_price,
-            "stop_loss": signal.stop_loss,
-            "take_profit": signal.take_profit_1,
-            "risk_percent": self.config.risk_percent,
-            "confluence_score": signal.confluence_score
+        await self._log_activity(f"Broadcasting Signal {signal.direction} to {len(self.workers)} accounts...")
+
+        # Construct Command Payload
+        sl_pips = abs(signal.entry_price - signal.stop_loss) * 100 # Approx, cleaner logic needed per symbol
+        
+        trade_cmd = {
+            "type": "OPEN_TRADE",
+            "payload": {
+                "symbol": signal.symbol,
+                "type": signal.direction, # BUY/SELL
+                "sl": signal.stop_loss,
+                "tp": signal.take_profit_1,
+                "risk_percent": self.config.risk_percent,
+                "sl_pips": sl_pips 
+            }
         }
         
-        await self.rabbitmq.publish_signal(signal_data)
-        
-        # Also execute locally for now (Hybrid Mode) until Worker is fully tested
-        # ... (existing execution logic) ...
+        # Broadcast to all workers
+        for acc_id, w_data in self.workers.items():
+            try:
+                w_data['cmd'].put(trade_cmd)
+                await self._log_activity(f"Signal sent to Account {acc_id}")
+            except Exception as e:
+                logger.error(f"Failed to send command to worker {acc_id}: {e}")
+
+        # ... (rest of logic like Notifications) ...
 
     def _load_config(self):
         """Load bot configuration from database"""

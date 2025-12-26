@@ -25,6 +25,12 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
           <span>Accounts</span>
         </router-link>
+
+        <!-- System Logs -->
+        <router-link to="/logs" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-bold text-sm transition-colors" :class="$route.path === '/logs' ? 'bg-accent/10 text-accent' : 'text-slate-500 hover:bg-slate-50 hover:text-primary'">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          <span>System Logs</span>
+        </router-link>
       </nav>
 
       <div class="p-4 border-t border-slate-200">

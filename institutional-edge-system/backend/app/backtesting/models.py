@@ -201,6 +201,9 @@ class SlotConfig:
     
     # MT5 Tracking
     magic_number: Optional[int] = None
+    
+    # Institutional Bias
+    use_daily_bias: bool = False
 
 
 @dataclass
@@ -220,6 +223,7 @@ class BacktestConfig:
     risk_percent: float = 1.0
     max_trades: int = 1
     direction_filter: str = "BOTH"  # "BOTH", "BUY_ONLY", "SELL_ONLY"
+    use_daily_bias: bool = False
 
     # Trading engine config
     swing_length: int = 10

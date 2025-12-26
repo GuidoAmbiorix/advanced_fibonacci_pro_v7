@@ -54,7 +54,14 @@ def register_user(
     db.commit()
     db.refresh(user)
     
-    return user
+    return {
+        "id": user.id,
+        "email": user.email,
+        "username": user.username,
+        "is_active": user.is_active,
+        "is_admin": user.is_admin,
+        "created_at": user.created_at
+    }
 
 @router.post("/token", response_model=schemas.Token)
 def login_access_token(
@@ -64,6 +71,7 @@ def login_access_token(
     """
     OAuth2 compatible token login, get an access token for future requests
     """
+
     # Authenticate user
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not security.verify_password(form_data.password, user.hashed_password):

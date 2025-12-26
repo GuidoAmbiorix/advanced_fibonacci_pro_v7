@@ -32,6 +32,7 @@ class AccountCreate(BaseModel):
     account_type: str = "demo"
     max_drawdown_percent: float = 8.0
     max_daily_dd_percent: float = 3.0
+    terminal_path: Optional[str] = None
 
 
 class AccountUpdate(BaseModel):
@@ -44,6 +45,7 @@ class AccountUpdate(BaseModel):
     account_type: Optional[str] = None
     max_drawdown_percent: Optional[float] = None
     max_daily_dd_percent: Optional[float] = None
+    terminal_path: Optional[str] = None
 
 
 class AccountResponse(BaseModel):
@@ -57,6 +59,7 @@ class AccountResponse(BaseModel):
     max_drawdown_percent: float
     max_daily_dd_percent: float
     starting_balance: float
+    terminal_path: Optional[str] = None
     is_active: bool
     created_at: datetime
     last_connected: Optional[datetime]
@@ -103,6 +106,7 @@ async def create_account(account: AccountCreate, db: Session = Depends(get_db)):
         account_type=account.account_type,
         max_drawdown_percent=account.max_drawdown_percent,
         max_daily_dd_percent=account.max_daily_dd_percent,
+        terminal_path=account.terminal_path,
         is_active=False
     )
     
@@ -172,20 +176,33 @@ async def connect_account(account_id: int, db: Session = Depends(get_db)):
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
     
-    # Deactivate all other accounts
-    db.query(MT5Account).filter(MT5Account.id != account_id).update({"is_active": False})
+    # PREVIOUSLY: Deactivates all other accounts. 
+    # REMOVED to allow Multi-Account Connectivity.
+    # db.query(MT5Account).filter(MT5Account.id != account_id).update({"is_active": False})
     
-    # Try to connect to MT5 and get real balance
+    # Try to connect to MT5 and get real balance via RPyC (Docker)
     real_balance = None
     try:
-        import MetaTrader5 as mt5
+        import rpyc
+        import os
+        
+        # Connect to the Remote MT5 Container
+        mt5_host = os.getenv("MT5_HOST", "mt5")
+        mt5_port = int(os.getenv("MT5_PORT", 18812))
+        
+        logger.info(f"Connecting to MT5 Service at {mt5_host}:{mt5_port}...")
+        conn = rpyc.classic.connect(mt5_host, mt5_port)
+        mt5 = conn.modules.MetaTrader5
         
         # Decrypt password
         decrypted_password = decrypt_password(account.password_encrypted)
         
-        # Initialize MT5
+        # Shutdown any previous connection to be safe (on remote)
+        mt5.shutdown()
+        
+        # Simple Initialize (Remote Default Terminal)
         if not mt5.initialize():
-            logger.warning("MT5 not initialized, will use stored balance")
+             logger.warning(f"MT5 initialization failed: {mt5.last_error()}, using stored balance")
         else:
             # Try to connect with credentials
             login_result = mt5.login(
@@ -199,15 +216,16 @@ async def connect_account(account_id: int, db: Session = Depends(get_db)):
                 account_info = mt5.account_info()
                 if account_info:
                     real_balance = account_info.balance
-                    logger.info(f"MT5 connected: Balance = ${real_balance:,.2f}")
+                    logger.info(f"MT5 connected (Remote): Balance = ${real_balance:,.2f}")
                     
                     # Update starting_balance with real balance
                     account.starting_balance = real_balance
                     account.daily_starting_balance = real_balance
             else:
                 logger.warning(f"MT5 login failed: {mt5.last_error()}")
+                
     except Exception as e:
-        logger.warning(f"Could not connect to MT5: {e}")
+        logger.warning(f"Could not connect to MT5 Service: {e}")
     
     # Activate this account
     account.is_active = True
@@ -262,4 +280,75 @@ async def get_risk_status(account_id: int, db: Session = Depends(get_db)):
         starting_balance=account.starting_balance
     )
     
+    
     return manager.get_risk_status(current_balance)
+
+
+# ============================================================================
+# BOT LINKING ENDPOINTS (Multi-Account)
+# ============================================================================
+
+from app.models.database import BotConfig
+
+
+@router.get("/bot/{bot_id}", response_model=List[AccountResponse])
+async def get_bot_accounts(bot_id: int, db: Session = Depends(get_db)):
+    """Get all accounts linked to a specific bot configuration"""
+    bot = db.query(BotConfig).filter(BotConfig.id == bot_id).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+        
+    return bot.accounts
+
+@router.post("/bot/{bot_id}", response_model=AccountResponse)
+async def create_bot_account(
+    bot_id: int, 
+    account_data: AccountCreate, 
+    db: Session = Depends(get_db)
+):
+    """Create a new MT5 account and link it to the bot"""
+    from app.core.crypto import encrypt_password
+    
+    # 1. Verify Bot
+    bot = db.query(BotConfig).filter(BotConfig.id == bot_id).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+
+    # 2. Check if account already exists (by login)
+    existing = db.query(MT5Account).filter(MT5Account.login == account_data.login).first()
+    
+    if existing:
+        # If exists, just link it if not linked
+        if existing not in bot.accounts:
+            bot.accounts.append(existing)
+            db.commit()
+            db.refresh(existing)
+        return existing
+    
+    # 3. Create New Account
+    encrypted_pw = encrypt_password(account_data.password)
+    
+    # Check for terminal path in request (AccountCreate schema needs update or we pass it separately)
+    # Ideally AccountCreate should have it. Let's assume it does or we'll add it.
+    # We need to update AccountCreate schema in this file first or assume it's there.
+    # Wait, AccountCreate is defined at top of THIS file. I should update it too.
+    
+    new_account = MT5Account(
+        user_id=bot.user_id,
+        name=account_data.name,
+        login=account_data.login,
+        password_encrypted=encrypted_pw,
+        server=account_data.server,
+        terminal_path=account_data.terminal_path,
+        is_active=True 
+    )
+    
+    db.add(new_account)
+    db.commit() # Commit to get ID
+    
+    # 4. Link to Bot
+    bot.accounts.append(new_account)
+    db.commit()
+    db.refresh(new_account)
+    
+    return new_account

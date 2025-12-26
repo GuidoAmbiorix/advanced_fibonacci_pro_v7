@@ -53,3 +53,28 @@ class AdaptiveSignal:
     # Context
     timestamp: datetime = None
     metadata: Dict = field(default_factory=dict)
+
+    @property
+    def signal_type(self) -> str:
+        """Alias for direction to match TradingBot expectation"""
+        return self.direction
+
+    @property
+    def confluence_score(self) -> float:
+        """Alias for score to match TradingBot expectation"""
+        return self.score
+
+    @property
+    def take_profit_1(self) -> float:
+        """Alias for take_profit"""
+        return self.take_profit
+
+    @property
+    def take_profit_2(self) -> float:
+        """Get TP2 from metadata or fall back to TP1"""
+        return self.metadata.get('tp2', self.take_profit)
+
+    @property
+    def take_profit_3(self) -> float:
+        """Get TP3 from metadata or fall back to TP1"""
+        return self.metadata.get('tp3', self.take_profit)

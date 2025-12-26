@@ -1,7 +1,11 @@
 import axios from 'axios'
 import { io } from 'socket.io-client'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// Support both proxy routing and direct access
+// For proxy: VITE_API_BASE_URL = '/instance/1/api'
+// For direct: VITE_API_BASE_URL = 'http://localhost:8000' (development)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || ''
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -248,7 +252,10 @@ export default {
       return this.socket
     }
 
-    this.socket = io(API_BASE_URL, {
+    // Use SOCKET_URL for Socket.IO connection (proxy routing support)
+    const socketUrl = SOCKET_URL || API_BASE_URL
+    this.socket = io(socketUrl, {
+      path: SOCKET_URL ? `${SOCKET_URL}/socket.io` : '/socket.io',
       transports: ['websocket'], // Force WebSocket to avoid polling issues
       autoConnect: true,
       reconnection: true,
@@ -274,5 +281,26 @@ export default {
   // Deprecated: Alias for backward compatibility
   initSocket() {
     return this.getSocket()
+  },
+
+  // Multi-Account & Terminal Management
+  async getTerminals() {
+    const response = await api.get('/api/terminals/')
+    return response.data
+  },
+
+  async cloneTerminal(sourcePath, newName) {
+    const response = await api.post('/api/terminals/clone', { source_path: sourcePath, new_name: newName })
+    return response.data
+  },
+
+  async getBotAccounts(botId) {
+    const response = await api.get(`/api/accounts/bot/${botId}`)
+    return response.data
+  },
+
+  async createBotAccount(botId, accountData) {
+    const response = await api.post(`/api/accounts/bot/${botId}`, accountData)
+    return response.data
   }
 }

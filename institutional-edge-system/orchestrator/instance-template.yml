@@ -1,0 +1,80 @@
+# ============================================================================
+# INSTANCE TEMPLATE - Docker Compose Configuration
+# This template is used by the orchestrator to dynamically create instances
+# ============================================================================
+#
+# Variables to be replaced by orchestrator:
+# - {INSTANCE_NUMBER}: The instance number (1, 2, 3, etc.)
+# - {INSTANCE_NAME}: The instance name (main, account-1, account-2, etc.)
+# - {VNC_PORT}: VNC web interface port (3000, 3001, 3002, etc.)
+# - {RPYC_PORT}: RPyC server port (8001, 8003, 8005, etc.)
+# - {API_PORT}: Backend API port (8000, 8002, 8004, etc.)
+# - {WEB_PORT}: Frontend web port (80, 81, 82, etc.)
+# - {MT5_LOGIN}: MT5 account login
+# - {MT5_PASSWORD}: MT5 account password
+# - {MT5_SERVER}: MT5 server name
+# ============================================================================
+
+version: '3.8'
+
+services:
+  mt5:
+    image: gmag11/metatrader5_vnc:latest
+    container_name: mt5_terminal_{INSTANCE_NAME}
+    ports:
+      - "{VNC_PORT}:3000"   # VNC Web Interface
+      - "{RPYC_PORT}:8001"   # RPyC Server
+    environment:
+      - CUSTOM_USER=trader
+      - PASSWORD=trading
+      - VNCPASSWORD=trading
+    volumes:
+      - mt5_config_{INSTANCE_NAME}:/config
+    restart: unless-stopped
+
+  backend:
+    build: ../../backend
+    container_name: institutional_backend_{INSTANCE_NAME}
+    ports:
+      - "{API_PORT}:8000"
+    environment:
+      - MT5_HOST=mt5
+      - MT5_PORT=8001
+      - MT5_LOGIN={MT5_LOGIN}
+      - MT5_PASSWORD={MT5_PASSWORD}
+      - MT5_SERVER={MT5_SERVER}
+      - INSTANCE_NAME={INSTANCE_NAME}
+      - INSTANCE_NUMBER={INSTANCE_NUMBER}
+      - DATABASE_URL=sqlite:///./data/instance_{INSTANCE_NUMBER}.db
+      - CORS_ORIGINS=http://localhost,http://127.0.0.1
+      - SECRET_KEY=institutional-edge-instance-{INSTANCE_NUMBER}
+      - JWT_SECRET_KEY=institutional-edge-jwt-instance-{INSTANCE_NUMBER}
+    depends_on:
+      - mt5
+    volumes:
+      - ../../backend/app:/app/app
+      - backend_data_{INSTANCE_NAME}:/app/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../../frontend
+      args:
+        - VITE_INSTANCE_NUMBER={INSTANCE_NUMBER}
+        - VITE_API_BASE_URL=/instance/{INSTANCE_NUMBER}/api
+        - VITE_SOCKET_URL=/instance/{INSTANCE_NUMBER}
+        - VITE_INSTANCE_NAME={INSTANCE_NAME}
+    container_name: institutional_frontend_{INSTANCE_NAME}
+    ports:
+      - "{WEB_PORT}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mt5_config_{INSTANCE_NAME}:
+  backend_data_{INSTANCE_NAME}:
+
+networks:
+  default:
+    name: institutional_instance_{INSTANCE_NUMBER}

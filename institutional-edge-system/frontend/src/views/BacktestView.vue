@@ -177,9 +177,26 @@
 
     <!-- Header -->
     <div class="flex justify-between items-center">
-      <div>
-        <h1 class="text-2xl font-bold text-white">{{ tradingMode === 'backtest' ? 'Strategy Backtester' : '🔴 Live Trading' }}</h1>
-        <p class="text-gray-400">{{ tradingMode === 'backtest' ? 'Test strategies with historical data before going live' : 'Trading live with real money - FundedPips rules active' }}</p>
+      <div class="flex-1">
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold text-white">{{ tradingMode === 'backtest' ? 'Strategy Backtester' : '🔴 Live Trading' }}</h1>
+
+          <!-- Socket Status Indicator -->
+          <div class="flex items-center gap-2 px-3 py-1 rounded-full text-xs" :class="socketConnected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'">
+            <span class="relative flex h-2 w-2">
+              <span v-if="socketConnected" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2" :class="socketConnected ? 'bg-green-500' : 'bg-red-500'"></span>
+            </span>
+            {{ socketConnected ? 'Connected' : 'Disconnected' }}
+          </div>
+
+          <!-- Backtest Status Badge -->
+          <div v-if="backtestStatus && isRunning" class="flex items-center gap-2 px-3 py-1 rounded-full text-xs bg-blue-500/20 text-blue-400">
+            <span class="animate-spin">⟳</span>
+            {{ backtestStatus }}
+          </div>
+        </div>
+        <p class="text-gray-400 mt-1">{{ tradingMode === 'backtest' ? 'Test strategies with historical data before going live' : 'Trading live with real money - FundedPips rules active' }}</p>
       </div>
       <div class="flex space-x-3">
         <button 
@@ -257,40 +274,68 @@
       
       <!-- Slot Cards Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div v-for="slot in slots" :key="slot.id" 
+        <div v-for="slot in slots" :key="slot.id"
              class="group relative overflow-hidden rounded-xl border transition-all duration-300 hover:scale-[1.01]"
-             :class="slot.enabled 
-               ? 'bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-blue-500/50 shadow-lg shadow-blue-500/10' 
-               : 'bg-gray-900/50 border-gray-700/50 opacity-60'">
-          
+             :class="slot.isRunning
+               ? 'bg-gradient-to-br from-blue-800/60 to-purple-900/60 border-blue-400/70 shadow-xl shadow-blue-500/30'
+               : slot.enabled
+                 ? 'bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-blue-500/50 shadow-lg shadow-blue-500/10'
+                 : 'bg-gray-900/50 border-gray-700/50 opacity-60'">
+
+          <!-- Animated border for running slots -->
+          <div v-if="slot.isRunning" class="absolute inset-0 pointer-events-none">
+            <div class="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 animate-pulse"></div>
+          </div>
+
           <!-- Slot glow effect when enabled -->
-          <div v-if="slot.enabled" class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+          <div v-if="slot.enabled && !slot.isRunning" class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
           
           <!-- Slot Header -->
           <div class="relative z-10 p-3 flex justify-between items-center border-b border-gray-700/50">
             <label class="flex items-center space-x-2 cursor-pointer">
               <div class="relative">
-                <input type="checkbox" v-model="slot.enabled" @change="saveSlot(slot)" 
+                <input type="checkbox" v-model="slot.enabled" @change="saveSlot(slot)"
+                       :disabled="slot.isRunning"
                        class="sr-only peer">
-                <div class="w-5 h-5 rounded bg-gray-700 border border-gray-600 peer-checked:bg-gradient-to-r peer-checked:from-blue-600 peer-checked:to-cyan-500 peer-checked:border-transparent transition-all flex items-center justify-center">
+                <div class="w-5 h-5 rounded bg-gray-700 border border-gray-600 peer-checked:bg-gradient-to-r peer-checked:from-blue-600 peer-checked:to-cyan-500 peer-checked:border-transparent transition-all flex items-center justify-center"
+                     :class="slot.isRunning ? 'opacity-50 cursor-not-allowed' : ''">
                   <svg v-if="slot.enabled" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
                   </svg>
                 </div>
               </div>
-              <span class="text-sm font-bold" :class="slot.enabled ? 'text-white' : 'text-gray-400'">
-                Slot {{ slot.id + 1 }}
-              </span>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold" :class="slot.enabled ? 'text-white' : 'text-gray-400'">
+                  Slot {{ slot.id + 1 }}
+                </span>
+                <!-- Running indicator -->
+                <span v-if="slot.isRunning" class="flex items-center gap-1 px-1.5 py-0.5 bg-blue-500/20 rounded text-[10px] text-blue-300">
+                  <span class="animate-spin">⟳</span>
+                  Running
+                </span>
+              </div>
             </label>
-            <div class="flex items-center space-x-2">
-              <button @click="slot.expanded = !slot.expanded" 
+            <div class="flex items-center space-x-1">
+              <!-- Clone Button -->
+              <button @click="cloneSlot(slot)"
+                      :disabled="slot.isRunning"
+                      class="p-1 rounded hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-30"
+                      title="Clone Slot Settings">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                </svg>
+              </button>
+              <!-- Expand Button -->
+              <button @click="slot.expanded = !slot.expanded"
                       class="p-1 rounded hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors">
                 <svg class="w-4 h-4 transition-transform" :class="slot.expanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
-              <button @click="deleteSlot(slot.id)" 
-                      class="p-1 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors" 
+              <!-- Delete Button -->
+              <button @click="deleteSlot(slot.id)"
+                      :disabled="slot.isRunning"
+                      class="p-1 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors disabled:opacity-30"
                       title="Delete Slot">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -330,8 +375,8 @@
           
           <!-- Expandable Config (FULL INDEPENDENCE) -->
           <div v-if="slot.expanded && slot.enabled" class="p-3 border-t border-gray-700 space-y-3 bg-gray-850">
-            <!-- Row 1: Timeframe + TSL -->
-            <div class="grid grid-cols-2 gap-2">
+            <!-- Row 1: Timeframe + Confirmation + TSL -->
+            <div class="grid grid-cols-3 gap-2">
               <div>
                 <label class="text-[10px] text-gray-500">Timeframe</label>
                 <select v-model="slot.timeframe" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
@@ -342,6 +387,19 @@
                   <option value="H4">H4</option>
                 </select>
               </div>
+               <div>
+                <label class="text-[10px] text-gray-500">Confirm TF</label>
+                <select v-model="slot.confirmation_timeframe" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
+                        :class="{'border-red-500': getTFMins(slot.confirmation_timeframe) < getTFMins(slot.timeframe)}">
+                  <option :value="null">Auto</option>
+                  <option value="M5">M5</option>
+                  <option value="M15">M15</option>
+                  <option value="M30">M30</option>
+                  <option value="H1">H1</option>
+                  <option value="H4">H4</option>
+                  <option value="D1">D1</option>
+                </select>
+              </div>
               <div>
                 <label class="text-[10px] text-gray-500">TSL Mode</label>
                 <select v-model="slot.tsl_mode" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
@@ -349,6 +407,46 @@
                   <option value="ATR">ATR</option>
                   <option value="TIERED">Tiered</option>
                 </select>
+              </div>
+            </div>
+            
+            <!-- Institutional Session Control -->
+            <div class="p-2 bg-blue-900/10 rounded border border-blue-500/20 space-y-2">
+              <div class="flex justify-between items-center">
+                 <span class="text-[10px] font-bold text-blue-300 uppercase tracking-wider">🏛️ Institutional Control</span>
+                 <span v-if="isBadSession(slot.symbol, slot.trading_session)" class="text-[9px] text-yellow-400 font-medium px-1.5 py-0.5 bg-yellow-900/30 rounded border border-yellow-500/30">
+                    ⚠ Low Volatility Warning
+                 </span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                 <div>
+                    <label class="text-[10px] text-gray-500">Trading Session</label>
+                    <select v-model="slot.trading_session" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-[10px]">
+                       <option value="ALL">🌍 All Sessions</option>
+                       <option value="ASIA">🌏 Asia (23-08)</option>
+                       <option value="LONDON">🇬🇧 London (08-16)</option>
+                       <option value="NY">🇺🇸 NY (13-22)</option>
+                       <option value="ASIA_LONDON">🌏+🇬🇧 Asia & London</option>
+                       <option value="LONDON_NY">🇬🇧+🇺🇸 London & NY</option>
+                    </select>
+                 </div>
+                 <div>
+                    <label class="text-[10px] text-gray-500">Session End</label>
+                    <select v-model="slot.session_end_action" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-[10px]">
+                       <option value="HOLD">✋ Hold Trades</option>
+                       <option value="CLOSE">❌ Close All</option>
+                       <option value="DISABLE_NEW">⛔ No New Entries</option>
+                    </select>
+                 </div>
+              </div>
+              
+              <!-- D1 Bias Toggle -->
+              <div class="flex items-center space-x-2 pt-1 border-t border-blue-500/20 mt-1">
+                 <input type="checkbox" v-model="slot.use_daily_bias" :id="'bias-'+slot.slot_number" 
+                        class="w-3 h-3 rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900">
+                 <label :for="'bias-'+slot.slot_number" class="text-[10px] text-gray-400 select-none cursor-pointer hover:text-blue-300 transition-colors">
+                    Filter Trades with Daily Trend (D1 Bias)
+                 </label>
               </div>
             </div>
             
@@ -427,19 +525,50 @@
           
           <!-- Progress / Results -->
           <div class="p-2 border-t border-gray-700">
-            <div v-if="slot.isRunning" class="flex items-center space-x-2">
-              <div class="flex-1 bg-gray-700 rounded-full h-1.5">
-                <div class="bg-blue-500 h-1.5 rounded-full transition-all" :style="{ width: slot.progress + '%' }"></div>
+            <!-- Running - Enhanced Progress Bar -->
+            <div v-if="slot.isRunning" class="space-y-1">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-blue-300 font-medium flex items-center gap-1">
+                  <span class="animate-pulse">◉</span>
+                  Processing...
+                </span>
+                <span class="text-blue-400 font-bold">{{ slot.progress }}%</span>
               </div>
-              <span class="text-xs text-blue-400">{{ slot.progress }}%</span>
+              <div class="relative w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 animate-pulse opacity-20"></div>
+                <div class="relative bg-gradient-to-r from-blue-600 to-cyan-500 h-2 rounded-full transition-all duration-500 shadow-lg shadow-blue-500/50"
+                     :style="{ width: slot.progress + '%' }">
+                  <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 animate-pulse"></div>
+                </div>
+              </div>
             </div>
-            <div v-else-if="slot.results?.win_rate" class="flex justify-between text-xs">
-              <span :class="slot.results.net_profit >= 0 ? 'text-green-400' : 'text-red-400'">
-                {{ slot.results.net_profit >= 0 ? '+' : '' }}${{ slot.results.net_profit?.toFixed(0) }}
-              </span>
-              <span class="text-gray-500">WR: {{ slot.results.win_rate?.toFixed(0) }}%</span>
+            <!-- Results - Enhanced Display -->
+            <div v-else-if="slot.results?.win_rate" class="space-y-1">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-semibold" :class="slot.results.net_profit >= 0 ? 'text-green-400' : 'text-red-400'">
+                  {{ slot.results.net_profit >= 0 ? '↑ ' : '↓ ' }}
+                  {{ slot.results.net_profit >= 0 ? '+' : '' }}${{ slot.results.net_profit?.toFixed(2) }}
+                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-400">WR:</span>
+                  <span :class="slot.results.win_rate >= 50 ? 'text-green-400 font-semibold' : 'text-yellow-400'">
+                    {{ slot.results.win_rate?.toFixed(1) }}%
+                  </span>
+                </div>
+              </div>
+              <div class="flex justify-between text-[10px] text-gray-500">
+                <span>{{ slot.results.total_trades || 0 }} trades</span>
+                <span v-if="slot.results.profit_factor">
+                  PF: <span :class="slot.results.profit_factor >= 1.5 ? 'text-green-400' : 'text-yellow-400'">
+                    {{ slot.results.profit_factor?.toFixed(2) }}
+                  </span>
+                </span>
+              </div>
             </div>
-            <div v-else class="text-xs text-gray-600 text-center">Ready</div>
+            <!-- Ready State -->
+            <div v-else class="text-xs text-gray-600 text-center py-1">
+              <span class="opacity-50">Ready to trade</span>
+            </div>
           </div>
         </div>
       </div>
@@ -739,6 +868,71 @@
           </div>
         </div>
     </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- 🔔 TOAST NOTIFICATION                                                    -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <transition
+      enter-active-class="transform ease-out duration-300 transition"
+      enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+      enter-to-class="translate-y-0 opacity-100 sm:translate-x-0"
+      leave-active-class="transition ease-in duration-200"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div v-if="showToast" class="fixed bottom-6 right-6 z-50 max-w-md">
+        <div class="relative overflow-hidden rounded-xl border backdrop-blur-xl shadow-2xl"
+             :class="{
+               'bg-green-500/10 border-green-500/30': toastType === 'success',
+               'bg-red-500/10 border-red-500/30': toastType === 'error',
+               'bg-blue-500/10 border-blue-500/30': toastType === 'info',
+               'bg-yellow-500/10 border-yellow-500/30': toastType === 'warning'
+             }">
+          <!-- Animated gradient bar -->
+          <div class="absolute top-0 left-0 right-0 h-1">
+            <div class="h-full animate-pulse"
+                 :class="{
+                   'bg-gradient-to-r from-green-500 to-emerald-400': toastType === 'success',
+                   'bg-gradient-to-r from-red-500 to-rose-400': toastType === 'error',
+                   'bg-gradient-to-r from-blue-500 to-cyan-400': toastType === 'info',
+                   'bg-gradient-to-r from-yellow-500 to-amber-400': toastType === 'warning'
+                 }">
+            </div>
+          </div>
+
+          <div class="p-4 flex items-start gap-3">
+            <!-- Icon -->
+            <div class="flex-shrink-0 text-2xl">
+              <span v-if="toastType === 'success'">✅</span>
+              <span v-else-if="toastType === 'error'">❌</span>
+              <span v-else-if="toastType === 'info'">ℹ️</span>
+              <span v-else-if="toastType === 'warning'">⚠️</span>
+            </div>
+
+            <!-- Message -->
+            <div class="flex-1 pt-0.5">
+              <p class="text-sm font-medium"
+                 :class="{
+                   'text-green-300': toastType === 'success',
+                   'text-red-300': toastType === 'error',
+                   'text-blue-300': toastType === 'info',
+                   'text-yellow-300': toastType === 'warning'
+                 }">
+                {{ toastMessage }}
+              </p>
+            </div>
+
+            <!-- Close Button -->
+            <button @click="showToast = false"
+                    class="flex-shrink-0 rounded-lg p-1 transition-colors hover:bg-white/10">
+              <svg class="w-4 h-4 text-gray-400 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -752,11 +946,16 @@ import CorrelationHeatmap from '../components/CorrelationHeatmap.vue'
 const socketConnected = connectionState.isConnected
 const socketReconnecting = connectionState.isReconnecting
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// Use relative path for proxy support
+const API_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 // State
 const isRunning = ref(false)  // Global running state (any slot running)
 const history = ref([])
+const backtestStatus = ref('')  // Current backtest status message
+const toastMessage = ref('')  // Toast notification message
+const toastType = ref('info')  // 'success', 'error', 'info', 'warning'
+const showToast = ref(false)  // Show toast notification
 
 // Trading Mode State
 const tradingMode = ref('backtest')  // 'backtest' or 'live'
@@ -1233,22 +1432,66 @@ const getAutoHTF = (tf) => {
   return htfMap[tf] || 'H4'
 }
 
+// Helper: Get timeframe in minutes for comparison
+const getTFMins = (tf) => {
+  const map = {
+    'M1': 1, 'M5': 5, 'M15': 15, 'M30': 30,
+    'H1': 60, 'H4': 240, 'D1': 1440
+  }
+  return map[tf] || 0
+}
+
+// Helper: Check for bad session/symbol combination
+const isBadSession = (symbol, session) => {
+  if (!symbol || !session) return false
+  
+  // Asia Session Warnings
+  if (session === 'ASIA' || session === 'ASIA_LONDON') {
+     // Gold is very low vol in Asia
+     if (symbol.includes('XAU')) return true
+     // EUR/GBP pairs (non-JPY) are often flat
+     if ((symbol.includes('EUR') || symbol.includes('GBP')) && !symbol.includes('JPY')) return true
+  }
+  
+  // NY Session Warnings
+  if (session === 'NY') {
+     // Some cross pairs might be lower vol, but generally NY is OK.
+     // Could warn for AUD/NZD specific crosses if needed.
+  }
+  
+  return false
+}
+
+// Toast Notification Helper
+const showToastNotification = (message, type = 'info', duration = 3000) => {
+  toastMessage.value = message
+  toastType.value = type
+  showToast.value = true
+  setTimeout(() => {
+    showToast.value = false
+  }, duration)
+}
+
 // Methods
 const runBacktest = async () => {
   // Get enabled slots
   const enabledSlots = slots.value.filter(s => s.enabled)
+  console.log(`🔍 Total slots: ${slots.value.length}, Enabled slots: ${enabledSlots.length}`)
   if (enabledSlots.length === 0) {
-    alert('Please enable at least one slot')
+    showToastNotification('Please enable at least one slot', 'warning')
+    console.error('❌ No enabled slots found!')
     return
   }
-  
+
   // Check if live mode requires active account
   if (tradingMode.value === 'live' && !activeAccount.value) {
-    alert('Please select an account to start live trading')
+    showToastNotification('Please select an account to start live trading', 'warning')
     return
   }
-  
+
   isRunning.value = true
+  backtestStatus.value = 'Initializing...'
+  showToastNotification(`Starting ${tradingMode.value} mode for ${enabledSlots.length} slot(s)`, 'info')
   
   // Reset all enabled slots
   enabledSlots.forEach(slot => {
@@ -1313,7 +1556,13 @@ const runBacktest = async () => {
           timeframe: slot.timeframe,
           max_trade_duration_hours: slot.max_duration || 2,
           min_confluence_score: 5,
-          account_id: activeAccount.value?.id
+          account_id: activeAccount.value?.id,
+          
+          // Institutional
+          confirmation_timeframe: slot.confirmation_timeframe,
+          trading_session: slot.trading_session,
+          session_end_action: slot.session_end_action,
+          use_daily_bias: slot.use_daily_bias
         }
         
         // Call live trading API
@@ -1328,7 +1577,8 @@ const runBacktest = async () => {
     } else {
       // BACKTEST MODE - Run simulation
       console.log('📊 Starting BACKTEST mode...')
-      
+      backtestStatus.value = 'Sending requests...'
+
       const promises = enabledSlots.map(async (slot) => {
         // Merge shared config with slot-specific overrides
         const payload = {
@@ -1347,7 +1597,11 @@ const runBacktest = async () => {
           timeframe: slot.timeframe,
           tsl_mode: slot.tsl_mode,
           // Portfolio-level shared settings
-          confirmation_timeframe: null,  // Auto-detect
+          confirmation_timeframe: slot.confirmation_timeframe,  // From Slot (Institutional)
+          trading_session: slot.trading_session || 'ALL',
+          session_end_action: slot.session_end_action || 'HOLD',
+          use_daily_bias: slot.use_daily_bias,
+          
           strategy_mode: ['M1', 'M5', 'M15'].includes(slot.timeframe) ? 'SCALP' : 'SWING',
           initial_balance: sharedConfig.value.initial_balance,
           use_adx_filter: slot.use_adx_filter !== undefined ? slot.use_adx_filter : true,
@@ -1373,18 +1627,25 @@ const runBacktest = async () => {
           end_date: new Date(sharedConfig.value.end_date).toISOString()
         }
         
+        console.log(`📤 Sending backtest request for ${slot.symbol}...`, payload)
         const response = await axios.post(`${API_URL}/api/backtest/run`, payload)
+        console.log(`✅ Backtest response for ${slot.symbol}:`, response.data)
         slot.sessionId = response.data.session_id
         return response
       })
       
       await Promise.all(promises)
+      console.log(`🎉 All backtest requests sent successfully!`)
+      backtestStatus.value = 'Running backtest...'
+      showToastNotification(`Backtest started for ${enabledSlots.length} slot(s)`, 'success')
     }
-    
+
   } catch (error) {
-    console.error('Trading failed:', error)
-    alert('Failed to start: ' + (error.response?.data?.detail || error.message))
+    console.error('❌ Trading failed:', error)
+    console.error('Error details:', error.response?.data || error.message)
+    showToastNotification('Failed to start: ' + (error.response?.data?.detail || error.message), 'error', 5000)
     isRunning.value = false
+    backtestStatus.value = ''
     enabledSlots.forEach(slot => slot.isRunning = false)
   }
 }
@@ -1447,29 +1708,58 @@ const setupSocketListeners = () => {
             slot.isRunning = false
             slot.progress = 100
             slot.results = data.results
+
+            // Show completion notification with results
+            const profit = data.results.net_profit || 0
+            const profitSign = profit >= 0 ? '+' : ''
+            showToastNotification(
+                `${slot.symbol} backtest complete! P/L: ${profitSign}$${profit.toFixed(2)}`,
+                profit >= 0 ? 'success' : 'warning',
+                4000
+            )
         }
-        
+
         // Check if all slots are done
         const anyRunning = slots.value.some(s => s.isRunning)
         if (!anyRunning) {
             isRunning.value = false
+            backtestStatus.value = ''
             progress.value = 100
             fetchHistory()
+            showToastNotification('All backtests completed!', 'success', 4000)
         }
-        
+
         // Update legacy results with first completed slot
         if (Object.keys(results.value).length === 0) {
             results.value = data.results
+        }
+    })
+
+    // Handle backtest errors
+    socket.on('backtest_error', (data) => {
+        console.error('❌ Backtest error:', data)
+        const slot = slots.value.find(s => s.sessionId === data.session_id)
+        if (slot) {
+            slot.isRunning = false
+            slot.progress = 0
+            showToastNotification(`${slot.symbol}: ${data.error}`, 'error', 6000)
+        }
+
+        // Check if all slots are done
+        const anyRunning = slots.value.some(s => s.isRunning)
+        if (!anyRunning) {
+            isRunning.value = false
+            backtestStatus.value = ''
         }
     })
     
     // 🔴 LIVE TRADING: Handle real-time trade updates
     socket.on('live_trade_opened', (trade) => {
         console.log('🔴 Live trade opened:', trade)
-        
+
         // Find the slot by session_id
         const slot = slots.value.find(s => s.sessionId === trade.session_id)
-        
+
         const tradeObj = {
             id: trade.ticket,
             symbol: trade.symbol,
@@ -1484,21 +1774,28 @@ const setupSocketListeners = () => {
             profit: 0,  // Unknown until closed
             status: 'OPEN'
         }
-        
+
         // Add to slot's trades
         if (slot) {
             if (!slot.trades) slot.trades = []
             slot.trades.unshift(tradeObj)
         }
-        
+
         // Add to legacy trades for combined view
         trades.value.unshift(tradeObj)
+
+        // Show notification
+        showToastNotification(
+            `🔴 ${trade.type} ${trade.symbol} @ ${trade.entry_price}`,
+            'info',
+            3000
+        )
     })
     
     // 🔴 LIVE TRADING: Handle trade closed
     socket.on('live_trade_closed', (data) => {
         console.log('🔴 Live trade closed:', data)
-        
+
         // Update trade in slot
         const slot = slots.value.find(s => s.sessionId === data.session_id)
         if (slot) {
@@ -1507,9 +1804,17 @@ const setupSocketListeners = () => {
                 trade.status = 'CLOSED'
                 trade.exit_time = data.closed_at
                 trade.profit = data.pnl
+
+                // Show notification with P/L
+                const profitSign = data.pnl >= 0 ? '+' : ''
+                showToastNotification(
+                    `${trade.symbol} closed: ${profitSign}$${data.pnl.toFixed(2)}`,
+                    data.pnl >= 0 ? 'success' : 'error',
+                    4000
+                )
             }
         }
-        
+
         // Also update in legacy trades
         const legacyTrade = trades.value.find(t => t.id === data.ticket)
         if (legacyTrade) {
@@ -1562,7 +1867,7 @@ const setupSocketListeners = () => {
 
 const fetchHistory = async () => {
   try {
-    const response = await axios.get('http://localhost:8000/api/backtest/history')
+    const response = await axios.get('/api/backtest/history')
     history.value = response.data
   } catch (error) {
     console.error('Error fetching history:', error)
@@ -1603,10 +1908,38 @@ const addSlot = () => {
     enable_institutional: true,
     enable_fibonacci: true,
     tsl_mode: 'TIERED',
-    partial_tp_on: true
+    partial_tp_on: true,
+    
+    // Institutional Defaults
+    confirmation_timeframe: null,
+    trading_session: 'ALL',
+    session_end_action: 'HOLD'
   })
   
   console.log(`➕ Added new slot ${newId}`)
+}
+
+// Clone an existing slot
+const cloneSlot = (sourceSlot) => {
+  const newId = Math.max(...slots.value.map(s => s.id)) + 1
+
+  // Clone all settings from source slot
+  const clonedSlot = {
+    ...sourceSlot,
+    id: newId,
+    dbId: null,  // New slot doesn't have DB id yet
+    enabled: false,  // Start disabled so user can review settings
+    expanded: true,  // Show expanded so user sees cloned settings
+    isRunning: false,
+    progress: 0,
+    results: {},
+    trades: [],
+    sessionId: null
+  }
+
+  slots.value.push(clonedSlot)
+  showToastNotification(`Cloned ${sourceSlot.symbol} to Slot ${newId + 1}`, 'success', 3000)
+  console.log(`📋 Cloned slot ${sourceSlot.id} to new slot ${newId}`)
 }
 
 // Delete a slot
@@ -1657,7 +1990,12 @@ const saveSlot = async (slot) => {
         enable_fibonacci_strategy: slot.enable_fibonacci !== false,
         partial_tp_on: slot.partial_tp_on !== false,
         partial_tp_amount: 1.0,
-        enabled: slot.enabled !== false
+        enabled: slot.enabled !== false,
+        
+        // Institutional
+        confirmation_timeframe: slot.confirmation_timeframe || null,
+        trading_session: slot.trading_session || 'ALL',
+        session_end_action: slot.session_end_action || 'HOLD'
       }
       
       if (slot.dbId) {
@@ -1710,7 +2048,12 @@ const loadSlots = async () => {
         enable_stoch: dbSlot.enable_stoch_strategy,
         enable_institutional: dbSlot.enable_institutional_strategy,
         enable_fibonacci: dbSlot.enable_fibonacci_strategy,
-        partial_tp_on: dbSlot.partial_tp_on
+        partial_tp_on: dbSlot.partial_tp_on,
+        
+        // Institutional
+        confirmation_timeframe: dbSlot.confirmation_timeframe,
+        trading_session: dbSlot.trading_session,
+        session_end_action: dbSlot.session_end_action
       }))
       console.log(`📦 Loaded ${dbSlots.length} slots from database`)
     }
@@ -1721,7 +2064,7 @@ const loadSlots = async () => {
 
 const loadSession = async (sessionId) => {
   try {
-    const response = await axios.get(`http://localhost:8000/api/backtest/${sessionId}`)
+    const response = await axios.get(`/api/backtest/${sessionId}`)
     results.value = response.data.session
     trades.value = response.data.trades
     // Update config to match loaded session (optional)

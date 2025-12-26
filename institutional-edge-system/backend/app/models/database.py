@@ -11,6 +11,14 @@ from datetime import datetime
 
 Base = declarative_base()
 
+# Many-to-Many Association Table
+from sqlalchemy import Table
+bot_config_accounts = Table(
+    'bot_config_accounts', Base.metadata,
+    Column('bot_config_id', Integer, ForeignKey('bot_configs.id')),
+    Column('mt5_account_id', Integer, ForeignKey('mt5_accounts.id'))
+)
+
 
 class User(Base):
     """User model for authentication"""
@@ -47,6 +55,9 @@ class MT5Account(Base):
     symbol_prefix = Column(String, default="")  # "#" for HFM crypto
     symbol_suffix = Column(String, default="")  # "m" for some brokers
     
+    # Terminal Path (NEW for Multi-Account)
+    terminal_path = Column(String, nullable=True) # Path to specific terminal64.exe folder
+    
     # Account type
     account_type = Column(String, default="demo")  # "demo" | "live" | "prop"
     
@@ -62,7 +73,9 @@ class MT5Account(Base):
     last_connected = Column(DateTime, nullable=True)
     
     # Relationship
+    # Relationship
     user = relationship("User", back_populates="mt5_accounts")
+    bot_configs = relationship("BotConfig", secondary=bot_config_accounts, back_populates="accounts")
 
 
 class BotConfig(Base):
@@ -157,6 +170,7 @@ class BotConfig(Base):
     user = relationship("User", back_populates="bot_configs")
     risk_profile = relationship("RiskProfile", uselist=False, back_populates="bot_config", cascade="all, delete-orphan")
     slots = relationship("BotSlot", back_populates="bot_config", cascade="all, delete-orphan")
+    accounts = relationship("MT5Account", secondary=bot_config_accounts, back_populates="bot_configs")
 
 
 class BotSlot(Base):
@@ -173,7 +187,12 @@ class BotSlot(Base):
     
     # Timeframe (per-slot)
     timeframe = Column(String, default="M5")
-    confirmation_timeframe = Column(String, nullable=True)  # Auto if null
+    confirmation_timeframe = Column(String, nullable=True) # e.g. "H1", "H4"
+    use_daily_bias = Column(Boolean, default=False) # Strict D1 Bias Filterif null
+    
+    # Session Control (Institutional)
+    trading_session = Column(String, default="ALL")  # ASIA, LONDON, NY, ASIA_LONDON, LONDON_NY, ALL
+    session_end_action = Column(String, default="HOLD") # CLOSE, HOLD, DISABLE_NEW
     
     # Risk & TP/SL
     risk_percent = Column(Float, default=1.0)

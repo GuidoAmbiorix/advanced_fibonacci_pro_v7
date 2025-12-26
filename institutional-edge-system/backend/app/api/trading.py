@@ -55,7 +55,12 @@ class TradingStartRequest(BaseModel):
     enable_partial_tp: bool = True
     partial_tp_percent: float = 50.0
     enable_trailing_stop: bool = True
+    enable_partial_tp: bool = True
+    partial_tp_percent: float = 50.0
+    enable_trailing_stop: bool = True
     trailing_stop_atr: float = 1.5
+    # Institutional
+    use_daily_bias: bool = False
 
 
 class RiskConfigRequest(BaseModel):
@@ -112,8 +117,18 @@ class LiveTradingSession:
         
         logger.info(f"🔴 LIVE SESSION {self.session_id}: Starting for {symbol} ({timeframe})")
         
+        last_news_update = datetime.min
+        
         while self.is_running:
             try:
+                # Update News Filter (Hourly)
+                if (datetime.utcnow() - last_news_update).total_seconds() > 3600:
+                    try:
+                        self.engine.update_news(self.mt5)
+                        last_news_update = datetime.utcnow()
+                    except Exception as e:
+                        logger.error(f"Failed to update news: {e}")
+
                 # 0. Check kill switch
                 if self.risk_controls.is_kill_switch_active():
                     logger.warning(f"⛔ {self.session_id}: Kill switch active - pausing")
@@ -175,8 +190,15 @@ class LiveTradingSession:
                     await asyncio.sleep(60)
                     continue
 
+                # 6.5 Get D1 data for Bias (Institutional)
+                df_daily = None
+                if self.config.get('use_daily_bias', False):
+                    df_daily = self.mt5.get_ohlcv_data(symbol, 'D1', bars=100)
+                    if df_daily is None or len(df_daily) < 50:
+                         logger.warning(f"{self.session_id}: D1 data missing for Daily Bias")
+
                 # 7. Analyze for signals
-                analysis = self.engine.analyze(df)
+                analysis = self.engine.analyze(df, df_daily=df_daily)
                 signals = analysis.get('signals', [])
                 
                 if signals:
@@ -410,26 +432,30 @@ def get_mt5_connector(account: MT5Account) -> MT5Connector:
     """Get or create MT5 connector for an account"""
     global _mt5_connector
     
+    password = decrypt_password(account.password_encrypted)
+    config = {
+        "mt5_login": int(account.login),
+        "mt5_password": password,
+        "mt5_server": account.server
+    }
+    
     if _mt5_connector is None:
-        _mt5_connector = MT5Connector({})
+        _mt5_connector = MT5Connector(config)
+    else:
+        # Update credentials just in case account changed
+        _mt5_connector.config.update(config)
+        _mt5_connector.login = config['mt5_login']
+        _mt5_connector.password = config['mt5_password']
+        _mt5_connector.server = config['mt5_server']
     
     if not _mt5_connector.connected:
         try:
-            import MetaTrader5 as mt5
-            
-            password = decrypt_password(account.password_encrypted)
-            
-            if not mt5.initialize():
-                logger.error("Failed to initialize MT5")
-                return _mt5_connector
-            
-            if mt5.login(int(account.login), password, account.server):
-                logger.info(f"✅ MT5 connected as {account.login}")
-                _mt5_connector.connected = True
+            if _mt5_connector.connect():
+                logger.info(f"✅ MT5 connected via Connector as {account.login}")
             else:
-                logger.error(f"MT5 login failed: {mt5.last_error()}")
+                logger.error("Failed to connect to MT5 via Connector")
         except Exception as e:
-            logger.error(f"MT5 connection error: {e}")
+            logger.error(f"MT5 connection exception: {e}")
     
     return _mt5_connector
 
@@ -502,6 +528,7 @@ async def start_trading(
             'stoch_k_period': slot.stoch_k_period,
             'stoch_d_period': slot.stoch_d_period,
             'vwap_use_trend_filter': slot.vwap_use_trend_filter,
+            'use_daily_bias': slot.use_daily_bias,
         }
         logger.info(f"📦 Loaded slot {slot.id} config for {slot.symbol}")
     else:

@@ -40,7 +40,15 @@ class SlotCreate(BaseModel):
     enable_fibonacci_strategy: bool = True
     partial_tp_on: bool = True
     partial_tp_amount: float = 1.0
+    tp_ratio: float = 2.0
+    sl_atr_multiplier: float = 1.5
     enabled: bool = True
+    
+    # Institutional Control
+    confirmation_timeframe: Optional[str] = None
+    trading_session: str = "ALL"
+    session_end_action: str = "HOLD"
+    use_daily_bias: bool = False
 
 
 class SlotUpdate(BaseModel):
@@ -48,8 +56,6 @@ class SlotUpdate(BaseModel):
     direction_filter: Optional[str] = None
     timeframe: Optional[str] = None
     risk_percent: Optional[float] = None
-    tp_ratio: Optional[float] = None
-    sl_atr_multiplier: Optional[float] = None
     tsl_mode: Optional[str] = None
     rsi_period: Optional[int] = None
     rsi_overbought: Optional[int] = None
@@ -62,7 +68,15 @@ class SlotUpdate(BaseModel):
     enable_fibonacci_strategy: Optional[bool] = None
     partial_tp_on: Optional[bool] = None
     partial_tp_amount: Optional[float] = None
+    tp_ratio: Optional[float] = None
+    sl_atr_multiplier: Optional[float] = None
     enabled: Optional[bool] = None
+    
+    # Institutional ControlUpdate
+    confirmation_timeframe: Optional[str] = None
+    trading_session: Optional[str] = None
+    session_end_action: Optional[str] = None
+    use_daily_bias: Optional[bool] = None
 
 
 class SlotResponse(BaseModel):
@@ -72,8 +86,6 @@ class SlotResponse(BaseModel):
     direction_filter: str
     timeframe: str
     risk_percent: float
-    tp_ratio: float
-    sl_atr_multiplier: float
     tsl_mode: str
     rsi_period: int
     rsi_overbought: int
@@ -86,7 +98,15 @@ class SlotResponse(BaseModel):
     enable_fibonacci_strategy: bool
     partial_tp_on: bool
     partial_tp_amount: float
+    tp_ratio: float
+    sl_atr_multiplier: float
     enabled: bool
+    
+    # Institutional Control
+    confirmation_timeframe: Optional[str]
+    trading_session: str
+    session_end_action: str
+    use_daily_bias: bool
     created_at: datetime
 
     class Config:
@@ -122,12 +142,29 @@ async def create_slot(slot: SlotCreate, db: Session = Depends(get_db)):
     if not config:
         raise HTTPException(status_code=404, detail="BotConfig not found")
     
+    # Timeframe Hierarchy Map
+    TF_MAP = {
+        "M1": 1, "M5": 5, "M15": 15, "M30": 30, 
+        "H1": 60, "H4": 240, "D1": 1440
+    }
+    
+    # Validation: Confirmation TF >= Entry TF
+    if slot.confirmation_timeframe:
+        entry_mins = TF_MAP.get(slot.timeframe, 0)
+        confirm_mins = TF_MAP.get(slot.confirmation_timeframe, 0)
+        
+        if confirm_mins < entry_mins:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Confirmation TF ({slot.confirmation_timeframe}) cannot be lower than Entry TF ({slot.timeframe})"
+            )
+
     db_slot = BotSlot(**slot.dict())
     db.add(db_slot)
     db.commit()
     db.refresh(db_slot)
     
-    logger.info(f"Created slot {db_slot.id} for {slot.symbol}")
+    logger.info(f"Created slot {db_slot.id} for {slot.symbol} [Session: {slot.trading_session}]")
     return db_slot
 
 
@@ -139,6 +176,27 @@ async def update_slot(slot_id: int, slot: SlotUpdate, db: Session = Depends(get_
         raise HTTPException(status_code=404, detail="Slot not found")
     
     update_data = slot.dict(exclude_unset=True)
+    
+    # Validation: Confirmation TF >= Entry TF (if changing)
+    if "confirmation_timeframe" in update_data or "timeframe" in update_data:
+        TF_MAP = {
+            "M1": 1, "M5": 5, "M15": 15, "M30": 30, 
+            "H1": 60, "H4": 240, "D1": 1440
+        }
+        
+        new_entry = update_data.get("timeframe", db_slot.timeframe)
+        new_confirm = update_data.get("confirmation_timeframe", db_slot.confirmation_timeframe)
+        
+        if new_confirm:
+            entry_mins = TF_MAP.get(new_entry, 0)
+            confirm_mins = TF_MAP.get(new_confirm, 0)
+            
+            if confirm_mins < entry_mins:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Confirmation TF ({new_confirm}) cannot be lower than Entry TF ({new_entry})"
+                )
+    
     for key, value in update_data.items():
         setattr(db_slot, key, value)
     

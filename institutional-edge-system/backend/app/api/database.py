@@ -17,12 +17,22 @@ if "asyncpg" in database_url:
     database_url = database_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
 
 # Create database engine
-engine = create_engine(
-    database_url,
-    pool_size=settings.DATABASE_POOL_SIZE,
-    max_overflow=settings.DATABASE_MAX_OVERFLOW,
-    pool_pre_ping=True,  # Verify connections before using
-)
+connect_args = {}
+if "sqlite" in database_url:
+    connect_args["check_same_thread"] = False
+    # SQLite doesn't support pool_size/max_overflow with default pool
+    engine = create_engine(
+        database_url,
+        connect_args=connect_args,
+        pool_pre_ping=True,
+    )
+else:
+    engine = create_engine(
+        database_url,
+        pool_size=settings.DATABASE_POOL_SIZE,
+        max_overflow=settings.DATABASE_MAX_OVERFLOW,
+        pool_pre_ping=True,
+    )
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

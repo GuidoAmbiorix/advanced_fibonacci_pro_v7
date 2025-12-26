@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  orchestrator:
+    build: ./orchestrator
+    container_name: fleet_commander
+    ports:
+      - "9000:8000"
+      - "9001:9001" # In case we want separate API port, but we use 8000 internally mapped to 9000/9001
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Access to Docker Daemon
+      - ./:/app/host_project # Mount whole project to be able to copy blueprints
+      - ./orchestrator/backend:/app/backend # Live Backend Code
+      - ./orchestrator/frontend:/app/frontend # Live Frontend Code
+    environment:
+      - PROJECT_ROOT=/app/host_project
+      - HOST_PROJECT_PATH=c:\Users\Ing Guido\Desktop\Proyectos\advanced_fibonacci_pro_v7\institutional-edge-system
+    networks:
+      - bot-net
+
+networks:
+  bot-net:
+    external: true

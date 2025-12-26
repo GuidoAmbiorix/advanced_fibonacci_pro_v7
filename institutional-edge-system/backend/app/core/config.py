@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:8080"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:8080,http://localhost,http://127.0.0.1"
 
     @property
     def cors_origins_list(self) -> List[str]:

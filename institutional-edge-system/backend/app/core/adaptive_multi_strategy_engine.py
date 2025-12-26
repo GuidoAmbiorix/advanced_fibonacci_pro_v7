@@ -591,12 +591,16 @@ class AdaptiveMultiStrategyEngine:
         self.sl_atr_multiplier = config.get('sl_atr_multiplier', 0.75 if self.scalping_mode else 1.5)
         self.tp_ratio = config.get('tp_ratio', self.risk_reward_ratio if hasattr(self, 'risk_reward_ratio') else 1.5)
 
+        # Institutional Daily Bias (D1 Filter)
+        self.use_daily_bias = config.get('use_daily_bias', False)
+        self.daily_bias = "NEUTRAL" # Default to Neutral (Block all if enabled but not calc)
+
         # State
         self.current_regime = None
         self.current_strategy = None
 
         logger.info(f"AdaptiveMultiStrategyEngine initialized - {self.symbol} {self.timeframe}")
-        logger.info(f"Grid Recovery: {self.enable_grid_recovery}, Scalping Mode: {self.scalping_mode}")
+        logger.info(f"Grid Recovery: {self.enable_grid_recovery}, Scalping Mode: {self.scalping_mode}, Daily Bias: {self.use_daily_bias}")
         logger.info(f"Funding Rules: Max DD={self.max_drawdown_limit:.1%}, Daily Limit={self.daily_loss_limit:.1%}, R/R=1:{self.risk_reward_ratio}")
 
     def update_account_metrics(self, balance: float, equity: float, start_of_day_balance: Optional[float] = None):
@@ -656,15 +660,57 @@ class AdaptiveMultiStrategyEngine:
         if weekday > 4: # Saturday or Sunday
             return False, "Weekend - Trading Disabled"
         
-        # 4. Check Hours (00:00 - 12:00)
-        # Assuming timestamp is localized or UTC properly. User wants 12am-12pm.
-        if not (0 <= timestamp.hour < 12):
-             return False, f"Outside Trading Hours ({timestamp.hour:02d}:{timestamp.minute:02d})"
+        # 4. Check Hours (00:00 - 12:00 LOCAL)
+        # Assuming Server Time is UTC+2 approx (6h ahead of User's UTC-4)
+        # User 00:00 = Server 06:00
+        # User 12:00 = Server 18:00
+        # Allowed Server range: 06 <= hour < 18
+        
+        if not (6 <= timestamp.hour < 18):
+             return False, f"Outside Trading Hours (Server {timestamp.hour:02d}:{timestamp.minute:02d}, Allowed 06-18)"
              
         return True, "OK"
+        
+    def update_news(self, mt5_connector):
+        """Update News Filter using MT5 connection"""
+        self.news_filter.update_using_mt5(mt5_connector)
 
 
-    def analyze(self, df: pd.DataFrame, df_higher_tf: Optional[pd.DataFrame] = None) -> Dict:
+
+    def _calculate_daily_bias(self, df_d1: pd.DataFrame):
+        """Calculate Daily Bias using EMAs and RSI"""
+        if df_d1 is None or len(df_d1) < 50:
+            self.daily_bias = "NEUTRAL"
+            return
+
+        # Calculate Indicators on D1
+        close = df_d1['close']
+        ema_20 = close.ewm(span=20, adjust=False).mean()
+        ema_50 = close.ewm(span=50, adjust=False).mean()
+        
+        # Quick RSI Calc
+        delta = close.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+        
+        current_price = close.iloc[-1]
+        current_ema20 = ema_20.iloc[-1]
+        current_ema50 = ema_50.iloc[-1]
+        current_rsi = rsi.iloc[-1]
+        
+        if current_price > current_ema20 and current_price > current_ema50 and current_rsi > 50:
+            self.daily_bias = "BULLISH"
+        elif current_price < current_ema20 and current_price < current_ema50 and current_rsi < 50:
+             self.daily_bias = "BEARISH"
+        else:
+             self.daily_bias = "NEUTRAL"
+        
+        # logger.debug(f"📅 Daily Bias: {self.daily_bias} (P={current_price:.2f}, RSI={current_rsi:.1f})")
+
+
+    def analyze(self, df: pd.DataFrame, df_higher_tf: Optional[pd.DataFrame] = None, df_daily: Optional[pd.DataFrame] = None) -> Dict:
         """
         Main analysis method
 
@@ -672,6 +718,10 @@ class AdaptiveMultiStrategyEngine:
         """
         if len(df) < 100:
             return {'signals': [], 'message': 'Insufficient data'}
+        
+        # Institutional Daily Bias Check
+        if self.use_daily_bias and df_daily is not None:
+             self._calculate_daily_bias(df_daily)
         
         # Calculate HTF trend once
         h4_trend = self._check_higher_tf_trend(df_higher_tf)
@@ -819,6 +869,19 @@ class AdaptiveMultiStrategyEngine:
                 logger.info(f"🛑 Global RSI Filter: SELL rejected (RSI {current_rsi:.1f} < 30)")
                 return None
 
+        # 0.5 Institutional Daily Bias Filter
+        if self.use_daily_bias:
+            if self.daily_bias == "BULLISH" and signal and signal.direction == "SELL":
+                logger.info(f"🛑 Daily Bias Filter: SELL rejected (Bias is BULLISH)")
+                return None
+            if self.daily_bias == "BEARISH" and signal and signal.direction == "BUY":
+                logger.info(f"🛑 Daily Bias Filter: BUY rejected (Bias is BEARISH)")
+                return None
+            if self.daily_bias == "NEUTRAL":
+                if signal:
+                     logger.info(f"🛑 Daily Bias Filter: {signal.direction} rejected (Bias is NEUTRAL)")
+                return None
+
         # 4. Apply adaptive risk management
         if signal:
             signal.risk_percent = self._calculate_adaptive_risk()
@@ -860,7 +923,8 @@ class AdaptiveMultiStrategyEngine:
             'win_streak': self.win_streak,
             'higher_tf_trend': h4_trend,
             'bull_confluence_score': bull_score,
-            'bear_confluence_score': bear_score
+            'bear_confluence_score': bear_score,
+            'daily_bias': self.daily_bias if self.use_daily_bias else "OFF"
         }
 
     def _ensure_indicators(self, df: pd.DataFrame) -> pd.DataFrame:

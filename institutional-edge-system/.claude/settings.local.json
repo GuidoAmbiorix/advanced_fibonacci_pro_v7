@@ -4,7 +4,18 @@
       "Bash(docker-compose logs:*)",
       "Bash(curl:*)",
       "Bash(findstr:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(docker ps:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker-compose stop:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose exec:*)",
+      "Bash(cd:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker-compose restart:*)"
     ],
     "deny": [],
     "ask": []

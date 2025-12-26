@@ -62,6 +62,11 @@
         </div>
       </div>
 
+      <!-- Accounts Settings -->
+      <div v-if="currentTab === 'accounts'" class="space-y-6">
+        <AccountManager :botId="currentBotId" />
+      </div>
+
       <!-- Strategy Settings -->
       <div v-if="currentTab === 'strategy'" class="space-y-6">
         <h3 class="text-lg font-semibold text-slate-700">Strategy Configuration</h3>
@@ -301,10 +306,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../services/api'
+import AccountManager from '../components/settings/AccountManager.vue'
 
 const currentTab = ref('general')
 const tabs = [
   { id: 'general', label: 'General' },
+  { id: 'accounts', label: 'Accounts 👥' },
   { id: 'strategy', label: 'Strategy 🧠' },
   { id: 'risk', label: 'Risk Manager' },
   { id: 'news', label: 'News Filter' },

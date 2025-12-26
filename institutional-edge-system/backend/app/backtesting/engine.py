@@ -167,6 +167,25 @@ class BacktestEngine:
         except Exception as e:
             logger.warning(f"Could not load {htf_name} data: {e} - continuing without HTF filter")
 
+        # Load Daily data (D1) if Daily Bias is enabled
+        daily_data = None
+        if self.config.use_daily_bias:
+            try:
+                logger.info("Loading D1 data for Daily Bias Filter...")
+                daily_data = self.data_loader.load_and_validate(
+                    symbol=self.config.symbol,
+                    timeframe='D1',
+                    start_date=start_date or self.config.start_date,
+                    end_date=end_date or self.config.end_date,
+                    source='mt5'
+                )
+                if daily_data is not None:
+                    logger.info(f"Loaded {len(daily_data)} D1 bars for bias filtering")
+                else:
+                    logger.warning("D1 data not available - Daily Bias will be Neutral")
+            except Exception as e:
+                logger.warning(f"Could not load D1 data: {e} - Daily Bias will be Neutral")
+
         # Store callbacks for use in other methods
         self.on_trade_callback = on_trade
         self.on_progress_callback = on_progress
@@ -181,6 +200,7 @@ class BacktestEngine:
         # Main backtest loop
         peak_equity = self.current_balance  # Track highest equity
         trading_halted_dd = False  # Drawdown circuit breaker flag
+        last_processed_day = -1 # For optimizing Daily Bias updates
         
         for i in range(len(data)):
             current_bar = data.iloc[i]
@@ -228,9 +248,22 @@ class BacktestEngine:
                 if len(htf_historical) > 0:
                     htf_historical = htf_historical.reset_index(drop=True)
 
+            # Prepare Daily Slice (Optimization: Only update when day changes)
+            current_daily_slice = None
+            if daily_data is not None:
+                current_day = current_bar['time'].day
+                if current_day != last_processed_day:
+                    current_time = current_bar['time']
+                    d1_mask = daily_data['time'] < current_time # Use all COMPLETED daily bars before now
+                    d1_subset = daily_data[d1_mask]
+                    if len(d1_subset) > 0:
+                        current_daily_slice = d1_subset
+                        last_processed_day = current_day
+                        # logger.debug(f"Updating Daily Bias for Day {current_day}")
+
             # Run strategy analysis
             try:
-                analysis = self.trading_engine.analyze(historical_data, df_higher_tf=htf_historical)
+                analysis = self.trading_engine.analyze(historical_data, df_higher_tf=htf_historical, df_daily=current_daily_slice)
 
                 if 'error' in analysis:
                     continue

@@ -61,6 +61,9 @@ class BacktestRequest(BaseModel):
     # Signal Quality
     min_confluence_score: int = 7  # 3-10, higher = stronger signals only
     
+    # Institutional Control
+    use_daily_bias: bool = False
+
 class BacktestResponse(BaseModel):
     session_id: int
     status: str
@@ -69,10 +72,13 @@ class BacktestResponse(BaseModel):
 # --- Background Task ---
 def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, loop: asyncio.AbstractEventLoop):
     try:
-        logger.info(f"Starting backtest session {session_id} for {request.symbol}")
-        
+        logger.info(f"🚀 BACKTEST TASK STARTED - Session {session_id} for {request.symbol} {request.timeframe}")
+        logger.info(f"📅 Date Range: {request.start_date} to {request.end_date}")
+        logger.info(f"💰 Initial Balance: ${request.initial_balance:,.2f}, Risk: {request.risk_percent}%")
+
         # Define Callbacks
         def on_progress(pct, stats):
+            logger.info(f"📊 Session {session_id} Progress: {pct:.1f}% | Balance: ${stats.get('balance', 0):,.2f} | Trades: {stats.get('trades', 0)}")
             asyncio.run_coroutine_threadsafe(
                 sio.emit('backtest_progress', {
                     'session_id': session_id,
@@ -83,6 +89,7 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             )
 
         def on_trade(trade_data):
+            logger.info(f"💹 Session {session_id} Trade: {trade_data.get('trade_type')} @ {trade_data.get('price')} | PnL: ${trade_data.get('pnl', 0):,.2f}")
             asyncio.run_coroutine_threadsafe(
                 sio.emit('backtest_trade', {
                     'session_id': session_id,
@@ -107,7 +114,8 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             'D1': 'W1'
         }
         confirmation_tf = request.confirmation_timeframe or htf_map.get(request.timeframe, 'H4')
-        
+        logger.info(f"⚙️  Session {session_id} Config: TF={request.timeframe}, HTF={confirmation_tf}, Mode={request.strategy_mode}")
+
         config = BacktestConfig(
             symbol=request.symbol,
             timeframe=request.timeframe,
@@ -152,18 +160,25 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             max_trade_duration_hours=request.max_trade_duration_hours,
             # Signal Quality & Limits
             min_confluence_score=request.min_confluence_score,
+            use_daily_bias=request.use_daily_bias,
             max_trades=3 if request.strategy_mode == "SWING" else 5
         )
-        
+
+        logger.info(f"🔧 Session {session_id} Creating BacktestEngine...")
         engine = BacktestEngine(config)
-        
+        logger.info(f"✅ Session {session_id} BacktestEngine created successfully")
+
         # 3. Run Backtest
+        logger.info(f"▶️  Session {session_id} Starting backtest execution...")
         results = engine.run(
             on_progress=on_progress,
             on_trade=on_trade
         )
-        
+        logger.info(f"✅ Session {session_id} Backtest execution completed!")
+        logger.info(f"📈 Results: Net Profit: ${results.metrics.net_profit:,.2f} | Win Rate: {results.metrics.win_rate:.1f}% | Trades: {results.metrics.total_trades}")
+
         # 4. Save Results to DB
+        logger.info(f"💾 Session {session_id} Saving results to database...")
         # Calculate final balance
         final_balance = config.initial_balance + results.metrics.net_profit
         
@@ -195,8 +210,9 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             db.add(db_trade)
             
         db.commit()
-        logger.info(f"Backtest session {session_id} completed successfully")
-        
+        logger.info(f"✅ Session {session_id} Results saved to database successfully")
+        logger.info(f"🎉 BACKTEST COMPLETED - Session {session_id} | ${final_balance:,.2f} ({results.metrics.net_profit:+,.2f})")
+
         # Emit completion event
         asyncio.run_coroutine_threadsafe(
             sio.emit('backtest_complete', {
@@ -214,11 +230,24 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
         
         
     except Exception as e:
-        logger.exception(f"Backtest session {session_id} failed: {e}")
+        logger.error(f"❌ BACKTEST FAILED - Session {session_id}")
+        logger.exception(f"Exception details: {e}")
         session = db.query(BacktestSession).filter(BacktestSession.id == session_id).first()
         if session:
             session.status = "FAILED"
             db.commit()
+
+        # Emit failure event
+        try:
+            asyncio.run_coroutine_threadsafe(
+                sio.emit('backtest_error', {
+                    'session_id': session_id,
+                    'error': str(e)
+                }),
+                loop
+            )
+        except:
+            pass
 
 # --- Endpoints ---
 

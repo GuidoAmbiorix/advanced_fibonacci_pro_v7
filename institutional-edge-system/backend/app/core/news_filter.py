@@ -1,4 +1,4 @@
-import investpy
+# import investpy # Disabled
 import datetime
 import json
 import os
@@ -44,73 +44,85 @@ class NewsFilter:
         except Exception as e:
             logger.error(f"Failed to save news cache: {e}")
 
-    def fetch_calendar(self, target_date: Optional[datetime.date] = None):
-        """Fetch high impact news for a specific date using investpy"""
-        if target_date is None:
-            target_date = datetime.date.today()
-            
-        date_str = target_date.strftime("%d/%m/%Y")
-        
-        # Calculate next day for to_date (investpy requires distinct dates)
-        next_day = target_date + datetime.timedelta(days=1)
-        next_day_str = next_day.strftime("%d/%m/%Y")
-        
-        # Check if we already have data for this date in memory (simple optimization)
-        if hasattr(self, '_current_date_cache') and self._current_date_cache == date_str and self.high_impact_events:
-            return
-
+    def update_using_mt5(self, mt5_connector):
+        """
+        Update high impact events using MT5 Connector.
+        Should be called periodically (e.g., hourly).
+        """
         try:
-            # Fetch calendar
-            # ERR#0032 Fix: to_date must be > from_date
-            df = investpy.news.economic_calendar(
-                countries=['United States', 'Euro Zone'],
-                importances=['high'],
-                from_date=date_str,
-                to_date=next_day_str
-            )
+            # Fetch events for nex 24 hours
+            start_dt = datetime.datetime.utcnow()
+            end_dt = start_dt + datetime.timedelta(hours=24)
             
-            if df is not None and not df.empty:
-                # Filter to only keep events for the target date
-                df = df[df['date'] == date_str]
-                
-                self.high_impact_events = df.to_dict('records')
-                self._current_date_cache = date_str
-                logger.info(f"Fetched {len(self.high_impact_events)} events for {date_str}")
-            else:
-                self.high_impact_events = []
-                self._current_date_cache = date_str
+            events = mt5_connector.get_calendar_events(start_dt, end_dt)
+            if not events:
+                return
 
+            # Filter for High Impact (Importance >= 3 or specific logic)
+            # MT5 Importance: 0=None, 1=Low, 2=Moderate, 3=High
+            high_impact = [e for e in events if e.get('importance', 0) >= 3]
+            
+            self.high_impact_events = high_impact
+            self.last_update = datetime.datetime.now()
+            self._save_cache()
+            
+            if high_impact:
+                logger.info(f"NewsFilter: Cached {len(high_impact)} high impact events via MT5")
+                
         except Exception as e:
-            logger.error(f"Error fetching calendar for {date_str}: {e}")
-            self.high_impact_events = [] # Safety
+            logger.error(f"NewsFilter update failed: {e}")
+
+    def fetch_calendar(self, target_date: Optional[datetime.date] = None):
+        """Legacy method (Disabled)"""
+        pass
 
     def is_event_imminent(self, minutes_threshold: int = 30, current_time: Optional[datetime.datetime] = None) -> bool:
         """Check if a high impact event is within threshold minutes"""
         if current_time is None:
-            current_time = datetime.datetime.now()
+            current_time = datetime.datetime.utcnow()
 
-        # Update calendar for the target date
-        self.fetch_calendar(current_time.date())
+        if not self.high_impact_events:
+            return False
         
-        now_time = current_time.time()
+        # Ensure we have datetime objects
+        # MT5 events use datetime objects for 'time'
         
         for event in self.high_impact_events:
             try:
-                event_time_str = event.get('time', '')
-                if not event_time_str: continue
-
-                # Parse event time (HH:MM)
-                event_time = datetime.datetime.strptime(event_time_str, "%H:%M").time()
+                event_time = event.get('time')
                 
-                # Combine with correct date
-                event_dt = datetime.datetime.combine(current_time.date(), event_time)
+                # Handle legacy string format if cache is old
+                if isinstance(event_time, str):
+                    try:
+                        # Reset legacy cache if found
+                        self.high_impact_events = [] 
+                        return False
+                    except:
+                        continue
+                        
+                if not isinstance(event_time, datetime.datetime):
+                    continue
+                    
+                # Time difference in minutes
+                diff_seconds = (event_time - current_time).total_seconds()
+                diff_minutes = abs(diff_seconds) / 60.0
                 
-                # Check absolute difference
-                diff = abs((event_dt - current_time).total_seconds()) / 60.0
+                # Check if imminent (future event within threshold OR past event within small window?)
+                # Usually we block BEFORE event.
+                # If event is in 10 mins -> Block.
+                # If event was 5 mins ago -> Maybe Unblock?
+                # User usually wants "30 mins before".
                 
-                if diff <= minutes_threshold:
-                    logger.warning(f"🚨 NEWS FILTER: {event['event']} at {event_time_str} (Current: {now_time})")
+                # If event is in the future (within threshold)
+                if 0 <= diff_seconds <= (minutes_threshold * 60):
+                    logger.warning(f"🚨 NEWS FILTER: {event.get('title')} ({event.get('currency')}) in {diff_minutes:.1f} min")
                     return True
+                    
+                # Strict Mode: Also block if event was just released (volatility) e.g. 5 mins after
+                if -300 <= diff_seconds < 0:
+                     logger.warning(f"🚨 NEWS FILTER: {event.get('title')} Released! Volatility Warning.")
+                     return True
+                     
             except Exception as e:
                 continue
                 
@@ -119,3 +131,4 @@ class NewsFilter:
     def should_block_trade(self, current_time: Optional[datetime.datetime] = None) -> bool:
         """Alias for convenience"""
         return self.is_event_imminent(minutes_threshold=30, current_time=current_time)
+

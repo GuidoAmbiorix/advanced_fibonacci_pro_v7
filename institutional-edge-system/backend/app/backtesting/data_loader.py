@@ -4,7 +4,10 @@ Load historical OHLCV data from MT5 or CSV files
 """
 
 import pandas as pd
-import MetaTrader5 as mt5
+# import MetaTrader5 as mt5 # REMOVED for Docker
+import rpyc
+from rpyc.utils.classic import obtain
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Tuple
@@ -13,16 +16,9 @@ from loguru import logger
 
 class DataLoader:
     """Load and validate historical market data"""
-
-    TIMEFRAME_MAP = {
-        'M1': mt5.TIMEFRAME_M1,
-        'M5': mt5.TIMEFRAME_M5,
-        'M15': mt5.TIMEFRAME_M15,
-        'M30': mt5.TIMEFRAME_M30,
-        'H1': mt5.TIMEFRAME_H1,
-        'H4': mt5.TIMEFRAME_H4,
-        'D1': mt5.TIMEFRAME_D1,
-    }
+    
+    # Initialized lazily
+    TIMEFRAME_MAP = {} 
 
     def __init__(self):
         """Initialize data loader"""
@@ -47,14 +43,45 @@ class DataLoader:
         Returns:
             DataFrame with columns: time, open, high, low, close, volume
         """
-        logger.info(f"Loading {symbol} {timeframe} from MT5: {start_date} to {end_date}")
+        logger.info(f"📥 Loading {symbol} {timeframe} from MT5: {start_date} to {end_date}")
 
         # Initialize MT5 if needed
+        # Initialize MT5 if needed via RPyC
         if not self.mt5_initialized:
-            if not mt5.initialize():
-                logger.error("MT5 initialization failed")
+            try:
+                mt5_host = os.getenv("MT5_HOST", "mt5")
+                mt5_port = int(os.getenv("MT5_PORT", 18812))
+                logger.info(f"🔌 Connecting to MT5 Service at {mt5_host}:{mt5_port}...")
+                conn = rpyc.classic.connect(mt5_host, mt5_port)
+                logger.info(f"✅ RPyC connection established")
+
+                global mt5
+                mt5 = conn.modules.MetaTrader5
+                logger.info(f"📦 MetaTrader5 module loaded via RPyC")
+
+                logger.info(f"🔄 Initializing MT5...")
+                if not mt5.initialize():
+                    logger.error("❌ MT5 initialization failed")
+                    return None
+                logger.info(f"✅ MT5 initialized successfully")
+
+                # Populate TIMEFRAME_MAP dynamically
+                self.TIMEFRAME_MAP = {
+                    'M1': mt5.TIMEFRAME_M1,
+                    'M5': mt5.TIMEFRAME_M5,
+                    'M15': mt5.TIMEFRAME_M15,
+                    'M30': mt5.TIMEFRAME_M30,
+                    'H1': mt5.TIMEFRAME_H1,
+                    'H4': mt5.TIMEFRAME_H4,
+                    'D1': mt5.TIMEFRAME_D1,
+                }
+
+                self.mt5_initialized = True
+                logger.info(f"✅ MT5 DataLoader fully initialized")
+            except Exception as e:
+                logger.error(f"❌ Failed to connect to MT5 Service: {e}")
+                logger.exception("Full exception trace:")
                 return None
-            self.mt5_initialized = True
 
         # Get timeframe constant
         mt5_timeframe = self.TIMEFRAME_MAP.get(timeframe)
@@ -68,50 +95,63 @@ class DataLoader:
             return None
 
         # Ensure dates are naive (MT5 preference)
-        # MT5 usually expects local time or server time. 
+        # MT5 usually expects local time or server time.
         # If we have UTC, we should convert to naive.
         if start_date.tzinfo is not None:
             start_date = start_date.replace(tzinfo=None)
         if end_date.tzinfo is not None:
             end_date = end_date.replace(tzinfo=None)
-            
-        logger.info(f"Requesting MT5 data for {symbol} {timeframe} from {start_date} to {end_date}")
+
+        # Remove microseconds - MT5 doesn't accept them
+        start_date = start_date.replace(microsecond=0)
+        end_date = end_date.replace(microsecond=0)
+
+        logger.info(f"📊 Requesting MT5 data for {symbol} {timeframe} from {start_date} to {end_date}")
 
         # Fetch data in chunks (monthly) to avoid timeouts/limits
         chunks = []
         current_start = start_date
-        
+
         while current_start < end_date:
             current_end = min(current_start + timedelta(days=30), end_date)
-            logger.info(f"Fetching chunk: {current_start} to {current_end}")
+            logger.info(f"📦 Fetching chunk: {current_start} to {current_end}")
             
             try:
+                # Convert datetime objects to Unix timestamps (MT5 requirement)
+                start_timestamp = int(current_start.timestamp())
+                end_timestamp = int(current_end.timestamp())
+
                 rates = mt5.copy_rates_range(
                     symbol,
                     mt5_timeframe,
-                    current_start,
-                    current_end
+                    start_timestamp,
+                    end_timestamp
                 )
-                
+
                 if rates is not None and len(rates) > 0:
-                    chunks.append(rates)
+                    logger.info(f"✅ Chunk received: {len(rates)} bars")
+                    # Convert RPyC netref to local numpy array
+                    local_rates = obtain(rates)
+                    chunks.append(local_rates)
                 else:
                     error = mt5.last_error()
                     if error[0] != 1: # 1 = No data, which is fine for some chunks
-                        logger.warning(f"Chunk failed or empty: {error}")
-                        
+                        logger.warning(f"⚠️  Chunk failed or empty: {error}")
+
             except Exception as e:
-                logger.error(f"Error fetching chunk: {e}")
-                
+                logger.error(f"❌ Error fetching chunk: {e}")
+
             current_start = current_end
-            
+
         if not chunks:
-            logger.error(f"No data received from MT5 for {symbol} after all chunks.")
+            logger.error(f"❌ No data received from MT5 for {symbol} after all chunks.")
             return None
 
+        logger.info(f"🔗 Concatenating {len(chunks)} chunks...")
         # Concatenate all chunks into a single numpy structured array
         import numpy as np
         all_rates = np.concatenate(chunks)
+        logger.info(f"✅ Total bars fetched: {len(all_rates)}")
 
         # Convert to DataFrame (preserves structured array fields as columns)
         df = pd.DataFrame(all_rates)

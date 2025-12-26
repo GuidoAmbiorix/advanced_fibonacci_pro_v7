@@ -13,7 +13,7 @@ import { io } from "socket.io-client";
 import { ref, readonly } from "vue";
 
 // Configuration
-const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || "";
 const MAX_RECONNECT_ATTEMPTS = 10;
 const RECONNECT_DELAY_BASE = 1000; // 1 second base delay
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds

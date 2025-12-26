@@ -90,21 +90,53 @@ class MT5Connector:
     def connect(self) -> bool:
         """Connect to MetaTrader 5"""
         try:
+            # RPyC Connection Logic
+            mt5_host = os.getenv("MT5_HOST")
+            if mt5_host:
+                try:
+                    import rpyc
+                    mt5_port = int(os.getenv("MT5_PORT", 18812))
+                    logger.info(f"Connecting to remote MT5 at {mt5_host}:{mt5_port}...")
+                    conn = rpyc.classic.connect(mt5_host, mt5_port)
+                    global mt5
+                    mt5 = conn.modules.MetaTrader5
+                    
+                    # Re-initialize timeframe map with remote constants
+                    self.timeframe_map = {
+                        'M1': mt5.TIMEFRAME_M1, 'M5': mt5.TIMEFRAME_M5, 'M15': mt5.TIMEFRAME_M15,
+                        'M30': mt5.TIMEFRAME_M30, 'H1': mt5.TIMEFRAME_H1, 'H4': mt5.TIMEFRAME_H4,
+                        'D1': mt5.TIMEFRAME_D1, 'W1': mt5.TIMEFRAME_W1, 'MN1': mt5.TIMEFRAME_MN1,
+                    }
+                except Exception as e:
+                    logger.error(f"Failed to connect via RPyC: {e}")
+                    return False
+
             if mt5 is None:
-                logger.error("MetaTrader5 package is not installed")
+                logger.error("MetaTrader5 package is not installed and RPyC connection failed")
                 return False
 
-            if self.path:
+            if self.path and not mt5_host: # Only check path if local
                 if os.path.isdir(self.path):
                     self.path = os.path.join(self.path, "terminal64.exe")
                 if not mt5.initialize(path=self.path):
                     logger.error("MT5 initialize() failed, error code: {}", mt5.last_error())
                     return False
             else:
-                if not mt5.initialize():
-                    logger.error("MT5 initialize() failed, error code: {}", mt5.last_error())
+                # Initialize with explicit login parameters to ensure session
+                logger.info(f"Attempting MT5 initialize with: Login={self.login}, Server={self.server}")
+                login_id = int(self.login) if self.login and str(self.login).isdigit() else 0
+                
+                # Try initialize
+                if not mt5.initialize(
+                    login=login_id,
+                    password=self.password or "",
+                    server=self.server or ""
+                ):
+                    err_code = mt5.last_error()
+                    logger.error(f"❌ MT5 initialize() failed, error code: {err_code}")
                     return False
-
+            
+            # Additional explicit login to be safe
             if self.login and self.password and self.server:
                 authorized = mt5.login(
                     login=int(self.login),
@@ -112,13 +144,13 @@ class MT5Connector:
                     server=self.server
                 )
                 if not authorized:
-                    logger.error("MT5 login failed, error code: {}", mt5.last_error())
-                    mt5.shutdown()
+                    err_code = mt5.last_error()
+                    logger.error(f"❌ MT5 login failed, error code: {err_code}")
                     return False
-                logger.info("Successfully logged in to MT5 account: {}", self.login)
+                logger.info("✅ Successfully logged in to MT5 account: {}", self.login)
 
             self.connected = True
-            logger.info("MT5 connection established")
+            logger.info("✅ MT5 connection established")
 
             account_info = mt5.account_info()
             if account_info:
@@ -699,12 +731,78 @@ class MT5Connector:
             logger.error(f"Error getting all symbols: {e}")
             return []
 
-    def _determine_symbol_type(self, path: str, name: str) -> str:
-        """Helper to guess symbol type from path or name"""
-        path_lower = path.lower()
-        name_lower = name.lower()
-        if "forex" in path_lower or "major" in path_lower: return "forex"
-        if "crypto" in path_lower or "btc" in name_lower: return "crypto"
-        if "indices" in path_lower or "index" in path_lower: return "index"
-        if "metal" in path_lower or "gold" in name_lower or "xau" in name_lower: return "metal"
-        return "other"
+    def get_calendar_events(self, start: datetime = None, end: datetime = None) -> List[Dict]:
+        """
+        Fetch economic calendar events with importance and names.
+        Joins calendar_get (schedule) with calendar_event_by_id (details).
+        """
+        if not self.connected: 
+            return []
+        
+        try:
+            if start is None: start = datetime.utcnow()
+            if end is None: end = start + timedelta(hours=24)
+            
+            # 1. Get Scheduled Events (Values)
+            try:
+                values = mt5.calendar_get(start, end)
+            except AttributeError:
+                logger.warning("Remote MT5 package is outdated and does not support calendar_get. News Filter disabled.")
+                return []
+                
+            if values is None:
+                return []
+                
+            # 2. Get Event Details (Names, Importance)
+            # We cache event details to avoid thousands of calls
+            # Use a static cache on the class or instance if possible, 
+            # here we fetch purely necessary ones.
+            # To optimize, we might fetch ALL events once? 
+            # mt5.calendar_events() returns thousands.
+            # Better to fetch one by one and cache locally in this method? 
+            # Or just fetch needed ones.
+            
+            # Simple approach: Fetch details for unique event_ids in the window
+            event_ids = set(v.event_id for v in values)
+            event_details = {}
+            
+            for eid in event_ids:
+                details = mt5.calendar_event_by_id(eid)
+                if details:
+                    event_details[eid] = details
+            
+            # 3. Join and Format
+            result = []
+            for v in values:
+                details = event_details.get(v.event_id)
+                if not details: continue
+                
+                # Check currency (optional, filtering usually happened later)
+                # But typically we want high impact
+                
+                # Convert importance enum to int (0=None, 1=Low, 2=Moderate, 3=High)
+                importance = details.importance
+                
+                # Timestamp conversion
+                # v.time is timestamp int or datetime?
+                # MT5 python lib usually returns namedtuple with raw types.
+                # 'time' is usually int (seconds).
+                event_time = datetime.fromtimestamp(v.time)
+                
+                result.append({
+                    "id": v.id,
+                    "event_id": v.event_id,
+                    "title": details.name,
+                    "country": details.country_id, # Can map to 'USD', 'EUR' later
+                    "time": event_time,
+                    "importance": importance,
+                    "currency": details.currency.upper() if details.currency else "",
+                    "forecast": v.forecast,
+                    "previous": v.prev_value
+                })
+                
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error fetching calendar: {e}")
+            return []

@@ -52,6 +52,8 @@ app.include_router(accounts.router, prefix="/api/accounts", tags=["accounts"])
 app.include_router(trading.router, prefix="/api/trading", tags=["trading"])
 app.include_router(portfolio.router, prefix="/api/portfolio", tags=["portfolio"])
 app.include_router(slots.router, prefix="/api/slots", tags=["slots"])
+# from app.api.endpoints import terminals # Obsolete
+# app.include_router(terminals.router, prefix="/api/terminals", tags=["terminals"])
 
 # Socket.IO Setup
 import socketio
@@ -67,76 +69,17 @@ async def broadcast_market_data():
     Periodically broadcast market data (Account, Positions, PnL) to all clients
     This replaces frontend polling.
     """
+    await asyncio.sleep(5)  # Wait for startup
     while True:
         try:
             if mt5_connector and mt5_connector.connected:
-                # 1. Get Account Info
-                account = mt5_connector.get_account_info()
+                # Run blocking RPyC calls in a thread
+                data = await asyncio.to_thread(fetch_broadcast_data, mt5_connector, bot_manager)
                 
-                # 2. Get Open Positions
-                positions = mt5_connector.get_open_positions()
-                
-                # 3. Get Current Prices for Running Bots
-                prices = {}
-                if bot_manager:
-                    running_bots = bot_manager.get_running_bots()
-                    # We need to get symbols for these bots. 
-                    # Since bot_manager might not store config details directly accessible here without DB,
-                    # we can iterate unique symbols from open positions or just get all available symbols prices.
-                    # A better approach: Get all symbols from DB that are active.
-                    # For simplicity/performance, let's just get prices for symbols in open positions + selected symbol (if we knew it).
-                    # Let's just get prices for ALL symbols defined in BotConfig (active ones).
-                    
-                    # For now, let's just send prices for symbols that have open positions to ensure PnL updates are smooth,
-                    # and maybe we can accept a client event to subscribe to a specific symbol's price.
-                    # But to keep it simple: Broadcast prices for all symbols in open positions.
-                    
-                    # Get symbols from open positions
-                    symbols_to_fetch = set(p['symbol'] for p in positions)
-                    
-                    # ALSO get symbols from running bots
-                    if bot_manager:
-                        for bot_id, bot_instance in bot_manager.bots.items():
-                            if hasattr(bot_instance, 'config') and hasattr(bot_instance.config, 'symbol'):
-                                symbols_to_fetch.add(bot_instance.config.symbol)
-
-                    # Broadcast prices for all relevant symbols
-                    for symbol in symbols_to_fetch:
-                        tick = mt5_connector.get_current_price(symbol)
-                        if tick:
-                            prices[symbol] = tick
-                            
-                    # Debug log to verify broadcast
-                    # logger.debug(f"Broadcasting prices for: {list(prices.keys())}")
-
-                # 4. Broadcast
-                if account:
-                    # Convert datetime objects in positions to strings
-                    serializable_positions = []
-                    for pos in positions:
-                        pos_dict = pos.copy()
-                        for k, v in pos_dict.items():
-                            if isinstance(v, datetime):
-                                pos_dict[k] = v.isoformat()
-                        serializable_positions.append(pos_dict)
-                    
-                    # Serialize prices
-                    serializable_prices = {}
-                    for sym, tick in prices.items():
-                        tick_dict = tick.copy()
-                        if isinstance(tick_dict.get('time'), datetime):
-                            tick_dict['time'] = tick_dict['time'].isoformat()
-                        serializable_prices[sym] = tick_dict
-
-                    # logger.info(f"Broadcasting market data. Positions: {len(serializable_positions)}") 
-                    await sio.emit('market_update', {
-                        'account': account,
-                        'positions': serializable_positions,
-                        'prices': serializable_prices,
-                        'timestamp': datetime.utcnow().isoformat()
-                    })
+                if data:
+                    await sio.emit('market_update', data)
             else:
-                logger.warning("MT5 Not Connected - Skipping Broadcast")
+                logger.debug("MT5 Not Connected - Skipping Broadcast")
                     
         except Exception as e:
             logger.error(f"Error in broadcast loop: {e}")
@@ -144,10 +87,68 @@ async def broadcast_market_data():
         # Wait 1 second (Real-time feel without overloading)
         await asyncio.sleep(1)
 
+def fetch_broadcast_data(mt5_conn, bot_mgr):
+    """Helper to fetch data synchronously in thread"""
+    try:
+        # 1. Get Account Info
+        account = mt5_conn.get_account_info()
+        
+        # 2. Get Open Positions
+        positions = mt5_conn.get_open_positions()
+        
+        # 3. Get Prices
+        prices = {}
+        if bot_mgr:
+            symbols_to_fetch = set(p['symbol'] for p in positions)
+            # Add bot symbols... (simplified for stability)
+            for bot_id, bot_instance in bot_mgr.bots.items():
+                if hasattr(bot_instance, 'config') and hasattr(bot_instance.config, 'symbol'):
+                    symbols_to_fetch.add(bot_instance.config.symbol)
+
+            for symbol in symbols_to_fetch:
+                tick = mt5_conn.get_current_price(symbol)
+                if tick:
+                    prices[symbol] = tick
+
+        # Serialize
+        if account:
+            # Positions
+            serializable_positions = []
+            for pos in positions:
+                pos_dict = pos.copy()
+                for k, v in pos_dict.items():
+                    if isinstance(v, datetime):
+                        pos_dict[k] = v.isoformat()
+                serializable_positions.append(pos_dict)
+            
+            # Prices
+            serializable_prices = {}
+            for sym, tick in prices.items():
+                tick_dict = tick.copy()
+                if isinstance(tick_dict.get('time'), datetime):
+                    tick_dict['time'] = tick_dict['time'].isoformat()
+                serializable_prices[sym] = tick_dict
+
+            return {
+                'account': account,
+                'positions': serializable_positions,
+                'prices': serializable_prices,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+        return None
+    except Exception as e:
+        logger.error(f"Error fetching broadcast data: {e}")
+        return None
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize on startup"""
     logger.info("Starting Institutional Edge Pro API...")
+    
+    # Initialize Log Manager (System Logs)
+    from app.core.log_manager import log_manager
+    logger.add(log_manager.sink, serialize=False, level="DEBUG", enqueue=True)
+    logger.info("✅ Log Manager initialized")
 
     # Create database tables
     database.init_db()
