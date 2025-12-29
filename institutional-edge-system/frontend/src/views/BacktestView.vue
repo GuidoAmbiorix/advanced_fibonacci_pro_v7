@@ -375,6 +375,24 @@
           
           <!-- Expandable Config (FULL INDEPENDENCE) -->
           <div v-if="slot.expanded && slot.enabled" class="p-3 border-t border-gray-700 space-y-3 bg-gray-850">
+            
+            <!-- Row 0: Engine Selection -->
+            <div class="flex items-center justify-between bg-gray-800 p-2 rounded border border-gray-700">
+               <span class="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Engine</span>
+               <div class="flex space-x-2">
+                  <button @click="slot.engine_type = 'ADAPTIVE'" 
+                          class="px-3 py-1 text-xs rounded transition-colors"
+                          :class="(!slot.engine_type || slot.engine_type === 'ADAPTIVE') ? 'bg-blue-600 text-white font-bold' : 'text-gray-400 hover:text-white'">
+                    🛡️ Adaptive
+                  </button>
+                  <button @click="slot.engine_type = 'GOLDEN'" 
+                          class="px-3 py-1 text-xs rounded transition-colors"
+                          :class="slot.engine_type === 'GOLDEN' ? 'bg-amber-500 text-white font-bold shadow-lg shadow-amber-500/20' : 'text-gray-400 hover:text-white'">
+                    🏆 Golden
+                  </button>
+               </div>
+            </div>
+
             <!-- Row 1: Timeframe + Confirmation + TSL -->
             <div class="grid grid-cols-3 gap-2">
               <div>
@@ -469,59 +487,99 @@
               </div>
             </div>
             
-            <!-- Row 3: RSI Settings -->
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="text-[10px] text-gray-500">RSI Period</label>
-                <input type="number" v-model.number="slot.rsi_period" min="5" max="21" 
-                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+            <!-- LEGACY ENGINE CONTROLS -->
+            <div v-if="!slot.engine_type || slot.engine_type === 'ADAPTIVE'" class="space-y-3">
+              <!-- Row 3: RSI Settings -->
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="text-[10px] text-gray-500">RSI Period</label>
+                  <input type="number" v-model.number="slot.rsi_period" min="5" max="21" 
+                         class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                </div>
+                <div>
+                  <label class="text-[10px] text-gray-500">RSI OB</label>
+                  <input type="number" v-model.number="slot.rsi_overbought" min="60" max="90" 
+                         class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                </div>
+                <div>
+                  <label class="text-[10px] text-gray-500">RSI OS</label>
+                  <input type="number" v-model.number="slot.rsi_oversold" min="10" max="40" 
+                         class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                </div>
               </div>
-              <div>
-                <label class="text-[10px] text-gray-500">RSI OB</label>
-                <input type="number" v-model.number="slot.rsi_overbought" min="60" max="90" 
-                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+              
+              <!-- Row 4: Min Confluence + Max Hours -->
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-gray-500">Min Confluence</label>
+                  <input type="number" v-model.number="slot.min_confluence" min="3" max="10" 
+                         class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                </div>
+                <div>
+                  <label class="text-[10px] text-gray-500">Max Hours (0=∞)</label>
+                  <input type="number" v-model.number="slot.max_duration" min="0" max="48" 
+                         class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                </div>
               </div>
-              <div>
-                <label class="text-[10px] text-gray-500">RSI OS</label>
-                <input type="number" v-model.number="slot.rsi_oversold" min="10" max="40" 
-                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+              
+              <!-- Row 5: Strategies -->
+              <div class="grid grid-cols-2 gap-1 text-[10px]">
+                <label class="flex items-center space-x-1">
+                  <input type="checkbox" v-model="slot.enable_vwap" class="h-3 w-3">
+                  <span class="text-gray-400">VWAP</span>
+                </label>
+                <label class="flex items-center space-x-1">
+                  <input type="checkbox" v-model="slot.enable_stoch" class="h-3 w-3">
+                  <span class="text-gray-400">Stoch</span>
+                </label>
+                <label class="flex items-center space-x-1">
+                  <input type="checkbox" v-model="slot.enable_institutional" class="h-3 w-3">
+                  <span class="text-gray-400">Inst.</span>
+                </label>
+                <label class="flex items-center space-x-1">
+                  <input type="checkbox" v-model="slot.enable_fibonacci" class="h-3 w-3">
+                  <span class="text-gray-400">Fib</span>
+                </label>
               </div>
             </div>
-            
-            <!-- Row 4: Min Confluence + Max Hours -->
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="text-[10px] text-gray-500">Min Confluence</label>
-                <input type="number" v-model.number="slot.min_confluence" min="3" max="10" 
-                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-              </div>
-              <div>
-                <label class="text-[10px] text-gray-500">Max Hours (0=∞)</label>
-                <input type="number" v-model.number="slot.max_duration" min="0" max="48" 
-                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-              </div>
-            </div>
-            
-            <!-- Row 5: Strategies -->
-            <div class="grid grid-cols-2 gap-1 text-[10px]">
-              <label class="flex items-center space-x-1">
-                <input type="checkbox" v-model="slot.enable_vwap" class="h-3 w-3">
-                <span class="text-gray-400">VWAP</span>
-              </label>
-              <label class="flex items-center space-x-1">
-                <input type="checkbox" v-model="slot.enable_stoch" class="h-3 w-3">
-                <span class="text-gray-400">Stoch</span>
-              </label>
-              <label class="flex items-center space-x-1">
-                <input type="checkbox" v-model="slot.enable_institutional" class="h-3 w-3">
-                <span class="text-gray-400">Inst.</span>
-              </label>
-              <label class="flex items-center space-x-1">
-                <input type="checkbox" v-model="slot.enable_fibonacci" class="h-3 w-3">
-                <span class="text-gray-400">Fib</span>
-              </label>
+
+            <!-- GOLDEN ENGINE CONTROLS -->
+            <div v-else class="space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
+               <!-- Market Structure -->
+               <div class="p-2 bg-amber-900/10 rounded border border-amber-500/20">
+                  <div class="mb-2 flex items-center gap-2">
+                     <span class="text-[10px] font-bold text-amber-500 uppercase tracking-wider">📐 Market Structure</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                     <div class="col-span-2">
+                        <label class="text-[10px] text-gray-400">ZigZag Lookback</label>
+                        <input type="number" v-model.number="slot.zigzag_lookback" min="3" max="20"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-amber-200 text-xs focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20">
+                     </div>
+                  </div>
+               </div>
+               
+               <!-- Exit Management (Max Duration) -->
+               <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="text-[10px] text-gray-500">Max Duration (Hours)</label>
+                    <div class="flex items-center gap-1">
+                       <input type="number" v-model.number="slot.max_duration" min="0" step="0.5" 
+                              class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs focus:border-blue-500">
+                    </div>
+                    <div class="text-[9px] text-gray-600 mt-0.5" v-if="slot.max_duration === 0">
+                       0 = No time limit
+                    </div>
+                  </div>
+               </div>
+               
+               <!-- Risk Management Info -->
+               <div class="px-2 py-1.5 bg-blue-900/10 rounded border border-blue-500/10 text-[10px] text-blue-300/70 italic text-center">
+                  Risk & TSL handled by Golden Risk Manager
+               </div>
             </div>
           </div>
+
           
           <!-- Progress / Results -->
           <div class="p-2 border-t border-gray-700">
@@ -1210,7 +1268,10 @@ const slots = ref([
     tsl_mode: 'TIERED', use_h1_trend_filter: true, // ✅ Momentum: H1 Filter ON
     tsl_activation_r: 1.0, // Activate at 1R
     max_duration: 4, // Max hold 4 hours
-    partial_tp_on: false, min_confluence_score: 7, description: 'The Beast Cross (H1 Momentum - Safe Mode)' },  
+    partial_tp_on: false, min_confluence_score: 7, description: 'The Beast Cross (H1 Momentum - Safe Mode)',
+    // Engine Config
+    engine_type: 'ADAPTIVE', zigzag_lookback: 5
+  },  
   { id: 1, symbol: 'GBPJPY', enabled: false, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     // 💷🇯🇵 GBPJPY: The Dragon
     ...symbolPresets['GBPJPY'], risk_percent: 0.75, timeframe: 'M5', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'The Dragon Scalper' },  
@@ -1621,10 +1682,24 @@ const runBacktest = async () => {
           tsl_activation_r: slot.tsl_activation_r || 0.0, 
           partial_tp_on: slot.partial_tp_on !== undefined ? slot.partial_tp_on : true,
           partial_tp_amount: 1.0,
-          max_trade_duration_hours: slot.max_duration || 2,
+          max_trade_duration_hours: slot.max_duration !== undefined ? slot.max_duration : 0, // Allow 0
           min_confluence_score: slot.min_confluence || 5,
           start_date: new Date(sharedConfig.value.start_date).toISOString(),
-          end_date: new Date(sharedConfig.value.end_date).toISOString()
+          end_date: new Date(sharedConfig.value.end_date).toISOString(),
+          
+          // Engine Configuration
+          engine_type: slot.engine_type || 'ADAPTIVE',
+          engine_config: slot.engine_type === 'GOLDEN' ? {
+              structure: {
+                  zigzag_lookback: slot.zigzag_lookback || 5
+              },
+              risk: {
+                  risk_percent: slot.risk_percent,
+                  atr_sl_multiplier: slot.sl_atr_multiplier,
+                  tp1_ratio: slot.tp_ratio,
+                  enable_trailing_stop: slot.tsl_mode !== 'OFF'
+              }
+          } : {}
         }
         
         console.log(`📤 Sending backtest request for ${slot.symbol}...`, payload)

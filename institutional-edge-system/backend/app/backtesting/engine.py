@@ -23,6 +23,7 @@ from app.backtesting.metrics import MetricsCalculator
 from app.backtesting.reporter import ReportGenerator
 
 from app.core.adaptive_multi_strategy_engine import AdaptiveMultiStrategyEngine
+from app.engines.golden.core import GoldenEngine
 from app.core.strategy_factory import StrategyFactory
 from app.services.risk_manager import AdaptiveRiskManager
 from app.services.portfolio_manager import PortfolioManager, Position
@@ -84,35 +85,56 @@ class BacktestEngine:
         logger.info("✅ Using AdaptiveRiskManager + PortfolioManager (same as live trading)")
         self.discord = DiscordService()
 
-    def _init_trading_engine(self) -> AdaptiveMultiStrategyEngine:
-        """Initialize the Adaptive Multi-Strategy engine"""
-        engine_config = {
-            'symbol': self.config.symbol,
-            'timeframe': self.config.timeframe,
-            'initial_balance': self.config.initial_balance,
-            'max_risk_per_trade': 50.0,  # Max 50% risk (for aggressive testing)
-            'enable_grid_recovery': True,  # Waka Waka style
-            'grid_levels': 3,  # 3 recovery levels
-            'scalping_mode': self.config.scalping_mode,
-            'min_confluence_score': self.config.min_confluence_score,
-            'use_adx_filter': self.config.use_adx_filter,
-            'enable_vwap_strategy': self.config.enable_vwap_strategy,
-            'enable_stoch_strategy': self.config.enable_stoch_strategy,
-            'enable_institutional_strategy': self.config.enable_institutional_strategy,
-            'enable_fibonacci_strategy': self.config.enable_fibonacci_strategy,
-            'enable_strategy_3_29_162': self.config.enable_strategy_3_29_162,
+    def _init_trading_engine(self):
+        """Initialize the trading engine"""
+        
+        if self.config.engine_type == 'GOLDEN':
+            golden_config = self.config.engine_config.copy()
             
-            # RSI Settings
-            'rsi_period': self.config.rsi_period,
-            'rsi_overbought': self.config.rsi_overbought,
-            'rsi_oversold': self.config.rsi_oversold,
+            # Map essential backtest parameters to engine config if not present
+            if 'risk' not in golden_config: golden_config['risk'] = {}
+            golden_config['risk']['risk_percent'] = self.config.risk_percent
+            golden_config['risk']['atr_sl_multiplier'] = self.config.sl_atr_multiplier
+            golden_config['risk']['tp1_ratio'] = self.config.tp_ratio
             
-            # Scalping SL/TP Configuration (NEW)
-            'sl_atr_multiplier': self.config.sl_atr_multiplier,
-            'tp_ratio': self.config.tp_ratio,
-        }
-
-        return StrategyFactory.create_strategy(engine_config)
+            golden_config['balance'] = self.config.initial_balance
+            golden_config['symbol'] = self.config.symbol
+            
+            # Structure default
+            if 'structure' not in golden_config: golden_config['structure'] = {}
+            golden_config['structure']['zigzag_lookback'] = 5
+            
+            return GoldenEngine(golden_config)
+            
+        else:
+            # LEGACY: Adaptive Multi-Strategy
+            engine_config = {
+                'symbol': self.config.symbol,
+                'timeframe': self.config.timeframe,
+                'initial_balance': self.config.initial_balance,
+                'max_risk_per_trade': 50.0,  # Max 50% risk (for aggressive testing)
+                'enable_grid_recovery': True,  # Waka Waka style
+                'grid_levels': 3,  # 3 recovery levels
+                'scalping_mode': self.config.scalping_mode,
+                'min_confluence_score': self.config.min_confluence_score,
+                'use_adx_filter': self.config.use_adx_filter,
+                'enable_vwap_strategy': self.config.enable_vwap_strategy,
+                'enable_stoch_strategy': self.config.enable_stoch_strategy,
+                'enable_institutional_strategy': self.config.enable_institutional_strategy,
+                'enable_fibonacci_strategy': self.config.enable_fibonacci_strategy,
+                'enable_strategy_3_29_162': self.config.enable_strategy_3_29_162,
+                
+                # RSI Settings
+                'rsi_period': self.config.rsi_period,
+                'rsi_overbought': self.config.rsi_overbought,
+                'rsi_oversold': self.config.rsi_oversold,
+                
+                # Scalping SL/TP Configuration (NEW)
+                'sl_atr_multiplier': self.config.sl_atr_multiplier,
+                'tp_ratio': self.config.tp_ratio,
+            }
+    
+            return StrategyFactory.create_strategy(engine_config)
 
     def run(
         self,
@@ -268,14 +290,34 @@ class BacktestEngine:
                 if 'error' in analysis:
                     continue
 
-                # Process signals from Adaptive Multi-Strategy Engine
+                # Process signals
                 for signal in analysis.get('signals', []):
-                    # AdaptiveSignal has .score and .confidence attributes
-                    if hasattr(signal, 'score'):
+                    # Handle Signal Object (Legacy) vs Dict (Golden)
+                    score = 0
+                    confidence = 1.0
+                    direction = ""
+                    entry_price = 0.0
+                    stop_loss = 0.0
+                    take_profit = 0.0
+                    
+                    if isinstance(signal, dict):
+                        # Golden Engine Signal (Dict)
+                        direction = signal.get('signal_type', '')
+                        entry_price = signal.get('price', 0.0)
+                        stop_loss = signal.get('stop_loss', 0.0)
+                        take_profit = signal.get('take_profit_1', 0.0)
+                        score = 10 # Golden Engine implies high quality
+                        confidence = 1.0
+                    else:
+                        # Legacy Object
+                        if not hasattr(signal, 'score'):
+                             continue
                         score = signal.score
                         confidence = getattr(signal, 'confidence', 1.0)
-                    else:
-                        continue
+                        direction = signal.direction
+                        entry_price = signal.entry_price
+                        stop_loss = signal.stop_loss
+                        take_profit = signal.take_profit
 
                     # Filter by minimum score
                     # Note: Each strategy has fixed scores (Trend=8, Range=7, Breakout=9)
@@ -295,10 +337,10 @@ class BacktestEngine:
                         continue
                     
                     # DIRECTION FILTER: BUY_ONLY / SELL_ONLY
-                    if self.config.direction_filter == "BUY_ONLY" and signal.direction != "BUY":
+                    if self.config.direction_filter == "BUY_ONLY" and direction != "BUY":
                         logger.debug(f"Signal rejected: SELL signal blocked by BUY_ONLY filter")
                         continue
-                    if self.config.direction_filter == "SELL_ONLY" and signal.direction != "SELL":
+                    if self.config.direction_filter == "SELL_ONLY" and direction != "SELL":
                         logger.debug(f"Signal rejected: BUY signal blocked by SELL_ONLY filter")
                         continue
 
@@ -309,11 +351,11 @@ class BacktestEngine:
                     # Convert BreakoutSignal to dict for simulator
                     signal_dict = {
                         'symbol': self.config.symbol,
-                        'signal_type': signal.direction,  # "BUY" or "SELL"
-                        'entry_price': signal.entry_price,
-                        'stop_loss': signal.stop_loss,
-                        'take_profit_1': signal.take_profit,
-                        'confluence_score': signal.score,
+                        'signal_type': direction,  # "BUY" or "SELL"
+                        'entry_price': entry_price,
+                        'stop_loss': stop_loss,
+                        'take_profit_1': take_profit,
+                        'confluence_score': score,
                     }
 
                     # PROFESSIONAL RISK MANAGEMENT (same as live trading)

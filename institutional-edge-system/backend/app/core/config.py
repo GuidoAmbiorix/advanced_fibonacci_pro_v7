@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000
+    
+    # Instance Role: SOLO, MASTER, SLAVE
+    INSTANCE_ROLE: str = "SOLO" 
+    MASTER_NODE_HOST: str = "" # Hostname of Master (for direct connection if needed, though RMQ handles it)
 
     # MetaTrader 5
     MT5_LOGIN: str = ""
@@ -27,6 +31,7 @@ class Settings(BaseSettings):
     MT5_SERVER: str = ""
     MT5_PATH: str = ""
     MT5_SYMBOL_SUFFIX: str = ""  # e.g. "m" for EURUSDm
+    MT5_SYMBOL_PREFIX: str = ""  # e.g. "#" for #BTCUSD
 
     # Trading Defaults
     DEFAULT_SYMBOL: str = "EURJPY"  # Non-USD Cross Pair Default

@@ -35,6 +35,32 @@
       
       <!-- General Settings -->
       <div v-if="currentTab === 'general'" class="space-y-6">
+        
+        <!-- System Configuration (Read-Only) -->
+        <div class="bg-blue-50 p-5 rounded-lg border border-blue-200">
+             <h4 class="font-bold text-blue-800 flex items-center mb-4">
+                <span class="mr-2">🖥️</span> System Configuration (Environment)
+            </h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                 <div>
+                    <label class="block text-xs font-bold text-blue-700 uppercase mb-1">Account Type</label>
+                    <div class="text-sm font-mono bg-white px-3 py-2 rounded border border-blue-100">{{ systemInfo.account_type || 'N/A' }}</div>
+                </div>
+                 <div>
+                    <label class="block text-xs font-bold text-blue-700 uppercase mb-1">Role</label>
+                    <div class="text-sm font-mono bg-white px-3 py-2 rounded border border-blue-100">{{ systemInfo.instance_role || 'N/A' }}</div>
+                </div>
+                 <div>
+                    <label class="block text-xs font-bold text-blue-700 uppercase mb-1">Max Drawdown</label>
+                    <div class="text-sm font-mono bg-white px-3 py-2 rounded border border-blue-100">{{ systemInfo.max_drawdown }}%</div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-blue-700 uppercase mb-1">Suffix</label>
+                    <div class="text-sm font-mono bg-white px-3 py-2 rounded border border-blue-100">{{ systemInfo.symbol_suffix || 'None' }}</div>
+                </div>
+            </div>
+        </div>
+
         <h3 class="text-lg font-semibold text-slate-700">General Bot Configuration</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-2">
@@ -71,9 +97,103 @@
       <div v-if="currentTab === 'strategy'" class="space-y-6">
         <h3 class="text-lg font-semibold text-slate-700">Strategy Configuration</h3>
         
-        <!-- Strategy Selection -->
-        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
-            <h4 class="font-medium text-slate-700 mb-2">Active Strategies</h4>
+        <!-- Engine Selection -->
+        <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm mb-6">
+            <h4 class="font-bold text-lg text-slate-800 mb-4">Trading Engine ⚙️</h4>
+            <div class="flex space-x-4">
+                <button 
+                  @click="config.engine_type = 'ADAPTIVE'"
+                  class="flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center space-x-2"
+                  :class="config.engine_type !== 'GOLDEN' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 hover:border-slate-300 text-slate-500'"
+                >
+                  <span class="text-xl">🛡️</span>
+                  <div class="text-left">
+                    <div class="font-bold">Adaptive (Legacy)</div>
+                    <div class="text-xs opacity-75">Multi-Strategy (RSI, Stoch, VWAP)</div>
+                  </div>
+                </button>
+                
+                <button 
+                  @click="config.engine_type = 'GOLDEN'"
+                  class="flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center space-x-2"
+                  :class="config.engine_type === 'GOLDEN' ? 'border-amber-400 bg-amber-50 text-amber-800' : 'border-slate-200 hover:border-slate-300 text-slate-500'"
+                >
+                  <span class="text-xl">🏆</span>
+                  <div class="text-left">
+                    <div class="font-bold">Golden Engine</div>
+                    <div class="text-xs opacity-75">Structure + Fib + Institutional</div>
+                  </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- GOLDEN ENGINE CONFIG -->
+        <div v-if="config.engine_type === 'GOLDEN'" class="space-y-6 animate-fadeIn">
+            <!-- Structure Settings -->
+            <div class="bg-amber-50 p-5 rounded-lg border border-amber-200">
+                <h4 class="font-bold text-amber-800 flex items-center mb-4">
+                    <span class="mr-2">🌊</span> Market Structure & Waves
+                </h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-amber-700 uppercase mb-1">ZigZag Lookback</label>
+                        <input type="number" v-model.number="config.engine_config.structure.zigzag_lookback" class="w-full bg-white border border-amber-200 rounded px-3 py-2 text-sm focus:border-amber-400 outline-none">
+                        <p class="text-xs text-amber-600 mt-1">Bars to look back for pivots (Default: 5)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Settings (Specific to Golden) -->
+            <div class="bg-amber-50 p-5 rounded-lg border border-amber-200">
+                <h4 class="font-bold text-amber-800 flex items-center mb-4">
+                    <span class="mr-2">💰</span> Golden Risk Management
+                </h4>
+                <div class="grid grid-cols-2 gap-4">
+                     <div>
+                        <label class="block text-xs font-bold text-amber-700 uppercase mb-1">Risk % Per Trade</label>
+                        <input type="number" v-model.number="config.risk_percent" step="0.1" class="w-full bg-white border border-amber-200 rounded px-3 py-2 text-sm focus:border-amber-400 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-amber-700 uppercase mb-1">ATR SL Multiplier</label>
+                        <input type="number" v-model.number="config.sl_atr_multiplier" step="0.1" class="w-full bg-white border border-amber-200 rounded px-3 py-2 text-sm focus:border-amber-400 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-amber-700 uppercase mb-1">Tier 1 Profit (R)</label>
+                        <input type="number" v-model.number="config.tp_ratio" step="0.1" class="w-full bg-white border border-amber-200 rounded px-3 py-2 text-sm focus:border-amber-400 outline-none">
+                        <p class="text-xs text-amber-600 mt-1">Take 50% profit at this R-multiple</p>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-bold text-amber-700 uppercase mb-1">Runner Trailing</label>
+                         <div class="flex items-center space-x-2 mt-2">
+                             <input type="checkbox" v-model="config.enable_trailing_stop" class="form-checkbox text-amber-600 rounded">
+                             <span class="text-sm text-amber-800">Enable ATR Trailing for Runner</span>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Confluence Settings -->
+            <div class="bg-amber-50 p-5 rounded-lg border border-amber-200">
+                <h4 class="font-bold text-amber-800 flex items-center mb-4">
+                    <span class="mr-2">✨</span> Confirmation
+                </h4>
+                <div class="space-y-3">
+                     <label class="flex items-center space-x-2">
+                         <input type="checkbox" checked disabled class="form-checkbox text-amber-600 rounded opacity-50">
+                         <span class="text-sm text-amber-800">High Relative Volume (Auto-Enabled)</span>
+                     </label>
+                     <label class="flex items-center space-x-2">
+                         <input type="checkbox" checked disabled class="form-checkbox text-amber-600 rounded opacity-50">
+                         <span class="text-sm text-amber-800">RSI Non-Extreme (Auto-Enabled)</span>
+                     </label>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Strategy Selection (LEGACY) -->
+        <div v-else class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
+            <h4 class="font-medium text-slate-700 mb-2">Active Strategies (Legacy)</h4>
             
             <label class="flex items-center space-x-3 cursor-pointer p-2 hover:bg-slate-100 rounded transition-colors">
                 <input type="checkbox" v-model="config.use_adx_filter" class="form-checkbox h-5 w-5 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500">
@@ -349,7 +469,19 @@ const config = ref({
   rsi_period: 14,
   rsi_overbought: 70,
   rsi_oversold: 30,
-  min_confluence_score: 7
+  min_confluence_score: 7,
+  // Engine Config
+  engine_type: 'ADAPTIVE',
+  engine_config: {
+      structure: {
+          zigzag_lookback: 5
+      },
+      risk: {
+          risk_percent: 1.0,  // Will act as override/sync
+          atr_sl_multiplier: 1.5,
+          tp1_ratio: 1.5
+      }
+  }
 })
 
 const risk = ref({})
@@ -363,6 +495,8 @@ const prop = ref({
   max_total_dd: 10.0
 })
 
+const systemInfo = ref({})
+
 const currentBotId = ref(null)
 const availableBots = ref([])
 
@@ -372,6 +506,14 @@ async function loadSettings() {
     const bots = await api.getBots()
     availableBots.value = bots
     
+    // 2. Load System Info
+    try {
+        const info = await api.getSystemInfo()
+        systemInfo.value = info
+    } catch (e) {
+        console.warn("Failed to load system info", e)
+    }
+
     if (bots && bots.length > 0) {
       // If currentBotId is not set (first load), use the first one
       if (!currentBotId.value) {
@@ -381,6 +523,11 @@ async function loadSettings() {
       // 2. Load Config
       const botConfig = await api.getBotSettings(currentBotId.value)
       Object.assign(config.value, botConfig)
+      
+      // Ensure Golden Config structure exists (migration compatibility)
+      if (!config.value.engine_config) config.value.engine_config = {}
+      if (!config.value.engine_config.structure) config.value.engine_config.structure = { zigzag_lookback: 5 }
+      if (!config.value.engine_config.risk) config.value.engine_config.risk = { risk_percent: config.value.risk_percent || 1.0, atr_sl_multiplier: 1.5, tp1_ratio: 1.5 }
       
       // 3. Load Risk Profile
       const riskProfile = await api.getRiskProfile(currentBotId.value)

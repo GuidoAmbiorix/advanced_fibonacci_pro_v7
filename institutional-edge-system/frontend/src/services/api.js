@@ -169,6 +169,11 @@ export default {
   },
 
   // Settings & Risk
+  async getSystemInfo() {
+    const response = await api.get('/api/settings/system')
+    return response.data
+  },
+
   async getBotSettings(botId) {
     const response = await api.get(`/api/settings/config/${botId}`)
     return response.data

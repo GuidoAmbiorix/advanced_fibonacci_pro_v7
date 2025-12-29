@@ -72,11 +72,7 @@ class TradingBot:
         # Load configuration
         self._load_config()
 
-        # Initialize trading engine
-        self._init_trading_engine()
-        
-        # Initialize Workers for MULTI-ACCOUNT Support
-        self._init_workers()
+
 
         # Initialize trade manager (Primary for Analysis context)
         # Note: In multi-account, TradeManager primarily tracks 'Master' or aggregates data
@@ -106,7 +102,16 @@ class TradingBot:
         self.portfolio_manager = PortfolioManager()
 
         # Start main loop
-        await self._run_loop()
+        # Start main loop or Slave Listener
+        role = settings.INSTANCE_ROLE.upper()
+        if role == "SLAVE":
+            logger.info("⚔️ SLAVE MODE: Listening for signals...")
+            await self.rabbitmq.consume_signals(self._on_slave_signal)
+        else:
+            logger.info(f"👑 {role} MODE: Starting Analysis Engine...")
+            self._init_trading_engine()
+            self._init_workers()
+            await self._run_loop()
 
     async def stop(self):
         """Stop the trading bot"""
@@ -117,6 +122,39 @@ class TradingBot:
         self._stop_workers()
         
         logger.info("Stopping trading bot {}", self.bot_config_id)
+        
+    async def _on_slave_signal(self, signal_data: dict):
+        """Callback for Slave Mode: Execute incoming Master signal"""
+        try:
+            # 1. Validation
+            symbol = signal_data.get('symbol')
+            if not symbol: 
+                return
+            
+            # strict matching: Only trade if this bot instance is configured for this symbol
+            if symbol != self.config.symbol:
+                return
+
+            logger.info(f"📥 SLAVE EVENT: {signal_data['signal_type']} {symbol} @ {signal_data['entry_price']}")
+
+            # 2. Execution (Zero-Latency mode)
+            # We use our OWN risk settings, but copy the levels (SL/TP)
+            result = self.mt5_connector.open_position(
+                symbol=symbol,
+                order_type=signal_data['signal_type'], # "BUY" or "SELL"
+                stop_loss=signal_data['stop_loss'],
+                take_profit=signal_data['take_profit'],
+                # Volume will be calculated by connector based on OUR account balance & config risk
+                # If we passed 'volume' it would force it. Passing None/0 triggers calc.
+            )
+            
+            if result and result.get('success'):
+                logger.info(f"✅ SLAVE COPIED: Ticket {result['ticket']}")
+            else:
+                logger.error(f"❌ SLAVE FAILED: {result.get('error')}")
+
+        except Exception as e:
+            logger.error(f"Slave Signal Error: {e}")
 
     def _init_workers(self):
         """Spawn AccountWorker processes for each linked account"""
@@ -325,23 +363,35 @@ class TradingBot:
             logger.warning("No market data available for {}", self.config.symbol)
             return
 
-        # Get higher timeframe data for multi-timeframe analysis (H4 if on H1, D1 if on H4)
-        df_higher_tf = None
-        if self.config.timeframe == "H1":
-            df_higher_tf = self.mt5_connector.get_ohlcv_data(
-                self.config.symbol,
-                "H4",
-                bars=200
-            )
-        elif self.config.timeframe == "M15":
-            df_higher_tf = self.mt5_connector.get_ohlcv_data(
-                self.config.symbol,
-                "H1",
-                bars=200
-            )
+        # Get higher timeframe data for multi-timeframe analysis (Confirmation)
+        # Default logic: M1/M5/M15 -> H1, H1 -> H4, H4 -> D1
+        confirmation_tf = "H1"
+        if self.config.timeframe in ["H1", "H4"]:
+            confirmation_tf = "D1"
+        elif self.config.timeframe == "D1":
+            confirmation_tf = "W1"
+            
+        df_higher_tf = self.mt5_connector.get_ohlcv_data(
+            self.config.symbol,
+            confirmation_tf,
+            bars=200
+        )
+
+        # Get Macro timeframe data (Bias)
+        # Default to D1, unless we are already on D1/W1
+        macro_tf = "D1"
+        if self.config.timeframe in ["D1", "W1", "MN1"]:
+            macro_tf = "MN1" # Weekly/Monthly bias for long term
+            
+        df_macro = self.mt5_connector.get_ohlcv_data(
+            self.config.symbol,
+            macro_tf,
+            bars=200
+        )
 
         # Run analysis with multi-timeframe data
-        analysis = self.trading_engine.analyze(df, df_higher_tf)
+        # Passing df_macro as the third argument (was df_daily in some signatures)
+        analysis = self.trading_engine.analyze(df, df_higher_tf, df_macro)
 
         if 'error' in analysis:
             logger.error("Analysis error: {}", analysis['error'])
@@ -502,17 +552,19 @@ class TradingBot:
             # Log handled inside _check_cooldown
             return
 
-        # Publish to RabbitMQ (Decoupled Execution)
-        await self.rabbitmq.publish_signal({
-            "symbol": signal.symbol,
-            "signal_type": signal.direction, # Fixed
-            "entry_price": signal.entry_price,
-            "stop_loss": signal.stop_loss,
-            "take_profit": signal.take_profit, # Fixed
-            "risk_percent": self.config.risk_percent,
-            "confluence_score": signal.score, # Fixed
-            "bot_config_id": self.bot_config_id
-        })
+        # Publish to RabbitMQ (Only MASTER or SOLO)
+        role = settings.INSTANCE_ROLE.upper()
+        if role in ["MASTER", "SOLO"]:
+            await self.rabbitmq.publish_signal({
+                "symbol": signal.symbol,
+                "signal_type": signal.direction, # Fixed
+                "entry_price": signal.entry_price,
+                "stop_loss": signal.stop_loss,
+                "take_profit": signal.take_profit, # Fixed
+                "risk_percent": self.config.risk_percent,
+                "confluence_score": signal.score, # Fixed
+                "bot_config_id": self.bot_config_id
+            })
 
         # Get account info for position sizing
         account_info = self.mt5_connector.get_account_info()

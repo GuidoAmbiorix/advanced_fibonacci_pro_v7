@@ -225,6 +225,10 @@ class BacktestConfig:
     direction_filter: str = "BOTH"  # "BOTH", "BUY_ONLY", "SELL_ONLY"
     use_daily_bias: bool = False
 
+    # Engine Config
+    engine_type: str = "ADAPTIVE"
+    engine_config: Dict = field(default_factory=dict)
+
     # Trading engine config
     swing_length: int = 10
     ob_lookback: int = 50

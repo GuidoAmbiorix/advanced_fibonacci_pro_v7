@@ -63,6 +63,10 @@ class BacktestRequest(BaseModel):
     
     # Institutional Control
     use_daily_bias: bool = False
+    
+    # Engine Config
+    engine_type: str = "ADAPTIVE"
+    engine_config: Optional[dict] = {}
 
 class BacktestResponse(BaseModel):
     session_id: int
@@ -126,6 +130,9 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             risk_percent=request.risk_percent,
             scalping_mode=(request.strategy_mode == "SCALP"),
             direction_filter=request.direction_filter,  # BUY_ONLY / SELL_ONLY / BOTH
+            # Engine Selection
+            engine_type=request.engine_type,
+            engine_config=request.engine_config or {},
             # Strategy Selection
             use_adx_filter=request.use_adx_filter,
             enable_vwap_strategy=request.enable_vwap_strategy,

@@ -52,7 +52,22 @@ class DataLoader:
                 mt5_host = os.getenv("MT5_HOST", "mt5")
                 mt5_port = int(os.getenv("MT5_PORT", 18812))
                 logger.info(f"🔌 Connecting to MT5 Service at {mt5_host}:{mt5_port}...")
-                conn = rpyc.classic.connect(mt5_host, mt5_port)
+                
+                # Retry logic for slow startups
+                max_retries = 5
+                conn = None
+                for i in range(max_retries):
+                    try:
+                        conn = rpyc.classic.connect(mt5_host, mt5_port)
+                        break
+                    except Exception as connection_err:
+                        if i < max_retries - 1:
+                            logger.warning(f"⚠️ Connection attempt {i+1}/{max_retries} failed. Retrying in 2s...")
+                            import time
+                            time.sleep(2)
+                        else:
+                            raise connection_err
+                            
                 logger.info(f"✅ RPyC connection established")
 
                 global mt5

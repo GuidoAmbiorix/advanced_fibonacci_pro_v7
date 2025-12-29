@@ -13,6 +13,7 @@ RUN chmod +x /usr/local/bin/docker-compose
 # Copy source
 COPY backend /app/backend
 COPY frontend /app/frontend
+COPY instance-template.yml /app/instance-template.yml
 
 # Expose API
 EXPOSE 8000

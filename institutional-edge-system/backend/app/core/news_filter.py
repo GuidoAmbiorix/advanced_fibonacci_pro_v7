@@ -50,12 +50,15 @@ class NewsFilter:
         Should be called periodically (e.g., hourly).
         """
         try:
-            # Fetch events for nex 24 hours
+            # Fetch events for next 24 hours
             start_dt = datetime.datetime.utcnow()
             end_dt = start_dt + datetime.timedelta(hours=24)
             
+            logger.info(f"📰 NewsFilter: Fetching calendar events from {start_dt} to {end_dt}")
             events = mt5_connector.get_calendar_events(start_dt, end_dt)
+            
             if not events:
+                logger.warning("📰 NewsFilter: No calendar events returned (MT5 calendar may not be supported)")
                 return
 
             # Filter for High Impact (Importance >= 3 or specific logic)
@@ -67,10 +70,14 @@ class NewsFilter:
             self._save_cache()
             
             if high_impact:
-                logger.info(f"NewsFilter: Cached {len(high_impact)} high impact events via MT5")
+                logger.info(f"📰 NewsFilter: Cached {len(high_impact)} high impact events via MT5")
+                for event in high_impact[:3]:  # Log first 3
+                    logger.info(f"   - {event.get('title')} ({event.get('currency')}) @ {event.get('time')}")
+            else:
+                logger.info(f"📰 NewsFilter: {len(events)} events found, 0 high impact")
                 
         except Exception as e:
-            logger.error(f"NewsFilter update failed: {e}")
+            logger.error(f"📰 NewsFilter update failed: {e}")
 
     def fetch_calendar(self, target_date: Optional[datetime.date] = None):
         """Legacy method (Disabled)"""

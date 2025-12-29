@@ -660,14 +660,10 @@ class AdaptiveMultiStrategyEngine:
         if weekday > 4: # Saturday or Sunday
             return False, "Weekend - Trading Disabled"
         
-        # 4. Check Hours (00:00 - 12:00 LOCAL)
-        # Assuming Server Time is UTC+2 approx (6h ahead of User's UTC-4)
-        # User 00:00 = Server 06:00
-        # User 12:00 = Server 18:00
-        # Allowed Server range: 06 <= hour < 18
-        
-        if not (6 <= timestamp.hour < 18):
-             return False, f"Outside Trading Hours (Server {timestamp.hour:02d}:{timestamp.minute:02d}, Allowed 06-18)"
+        # 4. Trading Hours Check - DISABLED (24/7 trading enabled)
+        # Previously restricted to 06:00-18:00 server time
+        # if not (6 <= timestamp.hour < 18):
+        #      return False, f"Outside Trading Hours"
              
         return True, "OK"
         

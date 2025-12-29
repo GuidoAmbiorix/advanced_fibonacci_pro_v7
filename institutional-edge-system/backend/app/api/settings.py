@@ -7,6 +7,18 @@ from app.schemas import schemas # Assuming schemas are updated or we use generic
 
 router = APIRouter()
 
+@router.get("/system", response_model=schemas.SystemInfoSchema)
+async def get_system_info():
+    from app.core.config import settings
+    return {
+        "max_drawdown": settings.MAX_DRAWDOWN_PERCENT,
+        "max_daily_loss": settings.MAX_DAILY_LOSS_PERCENT,
+        "symbol_suffix": settings.MT5_SYMBOL_SUFFIX,
+        "symbol_prefix": settings.MT5_SYMBOL_PREFIX,
+        "account_type": settings.ACCOUNT_TYPE,
+        "instance_role": settings.INSTANCE_ROLE
+    }
+
 @router.get("/config/{bot_id}")
 async def get_bot_settings(bot_id: int, db: Session = Depends(database.get_db)):
     config = db.query(BotConfig).filter(BotConfig.id == bot_id).first()

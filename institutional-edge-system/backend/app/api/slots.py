@@ -50,6 +50,10 @@ class SlotCreate(BaseModel):
     session_end_action: str = "HOLD"
     use_daily_bias: bool = False
 
+    # Engine Config
+    engine_type: str = "ADAPTIVE"
+    engine_config: Optional[dict] = {}
+
 
 class SlotUpdate(BaseModel):
     symbol: Optional[str] = None
@@ -77,6 +81,10 @@ class SlotUpdate(BaseModel):
     trading_session: Optional[str] = None
     session_end_action: Optional[str] = None
     use_daily_bias: Optional[bool] = None
+
+    # Engine Config Update
+    engine_type: Optional[str] = None
+    engine_config: Optional[dict] = None
 
 
 class SlotResponse(BaseModel):
@@ -107,6 +115,11 @@ class SlotResponse(BaseModel):
     trading_session: str
     session_end_action: str
     use_daily_bias: bool
+    
+    # Engine Config
+    engine_type: str = "ADAPTIVE"
+    engine_config: Optional[dict] = {}
+
     created_at: datetime
 
     class Config:

@@ -3,6 +3,11 @@
 INSTITUTIONAL EDGE PRO - MT5 Integration Layer (Enhanced)
 ============================================================================
 Handles all MetaTrader 5 connections and operations with improved execution
+============================================================================
+Supports:
+- Local Windows MT5 via MetaTrader5 package
+- Remote Docker MT5 via mt5linux (gmag11/metatrader5_vnc)
+============================================================================
 """
 
 import pandas as pd
@@ -13,11 +18,35 @@ import time
 import os
 from app.core.config import settings
 
-try:
-    import MetaTrader5 as mt5
-except ImportError:
-    mt5 = None
-    logger.warning("MetaTrader5 package not found. Running in headless/mock mode.")
+# MT5 module - will be set based on connection type
+mt5 = None
+
+def get_local_mt5():
+    """Try to import local MetaTrader5 package"""
+    try:
+        import MetaTrader5
+        return MetaTrader5
+    except ImportError:
+        return None
+
+def get_remote_mt5(host: str, port: int):
+    """
+    Create remote MetaTrader5 connection using RPyC directly.
+    Simulates mt5linux behavior without the package dependency.
+    """
+    try:
+        import rpyc
+        # Connect to RPyC server (default configuration)
+        conn = rpyc.classic.connect(host, port)
+        
+        # Set timeout on the connection if possible, or rely on default
+        if hasattr(conn, '_config'):
+            conn._config['sync_request_timeout'] = 180
+        # Return the remote MetaTrader5 module proxy
+        return conn.modules.MetaTrader5
+    except Exception as e:
+        logger.error(f"❌ Failed to connect to remote MT5 via RPyC: {e}")
+        return None
 
 
 class MT5Connector:
@@ -88,78 +117,99 @@ class MT5Connector:
         return self._normalize_symbol(symbol)
 
     def connect(self) -> bool:
-        """Connect to MetaTrader 5"""
+        """Connect to local dedicated MetaTrader 5 via RPyC"""
         try:
-            # RPyC Connection Logic
-            mt5_host = os.getenv("MT5_HOST")
-            if mt5_host:
-                try:
-                    import rpyc
-                    mt5_port = int(os.getenv("MT5_PORT", 18812))
-                    logger.info(f"Connecting to remote MT5 at {mt5_host}:{mt5_port}...")
-                    conn = rpyc.classic.connect(mt5_host, mt5_port)
-                    global mt5
-                    mt5 = conn.modules.MetaTrader5
-                    
-                    # Re-initialize timeframe map with remote constants
-                    self.timeframe_map = {
-                        'M1': mt5.TIMEFRAME_M1, 'M5': mt5.TIMEFRAME_M5, 'M15': mt5.TIMEFRAME_M15,
-                        'M30': mt5.TIMEFRAME_M30, 'H1': mt5.TIMEFRAME_H1, 'H4': mt5.TIMEFRAME_H4,
-                        'D1': mt5.TIMEFRAME_D1, 'W1': mt5.TIMEFRAME_W1, 'MN1': mt5.TIMEFRAME_MN1,
-                    }
-                except Exception as e:
-                    logger.error(f"Failed to connect via RPyC: {e}")
-                    return False
-
-            if mt5 is None:
-                logger.error("MetaTrader5 package is not installed and RPyC connection failed")
+            global mt5
+            
+            # Dedicated MT5 Connection
+            mt5_host = os.getenv("MT5_HOST", "mt5")
+            mt5_port = int(os.getenv("MT5_PORT", 8001))
+            
+            logger.info(f"🔌 Connecting to dedicated MT5 at {mt5_host}:{mt5_port}...")
+            
+            try:
+                import rpyc
+                conn = rpyc.classic.connect(mt5_host, mt5_port)
+                mt5 = conn.modules.MetaTrader5
+                
+                # Re-initialize timeframe map with remote constants
+                self.timeframe_map = {
+                    'M1': mt5.TIMEFRAME_M1, 'M5': mt5.TIMEFRAME_M5, 'M15': mt5.TIMEFRAME_M15,
+                    'M30': mt5.TIMEFRAME_M30, 'H1': mt5.TIMEFRAME_H1, 'H4': mt5.TIMEFRAME_H4,
+                    'D1': mt5.TIMEFRAME_D1, 'W1': mt5.TIMEFRAME_W1, 'MN1': mt5.TIMEFRAME_MN1,
+                }
+                logger.info("✅ RPyC connection established")
+            except Exception as e:
+                logger.error(f"❌ Failed to connect via RPyC: {e}")
                 return False
 
-            if self.path and not mt5_host: # Only check path if local
-                if os.path.isdir(self.path):
-                    self.path = os.path.join(self.path, "terminal64.exe")
-                if not mt5.initialize(path=self.path):
-                    logger.error("MT5 initialize() failed, error code: {}", mt5.last_error())
-                    return False
-            else:
-                # Initialize with explicit login parameters to ensure session
-                logger.info(f"Attempting MT5 initialize with: Login={self.login}, Server={self.server}")
-                login_id = int(self.login) if self.login and str(self.login).isdigit() else 0
-                
-                # Try initialize
-                if not mt5.initialize(
-                    login=login_id,
-                    password=self.password or "",
-                    server=self.server or ""
-                ):
-                    err_code = mt5.last_error()
-                    logger.error(f"❌ MT5 initialize() failed, error code: {err_code}")
-                    return False
+            # Initialize MT5 (Standard Procedure)
+            if not mt5.initialize():
+                err_code = mt5.last_error()
+                logger.error(f"❌ MT5 initialize() failed: {err_code}")
+                return False
             
-            # Additional explicit login to be safe
+            logger.info("✅ MT5 initialized successfully")
+            
+            # Login if credentials provided
             if self.login and self.password and self.server:
+                logger.info(f"🔐 Logging into account {self.login}...")
                 authorized = mt5.login(
                     login=int(self.login),
                     password=self.password,
                     server=self.server
                 )
                 if not authorized:
-                    err_code = mt5.last_error()
-                    logger.error(f"❌ MT5 login failed, error code: {err_code}")
+                    logger.error(f"❌ MT5 login failed: {mt5.last_error()}")
                     return False
-                logger.info("✅ Successfully logged in to MT5 account: {}", self.login)
-
+                logger.info(f"✅ Successfully logged into {self.login}")
+                
             self.connected = True
-            logger.info("✅ MT5 connection established")
-
-            account_info = mt5.account_info()
-            if account_info:
-                logger.info("Account balance: ${:.2f}, Equity: ${:.2f}",
-                          account_info.balance, account_info.equity)
             return True
 
         except Exception as e:
-            logger.exception("Error connecting to MT5: {}", e)
+            logger.error(f"CRITICAL ERROR in connect(): {e}")
+            return False
+            
+            logger.info("✅ MT5 initialized successfully")
+            
+            # ================================================================
+            # LOGIN TO ACCOUNT (works for both local and remote/shared)
+            # This is the KEY for automatic multi-account support!
+            # ================================================================
+            if self.login and self.password and self.server:
+                logger.info(f"🔐 Logging into account {self.login} on server {self.server}...")
+                
+                authorized = mt5.login(
+                    login=int(self.login),
+                    password=self.password,
+                    server=self.server
+                )
+                
+                if not authorized:
+                    err_code = mt5.last_error()
+                    logger.error(f"❌ MT5 login failed for account {self.login}: {err_code}")
+                    return False
+                    
+                logger.info(f"✅ Successfully logged into MT5 account: {self.login}")
+            else:
+                logger.warning("⚠️ No MT5 credentials provided - using current terminal session")
+
+            self.connected = True
+            
+            # Verify connection
+            account_info = mt5.account_info()
+            if account_info:
+                logger.info(f"📊 Account {account_info.login} | Balance: ${account_info.balance:.2f} | Equity: ${account_info.equity:.2f}")
+            else:
+                logger.warning("⚠️ Connected but Account Info unavailable (Terminal initializing?)")
+                if self.login and self.password:
+                    return False  # Force retry
+            
+            return True
+
+        except Exception as e:
+            logger.exception(f"Error connecting to MT5: {e}")
             return False
 
     def disconnect(self):
@@ -168,6 +218,76 @@ class MT5Connector:
             mt5.shutdown()
             self.connected = False
             logger.info("MT5 connection closed")
+
+    def switch_account(self, login: int, password: str, server: str) -> bool:
+        """
+        Switch MT5 to a different account (for shared MT5 architecture).
+        
+        Args:
+            login: MT5 account number
+            password: Account password
+            server: Broker server name
+            
+        Returns:
+            bool: True if switch successful, False otherwise
+        """
+        if not self.connected:
+            logger.error("MT5 not connected - cannot switch account")
+            return False
+        
+        try:
+            authorized = mt5.login(login=login, password=password, server=server)
+            if not authorized:
+                err_code = mt5.last_error()
+                logger.error(f"❌ Failed to switch to account {login}: {err_code}")
+                return False
+            
+            # Update internal state
+            self.login = str(login)
+            self.password = password
+            self.server = server
+            
+            account_info = mt5.account_info()
+            if account_info:
+                logger.info(f"✅ Switched to account {login} | Balance: ${account_info.balance:.2f}")
+            else:
+                logger.warning(f"⚠️ Switched to account {login} but account_info unavailable")
+            
+            return True
+            
+        except Exception as e:
+            logger.exception(f"Error switching to account {login}: {e}")
+            return False
+
+    def ensure_account(self) -> bool:
+        """
+        Ensure we're logged into the correct account before trading.
+        This is critical for the shared MT5 architecture where multiple
+        backends may be using the same MT5 terminal.
+        
+        Returns:
+            bool: True if correct account is active, False otherwise
+        """
+        if not self.connected:
+            logger.info("Not connected, attempting to connect...")
+            return self.connect()
+        
+        if not self.login:
+            logger.warning("No login configured for this instance")
+            return True  # No specific account required
+        
+        try:
+            account_info = mt5.account_info()
+            if account_info and str(account_info.login) == str(self.login):
+                return True  # Already on correct account
+            
+            # Need to switch accounts
+            logger.info(f"Account mismatch: Current={account_info.login if account_info else 'None'}, Required={self.login}")
+            return self.switch_account(int(self.login), self.password, self.server)
+            
+        except Exception as e:
+            logger.exception(f"Error ensuring account: {e}")
+            return False
 
     def get_ohlcv_data(self, symbol: str, timeframe: str, bars: int = 500) -> Optional[pd.DataFrame]:
         """Get OHLCV data from MT5"""
@@ -319,6 +439,11 @@ class MT5Connector:
         if not self.connected:
             logger.error("Not connected to MT5")
             return None
+        
+        # CRITICAL: Ensure correct account before trading (shared MT5 architecture)
+        if not self.ensure_account():
+            logger.error("Failed to ensure correct account is active")
+            return None
 
         symbol = self._normalize_symbol(symbol)
 
@@ -464,6 +589,11 @@ class MT5Connector:
             True if successful
         """
         if not self.connected:
+            return False
+        
+        # CRITICAL: Ensure correct account before trading (shared MT5 architecture)
+        if not self.ensure_account():
+            logger.error("Failed to ensure correct account is active for close")
             return False
 
         try:

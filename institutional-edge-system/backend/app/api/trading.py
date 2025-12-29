@@ -25,7 +25,7 @@ from app.core.crypto import decrypt_password
 from app.core.prop_firm_manager import PropFirmManager
 from app.core.mt5_connector import MT5Connector
 from app.core.mt5_connector import MT5Connector
-from app.core.adaptive_multi_strategy_engine import AdaptiveMultiStrategyEngine
+from app.engines.golden.core import GoldenEngine
 from app.core.risk_controls import get_risk_controls, RiskControls
 from app.core.socket_server import sio
 
@@ -58,6 +58,9 @@ class TradingStartRequest(BaseModel):
     enable_partial_tp: bool = True
     partial_tp_percent: float = 50.0
     enable_trailing_stop: bool = True
+    # Engine Config
+    engine_type: str = "ADAPTIVE"
+    engine_config: Optional[Dict] = {}
     trailing_stop_atr: float = 1.5
     # Institutional
     use_daily_bias: bool = False
@@ -100,12 +103,31 @@ class LiveTradingSession:
         
         # Initialize trading engine
         is_scalping = config['timeframe'] in ['M1', 'M5', 'M15']
-        # Initialize trading engine (Adaptive Multi-Strategy)
-        engine_config = config.copy()
-        engine_config['initial_balance'] = account.starting_balance
-        engine_config['max_risk_per_trade'] = config['risk_percent']
+        # Initialize trading engine (Golden Engine)
+        golden_config = config.copy()
         
-        self.engine = AdaptiveMultiStrategyEngine(engine_config)
+        # Merge explicit JSON config from slot (engine_config)
+        if 'engine_config' in config and isinstance(config['engine_config'], dict):
+            golden_config.update(config['engine_config'])
+            
+        # Map generic flat config to Golden Engine structure
+        # Risk Module
+        if 'risk' not in golden_config:
+            golden_config['risk'] = {}
+        # Ensure we use the latest values from the UI/Slot config
+        golden_config['risk']['risk_percent'] = config.get('risk_percent', 1.0)
+        golden_config['risk']['atr_sl_multiplier'] = config.get('sl_atr_multiplier', 1.5)
+        golden_config['risk']['tp1_ratio'] = config.get('tp_ratio', 1.5)
+        
+        # Pass Account Balance for Sizing
+        golden_config['balance'] = account.starting_balance
+        
+        # Structure Module defaults
+        if 'structure' not in golden_config:
+             golden_config['structure'] = {}
+        golden_config['structure']['zigzag_lookback'] = 5 # Default
+        
+        self.engine = GoldenEngine(golden_config)
     
     async def run(self):
         """Main trading loop with enhanced features"""
@@ -135,12 +157,25 @@ class LiveTradingSession:
                     await asyncio.sleep(10)
                     continue
 
-                # 1. Trading hours check (00:00 - 12:00 local)
+                # 1. Trading hours check - DISABLED (24/7 trading enabled)
+                # utc_now = datetime.utcnow()
+                # local_now = utc_now - timedelta(hours=4)
+                # if not (0 <= local_now.hour < 12):
+                #     logger.debug(f"⛔ {self.session_id}: Outside trading hours")
+                #     await asyncio.sleep(60)
+                #     continue
+
+                # 1.5 Session Filter (ASIA, LONDON, NY, ALL)
                 utc_now = datetime.utcnow()
-                local_now = utc_now - timedelta(hours=4)
+                trading_session = self.config.get('trading_session', 'ALL')
+                session_end_action = self.config.get('session_end_action', 'HOLD')
                 
-                if not (0 <= local_now.hour < 12):
-                    logger.debug(f"⛔ {self.session_id}: Outside trading hours")
+                in_session = self._is_in_trading_session(utc_now.hour, trading_session)
+                
+                if not in_session and session_end_action == 'DISABLE_NEW':
+                    logger.debug(f"⛔ {self.session_id}: Outside {trading_session} session - No New Entries")
+                    # Still manage existing positions
+                    await self._manage_open_positions()
                     await asyncio.sleep(60)
                     continue
 
@@ -197,8 +232,16 @@ class LiveTradingSession:
                     if df_daily is None or len(df_daily) < 50:
                          logger.warning(f"{self.session_id}: D1 data missing for Daily Bias")
 
+                # 6.6 Get Confirmation Timeframe data (Multi-TF Analysis)
+                df_higher_tf = None
+                confirmation_tf = self.config.get('confirmation_timeframe')
+                if confirmation_tf:
+                    df_higher_tf = self.mt5.get_ohlcv_data(symbol, confirmation_tf, bars=200)
+                    if df_higher_tf is None or len(df_higher_tf) < 50:
+                        logger.warning(f"{self.session_id}: {confirmation_tf} data missing for confirmation")
+
                 # 7. Analyze for signals
-                analysis = self.engine.analyze(df, df_daily=df_daily)
+                analysis = self.engine.analyze(df, df_higher_tf=df_higher_tf, df_daily=df_daily)
                 signals = analysis.get('signals', [])
                 
                 if signals:
@@ -254,13 +297,18 @@ class LiveTradingSession:
         
         logger.info(f"📈 {self.session_id}: Opening {signal.signal_type} {lot_size} lots @ {signal.entry_price}")
         
+        # Prepare trade comment with slot identification
+        slot_id = self.config.get('slot_id', 0)
+        magic_number = self.config.get('magic_number', 0)
+        trade_comment = f"Slot{slot_id}-M{magic_number}" if magic_number else f"Live-{self.session_id}"
+        
         result = self.mt5.open_position(
             symbol=symbol,
             order_type=signal.signal_type,
             volume=lot_size,
             stop_loss=signal.stop_loss,
             take_profit=signal.take_profit_1,
-            comment=f"Live-{self.session_id}"
+            comment=trade_comment
         )
         
         if result and result.get('success'):
@@ -362,7 +410,14 @@ class LiveTradingSession:
                             })
             
             # ============ TRAILING STOP LOGIC ============
-            if self.config.get('enable_trailing_stop', True) and managed['breakeven_moved']:
+            # Check activation condition: breakeven moved AND profit >= tsl_activation_r
+            tsl_activation_r = self.config.get('tsl_activation_r', 0.0)
+            sl_distance = abs(entry_price - managed['stop_loss']) if managed['stop_loss'] else 0
+            current_r_profit = (profit_points * self.mt5.get_symbol_point(pos['symbol']) / sl_distance) if sl_distance > 0 else 0
+            
+            tsl_activated = managed['breakeven_moved'] and current_r_profit >= tsl_activation_r
+            
+            if self.config.get('enable_trailing_stop', True) and tsl_activated:
                 # Get ATR for trailing distance
                 df = self.mt5.get_ohlcv_data(pos['symbol'], self.config['timeframe'], 20)
                 if df is not None and len(df) > 0:
@@ -422,6 +477,36 @@ class LiveTradingSession:
                             'closed_at': datetime.utcnow().isoformat()
                         })
                         del self.managed_positions[ticket]
+    
+    def _is_in_trading_session(self, utc_hour: int, session: str) -> bool:
+        """
+        Check if current UTC hour is within the configured trading session.
+        
+        Session times (UTC):
+        - ASIA: 00:00 - 07:00
+        - LONDON: 07:00 - 16:00
+        - NY: 12:00 - 21:00
+        - ASIA_LONDON: 00:00 - 16:00
+        - LONDON_NY: 07:00 - 21:00
+        - ALL: Always True
+        """
+        if session == 'ALL':
+            return True
+        
+        session_times = {
+            'ASIA': (0, 7),
+            'LONDON': (7, 16),
+            'NY': (12, 21),
+            'ASIA_LONDON': (0, 16),
+            'LONDON_NY': (7, 21),
+        }
+        
+        if session in session_times:
+            start, end = session_times[session]
+            return start <= utc_hour < end
+        
+        # Unknown session = allow trading
+        return True
     
     def stop(self):
         """Stop the trading session"""
@@ -519,9 +604,6 @@ async def start_trading(
             'rsi_period': slot.rsi_period,
             'rsi_overbought': slot.rsi_overbought,
             'rsi_oversold': slot.rsi_oversold,
-            'rsi_period': slot.rsi_period,
-            'rsi_overbought': slot.rsi_overbought,
-            'rsi_oversold': slot.rsi_oversold,
             # Enhanced Params (Adaptive Engine)
             'use_adx_filter': slot.use_adx_filter,
             'use_h1_trend_filter': slot.use_h1_trend_filter,
@@ -529,6 +611,20 @@ async def start_trading(
             'stoch_d_period': slot.stoch_d_period,
             'vwap_use_trend_filter': slot.vwap_use_trend_filter,
             'use_daily_bias': slot.use_daily_bias,
+            # Session Control
+            'trading_session': slot.trading_session,
+            'session_end_action': slot.session_end_action,
+            # Multi-Timeframe
+            'confirmation_timeframe': slot.confirmation_timeframe,
+            # TSL Advanced
+            'tsl_activation_r': slot.tsl_activation_r,
+            # MT5 Tracking
+            'magic_number': slot.magic_number,
+            # TradingView Integration
+            'respect_user_zones': slot.respect_user_zones,
+            # Engine Configuration
+            'engine_type': slot.engine_type,
+            'engine_config': slot.engine_config,
         }
         logger.info(f"📦 Loaded slot {slot.id} config for {slot.symbol}")
     else:

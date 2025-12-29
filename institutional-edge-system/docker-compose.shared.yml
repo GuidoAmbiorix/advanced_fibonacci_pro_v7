@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # Message Broker for Signal Distribution
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: institutional_rabbitmq
+    ports:
+      - "5672:5672" # AMQP protocol
+      - "15672:15672" # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    restart: unless-stopped
+    networks:
+      - trading_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ============================================================================
+  # SHARED MT5 TERMINAL (Disabled for Dedicated Mode)
+  # ============================================================================
+  # mt5_shared:
+  #   image: gmag11/metatrader5_vnc:latest
+  #   container_name: mt5_shared
+  #   ports:
+  #     - "3000:3000"   # VNC Web Interface 
+  #     - "8001:8001"   # RPyC Server 
+  #   environment:
+  #     - CUSTOM_USER=trader
+  #     - PASSWORD=trading
+  #     - VNCPASSWORD=trading
+  #   volumes:
+  #     - mt5_shared_config:/config
+  #   networks:
+  #     - trading_network
+  #   restart: unless-stopped
+
+volumes:
+  mt5_shared_config:
+
+networks:
+  trading_network:
+    external: true

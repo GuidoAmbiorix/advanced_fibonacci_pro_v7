@@ -31,4 +31,11 @@ class StrategyFactory:
         # if config.get('strategy_mode') == 'SQ_ONLY':
         #     return SQStrategy_3_29_162(config)
         
+        # Helper mapping for engine types
+        engine_type = config.get('engine_type', 'ADAPTIVE').upper()
+        
+        if engine_type == 'GOLDEN':
+            from app.engines.golden.core import GoldenEngine
+            return GoldenEngine(config)
+        
         return AdaptiveMultiStrategyEngine(config)

@@ -160,6 +160,55 @@ async def startup_event():
 
     # Create database tables
     database.init_db()
+    
+    # --- AUTO-PROVISIONING: Register Account from Config if missing ---
+    if settings.MT5_LOGIN:
+        try:
+             # Create a session directly since we are not in a request context
+            db = database.SessionLocal()
+            from app.models.database import MT5Account, User
+            from app.core.crypto import encrypt_password
+            
+            # Ensure User Exists
+            user = db.query(User).first()
+            if not user:
+                logger.info("creating default user admin@gmail.com...")
+                user = User(email="admin@gmail.com", is_active=True, is_superuser=True, full_name="Admin User")
+                user.set_password("admin12345")
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+
+            # Check if account exists
+            login_str = str(settings.MT5_LOGIN)
+            account = db.query(MT5Account).filter(MT5Account.login == login_str).first()
+            
+            if not account:
+                logger.info(f"✨ Auto-Provisioning Account {login_str}...")
+                new_account = MT5Account(
+                    user_id=user.id,
+                    name=f"Auto-{login_str}",
+                    login=login_str,
+                    password=settings.MT5_PASSWORD,
+                    server=settings.MT5_SERVER,
+                    account_type="demo",  # Default, can be updated from settings if needed
+                    is_active=True,
+                    max_drawdown_percent=settings.MAX_DRAWDOWN_PERCENT,
+                    max_daily_dd_percent=settings.MAX_DAILY_LOSS_PERCENT
+                )
+                db.add(new_account)
+                db.commit()
+                logger.info(f"✅ Account {login_str} created and activated.")
+            else:
+                if not account.is_active:
+                     account.is_active = True
+                     db.commit()
+                     logger.info(f"✅ Account {login_str} reactivated.")
+                logger.info(f"ℹ️ Account {login_str} already exists.")
+            
+            db.close()
+        except Exception as e:
+            logger.error(f"❌ Auto-provisioning failed: {e}")
 
     # Initialize MT5 connector
     global mt5_connector
@@ -172,12 +221,20 @@ async def startup_event():
 
     mt5_connector = MT5Connector(mt5_config)
     
-    # Always attempt to connect (use active terminal if no creds)
-    connected = mt5_connector.connect()
-    if connected:
-        logger.info("MT5 connected successfully")
-    else:
-        logger.warning("MT5 connection failed - running in demo/mock mode")
+    # Retry Loop: Wait for MT5 Installation/Startup
+    max_retries = 60 # 5 minutes
+    for i in range(max_retries):
+        logger.info(f"Connecting to MT5 (Attempt {i+1}/{max_retries})...")
+        connected = mt5_connector.connect()
+        if connected:
+            logger.info("✅ MT5 connected successfully")
+            break
+        else:
+            logger.warning("⏳ MT5 not ready (still installing/starting?)... Waiting 5s.")
+            await asyncio.sleep(5)
+    
+    if not mt5_connector.connected:
+        logger.error("❌ MT5 connection failed after timeout - running in disconnected mode")
 
     # Initialize bot manager
     global bot_manager

@@ -33,6 +33,14 @@ if errorlevel 1 (
     echo   - Shared network 'bot-net' already exists.
 )
 
+docker network inspect trading_network >nul 2>&1
+if errorlevel 1 (
+    echo   - Creating shared network 'trading_network'...
+    docker network create trading_network
+) else (
+    echo   - Shared network 'trading_network' already exists.
+)
+
 REM 4. Start Services
 echo [4/5] Starting Services...
 
@@ -40,6 +48,14 @@ echo   - Starting Proxy Service...
 docker-compose -f docker-compose.proxy.yml up -d
 if errorlevel 1 (
     echo [ERROR] Failed to start Proxy.
+    pause
+    exit /b 1
+)
+
+echo   - Starting Shared Infrastructure (RabbitMQ)...
+docker-compose -f docker-compose.shared.yml up -d
+if errorlevel 1 (
+    echo [ERROR] Failed to start Shared Infrastructure.
     pause
     exit /b 1
 )
@@ -73,16 +89,20 @@ echo =========================================
 echo.
 echo Access URLs:
 echo -----------------------------------------
-echo Dashboard:      http://localhost/
-echo API Docs:       http://localhost/api/orchestrator/docs
+echo Fleet Commander: http://localhost:9000/
+echo RabbitMQ:        http://localhost:15672/ (guest/guest)
 echo.
 echo Instance URLs (Once Deployed):
 echo -----------------------------------------
-echo Instance 1:     http://localhost/instance/1/
-echo Instance 2:     http://localhost/instance/2/
+echo Instance 1:     http://localhost:81/ (Dashboard) - VNC: 3001
+echo Instance 2:     http://localhost:82/ (Dashboard) - VNC: 3002
+echo.
+echo NOTE: Each instance has its own dedicated MT5 terminal.
+echo       Access VNC ports (3001+) to login to broker accounts.
 echo.
 echo To Stop Everything:
 echo   docker-compose -f docker-compose.admin.yml down
 echo   docker-compose -f docker-compose.proxy.yml down
+echo   docker-compose -f docker-compose.shared.yml down
 echo.
 pause

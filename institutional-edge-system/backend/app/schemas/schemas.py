@@ -24,6 +24,15 @@ class UserLogin(BaseModel):
     password: str
 
 
+class SystemInfoSchema(BaseModel):
+    max_drawdown: float
+    max_daily_loss: float
+    symbol_suffix: str
+    symbol_prefix: str
+    account_type: str
+    instance_role: str
+
+
 class UserResponse(BaseModel):
     id: int
     email: str

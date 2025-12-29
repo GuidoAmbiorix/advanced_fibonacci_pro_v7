@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import docker
 import os
+import httpx
 import shutil
 import subprocess
 import json
@@ -51,6 +52,13 @@ class InstanceCreate(BaseModel):
     mt5_login: Optional[str] = ""
     mt5_password: Optional[str] = ""
     mt5_server: Optional[str] = "HFMarketsGlobal-Demo"
+    role: Optional[str] = "SOLO"
+    # Phase 3: Enhanced Onboarding
+    max_drawdown: Optional[float] = 10.0
+    max_daily_loss: Optional[float] = 5.0
+    symbol_suffix: Optional[str] = ""
+    symbol_prefix: Optional[str] = ""
+    account_type: Optional[str] = "DEMO" # DEMO, LIVE, PROP
 
 class InstanceResponse(BaseModel):
     name: str
@@ -62,7 +70,7 @@ def get_docker_client():
     return docker.from_env()
 
 @app.get("/instances", response_model=List[InstanceResponse])
-def list_instances():
+async def list_instances():
     client = get_docker_client()
     instances = []
     
@@ -76,21 +84,61 @@ def list_instances():
         instance_name = path.name
         container_name = f"institutional_backend_{instance_name}"
         status = "STOPPED"
+        ports = {}
         
+        # Read .env for ports
+        env_path = path / ".env"
+        if env_path.exists():
+            with open(env_path) as f:
+                for line in f:
+                    if "WEB_PORT=" in line:
+                         ports['web'] = line.strip().split("=")[1]
+                    if "VNC_PORT=" in line:
+                         ports['vnc'] = line.strip().split("=")[1]
+                    if "API_PORT=" in line:
+                        ports['api'] = line.strip().split("=")[1]
+
         try:
             container = client.containers.get(container_name)
-            status = container.status.upper()
+            if container.status == "running":
+                status = "RUNNING"
+                api_port = ports.get('api')
+                if api_port:
+                    try:
+                        async with httpx.AsyncClient() as http_client:
+                            # Use localhost as the orchestrator is running on the host
+                            # and the instance's API is exposed via port mapping to localhost.
+                            response = await http_client.get(f"http://localhost:{api_port}/health", timeout=2)
+                            if response.status_code == 200:
+                                health_data = response.json()
+                                if health_data.get("mt5_status") == "connected":
+                                    status = "READY"
+                                elif health_data.get("mt5_status") == "connecting":
+                                    status = "INITIALIZING (Connecting to MT5...)"
+                                elif health_data.get("mt5_status") == "disconnected":
+                                    status = "MT5_DISCONNECTED"
+                                else:
+                                    status = "RUNNING (MT5 Status Unknown)"
+                            else:
+                                status = "RUNNING (API Unresponsive)"
+                    except httpx.RequestError:
+                        status = "RUNNING (API Unreachable)"
+                    except json.JSONDecodeError:
+                        status = "RUNNING (API Malformed Response)"
+                else:
+                    status = "RUNNING (API Port Missing)"
+            else:
+                status = container.status.upper()
         except docker.errors.NotFound:
             pass
             
-        # Parse ports from .env if possible, for now simplify return
         instances.append({
             "name": instance_name,
             "status": status,
-            "ports": {},
+            "ports": ports,
             "urls": {
-                "dashboard": f"http://localhost:81", # Simplified dynamic check needed
-                "vnc": f"http://localhost:3001"
+                "dashboard": f"http://localhost:{ports.get('web', '80')}", 
+                "vnc": f"http://localhost:{ports.get('vnc', '3000')}"
             }
         })
     return instances
@@ -138,7 +186,27 @@ async def create_instance(item: InstanceCreate, background_tasks: BackgroundTask
     try:
         shutil.copytree(BLUEPRINT_DIR / "backend", target_dir / "backend", ignore=ignore_patterns)
         shutil.copytree(BLUEPRINT_DIR / "frontend", target_dir / "frontend", ignore=ignore_patterns)
-        shutil.copy(BLUEPRINT_DIR / "docker-compose.yml", target_dir / "docker-compose.yml")
+        
+        # Use lightweight instance template (no MT5 - uses shared mt5_shared)
+        # Read template and substitute placeholders
+        template_path = Path("/app/instance-template.yml")
+        with open(template_path, 'r') as f:
+            template_content = f.read()
+        
+        # Substitute all placeholders
+        instance_number = len([d for d in INSTANCES_DIR.iterdir() if d.is_dir()]) if INSTANCES_DIR.exists() else 1
+        compose_content = template_content.replace("{INSTANCE_NAME}", safe_name)
+        compose_content = compose_content.replace("{INSTANCE_NUMBER}", str(instance_number))
+        compose_content = compose_content.replace("{API_PORT}", str(ports['api']))
+        compose_content = compose_content.replace("{WEB_PORT}", str(ports['web']))
+        compose_content = compose_content.replace("{MT5_LOGIN}", item.mt5_login or "")
+        compose_content = compose_content.replace("{MT5_PASSWORD}", item.mt5_password or "")
+        compose_content = compose_content.replace("{MT5_SERVER}", item.mt5_server or "HFMarketsGlobal-Demo")
+        
+        # Write substituted content
+        with open(target_dir / "docker-compose.yml", 'w') as f:
+            f.write(compose_content)
+            
     except Exception as e:
         # Cleanup if copy fails
         shutil.rmtree(target_dir)
@@ -157,6 +225,11 @@ PORT=8000
 MT5_LOGIN={item.mt5_login or ""}
 MT5_PASSWORD={item.mt5_password or ""}
 MT5_SERVER={item.mt5_server or "HFMarketsGlobal-Demo"}
+MT5_SYMBOL_SUFFIX={item.symbol_suffix or ""}
+MT5_SYMBOL_PREFIX={item.symbol_prefix or ""}
+MAX_DRAWDOWN_PERCENT={item.max_drawdown or 10.0}
+MAX_DAILY_LOSS_PERCENT={item.max_daily_loss or 5.0}
+ACCOUNT_TYPE={item.account_type or "DEMO"}
 MT5_PATH=C:\\Program Files\\MetaTrader 5\\terminal64.exe
 
 WEB_PORT={ports['web']}
@@ -169,6 +242,8 @@ CORS_ORIGINS=*
 DATABASE_URL=sqlite:///./sql_app.db
 PROJECT_ROOT_HOST={instance_host_path}
 JWT_SECRET_KEY=jwt-{safe_name}-secret
+INSTANCE_ROLE={item.role or "SOLO"}
+
 """
     
     (target_dir / ".env").write_text(env_content)
@@ -178,6 +253,8 @@ JWT_SECRET_KEY=jwt-{safe_name}-secret
     # Frontend needs VITE_API_URL for the build (Use .env.production for higher priority)
     frontend_env = f"VITE_API_URL=http://localhost:{ports['api']}\n"
     (target_dir / "frontend" / ".env").write_text(frontend_env)
+    
+    # NOTE: No MT5 config needed - using shared MT5 terminal (mt5_shared)
     
     # 4. Start Instance
     background_tasks.add_task(start_instance_task, target_dir, safe_name)

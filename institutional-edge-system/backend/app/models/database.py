@@ -159,6 +159,10 @@ class BotConfig(Base):
     is_active = Column(Boolean, default=False)
     last_signal_time = Column(DateTime, nullable=True)
     
+    # Engine Configuration
+    engine_type = Column(String, default="ADAPTIVE")
+    engine_config = Column(JSON, default={})
+    
     # Portfolio Synergy Settings (NEW)
     max_portfolio_risk_percent = Column(Float, default=4.0)  # Max combined risk across all slots
     max_positions_per_symbol = Column(Integer, default=2)    # Limit concurrent positions per symbol
@@ -184,6 +188,10 @@ class BotSlot(Base):
     # Symbol & Direction
     symbol = Column(String, nullable=False, default="EURJPY")
     direction_filter = Column(String, default="BOTH")  # BOTH, BUY_ONLY, SELL_ONLY
+    
+    # Engine Selection
+    engine_type = Column(String, default="ADAPTIVE") # ADAPTIVE, GOLDEN
+    engine_config = Column(JSON, default={}) # Flexible config for new engines
     
     # Timeframe (per-slot)
     timeframe = Column(String, default="M5")

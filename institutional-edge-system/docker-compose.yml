@@ -30,6 +30,13 @@ services:
       - MT5_PORT=8001
       - PGPASSWORD=secret
       - DATABASE_URL=sqlite:///./sql_app.db
+      # Multi-Account / Signal Distribution
+      - RABBITMQ_HOST=institutional_rabbitmq
+      - RABBITMQ_PORT=5672
+      - INSTANCE_ROLE=${INSTANCE_ROLE:-SOLO}
+      - MT5_LOGIN=${MT5_LOGIN}
+      - MT5_PASSWORD=${MT5_PASSWORD}
+      - MT5_SERVER=${MT5_SERVER}
     depends_on:
       - mt5
     volumes:
@@ -37,6 +44,7 @@ services:
       - backend_data:/app/data
     networks:
       - bot-net
+      - trading_network
 
   frontend:
     build: ./frontend
@@ -54,4 +62,6 @@ volumes:
 
 networks:
   bot-net:
+    external: true
+  trading_network:
     external: true
