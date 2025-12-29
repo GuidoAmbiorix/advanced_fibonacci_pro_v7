@@ -56,6 +56,12 @@ const router = createRouter({
       name: 'logs',
       component: () => import('../views/SystemLogs.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/quant-analysis',
+      name: 'quant-analysis',
+      component: () => import('../views/QuantAnalysisView.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 })

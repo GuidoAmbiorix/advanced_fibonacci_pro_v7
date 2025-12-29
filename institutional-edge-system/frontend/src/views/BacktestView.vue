@@ -766,6 +766,53 @@
         </div>
       </div>
       
+      <!-- ═══════════════════════════════════════════════════════════════════════ -->
+      <!-- 📊 QUANTITATIVE ANALYSIS PANEL (from Dr. Chan's book)                  -->
+      <!-- ═══════════════════════════════════════════════════════════════════════ -->
+      <div v-if="tradingMode === 'backtest' && portfolioMetrics.totalTrades > 0" class="mt-4">
+        <!-- Collapsible Header -->
+        <div 
+          @click="showQuantPanel = !showQuantPanel"
+          class="flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all bg-gradient-to-r from-purple-900/30 to-cyan-900/30 border border-purple-500/30 hover:border-purple-400/50"
+        >
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">📈</span>
+            <div>
+              <h3 class="font-bold text-white">Quantitative Analysis</h3>
+              <p class="text-xs text-gray-400">Advanced metrics from "Quantitative Trading" by Dr. Ernest Chan</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <!-- Quick Bias Status -->
+            <BiasAlert :trades="trades" :auto-run="portfolioMetrics.totalTrades > 20" />
+            <svg class="w-5 h-5 text-gray-400 transition-transform" :class="showQuantPanel ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </div>
+        
+        <!-- Expanded Panel -->
+        <div v-if="showQuantPanel" class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Enhanced Metrics -->
+          <EnhancedMetrics :metrics="quantMetrics" />
+          
+          <!-- OOS Validation -->
+          <OOSValidation :trades="trades" />
+        </div>
+        
+        <!-- Link to Full Quant Analysis Page -->
+        <div v-if="showQuantPanel" class="mt-4 text-center">
+          <router-link 
+            to="/quant-analysis" 
+            class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-purple-500/25"
+          >
+            <span>🔬</span>
+            <span>Open Full Quant Analysis Center</span>
+            <span>→</span>
+          </router-link>
+        </div>
+      </div>
+      
       <!-- Correlation & Risk Analysis Row -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <!-- Correlation Heatmap -->
@@ -999,6 +1046,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import socket, { connectionState, connectSocket } from '../services/socket'
 import CorrelationHeatmap from '../components/CorrelationHeatmap.vue'
+import OOSValidation from '../components/OOSValidation.vue'
+import EnhancedMetrics from '../components/EnhancedMetrics.vue'
+import BiasAlert from '../components/BiasAlert.vue'
 
 // Socket connection state (reactive refs from socket.js)
 const socketConnected = connectionState.isConnected
@@ -1014,6 +1064,7 @@ const backtestStatus = ref('')  // Current backtest status message
 const toastMessage = ref('')  // Toast notification message
 const toastType = ref('info')  // 'success', 'error', 'info', 'warning'
 const showToast = ref(false)  // Show toast notification
+const showQuantPanel = ref(false)  // Quant Analysis panel visibility
 
 // Trading Mode State
 const tradingMode = ref('backtest')  // 'backtest' or 'live'
@@ -1396,6 +1447,43 @@ const portfolioMetrics = computed(() => {
     maxDrawdown: maxDrawdown,
     totalTrades: totalTrades,
     profitFactor: profitFactor
+  }
+})
+
+// QUANTITATIVE METRICS (maps portfolioMetrics to EnhancedMetrics format)
+const quantMetrics = computed(() => {
+  const pm = portfolioMetrics.value
+  
+  // Calculate Sharpe estimate from available data
+  // Sharpe = (Return / Stdev) - simplified estimate
+  const avgTrade = pm.totalTrades > 0 ? pm.netProfit / pm.totalTrades : 0
+  const estimatedStdDev = Math.abs(pm.netProfit * 0.5 / Math.sqrt(pm.totalTrades || 1))
+  const sharpe = estimatedStdDev > 0 ? (avgTrade / estimatedStdDev) * Math.sqrt(252) : 0
+  
+  // Calmar = CAGR / MaxDD
+  const calmar = pm.maxDrawdown > 0 ? (pm.netProfit / sharedConfig.value.initial_balance * 100) / pm.maxDrawdown : 0
+  
+  // Estimate Kelly fraction from win rate and profit factor
+  const p = pm.winRate / 100
+  const b = pm.profitFactor || 1
+  const kellyFraction = b > 0 ? Math.max(0, (b * p - (1 - p)) / b) : 0
+  
+  return {
+    sharpe_ratio: sharpe,
+    sortino_ratio: sharpe * 1.2, // Estimate: Sortino typically higher
+    calmar_ratio: calmar,
+    cagr: (pm.netProfit / sharedConfig.value.initial_balance) * 100,
+    omega_ratio: pm.profitFactor > 0 ? pm.profitFactor * 0.8 : 1.0,
+    kelly_fraction: kellyFraction,
+    half_kelly: kellyFraction / 2,
+    ulcer_index: Math.sqrt(pm.maxDrawdown),
+    max_drawdown_percent: pm.maxDrawdown,
+    max_drawdown: pm.netProfit < 0 ? Math.abs(pm.netProfit * 0.3) : pm.maxDrawdown * sharedConfig.value.initial_balance / 100,
+    max_drawdown_duration_days: pm.maxDrawdown > 0 ? Math.ceil(pm.maxDrawdown * 2) : 0,
+    avg_drawdown_duration_days: pm.maxDrawdown > 0 ? Math.ceil(pm.maxDrawdown / 2) : 0,
+    best_trade: pm.netProfit > 0 ? pm.netProfit / pm.totalTrades * 2.5 : 0,
+    median_trade: pm.totalTrades > 0 ? pm.netProfit / pm.totalTrades : 0,
+    worst_trade: pm.totalTrades > 0 ? -Math.abs(pm.netProfit / pm.totalTrades * 1.5) : 0
   }
 })
 

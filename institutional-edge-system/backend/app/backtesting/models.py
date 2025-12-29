@@ -154,6 +154,34 @@ class BacktestMetrics:
     recovery_factor: float = 0.0  # Net profit / max DD
     payoff_ratio: float = 0.0  # Avg win / Avg loss
 
+    # =========================================================================
+    # ENHANCED QUANTITATIVE METRICS (from Dr. Chan's book)
+    # =========================================================================
+    
+    # CAGR - Compound Annual Growth Rate
+    cagr: float = 0.0  # Annual compounded return percentage
+    
+    # Omega Ratio - Probability-weighted ratio of gains vs losses
+    omega_ratio: float = 0.0  # Higher is better. > 1 = profitable
+    
+    # Max Drawdown Duration (critical for risk management)
+    max_drawdown_duration_days: float = 0.0  # How long in max DD
+    avg_drawdown_duration_days: float = 0.0  # Average DD recovery time
+    
+    # Kelly Criterion optimal fraction
+    kelly_fraction: float = 0.0  # Optimal f* based on trade history
+    half_kelly: float = 0.0  # Recommended conservative Kelly
+    
+    # Mar Ratio (similar to Calmar but uses max DD $)
+    mar_ratio: float = 0.0  
+    
+    # Ulcer Index (measures downside volatility)
+    ulcer_index: float = 0.0
+    
+    # Tail Ratio (measures tail risk)
+    tail_ratio: float = 0.0  # 95th percentile / 5th percentile
+
+
 
 @dataclass
 class SlotConfig:

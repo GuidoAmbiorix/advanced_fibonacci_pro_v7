@@ -630,12 +630,19 @@ class TradingBot:
             )
             return
 
-        # STEP 3: Calculate lot size with adaptive risk
+        # STEP 3: Calculate Kelly fraction for optimal sizing
+        # Uses recent trade history to determine optimal position size
+        kelly_fraction = await self._calculate_kelly_from_history()
+        kelly_mode = getattr(self.config, 'kelly_mode', 'HALF')  # Default to conservative Half-Kelly
+        
+        # STEP 4: Calculate lot size with adaptive risk AND Kelly adjustment
         lot_size = self.mt5_connector.calculate_lot_size(
             symbol=signal.symbol,
             risk_percent=adaptive_risk_percent,  # Use adaptive risk instead of config
             sl_distance=sl_distance,
-            account_balance=account_balance
+            account_balance=account_balance,
+            kelly_fraction=kelly_fraction,  # Pass Kelly for optimal sizing
+            kelly_mode=kelly_mode
         )
 
         # Log risk adjustment
@@ -982,6 +989,68 @@ class TradingBot:
         finally:
             db.close()
 
+    async def _calculate_kelly_from_history(self) -> float:
+        """
+        Calculate Kelly optimal fraction from recent trade history.
+        
+        Uses the formula: f* = (bp - q) / b
+        where:
+            p = win rate
+            q = 1 - p = loss rate  
+            b = avg_win / avg_loss (profit factor approximation)
+        
+        Returns:
+            Kelly fraction (0.0 - 1.0), or None if insufficient data
+        """
+        db = SessionLocal()
+        try:
+            # Get recent closed trades (minimum 20 for statistical significance)
+            min_trades = 20
+            recent_trades = db.query(Trade).filter(
+                Trade.user_id == self.config.user_id,
+                Trade.status == "CLOSED"
+            ).order_by(Trade.closed_at.desc()).limit(100).all()
+
+            if len(recent_trades) < min_trades:
+                logger.debug(f"Insufficient trades for Kelly ({len(recent_trades)}/{min_trades})")
+                return None  # Not enough data, skip Kelly adjustment
+
+            # Calculate win rate and average win/loss
+            wins = [t for t in recent_trades if t.profit_loss > 0]
+            losses = [t for t in recent_trades if t.profit_loss < 0]
+
+            if len(wins) == 0 or len(losses) == 0:
+                return None  # Need both wins and losses
+
+            win_rate = len(wins) / len(recent_trades)  # p
+            loss_rate = 1 - win_rate  # q
+            
+            avg_win = sum(t.profit_loss for t in wins) / len(wins)
+            avg_loss = abs(sum(t.profit_loss for t in losses) / len(losses))
+            
+            if avg_loss == 0:
+                return None
+
+            b = avg_win / avg_loss  # Profit factor approximation
+            
+            # Kelly formula: f* = (bp - q) / b
+            kelly_fraction = (b * win_rate - loss_rate) / b
+            
+            # Cap at reasonable bounds (0 to 0.25 for safety)
+            kelly_fraction = max(0.0, min(kelly_fraction, 0.25))
+            
+            logger.info(
+                f"📊 Kelly Analysis: WR={win_rate*100:.1f}%, AvgW=${avg_win:.0f}, "
+                f"AvgL=${avg_loss:.0f}, b={b:.2f}, f*={kelly_fraction:.4f}"
+            )
+            
+            return kelly_fraction if kelly_fraction > 0 else None
+
+        except Exception as e:
+            logger.exception(f"Error calculating Kelly: {e}")
+            return None
+        finally:
+            db.close()
 
 class BotManager:
     """

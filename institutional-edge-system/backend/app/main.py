@@ -18,6 +18,8 @@ from app.models.database import Base, User, BotConfig, Trade
 from app.api import database, auth, stats, fundamentals, settings as settings_api, news, logs, backtest, market, accounts, trading, portfolio, slots
 # TradingView Integration APIs
 from app.api import annotations, grid, backtest_advanced
+# Quantitative Trading APIs (from Dr. Chan's book concepts)
+from app.api import kelly, regime, validation
 from app.core.mt5_connector import MT5Connector
 from app.core.trading_engine import TradingEngine
 from app.schemas import schemas
@@ -59,6 +61,11 @@ app.include_router(slots.router, prefix="/api/slots", tags=["slots"])
 app.include_router(annotations.router, prefix="/api", tags=["tradingview-annotations"])
 app.include_router(grid.router, prefix="/api", tags=["tradingview-grid"])
 app.include_router(backtest_advanced.router, prefix="/api", tags=["tradingview-visualizations"])
+
+# Quantitative Trading - Kelly Criterion Position Sizing
+app.include_router(kelly.router, prefix="/api/kelly", tags=["kelly-position-sizing"])
+app.include_router(regime.router, prefix="/api/regime", tags=["market-regime"])
+app.include_router(validation.router, prefix="/api/validation", tags=["oos-bias-detection"])
 
 # from app.api.endpoints import terminals # Obsolete
 # app.include_router(terminals.router, prefix="/api/terminals", tags=["terminals"])

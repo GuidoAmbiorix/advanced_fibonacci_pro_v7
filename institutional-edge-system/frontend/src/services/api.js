@@ -307,5 +307,108 @@ export default {
   async createBotAccount(botId, accountData) {
     const response = await api.post(`/api/accounts/bot/${botId}`, accountData)
     return response.data
+  },
+
+  // ============================================================================
+  // Kelly Criterion Position Sizing (Quantitative Trading)
+  // ============================================================================
+
+  async calculateKelly(winRate, riskReward, accountBalance = 10000) {
+    const response = await api.get('/api/kelly/quick', {
+      params: { win_rate: winRate, risk_reward: riskReward, account_balance: accountBalance }
+    })
+    return response.data
+  },
+
+  async calculateKellyFromStats(winRate, avgWin, avgLoss, accountBalance = 10000) {
+    const response = await api.post('/api/kelly/calculate', {
+      win_rate: winRate,
+      avg_win: avgWin,
+      avg_loss: avgLoss,
+      account_balance: accountBalance
+    })
+    return response.data
+  },
+
+  async calculateKellyFromHistory(days = 90, accountBalance = 10000) {
+    const response = await api.get('/api/kelly/from-history', {
+      params: { days, account_balance: accountBalance }
+    })
+    return response.data
+  },
+
+  async calculateKellyPositionSize(request) {
+    const response = await api.post('/api/kelly/position-size', request)
+    return response.data
+  },
+
+  // ============================================================================
+  // Market Regime Detection (Quantitative Trading)
+  // ============================================================================
+
+  async getMarketRegime(symbol, timeframe = 'H1', lookback = 100) {
+    const response = await api.get(`/api/regime/current/${symbol}`, {
+      params: { timeframe, lookback }
+    })
+    return response.data
+  },
+
+  async getMultiSymbolRegimes(symbols, timeframe = 'H1', lookback = 100) {
+    const response = await api.get('/api/regime/multi-symbol', {
+      params: { symbols: symbols.join(','), timeframe, lookback }
+    })
+    return response.data
+  },
+
+  async getRegimeSummary() {
+    const response = await api.get('/api/regime/summary')
+    return response.data
+  },
+
+  // ============================================================================
+  // OOS Validation & Bias Detection (Quantitative Trading)
+  // ============================================================================
+
+  async validateOOS(inSampleTrades, outOfSampleTrades, initialBalance = 10000) {
+    const response = await api.post('/api/validation/oos/validate', {
+      in_sample_trades: inSampleTrades,
+      out_of_sample_trades: outOfSampleTrades,
+      initial_balance: initialBalance
+    })
+    return response.data
+  },
+
+  async checkBiases(trades, strategyParams = null) {
+    const response = await api.post('/api/validation/bias/check', {
+      trades,
+      strategy_params: strategyParams
+    })
+    return response.data
+  },
+
+  async getOOSThresholds() {
+    const response = await api.get('/api/validation/oos/thresholds')
+    return response.data
+  },
+
+  async quickBiasCheck(tradeCount, winRate, profitFactor, maxDrawdown, numParams = 5) {
+    const response = await api.get(`/api/validation/bias/quick-check/${tradeCount}`, {
+      params: {
+        win_rate: winRate,
+        profit_factor: profitFactor,
+        max_drawdown: maxDrawdown,
+        num_parameters: numParams
+      }
+    })
+    return response.data
+  },
+
+  // Direct axios instance for advanced usage
+  get(url, config) {
+    return api.get(url, config)
+  },
+
+  post(url, data, config) {
+    return api.post(url, data, config)
   }
 }

@@ -787,9 +787,25 @@ class MT5Connector:
         symbol: str,
         risk_percent: float,
         sl_distance: float,
-        account_balance: float
+        account_balance: float,
+        kelly_fraction: float = None,
+        kelly_mode: str = "HALF"  # FULL, HALF, QUARTER
     ) -> float:
-        """Calculate lot size based on risk percentage and stop loss distance"""
+        """
+        Calculate lot size based on risk percentage and stop loss distance.
+        
+        Args:
+            symbol: Trading symbol
+            risk_percent: Base risk percentage (1.0 = 1%)
+            sl_distance: Stop loss distance in price
+            account_balance: Account balance in USD
+            kelly_fraction: Optional Kelly optimal fraction (0-1). 
+                           If provided, risk_percent will be adjusted to min(risk_percent, kelly_adjusted)
+            kelly_mode: FULL (100% Kelly), HALF (50% Kelly), QUARTER (25% Kelly)
+        
+        Returns:
+            Calculated lot size
+        """
         symbol = self._normalize_symbol(symbol)
 
         try:
@@ -798,7 +814,35 @@ class MT5Connector:
                 logger.error(f"Symbol info not found for {symbol}")
                 return 0.01
 
-            risk_amount = account_balance * (risk_percent / 100)
+            # ================================================================
+            # KELLY-ADJUSTED RISK (from Dr. Chan's Quantitative Trading)
+            # If Kelly fraction is provided, cap risk at Kelly-recommended level
+            # ================================================================
+            effective_risk_percent = risk_percent
+            
+            if kelly_fraction is not None and kelly_fraction > 0:
+                # Apply Kelly mode scaling
+                kelly_multiplier = {
+                    "FULL": 1.0,
+                    "HALF": 0.5,
+                    "QUARTER": 0.25
+                }.get(kelly_mode, 0.5)
+                
+                kelly_risk = kelly_fraction * kelly_multiplier * 100  # Convert to percent
+                
+                # Don't exceed the configured risk, but can reduce based on Kelly
+                if kelly_risk < risk_percent:
+                    effective_risk_percent = kelly_risk
+                    logger.info(
+                        f"🎯 Kelly Adjustment: Base risk {risk_percent}% → {effective_risk_percent:.2f}% "
+                        f"(f*={kelly_fraction:.3f}, mode={kelly_mode})"
+                    )
+                else:
+                    logger.debug(
+                        f"Kelly allows higher risk ({kelly_risk:.2f}%), using configured {risk_percent}%"
+                    )
+
+            risk_amount = account_balance * (effective_risk_percent / 100)
             tick_size = symbol_info.trade_tick_size
             tick_value = symbol_info.trade_tick_value
             
@@ -818,8 +862,8 @@ class MT5Connector:
             lot_size = max(symbol_info.volume_min, min(lot_size, symbol_info.volume_max))
 
             logger.debug(
-                "Calculated lot size for {}: {:.2f} (Risk: ${:.2f}, Dist: {:.5f}, Risk/Lot: ${:.2f})", 
-                symbol, lot_size, risk_amount, sl_distance, risk_per_lot
+                "Calculated lot size for {}: {:.2f} (Risk: ${:.2f} @ {}%, Dist: {:.5f}, Risk/Lot: ${:.2f})", 
+                symbol, lot_size, risk_amount, effective_risk_percent, sl_distance, risk_per_lot
             )
             return lot_size
 
