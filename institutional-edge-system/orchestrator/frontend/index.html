@@ -193,8 +193,8 @@
                             this.instances = newInstances.map(newItem => {
                                 const oldItem = this.instances.find(old => old.name === newItem.name)
                                 if (oldItem) {
-                                    // Keep local 'STARTING...' if server still says 'STOPPED'
-                                    if (oldItem.status === 'STARTING...' && newItem.status !== 'RUNNING') return oldItem
+                                    // Keep local 'STARTING...' if server still says 'STOPPED' (avoid flicker)
+                                    if (oldItem.status === 'STARTING...' && newItem.status === 'STOPPED') return oldItem
                                     // Keep local 'STOPPING...' if server still says 'RUNNING' || 'RESTARTING'
                                     if (oldItem.status === 'STOPPING...' && newItem.status !== 'STOPPED') return oldItem
                                 }

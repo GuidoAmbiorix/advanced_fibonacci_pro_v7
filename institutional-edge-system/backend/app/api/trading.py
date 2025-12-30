@@ -146,7 +146,8 @@ class LiveTradingSession:
                 # Update News Filter (Hourly)
                 if (datetime.utcnow() - last_news_update).total_seconds() > 3600:
                     try:
-                        self.engine.update_news(self.mt5)
+                        # TODO: Implement News Service. MT5Connector does not provide news.
+                        self.engine.update_news([]) 
                         last_news_update = datetime.utcnow()
                     except Exception as e:
                         logger.error(f"Failed to update news: {e}")
@@ -247,7 +248,18 @@ class LiveTradingSession:
                 if signals:
                     logger.info(f"{self.session_id}: Found {len(signals)} signals")
                     
-                    for signal in signals:
+                    from types import SimpleNamespace
+                    for signal_data in signals:
+                        # Convert dict to object for compatibility
+                        if isinstance(signal_data, dict):
+                            # Handle 'price' vs 'entry_price' mapping
+                            if 'entry_price' not in signal_data and 'price' in signal_data:
+                                signal_data['entry_price'] = signal_data['price']
+                            signal = SimpleNamespace(**signal_data)
+                            if not hasattr(signal, 'confluence_score'):
+                                signal.confluence_score = 10 
+                        else:
+                            signal = signal_data
                         # Direction filter
                         if direction != 'BOTH':
                             if direction == 'BUY_ONLY' and signal.signal_type != 'BUY':
@@ -256,7 +268,11 @@ class LiveTradingSession:
                                 continue
                         
                         # Confluence filter
-                        if signal.confluence_score < self.config['min_confluence_score']:
+                        # signal is a dictionary or object? In GoldenEngine it's a dict. 
+                        # But code accesses signal.confluence_score (object attribute access).
+                        # GoldenEngine returns dicts (line 194 core.py).
+                        # Accessing defaults if missing to avoid attribute error if it's a dict.
+                        if hasattr(signal, 'confluence_score') and signal.confluence_score < self.config['min_confluence_score']:
                             continue
                         
                         # Check existing positions
@@ -264,9 +280,23 @@ class LiveTradingSession:
                         if positions:
                             logger.info(f"{self.session_id}: Position already open for {symbol}")
                             continue
-                        
+                            
                         # Execute trade
                         await self._execute_trade(signal, account_info)
+
+                else:
+                    try:
+                        struct = analysis.get('structure', {})
+                        trend = struct.trend if hasattr(struct, 'trend') else struct.get('trend', 'Unknown')
+                    except Exception as e:
+                        logger.error(f"Trend extraction error: {e}, StructType: {type(analysis.get('structure'))}")
+                        trend = 'Unknown'
+                    
+                    if trend == 'Unknown':
+                         s = analysis.get('structure')
+                         logger.warning(f"Trend is Unknown. Struct Type: {type(s)}, Content: {s}")
+
+                    logger.info(f"Analysis complete: No signals found for {symbol} (Market Structure: {trend})")
 
                 # 8. Manage open positions (partial TPs, trailing stops)
                 await self._manage_open_positions()
@@ -495,10 +525,10 @@ class LiveTradingSession:
         
         session_times = {
             'ASIA': (0, 7),
-            'LONDON': (7, 16),
-            'NY': (12, 21),
-            'ASIA_LONDON': (0, 16),
-            'LONDON_NY': (7, 21),
+            'LONDON': (6, 15), # 2:00 AM RD (UTC-4) = 6:00 UTC
+            'NY': (12, 21),    # 8:00 AM RD (UTC-4) = 12:00 UTC
+            'ASIA_LONDON': (0, 15),
+            'LONDON_NY': (6, 21),
         }
         
         if session in session_times:

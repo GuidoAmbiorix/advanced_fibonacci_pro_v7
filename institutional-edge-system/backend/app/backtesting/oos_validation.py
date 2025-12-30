@@ -60,6 +60,9 @@ class ValidationResult:
     in_sample_trades: int
     out_of_sample_trades: int
     
+    kelly_fraction: float
+    half_kelly: float
+    
     data_snooping_score: float          # 0-100, higher = more snooping risk
     degradation_factor: float           # OOS / IS ratio
     
@@ -201,6 +204,9 @@ class OOSValidator:
             oos_trades=len(out_of_sample_trades)
         )
         
+        # Calculate Kelly (Based on IS data for sizing)
+        kelly, half_kelly = OOSValidator._calculate_kelly(in_sample_trades)
+        
         # Validation checks
         if len(out_of_sample_trades) < OOSValidator.MIN_TRADES_FOR_SIGNIFICANCE:
             warnings.append(f"OOS trades ({len(out_of_sample_trades)}) below minimum ({OOSValidator.MIN_TRADES_FOR_SIGNIFICANCE})")
@@ -243,11 +249,46 @@ class OOSValidator:
             out_of_sample_win_rate=round(oos_win_rate, 2),
             in_sample_trades=len(in_sample_trades),
             out_of_sample_trades=len(out_of_sample_trades),
+            kelly_fraction=round(kelly, 4),
+            half_kelly=round(half_kelly, 4),
             data_snooping_score=round(snooping_score, 2),
             degradation_factor=round(degradation, 4),
             recommendation=recommendation,
             warnings=warnings
         )
+    
+    @staticmethod
+    def _calculate_kelly(trades: List[Dict]) -> Tuple[float, float]:
+        """Calculate Kelly Fraction (and Half Kelly)"""
+        pnls = [t.get('pnl', 0) for t in trades]
+        wins = [p for p in pnls if p > 0]
+        losses = [abs(p) for p in pnls if p < 0]
+        
+        if not wins or not losses:
+            return 0.0, 0.0
+            
+        avg_win = np.mean(wins)
+        avg_loss = np.mean(losses)
+        
+        if avg_loss == 0:
+            return 0.0, 0.0
+            
+        win_rate = len(wins) / len(pnls)
+        loss_rate = len(losses) / len(pnls)
+        r_ratio = avg_win / avg_loss
+        
+        # Kelly = W - (L / R)
+        if r_ratio > 0:
+            kelly = win_rate - (loss_rate / r_ratio)
+            
+            # Check for negative expectancy behavior (simplistic check)
+            # If Kelly < 0, return 0
+            if kelly < 0:
+                kelly = 0.0
+                
+            return kelly, kelly / 2
+            
+        return 0.0, 0.0
     
     @staticmethod
     def walk_forward_analysis(
@@ -464,6 +505,8 @@ def validate_oos(
         "out_of_sample_win_rate": result.out_of_sample_win_rate,
         "in_sample_trades": result.in_sample_trades,
         "out_of_sample_trades": result.out_of_sample_trades,
+        "kelly_fraction": result.kelly_fraction,
+        "half_kelly": result.half_kelly,
         "data_snooping_score": result.data_snooping_score,
         "degradation_factor": result.degradation_factor,
         "recommendation": result.recommendation,

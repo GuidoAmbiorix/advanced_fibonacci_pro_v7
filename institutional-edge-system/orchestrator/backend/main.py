@@ -106,9 +106,9 @@ async def list_instances():
                 if api_port:
                     try:
                         async with httpx.AsyncClient() as http_client:
-                            # Use localhost as the orchestrator is running on the host
-                            # and the instance's API is exposed via port mapping to localhost.
-                            response = await http_client.get(f"http://localhost:{api_port}/health", timeout=2)
+                            # Use container name as hostname since we are on the same docker network (bot-net)
+                            # Backend service always listens on 8000 internally
+                            response = await http_client.get(f"http://{container_name}:8000/health", timeout=2)
                             if response.status_code == 200:
                                 health_data = response.json()
                                 if health_data.get("mt5_status") == "connected":

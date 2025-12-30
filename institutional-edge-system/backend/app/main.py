@@ -155,6 +155,23 @@ def fetch_broadcast_data(mt5_conn, bot_mgr):
         logger.error(f"Error fetching broadcast data: {e}")
         return None
 
+async def connect_mt5_background():
+    """Background task to wait for MT5 connection"""
+    global mt5_connector
+    
+    # Retry Loop: Wait for MT5 Installation/Startup
+    max_retries = 120 # 10 minutes (increased for installation time)
+    for i in range(max_retries):
+        logger.info(f"Connecting to MT5 (Attempt {i+1}/{max_retries})...")
+        if mt5_connector.connect():
+            logger.info("✅ MT5 connected successfully")
+            return
+        
+        logger.warning("⏳ MT5 not ready (still installing/starting?)... Waiting 5s.")
+        await asyncio.sleep(5)
+    
+    logger.error("❌ MT5 connection failed after timeout - running in disconnected mode")
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize on startup"""
@@ -228,20 +245,8 @@ async def startup_event():
 
     mt5_connector = MT5Connector(mt5_config)
     
-    # Retry Loop: Wait for MT5 Installation/Startup
-    max_retries = 60 # 5 minutes
-    for i in range(max_retries):
-        logger.info(f"Connecting to MT5 (Attempt {i+1}/{max_retries})...")
-        connected = mt5_connector.connect()
-        if connected:
-            logger.info("✅ MT5 connected successfully")
-            break
-        else:
-            logger.warning("⏳ MT5 not ready (still installing/starting?)... Waiting 5s.")
-            await asyncio.sleep(5)
-    
-    if not mt5_connector.connected:
-        logger.error("❌ MT5 connection failed after timeout - running in disconnected mode")
+    # Start Connection in Background
+    asyncio.create_task(connect_mt5_background())
 
     # Initialize bot manager
     global bot_manager

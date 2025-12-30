@@ -79,7 +79,7 @@ class GoldenEngine:
             Dict containing 'signals', 'analysis_data', 'debug_info'
         """
         if df is None or len(df) < 100:
-            return {'signals': []}
+            return {'signals': [], 'structure': None}
 
         # 1. Structure Analysis
         structure = self.structure_analyzer.analyze(df)
@@ -109,17 +109,17 @@ class GoldenEngine:
                 
                 if macro_structure.trend == "UP" and direction == "SELL":
                      logger.info(f"🚫 Signal BLOCKED by Macro Bias (D1: {macro_structure.trend})")
-                     return {'signals': []}
+                     return {'signals': [], 'structure': structure}
                      
                 if macro_structure.trend == "DOWN" and direction == "BUY":
                      logger.info(f"🚫 Signal BLOCKED by Macro Bias (D1: {macro_structure.trend})")
-                     return {'signals': []}
+                     return {'signals': [], 'structure': structure}
                      
                 if macro_structure.trend == "NEUTRAL":
                     # Optional: Allow invalidation if immediate structure is very strong?
                     # For now, safe approach: Block.
                     logger.info(f"⚠️ Signal BLOCKED: Macro Bias is NEUTRAL (Ranging)")
-                    return {'signals': []}
+                    return {'signals': [], 'structure': structure}
             # --- MACRO BIAS END ---
 
             # --- CONFIRMATION TIMEFRAME CHECK (Tier 2) ---
@@ -132,7 +132,7 @@ class GoldenEngine:
                 
                 if htf_structure.trend != structure.trend:
                      logger.info(f"🚫 Signal BLOCKED by Confirmation TF ({htf_structure.trend} != {structure.trend})")
-                     return {'signals': []}
+                     return {'signals': [], 'structure': structure}
             # --- CONFIRMATION END ---
             
             for zone in fib_zones:
@@ -203,3 +203,11 @@ class GoldenEngine:
             'structure': structure,
             'fib_zones': fib_zones
         }
+
+    def update_news(self, events: List[Dict]):
+        """
+        Update high-impact news events for filtering.
+        Current implementation: Log only (Pass-through).
+        """
+        if events:
+            logger.debug(f"📰 GoldenEngine received {len(events)} news events (No Filtering Active)")

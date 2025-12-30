@@ -102,7 +102,8 @@ class BacktestEngine:
             
             # Structure default
             if 'structure' not in golden_config: golden_config['structure'] = {}
-            golden_config['structure']['zigzag_lookback'] = 5
+            if 'zigzag_lookback' not in golden_config['structure']:
+                golden_config['structure']['zigzag_lookback'] = 5
             
             return GoldenEngine(golden_config)
             

@@ -109,6 +109,22 @@ class MetricsCalculator:
         if len(returns) > 1:
             metrics.sharpe_ratio = MetricsCalculator._calculate_sharpe(returns)
             metrics.sortino_ratio = MetricsCalculator._calculate_sortino(returns)
+            
+        # Kelly Criterion
+        if metrics.average_loss > 0:
+            win_prob = metrics.win_rate / 100
+            loss_prob = metrics.loss_rate / 100
+            r_ratio = metrics.average_win / metrics.average_loss
+            
+            # Kelly = W - (1-W)/R
+            if r_ratio > 0:
+                metrics.kelly_fraction = win_prob - (loss_prob / r_ratio)
+                metrics.half_kelly = metrics.kelly_fraction / 2
+                
+                # Check for "gambler's ruin" (negative expectancy) which breaks Kelly
+                if metrics.expectancy <= 0:
+                     metrics.kelly_fraction = 0.0
+                     metrics.half_kelly = 0.0
 
         # Calmar ratio
         if metrics.max_drawdown > 0:
