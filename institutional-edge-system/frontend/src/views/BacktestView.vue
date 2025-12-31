@@ -380,21 +380,11 @@
             <div class="flex items-center justify-between bg-gray-800 p-2 rounded border border-gray-700">
                <span class="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Engine</span>
                 <div class="flex space-x-1">
-                   <button @click="slot.engine_type = 'GOLDEN'" 
-                           class="px-2 py-1 text-[10px] rounded transition-colors"
-                           :class="slot.engine_type === 'GOLDEN' || !slot.engine_type ? 'bg-amber-500 text-white font-bold shadow-lg shadow-amber-500/20' : 'text-gray-400 hover:text-white'">
-                     🏆 Golden
+                   <button @click="slot.engine_type = 'XAU_PRO'" 
+                           class="px-2 py-1 text-[10px] rounded transition-colors bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold shadow-lg shadow-yellow-500/20 cursor-default">
+                     🥇 Institutional Gold (XAU PRO)
                    </button>
-                   <button @click="slot.engine_type = 'SILVER'" 
-                           class="px-2 py-1 text-[10px] rounded transition-colors"
-                           :class="slot.engine_type === 'SILVER' ? 'bg-slate-500 text-white font-bold shadow-lg shadow-slate-500/20' : 'text-gray-400 hover:text-white'">
-                     ⚪ Silver
-                   </button>
-                   <button @click="slot.engine_type = 'BRONZE'" 
-                           class="px-2 py-1 text-[10px] rounded transition-colors"
-                           :class="slot.engine_type === 'BRONZE' ? 'bg-orange-700 text-white font-bold shadow-lg shadow-orange-700/20' : 'text-gray-400 hover:text-white'">
-                     🟤 Bronze
-                   </button>
+                </div>
                 </div>
             </div>
 
@@ -492,146 +482,91 @@
               </div>
             </div>
             
-            <!-- SILVER ENGINE CONTROLS -->
-            <div v-if="slot.engine_type === 'SILVER'" class="space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
-               <div class="p-2 bg-slate-800/50 rounded border border-slate-600/30">
+            <!-- XAU PRO CONFIGURATION -->
+            <div class="space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
+               <!-- MACD Momentum -->
+               <div class="p-2 bg-yellow-900/10 rounded border border-yellow-600/30">
                   <div class="mb-2 flex items-center gap-2">
-                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">⚡ Velocity Settings</span>
+                     <span class="text-[10px] font-bold text-yellow-400 uppercase tracking-wider">⚡ Momentum (MACD)</span>
                   </div>
                   <div class="grid grid-cols-3 gap-2">
                      <div>
-                        <label class="text-[10px] text-gray-400">Fast MACD</label>
-                        <input type="number" v-model.number="slot.config.macd_fast" placeholder="5"
+                        <label class="text-[10px] text-gray-400">Fast</label>
+                        <input type="number" v-model.number="slot.config.macd_fast" placeholder="8"
                                class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
                      </div>
                      <div>
-                        <label class="text-[10px] text-gray-400">Slow MACD</label>
-                        <input type="number" v-model.number="slot.config.macd_slow" placeholder="13"
+                        <label class="text-[10px] text-gray-400">Slow</label>
+                        <input type="number" v-model.number="slot.config.macd_slow" placeholder="21"
                                class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
                      </div>
                      <div>
                         <label class="text-[10px] text-gray-400">Signal</label>
-                        <input type="number" v-model.number="slot.config.macd_signal" placeholder="8"
+                        <input type="number" v-model.number="slot.config.macd_signal" placeholder="5"
                                class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
                      </div>
                   </div>
                </div>
-            </div>
 
-            <!-- BRONZE ENGINE CONTROLS -->
-            <div v-else-if="slot.engine_type === 'BRONZE'" class="space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
-               <div class="p-2 bg-orange-900/10 rounded border border-orange-600/30">
+               <!-- RSI Value -->
+               <div class="p-2 bg-purple-900/10 rounded border border-purple-600/30">
                   <div class="mb-2 flex items-center gap-2">
-                     <span class="text-[10px] font-bold text-orange-400 uppercase tracking-wider">📉 Range Settings</span>
+                     <span class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">📊 Value (RSI)</span>
+                  </div>
+                  <div class="grid grid-cols-3 gap-2">
+                     <div>
+                        <label class="text-[10px] text-gray-400">Period</label>
+                        <input type="number" v-model.number="slot.config.rsi_period" placeholder="14"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                     <div>
+                        <label class="text-[10px] text-gray-400">Buy Ceiling</label>
+                        <input type="number" v-model.number="slot.config.rsi_buy_threshold" placeholder="45"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-green-200 text-xs">
+                     </div>
+                     <div>
+                        <label class="text-[10px] text-gray-400">Sell Floor</label>
+                        <input type="number" v-model.number="slot.config.rsi_sell_threshold" placeholder="55"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-red-200 text-xs">
+                     </div>
+                  </div>
+               </div>
+               
+               <!-- Structure & Risk -->
+               <div class="p-2 bg-blue-900/10 rounded border border-blue-500/20">
+                  <div class="mb-2 flex items-center gap-2">
+                     <span class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">🛡️ Risk & Structure</span>
                   </div>
                   <div class="grid grid-cols-2 gap-2">
                      <div>
-                        <label class="text-[10px] text-gray-400">BB Length</label>
-                        <input type="number" v-model.number="slot.config.bb_length" placeholder="20"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-orange-200 text-xs">
+                        <label class="text-[10px] text-gray-400">SL ATR Multiplier</label>
+                        <input type="number" v-model.number="slot.sl_atr_multiplier" step="0.1" placeholder="1.0"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
                      </div>
                      <div>
-                        <label class="text-[10px] text-gray-400">BB StdDev</label>
-                        <input type="number" v-model.number="slot.config.bb_std" step="0.1" placeholder="2.0"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-orange-200 text-xs">
+                         <label class="text-[10px] text-gray-400">ZigZag Lookback</label>
+                         <input type="number" v-model.number="slot.zigzag_lookback" min="3" max="20" placeholder="8"
+                                class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
                      </div>
                   </div>
                </div>
             </div>
+
+
+
+
 
              <!-- LEGACY ENGINE CONTROLS (Only if explicitly Adaptive) -->
-            <div v-else-if="slot.engine_type === 'ADAPTIVE'" class="space-y-3 opacity-75 grayscale-[0.5]">
-              <div class="text-[10px] bg-red-900/20 text-red-400 px-2 py-1 rounded text-center font-bold">LEGACY MODE DEPRECATED</div>
-              <!-- Row 3: RSI Settings -->
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="text-[10px] text-gray-500">RSI Period</label>
-                  <input type="number" v-model.number="slot.rsi_period" min="5" max="21" 
-                         class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                </div>
-                <div>
-                  <label class="text-[10px] text-gray-500">RSI OB</label>
-                  <input type="number" v-model.number="slot.rsi_overbought" min="60" max="90" 
-                         class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                </div>
-                <div>
-                  <label class="text-[10px] text-gray-500">RSI OS</label>
-                  <input type="number" v-model.number="slot.rsi_oversold" min="10" max="40" 
-                         class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                </div>
-              </div>
-              
-              <!-- Row 4: Min Confluence + Max Hours -->
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="text-[10px] text-gray-500">Min Confluence</label>
-                  <input type="number" v-model.number="slot.min_confluence" min="3" max="10" 
-                         class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                </div>
-                <div>
-                  <label class="text-[10px] text-gray-500">Max Hours (0=∞)</label>
-                  <input type="number" v-model.number="slot.max_duration" min="0" max="48" 
-                         class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                </div>
-              </div>
-              
-              <!-- Row 5: Strategies -->
-              <div class="grid grid-cols-2 gap-1 text-[10px]">
-                <label class="flex items-center space-x-1">
-                  <input type="checkbox" v-model="slot.enable_vwap" class="h-3 w-3">
-                  <span class="text-gray-400">VWAP</span>
-                </label>
-                <label class="flex items-center space-x-1">
-                  <input type="checkbox" v-model="slot.enable_stoch" class="h-3 w-3">
-                  <span class="text-gray-400">Stoch</span>
-                </label>
-                <label class="flex items-center space-x-1">
-                  <input type="checkbox" v-model="slot.enable_institutional" class="h-3 w-3">
-                  <span class="text-gray-400">Inst.</span>
-                </label>
-                <label class="flex items-center space-x-1">
-                  <input type="checkbox" v-model="slot.enable_fibonacci" class="h-3 w-3">
-                  <span class="text-gray-400">Fib</span>
-                </label>
-              </div>
-            </div>
 
-            <!-- GOLDEN ENGINE CONTROLS -->
-            <div v-else-if="slot.engine_type === 'GOLDEN' || !slot.engine_type" class="space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
-               <!-- Market Structure -->
-               <div class="p-2 bg-amber-900/10 rounded border border-amber-500/20">
-                  <div class="mb-2 flex items-center gap-2">
-                     <span class="text-[10px] font-bold text-amber-500 uppercase tracking-wider">📐 Market Structure</span>
-                  </div>
-                  <div class="grid grid-cols-2 gap-2">
-                     <div class="col-span-2">
-                        <label class="text-[10px] text-gray-400">ZigZag Lookback</label>
-                        <input type="number" v-model.number="slot.zigzag_lookback" min="3" max="20"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-amber-200 text-xs focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20">
-                     </div>
-                  </div>
-               </div>
-               
-               <!-- Exit Management (Max Duration) -->
-               <div class="grid grid-cols-2 gap-2">
-                  <div>
-                    <label class="text-[10px] text-gray-500">Max Duration (Hours)</label>
-                    <div class="flex items-center gap-1">
-                       <input type="number" v-model.number="slot.max_duration" min="0" step="0.5" 
-                              class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs focus:border-blue-500">
-                    </div>
-                    <div class="text-[9px] text-gray-600 mt-0.5" v-if="slot.max_duration === 0">
-                       0 = No time limit
-                    </div>
-                  </div>
-               </div>
-               
-               <!-- Risk Management Info -->
-               <div class="px-2 py-1.5 bg-blue-900/10 rounded border border-blue-500/10 text-[10px] text-blue-300/70 italic text-center">
-                  Risk & TSL handled by Golden Risk Manager
-               </div>
-            </div>
-          </div>
+
+              
+
+              
+
+
+
+
+
 
           
           <!-- Progress / Results -->
@@ -1229,12 +1164,13 @@ const symbolPresets = {
   },
   'XAUUSD': { 
     name: 'XAU/USD', emoji: '🥇', volatility: 'EXTREME',
-    timeframe: 'M5', tsl_mode: 'ATR',
-    risk_percent: 0.5, tp_ratio: 1.5, sl_atr_multiplier: 2.0, 
-    rsi_period: 9, rsi_overbought: 80, rsi_oversold: 20, min_confluence: 5, max_duration: 2,
+    timeframe: 'M15', tsl_mode: 'ATR',
+    risk_percent: 0.5, tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
+    rsi_period: 9, rsi_overbought: 50, rsi_oversold: 50, min_confluence: 5, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',  // Trade both directions for more opportunities
-    description: 'Gold 🥇 Extreme volatility - Wider stops' 
+    zigzag_lookback: 10,
+    direction: 'BOTH', 
+    description: 'Gold 🥇 High Win Rate - Optimized M15' 
   },
   'USDJPY': { 
     name: 'USD/JPY', emoji: '🇯🇵', volatility: 'MEDIUM',
@@ -1377,9 +1313,16 @@ const slots = ref([
     engine_type: 'ADAPTIVE', zigzag_lookback: 5,
     config: {}
   },  
-  { id: 1, symbol: 'GBPJPY', enabled: false, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    // 💷🇯🇵 GBPJPY: The Dragon
-    ...symbolPresets['GBPJPY'], risk_percent: 0.75, timeframe: 'M5', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'The Dragon Scalper', config: {} },  
+  { id: 1, symbol: 'XAUUSD', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
+    // 🥇 XAUUSD: Institutional Gold (High Win Rate)
+    ...symbolPresets['XAUUSD'], 
+    risk_percent: 0.5, timeframe: 'M15', 
+    tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
+    rsi_period: 9, rsi_overbought: 50, rsi_oversold: 50,
+    zigzag_lookback: 10,
+    description: 'Gold 🥇 High Win Rate - Optimized M15', 
+    config: {} 
+  },  
   { id: 2, symbol: 'EURGBP', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     // 💶💷 EURGBP: The Channel (Range)
     ...symbolPresets['EURGBP'], 
@@ -2228,7 +2171,20 @@ const saveSlot = async (slot) => {
         console.log(`💾 Created slot ${slot.dbId}`)
       }
     } catch (error) {
-      console.error('Failed to save slot:', error)
+      // Handle 404 (Slot not found in DB but exists in Frontend) - Retry as Create
+      if (error.response && error.response.status === 404 && slot.dbId) {
+        console.warn(`⚠️ Slot ${slot.dbId} not found in DB (404). Re-creating...`)
+        try {
+           const response = await axios.post(`${API_URL}/api/slots/`, payload)
+           slot.dbId = response.data.id
+           console.log(`💾 Re-created slot as ID ${slot.dbId}`)
+           showToastNotification('Sync: Slot re-created on server', 'info')
+        } catch (createError) {
+           console.error('Failed to re-create slot:', createError)
+        }
+      } else {
+        console.error('Failed to save slot:', error)
+      }
     }
   }, 500)  // 500ms debounce
 }

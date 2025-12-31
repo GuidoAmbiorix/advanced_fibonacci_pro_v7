@@ -2,6 +2,8 @@ import pandas as pd
 import logging
 from typing import Dict, Optional, List, Tuple
 from datetime import datetime
+from ta.trend import SMAIndicator
+from ta.volatility import BollingerBands
 
 from .structure import StructureAnalyzer, MarketStructure
 from .fibonacci import FibonacciCalculator
@@ -97,6 +99,28 @@ class GoldenEngine:
             
             direction = "BUY" if structure.trend == "UP" else "SELL"
             
+            # --- v2 ENHANCEMENT: SMA 200 TREND FILTER ---
+            sma200 = SMAIndicator(close=df['close'], window=200).sma_indicator().iloc[-1]
+            if not pd.isna(sma200):
+                if direction == "BUY" and current_price < sma200:
+                    logger.info(f"🚫 Golden BUY Blocked: Price below SMA 200 (Trend Filter)")
+                    return {'signals': [], 'structure': structure}
+                if direction == "SELL" and current_price > sma200:
+                    logger.info(f"🚫 Golden SELL Blocked: Price above SMA 200 (Trend Filter)")
+                    return {'signals': [], 'structure': structure}
+            
+            # --- v2 ENHANCEMENT: BOLLINGER SQUEEZE CHECK ---
+            # Calculate BandWidth: (Upper - Lower) / Middle
+            bb = BollingerBands(close=df['close'], window=20, window_dev=2.0)
+            bw = (bb.bollinger_hband() - bb.bollinger_lband()) / bb.bollinger_mavg()
+            current_bw = bw.iloc[-1]
+            avg_bw = bw.rolling(window=20).mean().iloc[-1]
+            
+            is_squeeze = current_bw < (avg_bw * 0.9) # 10% tighter than average
+            
+            if is_squeeze:
+                logger.info(f"⚡ Golden Engine: Bollinger Squeeze Detected (Energy Building) at Fib Zone")
+
             # --- MACRO BIAS CHECK (Tier 1) ---
             if df_daily is not None and len(df_daily) > 50:
                 # We use 'df_daily' argument but it represents the Macro timeframe (D1/W1)
