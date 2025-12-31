@@ -10,11 +10,10 @@ from typing import Dict, Optional
 from datetime import datetime, timedelta
 from loguru import logger
 
-from app.core.strategy_factory import StrategyFactory
-from app.core.adaptive_multi_strategy_engine import AdaptiveMultiStrategyEngine
+from app.engines.factory import EngineFactory
 from app.core.mt5_connector import MT5Connector
 from app.services.trade_manager import TradeManager
-from app.services.risk_manager import AdaptiveRiskManager
+# from app.services.risk_manager import AdaptiveRiskManager # Deleted
 from app.services.portfolio_manager import PortfolioManager
 from app.services.discord_service import DiscordService
 from app.models.database import BotConfig, Trade, Signal
@@ -52,9 +51,9 @@ class TradingBot:
         # Multi-Account Workers
         self.workers = {} # {account_id: {'process': Process, 'queues': (cmd, resp)}}
         
-        self.trading_engine: Optional[AdaptiveMultiStrategyEngine] = None
+        self.trading_engine = None # Assigned by Factory
         self.trade_manager: Optional[TradeManager] = None
-        self.risk_manager: Optional[AdaptiveRiskManager] = None
+        # self.risk_manager: Optional[AdaptiveRiskManager] = None # Removed
         self.portfolio_manager: Optional[PortfolioManager] = None
         self.last_analysis_time: Optional[datetime] = None
         self.open_positions_count = 0
@@ -95,8 +94,8 @@ class TradingBot:
         self.trade_manager._init_tsl_manager()
         logger.info(f"Trade Manager configured: TSL={self.config.tsl_mode}")
 
-        # Initialize Risk Manager
-        self.risk_manager = AdaptiveRiskManager()
+        # Risk Manager Removed as per request
+        # self.risk_manager = AdaptiveRiskManager()
         
         # Initialize Portfolio Manager
         self.portfolio_manager = PortfolioManager()
@@ -296,8 +295,9 @@ class TradingBot:
             'rsi_oversold': self.config.rsi_oversold,
         }
 
-        self.trading_engine = StrategyFactory.create_strategy(engine_config)
-        logger.info(f"Adaptive Trading Engine initialized (Scalping: {is_scalping})")
+        engine_type = getattr(self.config, 'engine_type', 'golden')
+        self.trading_engine = EngineFactory.create_engine(engine_type, engine_config)
+        logger.info(f"Trading Engine initialized: {engine_type} (Scalping: {is_scalping})")
 
     async def _run_loop(self):
         """Main trading loop"""
@@ -615,13 +615,15 @@ class TradingBot:
         # Get consecutive losses from recent trades
         consecutive_losses = await self._get_consecutive_losses()
 
-        # Calculate adaptive risk percentage
-        adaptive_risk_percent, risk_reason = self.risk_manager.calculate_risk_percent(
-            market_regime="NORMAL",  # Could be enhanced with market volatility detection
-            consecutive_losses=consecutive_losses,
-            current_volatility_percentile=50,  # Default, could calculate from ATR
-            current_drawdown=current_dd
-        )
+        # Calculate risk percentage (Fixed from config now, since adaptive is removed)
+        adaptive_risk_percent = self.config.risk_percent
+        risk_reason = "Fixed Risk"
+        # adaptive_risk_percent, risk_reason = self.risk_manager.calculate_risk_percent(
+        #     market_regime="NORMAL",
+        #     consecutive_losses=consecutive_losses,
+        #     current_volatility_percentile=50,
+        #     current_drawdown=current_dd
+        # )
 
         if adaptive_risk_percent == 0:
             await self._log_activity(

@@ -70,6 +70,12 @@
 
         <!-- Bot Control -->
         <div class="flex items-center space-x-3">
+          <!-- Engine Badge -->
+          <div class="hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded border" :class="engineDetails.color">
+               <span class="text-lg">{{ engineDetails.icon }}</span>
+               <span class="text-xs font-bold tracking-wider">{{ engineDetails.name }}</span>
+          </div>
+
           <button 
             type="button"
             @click.prevent="toggleBot" 
@@ -225,7 +231,18 @@ const riskPercent = ref(1.0);
 
 const marketRegime = ref({
   type: 'TRENDING',
+  type: 'TRENDING',
   volatility: 'NORMAL'
+});
+
+const currentEngineType = ref('GOLDEN'); // Default
+const engineDetails = computed(() => {
+    switch(currentEngineType.value) {
+        case 'GOLDEN': return { icon: '🏆', name: 'GOLDEN', color: 'text-amber-600 bg-amber-50 border-amber-200' };
+        case 'SILVER': return { icon: '⚪', name: 'SILVER', color: 'text-slate-600 bg-slate-50 border-slate-200' };
+        case 'BRONZE': return { icon: '🟤', name: 'BRONZE', color: 'text-orange-800 bg-orange-50 border-orange-200' };
+        default: return { icon: '🛡️', name: 'ADAPTIVE', color: 'text-blue-600 bg-blue-50 border-blue-200' };
+    }
 });
 
 const chartData = ref([]);
@@ -260,6 +277,7 @@ const loadData = async () => {
             
             if (matchingBot) {
                 currentBotId.value = matchingBot.id;
+                currentEngineType.value = matchingBot.engine_type || 'GOLDEN';
                 const status = await api.getBotStatus(currentBotId.value);
                 isBotRunning.value = status.is_running;
             } else {

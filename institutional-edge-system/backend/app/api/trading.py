@@ -25,7 +25,9 @@ from app.core.crypto import decrypt_password
 from app.core.prop_firm_manager import PropFirmManager
 from app.core.mt5_connector import MT5Connector
 from app.core.mt5_connector import MT5Connector
+from app.core.mt5_connector import MT5Connector
 from app.engines.golden.core import GoldenEngine
+from app.engines.factory import EngineFactory
 from app.core.risk_controls import get_risk_controls, RiskControls
 from app.core.socket_server import sio
 
@@ -127,7 +129,9 @@ class LiveTradingSession:
              golden_config['structure'] = {}
         golden_config['structure']['zigzag_lookback'] = 5 # Default
         
-        self.engine = GoldenEngine(golden_config)
+        # Determine Engine Type
+        engine_type = config.get('engine_type', 'golden')
+        self.engine = EngineFactory.create_engine(engine_type, golden_config)
     
     async def run(self):
         """Main trading loop with enhanced features"""

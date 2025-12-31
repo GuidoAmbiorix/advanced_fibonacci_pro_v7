@@ -28,41 +28,46 @@ def register_user(
     """
     Register a new user
     """
-    # Check if user already exists
-    user = db.query(User).filter(User.email == user_in.email).first()
-    if user:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this email already exists in the system.",
-        )
-    
-    user_by_username = db.query(User).filter(User.username == user_in.username).first()
-    if user_by_username:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this username already exists in the system.",
-        )
+    try:
+        # Check if user already exists
+        user = db.query(User).filter(User.email == user_in.email).first()
+        if user:
+            raise HTTPException(
+                status_code=400,
+                detail="The user with this email already exists in the system.",
+            )
+        
+        user_by_username = db.query(User).filter(User.username == user_in.username).first()
+        if user_by_username:
+            raise HTTPException(
+                status_code=400,
+                detail="The user with this username already exists in the system.",
+            )
 
-    # Create new user
-    user = User(
-        email=user_in.email,
-        username=user_in.username,
-        hashed_password=security.get_password_hash(user_in.password),
-        is_active=True,
-        is_admin=False
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
-    return {
-        "id": user.id,
-        "email": user.email,
-        "username": user.username,
-        "is_active": user.is_active,
-        "is_admin": user.is_admin,
-        "created_at": user.created_at
-    }
+        # Create new user
+        user = User(
+            email=user_in.email,
+            username=user_in.username,
+            hashed_password=security.get_password_hash(user_in.password),
+            is_active=True,
+            is_admin=False
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        return {
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+            "is_active": user.is_active,
+            "is_admin": user.is_admin,
+            "created_at": user.created_at
+        }
+    except Exception as e:
+        from loguru import logger
+        logger.exception("Error creating user")
+        raise e
 
 @router.post("/token", response_model=schemas.Token)
 def login_access_token(

@@ -100,30 +100,78 @@
         <!-- Engine Selection -->
         <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm mb-6">
             <h4 class="font-bold text-lg text-slate-800 mb-4">Trading Engine ⚙️</h4>
-            <div class="flex space-x-4">
-                <button 
-                  @click="config.engine_type = 'ADAPTIVE'"
-                  class="flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center space-x-2"
-                  :class="config.engine_type !== 'GOLDEN' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 hover:border-slate-300 text-slate-500'"
-                >
-                  <span class="text-xl">🛡️</span>
-                  <div class="text-left">
-                    <div class="font-bold">Adaptive (Legacy)</div>
-                    <div class="text-xs opacity-75">Multi-Strategy (RSI, Stoch, VWAP)</div>
-                  </div>
-                </button>
-                
+            <div class="grid grid-cols-3 gap-4">
                 <button 
                   @click="config.engine_type = 'GOLDEN'"
-                  class="flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center space-x-2"
+                  class="py-3 px-4 rounded-lg border-2 transition-all flex flex-col items-center justify-center space-y-2"
                   :class="config.engine_type === 'GOLDEN' ? 'border-amber-400 bg-amber-50 text-amber-800' : 'border-slate-200 hover:border-slate-300 text-slate-500'"
                 >
-                  <span class="text-xl">🏆</span>
-                  <div class="text-left">
-                    <div class="font-bold">Golden Engine</div>
-                    <div class="text-xs opacity-75">Structure + Fib + Institutional</div>
+                  <span class="text-2xl">🏆</span>
+                  <div class="text-center">
+                    <div class="font-bold">Golden</div>
+                    <div class="text-xs opacity-75">Trend Retracement</div>
                   </div>
                 </button>
+
+                <button 
+                  @click="config.engine_type = 'SILVER'"
+                  class="py-3 px-4 rounded-lg border-2 transition-all flex flex-col items-center justify-center space-y-2"
+                  :class="config.engine_type === 'SILVER' ? 'border-slate-400 bg-slate-50 text-slate-800' : 'border-slate-200 hover:border-slate-300 text-slate-500'"
+                >
+                  <span class="text-2xl">⚪</span>
+                  <div class="text-center">
+                    <div class="font-bold">Silver</div>
+                    <div class="text-xs opacity-75">MACD Momentum</div>
+                  </div>
+                </button>
+
+                <button 
+                  @click="config.engine_type = 'BRONZE'"
+                  class="py-3 px-4 rounded-lg border-2 transition-all flex flex-col items-center justify-center space-y-2"
+                  :class="config.engine_type === 'BRONZE' ? 'border-orange-700 bg-orange-50 text-orange-900' : 'border-slate-200 hover:border-slate-300 text-slate-500'"
+                >
+                  <span class="text-2xl">🟤</span>
+                  <div class="text-center">
+                    <div class="font-bold">Bronze</div>
+                    <div class="text-xs opacity-75">Range Reversion</div>
+                  </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- SILVER CONFIG -->
+        <div v-if="config.engine_type === 'SILVER'" class="bg-slate-50 p-5 rounded-lg border border-slate-200 animate-fadeIn">
+             <h4 class="font-bold text-slate-800 flex items-center mb-4">
+                <span class="mr-2">⚡</span> Velocity Scalp Settings
+            </h4>
+            <p class="text-sm text-slate-600 mb-4">optimized for M15 Momentum (EURUSD, USDJPY, Gold)</p>
+            <div class="grid grid-cols-2 gap-4">
+                 <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Fast MACD</label>
+                    <div class="text-sm font-mono bg-white px-3 py-2 rounded border">5, 13, 8</div>
+                </div>
+                 <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">RSI Period</label>
+                    <div class="text-sm font-mono bg-white px-3 py-2 rounded border">9 (Sensitive)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BRONZE CONFIG -->
+        <div v-if="config.engine_type === 'BRONZE'" class="bg-orange-50 p-5 rounded-lg border border-orange-200 animate-fadeIn">
+             <h4 class="font-bold text-orange-900 flex items-center mb-4">
+                <span class="mr-2">📉</span> Mean Reversion Settings
+            </h4>
+            <p class="text-sm text-orange-800 mb-4">Optimized for Range/Chop (EURGBP, Asia Session)</p>
+            <div class="grid grid-cols-2 gap-4">
+                 <div>
+                    <label class="block text-xs font-bold text-orange-900 uppercase mb-1">Bollinger Bands</label>
+                    <div class="text-sm font-mono bg-white px-3 py-2 rounded border">20, 2.0</div>
+                </div>
+                 <div>
+                    <label class="block text-xs font-bold text-orange-900 uppercase mb-1">Safe Filter</label>
+                    <div class="text-sm font-mono bg-white px-3 py-2 rounded border">ADX < 25</div>
+                </div>
             </div>
         </div>
 
@@ -192,7 +240,7 @@
         </div>
 
         <!-- Strategy Selection (LEGACY) -->
-        <div v-else class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
+        <div v-if="config.engine_type === 'ADAPTIVE'" class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
             <h4 class="font-medium text-slate-700 mb-2">Active Strategies (Legacy)</h4>
             
             <label class="flex items-center space-x-3 cursor-pointer p-2 hover:bg-slate-100 rounded transition-colors">

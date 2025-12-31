@@ -379,18 +379,23 @@
             <!-- Row 0: Engine Selection -->
             <div class="flex items-center justify-between bg-gray-800 p-2 rounded border border-gray-700">
                <span class="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Engine</span>
-               <div class="flex space-x-2">
-                  <button @click="slot.engine_type = 'ADAPTIVE'" 
-                          class="px-3 py-1 text-xs rounded transition-colors"
-                          :class="(!slot.engine_type || slot.engine_type === 'ADAPTIVE') ? 'bg-blue-600 text-white font-bold' : 'text-gray-400 hover:text-white'">
-                    🛡️ Adaptive
-                  </button>
-                  <button @click="slot.engine_type = 'GOLDEN'" 
-                          class="px-3 py-1 text-xs rounded transition-colors"
-                          :class="slot.engine_type === 'GOLDEN' ? 'bg-amber-500 text-white font-bold shadow-lg shadow-amber-500/20' : 'text-gray-400 hover:text-white'">
-                    🏆 Golden
-                  </button>
-               </div>
+                <div class="flex space-x-1">
+                   <button @click="slot.engine_type = 'GOLDEN'" 
+                           class="px-2 py-1 text-[10px] rounded transition-colors"
+                           :class="slot.engine_type === 'GOLDEN' || !slot.engine_type ? 'bg-amber-500 text-white font-bold shadow-lg shadow-amber-500/20' : 'text-gray-400 hover:text-white'">
+                     🏆 Golden
+                   </button>
+                   <button @click="slot.engine_type = 'SILVER'" 
+                           class="px-2 py-1 text-[10px] rounded transition-colors"
+                           :class="slot.engine_type === 'SILVER' ? 'bg-slate-500 text-white font-bold shadow-lg shadow-slate-500/20' : 'text-gray-400 hover:text-white'">
+                     ⚪ Silver
+                   </button>
+                   <button @click="slot.engine_type = 'BRONZE'" 
+                           class="px-2 py-1 text-[10px] rounded transition-colors"
+                           :class="slot.engine_type === 'BRONZE' ? 'bg-orange-700 text-white font-bold shadow-lg shadow-orange-700/20' : 'text-gray-400 hover:text-white'">
+                     🟤 Bronze
+                   </button>
+                </div>
             </div>
 
             <!-- Row 1: Timeframe + Confirmation + TSL -->
@@ -487,8 +492,56 @@
               </div>
             </div>
             
-            <!-- LEGACY ENGINE CONTROLS -->
-            <div v-if="!slot.engine_type || slot.engine_type === 'ADAPTIVE'" class="space-y-3">
+            <!-- SILVER ENGINE CONTROLS -->
+            <div v-if="slot.engine_type === 'SILVER'" class="space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
+               <div class="p-2 bg-slate-800/50 rounded border border-slate-600/30">
+                  <div class="mb-2 flex items-center gap-2">
+                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">⚡ Velocity Settings</span>
+                  </div>
+                  <div class="grid grid-cols-3 gap-2">
+                     <div>
+                        <label class="text-[10px] text-gray-400">Fast MACD</label>
+                        <input type="number" v-model.number="slot.config.macd_fast" placeholder="5"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                     <div>
+                        <label class="text-[10px] text-gray-400">Slow MACD</label>
+                        <input type="number" v-model.number="slot.config.macd_slow" placeholder="13"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                     <div>
+                        <label class="text-[10px] text-gray-400">Signal</label>
+                        <input type="number" v-model.number="slot.config.macd_signal" placeholder="8"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <!-- BRONZE ENGINE CONTROLS -->
+            <div v-else-if="slot.engine_type === 'BRONZE'" class="space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
+               <div class="p-2 bg-orange-900/10 rounded border border-orange-600/30">
+                  <div class="mb-2 flex items-center gap-2">
+                     <span class="text-[10px] font-bold text-orange-400 uppercase tracking-wider">📉 Range Settings</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                     <div>
+                        <label class="text-[10px] text-gray-400">BB Length</label>
+                        <input type="number" v-model.number="slot.config.bb_length" placeholder="20"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-orange-200 text-xs">
+                     </div>
+                     <div>
+                        <label class="text-[10px] text-gray-400">BB StdDev</label>
+                        <input type="number" v-model.number="slot.config.bb_std" step="0.1" placeholder="2.0"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-orange-200 text-xs">
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+             <!-- LEGACY ENGINE CONTROLS (Only if explicitly Adaptive) -->
+            <div v-else-if="slot.engine_type === 'ADAPTIVE'" class="space-y-3 opacity-75 grayscale-[0.5]">
+              <div class="text-[10px] bg-red-900/20 text-red-400 px-2 py-1 rounded text-center font-bold">LEGACY MODE DEPRECATED</div>
               <!-- Row 3: RSI Settings -->
               <div class="grid grid-cols-3 gap-2">
                 <div>
@@ -544,7 +597,7 @@
             </div>
 
             <!-- GOLDEN ENGINE CONTROLS -->
-            <div v-else class="space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
+            <div v-else-if="slot.engine_type === 'GOLDEN' || !slot.engine_type" class="space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
                <!-- Market Structure -->
                <div class="p-2 bg-amber-900/10 rounded border border-amber-500/20">
                   <div class="mb-2 flex items-center gap-2">
@@ -1321,11 +1374,12 @@ const slots = ref([
     max_duration: 4, // Max hold 4 hours
     partial_tp_on: false, min_confluence_score: 7, description: 'The Beast Cross (H1 Momentum - Safe Mode)',
     // Engine Config
-    engine_type: 'ADAPTIVE', zigzag_lookback: 5
+    engine_type: 'ADAPTIVE', zigzag_lookback: 5,
+    config: {}
   },  
   { id: 1, symbol: 'GBPJPY', enabled: false, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     // 💷🇯🇵 GBPJPY: The Dragon
-    ...symbolPresets['GBPJPY'], risk_percent: 0.75, timeframe: 'M5', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'The Dragon Scalper' },  
+    ...symbolPresets['GBPJPY'], risk_percent: 0.75, timeframe: 'M5', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'The Dragon Scalper', config: {} },  
   { id: 2, symbol: 'EURGBP', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     // 💶💷 EURGBP: The Channel (Range)
     ...symbolPresets['EURGBP'], 
@@ -1336,10 +1390,10 @@ const slots = ref([
     use_h1_trend_filter: false, // ❌ Range: H1 Filter OFF
     stoch_k_period: 9, stoch_d_period: 3, vwap_use_trend_filter: false, // Range Settings
     max_duration: 4, // Max hold 4 hours
-    partial_tp_on: false, min_confluence_score: 7, description: 'Channel Scalper (H1 Range - Safe Mode)' },  
+    partial_tp_on: false, min_confluence_score: 7, description: 'Channel Scalper (H1 Range - Safe Mode)', config: {} },  
   { id: 3, symbol: 'AUDJPY', enabled: false, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     // 🦘🇯🇵 AUDJPY: Risk Proxy
-    ...symbolPresets['AUDJPY'], risk_percent: 0.75, timeframe: 'M5', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'Risk Proxy Scalper' }   
+    ...symbolPresets['AUDJPY'], risk_percent: 0.75, timeframe: 'M5', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'Risk Proxy Scalper', config: {} }   
 ])
 
 // Portfolio Synergy Settings
@@ -2076,7 +2130,8 @@ const addSlot = () => {
     // Institutional Defaults
     confirmation_timeframe: null,
     trading_session: 'ALL',
-    session_end_action: 'HOLD'
+    session_end_action: 'HOLD',
+    config: {}
   })
   
   console.log(`➕ Added new slot ${newId}`)
@@ -2091,6 +2146,7 @@ const cloneSlot = (sourceSlot) => {
     ...sourceSlot,
     id: newId,
     dbId: null,  // New slot doesn't have DB id yet
+    config: JSON.parse(JSON.stringify(sourceSlot.config || {})), // Deep copy config
     enabled: false,  // Start disabled so user can review settings
     expanded: true,  // Show expanded so user sees cloned settings
     isRunning: false,
@@ -2216,7 +2272,8 @@ const loadSlots = async () => {
         // Institutional
         confirmation_timeframe: dbSlot.confirmation_timeframe,
         trading_session: dbSlot.trading_session,
-        session_end_action: dbSlot.session_end_action
+        session_end_action: dbSlot.session_end_action,
+        config: dbSlot.config || {}
       }))
       console.log(`📦 Loaded ${dbSlots.length} slots from database`)
     }
