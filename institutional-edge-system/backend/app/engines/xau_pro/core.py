@@ -81,11 +81,23 @@ class InstitutionalGoldEngine:
              return {'signals': [], 'structure': None}
         
         # --- v3.0: SESSION KILLZONE FILTER ---
-        current_time = df.iloc[-1].name if hasattr(df.iloc[-1].name, 'hour') else datetime.now()
+        try:
+            # Handle both DatetimeIndex and RangeIndex with 'time' column
+            if isinstance(df.index, pd.DatetimeIndex):
+                current_time = df.index[-1]
+            elif 'time' in df.columns:
+                current_time = pd.Timestamp(df['time'].iloc[-1])
+            else:
+                current_time = pd.Timestamp(df.index[-1])
+        except Exception as e:
+            logger.error(f"Time conversion failed: {e} | Index Type: {type(df.index)}")
+            current_time = datetime.now()
+
         if not self._is_in_killzone(current_time):
+            # logger.warning(f"⏳ SKIP KZ: {current_time}")
             return {'signals': [], 'structure': None, 'reason': 'Outside killzone'}
-             
-        # 1. Indicators Calculation
+        
+        # logger.warning(f"✅ Passed KZ: {current_time}")
         # -------------------------
         
         # EMA 200 (Trend)
@@ -153,8 +165,8 @@ class InstitutionalGoldEngine:
             # If Structure is RANGE or Undefined
             if self.config.get('debug', False): logger.info(f"⚠️ Trend Conflict: M15={structure.trend}")
             return {'signals': [], 'structure': structure} 
-            
-        logger.info(f"✅ Trend Aligned: {signal_type}") 
+        if signal_type:
+            logger.warning(f"✅ Trend Aligned: {signal_type} @ {current_price}") 
             
         # --- BUY LOGIC ---
         if signal_type == 'BUY':
@@ -188,17 +200,21 @@ class InstitutionalGoldEngine:
             is_smc_entry = False
             
             if smc_enabled:
-                # Real SMC Check (Zone REQUIRED, Sweep is Bonus)
+                # v4.1 STRICT: SMC Sweep + Zone Required
                 smc_result = self.smc.get_smc_confluence(
                     df, 'BUY', current_price, current['atr'],
                     candle_high=current['high'], candle_low=current['low']
                 )
-                if smc_result['in_order_block'] or smc_result['in_fvg']:
+                if (smc_result['in_order_block'] or smc_result['in_fvg']) and smc_result['liquidity_swept']:
                     is_smc_entry = True
             
+            # Debug SMC Failure
+            if not is_smc_entry:
+                 logger.warning(f"❌ SMC FAIL: No Entry (Zone/Sweep missing? Swept={smc_result.get('liquidity_swept')})")
+
             # Combined Entry Logic
             if is_smc_entry and price_action_trigger:
-                 # SMC Path: Valid Structure + SMC Zone + Candle Trigger
+                 logger.warning(f"🚀 SMC BUY TRIGGERED! Prob: {smc_result}")
                  self._create_signal(signals, 'BUY', current, structure, None, smc_result)
                  
             elif in_zone and indicators_aligned and price_action_trigger:
@@ -230,7 +246,8 @@ class InstitutionalGoldEngine:
                     df, 'SELL', current_price, current['atr'],
                     candle_high=current['high'], candle_low=current['low']
                 )
-                if smc_result['in_order_block'] or smc_result['in_fvg']:
+                # v4.1 STRICT: SMC Sweep + Zone Required
+                if (smc_result['in_order_block'] or smc_result['in_fvg']) and smc_result['liquidity_swept']:
                     is_smc_entry = True
             
             # Combined Entry Logic
