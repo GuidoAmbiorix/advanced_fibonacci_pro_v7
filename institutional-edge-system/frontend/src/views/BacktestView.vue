@@ -432,17 +432,16 @@
                  </span>
               </div>
               <div class="grid grid-cols-2 gap-2">
-                 <div>
-                    <label class="text-[10px] text-gray-500">Trading Session</label>
-                    <select v-model="slot.trading_session" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-[10px]">
-                       <option value="ALL">🌍 All Sessions</option>
-                       <option value="ASIA">🌏 Asia (23-08)</option>
-                       <option value="LONDON">🇬🇧 London (08-16)</option>
-                       <option value="NY">🇺🇸 NY (13-22)</option>
-                       <option value="ASIA_LONDON">🌏+🇬🇧 Asia & London</option>
-                       <option value="LONDON_NY">🇬🇧+🇺🇸 London & NY</option>
-                    </select>
-                 </div>
+                  <div>
+                     <label class="text-[10px] text-gray-500">Session Killzone v3.0</label>
+                     <select v-model="slot.session_mode" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-[10px]">
+                        <option value="BOTH_KZ">🎯 London + NY Killzones (Recommended)</option>
+                        <option value="LONDON_KZ">🇬🇧 London Killzone (07-10 UTC)</option>
+                        <option value="NY_KZ">🇺🇸 NY Killzone (12-15 UTC)</option>
+                        <option value="OVERLAP_KZ">⚡ Overlap Only (13-16 UTC)</option>
+                        <option value="ALL">🌍 All Sessions (Not Recommended)</option>
+                     </select>
+                  </div>
                  <div>
                     <label class="text-[10px] text-gray-500">Session End</label>
                     <select v-model="slot.session_end_action" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-[10px]">
@@ -535,18 +534,54 @@
                <!-- Structure & Risk -->
                <div class="p-2 bg-blue-900/10 rounded border border-blue-500/20">
                   <div class="mb-2 flex items-center gap-2">
-                     <span class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">🛡️ Risk & Structure</span>
+                     <span class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">🛡️ Structure (v3.0)</span>
+                  </div>
+                  <div class="grid grid-cols-1 gap-2">
+                     <div>
+                         <label class="text-[10px] text-gray-400">ZigZag Lookback (Recommended: 12)</label>
+                         <input type="number" v-model.number="slot.zigzag_lookback" min="3" max="20" placeholder="12"
+                                class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                  </div>
+               </div>
+               
+               <!-- SMC v4.0 - Smart Money Concepts -->
+               <div class="p-2 bg-purple-900/10 rounded border border-purple-500/20">
+                  <div class="mb-2 flex items-center gap-2">
+                     <span class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">🧠 Smart Money (v4.0)</span>
                   </div>
                   <div class="grid grid-cols-2 gap-2">
-                     <div>
-                        <label class="text-[10px] text-gray-400">SL ATR Multiplier</label>
-                        <input type="number" v-model.number="slot.sl_atr_multiplier" step="0.1" placeholder="1.0"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     <!-- Order Blocks -->
+                     <div class="flex items-center gap-2">
+                        <input type="checkbox" v-model="slot.enable_order_blocks" class="w-3 h-3 accent-purple-500">
+                        <label class="text-[10px] text-gray-400">Order Blocks</label>
                      </div>
                      <div>
-                         <label class="text-[10px] text-gray-400">ZigZag Lookback</label>
-                         <input type="number" v-model.number="slot.zigzag_lookback" min="3" max="20" placeholder="8"
-                                class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                        <label class="text-[10px] text-gray-400">OB Lookback</label>
+                        <input type="number" v-model.number="slot.ob_lookback" min="5" max="50" placeholder="20"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                     
+                     <!-- Liquidity Sweep -->
+                     <div class="flex items-center gap-2">
+                        <input type="checkbox" v-model="slot.enable_liquidity_sweep" class="w-3 h-3 accent-purple-500">
+                        <label class="text-[10px] text-gray-400">Liquidity Sweep</label>
+                     </div>
+                     <div>
+                        <label class="text-[10px] text-gray-400">Sweep Lookback</label>
+                        <input type="number" v-model.number="slot.sweep_lookback" min="5" max="30" placeholder="10"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                     
+                     <!-- Fair Value Gap -->
+                     <div class="flex items-center gap-2">
+                        <input type="checkbox" v-model="slot.enable_fvg" class="w-3 h-3 accent-purple-500">
+                        <label class="text-[10px] text-gray-400">Fair Value Gap</label>
+                     </div>
+                     <div>
+                        <label class="text-[10px] text-gray-400">FVG Min (ATR)</label>
+                        <input type="number" v-model.number="slot.fvg_min_size_atr" step="0.1" min="0.1" max="2" placeholder="0.5"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
                      </div>
                   </div>
                </div>
@@ -1164,13 +1199,22 @@ const symbolPresets = {
   },
   'XAUUSD': { 
     name: 'XAU/USD', emoji: '🥇', volatility: 'EXTREME',
+    engine_type: 'XAU_PRO',  // Use InstitutionalGoldEngine with SMC v4.1
+    // v4.1 SMC Enhanced (Order Blocks + Liquidity Sweeps + FVG - AND Logic)
     timeframe: 'M15', tsl_mode: 'ATR',
-    risk_percent: 0.5, tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
-    rsi_period: 9, rsi_overbought: 50, rsi_oversold: 50, min_confluence: 5, max_duration: 2,
+    risk_percent: 0.5, tp_ratio: 2.0, sl_atr_multiplier: 1.4,
+    rsi_period: 14, rsi_overbought: 60, rsi_oversold: 40,
+    min_confluence: 5, max_duration: 2,
     enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    zigzag_lookback: 10,
+    zigzag_lookback: 12,
+    macd_fast: 6, macd_slow: 18, macd_signal: 9,
+    session_mode: 'BOTH_KZ',
+    // SMC v4.1 Settings (Sweep REQUIRED + OB/FVG)
+    enable_order_blocks: true, ob_lookback: 20,
+    enable_liquidity_sweep: true, sweep_lookback: 10,
+    enable_fvg: true, fvg_min_size_atr: 0.5,
     direction: 'BOTH', 
-    description: 'Gold 🥇 High Win Rate - Optimized M15' 
+    description: 'Gold 🥇 v4.1 SMC (Sweep+Zone, ~70% WR)' 
   },
   'USDJPY': { 
     name: 'USD/JPY', emoji: '🇯🇵', volatility: 'MEDIUM',
@@ -1275,7 +1319,22 @@ const symbolPresets = {
   }
 }
 
-// Apply preset when symbol changes
+// Store previous risk
+let previousRiskBeforeGold = 1.0
+
+// Handle symbol change
+const onSymbolChange = () => {
+  if (HIGH_VOLATILITY_SYMBOLS.includes(config.value.symbol)) {
+    if (config.value.risk_percent > 0.5) previousRiskBeforeGold = config.value.risk_percent
+    config.value.risk_percent = 0.5
+  } else {
+    if (config.value.risk_percent === 0.5 && previousRiskBeforeGold > 0.5) {
+      config.value.risk_percent = previousRiskBeforeGold
+    }
+  }
+}
+
+// Apply preset when symbol changes (v3.0: includes MACD + session)
 const applySymbolPreset = (slot) => {
   const preset = symbolPresets[slot.symbol]
   if (preset) {
@@ -1293,7 +1352,18 @@ const applySymbolPreset = (slot) => {
     slot.enable_stoch = preset.enable_stoch
     slot.enable_institutional = preset.enable_institutional
     slot.enable_fibonacci = preset.enable_fibonacci
-    slot.direction = preset.direction  // Apply researched direction bias
+    slot.direction = preset.direction
+    if (preset.zigzag_lookback) slot.zigzag_lookback = preset.zigzag_lookback
+    
+    // v3.0: MACD & Session Killzone support
+    if (preset.macd_fast) slot.macd_fast = preset.macd_fast
+    if (preset.macd_slow) slot.macd_slow = preset.macd_slow
+    if (preset.macd_signal) slot.macd_signal = preset.macd_signal
+    if (preset.session_mode) slot.session_mode = preset.session_mode
+    
+    // Save & Notify
+    if (typeof saveSlot === 'function') saveSlot(slot)
+    if (typeof showToastNotification === 'function') showToastNotification('Auto-configured ' + slot.symbol + ' (v3.0)', 'info', 2000)
   }
 }
 
@@ -1528,26 +1598,8 @@ const trades = ref([])
 // High-volatility symbol detection
 const HIGH_VOLATILITY_SYMBOLS = ['XAUUSD', 'BTCUSD', 'ETHUSD']
 
-// Store previous risk before gold selection
-let previousRiskBeforeGold = 1.0
+// Logic moved to bottom to fix order issues
 
-// Handle symbol change - auto-reduce risk for high-volatility instruments
-const onSymbolChange = () => {
-  if (HIGH_VOLATILITY_SYMBOLS.includes(config.value.symbol)) {
-    // Save current risk before reducing (only if not already reduced)
-    if (config.value.risk_percent > 0.5) {
-      previousRiskBeforeGold = config.value.risk_percent
-    }
-    // FORCE set risk to 0.5% for XAUUSD (backend will further reduce by 50% = 0.25%)
-    config.value.risk_percent = 0.5
-    console.log(`⚠️ Gold selected: Risk auto-reduced to ${config.value.risk_percent}% (backend applies 0.5x multiplier = ${config.value.risk_percent * 0.5}% effective)`)
-  } else {
-    // Restore previous risk when switching back to forex pairs
-    if (config.value.risk_percent === 0.5 && previousRiskBeforeGold > 0.5) {
-      config.value.risk_percent = previousRiskBeforeGold
-    }
-  }
-}
 
 // Handle timeframe change - auto-set strategy mode and reset confirmation TF
 const onTimeframeChange = () => {
@@ -1784,6 +1836,22 @@ const runBacktest = async () => {
                   tp1_ratio: slot.tp_ratio,
                   enable_trailing_stop: slot.tsl_mode !== 'OFF'
               }
+          } : slot.engine_type === 'XAU_PRO' ? {
+              // XAU_PRO (InstitutionalGoldEngine) Configuration
+              structure: {
+                  zigzag_lookback: slot.zigzag_lookback || 12
+              },
+              session_mode: slot.session_mode || 'BOTH_KZ',
+              // SMC v4.0 Settings
+              enable_order_blocks: slot.enable_order_blocks !== undefined ? slot.enable_order_blocks : true,
+              ob_lookback: slot.ob_lookback || 20,
+              enable_liquidity_sweep: slot.enable_liquidity_sweep !== undefined ? slot.enable_liquidity_sweep : true,
+              sweep_lookback: slot.sweep_lookback || 10,
+              enable_fvg: slot.enable_fvg !== undefined ? slot.enable_fvg : true,
+              fvg_min_size_atr: slot.fvg_min_size_atr || 0.5,
+              // RSI thresholds
+              rsi_buy_threshold: slot.rsi_oversold || 40,
+              rsi_sell_threshold: slot.rsi_overbought || 60
           } : {}
         }
         
@@ -2070,10 +2138,19 @@ const addSlot = () => {
     tsl_mode: 'TIERED',
     partial_tp_on: true,
     
-    // Institutional Defaults
+    // Institutional Defaults (v3.0)
     confirmation_timeframe: null,
-    trading_session: 'ALL',
+    trading_session: 'BOTH_KZ',
+    session_mode: 'BOTH_KZ',  // v3.0 Killzone
     session_end_action: 'HOLD',
+    macd_fast: 6, macd_slow: 18, macd_signal: 9,  // v3.0 MACD
+    zigzag_lookback: 12,
+    
+    // SMC v4.0 Defaults
+    enable_order_blocks: true, ob_lookback: 20,
+    enable_liquidity_sweep: true, sweep_lookback: 10,
+    enable_fvg: true, fvg_min_size_atr: 0.5,
+    
     config: {}
   })
   
@@ -2315,6 +2392,7 @@ const getConfluenceDescription = (score) => {
   if (score >= 5) return '⚠️ Includes weak signals - more trades, lower quality'
   return '❌ All signals - high risk, many false positives'
 }
+
 
 // Init
 onMounted(() => {

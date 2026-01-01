@@ -18,8 +18,8 @@ from app.models.database import Base, User, BotConfig, Trade
 from app.api import database, auth, stats, fundamentals, settings as settings_api, news, logs, backtest, market, accounts, trading, portfolio, slots
 # TradingView Integration APIs
 from app.api import annotations, grid, backtest_advanced
-# Quantitative Trading APIs (from Dr. Chan's book concepts)
-from app.api import kelly, regime, validation
+# Quantitative Trading APIs (kelly removed - module deleted)
+from app.api import regime, validation
 from app.core.mt5_connector import MT5Connector
 from app.core.trading_engine import TradingEngine
 from app.schemas import schemas
@@ -62,8 +62,8 @@ app.include_router(annotations.router, prefix="/api", tags=["tradingview-annotat
 app.include_router(grid.router, prefix="/api", tags=["tradingview-grid"])
 app.include_router(backtest_advanced.router, prefix="/api", tags=["tradingview-visualizations"])
 
-# Quantitative Trading - Kelly Criterion Position Sizing
-app.include_router(kelly.router, prefix="/api/kelly", tags=["kelly-position-sizing"])
+# Quantitative Trading - Kelly removed, Regime & Validation remain
+# app.include_router(kelly.router, prefix="/api/kelly", tags=["kelly-position-sizing"])  # Deleted
 app.include_router(regime.router, prefix="/api/regime", tags=["market-regime"])
 app.include_router(validation.router, prefix="/api/validation", tags=["oos-bias-detection"])
 
@@ -186,19 +186,26 @@ async def startup_event():
     database.init_db()
     
     # --- AUTO-PROVISIONING: Register Account from Config if missing ---
+    # --- AUTO-PROVISIONING: Register Account from Config if missing ---
     if settings.MT5_LOGIN:
         try:
              # Create a session directly since we are not in a request context
             db = database.SessionLocal()
             from app.models.database import MT5Account, User
             from app.core.crypto import encrypt_password
+            from app.core.security import get_password_hash
             
             # Ensure User Exists
-            user = db.query(User).first()
+            user = db.query(User).filter(User.email == "admin@gmail.com").first()
             if not user:
                 logger.info("creating default user admin@gmail.com...")
-                user = User(email="admin@gmail.com", is_active=True, is_superuser=True, full_name="Admin User")
-                user.set_password("admin12345")
+                user = User(
+                    email="admin@gmail.com", 
+                    username="admin",
+                    hashed_password=get_password_hash("admin12345"),
+                    is_active=True, 
+                    is_admin=True
+                )
                 db.add(user)
                 db.commit()
                 db.refresh(user)
@@ -213,9 +220,9 @@ async def startup_event():
                     user_id=user.id,
                     name=f"Auto-{login_str}",
                     login=login_str,
-                    password=settings.MT5_PASSWORD,
+                    password_encrypted=encrypt_password(settings.MT5_PASSWORD),
                     server=settings.MT5_SERVER,
-                    account_type="demo",  # Default, can be updated from settings if needed
+                    account_type="demo",
                     is_active=True,
                     max_drawdown_percent=settings.MAX_DRAWDOWN_PERCENT,
                     max_daily_dd_percent=settings.MAX_DAILY_LOSS_PERCENT

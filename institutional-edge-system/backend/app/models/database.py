@@ -198,14 +198,22 @@ class BotSlot(Base):
     confirmation_timeframe = Column(String, nullable=True) # e.g. "H1", "H4"
     use_daily_bias = Column(Boolean, default=False) # Strict D1 Bias Filterif null
     
-    # Session Control (Institutional)
-    trading_session = Column(String, default="ALL")  # ASIA, LONDON, NY, ASIA_LONDON, LONDON_NY, ALL
+    # Session Control (Institutional) - v3.0 Killzones
+    trading_session = Column(String, default="BOTH_KZ")  # LONDON_KZ, NY_KZ, OVERLAP_KZ, BOTH_KZ, ALL
+    session_mode = Column(String, default="BOTH_KZ")  # Killzone mode for data-driven trading
+    session_start_utc = Column(String, default="07:00")  # London Killzone start
+    session_end_utc = Column(String, default="15:00")    # NY Killzone end
     session_end_action = Column(String, default="HOLD") # CLOSE, HOLD, DISABLE_NEW
     
-    # Risk & TP/SL
-    risk_percent = Column(Float, default=1.0)
-    tp_ratio = Column(Float, default=1.5)
-    sl_atr_multiplier = Column(Float, default=1.5)
+    # Risk & TP/SL (v3.0: SL ATR 1.4)
+    risk_percent = Column(Float, default=0.5)  # Conservative for Gold
+    tp_ratio = Column(Float, default=2.0)      # 2R target
+    sl_atr_multiplier = Column(Float, default=1.4)  # v3.0: Slightly tighter
+    
+    # MACD Parameters (v3.0: 6/18/9 for noise reduction)
+    macd_fast = Column(Integer, default=6)
+    macd_slow = Column(Integer, default=18)
+    macd_signal = Column(Integer, default=9)
     
     # Strategies
     use_adx_filter = Column(Boolean, default=False)
@@ -224,6 +232,17 @@ class BotSlot(Base):
     rsi_period = Column(Integer, default=14)
     rsi_overbought = Column(Integer, default=70)
     rsi_oversold = Column(Integer, default=30)
+    
+    # ZigZag Structure (v3.0)
+    zigzag_lookback = Column(Integer, default=12)
+    
+    # SMC v4.0 - Smart Money Concepts (UI Configurable)
+    enable_order_blocks = Column(Boolean, default=True)
+    ob_lookback = Column(Integer, default=20)
+    enable_liquidity_sweep = Column(Boolean, default=True)
+    sweep_lookback = Column(Integer, default=10)
+    enable_fvg = Column(Boolean, default=True)
+    fvg_min_size_atr = Column(Float, default=0.5)
     
     # Trailing Stop Loss (per-slot)
     enable_trailing_stop = Column(Boolean, default=True)

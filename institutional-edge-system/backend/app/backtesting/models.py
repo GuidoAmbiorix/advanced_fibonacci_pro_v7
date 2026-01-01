@@ -290,6 +290,18 @@ class BacktestConfig:
     enable_fibonacci_strategy: bool = True  # Enable Fibonacci Golden Zone Scalping
     enable_strategy_3_29_162: bool = True  # Enable SQ Strategy 3.29.162
     
+    # Session Killzone (v3.0)
+    session_mode: str = "BOTH_KZ"  # LONDON_KZ, NY_KZ, OVERLAP_KZ, BOTH_KZ, ALL
+    
+    # SMC v4.0 Parameters
+    enable_order_blocks: bool = True
+    ob_lookback: int = 20
+    enable_liquidity_sweep: bool = True
+    sweep_lookback: int = 10
+    enable_fvg: bool = True
+    fvg_min_size_atr: float = 0.5
+    zigzag_lookback: int = 12
+    
     # RSI Settings
     rsi_period: int = 14
     rsi_overbought: int = 70

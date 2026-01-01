@@ -24,6 +24,7 @@ from app.backtesting.reporter import ReportGenerator
 
 from app.core.adaptive_multi_strategy_engine import AdaptiveMultiStrategyEngine
 from app.engines.golden.core import GoldenEngine
+from app.engines.xau_pro.core import InstitutionalGoldEngine  # SMC v4.1
 from app.core.strategy_factory import StrategyFactory
 from app.services.risk_manager import AdaptiveRiskManager
 from app.services.portfolio_manager import PortfolioManager, Position
@@ -102,10 +103,52 @@ class BacktestEngine:
             
             # Structure default
             if 'structure' not in golden_config: golden_config['structure'] = {}
-            if 'zigzag_lookback' not in golden_config['structure']:
-                golden_config['structure']['zigzag_lookback'] = 5
+            golden_config['structure']['zigzag_lookback'] = getattr(self.config, 'zigzag_lookback', 12)
+            
+            # Session Killzone (v3.0) - CRITICAL BUG FIX
+            golden_config['session_mode'] = getattr(self.config, 'session_mode', 'BOTH_KZ')
+            
+            # SMC v4.0 Parameters
+            golden_config['enable_order_blocks'] = getattr(self.config, 'enable_order_blocks', True)
+            golden_config['ob_lookback'] = getattr(self.config, 'ob_lookback', 20)
+            golden_config['enable_liquidity_sweep'] = getattr(self.config, 'enable_liquidity_sweep', True)
+            golden_config['sweep_lookback'] = getattr(self.config, 'sweep_lookback', 10)
+            golden_config['enable_fvg'] = getattr(self.config, 'enable_fvg', True)
+            golden_config['fvg_min_size_atr'] = getattr(self.config, 'fvg_min_size_atr', 0.5)
             
             return GoldenEngine(golden_config)
+        
+        elif self.config.engine_type == 'XAU_PRO':
+            # InstitutionalGoldEngine with SMC v4.1
+            xau_config = self.config.engine_config.copy()
+            
+            # Core params
+            xau_config['symbol'] = self.config.symbol
+            xau_config['timeframe'] = self.config.timeframe
+            xau_config['rr_ratio'] = self.config.tp_ratio
+            xau_config['sl_atr_multiplier'] = self.config.sl_atr_multiplier
+            
+            # Structure
+            if 'structure' not in xau_config: xau_config['structure'] = {}
+            xau_config['structure']['zigzag_lookback'] = getattr(self.config, 'zigzag_lookback', 12)
+            
+            # Session Killzone
+            xau_config['session_mode'] = getattr(self.config, 'session_mode', 'BOTH_KZ')
+            
+            # SMC v4.1 Parameters
+            xau_config['enable_order_blocks'] = getattr(self.config, 'enable_order_blocks', True)
+            xau_config['ob_lookback'] = getattr(self.config, 'ob_lookback', 20)
+            xau_config['enable_liquidity_sweep'] = getattr(self.config, 'enable_liquidity_sweep', True)
+            xau_config['sweep_lookback'] = getattr(self.config, 'sweep_lookback', 10)
+            xau_config['enable_fvg'] = getattr(self.config, 'enable_fvg', True)
+            xau_config['fvg_min_size_atr'] = getattr(self.config, 'fvg_min_size_atr', 0.5)
+            
+            # RSI thresholds
+            xau_config['rsi_buy_threshold'] = getattr(self.config, 'rsi_oversold', 40)
+            xau_config['rsi_sell_threshold'] = getattr(self.config, 'rsi_overbought', 60)
+            
+            logger.info(f"🥇 XAU_PRO Engine initialized with SMC v4.1: session={xau_config['session_mode']}, sweep_required=AND_logic")
+            return InstitutionalGoldEngine(xau_config)
             
         else:
             # LEGACY: Adaptive Multi-Strategy

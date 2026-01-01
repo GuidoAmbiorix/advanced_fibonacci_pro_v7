@@ -1,0 +1,13 @@
+﻿INFO:     172.20.0.4:46662 - "GET /api/backtest/history HTTP/1.1" 200 OK
+INFO:     172.20.0.4:46668 - "GET /api/accounts/ HTTP/1.1" 200 OK
+INFO:     172.20.0.4:46676 - "GET /api/slots/ HTTP/1.1" 500 Internal Server Error
+INFO:     172.20.0.4:46686 - "GET /api/portfolio/correlation?symbols=XAUUSD,EURGBP HTTP/1.1" 200 OK
+INFO:     172.21.0.3:39174 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.20.0.4:46694 - "POST /api/slots/ HTTP/1.1" 404 Not Found
+INFO:     172.20.0.4:46708 - "POST /api/slots/ HTTP/1.1" 404 Not Found
+INFO:     172.20.0.4:38304 - "POST /api/backtest/run HTTP/1.1" 200 OK
+INFO:     172.20.0.4:38312 - "GET /api/logs/system HTTP/1.1" 200 OK
+INFO:     172.20.0.4:38318 - "GET /api/logs/system HTTP/1.1" 200 OK
+INFO:     172.20.0.4:38322 - "GET /api/backtest/history HTTP/1.1" 200 OK
+INFO:     172.20.0.4:38324 - "GET /api/logs/system HTTP/1.1" 200 OK
+INFO:     172.21.0.3:56840 - "GET /health HTTP/1.1" 200 OK
