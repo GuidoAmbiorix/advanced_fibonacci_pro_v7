@@ -247,6 +247,23 @@ class BotSlot(Base):
     enable_fvg = Column(Boolean, default=True)
     fvg_min_size_atr = Column(Float, default=0.5)
     
+    # Volatility Filters (Phase 1) - Market Regime Detection
+    enable_volatility_filter = Column(Boolean, default=True)
+    adx_period = Column(Integer, default=14)
+    adx_threshold = Column(Float, default=25.0)  # Dynamic threshold
+    volatility_regime = Column(String, default="NORMAL,HIGH")  # Allowed regimes (comma-separated)
+    
+    # Confluence v2 (Phase 2) - Weighted Multi-TF Bias
+    confluence_h1_weight = Column(Float, default=0.5)
+    confluence_h4_weight = Column(Float, default=0.3)
+    confluence_d1_weight = Column(Float, default=0.2)
+    min_confluence_bias = Column(Float, default=0.3)  # Min score to trade
+    
+    # Volume Profile (Phase 3) - VPVR/POC Analysis
+    enable_volume_profile = Column(Boolean, default=False)
+    vp_lookback = Column(Integer, default=100)
+    vp_num_bins = Column(Integer, default=24)
+    
     # Trailing Stop Loss (per-slot)
     enable_trailing_stop = Column(Boolean, default=True)
     tsl_mode = Column(String, default="TIERED")  # OFF, ATR, TIERED

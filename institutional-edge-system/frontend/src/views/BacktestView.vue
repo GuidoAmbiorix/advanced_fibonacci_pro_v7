@@ -585,6 +585,85 @@
                      </div>
                   </div>
                </div>
+               
+               <!-- Volatility Filter v5.0 - Market Regime -->
+               <div class="p-2 bg-red-900/10 rounded border border-red-500/20">
+                  <div class="mb-2 flex items-center justify-between">
+                     <span class="text-[10px] font-bold text-red-400 uppercase tracking-wider">📊 Market Regime (v5.0)</span>
+                     <input type="checkbox" v-model="slot.enable_volatility_filter" class="w-3 h-3 accent-red-500">
+                  </div>
+                  <div v-if="slot.enable_volatility_filter" class="grid grid-cols-2 gap-2">
+                     <div>
+                        <label class="text-[10px] text-gray-400">ADX Period</label>
+                        <input type="number" v-model.number="slot.adx_period" min="7" max="28" placeholder="14"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                     <div>
+                        <label class="text-[10px] text-gray-400">ADX Threshold</label>
+                        <input type="number" v-model.number="slot.adx_threshold" step="0.5" min="15" max="35" placeholder="25"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                     <div class="col-span-2">
+                        <label class="text-[10px] text-gray-400">Allowed Regimes</label>
+                        <select v-model="slot.volatility_regime" 
+                                class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-[10px]">
+                           <option value="NORMAL,HIGH">🟢 Normal + High (Recommended)</option>
+                           <option value="NORMAL,HIGH,EXTREME">⚡ Normal + High + Extreme</option>
+                           <option value="HIGH,EXTREME">🔥 High + Extreme Only</option>
+                           <option value="LOW,NORMAL,HIGH,EXTREME">🌐 All Regimes (Not Recommended)</option>
+                        </select>
+                        <p class="text-[9px] text-gray-500 mt-0.5">Skip trades when ADX is below threshold (LOW regime)</p>
+                     </div>
+                  </div>
+               </div>
+               
+               <!-- Confluence v2.0 - Multi-TF Weights -->
+               <div class="p-2 bg-cyan-900/10 rounded border border-cyan-500/20">
+                  <div class="mb-2">
+                     <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">🎯 Multi-TF Confluence (v2.0)</span>
+                  </div>
+                  <div class="grid grid-cols-3 gap-2">
+                     <div>
+                        <label class="text-[10px] text-gray-400">H1 Weight</label>
+                        <input type="number" v-model.number="slot.confluence_h1_weight" step="0.1" min="0" max="1"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                     <div>
+                        <label class="text-[10px] text-gray-400">H4 Weight</label>
+                        <input type="number" v-model.number="slot.confluence_h4_weight" step="0.1" min="0" max="1"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                     <div>
+                        <label class="text-[10px] text-gray-400">D1 Weight</label>
+                        <input type="number" v-model.number="slot.confluence_d1_weight" step="0.1" min="0" max="1"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                  </div>
+                  <div class="mt-2">
+                     <label class="text-[10px] text-gray-400">Min Bias Score</label>
+                     <input type="number" v-model.number="slot.min_confluence_bias" step="0.1" min="0" max="1"
+                            class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     <p class="text-[9px] text-gray-500 mt-0.5">Score = H1×W1 + H4×W2 + D1×W3 (trade when |score| ≥ min)</p>
+                  </div>
+               </div>
+               
+               <!-- Volume Profile v1.0 (Post-MVP) -->
+               <div class="p-2 bg-green-900/10 rounded border border-green-500/20">
+                  <div class="mb-2 flex items-center justify-between">
+                     <span class="text-[10px] font-bold text-green-400 uppercase tracking-wider">📊 Volume Profile (Beta)</span>
+                     <input type="checkbox" v-model="slot.enable_volume_profile" class="w-3 h-3 accent-green-500">
+                  </div>
+                  <div v-if="slot.enable_volume_profile" class="grid grid-cols-2 gap-2">
+                     <div>
+                        <label class="text-[10px] text-gray-400">VP Lookback</label>
+                        <input type="number" v-model.number="slot.vp_lookback" min="50" max="500" placeholder="100"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                     <div class="flex items-end">
+                        <p class="text-[9px] text-gray-500">POC/VAH/VAL zone detection</p>
+                     </div>
+                  </div>
+               </div>
             </div>
 
 
@@ -1213,8 +1292,12 @@ const symbolPresets = {
     enable_order_blocks: true, ob_lookback: 20,
     enable_liquidity_sweep: true, sweep_lookback: 10,
     enable_fvg: true, fvg_min_size_atr: 0.5,
+    // Volatility v5.0 Defaults
+    enable_volatility_filter: true, adx_period: 14, adx_threshold: 25.0, volatility_regime: 'NORMAL,HIGH',
+    // Confluence v2.0 Defaults
+    confluence_h1_weight: 0.5, confluence_h4_weight: 0.3, confluence_d1_weight: 0.2, min_confluence_bias: 0.3,
     direction: 'BOTH', 
-    description: 'Gold 🥇 v4.1 SMC (Sweep+Zone, ~70% WR)' 
+    description: 'Gold 🥇 v5.0 SMC + Regime + MTF Confluence' 
   },
   'USDJPY': { 
     name: 'USD/JPY', emoji: '🇯🇵', volatility: 'MEDIUM',
@@ -1851,7 +1934,17 @@ const runBacktest = async () => {
               fvg_min_size_atr: slot.fvg_min_size_atr || 0.5,
               // RSI thresholds
               rsi_buy_threshold: slot.rsi_oversold || 40,
-              rsi_sell_threshold: slot.rsi_overbought || 60
+              rsi_sell_threshold: slot.rsi_overbought || 60,
+              // Volatility v5.0 Settings
+              enable_volatility_filter: slot.enable_volatility_filter !== undefined ? slot.enable_volatility_filter : true,
+              adx_period: slot.adx_period || 14,
+              adx_threshold: slot.adx_threshold || 25.0,
+              volatility_regime: slot.volatility_regime || 'NORMAL,HIGH',
+              // Confluence v2.0 Settings
+              confluence_h1_weight: slot.confluence_h1_weight || 0.5,
+              confluence_h4_weight: slot.confluence_h4_weight || 0.3,
+              confluence_d1_weight: slot.confluence_d1_weight || 0.2,
+              min_confluence_bias: slot.min_confluence_bias || 0.3
           } : {}
         }
         
@@ -2150,6 +2243,12 @@ const addSlot = () => {
     enable_order_blocks: true, ob_lookback: 20,
     enable_liquidity_sweep: true, sweep_lookback: 10,
     enable_fvg: true, fvg_min_size_atr: 0.5,
+    
+    // Volatility v5.0 Defaults
+    enable_volatility_filter: true, adx_period: 14, adx_threshold: 25.0, volatility_regime: 'NORMAL,HIGH',
+    
+    // Confluence v2.0 Defaults
+    confluence_h1_weight: 0.5, confluence_h4_weight: 0.3, confluence_d1_weight: 0.2, min_confluence_bias: 0.3,
     
     config: {}
   })

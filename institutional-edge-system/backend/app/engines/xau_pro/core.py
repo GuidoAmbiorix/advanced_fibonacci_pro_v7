@@ -10,6 +10,8 @@ from ta.momentum import RSIIndicator, StochasticOscillator
 from app.engines.golden.structure import StructureAnalyzer
 from app.engines.golden.fibonacci import FibonacciCalculator
 from app.engines.xau_pro.smc import SMCAnalyzer
+from app.engines.xau_pro.volatility import VolatilityAnalyzer
+from app.engines.xau_pro.confluence_v2 import ConfluenceV2
 
 class InstitutionalGoldEngine:
     """
@@ -72,6 +74,12 @@ class InstitutionalGoldEngine:
         # SMC v4.0 - Smart Money Concepts Analyzer
         self.smc = SMCAnalyzer(config)
         
+        # Volatility v5.0 - Market Regime Detection (Phase 1)
+        self.volatility = VolatilityAnalyzer(config)
+        
+        # Confluence v2.0 - Weighted Multi-TF Bias (Phase 2)
+        self.confluence = ConfluenceV2(config)
+        
     def analyze(self, df: pd.DataFrame, df_higher_tf: Optional[pd.DataFrame] = None, df_daily: Optional[pd.DataFrame] = None) -> Dict:
         """
         Main Analysis Pipeline for Gold (SMC + Fib + Killzone Filter).
@@ -106,7 +114,18 @@ class InstitutionalGoldEngine:
             structure = self.structure_analyzer.analyze(df)
             return {'signals': [], 'structure': structure, 'reason': 'Outside killzone'}
         
-        # logger.warning(f"✅ Passed KZ: {current_time}")
+        # --- v5.0: VOLATILITY REGIME FILTER ---
+        can_trade, vol_reason = self.volatility.should_trade(df)
+        if not can_trade:
+            structure = self.structure_analyzer.analyze(df)
+            regime_info = self.volatility.get_regime(df)
+            return {
+                'signals': [], 
+                'structure': structure, 
+                'reason': vol_reason,
+                'regime': regime_info
+            }
+        
         # -------------------------
         
         # EMA 200 (Trend)

@@ -54,6 +54,22 @@ class SlotCreate(BaseModel):
     engine_type: str = "ADAPTIVE"
     engine_config: Optional[dict] = {}
 
+    # Volatility Filters (Phase 1)
+    enable_volatility_filter: bool = True
+    adx_period: int = 14
+    adx_threshold: float = 25.0
+    volatility_regime: str = "NORMAL,HIGH"
+
+    # Confluence v2 (Phase 2)
+    confluence_h1_weight: float = 0.5
+    confluence_h4_weight: float = 0.3
+    confluence_d1_weight: float = 0.2
+    min_confluence_bias: float = 0.3
+
+    # Volume Profile (Phase 3)
+    enable_volume_profile: bool = False
+    vp_lookback: int = 100
+
 
 class SlotUpdate(BaseModel):
     symbol: Optional[str] = None
@@ -85,6 +101,22 @@ class SlotUpdate(BaseModel):
     # Engine Config Update
     engine_type: Optional[str] = None
     engine_config: Optional[dict] = None
+
+    # Volatility Filters Update
+    enable_volatility_filter: Optional[bool] = None
+    adx_period: Optional[int] = None
+    adx_threshold: Optional[float] = None
+    volatility_regime: Optional[str] = None
+
+    # Confluence v2 Update
+    confluence_h1_weight: Optional[float] = None
+    confluence_h4_weight: Optional[float] = None
+    confluence_d1_weight: Optional[float] = None
+    min_confluence_bias: Optional[float] = None
+
+    # Volume Profile Update
+    enable_volume_profile: Optional[bool] = None
+    vp_lookback: Optional[int] = None
 
 
 class SlotResponse(BaseModel):
@@ -119,6 +151,22 @@ class SlotResponse(BaseModel):
     # Engine Config
     engine_type: str = "ADAPTIVE"
     engine_config: Optional[dict] = {}
+
+    # Volatility Filters
+    enable_volatility_filter: bool = True
+    adx_period: int = 14
+    adx_threshold: float = 25.0
+    volatility_regime: str = "NORMAL,HIGH"
+
+    # Confluence v2
+    confluence_h1_weight: float = 0.5
+    confluence_h4_weight: float = 0.3
+    confluence_d1_weight: float = 0.2
+    min_confluence_bias: float = 0.3
+
+    # Volume Profile
+    enable_volume_profile: bool = False
+    vp_lookback: int = 100
 
     created_at: datetime
 
