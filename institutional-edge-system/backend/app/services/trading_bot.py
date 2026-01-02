@@ -130,9 +130,23 @@ class TradingBot:
             if not symbol: 
                 return
             
-            # strict matching: Only trade if this bot instance is configured for this symbol
-            if symbol != self.config.symbol:
+            # --- FILTERING LOGIC ---
+            
+            # A) Exclusion Check (FundingPips Requirement: Exclude XAUUSD etc.)
+            excluded = getattr(self.config, 'excluded_symbols', []) or []
+            if symbol in excluded:
+                logger.info(f"🛡️ SLAVE IGNORE: {symbol} is in excluded list.")
                 return
+
+            # B) Inclusion Check (Universal vs Strict)
+            # If config.symbol is "ALL" or "COPY_MASTER", we accept everything (unless excluded above)
+            # Otherwise, we enforce strict 1-to-1 matching.
+            configured_symbol = self.config.symbol
+            is_universal_slave = configured_symbol in ["ALL", "COPY_MASTER", "*"]
+            
+            if not is_universal_slave and symbol != configured_symbol:
+                 # Strict mode: mismatch
+                 return
 
             logger.info(f"📥 SLAVE EVENT: {signal_data['signal_type']} {symbol} @ {signal_data['entry_price']}")
 

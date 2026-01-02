@@ -77,8 +77,15 @@ class InstitutionalGoldEngine:
         Main Analysis Pipeline for Gold (SMC + Fib + Killzone Filter).
         v3.0: Now includes session killzone check to reduce over-trading.
         """
-        if df is None or len(df) < 200:
-             return {'signals': [], 'structure': None}
+        if df is None or len(df) < 50: # Lowered threshold to 50 to match StructureAnalyzer
+             # Return valid structure object even for empty data to prevent AttributeError in caller
+             empty_struct = self.structure_analyzer.analyze(pd.DataFrame() if df is None else df)
+             return {'signals': [], 'structure': empty_struct}
+             
+        if len(df) < 200:
+             # Still analyze structure for small datasets
+             structure = self.structure_analyzer.analyze(df)
+             return {'signals': [], 'structure': structure}
         
         # --- v3.0: SESSION KILLZONE FILTER ---
         try:
@@ -94,8 +101,10 @@ class InstitutionalGoldEngine:
             current_time = datetime.now()
 
         if not self._is_in_killzone(current_time):
-            # logger.warning(f"⏳ SKIP KZ: {current_time}")
-            return {'signals': [], 'structure': None, 'reason': 'Outside killzone'}
+            logger.warning(f"⏳ SKIP KZ: {current_time} (Outside Trading Session)")
+            # Even if outside KZ, we should analyze structure for UI feedback
+            structure = self.structure_analyzer.analyze(df)
+            return {'signals': [], 'structure': structure, 'reason': 'Outside killzone'}
         
         # logger.warning(f"✅ Passed KZ: {current_time}")
         # -------------------------
@@ -158,15 +167,17 @@ class InstitutionalGoldEngine:
                 h1_bearish_flow = True
                 
         # Combine M15 Structure        if structure.trend == 'UP' and (h1_bullish_flow or True): # RELAXED: Trust M15
+        signal_type = None
+        if structure.trend == 'UP' and (h1_bullish_flow or True): 
             signal_type = 'BUY'
-        elif structure.trend == 'DOWN' and (h1_bearish_flow or True): # RELAXED: Trust M15
+        elif structure.trend == 'DOWN' and (h1_bearish_flow or True): 
             signal_type = 'SELL'
         else:
             # If Structure is RANGE or Undefined
             if self.config.get('debug', False): logger.info(f"⚠️ Trend Conflict: M15={structure.trend}")
             return {'signals': [], 'structure': structure} 
         if signal_type:
-            logger.warning(f"✅ Trend Aligned: {signal_type} @ {current_price}") 
+            pass # logger.warning(f"✅ Trend Aligned: {signal_type} @ {current_price}") 
             
         # --- BUY LOGIC ---
         if signal_type == 'BUY':
@@ -207,14 +218,18 @@ class InstitutionalGoldEngine:
                 )
                 if (smc_result['in_order_block'] or smc_result['in_fvg']) and smc_result['liquidity_swept']:
                     is_smc_entry = True
+            else:
+                 smc_result = {} # Init for later use
             
             # Debug SMC Failure
-            if not is_smc_entry:
-                 logger.warning(f"❌ SMC FAIL: No Entry (Zone/Sweep missing? Swept={smc_result.get('liquidity_swept')})")
+            if not is_smc_entry and smc_enabled:
+                 pass # logger.warning(f"❌ SMC FAIL: No Entry (Zone/Sweep missing? Swept={smc_result.get('liquidity_swept')})")
+            elif not smc_enabled:
+                smc_result = {}
 
             # Combined Entry Logic
             if is_smc_entry and price_action_trigger:
-                 logger.warning(f"🚀 SMC BUY TRIGGERED! Prob: {smc_result}")
+                 logger.info(f"🚀 SMC BUY TRIGGERED! Prob: {smc_result}")
                  self._create_signal(signals, 'BUY', current, structure, None, smc_result)
                  
             elif in_zone and indicators_aligned and price_action_trigger:
@@ -249,6 +264,8 @@ class InstitutionalGoldEngine:
                 # v4.1 STRICT: SMC Sweep + Zone Required
                 if (smc_result['in_order_block'] or smc_result['in_fvg']) and smc_result['liquidity_swept']:
                     is_smc_entry = True
+            else:
+                smc_result = {}
             
             # Combined Entry Logic
             if is_smc_entry and price_action_trigger:
@@ -269,6 +286,14 @@ class InstitutionalGoldEngine:
                 'in_zone': locals().get('in_zone', False)
             }
         }
+
+    def update_news(self, events: List[Dict]):
+        """
+        Update high-impact news events for filtering.
+        Current implementation: Log only (Pass-through).
+        """
+        if events:
+            logger.debug(f"📰 InstitutionalGoldEngine received {len(events)} news events (No Filtering Active)")
 
     def _is_in_killzone(self, current_time) -> bool:
         """

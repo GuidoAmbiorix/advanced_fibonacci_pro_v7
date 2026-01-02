@@ -98,6 +98,9 @@ class BotConfig(Base):
     risk_percent = Column(Float, default=0.001)  # 0.001% for Gold (critical)
     min_confluence_score = Column(Integer, default=5)  # Lower for more signals
     max_trades = Column(Integer, default=3)
+    
+    # Copy Trading Filters (NEW)
+    excluded_symbols = Column(JSON, default=[]) # List of symbols to exclude (e.g. ["XAUUSD"])
 
     # Smart Money Settings
     swing_length = Column(Integer, default=10)

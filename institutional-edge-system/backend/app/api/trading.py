@@ -130,7 +130,27 @@ class LiveTradingSession:
         golden_config['structure']['zigzag_lookback'] = 5 # Default
         
         # Determine Engine Type
-        engine_type = config.get('engine_type', 'golden')
+        engine_type = config.get('engine_type', 'golden').upper()
+        
+        # FIX: XAU_PRO specific config mapping (Match BacktestEngine logic)
+        if engine_type == 'XAU_PRO' or engine_type in ['SILVER', 'BRONZE', 'PLATINUM', 'ADAPTIVE']:
+            # InstitutionalGoldEngine expects these at root level
+            golden_config['rr_ratio'] = config.get('tp_ratio', 2.0)
+            golden_config['sl_atr_multiplier'] = config.get('sl_atr_multiplier', 1.5)
+            # RSI Thresholds mapping
+            golden_config['rsi_buy_threshold'] = config.get('rsi_oversold', 40)
+            golden_config['rsi_sell_threshold'] = config.get('rsi_overbought', 60)
+            
+            # Ensure SMC params are passed if present in root config
+            golden_config['enable_order_blocks'] = config.get('enable_order_blocks', True)
+            golden_config['ob_lookback'] = config.get('ob_lookback', 20)
+            golden_config['enable_liquidity_sweep'] = config.get('enable_liquidity_sweep', True)
+            golden_config['sweep_lookback'] = config.get('sweep_lookback', 10)
+            golden_config['enable_fvg'] = config.get('enable_fvg', True)
+            golden_config['fvg_min_size_atr'] = config.get('fvg_min_size_atr', 0.5)
+            
+            logger.info(f"✅ Live Session: Mapped XAU_PRO config (RR: {golden_config['rr_ratio']}, SL: {golden_config['sl_atr_multiplier']})")
+
         self.engine = EngineFactory.create_engine(engine_type, golden_config)
     
     async def run(self):
@@ -290,7 +310,7 @@ class LiveTradingSession:
 
                 else:
                     try:
-                        struct = analysis.get('structure', {})
+                        struct = analysis.get('structure') or {} # Handle None explicitly
                         trend = struct.trend if hasattr(struct, 'trend') else struct.get('trend', 'Unknown')
                     except Exception as e:
                         logger.error(f"Trend extraction error: {e}, StructType: {type(analysis.get('structure'))}")
