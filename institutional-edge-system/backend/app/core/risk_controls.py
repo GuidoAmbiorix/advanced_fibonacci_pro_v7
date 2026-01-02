@@ -24,6 +24,7 @@ class DailyStats:
     realized_pnl: float = 0.0
     max_drawdown_pct: float = 0.0
     lowest_equity: float = field(default=0.0)
+    peak_daily_profit_pct: float = 0.0  # Track highest profit % reached today
     
     def __post_init__(self):
         if self.lowest_equity == 0:
@@ -60,6 +61,11 @@ class RiskControls:
         self.max_drawdown_pct = config.get('max_drawdown_pct', 5.0)
         self.max_positions_per_group = config.get('max_positions_per_group', 1)
         
+        # Daily Profit Cap (Winning Lock)
+        self.max_daily_profit_pct = config.get('max_daily_profit_pct', 3.0)
+        self.profit_cap_mode = config.get('max_daily_profit_mode', 'TRAILING')  # HARD or TRAILING
+        self.trailing_profit_lock_pct = config.get('trailing_profit_lock_pct', 0.5)  # Lock 50% of peak
+        
         # Correlated pairs (default groups)
         self.correlated_pairs = config.get('correlated_pairs', [
             ['EURUSD', 'GBPUSD', 'AUDUSD', 'NZDUSD'],  # USD pairs
@@ -75,7 +81,8 @@ class RiskControls:
         
         logger.info(f"Risk Controls initialized: Daily Loss {self.max_daily_loss_pct}%, "
                    f"Max Consecutive Losses {self.max_consecutive_losses}, "
-                   f"Max Drawdown {self.max_drawdown_pct}%")
+                   f"Max Drawdown {self.max_drawdown_pct}%, "
+                   f"Daily Profit Cap +{self.max_daily_profit_pct}% ({self.profit_cap_mode})")
     
     # ==================== KILL SWITCH ====================
     
@@ -136,7 +143,13 @@ class RiskControls:
             stats.lowest_equity = current_balance
             stats.max_drawdown_pct = ((starting_balance - stats.lowest_equity) / starting_balance) * 100
         
+        # Update peak daily profit (for trailing profit lock)
+        current_profit_pct = (stats.realized_pnl / starting_balance) * 100
+        if current_profit_pct > stats.peak_daily_profit_pct:
+            stats.peak_daily_profit_pct = current_profit_pct
+        
         logger.info(f"Trade recorded: PnL ${pnl:.2f}, Daily PnL ${stats.realized_pnl:.2f}, "
+                   f"Peak Profit +{stats.peak_daily_profit_pct:.2f}%, "
                    f"Consecutive Losses: {stats.consecutive_losses}")
     
     def update_equity(self, account_id: str, current_equity: float, starting_balance: float):
@@ -191,6 +204,17 @@ class RiskControls:
                 if correlated_open >= self.max_positions_per_group:
                     return False, f"Correlation limit: {correlated_open} positions in group {group}"
         
+        # 6. Daily Profit Cap check (HARD mode)
+        daily_profit_pct = (stats.realized_pnl / starting_balance) * 100
+        if daily_profit_pct >= self.max_daily_profit_pct:
+            return False, f"🎯 Daily profit target reached: +{daily_profit_pct:.2f}% (Cap: +{self.max_daily_profit_pct}%)"
+        
+        # 7. Trailing Profit Lock check (TRAILING mode)
+        if self.profit_cap_mode == "TRAILING" and stats.peak_daily_profit_pct > 0:
+            min_locked_pct = stats.peak_daily_profit_pct * self.trailing_profit_lock_pct
+            if daily_profit_pct < min_locked_pct and stats.peak_daily_profit_pct >= self.max_daily_profit_pct * 0.5:
+                return False, f"🔒 Trailing profit lock: Peak +{stats.peak_daily_profit_pct:.2f}%, now +{daily_profit_pct:.2f}% < Min +{min_locked_pct:.2f}%"
+        
         return True, "All checks passed"
     
     def register_position_opened(self, account_id: str, symbol: str):
@@ -216,6 +240,7 @@ class RiskControls:
             "kill_switch_active": self.is_kill_switch_active(),
             "daily_pnl": stats.realized_pnl,
             "daily_pnl_pct": (stats.realized_pnl / starting_balance) * 100,
+            "peak_daily_profit_pct": stats.peak_daily_profit_pct,
             "trades_today": stats.trades_count,
             "wins": stats.wins,
             "losses": stats.losses,
@@ -226,6 +251,8 @@ class RiskControls:
                 "max_daily_loss_pct": self.max_daily_loss_pct,
                 "max_consecutive_losses": self.max_consecutive_losses,
                 "max_drawdown_pct": self.max_drawdown_pct,
+                "max_daily_profit_pct": self.max_daily_profit_pct,
+                "profit_cap_mode": self.profit_cap_mode,
             }
         }
     

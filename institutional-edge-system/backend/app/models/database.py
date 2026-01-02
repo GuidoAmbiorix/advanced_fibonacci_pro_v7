@@ -67,6 +67,11 @@ class MT5Account(Base):
     starting_balance = Column(Float, default=0.0)       # Track from start
     daily_starting_balance = Column(Float, default=0.0) # Reset daily
     
+    # Daily Profit Cap (Winning Lock)
+    max_daily_profit_pct = Column(Float, default=3.0)   # Stop after +3% daily
+    max_daily_profit_mode = Column(String, default="TRAILING")  # HARD or TRAILING
+    trailing_profit_lock_pct = Column(Float, default=0.5)  # Lock 50% of peak
+    
     # Status
     is_active = Column(Boolean, default=False)  # Only ONE active at a time
     created_at = Column(DateTime, default=datetime.utcnow)

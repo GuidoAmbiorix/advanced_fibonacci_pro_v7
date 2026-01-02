@@ -664,6 +664,29 @@
                      </div>
                   </div>
                </div>
+               
+               <!-- Daily Profit Cap (Winning Lock) -->
+               <div class="p-2 bg-emerald-900/10 rounded border border-emerald-500/20">
+                  <div class="mb-2">
+                     <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">🔒 Daily Profit Cap</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                     <div>
+                        <label class="text-[10px] text-gray-400">Max Daily Profit %</label>
+                        <input type="number" v-model.number="slot.max_daily_profit_pct" step="0.5" min="1" max="10" placeholder="3.0"
+                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                     </div>
+                     <div>
+                        <label class="text-[10px] text-gray-400">Cap Mode</label>
+                        <select v-model="slot.max_daily_profit_mode" 
+                                class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-[10px]">
+                           <option value="TRAILING">🔄 Trailing (Lock 50%)</option>
+                           <option value="HARD">🛑 Hard Stop</option>
+                        </select>
+                     </div>
+                  </div>
+                  <p class="text-[9px] text-gray-500 mt-1">Stop trading after hitting daily profit target (prevents giveback)</p>
+               </div>
             </div>
 
 

@@ -561,7 +561,13 @@ class TradingBot:
             await self._log_activity("Max total drawdown limit reached, skipping", "warning")
             return
 
-        # 5. Check Cooldown
+        # 6. Check Daily Profit Cap (Winning Lock)
+        profit_cap_result = self._check_daily_profit_cap()
+        if not profit_cap_result[0]:
+            await self._log_activity(profit_cap_result[1], "info")
+            return
+
+        # 7. Check Cooldown
         if not self._check_cooldown(signal.symbol):
             # Log handled inside _check_cooldown
             return
@@ -936,6 +942,72 @@ class TradingBot:
             return False
             
         return True
+
+    def _check_daily_profit_cap(self) -> tuple:
+        """
+        Check if Daily Profit Cap has been reached.
+        Supports HARD mode (stop at target) and TRAILING mode (lock % of peak).
+        
+        Returns:
+            Tuple of (can_trade: bool, reason: str)
+        """
+        db = SessionLocal()
+        try:
+            today = datetime.utcnow().date()
+            trades = db.query(Trade).filter(
+                Trade.user_id == self.config.user_id,
+                Trade.closed_at >= datetime.combine(today, datetime.min.time())
+            ).all()
+            
+            daily_pnl = sum(t.profit_loss for t in trades if t.profit_loss)
+            
+            # Get account balance
+            account_info = self.mt5_connector.get_account_info()
+            if not account_info:
+                return True, "OK"
+                
+            balance = account_info['balance']
+            if balance <= 0:
+                return True, "OK"
+            
+            daily_profit_pct = (daily_pnl / balance) * 100
+            
+            # Get config values (with defaults)
+            max_profit_pct = getattr(self.config, 'max_daily_profit_pct', 3.0) or 3.0
+            profit_mode = getattr(self.config, 'max_daily_profit_mode', 'TRAILING') or 'TRAILING'
+            lock_pct = getattr(self.config, 'trailing_profit_lock_pct', 0.5) or 0.5
+            
+            # HARD Mode: Stop at target
+            if daily_profit_pct >= max_profit_pct:
+                return False, f"🎯 Daily profit target reached: +{daily_profit_pct:.2f}% (Cap: +{max_profit_pct}%)"
+            
+            # TRAILING Mode: Lock % of peak profit
+            # We need to track peak - for now use daily max from trades
+            if profit_mode == "TRAILING" and daily_profit_pct > 0:
+                # Calculate peak profit (highest point today)
+                running_pnl = 0
+                peak_pnl = 0
+                for t in sorted(trades, key=lambda x: x.closed_at or datetime.min):
+                    if t.profit_loss:
+                        running_pnl += t.profit_loss
+                        if running_pnl > peak_pnl:
+                            peak_pnl = running_pnl
+                
+                peak_profit_pct = (peak_pnl / balance) * 100
+                
+                # Only apply lock if peak was significant (> 50% of target)
+                if peak_profit_pct >= max_profit_pct * 0.5:
+                    min_locked_pct = peak_profit_pct * lock_pct
+                    if daily_profit_pct < min_locked_pct:
+                        return False, f"🔒 Trailing profit lock: Peak +{peak_profit_pct:.2f}%, now +{daily_profit_pct:.2f}% < Min +{min_locked_pct:.2f}%"
+            
+            return True, "OK"
+            
+        except Exception as e:
+            logger.error(f"Error checking daily profit cap: {e}")
+            return True, "OK"  # Fail safe
+        finally:
+            db.close()
 
     def _check_cooldown(self, symbol: str) -> bool:
         """
