@@ -153,9 +153,32 @@ class InstitutionalGoldEngine:
         signal_type = None
         
         # EMA Trend Check
-        if current['close'] > current['ema200']:
+        is_bullish = current['close'] > current['ema200']
+        is_bearish = current['close'] < current['ema200']
+        
+        # M5 SCALPING SAFETY: Require HTF (M30/H1) Confirmation
+        timeframe = self.config.get('timeframe', '15m')
+        if '5m' in timeframe.lower() and df_higher_tf is not None and len(df_higher_tf) > 50:
+             # Calculate HTF EMA200 if missing
+             if 'ema200' not in df_higher_tf.columns:
+                 df_higher_tf['ema200'] = EMAIndicator(close=df_higher_tf['close'], window=200).ema_indicator()
+             
+             htf_last = df_higher_tf.iloc[-1]
+             htf_bullish = htf_last['close'] > htf_last['ema200']
+             htf_bearish = htf_last['close'] < htf_last['ema200']
+             
+             # Filter: Must align with HTF
+             if is_bullish and not htf_bullish: 
+                 is_bullish = False
+                 # logger.info(f"🚫 M5 Bullish Signal Vetoed by HTF Bearish Trend")
+                 
+             if is_bearish and not htf_bearish: 
+                 is_bearish = False
+                 # logger.info(f"🚫 M5 Bearish Signal Vetoed by HTF Bullish Trend")
+
+        if is_bullish:
             signal_type = 'BUY'
-        elif current['close'] < current['ema200']:
+        elif is_bearish:
             signal_type = 'SELL'
             
         # Structure Confirmation (Optional/Bonus, not blocking)
@@ -390,31 +413,49 @@ class InstitutionalGoldEngine:
         atr = current['atr']
         
         # SMC / Institutional Stop Loss
+        # SMC / Institutional Stop Loss
         # We look for the INVALIDATION point (Structure start) + 1 ATR breathing room
-        invalid_price = structure.last_impulse_leg['start'].price
         
-        # Max Risk Distance: 3 ATR (to avoid huge stops on large impulses)
-        max_sl_dist = atr * 3.0
-        
-        if direction == 'BUY':
-            dist_to_struct = current_price - invalid_price
-            if dist_to_struct > max_sl_dist:
-                sl_price = current_price - (atr * self.sl_atr_multiplier) 
-            else:
-                sl_price = invalid_price - (atr * 0.2) 
+        # FIX M5 CRASH: structure.last_impulse_leg can be None if zigzag undefined
+        if structure and structure.last_impulse_leg:
+             invalid_price = structure.last_impulse_leg['start'].price
+             
+             # Max Risk Distance: 3 ATR (to avoid huge stops on large impulses)
+             max_sl_dist = atr * 3.0
+             
+             if direction == 'BUY':
+                dist_to_struct = current_price - invalid_price
+                if dist_to_struct > max_sl_dist:
+                    sl_price = current_price - (atr * self.sl_atr_multiplier) 
+                else:
+                    sl_price = invalid_price - (atr * 0.2) 
+                    
+                tp_dist = abs(current_price - sl_price) * self.rr_ratio
+                tp1_price = current_price + tp_dist
+             else: # SELL
+                dist_to_struct = invalid_price - current_price
+                if dist_to_struct > max_sl_dist:
+                    sl_price = current_price + (atr * self.sl_atr_multiplier)
+                else:
+                    sl_price = invalid_price + (atr * 0.2)
+
+                tp_dist = abs(sl_price - current_price) * self.rr_ratio
+                tp1_price = current_price - tp_dist
                 
-            tp_dist = abs(current_price - sl_price) * self.rr_ratio
-            tp1_price = current_price + tp_dist
-            
         else:
-            dist_to_struct = invalid_price - current_price
-            if dist_to_struct > max_sl_dist:
-                sl_price = current_price + (atr * self.sl_atr_multiplier)
-            else:
-                sl_price = invalid_price + (atr * 0.2)
-                
-            tp_dist = abs(current_price - sl_price) * self.rr_ratio
-            tp1_price = current_price - tp_dist
+             # Fallback if structure is missing (e.g. M5 early data)
+             # Use Standard ATR SL
+             sl_dist = atr * self.sl_atr_multiplier
+             tp_dist = sl_dist * self.rr_ratio
+             
+             if direction == 'BUY':
+                 sl_price = current_price - sl_dist
+                 tp1_price = current_price + tp_dist
+             else:
+                 sl_price = current_price + sl_dist
+                 tp1_price = current_price - tp_dist
+            
+
 
         # SMC metadata (v4.0)
         smc_info = {}
