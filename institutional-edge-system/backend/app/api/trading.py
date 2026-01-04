@@ -149,7 +149,11 @@ class LiveTradingSession:
             golden_config['enable_fvg'] = config.get('enable_fvg', True)
             golden_config['fvg_min_size_atr'] = config.get('fvg_min_size_atr', 0.5)
             
-            logger.info(f"✅ Live Session: Mapped XAU_PRO config (RR: {golden_config['rr_ratio']}, SL: {golden_config['sl_atr_multiplier']})")
+            # CRITICAL LOOP FIX: Pass Session Mode to Engine
+            # 'trading_session' (Frontend) -> 'session_mode' (Engine)
+            golden_config['session_mode'] = config.get('trading_session', 'ALL') 
+            
+            logger.info(f"✅ Live Session: Mapped XAU_PRO config (RR: {golden_config['rr_ratio']}, Session: {golden_config['session_mode']})")
 
         self.engine = EngineFactory.create_engine(engine_type, golden_config)
     
@@ -238,8 +242,18 @@ class LiveTradingSession:
 
                 # 5. Market condition checks
                 spread = self.mt5.get_spread(symbol)
-                if spread and spread > 5.0:  # Max 5 pips spread
-                    logger.warning(f"⛔ {self.session_id}: High spread: {spread:.1f} pips")
+                
+                # Dynamic Spread Thresholds
+                max_spread = 50.0 # Default High
+                if 'BTC' in symbol or 'ETH' in symbol:
+                    max_spread = 15000.0 # Crypto (Raw points often huge)
+                elif 'XAU' in symbol or 'GOLD' in symbol:
+                    max_spread = 100.0   # Gold (10-30 pips normal)
+                else: 
+                    max_spread = 20.0    # Forex (2 pips = 20 points usually)
+                    
+                if spread and spread > max_spread:
+                    logger.warning(f"⛔ {self.session_id}: High spread: {spread:.1f} > {max_spread}")
                     await asyncio.sleep(30)
                     continue
 
