@@ -146,38 +146,29 @@ class InstitutionalGoldEngine:
         prev = df.iloc[-2]
         current_price = current.close
         
-        # --- SMC STRUCTURAL TREND FILTER (H1) ---
-        # Strong Trend: Price > EMA 50 > EMA 200 (Bullish)
-        # We need H1 data for this "Institutional Flow" check. by default assume neutral if missing.
-        h1_bullish_flow = False
-        h1_bearish_flow = False
+        # --- STELLAR TREND LOGIC (M15 EMA Only) ---
+        # "Smart Trend" = Price vs EMA200. 
+        # Structure is used for Entry Context, not blocking Trend.
         
-        if df_higher_tf is not None and len(df_higher_tf) > 200:
-            if 'ema200' not in df_higher_tf.columns:
-                df_higher_tf['ema200'] = EMAIndicator(close=df_higher_tf['close'], window=200).ema_indicator()
-            if 'ema50' not in df_higher_tf.columns:
-                df_higher_tf['ema50'] = EMAIndicator(close=df_higher_tf['close'], window=50).ema_indicator()
-                
-            last_h1 = df_higher_tf.iloc[-1]
-            
-            # Institutional Flow Check
-            if last_h1['close'] > last_h1['ema50'] and last_h1['ema50'] > last_h1['ema200']:
-                h1_bullish_flow = True
-            elif last_h1['close'] < last_h1['ema50'] and last_h1['ema50'] < last_h1['ema200']:
-                h1_bearish_flow = True
-                
-        # Combine M15 Structure        if structure.trend == 'UP' and (h1_bullish_flow or True): # RELAXED: Trust M15
         signal_type = None
-        if structure.trend == 'UP' and (h1_bullish_flow or True): 
+        
+        # EMA Trend Check
+        if current['close'] > current['ema200']:
             signal_type = 'BUY'
-        elif structure.trend == 'DOWN' and (h1_bearish_flow or True): 
+        elif current['close'] < current['ema200']:
             signal_type = 'SELL'
-        else:
-            # If Structure is RANGE or Undefined
-            if self.config.get('debug', False): logger.info(f"⚠️ Trend Conflict: M15={structure.trend}")
-            return {'signals': [], 'structure': structure} 
-        if signal_type:
-            pass # logger.warning(f"✅ Trend Aligned: {signal_type} @ {current_price}") 
+            
+        # Structure Confirmation (Optional/Bonus, not blocking)
+        # if structure.trend != 'UP' and signal_type == 'BUY': ... (We ignore this for volume)
+
+        if not signal_type:
+             return {'signals': [], 'structure': structure} 
+        
+        # logger.warning(f"✅ Trend Aligned: {signal_type} @ {current_price}") 
+        
+        # logger.warning(f"✅ Trend Aligned: {signal_type} @ {current_price}") 
+
+ 
             
         # --- BUY LOGIC ---
         if signal_type == 'BUY':
