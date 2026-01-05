@@ -18,17 +18,6 @@ import time
 import os
 from app.core.config import settings
 
-# Global RPyC configuration to prevent timeouts during MT5 initialization
-try:
-    import rpyc
-    # Set default timeout to 600s (10m) to allow for slow MT5 startup
-    if hasattr(rpyc.core.protocol, 'DEFAULT_CONFIG'):
-        rpyc.core.protocol.DEFAULT_CONFIG['sync_request_timeout'] = 600
-        rpyc.core.protocol.DEFAULT_CONFIG['allow_pickle'] = True
-except ImportError:
-    pass
-
-
 # MT5 module - will be set based on connection type
 mt5 = None
 
@@ -47,14 +36,14 @@ def get_remote_mt5(host: str, port: int):
     """
     try:
         import rpyc
-        # Connect to RPyC server (without config arg which fails on older versions)
-        conn = rpyc.classic.connect(host, port)
+        # Connect to RPyC server (default configuration)
+        # Enhanced for Stability: Increased timeout and config
+        config = {
+            'sync_request_timeout': 300,  # 5 minutes
+            'allow_pickle': True,
+        }
+        conn = rpyc.classic.connect(host, port, config=config)
         
-        # Enhanced for Stability: Set timeout after connection
-        if hasattr(conn, '_config'):
-            conn._config['sync_request_timeout'] = 300  # 5 minutes
-            conn._config['allow_pickle'] = True
-
         # Verify connection
         if conn.closed:
              logger.error("❌ RPyC connection immediately closed")
@@ -147,30 +136,26 @@ class MT5Connector:
             
             try:
                 import rpyc
-                # Establish connection
-                conn = rpyc.classic.connect(mt5_host, mt5_port)
-                
-                # Force update instance config as a fallback
-                if hasattr(conn, '_config'):
-                     conn._config['sync_request_timeout'] = 600
-                
+                # Use enhanced config for connection
+                config = {
+                    'sync_request_timeout': 300,
+                    'allow_pickle': True
+                }
+                conn = rpyc.classic.connect(mt5_host, mt5_port, config=config)
                 mt5 = conn.modules.MetaTrader5
                 
-                # Re-initialize timeframe map with LOCALLY DEFINED constants 
-                # to avoid blocking RPyC calls on property access during startup
+                # Re-initialize timeframe map with remote constants
                 self.timeframe_map = {
-                    'M1': 1, 'M5': 5, 'M15': 15,
-                    'M30': 30, 'H1': 16385, 'H4': 16388,
-                    'D1': 16408, 'W1': 32769, 'MN1': 49153,
+                    'M1': mt5.TIMEFRAME_M1, 'M5': mt5.TIMEFRAME_M5, 'M15': mt5.TIMEFRAME_M15,
+                    'M30': mt5.TIMEFRAME_M30, 'H1': mt5.TIMEFRAME_H1, 'H4': mt5.TIMEFRAME_H4,
+                    'D1': mt5.TIMEFRAME_D1, 'W1': mt5.TIMEFRAME_W1, 'MN1': mt5.TIMEFRAME_MN1,
                 }
-                logger.info("✅ RPyC connection established")
-                
+                logger.info("✅ RPyC connection established (Enhanced Reliability)")
             except Exception as e:
                 logger.error(f"❌ Failed to connect via RPyC: {e}")
                 return False
 
-            # Initialize MT5
-            # This call may block for a while if MT5 is starting up
+            # Initialize MT5 (Standard Procedure)
             if not mt5.initialize():
                 err_code = mt5.last_error()
                 logger.error(f"❌ MT5 initialize() failed: {err_code}")
@@ -178,38 +163,65 @@ class MT5Connector:
             
             logger.info("✅ MT5 initialized successfully")
             
-            # Login
+            # Login if credentials provided
             if self.login and self.password and self.server:
-                logger.info(f"🔐 Logging into account {self.login} on server {self.server}...")
+                logger.info(f"🔐 Logging into account {self.login}...")
                 authorized = mt5.login(
                     login=int(self.login),
                     password=self.password,
                     server=self.server
                 )
                 if not authorized:
+                    logger.error(f"❌ MT5 login failed: {mt5.last_error()}")
+                    return False
+                logger.info(f"✅ Successfully logged into {self.login}")
+                
+            self.connected = True
+            return True
+
+        except Exception as e:
+            logger.error(f"CRITICAL ERROR in connect(): {e}")
+            return False
+            
+            logger.info("✅ MT5 initialized successfully")
+            
+            # ================================================================
+            # LOGIN TO ACCOUNT (works for both local and remote/shared)
+            # This is the KEY for automatic multi-account support!
+            # ================================================================
+            if self.login and self.password and self.server:
+                logger.info(f"🔐 Logging into account {self.login} on server {self.server}...")
+                
+                authorized = mt5.login(
+                    login=int(self.login),
+                    password=self.password,
+                    server=self.server
+                )
+                
+                if not authorized:
                     err_code = mt5.last_error()
                     logger.error(f"❌ MT5 login failed for account {self.login}: {err_code}")
                     return False
-                logger.info(f"✅ Successfully logged into {self.login}")
+                    
+                logger.info(f"✅ Successfully logged into MT5 account: {self.login}")
             else:
                 logger.warning("⚠️ No MT5 credentials provided - using current terminal session")
 
             self.connected = True
             
-            # Verify connection status
-            try:
-                account_info = mt5.account_info()
-                if account_info:
-                    logger.info(f"📊 Account {account_info.login} | Balance: ${account_info.balance:.2f}")
-                else:
-                    logger.warning("⚠️ Connected but Account Info unavailable")
-            except:
-                pass 
-                
+            # Verify connection
+            account_info = mt5.account_info()
+            if account_info:
+                logger.info(f"📊 Account {account_info.login} | Balance: ${account_info.balance:.2f} | Equity: ${account_info.equity:.2f}")
+            else:
+                logger.warning("⚠️ Connected but Account Info unavailable (Terminal initializing?)")
+                if self.login and self.password:
+                    return False  # Force retry
+            
             return True
 
         except Exception as e:
-            logger.error(f"CRITICAL ERROR in connect(): {e}")
+            logger.exception(f"Error connecting to MT5: {e}")
             return False
 
     def disconnect(self):
