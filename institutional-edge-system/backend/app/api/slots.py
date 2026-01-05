@@ -54,6 +54,31 @@ class SlotCreate(BaseModel):
     engine_type: str = "ADAPTIVE"
     engine_config: Optional[dict] = {}
 
+    # MOMENTUM (MACD)
+    macd_fast: int = 12
+    macd_slow: int = 26
+    macd_signal: int = 9
+
+    # STOCHASTIC
+    stoch_k_period: int = 14
+    stoch_d_period: int = 3
+
+    # STRUCTURE & SMC
+    zigzag_lookback: int = 12
+    enable_order_blocks: bool = True
+    ob_lookback: int = 20
+    enable_liquidity_sweep: bool = True
+    sweep_lookback: int = 10
+    enable_fvg: bool = True
+    fvg_min_size_atr: float = 0.5
+
+    # FILTERS & EXTRAS
+    use_adx_filter: bool = False
+    use_h1_trend_filter: bool = False
+    vwap_use_trend_filter: bool = True
+    magic_number: int = 8888
+    respect_user_zones: bool = True
+
 
 class SlotUpdate(BaseModel):
     symbol: Optional[str] = None
@@ -85,6 +110,56 @@ class SlotUpdate(BaseModel):
     # Engine Config Update
     engine_type: Optional[str] = None
     engine_config: Optional[dict] = None
+
+    # MOMENTUM (MACD)
+    macd_fast: Optional[int] = None
+    macd_slow: Optional[int] = None
+    macd_signal: Optional[int] = None
+
+    # STOCHASTIC
+    stoch_k_period: Optional[int] = None
+    stoch_d_period: Optional[int] = None
+
+    # STRUCTURE & SMC
+    zigzag_lookback: Optional[int] = None
+    enable_order_blocks: Optional[bool] = None
+    ob_lookback: Optional[int] = None
+    enable_liquidity_sweep: Optional[bool] = None
+    sweep_lookback: Optional[int] = None
+    enable_fvg: Optional[bool] = None
+    fvg_min_size_atr: Optional[float] = None
+
+    # FILTERS & EXTRAS
+    use_adx_filter: Optional[bool] = None
+    use_h1_trend_filter: Optional[bool] = None
+    vwap_use_trend_filter: Optional[bool] = None
+    magic_number: Optional[int] = None
+    respect_user_zones: Optional[bool] = None
+
+    # MOMENTUM (MACD)
+    macd_fast: Optional[int] = None
+    macd_slow: Optional[int] = None
+    macd_signal: Optional[int] = None
+
+    # STOCHASTIC
+    stoch_k_period: Optional[int] = None
+    stoch_d_period: Optional[int] = None
+
+    # STRUCTURE & SMC
+    zigzag_lookback: Optional[int] = None
+    enable_order_blocks: Optional[bool] = None
+    ob_lookback: Optional[int] = None
+    enable_liquidity_sweep: Optional[bool] = None
+    sweep_lookback: Optional[int] = None
+    enable_fvg: Optional[bool] = None
+    fvg_min_size_atr: Optional[float] = None
+
+    # FILTERS & EXTRAS
+    use_adx_filter: Optional[bool] = None
+    use_h1_trend_filter: Optional[bool] = None
+    vwap_use_trend_filter: Optional[bool] = None
+    magic_number: Optional[int] = None
+    respect_user_zones: Optional[bool] = None
 
 
 class SlotResponse(BaseModel):
@@ -119,6 +194,31 @@ class SlotResponse(BaseModel):
     # Engine Config
     engine_type: str = "ADAPTIVE"
     engine_config: Optional[dict] = {}
+
+    # MOMENTUM (MACD)
+    macd_fast: int
+    macd_slow: int
+    macd_signal: int
+
+    # STOCHASTIC
+    stoch_k_period: int
+    stoch_d_period: int
+
+    # STRUCTURE & SMC
+    zigzag_lookback: int
+    enable_order_blocks: bool
+    ob_lookback: int
+    enable_liquidity_sweep: bool
+    sweep_lookback: int
+    enable_fvg: bool
+    fvg_min_size_atr: float
+
+    # FILTERS & EXTRAS
+    use_adx_filter: bool
+    use_h1_trend_filter: bool
+    vwap_use_trend_filter: bool
+    magic_number: int
+    respect_user_zones: bool
 
     created_at: datetime
 

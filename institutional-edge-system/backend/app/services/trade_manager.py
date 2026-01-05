@@ -421,8 +421,8 @@ class TradeManager:
 
     def _check_and_partial_close(self, trade: Dict, r_multiple: float):
         """Check and execute Partial Take Profit"""
-        # Trigger at 1.5R (or configurable)
-        if r_multiple < 1.5:
+        # Trigger at 1.0R (Aligned with Backtest)
+        if r_multiple < 1.0:
             return
 
         ticket = trade['ticket']

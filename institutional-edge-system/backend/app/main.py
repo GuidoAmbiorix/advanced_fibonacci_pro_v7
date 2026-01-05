@@ -184,6 +184,10 @@ async def startup_event():
 
     # Create database tables
     database.init_db()
+
+    # --- AUTO-SEEDING: Ensure Default Configuration Exists ---
+    from app.db.seed_db import seed_database
+    seed_database()
     
     # --- AUTO-PROVISIONING: Register Account from Config if missing ---
     # --- AUTO-PROVISIONING: Register Account from Config if missing ---

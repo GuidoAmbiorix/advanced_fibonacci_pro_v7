@@ -60,8 +60,10 @@ class TradingStartRequest(BaseModel):
     enable_partial_tp: bool = True
     partial_tp_percent: float = 50.0
     enable_trailing_stop: bool = True
+    enable_trailing_stop: bool = True
     # Engine Config
     engine_type: str = "ADAPTIVE"
+    trading_session: str = "ALL" # session override
     engine_config: Optional[Dict] = {}
     trailing_stop_atr: float = 1.5
     # Institutional
@@ -202,7 +204,7 @@ class LiveTradingSession:
                 in_session = self._is_in_trading_session(utc_now.hour, trading_session)
                 
                 if not in_session and session_end_action == 'DISABLE_NEW':
-                    logger.debug(f"⛔ {self.session_id}: Outside {trading_session} session - No New Entries")
+                    logger.info(f"⛔ {self.session_id}: Outside {trading_session} session (UTC {utc_now.hour}:00) - No New Entries")
                     # Still manage existing positions
                     await self._manage_open_positions()
                     await asyncio.sleep(60)
@@ -334,7 +336,16 @@ class LiveTradingSession:
                          s = analysis.get('structure')
                          logger.warning(f"Trend is Unknown. Struct Type: {type(s)}, Content: {s}")
 
-                    logger.info(f"Analysis complete: No signals found for {symbol} (Market Structure: {trend})")
+                    debug_info = analysis.get('debug_info', {})
+                    logger.info(
+                        f"Analysis complete: No signals found for {symbol}. "
+                        f"Session: {trading_session}. "
+                        f"Structure: {trend}. "
+                        f"Debug: RSI={debug_info.get('rsi', 'N/A')}, "
+                        f"SMC={debug_info.get('smc', 'N/A')}, "
+                        f"Zone={debug_info.get('in_zone', 'N/A')}, "
+                        f"Conf={debug_info.get('indicators_aligned', 'N/A')}"
+                    )
 
                 # 8. Manage open positions (partial TPs, trailing stops)
                 await self._manage_open_positions()
@@ -640,12 +651,32 @@ async def start_trading(
         raise HTTPException(status_code=500, detail="Failed to connect to MT5")
     
     # Build config - either from slot or from request
+    slot = None
+    
     if request.slot_id:
         slot = db.query(BotSlot).filter(BotSlot.id == request.slot_id).first()
         if not slot:
             raise HTTPException(status_code=404, detail=f"Slot {request.slot_id} not found")
+    elif request.symbol:
+        # Auto-detect slot by symbol to enforce DB config (e.g. Killzones)
+        stripped_symbol = request.symbol.strip()
+        logger.info(f"🔍 DEBUG: Attempting auto-detect for symbol: '{request.symbol}' (Stripped: '{stripped_symbol}')")
+        
+        slot = db.query(BotSlot).filter(
+            BotSlot.symbol == stripped_symbol, 
+            BotSlot.enabled == True
+        ).first()
+        
+        if slot:
+            logger.info(f"✨ Auto-detected Slot {slot.id} for {request.symbol} - Loading DB Config")
+        else:
+            logger.warning(f"⚠️ DEBUG: Auto-detect FAILED for symbol: '{stripped_symbol}'. No enabled slot found in DB.")
+
+
+    if slot:
         if not slot.enabled:
-            raise HTTPException(status_code=400, detail=f"Slot {request.slot_id} is disabled")
+            raise HTTPException(status_code=400, detail=f"Slot {slot.id} is disabled")
+
         
         # Load config from slot
         config = {

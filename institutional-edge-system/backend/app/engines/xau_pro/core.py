@@ -87,28 +87,6 @@ class InstitutionalGoldEngine:
              structure = self.structure_analyzer.analyze(df)
              return {'signals': [], 'structure': structure}
         
-        # --- v3.0: SESSION KILLZONE FILTER ---
-        try:
-            # Handle both DatetimeIndex and RangeIndex with 'time' column
-            if isinstance(df.index, pd.DatetimeIndex):
-                current_time = df.index[-1]
-            elif 'time' in df.columns:
-                current_time = pd.Timestamp(df['time'].iloc[-1])
-            else:
-                current_time = pd.Timestamp(df.index[-1])
-        except Exception as e:
-            logger.error(f"Time conversion failed: {e} | Index Type: {type(df.index)}")
-            current_time = datetime.now()
-
-        if not self._is_in_killzone(current_time):
-            logger.warning(f"⏳ SKIP KZ: {current_time} (Outside Trading Session)")
-            # Even if outside KZ, we should analyze structure for UI feedback
-            structure = self.structure_analyzer.analyze(df)
-            return {'signals': [], 'structure': structure, 'reason': 'Outside killzone'}
-        
-        # logger.warning(f"✅ Passed KZ: {current_time}")
-        # -------------------------
-        
         # EMA 200 (Trend)
         ema = EMAIndicator(close=df['close'], window=self.ema_trend_period)
         df['ema200'] = ema.ema_indicator()
@@ -133,6 +111,61 @@ class InstitutionalGoldEngine:
              from ta.volatility import AverageTrueRange
              atr_ind = AverageTrueRange(high=df['high'], low=df['low'], close=df['close'])
              df['atr'] = atr_ind.average_true_range()
+
+        # --- v3.0: SESSION KILLZONE FILTER ---
+        try:
+            # Handle both DatetimeIndex and RangeIndex with 'time' column
+            if isinstance(df.index, pd.DatetimeIndex):
+                current_time = df.index[-1]
+            elif 'time' in df.columns:
+                current_time = pd.Timestamp(df['time'].iloc[-1])
+            else:
+                current_time = pd.Timestamp(df.index[-1])
+        except Exception as e:
+            logger.error(f"Time conversion failed: {e} | Index Type: {type(df.index)}")
+            current_time = datetime.now()
+
+        current = df.iloc[-1]
+        
+        # TIMEZONE MATH (User Reference)
+        # Broker = UTC+2 (FundingPips Winter)
+        # User   = UTC-4 (RD/EST)
+        try:
+            from datetime import timedelta
+            utc_time = current_time - timedelta(hours=2)
+            local_time = utc_time - timedelta(hours=4)
+        except:
+             utc_time = current_time
+             local_time = current_time
+
+        # Prepare debug info immediately so it's available even if we skip
+        debug_info = {
+            'rsi': current['rsi'],
+            'macd_hist': current['macd_hist'],
+            'stoch': current.get('stoch_k', 0),
+            'in_zone': False,
+            'indicators_aligned': False,
+            'smc': {},
+            'price_action': False,
+            'time_broker': str(current_time.time()),
+            'time_utc': str(utc_time.time()),
+            'time_local': str(local_time.time())
+        }
+
+        if not self._is_in_killzone(current_time):
+            # Only log if we haven't logged recently? No, log every check for clarity now.
+            # Use INFO so user sees it clearly.
+            logger.info(f"⏳ SKIP KZ: Local {local_time.strftime('%H:%M')} | UTC {utc_time.strftime('%H:%M')} | Broker {current_time.strftime('%H:%M')} (Outside Session)")
+            structure = self.structure_analyzer.analyze(df)
+            return {
+                'signals': [], 
+                'structure': structure, 
+                'reason': f"Outside killzone (Local {local_time.strftime('%H:%M')})",
+                'debug_info': debug_info 
+            }
+        
+        # logger.warning(f"✅ Passed KZ: {current_time}")
+        # -------------------------
 
         # 2. Structure & Fibs
         # -------------------
@@ -297,7 +330,11 @@ class InstitutionalGoldEngine:
             'debug_info': {
                 'rsi': current['rsi'],
                 'macd_hist': current['macd_hist'],
-                'in_zone': locals().get('in_zone', False)
+                'stoch': current.get('slow_k', 0),
+                'in_zone': locals().get('in_zone', False),
+                'indicators_aligned': locals().get('indicators_aligned', False),
+                'smc': locals().get('smc_result', {}),
+                'price_action': locals().get('price_action_trigger', False)
             }
         }
 
@@ -313,12 +350,18 @@ class InstitutionalGoldEngine:
         """
         v3.0: Check if current UTC hour is within the configured session killzone.
         Returns True if we should trade, False if outside killzone.
+        
+        Auto-adjusts for Broker Time (UTC+2) by subtracting 2 hours.
         """
         if self.session_mode == 'ALL':
             return True
         
         try:
-            hour_utc = current_time.hour if hasattr(current_time, 'hour') else datetime.now().hour
+            hour_broker = current_time.hour if hasattr(current_time, 'hour') else datetime.now().hour
+            # Hack: Broker is usually UTC+2 or UTC+3. User confirms Broker=15 when Local/RD=9 (UTC=13).
+            # So Broker = UTC + 2.
+            # Convert Broker Hour to UTC Hour:
+            hour_utc = (hour_broker - 2) % 24 
         except:
             return True  # Fail open if we can't determine time
         

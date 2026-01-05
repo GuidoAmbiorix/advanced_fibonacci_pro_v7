@@ -521,7 +521,7 @@ class MT5Connector:
                 if take_profit:
                     request["tp"] = take_profit
 
-                result = mt5.order_send(request)
+                result = mt5.order_send(request=request)
 
                 if result is None:
                     logger.error("Order send failed, error: {}", mt5.last_error())
@@ -818,6 +818,21 @@ class MT5Connector:
             # KELLY-ADJUSTED RISK (from Dr. Chan's Quantitative Trading)
             # If Kelly fraction is provided, cap risk at Kelly-recommended level
             # ================================================================
+            # ================================================================
+            # SAFETY CLAMP: Minimum SL Distance (3.0 pips)
+            # Aligns with Backtest logic to prevent massive lots on noise
+            # ================================================================
+            point = symbol_info.point
+            # 1 pip = 10 points (standard for 5-digit brokers)
+            min_sl_distance = 3.0 * (point * 10) 
+            
+            if sl_distance < min_sl_distance:
+                logger.warning(
+                    f"⚠️ SL Clamp: {symbol} SL {sl_distance:.5f} < {min_sl_distance:.5f} (3.0 pips). "
+                    f"Using clamped value for safety."
+                )
+                sl_distance = min_sl_distance
+
             effective_risk_percent = risk_percent
             
             if kelly_fraction is not None and kelly_fraction > 0:
