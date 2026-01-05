@@ -65,7 +65,7 @@ class BacktestRequest(BaseModel):
     use_daily_bias: bool = False
     
     # Engine Config
-    engine_type: str = "ADAPTIVE"
+    engine_type: str = "XAU_PRO"
     engine_config: Optional[dict] = {}
 
 class BacktestResponse(BaseModel):
