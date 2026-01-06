@@ -6,12 +6,13 @@ Run a backtest on EURUSD H1 data
 import sys
 from pathlib import Path
 from datetime import datetime
+from typing import List
 
 # Add app to path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from app.backtesting.engine import BacktestEngine
-from app.backtesting.models import BacktestConfig
+from app.backtesting.models import BacktestConfig, SimulatedSlaveConfig
 from loguru import logger
 
 
@@ -27,14 +28,41 @@ def main():
     )
 
     logger.info("="*70)
-    logger.info("ADAPTIVE MULTI-STRATEGY ENGINE - BACKTEST")
+    logger.info("ADAPTIVE MULTI-STRATEGY ENGINE - MULTI-ACCOUNT BACKTEST")
     logger.info("M1 Execution + M5 Confirmation | Scalping Mode")
     logger.info("="*70)
+    
+    # --- MULTI-ACCOUNT SIMULATION CONFIG ---
+    slaves = [
+        SimulatedSlaveConfig(
+            name="Aggressive_Clone",
+            initial_balance=5000,
+            mode="MULTIPLIER",
+            risk_multiplier=2.0  # Double risk
+        ),
+        SimulatedSlaveConfig(
+            name="Conservative_Clone",
+            initial_balance=25000,
+            mode="RISK_PERCENT",
+            max_risk_percent=0.5  # Fixed 0.5% risk
+        ),
+        SimulatedSlaveConfig(
+            name="Inverse_Trader",
+            initial_balance=10000,
+            mode="MULTIPLIER",
+            risk_multiplier=1.0,
+            reverse_copy=True,
+            slippage_pips=1.0 # Extra slippage
+        )
+    ]
 
     # Configure backtest
     config = BacktestConfig(
         # Account
-        initial_balance=10.0,  # $10 challenge
+        initial_balance=10000.0,
+        
+        # Copy Trading Simulation
+        slave_configs=slaves,
 
         # Symbol & Timeframe - SCALPING MODE
         symbol="EURUSD",
@@ -47,14 +75,8 @@ def main():
 
         # Strategy parameters - 30% RIESGO
         min_confluence_score=7,
-        risk_percent=30.0,  # 30% riesgo = $3 por trade con $10
+        risk_percent=5.0,  # 5% for master to allow slaves to scale
         max_trades=1,
-
-        # Breakout + Liquidity engine config
-        swing_length=10,  # Swing detection period
-        ob_lookback=50,  # Not used (legacy)
-        fvg_min_size=0.3,  # Not used (legacy)
-        vp_lookback=100,  # Not used (legacy)
 
         # Execution costs (tighter for M1 scalping)
         slippage_pips=0.5,  # 0.5 pip slippage for faster fills
@@ -67,7 +89,11 @@ def main():
     )
 
     # Create engine
-    engine = BacktestEngine(config)
+    try:
+        engine = BacktestEngine(config)
+    except Exception as e:
+        logger.error(f"Failed to initialize engine: {e}")
+        return
 
     # Run backtest
     logger.info("Starting backtest...")
@@ -87,7 +113,24 @@ def main():
 
     # Print summary
     from app.backtesting.metrics import MetricsCalculator
+    print("\n" + "="*64)
+    print("MASTER ACCOUNT PERFORMANCE")
+    print("="*64)
     print(MetricsCalculator.generate_summary_text(results.metrics))
+    
+    # Print Slave Results
+    if results.slave_results:
+        print("\n" + "="*64)
+        print("COPY TRADING SIMULATION RESULTS")
+        print("="*64)
+        for slave_name, slave_res in results.slave_results.items():
+            print(f"\n👥 SLAVE: {slave_name}")
+            print("-" * 30)
+            print(f"Total Trades:  {slave_res.metrics.total_trades}")
+            print(f"Net Profit:    ${slave_res.metrics.net_profit:.2f}")
+            print(f"Win Rate:      {slave_res.metrics.win_rate:.2f}%")
+            print(f"Max Drawdown:  {slave_res.metrics.max_drawdown_percent:.2f}%")
+            print(f"Profit Factor: {slave_res.metrics.profit_factor:.2f}")
 
     # Final verdict
     m = results.metrics

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  worker-node-1:
+    build:
+      context: .
+      dockerfile: nodes/Dockerfile
+    container_name: iep-worker-1
+    restart: unless-stopped
+    environment:
+      - INSTANCE_ROLE=SLAVE
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - POSTGRES_SERVER=postgres
+      # Re-construct DB URL if backend uses it, or pass explicitly
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/institutional_edge
+      # Worker Identity
+      - WORKER_ID=worker-1
+      # Pass credentials via .env or external Manager
+    networks:
+      - trading_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+networks:
+  trading_network:
+    external: true

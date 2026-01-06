@@ -72,191 +72,8 @@ class BacktestResponse(BaseModel):
     session_id: int
     status: str
     message: str
-
-# --- Background Task ---
-def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, loop: asyncio.AbstractEventLoop):
-    try:
-        logger.info(f"🚀 BACKTEST TASK STARTED - Session {session_id} for {request.symbol} {request.timeframe}")
-        logger.info(f"📅 Date Range: {request.start_date} to {request.end_date}")
-        logger.info(f"💰 Initial Balance: ${request.initial_balance:,.2f}, Risk: {request.risk_percent}%")
-
-        # Define Callbacks
-        def on_progress(pct, stats):
-            logger.info(f"📊 Session {session_id} Progress: {pct:.1f}% | Balance: ${stats.get('balance', 0):,.2f} | Trades: {stats.get('trades', 0)}")
-            asyncio.run_coroutine_threadsafe(
-                sio.emit('backtest_progress', {
-                    'session_id': session_id,
-                    'progress': pct,
-                    'stats': stats
-                }),
-                loop
-            )
-
-        def on_trade(trade_data):
-            logger.info(f"💹 Session {session_id} Trade: {trade_data.get('trade_type')} @ {trade_data.get('price')} | PnL: ${trade_data.get('pnl', 0):,.2f}")
-            asyncio.run_coroutine_threadsafe(
-                sio.emit('backtest_trade', {
-                    'session_id': session_id,
-                    'trade': trade_data
-                }),
-                loop
-            )
-
-        # 1. Update status to RUNNING
-        session = db.query(BacktestSession).filter(BacktestSession.id == session_id).first()
-        if not session:
-            return
-            
-        # 2. Configure Engine
-        # Auto-detect confirmation timeframe if not provided
-        htf_map = {
-            'M1': 'M5',
-            'M5': 'M15', 
-            'M15': 'H1',
-            'H1': 'H4',
-            'H4': 'D1',
-            'D1': 'W1'
-        }
-        confirmation_tf = request.confirmation_timeframe or htf_map.get(request.timeframe, 'H4')
-        logger.info(f"⚙️  Session {session_id} Config: TF={request.timeframe}, HTF={confirmation_tf}, Mode={request.strategy_mode}")
-
-        config = BacktestConfig(
-            symbol=request.symbol,
-            timeframe=request.timeframe,
-            confirmation_timeframe=confirmation_tf,  # NEW: HTF for trend confirmation
-            start_date=request.start_date,
-            end_date=request.end_date,
-            initial_balance=request.initial_balance,
-            risk_percent=request.risk_percent,
-            scalping_mode=(request.strategy_mode == "SCALP"),
-            direction_filter=request.direction_filter,  # BUY_ONLY / SELL_ONLY / BOTH
-            # Engine Selection
-            engine_type=request.engine_type,
-            engine_config=request.engine_config or {},
-            # Strategy Selection
-            use_adx_filter=request.use_adx_filter,
-            enable_vwap_strategy=request.enable_vwap_strategy,
-            enable_stoch_strategy=request.enable_stoch_strategy,
-            enable_institutional_strategy=request.enable_institutional_strategy,
-            enable_fibonacci_strategy=request.enable_fibonacci_strategy,
-            enable_strategy_3_29_162=request.enable_strategy_3_29_162,
-            # RSI Settings
-            rsi_period=request.rsi_period,
-            rsi_overbought=request.rsi_overbought,
-            rsi_oversold=request.rsi_oversold,
-            # Trailing Stop Loss
-            enable_trailing_stop=request.enable_trailing_stop,
-            tsl_mode=request.tsl_mode,
-            tsl_activation_r=request.tsl_activation_r,
-            # Advanced TSL Parameters
-            tsl_atr_period=request.tsl_atr_period,
-            tsl_atr_multiplier=request.tsl_atr_multiplier,
-            tsl_chandelier_period=request.tsl_chandelier_period,
-            tsl_chandelier_mult=request.tsl_chandelier_mult,
-            tsl_swing_lookback=request.tsl_swing_lookback,
-            tsl_swing_buffer_atr=request.tsl_swing_buffer_atr,
-            tsl_psar_af_start=request.tsl_psar_af_start,
-            tsl_psar_af_increment=request.tsl_psar_af_increment,
-            tsl_psar_af_max=request.tsl_psar_af_max,
-            # Partial Take Profit
-            partial_tp_on=request.partial_tp_on,
-            partial_tp_amount=request.partial_tp_amount,
-            # Scalping TP/SL Configuration
-            tp_ratio=request.tp_ratio,
-            sl_atr_multiplier=request.sl_atr_multiplier,
-            max_trade_duration_hours=request.max_trade_duration_hours,
-            # Signal Quality & Limits
-            min_confluence_score=request.min_confluence_score,
-            use_daily_bias=request.use_daily_bias,
-            max_trades=3 if request.strategy_mode == "SWING" else 5
-        )
-
-        logger.info(f"🔧 Session {session_id} Creating BacktestEngine...")
-        engine = BacktestEngine(config)
-        logger.info(f"✅ Session {session_id} BacktestEngine created successfully")
-
-        # 3. Run Backtest
-        logger.info(f"▶️  Session {session_id} Starting backtest execution...")
-        results = engine.run(
-            on_progress=on_progress,
-            on_trade=on_trade
-        )
-        logger.info(f"✅ Session {session_id} Backtest execution completed!")
-        logger.info(f"📈 Results: Net Profit: ${results.metrics.net_profit:,.2f} | Win Rate: {results.metrics.win_rate:.1f}% | Trades: {results.metrics.total_trades}")
-
-        # 4. Save Results to DB
-        logger.info(f"💾 Session {session_id} Saving results to database...")
-        # Calculate final balance
-        final_balance = config.initial_balance + results.metrics.net_profit
-        
-        session.final_balance = final_balance
-        session.total_trades = results.metrics.total_trades
-        session.win_rate = results.metrics.win_rate
-        session.profit_factor = results.metrics.profit_factor
-        session.max_drawdown = results.metrics.max_drawdown_percent
-        session.net_profit = results.metrics.net_profit
-        session.status = "COMPLETED"
-        
-        # Save Trades
-        for trade in results.trades:
-            db_trade = BacktestTrade(
-                session_id=session.id,
-                symbol=trade.symbol,
-                trade_type=trade.signal_type,
-                entry_time=trade.entry_time,
-                exit_time=trade.exit_time,
-                entry_price=trade.entry_price,
-                exit_price=trade.exit_price,
-                stop_loss=trade.stop_loss,
-                take_profit=trade.take_profit,
-                volume=trade.volume,
-                profit=trade.pnl,
-                balance_after=trade.balance_after,
-                confluence_score=trade.confluence_score
-            )
-            db.add(db_trade)
-            
-        db.commit()
-        logger.info(f"✅ Session {session_id} Results saved to database successfully")
-        logger.info(f"🎉 BACKTEST COMPLETED - Session {session_id} | ${final_balance:,.2f} ({results.metrics.net_profit:+,.2f})")
-
-        # Emit completion event
-        asyncio.run_coroutine_threadsafe(
-            sio.emit('backtest_complete', {
-                'session_id': session_id,
-                'results': {
-                    'net_profit': results.metrics.net_profit,
-                    'win_rate': results.metrics.win_rate,
-                    'profit_factor': results.metrics.profit_factor,
-                    'max_drawdown': results.metrics.max_drawdown_percent,
-                    'total_trades': results.metrics.total_trades
-                }
-            }),
-            loop
-        )
-        
-        
-    except Exception as e:
-        logger.error(f"❌ BACKTEST FAILED - Session {session_id}")
-        logger.exception(f"Exception details: {e}")
-        session = db.query(BacktestSession).filter(BacktestSession.id == session_id).first()
-        if session:
-            session.status = "FAILED"
-            db.commit()
-
-        # Emit failure event
-        try:
-            asyncio.run_coroutine_threadsafe(
-                sio.emit('backtest_error', {
-                    'session_id': session_id,
-                    'error': str(e)
-                }),
-                loop
-            )
-        except:
-            pass
-
-# --- Endpoints ---
+    metrics: Optional[dict] = None
+    equity_curve: Optional[List[float]] = None
 
 @router.post("/run", response_model=BacktestResponse)
 async def run_backtest(
@@ -264,7 +81,7 @@ async def run_backtest(
     background_tasks: BackgroundTasks,
     db: Session = Depends(database.get_db)
 ):
-    """Start a new backtest session"""
+    """Start a new backtest session (Synchronous for UI Simplicity)"""
     
     # Create Session Record
     new_session = BacktestSession(
@@ -276,28 +93,76 @@ async def run_backtest(
         strategy_config=jsonable_encoder(request.dict()),
         status="PENDING"
     )
-    
     db.add(new_session)
     db.commit()
     db.refresh(new_session)
     
-    # Start Background Task
-    # We need a new DB session for the background task to avoid threading issues
-    # But for simplicity in this setup, we'll let the task create its own or pass the ID
-    # Ideally, use a proper task queue (Celery/RabbitMQ), but BackgroundTasks works for simple cases
-    
-    # Get current event loop to pass to background task
-    loop = asyncio.get_running_loop()
-    
-    background_tasks.add_task(run_backtest_wrapper, new_session.id, request, loop)
-    
-    logger.info(f"🚀 Backtest started: {new_session.id} for {request.symbol} with MaxDuration={request.max_trade_duration_hours}h")
-    
-    return {
-        "session_id": new_session.id,
-        "status": "PENDING",
-        "message": "Backtest started in background"
-    }
+    try:
+        # Run Synchronously for MVP
+        # ... (Duplicate logic or reuse function? reusing logic inline for speed)
+        
+        htf_map = {'M1': 'M5', 'M5': 'M15', 'M15': 'H1', 'H1': 'H4', 'H4': 'D1', 'D1': 'W1'}
+        confirmation_tf = request.confirmation_timeframe or htf_map.get(request.timeframe, 'H4')
+
+        config = BacktestConfig(
+            symbol=request.symbol,
+            timeframe=request.timeframe,
+            confirmation_timeframe=confirmation_tf,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            initial_balance=request.initial_balance,
+            risk_percent=request.risk_percent,
+            scalping_mode=(request.strategy_mode == "SCALP"),
+            direction_filter=request.direction_filter,
+            engine_type=request.engine_type,
+            engine_config=request.engine_config or {},
+            use_adx_filter=request.use_adx_filter,
+            enable_vwap_strategy=request.enable_vwap_strategy,
+            enable_stoch_strategy=request.enable_stoch_strategy,
+            enable_institutional_strategy=request.enable_institutional_strategy,
+            enable_fibonacci_strategy=request.enable_fibonacci_strategy,
+            enable_strategy_3_29_162=request.enable_strategy_3_29_162,
+            rsi_period=request.rsi_period,
+            rsi_overbought=request.rsi_overbought,
+            rsi_oversold=request.rsi_oversold,
+            enable_trailing_stop=request.enable_trailing_stop,
+            tsl_mode=request.tsl_mode,
+            tsl_activation_r=request.tsl_activation_r,
+            min_confluence_score=request.min_confluence_score,
+            use_daily_bias=request.use_daily_bias,
+            max_trades=100  # Higher limit for backtest
+        )
+        
+        engine = BacktestEngine(config)
+        results = engine.run() # Sync call
+        
+        # Update DB
+        new_session.final_balance = config.initial_balance + results.metrics.net_profit
+        new_session.net_profit = results.metrics.net_profit
+        new_session.total_trades = results.metrics.total_trades
+        new_session.win_rate = results.metrics.win_rate
+        new_session.max_drawdown = results.metrics.max_drawdown_percent
+        new_session.status = "COMPLETED"
+        db.commit()
+        
+        return {
+            "session_id": new_session.id,
+            "status": "COMPLETED",
+            "message": "Backtest finished successfully",
+            "metrics": {
+                "netProfit": results.metrics.net_profit,
+                "winRate": results.metrics.win_rate,
+                "maxDrawdown": results.metrics.max_drawdown_percent,
+                "totalTrades": results.metrics.total_trades
+            },
+            "equity_curve": results.equity_curve
+        }
+        
+    except Exception as e:
+        logger.error(f"Backtest Error: {e}")
+        new_session.status = "FAILED"
+        db.commit()
+        raise HTTPException(status_code=500, detail=str(e))
 
 def run_backtest_wrapper(session_id: int, request: BacktestRequest, loop: asyncio.AbstractEventLoop):
     """Wrapper to handle DB session for background task"""

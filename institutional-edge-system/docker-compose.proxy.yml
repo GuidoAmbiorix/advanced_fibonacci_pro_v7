@@ -15,7 +15,7 @@ services:
       # This allows nginx to access services on the host machine
       - "host.docker.internal:host-gateway"
     networks:
-      - bot-net
+      - trading_network
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health"]
       interval: 30s
@@ -24,7 +24,7 @@ services:
       start_period: 10s
 
 networks:
-  bot-net:
+  trading_network:
     external: true
 
 volumes:

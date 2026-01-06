@@ -67,8 +67,21 @@ app.include_router(backtest_advanced.router, prefix="/api", tags=["tradingview-v
 app.include_router(regime.router, prefix="/api/regime", tags=["market-regime"])
 app.include_router(validation.router, prefix="/api/validation", tags=["oos-bias-detection"])
 
+# Copy Trading API
+from app.api import copy_trading
+app.include_router(copy_trading.router, prefix="/api/copy-trading", tags=["copy-trading"])
+
 # from app.api.endpoints import terminals # Obsolete
 # app.include_router(terminals.router, prefix="/api/terminals", tags=["terminals"])
+
+# Static Files (Frontend)
+from fastapi.staticfiles import StaticFiles
+import os
+frontend_dir = "/app/frontend"
+if os.path.exists(frontend_dir):
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+else:
+    logger.warning(f"Frontend directory {frontend_dir} not found. UI will not be served.")
 
 # Socket.IO Setup
 import socketio

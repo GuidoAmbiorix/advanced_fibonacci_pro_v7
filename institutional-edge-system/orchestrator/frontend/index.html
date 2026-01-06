@@ -1,156 +1,638 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Institutional Edge Orchestrator</title>
+    <title>Fleet Commander | Institutional Edge</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @keyframes progress {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.3s;
         }
-        .animate-progress {
-            animation: progress 2s infinite linear;
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+        }
+
+        .glass-panel {
+            background: rgba(31, 41, 55, 0.7);
+            backdrop-filter: blur(10px);
         }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen">
-    <div id="app" class="container mx-auto px-4 py-8">
-        <!-- Header -->
-        <header class="flex justify-between items-center mb-10 border-b border-gray-700 pb-4">
-            <div>
-                <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-                    <i class="fas fa-network-wired mr-2"></i>Institutional Edge Orchestrator
-                </h1>
-                <p class="text-gray-400 mt-1">Manage your Fleet of Trading Bots</p>
+
+<body class="bg-gray-900 text-white min-h-screen font-sans">
+    <div id="app" class="flex flex-col h-screen">
+
+        <!-- Top Navbar -->
+        <header
+            class="bg-gray-800 border-b border-gray-700 h-16 flex items-center justify-between px-6 shrink-0 z-10 shadow-md">
+            <div class="flex items-center space-x-4">
+                <i class="fas fa-network-wired text-blue-500 text-2xl"></i>
+                <h1 class="text-xl font-bold tracking-wide">Fleet <span class="text-blue-500">Commander</span></h1>
+
+                <!-- Navigation Tabs -->
+                <nav class="ml-10 flex space-x-1 bg-gray-900 rounded-lg p-1">
+                    <button @click="currentView = 'dashboard'"
+                        :class="{'bg-blue-600 text-white': currentView === 'dashboard', 'text-gray-400 hover:text-white': currentView !== 'dashboard'}"
+                        class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                    </button>
+                    <button @click="currentView = 'copy-trading'"
+                        :class="{'bg-purple-600 text-white': currentView === 'copy-trading', 'text-gray-400 hover:text-white': currentView !== 'copy-trading'}"
+                        class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors">
+                        <i class="fas fa-copy mr-2"></i>Copy Trading
+                    </button>
+                    <button @click="currentView = 'live-strategies'"
+                        :class="{'bg-red-600 text-white': currentView === 'live-strategies', 'text-gray-400 hover:text-white': currentView !== 'live-strategies'}"
+                        class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors">
+                        <i class="fas fa-robot mr-2"></i>Live Strategies
+                    </button>
+                    <button @click="currentView = 'backtest-lab'"
+                        :class="{'bg-yellow-600 text-white': currentView === 'backtest-lab', 'text-gray-400 hover:text-white': currentView !== 'backtest-lab'}"
+                        class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors">
+                        <i class="fas fa-vial mr-2"></i>Backtest Lab
+                    </button>
+                    <button @click="currentView = 'nodes'"
+                        :class="{'bg-green-600 text-white': currentView === 'nodes', 'text-gray-400 hover:text-white': currentView !== 'nodes'}"
+                        class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors">
+                        <i class="fas fa-server mr-2"></i>Worker Nodes
+                    </button>
+                </nav>
             </div>
-            <button @click="showCreateModal = true" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg shadow-lg flex items-center transition-all">
-                <i class="fas fa-plus mr-2"></i> Deploy New Bot
-            </button>
+
+            <div class="flex items-center space-x-4">
+                <span
+                    class="flex items-center text-sm text-green-400 bg-green-900/30 px-3 py-1 rounded-full border border-green-800">
+                    <i class="fas fa-wifi mr-2 text-xs"></i> System Online
+                </span>
+            </div>
         </header>
 
-        <!-- Instance Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Loading State -->
-            <div v-if="loading" class="col-span-full text-center py-20">
-                <i class="fas fa-circle-notch fa-spin text-4xl text-blue-500"></i>
-                <p class="mt-4 text-gray-400">Scanning fleet infrastructure...</p>
-            </div>
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800">
 
-            <!-- Empty State -->
-            <div v-else-if="instances.length === 0" class="col-span-full text-center py-20 bg-gray-800 rounded-xl border border-dashed border-gray-700">
-                <i class="fas fa-robot text-6xl text-gray-600 mb-4"></i>
-                <h3 class="text-xl font-bold text-gray-300">No Active Bots</h3>
-                <p class="text-gray-500 mb-6">Your fleet is empty. Deploy your first worker node.</p>
-                <button @click="showCreateModal = true" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">Create Bot Instance</button>
-            </div>
-
-            <!-- Instance Card -->
-            <div v-for="instance in instances" :key="instance.name" class="bg-gray-800 rounded-xl shadow-xl border border-gray-700 overflow-hidden hover:border-blue-500 transition-colors">
-                <div class="p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="flex items-center">
-                            <div class="h-3 w-3 rounded-full mr-2" 
-                                 :class="{
-                                    'bg-green-500 animate-pulse': instance.status === 'RUNNING',
-                                    'bg-red-500': instance.status.includes('STOP') || instance.status.includes('FAIL'),
-                                    'bg-yellow-500 animate-bounce': instance.status.includes('WAIT') || instance.status.includes('INIT')
-                                 }"></div>
-                            <h2 class="text-xl font-bold capitalize">{{ formatName(instance.name) }}</h2>
+            <!-- VIEW: DASHBOARD (Summary) -->
+            <transition name="fade" mode="out-in">
+                <div v-if="currentView === 'dashboard'" key="dashboard" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Stat Card 1 -->
+                        <div class="glass-panel p-6 rounded-xl border border-gray-700 shadow-lg">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="text-gray-400 font-medium">Active Workers</h3>
+                                <i class="fas fa-microchip text-blue-500 bg-blue-500/10 p-2 rounded-lg"></i>
+                            </div>
+                            <div class="text-3xl font-bold">{{ connectedNodes.length }}</div>
+                            <div class="text-xs text-green-400 mt-1"><i class="fas fa-arrow-up mr-1"></i> Running
+                                Optimally</div>
                         </div>
-                        <span class="text-xs font-mono bg-gray-900 px-2 py-1 rounded text-gray-400">ID: {{ instance.name }}</span>
-                    </div>
 
-                    <div class="space-y-3 mb-6">
-                        <div class="flex justify-between items-center bg-gray-900 p-2 rounded">
-                            <span class="text-gray-400 text-sm"><i class="fas fa-globe mr-2"></i>Web Dashboard</span>
-                            <a :href="instance.urls.dashboard" target="_blank" class="text-blue-400 hover:text-blue-300 text-sm font-mono flex items-center">
-                                {{ instance.urls.dashboard }} <i class="fas fa-external-link-alt ml-1"></i>
-                            </a>
+                        <!-- Stat Card 2 -->
+                        <div class="glass-panel p-6 rounded-xl border border-gray-700 shadow-lg">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="text-gray-400 font-medium">Copy Groups</h3>
+                                <i class="fas fa-project-diagram text-purple-500 bg-purple-500/10 p-2 rounded-lg"></i>
+                            </div>
+                            <div class="text-3xl font-bold">{{ copyGroups.length }}</div>
+                            <div class="text-xs text-gray-500 mt-1">Active Clusters</div>
                         </div>
-                        <div class="flex justify-between items-center bg-gray-900 p-2 rounded">
-                            <span class="text-gray-400 text-sm"><i class="fas fa-desktop mr-2"></i>VNC Terminal</span>
-                            <a :href="instance.urls.vnc" target="_blank" class="text-green-400 hover:text-green-300 text-sm font-mono flex items-center">
-                                Port {{ instance.urls.vnc.split(':').pop() }} <i class="fas fa-external-link-alt ml-1"></i>
-                            </a>
+
+                        <!-- Stat Card 3 -->
+                        <div class="glass-panel p-6 rounded-xl border border-gray-700 shadow-lg">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="text-gray-400 font-medium">Global PnL (Today)</h3>
+                                <i class="fas fa-chart-line text-green-500 bg-green-500/10 p-2 rounded-lg"></i>
+                            </div>
+                            <div class="text-3xl font-bold text-green-400">$0.00</div>
+                            <div class="text-xs text-gray-500 mt-1">Aggregated Performance</div>
                         </div>
                     </div>
+                </div>
 
-                    <div v-if="['STARTING...', 'STOPPING...', 'deploying'].includes(instance.status)" class="mb-4">
-                        <div class="flex justify-between text-xs text-blue-400 mb-1">
-                            <span><i class="fas fa-cog fa-spin mr-1"></i> Processing...</span>
-                            <span>This may take 1-2 mins</span>
+                <!-- VIEW: COPY TRADING -->
+                <div v-else-if="currentView === 'copy-trading'" key="copy-trading" class="space-y-8">
+
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">Copy Trading Clusters</h2>
+                            <p class="text-gray-400 text-sm">Manage Master-Slave relationships and risk replication.</p>
                         </div>
-                        <div class="w-full bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                            <div class="bg-blue-600 h-2.5 rounded-full animate-progress" style="width: 100%"></div>
+                        <div class="space-x-2 flex">
+                            <button @click="showRegisterAccountModal = true"
+                                class="bg-gray-700 hover:bg-gray-600 px-5 py-2 rounded-lg shadow-lg flex items-center transition-all">
+                                <i class="fas fa-user-plus mr-2"></i> Register Account
+                            </button>
+                            <button @click="showCreateGroupModal = true"
+                                class="bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-lg shadow-lg flex items-center transition-all">
+                                <i class="fas fa-plus mr-2"></i> Create New Group
+                            </button>
                         </div>
                     </div>
 
-                    <div class="flex space-x-2">
-                        <button v-if="instance.status === 'RUNNING'" @click="manageInstance(instance.name, 'stop')" class="flex-1 bg-yellow-600 hover:bg-yellow-700 py-2 rounded text-sm transition-colors">
-                            <i class="fas fa-stop mr-1"></i> Stop
+                    <!-- Groups Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+
+                        <!-- Group Card -->
+                        <div v-for="group in copyGroups" :key="group.id"
+                            class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden hover:border-blue-500/50 transition-all shadow-xl">
+                            <!-- Header -->
+                            <div
+                                class="p-5 border-b border-gray-700 bg-gray-850 flex justify-between items-center relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-16 h-16 bg-blue-500 blur-3xl opacity-10"></div>
+                                <div>
+                                    <h3 class="text-lg font-bold flex items-center"><i
+                                            class="fas fa-crown text-yellow-500 mr-2 text-sm"></i> {{ group.name }}</h3>
+                                    <p class="text-xs text-gray-400 font-mono mt-1">MASTER: {{ group.master_name }}</p>
+                                </div>
+                                <span
+                                    class="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded border border-green-500/30">Active</span>
+                            </div>
+
+                            <!-- Slaves List -->
+                            <div class="p-5 min-h-[150px]">
+                                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Subscribed
+                                    Workers ({{ group.slaves.length }})</h4>
+
+                                <div v-if="group.slaves.length === 0"
+                                    class="text-center py-8 text-gray-500 text-sm border-2 border-dashed border-gray-700 rounded-lg">
+                                    No slaves assigned.
+                                </div>
+
+                                <div class="space-y-3">
+                                    <div v-for="slave in group.slaves" :key="slave.config_id"
+                                        class="flex justify-between items-center bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                                        <div class="flex items-center">
+                                            <div
+                                                class="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center mr-3 text-xs font-bold">
+                                                W{{ slave.slave_account_id }}</div>
+                                            <div>
+                                                <div class="text-sm font-medium">{{ slave.slave_name }}</div>
+                                                <div class="text-xs text-gray-400">{{ slave.mode }} ({{
+                                                    slave.risk_multiplier }}x)</div>
+                                            </div>
+                                        </div>
+                                        <div class="flex space-x-2">
+                                            <button class="text-gray-500 hover:text-white" title="Settings"><i
+                                                    class="fas fa-cog"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Footer -->
+                            <div
+                                class="px-5 py-3 bg-gray-900/50 border-t border-gray-700 flex justify-between items-center">
+                                <span class="text-xs text-gray-500">ID: {{ group.id }}</span>
+                                <button @click="openAddSlaveModal(group)"
+                                    class="text-sm text-blue-400 hover:text-blue-300 font-medium">
+                                    <i class="fas fa-user-plus mr-1"></i> Add Worker
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- VIEW: LIVE STRATEGIES -->
+                <div v-else-if="currentView === 'live-strategies'" key="live-strategies" class="space-y-8">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">Algorithmic Strategies</h2>
+                            <p class="text-gray-400 text-sm">Deploy and monitor automated trading bots.</p>
+                        </div>
+                        <button @click="stopAllSessions"
+                            class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded-lg shadow-lg flex items-center transition-all">
+                            <i class="fas fa-hand-paper mr-2"></i> EMERGENCY STOP
                         </button>
-                         <button v-else @click="manageInstance(instance.name, 'start')" class="flex-1 bg-green-600 hover:bg-green-700 py-2 rounded text-sm transition-colors">
-                            <i class="fas fa-play mr-1"></i> Start
-                        </button>
-                        <button @click="manageInstance(instance.name, 'delete')" class="flex-1 bg-red-900 hover:bg-red-700 py-2 rounded text-sm transition-colors">
-                            <i class="fas fa-trash mr-1"></i> Delete
-                        </button>
                     </div>
+
+                    <!-- Bot Slots Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Example Slot Card (Dynamic loops later) -->
+                        <div v-for="slot in botSlots" :key="slot.id"
+                            class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-lg p-5">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="font-bold text-lg">{{ slot.name }}</h3>
+                                <span
+                                    :class="slot.enabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-500'"
+                                    class="px-2 py-1 rounded text-xs font-mono">{{ slot.enabled ? 'ENABLED' : 'DISABLED'
+                                    }}</span>
+                            </div>
+                            <div class="text-sm text-gray-400 mb-4 font-mono">
+                                <div><i class="fas fa-tag mr-2"></i>{{ slot.symbol }} ({{ slot.timeframe }})</div>
+                                <div><i class="fas fa-shield-alt mr-2"></i>Risk: {{ slot.risk_percent }}%</div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button v-if="!isSessionActive(slot.id)" @click="startSession(slot)"
+                                    class="flex-1 bg-green-600 hover:bg-green-700 py-2 rounded font-medium text-sm transition-colors">
+                                    <i class="fas fa-play mr-1"></i> Start
+                                </button>
+                                <button v-else @click="stopSession(slot.id)"
+                                    class="flex-1 bg-red-600 hover:bg-red-700 py-2 rounded font-medium text-sm transition-colors animate-pulse">
+                                    <i class="fas fa-stop mr-1"></i> Stop
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Sessions Table -->
+                    <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-xl overflow-hidden">
+                        <div class="p-5 border-b border-gray-700">
+                            <h3 class="font-bold">Active Live Sessions</h3>
+                        </div>
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-900 text-gray-400">
+                                <tr>
+                                    <th class="px-6 py-3">Session ID</th>
+                                    <th class="px-6 py-3">Symbol</th>
+                                    <th class="px-6 py-3">PnL</th>
+                                    <th class="px-6 py-3">Status</th>
+                                    <th class="px-6 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-700">
+                                <tr v-for="session in activeSessions" :key="session.id" class="hover:bg-gray-750">
+                                    <td class="px-6 py-4 font-mono text-xs">{{ session.id }}</td>
+                                    <td class="px-6 py-4 font-bold">{{ session.symbol }}</td>
+                                    <td class="px-6 py-4" :class="session.pnl >= 0 ? 'text-green-400' : 'text-red-400'">
+                                        ${{ session.pnl }}</td>
+                                    <td class="px-6 py-4"><span class="text-green-400 animate-pulse">● Running</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button @click="stopSession(session.id)"
+                                            class="text-red-400 hover:text-white"><i
+                                                class="fas fa-stop-circle"></i></button>
+                                    </td>
+                                </tr>
+                                <tr v-if="activeSessions.length === 0">
+                                    <td colspan="5" class="px-6 py-8 text-center text-gray-500">No active trading
+                                        sessions.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW: BACKTEST LAB -->
+                <div v-else-if="currentView === 'backtest-lab'" key="backtest-lab" class="space-y-6">
+                    <h2 class="text-2xl font-bold text-white mb-4">Backtest Laboratory</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Control Panel -->
+                        <div class="bg-gray-800 rounded-xl border border-gray-700 p-6 h-fit">
+                            <h3 class="font-bold mb-4 border-b border-gray-700 pb-2 text-xl text-white"><i
+                                    class="fas fa-flask mr-2"></i>Lab Configuration</h3>
+
+                            <div class="space-y-4">
+                                <!-- 1. Core Settings -->
+                                <div class="space-y-3 pb-4 border-b border-gray-700">
+                                    <h4 class="text-xs font-bold text-blue-400 uppercase">Core Parameters</h4>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <div>
+                                            <label class="text-[10px] text-gray-400">Symbol</label>
+                                            <input v-model="backtestConfig.symbol" type="text"
+                                                class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-sm text-white">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-400">Balance ($)</label>
+                                            <input v-model.number="backtestConfig.balance" type="number"
+                                                class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-sm text-white">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-400">Days</label>
+                                            <input v-model.number="backtestConfig.days" type="number"
+                                                class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-sm text-white">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Time & Session -->
+                                <div class="space-y-3 pb-4 border-b border-gray-700">
+                                    <h4 class="text-xs font-bold text-blue-400 uppercase">Time & Session (Institutional)
+                                    </h4>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="text-[10px] text-gray-400">Timeframe</label>
+                                            <select v-model="backtestConfig.timeframe"
+                                                class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-sm text-white">
+                                                <option value="M1">M1</option>
+                                                <option value="M5">M5</option>
+                                                <option value="M15">M15</option>
+                                                <option value="H1">H1</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-400">Confirmation</label>
+                                            <select v-model="backtestConfig.confirmation_timeframe"
+                                                class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-sm text-white">
+                                                <option value="M15">M15</option>
+                                                <option value="H1">H1</option>
+                                                <option value="H4">H4</option>
+                                                <option value="D1">D1</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-span-2">
+                                            <label class="text-[10px] text-gray-400">Session Mode</label>
+                                            <select v-model="backtestConfig.session_mode"
+                                                class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-sm text-white">
+                                                <option value="BOTH_KZ">🎯 London + NY Killzones</option>
+                                                <option value="LONDON_KZ">🇬🇧 London Only</option>
+                                                <option value="NY_KZ">🇺🇸 NY Only</option>
+                                                <option value="ALL">🌍 All Sessions</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Risk & TSL -->
+                                <div class="space-y-3 pb-4 border-b border-gray-700">
+                                    <h4 class="text-xs font-bold text-blue-400 uppercase">Risk & Management</h4>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <div>
+                                            <label class="text-[10px] text-gray-400">Risk %</label>
+                                            <input v-model.number="backtestConfig.risk" type="number" step="0.5"
+                                                class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-sm text-white">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-400">TP Ratio</label>
+                                            <input v-model.number="backtestConfig.tp_ratio" type="number" step="0.5"
+                                                class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-sm text-white">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-400">SL ATR</label>
+                                            <input v-model.number="backtestConfig.sl_atr_multiplier" type="number"
+                                                step="0.1"
+                                                class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-sm text-white">
+                                        </div>
+                                        <div class="col-span-3">
+                                            <label class="text-[10px] text-gray-400">Trailing Stop</label>
+                                            <select v-model="backtestConfig.tsl_mode"
+                                                class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-sm text-white">
+                                                <option value="OFF">Fixed SL (Off)</option>
+                                                <option value="TIERED">Tiered (Breakeven + Trail)</option>
+                                                <option value="ATR">ATR Dynamic Trail</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 4. Advanced Strategy -->
+                                <div class="space-y-3">
+                                    <h4 class="text-xs font-bold text-purple-400 uppercase">Advanced Strategy (SMC &
+                                        RSI)</h4>
+                                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-300">
+                                        <label class="flex items-center gap-2">
+                                            <input type="checkbox" v-model="backtestConfig.enable_order_blocks"
+                                                class="accent-purple-500"> Order Blocks
+                                        </label>
+                                        <label class="flex items-center gap-2">
+                                            <input type="checkbox" v-model="backtestConfig.enable_liquidity_sweep"
+                                                class="accent-purple-500"> Liquidity Sweep
+                                        </label>
+                                        <label class="flex items-center gap-2">
+                                            <input type="checkbox" v-model="backtestConfig.enable_fvg"
+                                                class="accent-purple-500"> FVG
+                                        </label>
+                                        <label class="flex items-center gap-2">
+                                            <input type="checkbox" v-model="backtestConfig.use_daily_bias"
+                                                class="accent-blue-500"> Daily Bias
+                                        </label>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2 mt-2">
+                                        <div>
+                                            <label class="text-[10px] text-gray-400">RSI Period</label>
+                                            <input v-model.number="backtestConfig.rsi_period" type="number"
+                                                class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-xs text-white">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-400">Buy << /label>
+                                                    <input v-model.number="backtestConfig.rsi_oversold" type="number"
+                                                        class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-xs text-white">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-400">Sell ></label>
+                                            <input v-model.number="backtestConfig.rsi_overbought" type="number"
+                                                class="w-full bg-gray-900 border border-gray-600 rounded p-1 text-xs text-white">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button @click="runBacktest" :disabled="backtestRunnning"
+                                    class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 py-3 rounded-lg font-bold shadow-lg transition-all mt-4 disabled:opacity-50 text-white">
+                                    <span v-if="!backtestRunnning"><i class="fas fa-rocket mr-2"></i>Run
+                                        Simulation</span>
+                                    <span v-else><i class="fas fa-spinner fa-spin mr-2"></i>Processing...</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Results Panel -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <!-- Metrics Cards -->
+                            <div class="grid grid-cols-4 gap-4">
+                                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                                    <div class="text-xs text-gray-400">Net Profit</div>
+                                    <div class="text-xl font-bold"
+                                        :class="backtestResults.netProfit >= 0 ? 'text-green-400' : 'text-red-400'">
+                                        ${{ backtestResults.netProfit.toFixed(2) }}
+                                    </div>
+                                </div>
+                                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                                    <div class="text-xs text-gray-400">Win Rate</div>
+                                    <div class="text-xl font-bold text-blue-400">{{ backtestResults.winRate }}%</div>
+                                </div>
+                                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                                    <div class="text-xs text-gray-400">Max DD</div>
+                                    <div class="text-xl font-bold text-red-400">{{ backtestResults.maxDrawdown }}%</div>
+                                </div>
+                                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                                    <div class="text-xs text-gray-400">Trades</div>
+                                    <div class="text-xl font-bold">{{ backtestResults.totalTrades }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Chart Canvas -->
+                            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 h-[400px]">
+                                <canvas id="equityChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: NODES (Infrastructure) -->
+                <div v-else-if="currentView === 'nodes'" key="nodes" class="space-y-6">
+                    <h2 class="text-2xl font-bold text-white mb-4">Worker Infrastructure</h2>
+
+                    <div class="overflow-x-auto bg-gray-800 rounded-xl border border-gray-700 shadow-xl">
+                        <table class="w-full">
+                            <thead class="bg-gray-900 border-b border-gray-700">
+                                <tr>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                        Node Name</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                        Login ID</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                        Status</th>
+                                    <th
+                                        class="px-6 py-4 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                        Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-700">
+                                <tr v-for="node in connectedNodes" :key="node.id"
+                                    class="hover:bg-gray-750 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap font-medium">{{ node.name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap font-mono text-gray-400">{{ node.login }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span
+                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            Online
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button class="text-blue-400 hover:text-blue-300">View Logs</button>
+                                    </td>
+                                </tr>
+                                <tr v-if="connectedNodes.length === 0">
+                                    <td colspan="4" class="px-6 py-8 text-center text-gray-500">No active worker nodes
+                                        found provided by discovery service.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </transition>
+        </main>
+
+        <!-- MODAL: Create Group -->
+        <div v-if="showCreateGroupModal"
+            class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-gray-800 rounded-2xl w-full max-w-md border border-gray-600 shadow-2xl">
+                <div class="p-6 border-b border-gray-700">
+                    <h3 class="text-lg font-bold">Create Copy Group</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Group Name</label>
+                        <input v-model="newGroup.name" type="text"
+                            class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none placeholder-gray-600"
+                            placeholder="e.g. Gold Scalping Fleet">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Select Master Account</label>
+                        <select v-model="newGroup.master_account_id"
+                            class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                            <option v-for="acc in availableMasters" :value="acc.id">{{ acc.name }} ({{ acc.login }})
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-gray-700 flex justify-end space-x-3">
+                    <button @click="showCreateGroupModal = false"
+                        class="text-gray-400 hover:text-white px-4 py-2">Cancel</button>
+                    <button @click="createGroup"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">Create
+                        Group</button>
                 </div>
             </div>
         </div>
 
-        <!-- Create Modal -->
-        <div v-if="showCreateModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 backdrop-blur-sm z-50">
-            <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border border-gray-600">
+        <!-- MODAL: Add Slave -->
+        <div v-if="showAddSlaveModal"
+            class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-gray-800 rounded-2xl w-full max-w-md border border-gray-600 shadow-2xl">
                 <div class="p-6 border-b border-gray-700">
-                    <h3 class="text-xl font-bold">Deploy New Bot Node</h3>
+                    <h3 class="text-lg font-bold">Add Worker to {{ selectedGroup?.name }}</h3>
                 </div>
                 <div class="p-6 space-y-4">
                     <div>
-                        <label class="block text-gray-400 text-sm mb-1">Instance Name</label>
-                        <input v-model="newBot.name" type="text" placeholder="e.g. PropFirm_Funded" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none">
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-400 text-sm mb-1">MT5 Login</label>
-                            <input v-model="newBot.mt5_login" type="number" placeholder="50123456" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-gray-400 text-sm mb-1">MT5 Password</label>
-                            <input v-model="newBot.mt5_password" type="password" placeholder="•••••••" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none">
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-gray-400 text-sm mb-1">MT5 Server</label>
-                        <input v-model="newBot.mt5_server" type="text" placeholder="HFMarketsGlobal-Demo" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none">
-                    </div>
-
-                    <!-- Simplified Form: Removed Enhanced Onboarding Fields -->
-                    <!-- Suffix, Drawdown, Daily Loss, Account Type defaults will be used -->
-
-
-                    <div>
-                        <label class="block text-gray-400 text-sm mb-1">Instance Role</label>
-                        <select v-model="newBot.role" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none">
-                            <option value="SOLO">SOLO (Standard)</option>
-                            <option value="MASTER">MASTER (Signal Publisher)</option>
-                            <option value="SLAVE">SLAVE (Signal Listener)</option>
+                        <label class="block text-sm text-gray-400 mb-1">Select Worker Node</label>
+                        <select v-model="newSlave.slave_account_id"
+                            class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                            <option v-for="acc in availableSlaves" :value="acc.id">{{ acc.name }} ({{ acc.login }})
+                            </option>
                         </select>
                     </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Risk Mode</label>
+                            <select v-model="newSlave.mode"
+                                class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                                <option value="MULTIPLIER">Multiplier</option>
+                                <option value="FIXED_LOT">Fixed Lot</option>
+                            </select>
+                        </div>
+                        <div v-if="newSlave.mode === 'MULTIPLIER'">
+                            <label class="block text-sm text-gray-400 mb-1">Multiplier (x)</label>
+                            <input v-model="newSlave.risk_multiplier" type="number" step="0.1"
+                                class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                        </div>
+                        <div v-else>
+                            <label class="block text-sm text-gray-400 mb-1">Lot Size</label>
+                            <input v-model="newSlave.fixed_lot_size" type="number" step="0.01"
+                                class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
                 <div class="p-6 border-t border-gray-700 flex justify-end space-x-3">
-                    <button @click="showCreateModal = false" class="text-gray-400 hover:text-white px-4 py-2">Cancel</button>
-                    <button @click="createInstance" :disabled="creating" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center shadow-lg transition-all disabled:opacity-50">
-                        <i v-if="creating" class="fas fa-spinner fa-spin mr-2"></i>
-                        {{ creating ? 'Deploying...' : 'Deploy Node' }}
-                    </button>
+                    <button @click="showAddSlaveModal = false"
+                        class="text-gray-400 hover:text-white px-4 py-2">Cancel</button>
+                    <button @click="addSlave"
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium">Add
+                        Worker</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: Register Account -->
+        <div v-if="showRegisterAccountModal"
+            class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-gray-800 rounded-2xl w-full max-w-md border border-gray-600 shadow-2xl">
+                <div class="p-6 border-b border-gray-700">
+                    <h3 class="text-lg font-bold">Register New Account</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Account Name (Label)</label>
+                        <input v-model="newAccount.name" type="text"
+                            class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none"
+                            placeholder="e.g. FundingPips Main">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">MT5 Login</label>
+                            <input v-model="newAccount.login" type="number"
+                                class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Password</label>
+                            <input v-model="newAccount.password" type="password"
+                                class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Server</label>
+                        <input v-model="newAccount.server" type="text"
+                            class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="p-6 border-t border-gray-700 flex justify-end space-x-3">
+                    <button @click="showRegisterAccountModal = false"
+                        class="text-gray-400 hover:text-white px-4 py-2">Cancel</button>
+                    <button @click="registerAccount"
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium">Register
+                        Account</button>
                 </div>
             </div>
         </div>
@@ -163,105 +645,459 @@
         createApp({
             data() {
                 return {
-                    instances: [],
-                    loading: true,
-                    showCreateModal: false,
-                    creating: false,
-                    newBot: {
-                        name: '',
-                        mt5_login: '',
-                        mt5_password: '',
-                        mt5_server: 'HFMarketsGlobal-Demo',
-                        role: 'SOLO'
+                    currentView: 'copy-trading',
+                    connectedNodes: [],
+                    copyGroups: [],
+                    availableMasters: [],
+                    availableSlaves: [],
+
+                    // Live Strategies (Legacy Port)
+                    botSlots: [
+                        {
+                            id: 1,
+                            name: 'Gold Scalper',
+                            symbol: 'XAUUSD',
+                            timeframe: 'M15',
+                            risk_percent: 0.5,
+                            enabled: true,
+                            // Legacy Preset: Institutional Gold
+                            tp_ratio: 2.0, sl_atr_multiplier: 1.5,
+                            rsi_period: 9, rsi_overbought: 50, rsi_oversold: 50,
+                            zigzag_lookback: 10,
+                            tsl_mode: 'ATR',
+                            description: 'Gold 🥇 High Win Rate - Optimized M15'
+                        },
+                        {
+                            id: 2,
+                            name: 'The Beast',
+                            symbol: 'GBPJPY',
+                            timeframe: 'M5',
+                            risk_percent: 1.0,
+                            enabled: true,
+                            // Legacy Preset: The Beast
+                            tp_ratio: 2.0, sl_atr_multiplier: 1.5,
+                            rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25,
+                            tsl_mode: 'TIERED',
+                            description: 'High volatility, strong trends 🔥'
+                        },
+                        {
+                            id: 3,
+                            name: 'Euro Channel',
+                            symbol: 'EURGBP',
+                            timeframe: 'H1',
+                            risk_percent: 0.7,
+                            enabled: true,
+                            // Legacy Preset: Range
+                            tp_ratio: 1.4, sl_atr_multiplier: 1.2,
+                            tsl_mode: 'ATR', tsl_atr_multiplier: 0.8,
+                            description: 'Channel Scalper (H1 Range) ↔️'
+                        },
+                        {
+                            id: 4,
+                            name: 'Crypto Breakout',
+                            symbol: '#BTCUSD',
+                            timeframe: 'M15',
+                            risk_percent: 0.5,
+                            enabled: false,
+                            // Legacy Preset: Crypto
+                            tp_ratio: 2.0, sl_atr_multiplier: 2.0,
+                            description: 'Bitcoin ₿ Extreme volatility 🚀'
+                        }
+                    ],
+                    activeSessions: [],
+
+                    // Backtest Lab
+                    backtestConfig: {
+                        // Core
+                        strategy: 'XAU_PRO',
+                        symbol: 'XAUUSD',
+                        balance: 10000,
+                        risk: 1.0,
+                        days: 30,
+
+                        // Time & Session
+                        timeframe: 'M5',
+                        confirmation_timeframe: 'H1',
+                        session_mode: 'BOTH_KZ', // LONDON_KZ, NY_KZ, etc.
+                        session_end_action: 'HOLD',
+                        use_daily_bias: false,
+
+                        // Risk & TSL
+                        tp_ratio: 2.0,
+                        sl_atr_multiplier: 1.5,
+                        tsl_mode: 'TIERED', // OFF, ATR, TIERED
+
+                        // Strategy - RSI
+                        rsi_period: 14,
+                        rsi_overbought: 70,
+                        rsi_oversold: 30,
+
+                        // Strategy - SMC (Smart Money)
+                        enable_order_blocks: true,
+                        ob_lookback: 20,
+                        enable_liquidity_sweep: true,
+                        sweep_lookback: 10,
+                        enable_fvg: true,
+                        fvg_min_size_atr: 0.5,
+
+                        // Strategy - MACD
+                        macd_fast: 12,
+                        macd_slow: 26,
+                        macd_signal: 9,
+
+                        // Structure
+                        zigzag_lookback: 12
+                    },
+                    backtestRunnning: false,
+                    backtestResults: { netProfit: 0, winRate: 0, maxDrawdown: 0, totalTrades: 0 },
+                    equityChart: null,
+
+                    // Modals
+                    showCreateGroupModal: false,
+                    showAddSlaveModal: false,
+
+                    // Forms
+                    newGroup: { name: '', master_account_id: null },
+                    selectedGroup: null,
+                    newSlave: { slave_account_id: null, mode: 'MULTIPLIER', risk_multiplier: 1.0, fixed_lot_size: 0.01 },
+                    showRegisterAccountModal: false,
+                    newAccount: { name: '', login: '', password: '', server: 'HFMarketsGlobal-Demo', account_type: 'demo' }
+                }
+            },
+            watch: {
+                'backtestConfig.symbol': function (newVal) {
+                    if (['XAUUSD', 'BTCUSD', 'ETHUSD'].includes(newVal)) {
+                        this.backtestConfig.risk = 0.5;
+                        // Auto-enable Institutional params for Gold/Crypto
+                        this.backtestConfig.enable_order_blocks = true;
+                        this.backtestConfig.enable_liquidity_sweep = true;
                     }
                 }
             },
-            mounted() {
-                this.fetchInstances()
-                setInterval(this.fetchInstances, 5000)
+            async mounted() {
+                await this.init()
+                // Poll for sessions
+                setInterval(() => {
+                    if (this.currentView === 'live-strategies') this.fetchSessions()
+                }, 5000)
             },
             methods: {
-                async fetchInstances() {
-                    try {
-                        const res = await fetch('/instances')
-                        const newInstances = await res.json()
-                        
-                        // Smart Merge to preserve optimistic updates
-                        if (this.instances.length === 0) {
-                            this.instances = newInstances
-                        } else {
-                            this.instances = newInstances.map(newItem => {
-                                const oldItem = this.instances.find(old => old.name === newItem.name)
-                                if (oldItem) {
-                                    // Keep local 'STARTING...' if server still says 'STOPPED' (avoid flicker)
-                                    if (oldItem.status === 'STARTING...' && newItem.status === 'STOPPED') return oldItem
-                                    // Keep local 'STOPPING...' if server still says 'RUNNING' || 'RESTARTING'
-                                    if (oldItem.status === 'STOPPING...' && newItem.status !== 'STOPPED') return oldItem
-                                }
-                                return newItem
-                            })
-                        }
-                        this.loading = false
-                    } catch (e) {
-                        console.error("Failed to load instances", e)
+                async init() {
+                    await Promise.all([
+                        this.fetchGroups(),
+                        this.fetchAccounts(),
+                        this.fetchSessions()
+                    ])
+                    // Restore Backtest Config if needed
+                    const saved = localStorage.getItem('backtestConfig');
+                    if (saved) {
+                        try {
+                            const parsed = JSON.parse(saved);
+                            this.backtestConfig = { ...this.backtestConfig, ...parsed };
+                        } catch (e) { }
                     }
                 },
-                async createInstance() {
-                    if(!this.newBot.name) return alert("Please fill details")
-                    
-                    this.creating = true
+
+                async fetchGroups() {
                     try {
-                        const payload = { ...this.newBot, mt5_login: String(this.newBot.mt5_login || '') }
-                        const res = await fetch('/instances', {
+                        const res = await fetch('/api/copy-trading/groups')
+                        if (res.ok) {
+                            this.copyGroups = await res.json()
+                        } else {
+                            console.error("API Error fetching groups:", res.status)
+                            this.copyGroups = []
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch groups", e)
+                        this.copyGroups = []
+                    }
+                },
+
+                async fetchAccounts() {
+                    try {
+                        const mRes = await fetch('/api/copy-trading/accounts/available-masters')
+                        this.availableMasters = await mRes.json()
+
+                        const sRes = await fetch('/api/copy-trading/accounts/available-slaves')
+                        this.availableSlaves = await sRes.json()
+
+                        this.connectedNodes = this.availableSlaves
+                    } catch (e) {
+                        console.error("Failed to fetch accounts", e)
+                    }
+                },
+
+                async registerAccount() {
+                    if (!this.newAccount.name || !this.newAccount.login || !this.newAccount.password) return alert("Fill all fields")
+                    try {
+                        const res = await fetch('/api/copy-trading/accounts', {
                             method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                ...this.newAccount,
+                                login: String(this.newAccount.login)
+                            })
+                        })
+                        if (res.ok) {
+                            this.showRegisterAccountModal = false
+                            this.newAccount = { name: '', login: '', password: '', server: 'HFMarketsGlobal-Demo', account_type: 'demo' }
+                            await this.fetchAccounts()
+                            alert("Account Registered Successfully!")
+                        } else {
+                            const txt = await res.json()
+                            alert(txt.detail)
+                        }
+                    } catch (e) { alert("Error registering account") }
+                },
+
+                async createGroup() {
+                    if (!this.newGroup.name || !this.newGroup.master_account_id) return alert("Fill all fields")
+                    try {
+                        const res = await fetch('/api/copy-trading/groups', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.newGroup)
+                        })
+                        if (res.ok) {
+                            this.showCreateGroupModal = false
+                            this.fetchGroups()
+                        }
+                    } catch (e) { alert("Error creating group") }
+                },
+
+                openAddSlaveModal(group) {
+                    this.selectedGroup = group
+                    this.newSlave.slave_account_id = null
+                    this.showAddSlaveModal = true
+                },
+
+                async addSlave() {
+                    if (!this.newSlave.slave_account_id) return alert("Select a worker")
+                    try {
+                        const payload = {
+                            group_id: this.selectedGroup.id,
+                            ...this.newSlave
+                        }
+                        const res = await fetch('/api/copy-trading/configs', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         })
-                        
-                        if(!res.ok) throw new Error(await res.text())
-                        
-                        this.showCreateModal = false
-                        this.newBot = { 
-                            name: '',
-                            mt5_login: '',
-                            mt5_password: '',
-                            mt5_server: 'HFMarketsGlobal-Demo',
-                            role: 'SOLO'
+                        if (res.ok) {
+                            this.showAddSlaveModal = false
+                            this.fetchGroups()
+                        } else {
+                            const txt = await res.json()
+                            alert(txt.detail)
                         }
-                        this.fetchInstances()
-                    } catch (e) {
-                        alert(e.message)
-                    } finally {
-                        this.creating = false
-                    }
+                    } catch (e) { alert("Error adding slave") }
                 },
-                async manageInstance(name, action) {
-                    console.log(`Clicked ${action} for ${name}`);
-                    if(action === 'delete' && !confirm("Are you sure? This will delete all data for this bot.")) return
-                    
-                    // Optimistic UI Update
-                    const instance = this.instances.find(i => i.name === name)
-                    if(instance) instance.status = (action === 'start' ? 'STARTING...' : 'STOPPING...')
+
+                // LIVE TRADING METHODS
+                async fetchSessions() {
+                    try {
+                        const res = await fetch('/api/trading/sessions')
+                        if (res.ok) {
+                            this.activeSessions = await res.json()
+                        }
+                    } catch (e) { console.error("Fetch sessions error", e) }
+                },
+
+                isSessionActive(slotId) {
+                    // Check if any active session matches the slot's symbol (simple check)
+                    const slot = this.botSlots.find(s => s.id === slotId)
+                    if (!slot) return false
+                    return this.activeSessions.some(s => s.symbol === slot.symbol && s.status === 'RUNNING')
+                },
+
+                async startSession(slot) {
+                    // Pick the first available Master account for simplicity
+                    // In real app, user should select account
+                    if (!this.availableMasters.length) return alert("No Master Account available to trade on!")
+                    const accountId = this.availableMasters[0].id
 
                     try {
-                        const url = `/instances/${name}/${action}`
-                        // alert(`DEBUG: Sending POST to ${url}`) 
-                        const res = await fetch(url, { method: 'POST' })
-                        if (!res.ok) {
-                            const txt = await res.text()
-                            console.error("Manage Error:", txt)
-                            throw new Error(`Server Error: ${res.status} ${res.statusText}\n${txt}`)
+                        const payload = {
+                            account_id: accountId,
+                            slot_id: slot.id,
+                            symbol: slot.symbol,
+                            risk_percent: slot.risk_percent,
+                            timeframe: slot.timeframe,
+                            // Logic Port: Pass all strategy params
+                            tp_ratio: slot.tp_ratio,
+                            sl_atr_multiplier: slot.sl_atr_multiplier,
+                            tsl_mode: slot.tsl_mode,
+                            min_confluence_score: slot.min_confluence_score || 7,
+                            max_trade_duration_hours: slot.max_duration || 2,
+
+                            // Institutional & Engines
+                            engine_type: slot.engine_type || 'GOLDEN',
+                            engine_config: {
+                                zigzag_lookback: slot.zigzag_lookback,
+                                macd_fast: slot.macd_fast,
+                                macd_slow: slot.macd_slow,
+                                macd_signal: slot.macd_signal,
+                                session_mode: slot.session_mode
+                            }
                         }
-                        this.fetchInstances()
-                    } catch(e) {
-                        alert(e.message)
-                    }
+                        const res = await fetch('/api/trading/start', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        })
+                        if (res.ok) {
+                            this.fetchSessions()
+                            alert(`Started ${slot.name} on ${slot.symbol}`)
+                        } else {
+                            const txt = await res.json()
+                            alert(txt.detail)
+                        }
+                    } catch (e) { alert("Failed to start session") }
                 },
-                formatName(name) {
-                    return name.replace(/_/g, ' ')
+
+                async stopSession(sessionId) {
+                    // If passed ID is logic slot ID, find the session ID
+                    if (typeof sessionId === 'number') {
+                        const slot = this.botSlots.find(s => s.id === sessionId)
+                        const session = this.activeSessions.find(s => s.symbol === slot.symbol)
+                        if (session) sessionId = session.id
+                        else return
+                    }
+
+                    try {
+                        await fetch(`/api/trading/stop/${sessionId}`, { method: 'POST' })
+                        this.fetchSessions()
+                    } catch (e) { alert("Failed to stop session") }
+                },
+
+                async stopAllSessions() {
+                    if (!confirm("EMERGENCY: Stop ALL trading bots?")) return
+                    try {
+                        await fetch('/api/trading/stop-all', { method: 'POST' })
+                        this.fetchSessions()
+                    } catch (e) { alert("Failed to stop all") }
+                },
+
+                // BACKTEST METHODS
+                async runBacktest() {
+                    this.backtestRunnning = true
+                    try {
+                        const conf = this.backtestConfig
+
+                        // Calculate Dates
+                        const end = new Date()
+                        const start = new Date()
+                        start.setDate(end.getDate() - conf.days)
+
+                        // Prepare Payload
+                        const payload = {
+                            symbol: conf.symbol,
+                            timeframe: conf.timeframe,
+                            confirmation_timeframe: conf.confirmation_timeframe,
+                            start_date: start.toISOString(),
+                            end_date: end.toISOString(),
+                            initial_balance: conf.balance,
+                            risk_percent: conf.risk,
+
+                            // Top Level Strategy Settings
+                            strategy_mode: 'SWING', // Default or UI option
+                            direction_filter: 'BOTH',
+                            use_daily_bias: conf.use_daily_bias,
+
+                            // TSL & Risk
+                            tp_ratio: conf.tp_ratio,
+                            sl_atr_multiplier: conf.sl_atr_multiplier,
+                            tsl_mode: conf.tsl_mode,
+                            enable_trailing_stop: conf.tsl_mode !== 'OFF',
+
+                            // Indicators (Top Level in Pydantic)
+                            rsi_period: conf.rsi_period,
+                            rsi_overbought: conf.rsi_overbought,
+                            rsi_oversold: conf.rsi_oversold,
+
+                            // ENGINE CONFIG (Specifics)
+                            engine_type: 'XAU_PRO',
+                            engine_config: {
+                                // Structure
+                                zigzag_lookback: conf.zigzag_lookback,
+
+                                // SMC
+                                enable_order_blocks: conf.enable_order_blocks,
+                                ob_lookback: conf.ob_lookback,
+                                enable_liquidity_sweep: conf.enable_liquidity_sweep,
+                                sweep_lookback: conf.sweep_lookback,
+                                enable_fvg: conf.enable_fvg,
+                                fvg_min_size_atr: conf.fvg_min_size_atr,
+
+                                // MACD
+                                macd_fast: conf.macd_fast,
+                                macd_slow: conf.macd_slow,
+                                macd_signal: conf.macd_signal,
+
+                                // Session
+                                session_mode: conf.session_mode,
+                                session_end_action: conf.session_end_action
+                            }
+                        }
+
+                        const res = await fetch('/api/backtest/run', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        })
+
+                        if (res.ok) {
+                            const data = await res.json()
+                            this.backtestResults = data.metrics
+                            this.renderChart(data.equity_curve)
+                        } else {
+                            const txt = await res.json()
+                            alert("Backtest Failed: " + (txt.detail || "Unknown Error"))
+                            // Fallback debug
+                            this.backtestResults = { netProfit: 0, winRate: 0, maxDrawdown: 0, totalTrades: 0 }
+                        }
+                    } catch (e) {
+                        console.error(e)
+                        alert("Backtest Exception: " + e.message)
+                    }
+                    this.backtestRunnning = false
+                },
+
+                renderChart(dataPoints) {
+                    const ctx = document.getElementById('equityChart')
+                    if (!ctx) return
+
+                    if (this.equityChart) this.equityChart.destroy()
+
+                    this.equityChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: dataPoints.map((_, i) => `Day ${i + 1}`),
+                            datasets: [{
+                                label: 'Account Equity ($)',
+                                data: dataPoints,
+                                borderColor: '#10B981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: { display: false },
+                                y: { grid: { color: '#374151' } }
+                            }
+                        }
+                    })
                 }
             }
         }).mount('#app')
     </script>
 </body>
+
 </html>

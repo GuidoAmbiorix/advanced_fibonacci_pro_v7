@@ -125,44 +125,72 @@ class TradingBot:
     async def _on_slave_signal(self, signal_data: dict):
         """Callback for Slave Mode: Execute incoming Master signal"""
         try:
-            # 1. Validation
+            signal_type = signal_data.get('signal_type', '').upper()
             symbol = signal_data.get('symbol')
+            master_ticket = signal_data.get('ticket', 0)
+            
+            # --- HANDLE CLOSE SIGNAL ---
+            if signal_type == 'CLOSE':
+                logger.info(f"📥 SLAVE CLOSE SIGNAL: Ticket {master_ticket} ({symbol})")
+                
+                # Find matching position by comment "Copy:{master_ticket}"
+                positions = self.mt5_connector.get_open_positions(symbol)
+                target_ticket = None
+                
+                for pos in positions:
+                    if f"Copy:{master_ticket}" in pos.get('comment', ''):
+                        target_ticket = pos['ticket']
+                        break
+                
+                # If not found by strict ID, fallback strategy? 
+                # Maybe close FIRST matching symbol/direction if simple mode? 
+                # For now, strict matching.
+                
+                if target_ticket:
+                    logger.info(f"✅ Found matching slave trade {target_ticket} for master {master_ticket}. Closing...")
+                    if self.mt5_connector.close_position(target_ticket):
+                        logger.info(f"✅ Slave trade {target_ticket} closed.")
+                    else:
+                         logger.error(f"❌ Failed to close slave trade {target_ticket}")
+                else:
+                    logger.warning(f"⚠️ No matching slave trade found for master ticket {master_ticket}")
+                return
+
+            # --- HANDLE OPEN SIGNAL ---
+            # 1. Validation
             if not symbol: 
                 return
             
-            # --- FILTERING LOGIC ---
-            
-            # A) Exclusion Check (FundingPips Requirement: Exclude XAUUSD etc.)
+            # ... (Exclusion/Inclusion checks same as before)
+            # A) Exclusion Check
             excluded = getattr(self.config, 'excluded_symbols', []) or []
             if symbol in excluded:
-                logger.info(f"🛡️ SLAVE IGNORE: {symbol} is in excluded list.")
                 return
 
-            # B) Inclusion Check (Universal vs Strict)
-            # If config.symbol is "ALL" or "COPY_MASTER", we accept everything (unless excluded above)
-            # Otherwise, we enforce strict 1-to-1 matching.
+            # B) Inclusion Check
             configured_symbol = self.config.symbol
             is_universal_slave = configured_symbol in ["ALL", "COPY_MASTER", "*"]
             
             if not is_universal_slave and symbol != configured_symbol:
-                 # Strict mode: mismatch
                  return
 
-            logger.info(f"📥 SLAVE EVENT: {signal_data['signal_type']} {symbol} @ {signal_data['entry_price']}")
+            logger.info(f"📥 SLAVE OPEN: {signal_type} {symbol} (Master: {master_ticket})")
 
-            # 2. Execution (Zero-Latency mode)
-            # We use our OWN risk settings, but copy the levels (SL/TP)
+            # 2. Execution
+            # Add correlation ID to comment
+            comment = f"Copy:{master_ticket}"
+            
             result = self.mt5_connector.open_position(
                 symbol=symbol,
-                order_type=signal_data['signal_type'], # "BUY" or "SELL"
-                stop_loss=signal_data['stop_loss'],
-                take_profit=signal_data['take_profit'],
-                # Volume will be calculated by connector based on OUR account balance & config risk
-                # If we passed 'volume' it would force it. Passing None/0 triggers calc.
+                order_type=signal_type, # "BUY" or "SELL"
+                stop_loss=signal_data.get('stop_loss'),
+                take_profit=signal_data.get('take_profit'),
+                comment=comment
+                # Volume calculated locally
             )
             
             if result and result.get('success'):
-                logger.info(f"✅ SLAVE COPIED: Ticket {result['ticket']}")
+                logger.info(f"✅ SLAVE COPIED: Master {master_ticket} -> Slave {result['ticket']}")
             else:
                 logger.error(f"❌ SLAVE FAILED: {result.get('error')}")
 
@@ -352,13 +380,78 @@ class TradingBot:
         finally:
             db.close()
 
+    
     def _update_positions_count(self):
-        """Update count of open positions"""
+        """Update count of open positions and detect closures"""
         if not self.mt5_connector or not self.mt5_connector.connected:
             return
 
         positions = self.mt5_connector.get_open_positions(self.config.symbol)
+        
+        # Current open tickets
+        current_tickets = {p['ticket'] for p in positions}
+        
+        # Initialize tracked tickets if first run
+        if not hasattr(self, 'tracked_tickets'):
+            self.tracked_tickets = current_tickets
+            self.open_positions_count = len(positions)
+            return
+
+        # Detect Closed Trades (Presen in tracked, missing in current)
+        closed_tickets = self.tracked_tickets - current_tickets
+        for ticket in closed_tickets:
+            asyncio.create_task(self._handle_trade_close(ticket))
+            
+        # Update state
+        self.tracked_tickets = current_tickets
         self.open_positions_count = len(positions)
+
+    async def _handle_trade_close(self, ticket: int):
+        """Handle detected trade closure"""
+        try:
+            # 1. Fetch deal details
+            deals = self.mt5_connector.get_history_deals(position=ticket)
+            if not deals:
+                logger.warning(f"Trade {ticket} closed but no history deal found")
+                return
+                
+            # Find the EXIT deal
+            exit_deal = next((d for d in deals if d['entry'] == 'EXIT'), None)
+            if not exit_deal:
+                # Might be partial close or other complex scenario, fallback to last deal?
+                exit_deal = deals[-1]
+            
+            logger.info(f"📉 Trade Closed: Ticket {ticket} @ {exit_deal['price']} (Profit: {exit_deal['profit']})")
+            
+            # 2. Publish CLOSE Signal (Master -> Queue -> Slaves)
+            role = settings.INSTANCE_ROLE.upper()
+            if role in ["MASTER", "SOLO"]:
+                await self.rabbitmq.publish_signal({
+                    "signal_type": "CLOSE",
+                    "symbol": exit_deal['symbol'],
+                    "ticket": ticket, # Master Ticket
+                    "exit_price": exit_deal['price'],
+                    "pnl": exit_deal['profit'],
+                    "reason": "SIGNAL_CLOSE",
+                    "bot_config_id": self.bot_config_id
+                })
+                
+            # 3. Update Trade in Database
+            # (Assuming TradeManager updates active trades, but we should mark as CLOSED in DB if not done)
+            db = SessionLocal()
+            try:
+                db_trade = db.query(Trade).filter(Trade.ticket == ticket).first()
+                if db_trade:
+                    db_trade.status = "CLOSED"
+                    db_trade.exit_price = exit_deal['price']
+                    db_trade.exit_time = exit_deal['time']
+                    db_trade.pnl = exit_deal['profit']
+                    db.commit()
+            finally:
+                db.close()
+
+        except Exception as e:
+            logger.error(f"Error handling close for {ticket}: {e}")
 
     async def _analyze_market(self):
         """Analyze market and execute trades if signals found"""

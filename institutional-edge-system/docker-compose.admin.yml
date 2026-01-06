@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   orchestrator:
-    build: ./orchestrator
+    build: ./orchestrator/backend
     container_name: fleet_commander
     ports:
       - "9000:8000"
@@ -10,14 +10,18 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock # Access to Docker Daemon
       - ./:/app/host_project # Mount whole project to be able to copy blueprints
-      - ./orchestrator/backend:/app/backend # Live Backend Code
+      - ./orchestrator/backend:/app # Live Backend Code
       - ./orchestrator/frontend:/app/frontend # Live Frontend Code
     environment:
       - PROJECT_ROOT=/app/host_project
       - HOST_PROJECT_PATH=c:\Users\Ing Guido\Desktop\Proyectos\advanced_fibonacci_pro_v7\institutional-edge-system
+      - SECRET_KEY=super-secure-secret-key-12345
+      - JWT_SECRET_KEY=super-secure-jwt-key-67890
+      - HOST_PROJECT_PATH=c:\Users\Ing Guido\Desktop\Proyectos\advanced_fibonacci_pro_v7\institutional-edge-system
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/institutional_edge
     networks:
-      - bot-net
+      - trading_network
 
 networks:
-  bot-net:
+  trading_network:
     external: true

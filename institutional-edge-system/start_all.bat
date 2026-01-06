@@ -25,14 +25,7 @@ if errorlevel 1 (
 REM 3. Network Setup
 echo [3/5] configuring network...
 REM Check if network exists, if not create it
-docker network inspect bot-net >nul 2>&1
-if errorlevel 1 (
-    echo   - Creating shared network 'bot-net'...
-    docker network create bot-net
-) else (
-    echo   - Shared network 'bot-net' already exists.
-)
-
+REM Check if trading_network exists, if not create it
 docker network inspect trading_network >nul 2>&1
 if errorlevel 1 (
     echo   - Creating shared network 'trading_network'...
@@ -52,7 +45,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo   - Starting Shared Infrastructure (RabbitMQ)...
+echo   - Starting Shared Infrastructure (RabbitMQ + Postgres)...
 docker-compose -f docker-compose.shared.yml up -d
 if errorlevel 1 (
     echo [ERROR] Failed to start Shared Infrastructure.
@@ -60,7 +53,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo   - Starting Fleet Commander...
+echo   - Starting Fleet Commander (Orchestrator)...
 docker-compose -f docker-compose.admin.yml up -d
 if errorlevel 1 (
     echo [ERROR] Failed to start Orchestrator.
@@ -68,7 +61,13 @@ if errorlevel 1 (
     exit /b 1
 )
 
-
+echo   - Starting Worker Nodes...
+docker-compose -f docker-compose.nodes.yml up -d
+if errorlevel 1 (
+    echo [ERROR] Failed to start Worker Nodes.
+    pause
+    exit /b 1
+)
 
 REM 5. Wait for Health
 echo [5/5] Waiting for services to initialize...
@@ -84,7 +83,7 @@ if errorlevel 1 (
 
 echo.
 echo =========================================
-echo SYSTEM READY 🚀
+echo SYSTEM READY (FLEET COMMANDER ARCHITECTURE) 🚀
 echo =========================================
 echo.
 echo Access URLs:
@@ -92,15 +91,13 @@ echo -----------------------------------------
 echo Fleet Commander: http://localhost:9000/
 echo RabbitMQ:        http://localhost:15672/ (guest/guest)
 echo.
-echo Instance URLs (Once Deployed):
+echo Managed Nodes:
 echo -----------------------------------------
-echo Instance 1:     http://localhost:81/ (Dashboard) - VNC: 3001
-echo Instance 2:     http://localhost:82/ (Dashboard) - VNC: 3002
-echo.
-echo NOTE: Each instance has its own dedicated MT5 terminal.
-echo       Access VNC ports (3001+) to login to broker accounts.
+echo Worker Nodes are running in background (headless).
+echo Monitor them via Fleet Commander Dashboard.
 echo.
 echo To Stop Everything:
+echo   docker-compose -f docker-compose.nodes.yml down
 echo   docker-compose -f docker-compose.admin.yml down
 echo   docker-compose -f docker-compose.proxy.yml down
 echo   docker-compose -f docker-compose.shared.yml down

@@ -1007,3 +1007,60 @@ class MT5Connector:
         except Exception as e:
             logger.error(f"Error fetching calendar: {e}")
             return []
+
+    def get_history_deals(
+        self, 
+        ticket: Optional[int] = None, 
+        position: Optional[int] = None,
+        start: datetime = None, 
+        end: datetime = None
+    ) -> List[Dict]:
+        """
+        Get history deals (completed trades)
+        
+        Args:
+            ticket: Filter by deal ticket
+            position: Filter by position ticket
+            start: Start date (default: 24h ago)
+            end: End date (default: now)
+        """
+        if not self.connected: 
+            return []
+            
+        try:
+            if start is None: start = datetime.utcnow() - timedelta(days=1)
+            if end is None: end = datetime.utcnow() + timedelta(minutes=5) # Future buffer
+            
+            if ticket:
+                deals = mt5.history_deals_get(ticket=ticket)
+            elif position:
+                deals = mt5.history_deals_get(position=position)
+            else:
+                deals = mt5.history_deals_get(start, end)
+                
+            if deals is None:
+                return []
+                
+            result = []
+            for deal in deals:
+                result.append({
+                    'ticket': deal.ticket,
+                    'order': deal.order,
+                    'time': datetime.fromtimestamp(deal.time),
+                    'type': 'BUY' if deal.type == mt5.ORDER_TYPE_BUY else 'SELL',
+                    'entry': 'ENTRY' if deal.entry == mt5.DEAL_ENTRY_IN else 'EXIT',
+                    'symbol': deal.symbol,
+                    'volume': deal.volume,
+                    'price': deal.price,
+                    'profit': deal.profit,
+                    'commission': deal.commission,
+                    'swap': deal.swap,
+                    'comment': deal.comment,
+                    'position_id': deal.position_id,
+                    'reason': deal.reason
+                })
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error getting history deals: {e}")
+            return []

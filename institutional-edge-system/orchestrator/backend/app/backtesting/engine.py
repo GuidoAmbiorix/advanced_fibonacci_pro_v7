@@ -75,6 +75,13 @@ class BacktestEngine:
         self.current_balance = config.initial_balance
         self.peak_balance = config.initial_balance  # Track for drawdown
 
+        # Virtual Copy Trader
+        self.virtual_copy_trader = None
+        if self.config.slave_configs:
+            from app.backtesting.virtual_copy_trader import VirtualCopyTrader
+            logger.info(f"👥 Virtual Copy Trading ENABLED: Simulating {len(self.config.slave_configs)} slave accounts")
+            self.virtual_copy_trader = VirtualCopyTrader(self.config.slave_configs)
+
         # Trading engine
         self.trading_engine = self._init_trading_engine()
 
@@ -204,6 +211,8 @@ class BacktestEngine:
         logger.info("="*60)
         logger.info("STARTING BACKTEST")
         logger.info("="*60)
+        
+        # Virtual Copy Trader is already initialized in __init__ if configured
 
         # Load data if not provided
         if data is None:
@@ -273,6 +282,28 @@ class BacktestEngine:
 
             # Update open positions
             self._update_open_positions(current_bar)
+            
+            # --- COPY TRADING EXIT SIGNAL ---
+            # Positions are updated in _update_open_positions, check closed trades to sync slaves
+            # Note: _update_open_positions appends to self.closed_trades immediately. 
+            # We need to catch that. 
+            # Ideally _update_open_positions would yield closed trades, but for now we can iterate 
+            # over CLOSED trades list difference, OR just iterate closed trades if we processed them properly.
+            # OPTIMIZATION: We hijack _update_open_positions to call the copy trader hook.
+            # Or simpler:
+            # We already modified _update_open_positions to emit callback so we can add logic there or below.
+            
+            # Actually, _update_open_positions DOES NOT call external hooks except callback.
+            # Better approach: Pass virtual_copy_trader to _update_open_positions or handle it there.
+            # But wait, local variables are cleaner. 
+            
+            # Let's inspect recently closed trades.
+            # A cleaner way is to separate the "Trading Engine" step from "Simulation" step?
+            # No, existing code is tight. 
+            # I will inject the hook into _update_open_positions if possible, OR
+            # Just do a quick check of what closed this bar.
+            # Since self.closed_trades grows, I can check specific reference if needed?
+            # Actually, let's just use the `self.open_trades` management.
             
             # Track peak equity and current drawdown
             if self.current_balance > peak_equity:
@@ -466,6 +497,11 @@ class BacktestEngine:
 
                     if trade:
                         self.open_trades.append(trade)
+                        
+                        # --- VIRTUAL COPY TRADER: PROPAGATE SIGNAL ---
+                        if self.virtual_copy_trader:
+                            self.virtual_copy_trader.on_master_signal(trade)
+                            
                         logger.debug(
                             f"[{current_bar['time']}] Opened {trade.signal_type} "
                             f"@ {trade.entry_price:.5f}, Score: {trade.confluence_score}/10"
@@ -534,6 +570,10 @@ class BacktestEngine:
                 self.simulator.force_close(trade, last_bar, "END_OF_DATA")
                 self.closed_trades.append(trade)
                 self.current_balance += trade.pnl
+                
+                # --- VIRTUAL COPY TRADER: FORCE CLOSE ---
+                if self.virtual_copy_trader:
+                     self.virtual_copy_trader.on_master_close(trade)
 
         # Calculate metrics
         logger.info("Calculating performance metrics...")
@@ -541,6 +581,13 @@ class BacktestEngine:
             self.closed_trades,
             self.config.initial_balance
         )
+        
+        # --- VIRTUAL COPY TRADER: GENERATE RESULTS ---
+        slave_results = {}
+        if self.virtual_copy_trader:
+            for slave_config in self.config.slave_configs:
+                slave_results[slave_config.name] = self.virtual_copy_trader.get_results(slave_config.name)
+                logger.info(f"👥 Slave {slave_config.name}: Net Profit ${slave_results[slave_config.name].metrics.net_profit:.2f}")
 
         # Create results
         results = BacktestResults(
@@ -551,7 +598,8 @@ class BacktestEngine:
             start_date=data.iloc[0]['time'] if len(data) > 0 else None,
             end_date=data.iloc[-1]['time'] if len(data) > 0 else None,
             total_bars=len(data),
-            execution_time_seconds=time.time() - start_time
+            execution_time_seconds=time.time() - start_time,
+            slave_results=slave_results # Attach slave results
         )
 
         # Log summary
@@ -611,6 +659,10 @@ class BacktestEngine:
                 # Update balance
                 self.current_balance += trade.pnl
                 trade.balance_after = self.current_balance
+                
+                # --- VIRTUAL COPY TRADER EXIT ---
+                if self.virtual_copy_trader:
+                    self.virtual_copy_trader.on_master_close(trade)
 
                 # Emit trade close event
                 if hasattr(self, 'on_trade_callback') and self.on_trade_callback:

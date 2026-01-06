@@ -33,14 +33,6 @@ echo -e "${GREEN}  ✓ Docker is running${NC}"
 # 3. Network Setup
 echo -e "${BLUE}[3/5] Configuring network...${NC}"
 
-# Check if bot-net network exists, if not create it
-if ! docker network inspect bot-net > /dev/null 2>&1; then
-    echo "  - Creating shared network 'bot-net'..."
-    docker network create bot-net
-else
-    echo "  - Shared network 'bot-net' already exists."
-fi
-
 # Check if trading_network exists, if not create it
 if ! docker network inspect trading_network > /dev/null 2>&1; then
     echo "  - Creating shared network 'trading_network'..."
@@ -59,17 +51,24 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "  - Starting Shared Infrastructure (RabbitMQ)..."
+echo "  - Starting Shared Infrastructure (RabbitMQ + Postgres)..."
 docker compose -f docker-compose.shared.yml up -d
 if [ $? -ne 0 ]; then
     echo -e "${RED}[ERROR] Failed to start Shared Infrastructure.${NC}"
     exit 1
 fi
 
-echo "  - Starting Fleet Commander..."
+echo "  - Starting Fleet Commander (Orchestrator)..."
 docker compose -f docker-compose.admin.yml up -d
 if [ $? -ne 0 ]; then
     echo -e "${RED}[ERROR] Failed to start Orchestrator.${NC}"
+    exit 1
+fi
+
+echo "  - Starting Worker Nodes..."
+docker compose -f docker-compose.nodes.yml up -d
+if [ $? -ne 0 ]; then
+    echo -e "${RED}[ERROR] Failed to start Worker Nodes.${NC}"
     exit 1
 fi
 
@@ -86,7 +85,7 @@ fi
 
 echo ""
 echo "========================================="
-echo -e "${GREEN}SYSTEM READY 🚀${NC}"
+echo -e "${GREEN}SYSTEM READY (FLEET COMMANDER ARCHITECTURE) 🚀${NC}"
 echo "========================================="
 echo ""
 echo "Access URLs:"
@@ -94,15 +93,13 @@ echo "-----------------------------------------"
 echo "Fleet Commander: http://localhost:9000/"
 echo "RabbitMQ:        http://localhost:15672/ (guest/guest)"
 echo ""
-echo "Instance URLs (Once Deployed):"
+echo "Managed Nodes:"
 echo "-----------------------------------------"
-echo "Instance 1:     http://localhost:81/ (Dashboard) - VNC: 3001"
-echo "Instance 2:     http://localhost:82/ (Dashboard) - VNC: 3002"
-echo ""
-echo "NOTE: Each instance has its own dedicated MT5 terminal."
-echo "      Access VNC ports (3001+) to login to broker accounts."
+echo "Worker Nodes are running in background (headless)."
+echo "Monitor them via Fleet Commander Dashboard."
 echo ""
 echo "To Stop Everything:"
+echo "  docker compose -f docker-compose.nodes.yml down"
 echo "  docker compose -f docker-compose.admin.yml down"
 echo "  docker compose -f docker-compose.proxy.yml down"
 echo "  docker compose -f docker-compose.shared.yml down"

@@ -23,24 +23,46 @@ services:
   # ============================================================================
   # SHARED MT5 TERMINAL (Disabled for Dedicated Mode)
   # ============================================================================
-  # mt5_shared:
-  #   image: gmag11/metatrader5_vnc:latest
-  #   container_name: mt5_shared
-  #   ports:
-  #     - "3000:3000"   # VNC Web Interface 
-  #     - "8001:8001"   # RPyC Server 
-  #   environment:
-  #     - CUSTOM_USER=trader
-  #     - PASSWORD=trading
-  #     - VNCPASSWORD=trading
-  #   volumes:
-  #     - mt5_shared_config:/config
-  #   networks:
-  #     - trading_network
-  #   restart: unless-stopped
+  mt5_shared:
+    image: gmag11/metatrader5_vnc:latest
+    container_name: mt5_shared
+    ports:
+      - "3000:3000"   # VNC Web Interface 
+      - "8001:8001"   # RPyC Server 
+    environment:
+      - CUSTOM_USER=trader
+      - PASSWORD=trading
+      - VNCPASSWORD=trading
+    volumes:
+      - mt5_shared_config:/config
+    networks:
+      - trading_network
+    restart: unless-stopped
+
+  # Central Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: institutional_postgres
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=institutional_edge
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - trading_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mt5_shared_config:
+  postgres_data:
 
 networks:
   trading_network:

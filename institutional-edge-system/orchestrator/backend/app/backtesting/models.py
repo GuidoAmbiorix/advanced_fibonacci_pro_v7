@@ -234,6 +234,30 @@ class SlotConfig:
     use_daily_bias: bool = False
 
 
+
+@dataclass
+class SimulatedSlaveConfig:
+    """Configuration for a simulated slave account in backtesting"""
+    name: str = "Slave"
+    initial_balance: float = 10000.0
+    
+    # Risk Management
+    mode: str = "MULTIPLIER"  # MULTIPLIER, FIXED_LOT, RISK_PERCENT
+    risk_multiplier: float = 1.0
+    fixed_lot_size: float = 0.01
+    max_risk_percent: float = 5.0
+    
+    # Execution
+    slippage_pips: float = 0.0  # Additional slippage vs Master
+    commission_per_lot: float = 7.0
+    
+    # Filtering
+    include_symbols: List[str] = field(default_factory=list)
+    exclude_symbols: List[str] = field(default_factory=list)
+    
+    # Modifiers
+    reverse_copy: bool = False
+
 @dataclass
 class BacktestConfig:
     """Configuration for backtest"""
@@ -329,6 +353,9 @@ class BacktestConfig:
     slots: List[SlotConfig] = field(default_factory=list)  # List of slot configs
     max_portfolio_risk_percent: float = 4.0  # Max combined risk across all slots
     max_positions_per_symbol: int = 2  # Limit concurrent positions per symbol
+    
+    # COPY TRADING SIMULATION
+    slave_configs: List[SimulatedSlaveConfig] = field(default_factory=list)
 
 
 @dataclass
@@ -339,6 +366,9 @@ class BacktestResults:
     metrics: BacktestMetrics
     trades: List[BacktestTrade] = field(default_factory=list)
     equity_curve: List[Dict] = field(default_factory=list)
+    
+    # Copy Trading Results
+    slave_results: Dict[str, 'BacktestResults'] = field(default_factory=dict)
 
     # Metadata
     start_date: Optional[datetime] = None

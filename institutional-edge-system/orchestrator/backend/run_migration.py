@@ -21,16 +21,21 @@ def migrate():
     elif "asyncpg" in database_url:
         database_url = database_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
     
-    # Force port fix if mismatch
-    if ":5433" in database_url and "sqlite" not in database_url:
-        print("Swapping port 5433 -> 5432 for migration connection...")
-        database_url = database_url.replace(":5433", ":5432")
+    # Port fix logic removed as we want to respect the env var (Port 5433 is used)
+    # if ":5433" in database_url and "sqlite" not in database_url:
+    #     print("Swapping port 5433 -> 5432 for migration connection...")
+    #     database_url = database_url.replace(":5433", ":5432")
 
     connect_args = {}
     if "sqlite" in database_url:
         connect_args["check_same_thread"] = False
     
     engine = create_engine(database_url, connect_args=connect_args)
+    
+    # Ensure all tables exist (including new Copy Trading models)
+    from app.models.database import Base
+    print("Creating missing tables (CopyGroup, CopyConfig)...")
+    Base.metadata.create_all(bind=engine)
 
     with engine.connect() as conn:
         trans = conn.begin()

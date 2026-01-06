@@ -659,3 +659,70 @@ class StrategyComparison(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+
+# ============================================================================
+# COPY TRADING SYSTEM MODELS
+# ============================================================================
+
+class CopyGroup(Base):
+    """
+    Defines a Master-Slave relationship group.
+    One Master account can have multiple Slaves via CopyConfig.
+    """
+    __tablename__ = "copy_groups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    
+    # The Master Account (Source of Signals)
+    master_account_id = Column(Integer, ForeignKey("mt5_accounts.id"), nullable=False)
+    
+    # Group Settings
+    is_active = Column(Boolean, default=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    master_account = relationship("MT5Account", foreign_keys=[master_account_id])
+    slaves = relationship("CopyConfig", back_populates="group", cascade="all, delete-orphan")
+
+
+class CopyConfig(Base):
+    """
+    Configuration for a specific Slave account inside a CopyGroup.
+    Determines how the slave copies the master's trades.
+    """
+    __tablename__ = "copy_configs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("copy_groups.id"), nullable=False)
+    
+    # The Slave Account (Receiver of Signals)
+    slave_account_id = Column(Integer, ForeignKey("mt5_accounts.id"), nullable=False)
+    
+    # Risk Management
+    mode = Column(String, default="MULTIPLIER") # MULTIPLIER, FIXED_LOT, RISK_PERCENT
+    risk_multiplier = Column(Float, default=1.0) # 1.0 = same risk as master
+    fixed_lot_size = Column(Float, default=0.01) # If mode is FIXED_LOT
+    max_risk_percent = Column(Float, default=5.0) # Safety cap
+    
+    # Filters
+    include_symbols = Column(JSON, default=[]) # Empty = All
+    exclude_symbols = Column(JSON, default=[])
+    
+    # Execution Modifiers
+    slippage_tolerance_pips = Column(Float, default=3.0)
+    reverse_copy = Column(Boolean, default=False) # For inverse trading
+    
+    # Status
+    is_active = Column(Boolean, default=True)
+    is_suspended = Column(Boolean, default=False) # Temp suspension due to drawdown etc.
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    group = relationship("CopyGroup", back_populates="slaves")
+    slave_account = relationship("MT5Account", foreign_keys=[slave_account_id])

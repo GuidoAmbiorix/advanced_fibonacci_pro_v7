@@ -414,6 +414,7 @@ class LiveTradingSession:
             }
             
             trade_data = {
+                'action': 'OPEN', # Added for Worker compatibility
                 'ticket': ticket,
                 'symbol': symbol,
                 'type': signal.signal_type,
@@ -422,15 +423,28 @@ class LiveTradingSession:
                 'stop_loss': signal.stop_loss,
                 'take_profit': signal.take_profit_1,
                 'session_id': self.session_id,
-                'opened_at': datetime.utcnow().isoformat()
+                'opened_at': datetime.utcnow().isoformat(),
+                'master_account_id': self.account.id # Identification for Copier
             }
             self.trades.append(trade_data)
             
-            # Emit WebSocket event
+            # 1. Emit WebSocket (Frontend)
             try:
                 await sio.emit('live_trade_opened', trade_data)
             except Exception as e:
                 logger.warning(f"Could not emit trade event: {e}")
+
+            # 2. Publish to RabbitMQ (Worker Nodes / Slaves)
+            try:
+                from app.services.rabbitmq_service import RabbitMQService
+                # Use a lightweight instance or shared service
+                rmq = RabbitMQService() 
+                await rmq.publish_signal(trade_data)
+                # Note: creating new instance every time might be inefficient but works for now.
+                # Ideally, pass rmq instance in __init__
+            except Exception as e:
+                logger.error(f"Failed to publish signal to RabbitMQ: {e}")
+
         else:
             error = result.get('error', 'Unknown') if result else 'No response'
             logger.error(f"❌ {self.session_id}: Trade failed - {error}")
@@ -795,7 +809,24 @@ async def deactivate_kill_switch():
     return {"success": True, "message": "Kill switch deactivated"}
 
 
-@router.get("/risk-status/{account_id}")
+@router.get("/sessions")
+async def get_active_sessions():
+    """Get all active trading sessions"""
+    sessions_data = []
+    for s_id, session in active_sessions.items():
+        # Calculate approximate PnL from closed trades in session
+        session_pnl = sum(t.get('pnl', 0.0) for t in session.trades)
+        
+        sessions_data.append({
+            "id": s_id,
+            "symbol": session.config.get('symbol'),
+            "pnl": round(session_pnl, 2),
+            "status": "RUNNING" if session.is_running else "STOPPED",
+            "startTime": session.managed_positions[next(iter(session.managed_positions))]['opened_at'].isoformat() if session.managed_positions else "N/A"
+        })
+    return sessions_data
+
+@router.get("/risk-status-details/{account_id}")
 async def get_risk_status(account_id: int, db: Session = Depends(get_db)):
     """Get current risk status for an account"""
     account = db.query(MT5Account).filter(MT5Account.id == account_id).first()
