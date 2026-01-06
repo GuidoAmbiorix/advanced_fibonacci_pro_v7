@@ -191,7 +191,7 @@ class InstitutionalGoldEngine:
         
         # M5 SCALPING SAFETY: Require HTF (M30/H1) Confirmation
         timeframe = self.config.get('timeframe', '15m')
-        if '5m' in timeframe.lower() and df_higher_tf is not None and len(df_higher_tf) > 50:
+        if timeframe.upper() == 'M5' and df_higher_tf is not None and len(df_higher_tf) > 50:
              # Calculate HTF EMA200 if missing
              if 'ema200' not in df_higher_tf.columns:
                  df_higher_tf['ema200'] = EMAIndicator(close=df_higher_tf['close'], window=200).ema_indicator()
