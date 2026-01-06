@@ -102,6 +102,31 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
                 loop
             )
 
+        def on_log(log_data):
+            """Emit detailed backtest logs to frontend (matches system_log format)"""
+            from datetime import datetime
+            log_entry = {
+                'session_id': session_id,
+                'timestamp': datetime.utcnow().isoformat(),
+                'level': log_data.get('level', 'INFO'),
+                'message': log_data.get('message', ''),
+                'module': log_data.get('module', 'backtest'),
+                'data': log_data.get('data', {})
+            }
+            level = log_data.get('level', 'INFO')
+            msg = log_data.get('message', '')
+            if level == 'WARNING':
+                logger.warning(f"📋 [{session_id}] {msg}")
+            elif level == 'ERROR':
+                logger.error(f"📋 [{session_id}] {msg}")
+            else:
+                logger.info(f"📋 [{session_id}] {msg}")
+            
+            asyncio.run_coroutine_threadsafe(
+                sio.emit('backtest_log', log_entry),
+                loop
+            )
+
         # 1. Update status to RUNNING
         session = db.query(BacktestSession).filter(BacktestSession.id == session_id).first()
         if not session:
@@ -179,7 +204,8 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
         logger.info(f"▶️  Session {session_id} Starting backtest execution...")
         results = engine.run(
             on_progress=on_progress,
-            on_trade=on_trade
+            on_trade=on_trade,
+            on_log=on_log
         )
         logger.info(f"✅ Session {session_id} Backtest execution completed!")
         logger.info(f"📈 Results: Net Profit: ${results.metrics.net_profit:,.2f} | Win Rate: {results.metrics.win_rate:.1f}% | Trades: {results.metrics.total_trades}")

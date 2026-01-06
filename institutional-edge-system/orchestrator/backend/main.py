@@ -318,3 +318,195 @@ def delete_instance(name: str):
     subprocess.run(["docker-compose", "down", "-v"], cwd=target_dir)
     shutil.rmtree(target_dir)
     return {"status": "deleted"}
+
+
+@app.post("/instances/{name}/restart")
+def restart_instance(name: str, background_tasks: BackgroundTasks):
+    """Stop then start an instance"""
+    target_dir = INSTANCES_DIR / name
+    if not target_dir.exists():
+        raise HTTPException(404, "Not found")
+    
+    def restart_task():
+        subprocess.run(["docker-compose", "down"], cwd=target_dir)
+        subprocess.run(["docker-compose", "up", "-d"], cwd=target_dir)
+    
+    background_tasks.add_task(restart_task)
+    return {"status": "restarting"}
+
+
+@app.post("/instances/{name}/rebuild")
+def rebuild_instance(name: str, background_tasks: BackgroundTasks):
+    """Force rebuild Docker images with --no-cache"""
+    target_dir = INSTANCES_DIR / name
+    if not target_dir.exists():
+        raise HTTPException(404, "Not found")
+    
+    def rebuild_task():
+        # Stop containers first
+        subprocess.run(["docker-compose", "down"], cwd=target_dir)
+        # Rebuild with no cache
+        subprocess.run(["docker-compose", "build", "--no-cache"], cwd=target_dir)
+        # Start containers
+        subprocess.run(["docker-compose", "up", "-d"], cwd=target_dir)
+    
+    background_tasks.add_task(rebuild_task)
+    return {"status": "rebuilding"}
+
+
+@app.get("/instances/{name}/logs")
+def get_instance_logs(name: str, lines: int = 100, service: str = "backend"):
+    """Get container logs"""
+    target_dir = INSTANCES_DIR / name
+    if not target_dir.exists():
+        raise HTTPException(404, "Not found")
+    
+    container_name = f"institutional_{service}_{name}"
+    try:
+        result = subprocess.run(
+            ["docker", "logs", "--tail", str(lines), container_name],
+            capture_output=True, text=True
+        )
+        return {
+            "logs": result.stdout + result.stderr,
+            "container": container_name,
+            "lines": lines
+        }
+    except Exception as e:
+        return {"error": str(e), "logs": ""}
+
+
+@app.get("/instances/{name}/metrics")
+def get_instance_metrics(name: str):
+    """Get CPU/Memory usage via docker stats"""
+    client = get_docker_client()
+    container_name = f"institutional_backend_{name}"
+    
+    try:
+        container = client.containers.get(container_name)
+        stats = container.stats(stream=False)
+        
+        # Calculate CPU percentage
+        cpu_delta = stats['cpu_stats']['cpu_usage']['total_usage'] - \
+                   stats['precpu_stats']['cpu_usage']['total_usage']
+        system_delta = stats['cpu_stats']['system_cpu_usage'] - \
+                      stats['precpu_stats']['system_cpu_usage']
+        cpu_percent = (cpu_delta / system_delta) * 100 if system_delta > 0 else 0
+        
+        # Calculate Memory percentage
+        mem_usage = stats['memory_stats'].get('usage', 0)
+        mem_limit = stats['memory_stats'].get('limit', 1)
+        mem_percent = (mem_usage / mem_limit) * 100 if mem_limit > 0 else 0
+        
+        return {
+            "cpu_percent": round(cpu_percent, 2),
+            "memory_percent": round(mem_percent, 2),
+            "memory_mb": round(mem_usage / 1024 / 1024, 2),
+            "status": container.status
+        }
+    except docker.errors.NotFound:
+        return {"error": "Container not found", "cpu_percent": 0, "memory_percent": 0}
+    except Exception as e:
+        return {"error": str(e), "cpu_percent": 0, "memory_percent": 0}
+
+
+@app.get("/instances/{name}/database")
+def get_database_info(name: str):
+    """List tables and row counts from instance SQLite"""
+    import sqlite3
+    
+    target_dir = INSTANCES_DIR / name
+    db_path = target_dir / "backend" / "sql_app.db"
+    
+    if not db_path.exists():
+        # Try data directory
+        db_path = target_dir / "data" / f"instance_{name}.db"
+    
+    if not db_path.exists():
+        return {"error": "Database not found", "tables": []}
+    
+    try:
+        conn = sqlite3.connect(str(db_path))
+        cursor = conn.cursor()
+        
+        # Get all tables
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = cursor.fetchall()
+        
+        table_info = []
+        for (table_name,) in tables:
+            cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+            count = cursor.fetchone()[0]
+            table_info.append({"name": table_name, "rows": count})
+        
+        conn.close()
+        return {"tables": table_info, "db_path": str(db_path)}
+    except Exception as e:
+        return {"error": str(e), "tables": []}
+
+
+class QueryRequest(BaseModel):
+    query: str
+
+
+@app.post("/instances/{name}/database/query")
+def execute_query(name: str, request: QueryRequest):
+    """Execute read-only SQL query"""
+    import sqlite3
+    
+    # Security: Only allow SELECT
+    query = request.query.strip()
+    if not query.upper().startswith("SELECT"):
+        raise HTTPException(400, "Only SELECT queries are allowed")
+    
+    target_dir = INSTANCES_DIR / name
+    db_path = target_dir / "backend" / "sql_app.db"
+    
+    if not db_path.exists():
+        db_path = target_dir / "data" / f"instance_{name}.db"
+    
+    if not db_path.exists():
+        raise HTTPException(404, "Database not found")
+    
+    try:
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(query)
+        rows = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return {"results": rows, "count": len(rows)}
+    except Exception as e:
+        raise HTTPException(400, f"Query error: {str(e)}")
+
+
+class BatchRequest(BaseModel):
+    names: List[str]
+
+
+@app.post("/instances/batch/{action}")
+def batch_action(action: str, request: BatchRequest, background_tasks: BackgroundTasks):
+    """Batch start/stop/restart multiple instances"""
+    if action not in ["start", "stop", "restart"]:
+        raise HTTPException(400, f"Invalid action: {action}")
+    
+    results = []
+    for name in request.names:
+        target_dir = INSTANCES_DIR / name
+        if not target_dir.exists():
+            results.append({"name": name, "status": "not_found"})
+            continue
+        
+        if action == "start":
+            background_tasks.add_task(start_instance_task, target_dir, name)
+        elif action == "stop":
+            subprocess.run(["docker-compose", "down"], cwd=target_dir)
+        elif action == "restart":
+            def restart():
+                subprocess.run(["docker-compose", "down"], cwd=target_dir)
+                subprocess.run(["docker-compose", "up", "-d"], cwd=target_dir)
+            background_tasks.add_task(restart)
+        
+        results.append({"name": name, "status": f"{action}ing"})
+    
+    return {"action": action, "results": results}

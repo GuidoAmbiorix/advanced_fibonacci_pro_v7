@@ -1,267 +1,771 @@
-
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Institutional Edge Orchestrator</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
     <style>
-        @keyframes progress {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+      @keyframes progress {
+        0% {
+          transform: translateX(-100%);
         }
-        .animate-progress {
-            animation: progress 2s infinite linear;
+        100% {
+          transform: translateX(100%);
         }
+      }
+      .animate-progress {
+        animation: progress 2s infinite linear;
+      }
+      .dropdown-menu {
+        display: none;
+      }
+      .dropdown:hover .dropdown-menu {
+        display: block;
+      }
     </style>
-</head>
-<body class="bg-gray-900 text-white min-h-screen">
+  </head>
+  <body class="bg-gray-900 text-white min-h-screen">
     <div id="app" class="container mx-auto px-4 py-8">
-        <!-- Header -->
-        <header class="flex justify-between items-center mb-10 border-b border-gray-700 pb-4">
-            <div>
-                <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-                    <i class="fas fa-network-wired mr-2"></i>Institutional Edge Orchestrator
-                </h1>
-                <p class="text-gray-400 mt-1">Manage your Fleet of Trading Bots</p>
-            </div>
-            <button @click="showCreateModal = true" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg shadow-lg flex items-center transition-all">
-                <i class="fas fa-plus mr-2"></i> Deploy New Bot
+      <!-- Header -->
+      <header
+        class="flex justify-between items-center mb-10 border-b border-gray-700 pb-4"
+      >
+        <div>
+          <h1
+            class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500"
+          >
+            <i class="fas fa-network-wired mr-2"></i>Institutional Edge
+            Orchestrator
+          </h1>
+          <p class="text-gray-400 mt-1">Manage your Fleet of Trading Bots</p>
+        </div>
+        <div class="flex gap-3">
+          <!-- Batch Operations -->
+          <div
+            v-if="selectedInstances.length > 0"
+            class="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700"
+          >
+            <span class="text-sm text-gray-400"
+              >{{ selectedInstances.length }} selected</span
+            >
+            <button
+              @click="batchAction('start')"
+              class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm"
+            >
+              <i class="fas fa-play"></i>
             </button>
-        </header>
+            <button
+              @click="batchAction('stop')"
+              class="bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-sm"
+            >
+              <i class="fas fa-stop"></i>
+            </button>
+            <button
+              @click="batchAction('restart')"
+              class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm"
+            >
+              <i class="fas fa-sync"></i>
+            </button>
+            <button
+              @click="selectedInstances = []"
+              class="text-gray-500 hover:text-white px-2"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <button
+            @click="showCreateModal = true"
+            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg shadow-lg flex items-center transition-all"
+          >
+            <i class="fas fa-plus mr-2"></i> Deploy New Bot
+          </button>
+        </div>
+      </header>
 
-        <!-- Instance Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Loading State -->
-            <div v-if="loading" class="col-span-full text-center py-20">
-                <i class="fas fa-circle-notch fa-spin text-4xl text-blue-500"></i>
-                <p class="mt-4 text-gray-400">Scanning fleet infrastructure...</p>
-            </div>
+      <!-- Instance Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Loading State -->
+        <div v-if="loading" class="col-span-full text-center py-20">
+          <i class="fas fa-circle-notch fa-spin text-4xl text-blue-500"></i>
+          <p class="mt-4 text-gray-400">Scanning fleet infrastructure...</p>
+        </div>
 
-            <!-- Empty State -->
-            <div v-else-if="instances.length === 0" class="col-span-full text-center py-20 bg-gray-800 rounded-xl border border-dashed border-gray-700">
-                <i class="fas fa-robot text-6xl text-gray-600 mb-4"></i>
-                <h3 class="text-xl font-bold text-gray-300">No Active Bots</h3>
-                <p class="text-gray-500 mb-6">Your fleet is empty. Deploy your first worker node.</p>
-                <button @click="showCreateModal = true" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">Create Bot Instance</button>
-            </div>
+        <!-- Empty State -->
+        <div
+          v-else-if="instances.length === 0"
+          class="col-span-full text-center py-20 bg-gray-800 rounded-xl border border-dashed border-gray-700"
+        >
+          <i class="fas fa-robot text-6xl text-gray-600 mb-4"></i>
+          <h3 class="text-xl font-bold text-gray-300">No Active Bots</h3>
+          <p class="text-gray-500 mb-6">
+            Your fleet is empty. Deploy your first worker node.
+          </p>
+          <button
+            @click="showCreateModal = true"
+            class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+          >
+            Create Bot Instance
+          </button>
+        </div>
 
-            <!-- Instance Card -->
-            <div v-for="instance in instances" :key="instance.name" class="bg-gray-800 rounded-xl shadow-xl border border-gray-700 overflow-hidden hover:border-blue-500 transition-colors">
-                <div class="p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="flex items-center">
-                            <div class="h-3 w-3 rounded-full mr-2" 
-                                 :class="{
-                                    'bg-green-500 animate-pulse': instance.status === 'RUNNING',
+        <!-- Instance Card -->
+        <div
+          v-for="instance in instances"
+          :key="instance.name"
+          class="bg-gray-800 rounded-xl shadow-xl border border-gray-700 overflow-hidden hover:border-blue-500 transition-colors"
+        >
+          <div class="p-6">
+            <!-- Header with checkbox -->
+            <div class="flex justify-between items-start mb-4">
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  :value="instance.name"
+                  v-model="selectedInstances"
+                  class="mr-3 w-4 h-4 rounded border-gray-600 bg-gray-900"
+                />
+                <div
+                  class="h-3 w-3 rounded-full mr-2"
+                  :class="{
+                                    'bg-green-500 animate-pulse': instance.status === 'RUNNING' || instance.status === 'READY',
                                     'bg-red-500': instance.status.includes('STOP') || instance.status.includes('FAIL'),
-                                    'bg-yellow-500 animate-bounce': instance.status.includes('WAIT') || instance.status.includes('INIT')
-                                 }"></div>
-                            <h2 class="text-xl font-bold capitalize">{{ formatName(instance.name) }}</h2>
-                        </div>
-                        <span class="text-xs font-mono bg-gray-900 px-2 py-1 rounded text-gray-400">ID: {{ instance.name }}</span>
-                    </div>
-
-                    <div class="space-y-3 mb-6">
-                        <div class="flex justify-between items-center bg-gray-900 p-2 rounded">
-                            <span class="text-gray-400 text-sm"><i class="fas fa-globe mr-2"></i>Web Dashboard</span>
-                            <a :href="instance.urls.dashboard" target="_blank" class="text-blue-400 hover:text-blue-300 text-sm font-mono flex items-center">
-                                {{ instance.urls.dashboard }} <i class="fas fa-external-link-alt ml-1"></i>
-                            </a>
-                        </div>
-                        <div class="flex justify-between items-center bg-gray-900 p-2 rounded">
-                            <span class="text-gray-400 text-sm"><i class="fas fa-desktop mr-2"></i>VNC Terminal</span>
-                            <a :href="instance.urls.vnc" target="_blank" class="text-green-400 hover:text-green-300 text-sm font-mono flex items-center">
-                                Port {{ instance.urls.vnc.split(':').pop() }} <i class="fas fa-external-link-alt ml-1"></i>
-                            </a>
-                        </div>
-                    </div>
-
-                    <div v-if="['STARTING...', 'STOPPING...', 'deploying'].includes(instance.status)" class="mb-4">
-                        <div class="flex justify-between text-xs text-blue-400 mb-1">
-                            <span><i class="fas fa-cog fa-spin mr-1"></i> Processing...</span>
-                            <span>This may take 1-2 mins</span>
-                        </div>
-                        <div class="w-full bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                            <div class="bg-blue-600 h-2.5 rounded-full animate-progress" style="width: 100%"></div>
-                        </div>
-                    </div>
-
-                    <div class="flex space-x-2">
-                        <button v-if="instance.status === 'RUNNING'" @click="manageInstance(instance.name, 'stop')" class="flex-1 bg-yellow-600 hover:bg-yellow-700 py-2 rounded text-sm transition-colors">
-                            <i class="fas fa-stop mr-1"></i> Stop
-                        </button>
-                         <button v-else @click="manageInstance(instance.name, 'start')" class="flex-1 bg-green-600 hover:bg-green-700 py-2 rounded text-sm transition-colors">
-                            <i class="fas fa-play mr-1"></i> Start
-                        </button>
-                        <button @click="manageInstance(instance.name, 'delete')" class="flex-1 bg-red-900 hover:bg-red-700 py-2 rounded text-sm transition-colors">
-                            <i class="fas fa-trash mr-1"></i> Delete
-                        </button>
-                    </div>
-                </div>
+                                    'bg-yellow-500 animate-bounce': instance.status.includes('WAIT') || instance.status.includes('INIT') || instance.status.includes('ING')
+                                 }"
+                ></div>
+                <h2 class="text-xl font-bold capitalize">
+                  {{ formatName(instance.name) }}
+                </h2>
+              </div>
+              <span
+                class="text-xs font-mono bg-gray-900 px-2 py-1 rounded text-gray-400"
+                >ID: {{ instance.name }}</span
+              >
             </div>
-        </div>
 
-        <!-- Create Modal -->
-        <div v-if="showCreateModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 backdrop-blur-sm z-50">
-            <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border border-gray-600">
-                <div class="p-6 border-b border-gray-700">
-                    <h3 class="text-xl font-bold">Deploy New Bot Node</h3>
-                </div>
-                <div class="p-6 space-y-4">
-                    <div>
-                        <label class="block text-gray-400 text-sm mb-1">Instance Name</label>
-                        <input v-model="newBot.name" type="text" placeholder="e.g. PropFirm_Funded" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none">
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-400 text-sm mb-1">MT5 Login</label>
-                            <input v-model="newBot.mt5_login" type="number" placeholder="50123456" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-gray-400 text-sm mb-1">MT5 Password</label>
-                            <input v-model="newBot.mt5_password" type="password" placeholder="•••••••" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none">
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-gray-400 text-sm mb-1">MT5 Server</label>
-                        <input v-model="newBot.mt5_server" type="text" placeholder="HFMarketsGlobal-Demo" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none">
-                    </div>
-
-                    <!-- Simplified Form: Removed Enhanced Onboarding Fields -->
-                    <!-- Suffix, Drawdown, Daily Loss, Account Type defaults will be used -->
-
-
-                    <div>
-                        <label class="block text-gray-400 text-sm mb-1">Instance Role</label>
-                        <select v-model="newBot.role" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none">
-                            <option value="SOLO">SOLO (Standard)</option>
-                            <option value="MASTER">MASTER (Signal Publisher)</option>
-                            <option value="SLAVE">SLAVE (Signal Listener)</option>
-                        </select>
-                    </div>
-                <div class="p-6 border-t border-gray-700 flex justify-end space-x-3">
-                    <button @click="showCreateModal = false" class="text-gray-400 hover:text-white px-4 py-2">Cancel</button>
-                    <button @click="createInstance" :disabled="creating" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center shadow-lg transition-all disabled:opacity-50">
-                        <i v-if="creating" class="fas fa-spinner fa-spin mr-2"></i>
-                        {{ creating ? 'Deploying...' : 'Deploy Node' }}
-                    </button>
-                </div>
+            <!-- Metrics Widget -->
+            <div
+              v-if="instanceMetrics[instance.name]"
+              class="mb-4 p-3 bg-gray-900 rounded-lg"
+            >
+              <div class="flex justify-between text-xs text-gray-400 mb-2">
+                <span>CPU</span>
+                <span>{{ instanceMetrics[instance.name].cpu_percent }}%</span>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-1.5 mb-2">
+                <div
+                  class="bg-blue-500 h-1.5 rounded-full transition-all"
+                  :style="{width: instanceMetrics[instance.name].cpu_percent + '%'}"
+                ></div>
+              </div>
+              <div class="flex justify-between text-xs text-gray-400 mb-2">
+                <span>RAM</span>
+                <span>{{ instanceMetrics[instance.name].memory_mb }}MB</span>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-1.5">
+                <div
+                  class="bg-purple-500 h-1.5 rounded-full transition-all"
+                  :style="{width: Math.min(instanceMetrics[instance.name].memory_percent, 100) + '%'}"
+                ></div>
+              </div>
             </div>
-        </div>
 
+            <!-- URLs -->
+            <div class="space-y-3 mb-6">
+              <div
+                class="flex justify-between items-center bg-gray-900 p-2 rounded"
+              >
+                <span class="text-gray-400 text-sm"
+                  ><i class="fas fa-globe mr-2"></i>Web Dashboard</span
+                >
+                <a
+                  :href="instance.urls.dashboard"
+                  target="_blank"
+                  class="text-blue-400 hover:text-blue-300 text-sm font-mono flex items-center"
+                >
+                  {{ instance.urls.dashboard }}
+                  <i class="fas fa-external-link-alt ml-1"></i>
+                </a>
+              </div>
+              <div
+                class="flex justify-between items-center bg-gray-900 p-2 rounded"
+              >
+                <span class="text-gray-400 text-sm"
+                  ><i class="fas fa-desktop mr-2"></i>VNC Terminal</span
+                >
+                <a
+                  :href="instance.urls.vnc"
+                  target="_blank"
+                  class="text-green-400 hover:text-green-300 text-sm font-mono flex items-center"
+                >
+                  Port {{ instance.urls.vnc.split(':').pop() }}
+                  <i class="fas fa-external-link-alt ml-1"></i>
+                </a>
+              </div>
+            </div>
+
+            <!-- Progress bar for operations -->
+            <div
+              v-if="['STARTING...', 'STOPPING...', 'RESTARTING...', 'REBUILDING...', 'deploying'].includes(instance.status)"
+              class="mb-4"
+            >
+              <div class="flex justify-between text-xs text-blue-400 mb-1">
+                <span
+                  ><i class="fas fa-cog fa-spin mr-1"></i> Processing...</span
+                >
+                <span>This may take 1-2 mins</span>
+              </div>
+              <div
+                class="w-full bg-gray-700 rounded-full h-2.5 overflow-hidden"
+              >
+                <div
+                  class="bg-blue-600 h-2.5 rounded-full animate-progress"
+                  style="width: 100%"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex space-x-2">
+              <button
+                v-if="instance.status === 'RUNNING' || instance.status === 'READY'"
+                @click="manageInstance(instance.name, 'stop')"
+                class="flex-1 bg-yellow-600 hover:bg-yellow-700 py-2 rounded text-sm transition-colors"
+              >
+                <i class="fas fa-stop mr-1"></i> Stop
+              </button>
+              <button
+                v-else
+                @click="manageInstance(instance.name, 'start')"
+                class="flex-1 bg-green-600 hover:bg-green-700 py-2 rounded text-sm transition-colors"
+              >
+                <i class="fas fa-play mr-1"></i> Start
+              </button>
+
+              <!-- Actions Dropdown -->
+              <div class="dropdown relative">
+                <button
+                  class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm transition-colors"
+                >
+                  <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div
+                  class="dropdown-menu absolute right-0 mt-1 w-48 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50"
+                >
+                  <button
+                    @click="manageInstance(instance.name, 'restart')"
+                    class="w-full text-left px-4 py-2 hover:bg-gray-700 text-sm flex items-center"
+                  >
+                    <i class="fas fa-sync mr-2 text-blue-400"></i> Restart
+                  </button>
+                  <button
+                    @click="manageInstance(instance.name, 'rebuild')"
+                    class="w-full text-left px-4 py-2 hover:bg-gray-700 text-sm flex items-center"
+                  >
+                    <i class="fas fa-hammer mr-2 text-orange-400"></i> Rebuild
+                  </button>
+                  <button
+                    @click="showLogs(instance.name)"
+                    class="w-full text-left px-4 py-2 hover:bg-gray-700 text-sm flex items-center"
+                  >
+                    <i class="fas fa-file-alt mr-2 text-green-400"></i> View
+                    Logs
+                  </button>
+                  <button
+                    @click="showDatabase(instance.name)"
+                    class="w-full text-left px-4 py-2 hover:bg-gray-700 text-sm flex items-center"
+                  >
+                    <i class="fas fa-database mr-2 text-purple-400"></i>
+                    Database
+                  </button>
+                  <hr class="border-gray-700 my-1" />
+                  <button
+                    @click="manageInstance(instance.name, 'delete')"
+                    class="w-full text-left px-4 py-2 hover:bg-red-900 text-red-400 text-sm flex items-center"
+                  >
+                    <i class="fas fa-trash mr-2"></i> Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Modal -->
+      <div
+        v-if="showCreateModal"
+        class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 backdrop-blur-sm z-50"
+      >
+        <div
+          class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border border-gray-600"
+        >
+          <div class="p-6 border-b border-gray-700">
+            <h3 class="text-xl font-bold">Deploy New Bot Node</h3>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-gray-400 text-sm mb-1"
+                >Instance Name</label
+              >
+              <input
+                v-model="newBot.name"
+                type="text"
+                placeholder="e.g. PropFirm_Funded"
+                class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-gray-400 text-sm mb-1"
+                  >MT5 Login</label
+                >
+                <input
+                  v-model="newBot.mt5_login"
+                  type="number"
+                  placeholder="50123456"
+                  class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-gray-400 text-sm mb-1"
+                  >MT5 Password</label
+                >
+                <input
+                  v-model="newBot.mt5_password"
+                  type="password"
+                  placeholder="•••••••"
+                  class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-gray-400 text-sm mb-1">MT5 Server</label>
+              <input
+                v-model="newBot.mt5_server"
+                type="text"
+                placeholder="HFMarketsGlobal-Demo"
+                class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label class="block text-gray-400 text-sm mb-1"
+                >Instance Role</label
+              >
+              <select
+                v-model="newBot.role"
+                class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 focus:outline-none"
+              >
+                <option value="SOLO">SOLO (Standard)</option>
+                <option value="MASTER">MASTER (Signal Publisher)</option>
+                <option value="SLAVE">SLAVE (Signal Listener)</option>
+              </select>
+            </div>
+          </div>
+          <div class="p-6 border-t border-gray-700 flex justify-end space-x-3">
+            <button
+              @click="showCreateModal = false"
+              class="text-gray-400 hover:text-white px-4 py-2"
+            >
+              Cancel
+            </button>
+            <button
+              @click="createInstance"
+              :disabled="creating"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center shadow-lg transition-all disabled:opacity-50"
+            >
+              <i v-if="creating" class="fas fa-spinner fa-spin mr-2"></i>
+              {{ creating ? 'Deploying...' : 'Deploy Node' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logs Modal -->
+      <div
+        v-if="showLogsModal"
+        class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 backdrop-blur-sm z-50"
+      >
+        <div
+          class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl border border-gray-600 max-h-[80vh] flex flex-col"
+        >
+          <div
+            class="p-4 border-b border-gray-700 flex justify-between items-center"
+          >
+            <h3 class="text-xl font-bold">
+              <i class="fas fa-file-alt mr-2"></i> Logs: {{ logsInstance }}
+            </h3>
+            <div class="flex items-center gap-3">
+              <select
+                v-model="logsService"
+                @change="fetchLogs"
+                class="bg-gray-900 border border-gray-600 rounded px-3 py-1 text-sm"
+              >
+                <option value="backend">Backend</option>
+                <option value="frontend">Frontend</option>
+                <option value="mt5">MT5</option>
+              </select>
+              <button
+                @click="fetchLogs"
+                class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm"
+              >
+                <i class="fas fa-sync"></i> Refresh
+              </button>
+              <button
+                @click="showLogsModal = false"
+                class="text-gray-400 hover:text-white"
+              >
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+          </div>
+          <div class="flex-1 overflow-auto p-4 bg-gray-900 font-mono text-sm">
+            <pre class="whitespace-pre-wrap text-gray-300">
+{{ logsContent }}</pre
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Database Modal -->
+      <div
+        v-if="showDbModal"
+        class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 backdrop-blur-sm z-50"
+      >
+        <div
+          class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl border border-gray-600 max-h-[80vh] flex flex-col"
+        >
+          <div
+            class="p-4 border-b border-gray-700 flex justify-between items-center"
+          >
+            <h3 class="text-xl font-bold">
+              <i class="fas fa-database mr-2"></i> Database: {{ dbInstance }}
+            </h3>
+            <button
+              @click="showDbModal = false"
+              class="text-gray-400 hover:text-white"
+            >
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          <div class="p-4 space-y-4 overflow-auto">
+            <!-- Tables List -->
+            <div class="grid grid-cols-4 gap-2">
+              <div
+                v-for="table in dbTables"
+                :key="table.name"
+                class="bg-gray-900 p-3 rounded border border-gray-700 cursor-pointer hover:border-blue-500"
+                @click="dbQuery = 'SELECT * FROM ' + table.name + ' LIMIT 10'"
+              >
+                <div class="font-semibold text-blue-400">{{ table.name }}</div>
+                <div class="text-xs text-gray-500">{{ table.rows }} rows</div>
+              </div>
+            </div>
+
+            <!-- Query Input -->
+            <div>
+              <label class="block text-gray-400 text-sm mb-1"
+                >SQL Query (SELECT only)</label
+              >
+              <div class="flex gap-2">
+                <input
+                  v-model="dbQuery"
+                  type="text"
+                  placeholder="SELECT * FROM slots LIMIT 10"
+                  class="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white font-mono text-sm focus:border-blue-500 focus:outline-none"
+                />
+                <button
+                  @click="executeQuery"
+                  class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
+                >
+                  <i class="fas fa-play"></i> Run
+                </button>
+              </div>
+            </div>
+
+            <!-- Results -->
+            <div v-if="dbResults.length > 0" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-900">
+                  <tr>
+                    <th
+                      v-for="key in Object.keys(dbResults[0])"
+                      :key="key"
+                      class="px-3 py-2 text-left text-gray-400"
+                    >
+                      {{ key }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700">
+                  <tr
+                    v-for="(row, idx) in dbResults"
+                    :key="idx"
+                    class="hover:bg-gray-750"
+                  >
+                    <td
+                      v-for="key in Object.keys(row)"
+                      :key="key"
+                      class="px-3 py-2 text-gray-300"
+                    >
+                      {{ row[key] }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
-        const { createApp } = Vue
+      const { createApp } = Vue;
 
-        createApp({
-            data() {
-                return {
-                    instances: [],
-                    loading: true,
-                    showCreateModal: false,
-                    creating: false,
-                    newBot: {
-                        name: '',
-                        mt5_login: '',
-                        mt5_password: '',
-                        mt5_server: 'HFMarketsGlobal-Demo',
-                        role: 'SOLO'
-                    }
-                }
+      createApp({
+        data() {
+          return {
+            instances: [],
+            loading: true,
+            showCreateModal: false,
+            showLogsModal: false,
+            showDbModal: false,
+            creating: false,
+            selectedInstances: [],
+            instanceMetrics: {},
+            logsInstance: "",
+            logsService: "backend",
+            logsContent: "",
+            dbInstance: "",
+            dbTables: [],
+            dbQuery: "",
+            dbResults: [],
+            newBot: {
+              name: "",
+              mt5_login: "",
+              mt5_password: "",
+              mt5_server: "HFMarketsGlobal-Demo",
+              role: "SOLO",
             },
-            mounted() {
-                this.fetchInstances()
-                setInterval(this.fetchInstances, 5000)
-            },
-            methods: {
-                async fetchInstances() {
-                    try {
-                        const res = await fetch('/instances')
-                        const newInstances = await res.json()
-                        
-                        // Smart Merge to preserve optimistic updates
-                        if (this.instances.length === 0) {
-                            this.instances = newInstances
-                        } else {
-                            this.instances = newInstances.map(newItem => {
-                                const oldItem = this.instances.find(old => old.name === newItem.name)
-                                if (oldItem) {
-                                    // Keep local 'STARTING...' if server still says 'STOPPED' (avoid flicker)
-                                    if (oldItem.status === 'STARTING...' && newItem.status === 'STOPPED') return oldItem
-                                    // Keep local 'STOPPING...' if server still says 'RUNNING' || 'RESTARTING'
-                                    if (oldItem.status === 'STOPPING...' && newItem.status !== 'STOPPED') return oldItem
-                                }
-                                return newItem
-                            })
-                        }
-                        this.loading = false
-                    } catch (e) {
-                        console.error("Failed to load instances", e)
-                    }
-                },
-                async createInstance() {
-                    if(!this.newBot.name) return alert("Please fill details")
-                    
-                    this.creating = true
-                    try {
-                        const payload = { ...this.newBot, mt5_login: String(this.newBot.mt5_login || '') }
-                        const res = await fetch('/instances', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify(payload)
-                        })
-                        
-                        if(!res.ok) throw new Error(await res.text())
-                        
-                        this.showCreateModal = false
-                        this.newBot = { 
-                            name: '',
-                            mt5_login: '',
-                            mt5_password: '',
-                            mt5_server: 'HFMarketsGlobal-Demo',
-                            role: 'SOLO'
-                        }
-                        this.fetchInstances()
-                    } catch (e) {
-                        alert(e.message)
-                    } finally {
-                        this.creating = false
-                    }
-                },
-                async manageInstance(name, action) {
-                    console.log(`Clicked ${action} for ${name}`);
-                    if(action === 'delete' && !confirm("Are you sure? This will delete all data for this bot.")) return
-                    
-                    // Optimistic UI Update
-                    const instance = this.instances.find(i => i.name === name)
-                    if(instance) instance.status = (action === 'start' ? 'STARTING...' : 'STOPPING...')
+          };
+        },
+        mounted() {
+          this.fetchInstances();
+          setInterval(this.fetchInstances, 5000);
+          setInterval(this.fetchAllMetrics, 10000);
+        },
+        methods: {
+          async fetchInstances() {
+            try {
+              const res = await fetch("/instances");
+              const newInstances = await res.json();
 
-                    try {
-                        const url = `/instances/${name}/${action}`
-                        // alert(`DEBUG: Sending POST to ${url}`) 
-                        const res = await fetch(url, { method: 'POST' })
-                        if (!res.ok) {
-                            const txt = await res.text()
-                            console.error("Manage Error:", txt)
-                            throw new Error(`Server Error: ${res.status} ${res.statusText}\n${txt}`)
-                        }
-                        this.fetchInstances()
-                    } catch(e) {
-                        alert(e.message)
-                    }
-                },
-                formatName(name) {
-                    return name.replace(/_/g, ' ')
-                }
+              if (this.instances.length === 0) {
+                this.instances = newInstances;
+              } else {
+                this.instances = newInstances.map((newItem) => {
+                  const oldItem = this.instances.find(
+                    (old) => old.name === newItem.name
+                  );
+                  if (oldItem) {
+                    if (
+                      oldItem.status === "STARTING..." &&
+                      newItem.status === "STOPPED"
+                    )
+                      return oldItem;
+                    if (
+                      oldItem.status === "STOPPING..." &&
+                      newItem.status !== "STOPPED"
+                    )
+                      return oldItem;
+                    if (
+                      oldItem.status === "RESTARTING..." &&
+                      !newItem.status.includes("RUNNING")
+                    )
+                      return oldItem;
+                    if (oldItem.status === "REBUILDING...") return oldItem;
+                  }
+                  return newItem;
+                });
+              }
+              this.loading = false;
+              this.fetchAllMetrics();
+            } catch (e) {
+              console.error("Failed to load instances", e);
             }
-        }).mount('#app')
+          },
+          async fetchAllMetrics() {
+            for (const instance of this.instances) {
+              if (
+                instance.status === "RUNNING" ||
+                instance.status === "READY"
+              ) {
+                try {
+                  const res = await fetch(
+                    `/instances/${instance.name}/metrics`
+                  );
+                  const data = await res.json();
+                  this.instanceMetrics[instance.name] = data;
+                } catch (e) {
+                  console.error(
+                    `Failed to get metrics for ${instance.name}`,
+                    e
+                  );
+                }
+              }
+            }
+          },
+          async createInstance() {
+            if (!this.newBot.name) return alert("Please fill details");
+
+            this.creating = true;
+            try {
+              const payload = {
+                ...this.newBot,
+                mt5_login: String(this.newBot.mt5_login || ""),
+              };
+              const res = await fetch("/instances", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+
+              if (!res.ok) throw new Error(await res.text());
+
+              this.showCreateModal = false;
+              this.newBot = {
+                name: "",
+                mt5_login: "",
+                mt5_password: "",
+                mt5_server: "HFMarketsGlobal-Demo",
+                role: "SOLO",
+              };
+              this.fetchInstances();
+            } catch (e) {
+              alert(e.message);
+            } finally {
+              this.creating = false;
+            }
+          },
+          async manageInstance(name, action) {
+            if (
+              action === "delete" &&
+              !confirm("Are you sure? This will delete all data for this bot.")
+            )
+              return;
+
+            const instance = this.instances.find((i) => i.name === name);
+            if (instance) {
+              if (action === "restart") instance.status = "RESTARTING...";
+              else if (action === "rebuild") instance.status = "REBUILDING...";
+              else if (action === "start") instance.status = "STARTING...";
+              else instance.status = "STOPPING...";
+            }
+
+            try {
+              const res = await fetch(`/instances/${name}/${action}`, {
+                method: "POST",
+              });
+              if (!res.ok) {
+                const txt = await res.text();
+                throw new Error(
+                  `Server Error: ${res.status} ${res.statusText}\n${txt}`
+                );
+              }
+              setTimeout(() => this.fetchInstances(), 2000);
+            } catch (e) {
+              alert(e.message);
+              this.fetchInstances();
+            }
+          },
+          async batchAction(action) {
+            if (
+              !confirm(
+                `${action.toUpperCase()} ${
+                  this.selectedInstances.length
+                } instances?`
+              )
+            )
+              return;
+
+            try {
+              const res = await fetch(`/instances/batch/${action}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ names: this.selectedInstances }),
+              });
+              if (!res.ok) throw new Error(await res.text());
+              this.selectedInstances = [];
+              this.fetchInstances();
+            } catch (e) {
+              alert(e.message);
+            }
+          },
+          async showLogs(name) {
+            this.logsInstance = name;
+            this.logsContent = "Loading...";
+            this.showLogsModal = true;
+            await this.fetchLogs();
+          },
+          async fetchLogs() {
+            try {
+              const res = await fetch(
+                `/instances/${this.logsInstance}/logs?service=${this.logsService}&lines=200`
+              );
+              const data = await res.json();
+              this.logsContent = data.logs || data.error || "No logs available";
+            } catch (e) {
+              this.logsContent = "Error fetching logs: " + e.message;
+            }
+          },
+          async showDatabase(name) {
+            this.dbInstance = name;
+            this.dbTables = [];
+            this.dbResults = [];
+            this.dbQuery = "";
+            this.showDbModal = true;
+
+            try {
+              const res = await fetch(`/instances/${name}/database`);
+              const data = await res.json();
+              this.dbTables = data.tables || [];
+            } catch (e) {
+              alert("Error loading database: " + e.message);
+            }
+          },
+          async executeQuery() {
+            if (!this.dbQuery.trim()) return;
+
+            try {
+              const res = await fetch(
+                `/instances/${this.dbInstance}/database/query`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ query: this.dbQuery }),
+                }
+              );
+              const data = await res.json();
+              if (data.error) throw new Error(data.error);
+              this.dbResults = data.results || [];
+            } catch (e) {
+              alert("Query error: " + e.message);
+              this.dbResults = [];
+            }
+          },
+          formatName(name) {
+            return name.replace(/_/g, " ");
+          },
+        },
+      }).mount("#app");
     </script>
-</body>
+  </body>
 </html>

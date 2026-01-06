@@ -186,7 +186,8 @@ class BacktestEngine:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         on_progress = None, # Callback(progress_pct, stats_dict)
-        on_trade = None     # Callback(trade_dict)
+        on_trade = None,    # Callback(trade_dict)
+        on_log = None       # Callback(log_dict) - for detailed logging
     ) -> BacktestResults:
         """
         Run backtest
@@ -255,6 +256,15 @@ class BacktestEngine:
         # Store callbacks for use in other methods
         self.on_trade_callback = on_trade
         self.on_progress_callback = on_progress
+        self.on_log_callback = on_log
+        
+        # Emit initial log
+        self._emit_log('INFO', f'Starting backtest: {self.config.symbol} {self.config.timeframe}', {
+            'symbol': self.config.symbol,
+            'timeframe': self.config.timeframe,
+            'start_date': str(start_date or self.config.start_date),
+            'end_date': str(end_date or self.config.end_date)
+        })
 
         # Initialize equity curve
         self.equity_curve.append({
@@ -333,6 +343,23 @@ class BacktestEngine:
 
                 if 'error' in analysis:
                     continue
+
+                # Emit debug info from analysis (contains killzone, HTF, indicator values)
+                debug_info = analysis.get('debug_info', {})
+                reason = analysis.get('reason', '')
+                
+                # Log every 100 bars or when there's a specific reason (like killzone skip)
+                if reason or (i % 100 == 0 and debug_info):
+                    self._emit_log('INFO', reason or f'Analysis at bar {i}', {
+                        'bar': i,
+                        'time': str(current_bar['time']),
+                        'rsi': debug_info.get('rsi'),
+                        'macd_hist': debug_info.get('macd_hist'),
+                        'in_zone': debug_info.get('in_zone'),
+                        'indicators_aligned': debug_info.get('indicators_aligned'),
+                        'price_action': debug_info.get('price_action'),
+                        'reason': reason
+                    })
 
                 # Process signals
                 for signal in analysis.get('signals', []):
@@ -741,3 +768,23 @@ class BacktestEngine:
         """
         reporter = ReportGenerator(output_dir)
         return reporter.generate_full_report(results, report_name)
+
+    def _emit_log(self, level: str, message: str, data: dict = None):
+        """
+        Emit a structured log entry to the frontend via on_log callback.
+        
+        Args:
+            level: 'INFO', 'WARNING', 'ERROR'
+            message: Human-readable log message
+            data: Optional dict with additional context data
+        """
+        if hasattr(self, 'on_log_callback') and self.on_log_callback:
+            try:
+                self.on_log_callback({
+                    'level': level,
+                    'message': message,
+                    'module': 'BacktestEngine',
+                    'data': data or {}
+                })
+            except Exception as e:
+                logger.error(f"Error in on_log callback: {e}")

@@ -995,6 +995,9 @@
             </table>
           </div>
         </div>
+
+        <!-- Backtest Logs Panel -->
+        <BacktestLogs :session-id="currentSessionId" />
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
@@ -1072,6 +1075,7 @@ import CorrelationHeatmap from '../components/CorrelationHeatmap.vue'
 import OOSValidation from '../components/OOSValidation.vue'
 import EnhancedMetrics from '../components/EnhancedMetrics.vue'
 import BiasAlert from '../components/BiasAlert.vue'
+import BacktestLogs from '../components/BacktestLogs.vue'
 
 // Socket connection state (reactive refs from socket.js)
 const socketConnected = connectionState.isConnected
@@ -1088,6 +1092,7 @@ const toastMessage = ref('')  // Toast notification message
 const toastType = ref('info')  // 'success', 'error', 'info', 'warning'
 const showToast = ref(false)  // Show toast notification
 const showQuantPanel = ref(false)  // Quant Analysis panel visibility
+const currentSessionId = ref(null)  // Current backtest session ID for logs
 
 // Trading Mode State
 const tradingMode = ref('backtest')  // 'backtest' or 'live'
