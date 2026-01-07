@@ -604,6 +604,15 @@
 
 
           
+            <!-- Action Bar -->
+            <div class="pt-3 mt-2 border-t border-gray-700 flex justify-end">
+               <button @click="saveSlot(slot)" 
+                       class="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold rounded-lg shadow-lg flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95">
+                 <span>💾</span>
+                 <span>Save Configuration</span>
+               </button>
+            </div>
+
           <!-- Progress / Results -->
           <div class="p-2 border-t border-gray-700">
             <!-- Running - Enhanced Progress Bar -->
@@ -2230,9 +2239,9 @@ const saveSlot = async (slot) => {
         tp_ratio: slot.tp_ratio || 2.0,
         sl_atr_multiplier: slot.sl_atr_multiplier || 1.5,
         tsl_mode: slot.tsl_mode || 'TIERED',
-        rsi_period: slot.rsi_period || 14,
-        rsi_overbought: slot.rsi_overbought || 70,
-        rsi_oversold: slot.rsi_oversold || 30,
+        rsi_period: slot.config?.rsi_period || slot.rsi_period || 14,
+        rsi_overbought: slot.config?.rsi_sell_threshold || slot.rsi_overbought || 70,
+        rsi_oversold: slot.config?.rsi_buy_threshold || slot.rsi_oversold || 30,
         min_confluence_score: slot.min_confluence || 7,
         max_trade_duration_hours: slot.max_duration || 0,
         enable_vwap_strategy: slot.enable_vwap !== false,
@@ -2245,7 +2254,7 @@ const saveSlot = async (slot) => {
         
         // Institutional
         confirmation_timeframe: slot.confirmation_timeframe || null,
-        trading_session: slot.trading_session || 'ALL',
+        trading_session: slot.session_mode || slot.trading_session || 'ALL',
         session_end_action: slot.session_end_action || 'HOLD',
         use_daily_bias: slot.use_daily_bias || false,
 
@@ -2280,11 +2289,13 @@ const saveSlot = async (slot) => {
         // Update existing
         await axios.put(`${API_URL}/api/slots/${slot.dbId}`, payload)
         console.log(`💾 Updated slot ${slot.dbId}`)
+        showToastNotification('✅ Configuration Saved!', 'success')
       } else {
         // Create new
         const response = await axios.post(`${API_URL}/api/slots/`, payload)
         slot.dbId = response.data.id
         console.log(`💾 Created slot ${slot.dbId}`)
+        showToastNotification('✅ New Slot Created!', 'success')
       }
     } catch (error) {
       // Handle 404 (Slot not found in DB but exists in Frontend) - Retry as Create
@@ -2300,6 +2311,7 @@ const saveSlot = async (slot) => {
         }
       } else {
         console.error('Failed to save slot:', error)
+        showToastNotification('❌ Failed to save: ' + (error.response?.data?.detail || error.message), 'error')
       }
     }
   }, 500)  // 500ms debounce
@@ -2344,6 +2356,7 @@ const loadSlots = async () => {
         // Institutional
         confirmation_timeframe: dbSlot.confirmation_timeframe,
         trading_session: dbSlot.trading_session,
+        session_mode: dbSlot.trading_session, // Map DB trading_session to UI session_mode
         session_end_action: dbSlot.session_end_action,
         use_daily_bias: dbSlot.use_daily_bias,
 
@@ -2369,8 +2382,8 @@ const loadSlots = async () => {
             macd_slow: dbSlot.macd_slow,
             macd_signal: dbSlot.macd_signal,
             rsi_period: dbSlot.rsi_period,
-            rsi_buy_threshold: dbSlot.rsi_buy_threshold, // Note: mismatch in DB naming vs UI
-            rsi_sell_threshold: dbSlot.rsi_sell_threshold
+            rsi_buy_threshold: dbSlot.rsi_oversold, // Map DB oversold to UI buy_threshold
+            rsi_sell_threshold: dbSlot.rsi_overbought // Map DB overbought to UI sell_threshold
         } || {}
       }))
       console.log(`📦 Loaded ${dbSlots.length} slots from database`)
