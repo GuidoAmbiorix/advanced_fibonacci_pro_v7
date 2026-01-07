@@ -2143,12 +2143,14 @@ const addSlot = () => {
     tsl_mode: 'TIERED',
     partial_tp_on: true,
     
+    engine_type: 'XAU_PRO',  // Default to Pro Engine
+    
     // Institutional Defaults (v3.0)
     confirmation_timeframe: null,
     trading_session: 'BOTH_KZ',
     session_mode: 'BOTH_KZ',  // v3.0 Killzone
     session_end_action: 'HOLD',
-    macd_fast: 6, macd_slow: 18, macd_signal: 9,  // v3.0 MACD
+    macd_fast: 12, macd_slow: 26, macd_signal: 9, 
     zigzag_lookback: 12,
     
     // SMC v4.0 Defaults
@@ -2156,6 +2158,11 @@ const addSlot = () => {
     enable_liquidity_sweep: true, sweep_lookback: 10,
     enable_fvg: true, fvg_min_size_atr: 0.5,
     
+    // Filters
+    use_adx_filter: false,
+    use_h1_trend_filter: false,
+    vwap_use_trend_filter: true,
+
     config: {}
   })
   
@@ -2239,7 +2246,34 @@ const saveSlot = async (slot) => {
         // Institutional
         confirmation_timeframe: slot.confirmation_timeframe || null,
         trading_session: slot.trading_session || 'ALL',
-        session_end_action: slot.session_end_action || 'HOLD'
+        session_end_action: slot.session_end_action || 'HOLD',
+        use_daily_bias: slot.use_daily_bias || false,
+
+        // Engine Type & Config
+        engine_type: slot.engine_type || 'XAU_PRO',
+        
+        // MACD
+        macd_fast: slot.config?.macd_fast || 12,
+        macd_slow: slot.config?.macd_slow || 26,
+        macd_signal: slot.config?.macd_signal || 9,
+
+        // Stoch
+        stoch_k_period: slot.stoch_k_period || 14,
+        stoch_d_period: slot.stoch_d_period || 3,
+
+        // Structure & SMC
+        zigzag_lookback: slot.zigzag_lookback || 12,
+        enable_order_blocks: slot.enable_order_blocks !== false,
+        ob_lookback: slot.ob_lookback || 20,
+        enable_liquidity_sweep: slot.enable_liquidity_sweep !== false,
+        sweep_lookback: slot.sweep_lookback || 10,
+        enable_fvg: slot.enable_fvg !== false,
+        fvg_min_size_atr: slot.fvg_min_size_atr || 0.5,
+
+        // Filters
+        use_adx_filter: slot.use_adx_filter || false,
+        use_h1_trend_filter: slot.use_h1_trend_filter || false,
+        vwap_use_trend_filter: slot.vwap_use_trend_filter !== false
       }
       
       if (slot.dbId) {
@@ -2311,7 +2345,33 @@ const loadSlots = async () => {
         confirmation_timeframe: dbSlot.confirmation_timeframe,
         trading_session: dbSlot.trading_session,
         session_end_action: dbSlot.session_end_action,
-        config: dbSlot.config || {}
+        use_daily_bias: dbSlot.use_daily_bias,
+
+        // Engine & SMC
+        engine_type: dbSlot.engine_type || 'XAU_PRO',
+        zigzag_lookback: dbSlot.zigzag_lookback,
+        
+        enable_order_blocks: dbSlot.enable_order_blocks,
+        ob_lookback: dbSlot.ob_lookback,
+        enable_liquidity_sweep: dbSlot.enable_liquidity_sweep,
+        sweep_lookback: dbSlot.sweep_lookback,
+        enable_fvg: dbSlot.enable_fvg,
+        fvg_min_size_atr: dbSlot.fvg_min_size_atr,
+        
+        // Filters
+        use_adx_filter: dbSlot.use_adx_filter,
+        use_h1_trend_filter: dbSlot.use_h1_trend_filter,
+        vwap_use_trend_filter: dbSlot.vwap_use_trend_filter,
+        
+        // Config Object for UI Binding
+        config: {
+            macd_fast: dbSlot.macd_fast,
+            macd_slow: dbSlot.macd_slow,
+            macd_signal: dbSlot.macd_signal,
+            rsi_period: dbSlot.rsi_period,
+            rsi_buy_threshold: dbSlot.rsi_buy_threshold, // Note: mismatch in DB naming vs UI
+            rsi_sell_threshold: dbSlot.rsi_sell_threshold
+        } || {}
       }))
       console.log(`📦 Loaded ${dbSlots.length} slots from database`)
     }

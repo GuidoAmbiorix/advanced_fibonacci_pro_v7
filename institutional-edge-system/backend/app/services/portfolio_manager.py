@@ -106,6 +106,10 @@ class PortfolioManager:
 
         # Check 3: Correlation blocking
         for position in self.positions:
+            # Skip self-correlation (handled by max_positions_per_symbol)
+            if position.symbol == symbol:
+                continue
+                
             correlation = self._get_correlation(symbol, position.symbol)
 
             if abs(correlation) > self.correlation_threshold:
