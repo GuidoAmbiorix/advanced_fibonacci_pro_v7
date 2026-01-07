@@ -259,14 +259,21 @@ class TradingBot:
 
     def _load_config(self):
         """Load bot configuration from database"""
+        from sqlalchemy.orm import joinedload
         db = SessionLocal()
         try:
-            self.config = db.query(BotConfig).filter(
+            self.config = db.query(BotConfig).options(
+                joinedload(BotConfig.slots)
+            ).filter(
                 BotConfig.id == self.bot_config_id
             ).first()
 
             if not self.config:
                 raise ValueError(f"Bot config {self.bot_config_id} not found")
+
+            # Access slots to ensure they are loaded before session close (redundant with joinedload but safe)
+            if self.config.slots:
+                logger.info(f"Loaded {len(self.config.slots)} slots configuration")
 
             logger.info("Loaded config: {} - {} {}",
                        self.config.name, self.config.symbol, self.config.timeframe)
@@ -308,6 +315,46 @@ class TradingBot:
             'rsi_overbought': self.config.rsi_overbought,
             'rsi_oversold': self.config.rsi_oversold,
         }
+
+        # --- SLOT OVERRIDE (CRITICAL FIX) ---
+        # If slots are enabled, we must prefer the Slot configuration (Session Mode, Risk, etc.)
+        # over the bare BotConfig. Currently we only Support Single-Slot per Bot Instance in this engine.
+        if self.config.slots:
+             # Find first enabled slot
+             active_slot = next((s for s in self.config.slots if s.enabled), None)
+             if active_slot:
+                 logger.info(f"🎰 Loaded Slot Config: {active_slot.symbol} | Session: {active_slot.session_mode}")
+                 
+                 # 1. Override Session Mode (Fixes "SKIP KZ" Issue)
+                 engine_config['session_mode'] = active_slot.session_mode
+                 
+                 # 2. Override Risk
+                 engine_config['max_risk_per_trade'] = active_slot.risk_percent
+                 engine_config['tp_ratio'] = active_slot.tp_ratio
+                 engine_config['sl_atr_multiplier'] = active_slot.sl_atr_multiplier
+                 
+                 # 3. Override Indicators
+                 engine_config['rsi_period'] = active_slot.rsi_period
+                 engine_config['macd_fast'] = active_slot.macd_fast
+                 engine_config['macd_slow'] = active_slot.macd_slow
+                 engine_config['macd_signal'] = active_slot.macd_signal
+                 
+                 # 4. Override Strategies
+                 engine_config['use_adx_filter'] = active_slot.use_adx_filter
+                 engine_config['enable_vwap_strategy'] = active_slot.enable_vwap_strategy
+                 engine_config['enable_stoch_strategy'] = active_slot.enable_stoch_strategy
+                 
+                 # 5. SMC
+                 engine_config['enable_order_blocks'] = active_slot.enable_order_blocks
+                 engine_config['ob_lookback'] = active_slot.ob_lookback
+                 engine_config['enable_liquidity_sweep'] = active_slot.enable_liquidity_sweep
+                 engine_config['sweep_lookback'] = active_slot.sweep_lookback
+                 engine_config['enable_fvg'] = active_slot.enable_fvg
+                 
+                 # 6. Timeframe (Ideally)
+                 # self.config.timeframe is already set, but if slot differs, we might need to note it.
+                 # For now, we assume BotConfig matches Slot, or we just use Engine params.
+
 
         engine_type = getattr(self.config, 'engine_type', 'golden')
         self.trading_engine = EngineFactory.create_engine(engine_type, engine_config)
