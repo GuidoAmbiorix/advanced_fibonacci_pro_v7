@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -19,29 +18,11 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      redirect: '/backtest'  // Redirect to Trading view
+      redirect: '/trading'
     },
     {
-      path: '/signals',
-      name: 'signals',
-      component: () => import('../views/SignalsView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/settings',
-      name: 'settings',
-      component: () => import('../views/SettingsView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/performance',
-      name: 'performance',
-      component: () => import('../views/PerformanceView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/backtest',
-      name: 'backtest',
+      path: '/trading',
+      name: 'trading',
       component: () => import('../views/BacktestView.vue'),
       meta: { requiresAuth: true }
     },
@@ -49,18 +30,6 @@ const router = createRouter({
       path: '/accounts',
       name: 'accounts',
       component: () => import('../views/AccountsView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/logs',
-      name: 'logs',
-      component: () => import('../views/SystemLogs.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/quant-analysis',
-      name: 'quant-analysis',
-      component: () => import('../views/QuantAnalysisView.vue'),
       meta: { requiresAuth: true }
     }
   ]
