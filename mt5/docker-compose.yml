@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  mt5:
+    image: gmag11/metatrader5_vnc:latest
+    container_name: trading_mt5
+    ports:
+      - "3000:3000"
+      - "8001:8001"
+    environment:
+      - CUSTOM_USER=trader
+      - PASSWORD=trading
+      - VNCPASSWORD=trading
+    volumes:
+      - mt5_config:/config
+      # Mounting the agent to a visible location in the container
+      - ./XAU_Pro_Agent.mq5:/config/XAU_Pro_Agent.mq5
+    networks:
+      - trading_network
+    restart: unless-stopped
+
+volumes:
+  mt5_config:
+
+networks:
+  trading_network:
