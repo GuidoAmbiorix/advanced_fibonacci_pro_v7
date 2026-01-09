@@ -1,9 +1,10 @@
 version: '3.8'
 
 # ============================================================================
-# INSTITUTIONAL EDGE PRO - Unified Docker Compose
+# INSTITUTIONAL EDGE PRO - Complete Infrastructure
 # ============================================================================
-# All services in one file: Nginx, RabbitMQ, Redis, MT5, Backend, Frontend
+# Services: Nginx, PostgreSQL, RabbitMQ, Redis, MT5, Backend, Frontend
+#           + Prometheus, Grafana, Loki, cAdvisor, PGAdmin, Celery
 # ============================================================================
 
 services:
@@ -32,14 +33,37 @@ services:
       retries: 3
 
   # ==========================================================================
+  # DATABASE (PostgreSQL)
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: trading_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=trading
+      - POSTGRES_PASSWORD=trading123
+      - POSTGRES_DB=institutional_edge
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - trading_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trading -d institutional_edge"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
   # MESSAGE BROKER
   # ==========================================================================
   rabbitmq:
     image: rabbitmq:3-management
     container_name: trading_rabbitmq
     ports:
-      - "5672:5672"   # AMQP protocol
-      - "15672:15672" # Management UI
+      - "5672:5672"
+      - "15672:15672"
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-guest}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-guest}
@@ -75,14 +99,14 @@ services:
       retries: 5
 
   # ==========================================================================
-  # MT5 TERMINAL (Windows VM with VNC)
+  # MT5 TERMINAL
   # ==========================================================================
   mt5:
     image: gmag11/metatrader5_vnc:latest
     container_name: trading_mt5
     ports:
-      - "3000:3000"   # VNC Web Interface
-      - "8001:8001"   # RPyC Server
+      - "3000:3000"
+      - "8001:8001"
     environment:
       - CUSTOM_USER=trader
       - PASSWORD=trading
@@ -104,15 +128,16 @@ services:
     env_file:
       - .env
     environment:
-      # Override for Docker networking
       - MT5_HOST=mt5
       - MT5_PORT=8001
-      - DATABASE_URL=sqlite:///./data/trading.db
+      - DATABASE_URL=postgresql+asyncpg://trading:trading123@postgres:5432/institutional_edge
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     depends_on:
+      postgres:
+        condition: service_healthy
       mt5:
         condition: service_started
       rabbitmq:
@@ -140,6 +165,132 @@ services:
       - trading_network
     restart: unless-stopped
 
+  # ==========================================================================
+  # MONITORING - PROMETHEUS
+  # ==========================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: trading_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - trading_network
+    restart: unless-stopped
+
+  # ==========================================================================
+  # MONITORING - GRAFANA
+  # ==========================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: trading_grafana
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - trading_network
+    restart: unless-stopped
+
+  # ==========================================================================
+  # LOGGING - LOKI
+  # ==========================================================================
+  loki:
+    image: grafana/loki:latest
+    container_name: trading_loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+    networks:
+      - trading_network
+    restart: unless-stopped
+
+  # ==========================================================================
+  # CONTAINER METRICS - cAdvisor
+  # ==========================================================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: trading_cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - trading_network
+    restart: unless-stopped
+
+  # ==========================================================================
+  # DATABASE ADMIN - PGAdmin
+  # ==========================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: trading_pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@trading.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - trading_network
+    restart: unless-stopped
+
+  # ==========================================================================
+  # BACKGROUND TASKS - CELERY WORKER
+  # ==========================================================================
+  celery_worker:
+    build: ./backend
+    container_name: trading_celery_worker
+    command: celery -A app.core.celery_app worker --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://trading:trading123@postgres:5432/institutional_edge
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - postgres
+      - backend
+    networks:
+      - trading_network
+    restart: unless-stopped
+
+  # ==========================================================================
+  # BACKGROUND TASKS - CELERY BEAT (Scheduler)
+  # ==========================================================================
+  celery_beat:
+    build: ./backend
+    container_name: trading_celery_beat
+    command: celery -A app.core.celery_app beat --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - celery_worker
+    networks:
+      - trading_network
+    restart: unless-stopped
+
 # ============================================================================
 # VOLUMES
 # ============================================================================
@@ -152,6 +303,16 @@ volumes:
     name: trading_redis_data
   rabbitmq_data:
     name: trading_rabbitmq_data
+  postgres_data:
+    name: trading_postgres_data
+  prometheus_data:
+    name: trading_prometheus_data
+  grafana_data:
+    name: trading_grafana_data
+  loki_data:
+    name: trading_loki_data
+  pgadmin_data:
+    name: trading_pgadmin_data
 
 # ============================================================================
 # NETWORKS
