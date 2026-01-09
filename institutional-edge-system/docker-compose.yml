@@ -1,67 +1,162 @@
-
 version: '3.8'
 
+# ============================================================================
+# INSTITUTIONAL EDGE PRO - Unified Docker Compose
+# ============================================================================
+# All services in one file: Nginx, RabbitMQ, Redis, MT5, Backend, Frontend
+# ============================================================================
+
 services:
+  # ==========================================================================
+  # REVERSE PROXY
+  # ==========================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: trading_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - trading_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================================================
+  # MESSAGE BROKER
+  # ==========================================================================
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: trading_rabbitmq
+    ports:
+      - "5672:5672"   # AMQP protocol
+      - "15672:15672" # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - trading_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ==========================================================================
+  # CACHE / SESSION STORE
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: trading_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - trading_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  # MT5 TERMINAL (Windows VM with VNC)
+  # ==========================================================================
   mt5:
     image: gmag11/metatrader5_vnc:latest
-    container_name: mt5_terminal_${INSTANCE_NAME:-main}
+    container_name: trading_mt5
     ports:
-      - "${VNC_PORT:-3000}:3000"   # VNC Web Interface
-      - "${RPYC_PORT:-8001}:8001"   # RPyC Server
+      - "3000:3000"   # VNC Web Interface
+      - "8001:8001"   # RPyC Server
     environment:
       - CUSTOM_USER=trader
       - PASSWORD=trading
       - VNCPASSWORD=trading
     volumes:
       - mt5_config:/config
-    restart: unless-stopped
     networks:
-      - bot-net
+      - trading_network
+    restart: unless-stopped
 
+  # ==========================================================================
+  # BACKEND (FastAPI)
+  # ==========================================================================
   backend:
     build: ./backend
-    container_name: institutional_backend_${INSTANCE_NAME:-main}
+    container_name: trading_backend
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "8000:8000"
     env_file:
       - .env
     environment:
+      # Override for Docker networking
       - MT5_HOST=mt5
       - MT5_PORT=8001
-      - PGPASSWORD=secret
-      - DATABASE_URL=sqlite:///./sql_app.db
-      # Multi-Account / Signal Distribution
-      - RABBITMQ_HOST=institutional_rabbitmq
+      - DATABASE_URL=sqlite:///./data/trading.db
+      - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
-      - INSTANCE_ROLE=${INSTANCE_ROLE:-SOLO}
-      - MT5_LOGIN=${MT5_LOGIN}
-      - MT5_PASSWORD=${MT5_PASSWORD}
-      - MT5_SERVER=${MT5_SERVER}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
-      - mt5
+      mt5:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
-      - ${PROJECT_ROOT_HOST:-.}/backend/app:/app/app
+      - ./backend/app:/app/app
       - backend_data:/app/data
     networks:
-      - bot-net
       - trading_network
+    restart: unless-stopped
 
+  # ==========================================================================
+  # FRONTEND (Vue + Vite)
+  # ==========================================================================
   frontend:
     build: ./frontend
-    container_name: institutional_frontend_${INSTANCE_NAME:-main}
+    container_name: trading_frontend
     ports:
-      - "${WEB_PORT:-80}:80"
+      - "3001:80"
     depends_on:
       - backend
     networks:
-      - bot-net
+      - trading_network
+    restart: unless-stopped
 
+# ============================================================================
+# VOLUMES
+# ============================================================================
 volumes:
   mt5_config:
+    name: trading_mt5_config
   backend_data:
+    name: trading_backend_data
+  redis_data:
+    name: trading_redis_data
+  rabbitmq_data:
+    name: trading_rabbitmq_data
 
+# ============================================================================
+# NETWORKS
+# ============================================================================
 networks:
-  bot-net:
-    external: true
   trading_network:
-    external: true
+    name: trading_network
+    driver: bridge

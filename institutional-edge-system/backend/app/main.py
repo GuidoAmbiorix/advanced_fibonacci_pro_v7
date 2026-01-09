@@ -22,6 +22,7 @@ from app.api import annotations, grid, backtest_advanced
 from app.api import regime, validation
 from app.core.mt5_connector import MT5Connector
 from app.core.trading_engine import TradingEngine
+from app.core.redis_client import init_redis, close_redis
 from app.schemas import schemas
 
 # ============================================================================
@@ -175,6 +176,13 @@ async def connect_mt5_background():
 @app.on_event("startup")
 async def startup_event():
     """Initialize on startup"""
+    
+    # Initialize Redis
+    try:
+        await init_redis()
+        logger.info("✅ Redis connected")
+    except Exception as e:
+        logger.warning(f"⚠️ Redis not available: {e} - continuing without cache")
     logger.info("Starting Institutional Edge Pro API...")
     
     # Initialize Log Manager (System Logs)
@@ -275,6 +283,13 @@ async def startup_event():
 async def shutdown_event():
     """Cleanup on shutdown"""
     logger.info("Shutting down...")
+
+    # Close Redis
+    try:
+        await close_redis()
+        logger.info("Redis disconnected")
+    except Exception:
+        pass
 
     # Stop all bots
     if bot_manager:
