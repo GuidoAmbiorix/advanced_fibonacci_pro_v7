@@ -116,7 +116,7 @@ const fetchCorrelation = async () => {
   
   loading.value = true
   try {
-    const symbolsStr = symbols.value.join(',')
+    const symbolsStr = symbols.value.map(s => encodeURIComponent(s)).join(',')
     const response = await axios.get(`${API_URL}/api/portfolio/correlation?symbols=${symbolsStr}`)
     
     matrix.value = response.data.matrix || {}

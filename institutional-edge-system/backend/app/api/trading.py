@@ -135,27 +135,27 @@ class LiveTradingSession:
         engine_type = config.get('engine_type', 'golden').upper()
         
         # FIX: XAU_PRO specific config mapping (Match BacktestEngine logic)
-        if engine_type == 'XAU_PRO' or engine_type in ['SILVER', 'BRONZE', 'PLATINUM', 'ADAPTIVE']:
-            # InstitutionalGoldEngine expects these at root level
-            golden_config['rr_ratio'] = config.get('tp_ratio', 2.0)
-            golden_config['sl_atr_multiplier'] = config.get('sl_atr_multiplier', 1.5)
-            # RSI Thresholds mapping
-            golden_config['rsi_buy_threshold'] = config.get('rsi_oversold', 40)
-            golden_config['rsi_sell_threshold'] = config.get('rsi_overbought', 60)
-            
-            # Ensure SMC params are passed if present in root config
-            golden_config['enable_order_blocks'] = config.get('enable_order_blocks', True)
-            golden_config['ob_lookback'] = config.get('ob_lookback', 20)
-            golden_config['enable_liquidity_sweep'] = config.get('enable_liquidity_sweep', True)
-            golden_config['sweep_lookback'] = config.get('sweep_lookback', 10)
-            golden_config['enable_fvg'] = config.get('enable_fvg', True)
-            golden_config['fvg_min_size_atr'] = config.get('fvg_min_size_atr', 0.5)
-            
-            # CRITICAL LOOP FIX: Pass Session Mode to Engine
-            # 'trading_session' (Frontend) -> 'session_mode' (Engine)
-            golden_config['session_mode'] = config.get('trading_session', 'ALL') 
-            
-            logger.info(f"✅ Live Session: Mapped XAU_PRO config (RR: {golden_config['rr_ratio']}, Session: {golden_config['session_mode']})")
+        # Universal Config Mapping (Apply to ALL engine types to be safe)
+        # InstitutionalGoldEngine expects these at root level
+        golden_config['rr_ratio'] = config.get('tp_ratio', 2.0)
+        golden_config['sl_atr_multiplier'] = config.get('sl_atr_multiplier', 1.5)
+        # RSI Thresholds mapping
+        golden_config['rsi_buy_threshold'] = config.get('rsi_oversold', 40)
+        golden_config['rsi_sell_threshold'] = config.get('rsi_overbought', 60)
+        
+        # Ensure SMC params are passed if present in root config
+        golden_config['enable_order_blocks'] = config.get('enable_order_blocks', True)
+        golden_config['ob_lookback'] = config.get('ob_lookback', 20)
+        golden_config['enable_liquidity_sweep'] = config.get('enable_liquidity_sweep', True)
+        golden_config['sweep_lookback'] = config.get('sweep_lookback', 10)
+        golden_config['enable_fvg'] = config.get('enable_fvg', True)
+        golden_config['fvg_min_size_atr'] = config.get('fvg_min_size_atr', 0.5)
+        
+        # CRITICAL LOOP FIX: Pass Session Mode to Engine
+        # 'trading_session' (Frontend) -> 'session_mode' (Engine)
+        golden_config['session_mode'] = config.get('trading_session', 'ALL') 
+        
+        logger.info(f"✅ Live Session: Mapped config (Type: {engine_type}, RR: {golden_config['rr_ratio']}, Session: {golden_config['session_mode']})")
 
         self.engine = EngineFactory.create_engine(engine_type, golden_config)
     

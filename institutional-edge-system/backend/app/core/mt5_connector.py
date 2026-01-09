@@ -134,6 +134,21 @@ class MT5Connector:
         """Public method to normalize symbol name."""
         return self._normalize_symbol(symbol)
 
+    def _normalize_price(self, price: float, symbol: str) -> float:
+        """Normalize price to symbol's digits"""
+        if not self.connected or price is None:
+            return price
+        
+        try:
+            symbol_info = mt5.symbol_info(symbol)
+            if symbol_info is None:
+                return price
+            
+            digits = symbol_info.digits
+            return round(price, digits)
+        except Exception:
+            return price
+
     def connect(self) -> bool:
         """Connect to local dedicated MetaTrader 5 via RPyC"""
         try:
@@ -380,10 +395,16 @@ class MT5Connector:
             if symbol_info is None:
                 return mt5.ORDER_FILLING_FOK
             filling = symbol_info.filling_mode
-            if filling & 1:
-                return mt5.ORDER_FILLING_FOK
+            
+            # Prioritize IOC (2) as it is most common for Market Execution
             if filling & 2:
                 return mt5.ORDER_FILLING_IOC
+            
+            # Then FOK (1)
+            if filling & 1:
+                return mt5.ORDER_FILLING_FOK
+            
+            # Fallback to RETURN (0 or other) - mostly for older systems
             return mt5.ORDER_FILLING_RETURN
         except Exception as e:
             logger.error(f"Error determining filling mode: {e}")
@@ -517,11 +538,75 @@ class MT5Connector:
                 }
 
                 if stop_loss:
-                    request["sl"] = stop_loss
+                    request["sl"] = self._normalize_price(stop_loss, symbol)
                 if take_profit:
-                    request["tp"] = take_profit
+                    request["tp"] = self._normalize_price(take_profit, symbol)
+                
+                # VALIDATE STOPS LEVEL
+                stops_level = symbol_info.trade_stops_level * symbol_info.point
+                if stops_level > 0:
+                    current_spread = (tick.ask - tick.bid)
+                    min_dist = stops_level + current_spread # Safety buffer
+                    
+                    if stop_loss:
+                         dist_sl = abs(execution_price - stop_loss)
+                         if dist_sl < min_dist:
+                             logger.warning(f"⚠️ SL too close! Dist {dist_sl} < Limit {min_dist}. Adjusting...")
+                             # Move SL further away
+                             if "BUY" in effective_order_type or effective_order_type == "BUY": # Buy Stop Loss is below
+                                 stop_loss = execution_price - min_dist - symbol_info.point
+                             else: # Sell Stop Loss is above
+                                 stop_loss = execution_price + min_dist + symbol_info.point
+                             
+                             request["sl"] = self._normalize_price(stop_loss, symbol)
+                    
+                    if take_profit:
+                         dist_tp = abs(execution_price - take_profit)
+                         if dist_tp < min_dist:
+                             logger.warning(f"⚠️ TP too close! Dist {dist_tp} < Limit {min_dist}. Adjusting...")
+                             if "BUY" in effective_order_type or effective_order_type == "BUY": # Buy TP is above
+                                 take_profit = execution_price + min_dist + symbol_info.point
+                             else: # Sell TP is below
+                                 take_profit = execution_price - min_dist - symbol_info.point
+                             
+                             request["tp"] = self._normalize_price(take_profit, symbol)
 
+                request["price"] = self._normalize_price(execution_price, symbol)
+
+                logger.info(f"📤 Sending order: {request['action']} {request['type']} {volume} lots @ {request['price']} (Fill: {filling_mode})")
+                
+                # --- FILLING MODE AUTO-RETRY LOGIC ---
+                # Attempt to send order. If 10013 or 10030, try other filling modes
                 result = mt5.order_send(request=request)
+                
+                if result and (result.retcode == 10030 or result.retcode == 10013):
+                     logger.warning(f"⚠️ Order failed with {result.retcode} (Filling Mode?), retrying with alternatives...")
+                     
+                     # Get all supported modes
+                     supported_modes = []
+                     s_info = mt5.symbol_info(symbol)
+                     if s_info:
+                         if s_info.filling_mode & 1: supported_modes.append(mt5.ORDER_FILLING_FOK)
+                         if s_info.filling_mode & 2: supported_modes.append(mt5.ORDER_FILLING_IOC)
+                         # Bit 0 is typically return/unspecified? Python API constants are FOK=1, IOC=2, RETURN=0?
+                         # Actually: ORDER_FILLING_FOK=0, ORDER_FILLING_IOC=1, ORDER_FILLING_RETURN=2 in some docs, 
+                         # Check actual constants: Usually FOK=1, IOC=2, RETURN=0.
+                         # Let's try explicit constants from mt5 module if possible, or just cycle 0, 1, 2
+                     
+                     alternatives = [mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_RETURN]
+                     # Remove the one we just tried
+                     alternatives = [m for m in alternatives if m != filling_mode]
+                     
+                     for alt_mode in alternatives:
+                         request["type_filling"] = alt_mode
+                         logger.info(f"🔄 Retrying with filling mode: {alt_mode}")
+                         result = mt5.order_send(request=request)
+                         if result and result.retcode == mt5.TRADE_RETCODE_DONE:
+                             logger.info(f"✅ Retry successful with mode {alt_mode}")
+                             break
+                         elif result and result.retcode != 10030 and result.retcode != 10013:
+                             # Some other error occurred, stop trying filling modes
+                             break
 
                 if result is None:
                     logger.error("Order send failed, error: {}", mt5.last_error())
@@ -873,7 +958,18 @@ class MT5Connector:
 
             lot_size = risk_amount / risk_per_lot
             volume_step = symbol_info.volume_step
-            lot_size = round(lot_size / volume_step) * volume_step
+            
+            # Use strict decimal rounding to avoid 0.650000001
+            steps = round(lot_size / volume_step)
+            lot_size = steps * volume_step
+            # Round again to max decimals of volume_step (usually 2)
+            vol_decimals = 0
+            if '.' in str(volume_step):
+                vol_decimals = len(str(volume_step).split('.')[1])
+                if vol_decimals == 1 and str(volume_step).endswith('.0'): vol_decimals = 0
+            
+            lot_size = round(lot_size, vol_decimals)
+            
             lot_size = max(symbol_info.volume_min, min(lot_size, symbol_info.volume_max))
 
             logger.debug(

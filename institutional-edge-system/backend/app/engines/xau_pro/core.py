@@ -218,7 +218,7 @@ class InstitutionalGoldEngine:
         # if structure.trend != 'UP' and signal_type == 'BUY': ... (We ignore this for volume)
 
         if not signal_type:
-             return {'signals': [], 'structure': structure} 
+             return {'signals': [], 'structure': structure, 'debug_info': debug_info} 
         
         # logger.warning(f"✅ Trend Aligned: {signal_type} @ {current_price}") 
         

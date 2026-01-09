@@ -1079,6 +1079,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
+import api from '../services/api'
 import socket, { connectionState, connectSocket } from '../services/socket'
 import CorrelationHeatmap from '../components/CorrelationHeatmap.vue'
 import OOSValidation from '../components/OOSValidation.vue'
@@ -1772,7 +1773,7 @@ const runBacktest = async () => {
           
           // Institutional
           confirmation_timeframe: slot.confirmation_timeframe,
-          trading_session: slot.trading_session,
+          trading_session: slot.session_mode || slot.trading_session || 'ALL',
           session_end_action: slot.session_end_action,
           use_daily_bias: slot.use_daily_bias
         }
@@ -1810,7 +1811,7 @@ const runBacktest = async () => {
           tsl_mode: slot.tsl_mode,
           // Portfolio-level shared settings
           confirmation_timeframe: slot.confirmation_timeframe,  // From Slot (Institutional)
-          trading_session: slot.trading_session || 'ALL',
+          trading_session: slot.session_mode || slot.trading_session || 'ALL',
           session_end_action: slot.session_end_action || 'HOLD',
           use_daily_bias: slot.use_daily_bias,
           
@@ -2231,7 +2232,7 @@ const saveSlot = async (slot) => {
   saveTimeout = setTimeout(async () => {
     try {
       const payload = {
-        bot_config_id: 1,  // Default config ID
+        bot_config_id: activeBotId.value || 1,  // Dynamic config ID
         symbol: slot.symbol,
         direction_filter: slot.direction || 'BOTH',
         timeframe: slot.timeframe || 'M5',
@@ -2478,8 +2479,27 @@ onMounted(() => {
   fetchHistory()
   setupSocketListeners()
   fetchAccounts()  // Load accounts for live trading mode
+  fetchBotConfig() // Load bot config (ID)
   loadSlots()  // Load slots from database
 })
+
+// Fetch Bot Config to get ID
+const activeBotId = ref(null)
+const fetchBotConfig = async () => {
+  try {
+    const bots = await api.getBots()
+    if (bots && bots.length > 0) {
+      activeBotId.value = bots[0].id
+      console.log(`🤖 Active Bot ID: ${activeBotId.value}`)
+    } else {
+      console.warn('⚠️ No bots found, defaulting to ID 1')
+      activeBotId.value = 1
+    }
+  } catch (error) {
+    console.error('Failed to fetch bot config:', error)
+    activeBotId.value = 1
+  }
+}
 
 // Export combined portfolio trades to CSV
 const exportPortfolioCSV = () => {
