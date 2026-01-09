@@ -1,12 +1,12 @@
 //+------------------------------------------------------------------+
 //|                                                 XAU_Pro_Agent.mq5 |
-//|                          XAU Pro Engine - Pure MT5 Trading Agent  |
-//|                                   Institutional Edge Trading Bot  |
+//|          XAU Pro Engine v4.2 - Institutional Gold Engine          |
+//|               "The Gold Standard" for XAUUSD Scalping            |
 //+------------------------------------------------------------------+
 #property copyright "XAU Pro Engine"
 #property link      "https://github.com/GuidoAmbiorix"
-#property version   "1.00"
-#property description "Pure MT5 Trading Agent with XAU Pro Engine Logic"
+#property version   "4.20"
+#property description "Institutional Gold Engine v4.2 (Production Polish + Safety)"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -18,227 +18,157 @@
 //+------------------------------------------------------------------+
 //| ENUMERATIONS                                                      |
 //+------------------------------------------------------------------+
-enum ENUM_AGENT_MODE
+enum ENUM_SESSION_MODE
 {
-   AGENT_CONSERVATIVE = 0,    // Conservative - High Win Rate
-   AGENT_BALANCED = 1,        // Balanced - Mixed Approach  
-   AGENT_AGGRESSIVE = 2       // Aggressive - High Risk/Reward
+   SESSION_LONDON = 0,     // 07:00 - 10:00 UTC
+   SESSION_NY = 1,         // 12:00 - 15:00 UTC
+   SESSION_OVERLAP = 2,    // 13:00 - 16:00 UTC
+   SESSION_BOTH = 3,       // London + NY
+   SESSION_ALL = 4         // 24/7 (Not Recommended)
 };
 
-enum ENUM_SESSION_FILTER
+enum ENUM_ENTRY_PATH
 {
-   SESSION_ALL = 0,           // Trade All Sessions
-   SESSION_LONDON = 1,        // London Session Only
-   SESSION_NEWYORK = 2,       // New York Session Only
-   SESSION_OVERLAP = 3        // London-NY Overlap Only
-};
-
-enum ENUM_ENTRY_TYPE
-{
-   ENTRY_FIBONACCI = 0,       // Fibonacci Retracement
-   ENTRY_STRUCTURE = 1,       // Market Structure Break
-   ENTRY_LIQUIDITY = 2,       // Liquidity Sweep
-   ENTRY_CONFLUENCE = 3       // All Factors Combined
+   PATH_AUTO = 0,          // Check both SMC and Fib
+   PATH_SMC_ONLY = 1,      // Order Blocks / FVG / Sweeps Only
+   PATH_FIB_ONLY = 2       // Golden Zone + Triple Confirmation Only
 };
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
 //+------------------------------------------------------------------+
 
-//--- Agent Settings
-input group "========== AGENT CONFIGURATION =========="
-input ENUM_AGENT_MODE    InpAgentMode = AGENT_BALANCED;      // Agent Trading Mode
-input ENUM_SESSION_FILTER InpSessionFilter = SESSION_OVERLAP; // Session Filter
-input ENUM_ENTRY_TYPE    InpEntryType = ENTRY_CONFLUENCE;    // Entry Type
-input int                InpMagicNumber = 777777;            // Magic Number
-input string             InpAgentName = "XAU_PRO_AGENT";     // Agent Name
+//--- v4.2 Configuration
+input group "========== INSTITUTIONAL CONFIG v4.2 =========="
+input int             InpMagicNumber = 888888;            // Magic Number
+input ENUM_SESSION_MODE InpSessionMode = SESSION_BOTH;    // Trading Session (Killzones)
+input int             InpBrokerOffset = 2;                // Broker UTC Offset (e.g. 2 or 3)
+input ENUM_ENTRY_PATH InpEntryPath = PATH_AUTO;           // Entry Logic Path
+input int             InpMaxSpread = 25;                  // Max Spread (Points) - Safety
 
-//--- Risk Management
+//--- Risk Management (Strict v4.0)
 input group "========== RISK MANAGEMENT =========="
 input double   InpRiskPercent = 1.0;          // Risk Per Trade (%)
+input double   InpRiskReward = 2.0;           // Risk:Reward Ratio
+input double   InpSL_ATR_Mult = 1.4;          // Stop Loss ATR Multiplier
 input double   InpMaxDailyDD = 3.0;           // Max Daily Drawdown (%)
-input double   InpMaxTotalDD = 10.0;          // Max Total Drawdown (%)
 input int      InpMaxPositions = 1;           // Max Concurrent Positions
-input int      InpMaxDailyTrades = 3;         // Max Daily Trades
-input bool     InpUseEquityStop = true;       // Enable Equity Stop
+
+//--- Indicator Settings (Institutional Tuned)
+input group "========== INDICATOR SETTINGS =========="
+// RSI
+input int      InpRSI_Period = 14;            // RSI Period
+input int      InpRSI_BuyLevel = 40;          // RSI Buy Level (Deep Discount)
+input int      InpRSI_SellLevel = 60;         // RSI Sell Level (Premium)
+// MACD (Fast Tuning)
+input int      InpMACD_Fast = 6;              // MACD Fast EMA
+input int      InpMACD_Slow = 18;             // MACD Slow EMA
+input int      InpMACD_Signal = 9;            // MACD Signal
+// Stochastic
+input int      InpStoch_K = 14;               // Stochastic %K
+input int      InpStoch_D = 3;                // Stochastic %D
+input int      InpStoch_Slowing = 3;          // Stochastic Slowing
+
+//--- SMC Settings
+input group "========== SMC SETTINGS =========="
+input bool     InpUseSMC = true;              // Enable SMC Logic
+input int      InpOB_Lookback = 20;           // Order Block Lookback (Detection)
+input double   InpDisplacement_Mult = 1.5;    // Displacement ATR Multiplier
+input bool     InpUseLiquiditySweeps = true;  // Require Liquidity Sweep
 
 //--- Fibonacci Settings
-input group "========== FIBONACCI LEVELS =========="
-input bool     InpFib_236 = true;             // 23.6% Level
-input bool     InpFib_382 = true;             // 38.2% Level (Key Level)
-input bool     InpFib_500 = true;             // 50.0% Level (Key Level)
-input bool     InpFib_618 = true;             // 61.8% Level (Golden Ratio)
-input bool     InpFib_786 = true;             // 78.6% Level (Deep Retracement)
+input group "========== FIBONACCI SETTINGS =========="
 input int      InpSwingLookback = 50;         // Swing Detection Lookback
-input int      InpMinSwingBars = 5;           // Min Bars Between Swings
+input bool     InpUseFibEntry = true;         // Enable Fib Golden Zone Entry
 
-//--- Structure Analysis
-input group "========== MARKET STRUCTURE =========="
-input bool     InpRequireBOS = true;          // Require Break of Structure
-input bool     InpRequireCHoCH = true;        // Require Change of Character
-input bool     InpTrackOrderBlocks = true;    // Track Order Blocks
-input bool     InpTrackFVG = true;            // Track Fair Value Gaps (FVG)
-input int      InpStructureLookback = 100;    // Structure Detection Lookback
-
-//--- Multi-Timeframe
-input group "========== MULTI-TIMEFRAME =========="
-input bool     InpUseMTF = true;              // Enable Multi-Timeframe
-input ENUM_TIMEFRAMES InpHTF = PERIOD_H4;     // Higher Timeframe
-input bool     InpRequireHTFAlignment = true; // Require HTF Alignment
-
-//--- Smart Money Concepts
-input group "========== SMART MONEY =========="
-input bool     InpTrackLiquidity = true;      // Track Liquidity Pools
-input bool     InpAvoidLiquiditySweeps = true;// Avoid Before Sweep
-input bool     InpEnterAfterSweep = true;     // Enter After Liquidity Sweep
-input int      InpLiquidityBuffer = 20;       // Liquidity Buffer (points)
-
-//--- Take Profit & Stop Loss
-input group "========== TP/SL MANAGEMENT =========="
-input double   InpRiskReward1 = 1.5;          // TP1 Risk:Reward Ratio
-input double   InpRiskReward2 = 2.5;          // TP2 Risk:Reward Ratio  
-input double   InpRiskReward3 = 4.0;          // TP3 Risk:Reward Ratio
-input double   InpTP1Percent = 50;            // Close % at TP1
-input double   InpTP2Percent = 30;            // Close % at TP2
-input bool     InpTrailAfterTP1 = true;       // Trail Stop After TP1
-input double   InpTrailDistance = 30;         // Trail Distance (points)
-
-//--- Indicators
-input group "========== CONFIRMATION INDICATORS =========="
-input bool     InpUseRSI = true;              // Use RSI Filter
-input int      InpRSIPeriod = 14;             // RSI Period
-input int      InpRSIOverbought = 70;         // RSI Overbought
-input int      InpRSIOversold = 30;           // RSI Oversold
-input bool     InpUseMACD = true;             // Use MACD Filter
-input bool     InpUseVolume = true;           // Use Volume Filter
-
-//--- Dashboard
+//--- Display
 input group "========== DISPLAY =========="
-input bool     InpShowDashboard = true;       // Show Agent Dashboard
-input bool     InpShowLevels = true;          // Show Fib Levels on Chart
-input bool     InpShowZones = true;           // Show Order Block Zones
-input color    InpBullColor = clrLime;        // Bullish Color
-input color    InpBearColor = clrRed;         // Bearish Color
+input bool     InpShowDashboard = true;       // Show Dashboard
+input bool     InpShowZones = true;           // Draw Zones on Chart
 
 //+------------------------------------------------------------------+
 //| GLOBAL VARIABLES                                                  |
 //+------------------------------------------------------------------+
 CTrade         trade;
 CPositionInfo  position;
-COrderInfo     order;
 CAccountInfo   account;
 CSymbolInfo    symbolInfo;
 
 // Indicator Handles
-int handleRSI, handleMACD, handleATR, handleVolume;
-int handleRSI_HTF, handleMACD_HTF;
+int hRSI, hMACD, hStoch, hATR, hEMA;
 
-// Fibonacci Levels
-double fibLevels[5] = {0.236, 0.382, 0.500, 0.618, 0.786};
-double currentFibHigh, currentFibLow;
-double fibRetracements[5];
-double fibExtensions[3];
-
-// Swing Points
-double swingHigh, swingLow;
-int swingHighBar, swingLowBar;
-bool trendBullish;
+// State Variables
+double g_RSI, g_MACD_Main, g_MACD_Signal, g_Stoch_K, g_Stoch_D, g_ATR;
+double g_Prev_MACD_Main, g_Prev_MACD_Signal, g_Prev_MACD_Hist_Value; 
+double g_Prev_Stoch_K;
 
 // Market Structure
-struct StructurePoint
-{
-   double price;
-   datetime time;
-   bool isHigh;
-   bool broken;
-};
-StructurePoint structurePoints[];
-bool bosConfirmed, chochConfirmed;
+struct SwingPoint { double price; int bar; bool isHigh; };
+SwingPoint swingHigh, swingLow;
+bool trendBullish;
 
-// Order Blocks
+// SMC Arrays (Persistent)
 struct OrderBlock
 {
-   double high;
-   double low;
+   double top;
+   double bottom;
+   bool isBullish;
    datetime time;
-   bool bullish;
-   bool mitigated;
+   bool mitigated;   // USED/TOUCHED - Still visible but maybe inactive?
+   bool invalidated; // BROKEN - Should be deleted/ignored
+   int creationBar;
 };
-OrderBlock orderBlocks[];
+OrderBlock activeOBs[];
 
-// Fair Value Gaps
 struct FVG
 {
-   double high;
-   double low;
+   double top;
+   double bottom;
+   bool isBullish;
    datetime time;
-   bool bullish;
-   bool filled;
+   bool filled;      // Touched/Used
+   bool invalidated; // Broken
+   int creationBar;
 };
-FVG fairValueGaps[];
+FVG activeFVGs[];
 
-// Liquidity
-struct LiquidityPool
-{
-   double level;
-   datetime time;
-   bool isHigh;
-   bool swept;
-};
-LiquidityPool liquidityPools[];
-
-// Statistics
-int dailyTrades;
-double dailyPnL;
-double startingEquity;
-double peakEquity;
-datetime lastTradeDate;
-
-// State
-bool isNewBar;
-datetime lastBarTime;
-string agentStatus;
+// Session State
+bool inKillzone = false;
+datetime lastBarTime = 0;
+datetime lastTradeDate = 0;
+double dailyStartEquity = 0;
+int dailyTrades = 0;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   // Initialize trade object
+   // Validate Symbol
+   if(!symbolInfo.Name(_Symbol)) return INIT_FAILED;
+   symbolInfo.RefreshRates();
+
+   // Initialize Inputs/Trade Mode
    trade.SetExpertMagicNumber(InpMagicNumber);
    trade.SetDeviationInPoints(10);
    trade.SetTypeFilling(ORDER_FILLING_FOK);
    trade.SetAsyncMode(false);
-   
-   // Initialize symbol info
-   symbolInfo.Name(_Symbol);
-   symbolInfo.RefreshRates();
-   
-   // Initialize indicators
-   if(!InitializeIndicators())
+
+   // Initialize Indicators
+   hRSI = iRSI(NULL, 0, InpRSI_Period, PRICE_CLOSE);
+   hMACD = iMACD(NULL, 0, InpMACD_Fast, InpMACD_Slow, InpMACD_Signal, PRICE_CLOSE);
+   hStoch = iStochastic(NULL, 0, InpStoch_K, InpStoch_D, InpStoch_Slowing, MODE_SMA, STO_LOWHIGH);
+   hATR = iATR(NULL, 0, 14);
+   hEMA = iMA(NULL, 0, 200, 0, MODE_EMA, PRICE_CLOSE); // Persistent EMA Handle
+
+   if(hRSI == INVALID_HANDLE || hMACD == INVALID_HANDLE || hStoch == INVALID_HANDLE || hATR == INVALID_HANDLE || hEMA == INVALID_HANDLE)
    {
-      Print("XAU Pro Agent: Failed to initialize indicators");
+      Print("Error initializing indicators");
       return INIT_FAILED;
    }
-   
-   // Initialize tracking variables
-   startingEquity = account.Equity();
-   peakEquity = startingEquity;
-   dailyTrades = 0;
-   dailyPnL = 0;
-   lastTradeDate = 0;
-   
-   // Initial calculations
-   CalculateSwingPoints();
-   CalculateFibonacciLevels();
-   AnalyzeMarketStructure();
-   DetectLiquidityPools();
-   
-   agentStatus = "INITIALIZED";
-   
-   Print("✅ XAU Pro Agent Initialized Successfully");
-   Print("🎯 Mode: ", EnumToString(InpAgentMode));
-   Print("📊 Risk: ", InpRiskPercent, "% per trade");
+
+   dailyStartEquity = account.Equity();
+   Print("🥇 XAU Pro Agent v4.2 Initialized | Production Logic Active");
    
    return INIT_SUCCEEDED;
 }
@@ -248,18 +178,12 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
-   // Release indicator handles
-   if(handleRSI != INVALID_HANDLE) IndicatorRelease(handleRSI);
-   if(handleMACD != INVALID_HANDLE) IndicatorRelease(handleMACD);
-   if(handleATR != INVALID_HANDLE) IndicatorRelease(handleATR);
-   if(handleVolume != INVALID_HANDLE) IndicatorRelease(handleVolume);
-   if(handleRSI_HTF != INVALID_HANDLE) IndicatorRelease(handleRSI_HTF);
-   if(handleMACD_HTF != INVALID_HANDLE) IndicatorRelease(handleMACD_HTF);
-   
-   // Clean up chart objects
-   ObjectsDeleteAll(0, "XAU_");
-   
-   Print("🔴 XAU Pro Agent Deinitialized. Reason: ", reason);
+   IndicatorRelease(hRSI);
+   IndicatorRelease(hMACD);
+   IndicatorRelease(hStoch);
+   IndicatorRelease(hATR);
+   IndicatorRelease(hEMA);
+   ObjectsDeleteAll(0, "XAUPro_");
 }
 
 //+------------------------------------------------------------------+
@@ -267,1020 +191,646 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-   // Update symbol info
    symbolInfo.RefreshRates();
    
-   // Check for new bar
-   isNewBar = CheckNewBar();
-   
-   // Update dashboard every tick
-   if(InpShowDashboard)
-      UpdateDashboard();
-   
-   // Process only on new bar for main logic
-   if(!isNewBar) 
+   // Dashboard update (realtime)
+   if(InpShowDashboard) UpdateDashboard();
+
+   // New Bar Check
+   if(!IsNewBar()) return;
+
+   // 1. Session Filter (Killzone)
+   inKillzone = CheckKillzone();
+   if(!inKillzone && InpSessionMode != SESSION_ALL) 
    {
-      // Still manage positions on every tick
-      ManageOpenPositions();
-      return;
+      if(InpShowDashboard) Comment("⏳ OUTSIDE KILLZONE: Waiting for Session...");
+      return; 
    }
-   
-   // Reset daily counters if new day
-   CheckNewDay();
-   
-   // Check risk limits
-   if(!CheckRiskLimits())
+
+   // 2. Risk Check (Daily DD + Spread)
+   if(!CheckRisk()) return;
+   if(symbolInfo.Spread() > InpMaxSpread) 
    {
-      agentStatus = "RISK LIMIT HIT";
-      return;
+       // Print("Spread too high: ", symbolInfo.Spread());
+       return;
    }
+
+   // 3. Update Data
+   UpdateIndicators();
+   UpdateStructure();
    
-   // Check session filter
-   if(!IsValidSession())
+   if(InpUseSMC)
    {
-      agentStatus = "WAITING FOR SESSION";
-      return;
+      ManageOrderBlocks(); // Update and cleanup
+      ManageFVGs();        // Update and cleanup
    }
-   
-   // Update analysis
-   CalculateSwingPoints();
-   CalculateFibonacciLevels();
-   AnalyzeMarketStructure();
-   DetectOrderBlocks();
-   DetectFairValueGaps();
-   DetectLiquidityPools();
-   
-   // Get indicator values
-   double rsi = GetRSI();
-   double macdMain, macdSignal;
-   GetMACD(macdMain, macdSignal);
-   double atr = GetATR();
-   
-   // Analyze confluence
-   int buyConfluence = 0;
-   int sellConfluence = 0;
-   AnalyzeConfluence(buyConfluence, sellConfluence, rsi, macdMain, macdSignal);
-   
-   // Generate signals
-   int requiredConfluence = GetRequiredConfluence();
-   bool buySignal = (buyConfluence >= requiredConfluence);
-   bool sellSignal = (sellConfluence >= requiredConfluence);
-   
-   // Execute trades
-   if(CanOpenNewPosition())
+
+   // 4. Entry Logic
+   if(position.Select(_Symbol)) return; // Already in a trade
+   if(dailyTrades >= 5) return; // Hard limit 5 trades/day
+
+   bool signalBuy = false;
+   bool signalSell = false;
+   string strategy = "";
+
+   // --- PATH A: SMC STRATEGY ---
+   if((InpEntryPath == PATH_AUTO || InpEntryPath == PATH_SMC_ONLY) && InpUseSMC)
    {
-      if(buySignal)
+      // SMC Strategy: Structure + Valid Zone (OB/FVG) + Displacement Sweep + Trigger
+      if(CheckSMCEntry("BUY"))
       {
-         ExecuteTrade(ORDER_TYPE_BUY, atr, buyConfluence);
+         signalBuy = true;
+         strategy = "SMC_OB_Liquidity";
       }
-      else if(sellSignal)
+      else if(CheckSMCEntry("SELL"))
       {
-         ExecuteTrade(ORDER_TYPE_SELL, atr, sellConfluence);
+         signalSell = true;
+         strategy = "SMC_OB_Liquidity";
       }
    }
-   
-   // Update chart objects
-   if(InpShowLevels)
-      DrawFibonacciLevels();
-   if(InpShowZones)
-      DrawOrderBlockZones();
-      
-   agentStatus = "SCANNING";
+
+   // --- PATH B: FIB STRATEGY (Fallback or Primary) ---
+   if(!signalBuy && !signalSell && (InpEntryPath == PATH_AUTO || InpEntryPath == PATH_FIB_ONLY) && InpUseFibEntry)
+   {
+      // Fib Strategy: Structure + Golden Zone + Indicators + Trigger
+      if(CheckFibEntry("BUY"))
+      {
+         signalBuy = true;
+         strategy = "FIB_GoldenZone";
+      }
+      else if(CheckFibEntry("SELL"))
+      {
+         signalSell = true;
+         strategy = "FIB_GoldenZone";
+      }
+   }
+
+   // 5. Execution
+   if(signalBuy) ExecuteTrade(ORDER_TYPE_BUY, strategy);
+   if(signalSell) ExecuteTrade(ORDER_TYPE_SELL, strategy);
 }
 
 //+------------------------------------------------------------------+
-//| Initialize Indicators                                            |
+//| CORE LOGIC: Triple Confirmation (Fib Path)                       |
 //+------------------------------------------------------------------+
-bool InitializeIndicators()
+bool CheckTripleConfirmation(string dir)
 {
-   // RSI
-   if(InpUseRSI)
-   {
-      handleRSI = iRSI(_Symbol, PERIOD_CURRENT, InpRSIPeriod, PRICE_CLOSE);
-      if(handleRSI == INVALID_HANDLE) return false;
-      
-      if(InpUseMTF)
-      {
-         handleRSI_HTF = iRSI(_Symbol, InpHTF, InpRSIPeriod, PRICE_CLOSE);
-         if(handleRSI_HTF == INVALID_HANDLE) return false;
-      }
-   }
+   // 1. RSI Check (Institutional Zones)
+   bool rsiOk = (dir == "BUY") ? (g_RSI <= InpRSI_BuyLevel) : (g_RSI >= InpRSI_SellLevel);
    
-   // MACD
-   if(InpUseMACD)
-   {
-      handleMACD = iMACD(_Symbol, PERIOD_CURRENT, 12, 26, 9, PRICE_CLOSE);
-      if(handleMACD == INVALID_HANDLE) return false;
-      
-      if(InpUseMTF)
-      {
-         handleMACD_HTF = iMACD(_Symbol, InpHTF, 12, 26, 9, PRICE_CLOSE);
-         if(handleMACD_HTF == INVALID_HANDLE) return false;
-      }
-   }
-   
-   // ATR (always needed for position sizing)
-   handleATR = iATR(_Symbol, PERIOD_CURRENT, 14);
-   if(handleATR == INVALID_HANDLE) return false;
-   
-   // Volume
-   if(InpUseVolume)
-   {
-      handleVolume = iVolumes(_Symbol, PERIOD_CURRENT, VOLUME_TICK);
-      if(handleVolume == INVALID_HANDLE) return false;
-   }
-   
-   return true;
+   // 2. MACD Check (Momentum Shift)
+   double currentHist = g_MACD_Main - g_MACD_Signal;
+   bool macdOk = (dir == "BUY") ? (currentHist > g_Prev_MACD_Hist_Value) : (currentHist < g_Prev_MACD_Hist_Value);
+
+   // 3. Stochastic Check (Momentum Continuation)
+   bool stochOk = false;
+   if(dir == "BUY")
+      stochOk = (g_Stoch_K > g_Prev_Stoch_K) && (g_Stoch_K < 80);
+   else
+      stochOk = (g_Stoch_K < g_Prev_Stoch_K) && (g_Stoch_K > 20);
+
+   return rsiOk && macdOk && stochOk;
 }
 
 //+------------------------------------------------------------------+
-//| Check for New Bar                                                |
+//| CORE LOGIC: Candlestick Trigger                                  |
 //+------------------------------------------------------------------+
-bool CheckNewBar()
+bool CheckCandleTrigger(string dir)
 {
-   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
-   if(currentBarTime != lastBarTime)
+   double open = iOpen(_Symbol, 0, 1);
+   double close = iClose(_Symbol, 0, 1);
+   double high = iHigh(_Symbol, 0, 1);
+   double low = iLow(_Symbol, 0, 1);
+   
+   double body = MathAbs(close - open);
+   double range = high - low;
+   if(range == 0) return false;
+
+   // Previous Candle (for Engulfing)
+   double openPrev = iOpen(_Symbol, 0, 2);
+   double closePrev = iClose(_Symbol, 0, 2);
+   double bodyPrev = MathAbs(closePrev - openPrev);
+
+   // 1. Engulfing
+   bool engulfing = false;
+   if(dir == "BUY")
+      engulfing = (close > open) && (closePrev < openPrev) && (body > bodyPrev) && (close > openPrev);
+   else
+      engulfing = (close < open) && (closePrev > openPrev) && (body > bodyPrev) && (close < openPrev);
+
+   // 2. Pinbar (Hammer/Shooting Star)
+   bool pinbar = false;
+   if(dir == "BUY")
    {
-      lastBarTime = currentBarTime;
+      double lowerWick = MathMin(open, close) - low;
+      pinbar = (lowerWick > body * 2.0); // Wicked rejection from lows
+   }
+   else
+   {
+      double upperWick = high - MathMax(open, close);
+      pinbar = (upperWick > body * 2.0); // Wicked rejection from highs
+   }
+
+   return engulfing || pinbar;
+}
+
+//+------------------------------------------------------------------+
+//| CORE LOGIC: SMC Entry                                            |
+//+------------------------------------------------------------------+
+bool CheckSMCEntry(string dir)
+{
+   // v4.2 Strict Trend Rule:
+   // Don't buy if trend is Bearish (Price < EMA), Don't sell if Bullish.
+   if(dir == "BUY" && !trendBullish) return false;
+   if(dir == "SELL" && trendBullish) return false;
+
+   // 1. Must likely be active in a Persistent Zone (OB or FVG)
+   bool inZone = false;
+   double price = symbolInfo.Bid();
+   
+   // Check Order Blocks
+   for(int i=0; i<ArraySize(activeOBs); i++)
+   {
+      if(activeOBs[i].invalidated) continue;
+      // We ALLOW mitigated blocks if they are "Freshly" mitigated (just touched now)
+      // But typically we want the FIRST reaction. 
+      // Simplified: If Price effectively inside zone.
+      
+      bool correctDir = (dir == "BUY") ? activeOBs[i].isBullish : !activeOBs[i].isBullish;
+      
+      if(correctDir && price <= activeOBs[i].top && price >= activeOBs[i].bottom)
+      {
+         inZone = true;
+         // Mark as mitigated? Only if we actually EXECUTE.
+         // We'll mark mitigation in ManageOrderBlocks based on price action anyway.
+         break;
+      }
+   }
+   
+   // Check FVGs (If OB not found)
+   if(!inZone)
+   {
+      for(int i=0; i<ArraySize(activeFVGs); i++)
+      {
+         if(activeFVGs[i].invalidated || activeFVGs[i].filled) continue;
+         bool correctDir = (dir == "BUY") ? activeFVGs[i].isBullish : !activeFVGs[i].isBullish;
+         
+         if(correctDir && price <= activeFVGs[i].top && price >= activeFVGs[i].bottom)
+         {
+            inZone = true;
+            break;
+         }
+      }
+   }
+   
+   if(!inZone) return false;
+
+   // 2. Liquidity Sweep (Displacement Required)
+   if(InpUseLiquiditySweeps)
+   {
+      if(!CheckLiquiditySweep(dir)) return false;
+   }
+
+   // 3. Candlestick Trigger
+   return CheckCandleTrigger(dir);
+}
+
+//+------------------------------------------------------------------+
+//| CORE LOGIC: Liquidity Sweep (Enhanced)                           |
+//+------------------------------------------------------------------+
+bool CheckLiquiditySweep(string dir)
+{
+   // Look back 10 bars for specific sweep pattern with DISPLACEMENT
+   int lookback = 10;
+   double currentClose = iClose(_Symbol, 0, 1);
+   double currentOpen = iOpen(_Symbol, 0, 1);
+   double currentBody = MathAbs(currentClose - currentOpen);
+   
+   // Displacement Check: Body must be > 30% or 50% of ATR?
+   // Reviewer suggested body > X% of ATR.
+   if(currentBody < (g_ATR * 0.3)) return false; // Weak move
+
+   if(dir == "BUY")
+   {
+      int lowestBar = iLowest(_Symbol, 0, MODE_LOW, lookback, 2); 
+      if(lowestBar < 0) return false;
+      double recentLow = iLow(_Symbol, 0, lowestBar);
+      
+      double prevLow = iLow(_Symbol, 0, 1);
+      
+      // We swept the low but closed above
+      return (prevLow < recentLow) && (currentClose > recentLow);
+   }
+   else // SELL
+   {
+      int highestBar = iHighest(_Symbol, 0, MODE_HIGH, lookback, 2);
+      if(highestBar < 0) return false;
+      double recentHigh = iHigh(_Symbol, 0, highestBar);
+      
+      double prevHigh = iHigh(_Symbol, 0, 1);
+      
+      // We swept high but closed below
+      return (prevHigh > recentHigh) && (currentClose < recentHigh);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| CORE LOGIC: Fib Entry                                            |
+//+------------------------------------------------------------------+
+bool CheckFibEntry(string dir)
+{
+   double range = swingHigh.price - swingLow.price;
+   if(range <= g_ATR) return false; // Range too small
+
+   double fib618, fib786;
+   double price = symbolInfo.Bid();
+   
+   if(trendBullish) // Looking for Pullback to Buy
+   {
+      if(dir != "BUY") return false;
+      fib618 = swingLow.price + range * 0.618;
+      fib786 = swingLow.price + range * 0.786;
+      
+      if(price > fib618 || price < fib786) return false; 
+   }
+   else // Bearish
+   {
+      if(dir != "SELL") return false;
+      fib618 = swingHigh.price - range * 0.618;
+      fib786 = swingHigh.price - range * 0.786;
+      
+      if(price < fib618 || price > fib786) return false;
+   }
+
+   if(!CheckTripleConfirmation(dir)) return false;
+   return CheckCandleTrigger(dir);
+}
+
+//+------------------------------------------------------------------+
+//| UTILS: Updates                                                   |
+//+------------------------------------------------------------------+
+void UpdateIndicators()
+{
+   double bufRSI[1], bufMACD_M[2], bufMACD_S[2], bufStoch_K[2], bufStoch_D[1], bufATR[1];
+   
+   CopyBuffer(hRSI, 0, 1, 1, bufRSI);
+   CopyBuffer(hMACD, 0, 1, 2, bufMACD_M);
+   CopyBuffer(hMACD, 1, 1, 2, bufMACD_S);
+   CopyBuffer(hStoch, 0, 1, 2, bufStoch_K); 
+   CopyBuffer(hStoch, 1, 1, 1, bufStoch_D); 
+   CopyBuffer(hATR, 0, 1, 1, bufATR);
+
+   g_RSI = bufRSI[0];
+   g_MACD_Main = bufMACD_M[1]; 
+   g_MACD_Signal = bufMACD_S[1];
+   g_Prev_MACD_Main = bufMACD_M[0];
+   g_Prev_MACD_Signal = bufMACD_S[0];
+   g_Prev_MACD_Hist_Value = g_Prev_MACD_Main - g_Prev_MACD_Signal;
+   
+   g_Stoch_K = bufStoch_K[1];
+   g_Prev_Stoch_K = bufStoch_K[0]; 
+   g_Stoch_D = bufStoch_D[0];
+   g_ATR = bufATR[0];
+}
+
+void UpdateStructure()
+{
+   int hb = iHighest(_Symbol, 0, MODE_HIGH, InpSwingLookback, 1);
+   int lb = iLowest(_Symbol, 0, MODE_LOW, InpSwingLookback, 1);
+   
+   swingHigh.price = iHigh(_Symbol, 0, hb);
+   swingHigh.bar = hb;
+   
+   swingLow.price = iLow(_Symbol, 0, lb);
+   swingLow.bar = lb;
+   
+   // Efficient EMA Call
+   double emaBuf[1];
+   CopyBuffer(hEMA, 0, 1, 1, emaBuf);
+   trendBullish = (iClose(_Symbol, 0, 1) > emaBuf[0]);
+}
+
+void ManageOrderBlocks()
+{
+   // 1. Detect New OB
+   // Bullish OB: Bearish Candle (1) followed by Strong Bullish Candle (0)
+   double o1=iOpen(NULL,0,2), c1=iClose(NULL,0,2); 
+   double o0=iOpen(NULL,0,1), c0=iClose(NULL,0,1); 
+   double body0 = MathAbs(c0-o0);
+   
+   bool displacement = body0 > (g_ATR * InpDisplacement_Mult);
+   
+   if(displacement)
+   {
+      double h1 = iHigh(NULL,0,2);
+      double l1 = iLow(NULL,0,2);
+      
+      // Bullish OB
+      if(c1 < o1 && c0 > o0) 
+      {
+         OrderBlock ob;
+         ob.isBullish = true;
+         ob.top = h1;
+         ob.bottom = l1;
+         ob.time = iTime(NULL,0,2);
+         ob.mitigated = false;
+         ob.invalidated = false;
+         ob.creationBar = iBarShift(NULL,0,ob.time);
+         
+         bool exists = false;
+         int total = ArraySize(activeOBs);
+         if(total > 0 && activeOBs[total-1].time == ob.time) exists = true;
+         
+         if(!exists) 
+         {
+            ArrayResize(activeOBs, total+1);
+            activeOBs[total] = ob;
+            // Print("New Bullish OB Created: ", ob.top);
+         }
+      }
+      // Bearish OB
+      else if(c1 > o1 && c0 < o0)
+      {
+         OrderBlock ob;
+         ob.isBullish = false;
+         ob.top = h1;
+         ob.bottom = l1;
+         ob.time = iTime(NULL,0,2);
+         ob.mitigated = false;
+         ob.invalidated = false;
+         ob.creationBar = iBarShift(NULL,0,ob.time);
+
+         bool exists = false;
+         int total = ArraySize(activeOBs);
+         if(total > 0 && activeOBs[total-1].time == ob.time) exists = true;
+         
+         if(!exists) 
+         {
+            ArrayResize(activeOBs, total+1);
+            activeOBs[total] = ob;
+            // Print("New Bearish OB Created: ", ob.bottom);
+         }
+      }
+   }
+   
+   // 2. Cleanup / Mitigation / Invalidation
+   // Price action: 0 (Current)
+   double currentHigh = iHigh(NULL,0,0);
+   double currentLow = iLow(NULL,0,0);
+   
+   for(int i=ArraySize(activeOBs)-1; i>=0; i--)
+   {
+      if(activeOBs[i].invalidated) continue;
+      
+      // v4.2 Logic: 
+      // Invalidated = BROKEN (Price moves past the zone)
+      // Mitigated = TOUCHED (Price enters zone)
+      
+      if(activeOBs[i].isBullish)
+      {
+         // Break of structure below OB Low = Invalidated
+         if(currentLow < activeOBs[i].bottom) 
+         {
+             activeOBs[i].invalidated = true;
+             continue; // Done
+         }
+         
+         // Touch inside OB = Mitigated
+         if(currentLow <= activeOBs[i].top && !activeOBs[i].mitigated)
+             activeOBs[i].mitigated = true;
+      }
+      else // Bearish
+      {
+         // Break of structure above OB High = Invalidated
+         if(currentHigh > activeOBs[i].top) 
+         {
+             activeOBs[i].invalidated = true;
+             continue;
+         }
+         
+         // Touch inside OB = Mitigated
+         if(currentHigh >= activeOBs[i].bottom && !activeOBs[i].mitigated)
+             activeOBs[i].mitigated = true;
+      }
+      
+      // Remove old blocks (older than 100 bars)
+      datetime now = iTime(NULL,0,0);
+      if(now - activeOBs[i].time > PeriodSeconds() * 100)
+         activeOBs[i].invalidated = true;
+   }
+}
+
+void ManageFVGs()
+{
+   // FVG Logic: Gap between 2 candles. 
+   // Index 3 (Left), 2 (Mid/Gap), 1 (Right/Current Completed)
+   
+   double h3 = iHigh(NULL,0,3);
+   double l3 = iLow(NULL,0,3);
+   
+   double h1 = iHigh(NULL,0,1);
+   double l1 = iLow(NULL,0,1);
+   
+   // v4.2 Fix: Verify Candle Direction (Displacement Candle 1)
+   bool c1Bullish = (iClose(NULL,0,1) > iOpen(NULL,0,1));
+   bool c1Bearish = (iClose(NULL,0,1) < iOpen(NULL,0,1));
+   
+   // Bullish FVG
+   if(l1 > h3) 
+   {
+      double gapSize = l1 - h3;
+      // Added Check: Candle 1 must be Bullish to justify a Bullish FVG (strong move UP)
+      if(gapSize > g_ATR * 0.3 && c1Bullish) 
+      {
+         FVG fvg;
+         fvg.isBullish = true;
+         fvg.top = l1;
+         fvg.bottom = h3;
+         fvg.time = iTime(NULL,0,2);
+         fvg.filled = false;
+         fvg.invalidated = false;
+         
+         bool exists = false;
+         int total = ArraySize(activeFVGs);
+         if(total > 0 && activeFVGs[total-1].time == fvg.time) exists = true;
+         
+         if(!exists)
+         {
+            ArrayResize(activeFVGs, total+1);
+            activeFVGs[total] = fvg;
+         }
+      }
+   }
+   
+   // Bearish FVG
+   if(l3 > h1) 
+   {
+       double gapSize = l3 - h1;
+       // Added Check: Candle 1 must be Bearish to justify a Bearish FVG (strong move DOWN)
+       if(gapSize > g_ATR * 0.3 && c1Bearish)
+       {
+         FVG fvg;
+         fvg.isBullish = false;
+         fvg.top = l3;
+         fvg.bottom = h1;
+         fvg.time = iTime(NULL,0,2);
+         fvg.filled = false;
+         fvg.invalidated = false;
+         
+         bool exists = false;
+         int total = ArraySize(activeFVGs);
+         if(total > 0 && activeFVGs[total-1].time == fvg.time) exists = true;
+         
+         if(!exists)
+         {
+            ArrayResize(activeFVGs, total+1);
+            activeFVGs[total] = fvg;
+         }
+       }
+   }
+   
+   // Cleanup FVGs
+   double cHigh = iHigh(NULL,0,0);
+   double cLow = iLow(NULL,0,0);
+   
+   for(int i=ArraySize(activeFVGs)-1; i>=0; i--)
+   {
+      if(activeFVGs[i].invalidated || activeFVGs[i].filled) continue;
+      
+      if(activeFVGs[i].isBullish)
+      {
+         // Invalidated if price closes/moves below bottom? Usually "filled" means touched.
+         // Let's say filled if touched, invalidated if CRUSHED.
+         if(cLow < activeFVGs[i].bottom) activeFVGs[i].invalidated = true; // Broken
+         else if(cLow <= activeFVGs[i].top) activeFVGs[i].filled = true;   // Filled
+      }
+      else
+      {
+         if(cHigh > activeFVGs[i].top) activeFVGs[i].invalidated = true; // Broken
+         else if(cHigh >= activeFVGs[i].bottom) activeFVGs[i].filled = true; // Filled
+      }
+      
+      if(iTime(NULL,0,0) - activeFVGs[i].time > PeriodSeconds() * 50)
+         activeFVGs[i].invalidated = true;
+   }
+}
+
+//+------------------------------------------------------------------+
+//| UTILS: Execution                                                 |
+//+------------------------------------------------------------------+
+void ExecuteTrade(ENUM_ORDER_TYPE type, string comment)
+{
+   double sl=0, tp=0;
+   double price = (type == ORDER_TYPE_BUY) ? symbolInfo.Ask() : symbolInfo.Bid();
+   
+   // ATR Based SL
+   double slDist = g_ATR * InpSL_ATR_Mult;
+   double tpDist = slDist * InpRiskReward;
+   
+   if(type == ORDER_TYPE_BUY)
+   {
+      sl = price - slDist;
+      tp = price + tpDist;
+   }
+   else
+   {
+      sl = price + slDist;
+      tp = price - tpDist;
+   }
+   
+   // Gold-Safe Lot Calculation
+   double equity = account.Equity();
+   double riskAmount = equity * (InpRiskPercent / 100.0);
+   
+   // Critical: Handle Contract Size (e.g. 100 for Standard, 10 for Mini, 1 for Micro)
+   // Profit = (Close - Open) * ContractSize * Lots
+   // Risk = (SL_Dist) * ContractSize * Lots
+   // Lots = Risk / (SL_Dist * ContractSize)
+   
+   double contractSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_CONTRACT_SIZE);
+   if(contractSize == 0) contractSize = 100; // Default fallback
+   
+   double lotSize = riskAmount / (slDist * contractSize);
+   lotSize = NormalizeDouble(lotSize, 2);
+   
+   // Safety Caps
+   double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
+   double stepLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
+   
+   if(lotSize < minLot) lotSize = minLot; // Or return if too small
+   if(lotSize > maxLot) lotSize = maxLot;
+   
+   // Step Normalization
+   lotSize = MathFloor(lotSize / stepLot) * stepLot;
+
+   trade.PositionOpen(_Symbol, type, lotSize, price, sl, tp, comment);
+   dailyTrades++;
+}
+
+//+------------------------------------------------------------------+
+//| UTILS: Helpers                                                   |
+//+------------------------------------------------------------------+
+bool IsNewBar()
+{
+   datetime t = iTime(_Symbol, 0, 0);
+   if(t != lastBarTime)
+   {
+      lastBarTime = t;
       return true;
    }
    return false;
 }
 
-//+------------------------------------------------------------------+
-//| Check for New Day                                                |
-//+------------------------------------------------------------------+
-void CheckNewDay()
+bool CheckKillzone()
 {
-   datetime currentDate = StringToTime(TimeToString(TimeCurrent(), TIME_DATE));
-   if(currentDate != lastTradeDate)
-   {
-      dailyTrades = 0;
-      dailyPnL = 0;
-      lastTradeDate = currentDate;
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Check Risk Limits                                                |
-//+------------------------------------------------------------------+
-bool CheckRiskLimits()
-{
-   double currentEquity = account.Equity();
-   
-   // Update peak equity
-   if(currentEquity > peakEquity)
-      peakEquity = currentEquity;
-   
-   // Check daily drawdown
-   double dailyDD = (startingEquity - currentEquity) / startingEquity * 100;
-   if(InpUseEquityStop && dailyDD >= InpMaxDailyDD)
-   {
-      Print("⚠️ Daily Drawdown Limit Reached: ", DoubleToString(dailyDD, 2), "%");
-      return false;
-   }
-   
-   // Check total drawdown
-   double totalDD = (peakEquity - currentEquity) / peakEquity * 100;
-   if(InpUseEquityStop && totalDD >= InpMaxTotalDD)
-   {
-      Print("⚠️ Total Drawdown Limit Reached: ", DoubleToString(totalDD, 2), "%");
-      return false;
-   }
-   
-   // Check max daily trades
-   if(dailyTrades >= InpMaxDailyTrades)
-   {
-      return false;
-   }
-   
-   return true;
-}
-
-//+------------------------------------------------------------------+
-//| Check Session Filter                                             |
-//+------------------------------------------------------------------+
-bool IsValidSession()
-{
-   if(InpSessionFilter == SESSION_ALL)
-      return true;
-      
+   datetime now = TimeCurrent();
    MqlDateTime dt;
-   TimeCurrent(dt);
-   int hour = dt.hour;
+   TimeToStruct(now, dt);
    
-   switch(InpSessionFilter)
+   int utcHour = (dt.hour - InpBrokerOffset + 24) % 24;
+   
+   bool london = (utcHour >= 7 && utcHour < 10);
+   bool ny = (utcHour >= 12 && utcHour < 15);
+   
+   if(InpSessionMode == SESSION_LONDON) return london;
+   if(InpSessionMode == SESSION_NY) return ny;
+   if(InpSessionMode == SESSION_OVERLAP) return (utcHour >= 13 && utcHour < 16); 
+   if(InpSessionMode == SESSION_BOTH) return (london || ny);
+   
+   return true;
+}
+
+bool CheckRisk()
+{
+   datetime today = iTime(_Symbol, PERIOD_D1, 0);
+   if(today != lastTradeDate)
    {
-      case SESSION_LONDON:
-         return (hour >= 8 && hour < 16);  // 08:00 - 16:00 UTC
-         
-      case SESSION_NEWYORK:
-         return (hour >= 13 && hour < 21); // 13:00 - 21:00 UTC
-         
-      case SESSION_OVERLAP:
-         return (hour >= 13 && hour < 16); // 13:00 - 16:00 UTC
+      lastTradeDate = today;
+      dailyTrades = 0;
+      dailyStartEquity = account.Equity();
+   }
+   
+   double currentEq = account.Equity();
+   double dd = (dailyStartEquity - currentEq) / dailyStartEquity * 100.0;
+   
+   if(dd >= InpMaxDailyDD)
+   {
+      Comment("⛔ DAILY DRAWDOWN HIT: ", DoubleToString(dd, 2), "%");
+      return false;
    }
    
    return true;
 }
 
-//+------------------------------------------------------------------+
-//| Calculate Swing Points                                           |
-//+------------------------------------------------------------------+
-void CalculateSwingPoints()
-{
-   double high[], low[];
-   ArraySetAsSeries(high, true);
-   ArraySetAsSeries(low, true);
-   
-   CopyHigh(_Symbol, PERIOD_CURRENT, 0, InpSwingLookback, high);
-   CopyLow(_Symbol, PERIOD_CURRENT, 0, InpSwingLookback, low);
-   
-   // Find swing high
-   int highestBar = ArrayMaximum(high, 0, InpSwingLookback);
-   swingHigh = high[highestBar];
-   swingHighBar = highestBar;
-   
-   // Find swing low
-   int lowestBar = ArrayMinimum(low, 0, InpSwingLookback);
-   swingLow = low[lowestBar];
-   swingLowBar = lowestBar;
-   
-   // Determine trend
-   if(swingHighBar > swingLowBar)
-      trendBullish = true;  // Most recent swing is the low (potential reversal up)
-   else
-      trendBullish = false; // Most recent swing is the high (potential reversal down)
-}
-
-//+------------------------------------------------------------------+
-//| Calculate Fibonacci Levels                                       |
-//+------------------------------------------------------------------+
-void CalculateFibonacciLevels()
-{
-   currentFibHigh = swingHigh;
-   currentFibLow = swingLow;
-   double range = currentFibHigh - currentFibLow;
-   
-   if(trendBullish)
-   {
-      // Retracements from high to low (for buy entries)
-      for(int i = 0; i < 5; i++)
-         fibRetracements[i] = currentFibHigh - (range * fibLevels[i]);
-         
-      // Extensions above high
-      fibExtensions[0] = currentFibHigh + (range * 0.618);
-      fibExtensions[1] = currentFibHigh + range;
-      fibExtensions[2] = currentFibHigh + (range * 1.618);
-   }
-   else
-   {
-      // Retracements from low to high (for sell entries)
-      for(int i = 0; i < 5; i++)
-         fibRetracements[i] = currentFibLow + (range * fibLevels[i]);
-         
-      // Extensions below low
-      fibExtensions[0] = currentFibLow - (range * 0.618);
-      fibExtensions[1] = currentFibLow - range;
-      fibExtensions[2] = currentFibLow - (range * 1.618);
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Analyze Market Structure                                         |
-//+------------------------------------------------------------------+
-void AnalyzeMarketStructure()
-{
-   bosConfirmed = false;
-   chochConfirmed = false;
-   
-   ArrayResize(structurePoints, 0);
-   
-   double high[], low[], close[];
-   ArraySetAsSeries(high, true);
-   ArraySetAsSeries(low, true);
-   ArraySetAsSeries(close, true);
-   
-   CopyHigh(_Symbol, PERIOD_CURRENT, 0, InpStructureLookback, high);
-   CopyLow(_Symbol, PERIOD_CURRENT, 0, InpStructureLookback, low);
-   CopyClose(_Symbol, PERIOD_CURRENT, 0, InpStructureLookback, close);
-   
-   // Find structure points (swing highs and lows)
-   for(int i = 2; i < InpStructureLookback - 2; i++)
-   {
-      // Swing high
-      if(high[i] > high[i-1] && high[i] > high[i-2] && 
-         high[i] > high[i+1] && high[i] > high[i+2])
-      {
-         StructurePoint sp;
-         sp.price = high[i];
-         sp.time = iTime(_Symbol, PERIOD_CURRENT, i);
-         sp.isHigh = true;
-         sp.broken = (close[0] > high[i]);
-         
-         int size = ArraySize(structurePoints);
-         ArrayResize(structurePoints, size + 1);
-         structurePoints[size] = sp;
-         
-         // Check for BOS
-         if(sp.broken && trendBullish)
-            bosConfirmed = true;
-      }
-      
-      // Swing low
-      if(low[i] < low[i-1] && low[i] < low[i-2] && 
-         low[i] < low[i+1] && low[i] < low[i+2])
-      {
-         StructurePoint sp;
-         sp.price = low[i];
-         sp.time = iTime(_Symbol, PERIOD_CURRENT, i);
-         sp.isHigh = false;
-         sp.broken = (close[0] < low[i]);
-         
-         int size = ArraySize(structurePoints);
-         ArrayResize(structurePoints, size + 1);
-         structurePoints[size] = sp;
-         
-         // Check for BOS
-         if(sp.broken && !trendBullish)
-            bosConfirmed = true;
-      }
-   }
-   
-   // Detect CHoCH (Change of Character)
-   if(ArraySize(structurePoints) >= 3)
-   {
-      StructurePoint lastHigh, lastLow, prevHigh, prevLow;
-      bool foundLastHigh = false, foundLastLow = false;
-      bool foundPrevHigh = false, foundPrevLow = false;
-      
-      for(int i = 0; i < ArraySize(structurePoints); i++)
-      {
-         if(structurePoints[i].isHigh)
-         {
-            if(!foundLastHigh) { lastHigh = structurePoints[i]; foundLastHigh = true; }
-            else if(!foundPrevHigh) { prevHigh = structurePoints[i]; foundPrevHigh = true; }
-         }
-         else
-         {
-            if(!foundLastLow) { lastLow = structurePoints[i]; foundLastLow = true; }
-            else if(!foundPrevLow) { prevLow = structurePoints[i]; foundPrevLow = true; }
-         }
-      }
-      
-      if(foundPrevHigh && foundPrevLow)
-      {
-         // CHoCH = Higher low broken in uptrend OR Lower high broken in downtrend
-         double currentClose = close[0];
-         if(trendBullish && currentClose < lastLow.price)
-            chochConfirmed = true;
-         if(!trendBullish && currentClose > lastHigh.price)
-            chochConfirmed = true;
-      }
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Detect Order Blocks                                              |
-//+------------------------------------------------------------------+
-void DetectOrderBlocks()
-{
-   if(!InpTrackOrderBlocks)
-      return;
-      
-   ArrayResize(orderBlocks, 0);
-   
-   double open[], high[], low[], close[];
-   ArraySetAsSeries(open, true);
-   ArraySetAsSeries(high, true);
-   ArraySetAsSeries(low, true);
-   ArraySetAsSeries(close, true);
-   
-   CopyOpen(_Symbol, PERIOD_CURRENT, 0, InpStructureLookback, open);
-   CopyHigh(_Symbol, PERIOD_CURRENT, 0, InpStructureLookback, high);
-   CopyLow(_Symbol, PERIOD_CURRENT, 0, InpStructureLookback, low);
-   CopyClose(_Symbol, PERIOD_CURRENT, 0, InpStructureLookback, close);
-   
-   double currentPrice = close[0];
-   
-   for(int i = 3; i < InpStructureLookback - 1; i++)
-   {
-      // Bullish Order Block: Last down candle before strong up move
-      if(close[i] < open[i] && close[i-1] > open[i-1] && close[i-2] > open[i-2])
-      {
-         // Check for displacement (strong move)
-         if((close[i-2] - close[i]) > 2 * GetATR())
-         {
-            OrderBlock ob;
-            ob.high = high[i];
-            ob.low = low[i];
-            ob.time = iTime(_Symbol, PERIOD_CURRENT, i);
-            ob.bullish = true;
-            ob.mitigated = (currentPrice < ob.low);
-            
-            int size = ArraySize(orderBlocks);
-            ArrayResize(orderBlocks, size + 1);
-            orderBlocks[size] = ob;
-         }
-      }
-      
-      // Bearish Order Block: Last up candle before strong down move
-      if(close[i] > open[i] && close[i-1] < open[i-1] && close[i-2] < open[i-2])
-      {
-         // Check for displacement
-         if((close[i] - close[i-2]) > 2 * GetATR())
-         {
-            OrderBlock ob;
-            ob.high = high[i];
-            ob.low = low[i];
-            ob.time = iTime(_Symbol, PERIOD_CURRENT, i);
-            ob.bullish = false;
-            ob.mitigated = (currentPrice > ob.high);
-            
-            int size = ArraySize(orderBlocks);
-            ArrayResize(orderBlocks, size + 1);
-            orderBlocks[size] = ob;
-         }
-      }
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Detect Fair Value Gaps                                           |
-//+------------------------------------------------------------------+
-void DetectFairValueGaps()
-{
-   if(!InpTrackFVG)
-      return;
-      
-   ArrayResize(fairValueGaps, 0);
-   
-   double high[], low[];
-   ArraySetAsSeries(high, true);
-   ArraySetAsSeries(low, true);
-   
-   CopyHigh(_Symbol, PERIOD_CURRENT, 0, InpStructureLookback, high);
-   CopyLow(_Symbol, PERIOD_CURRENT, 0, InpStructureLookback, low);
-   
-   double currentPrice = symbolInfo.Bid();
-   
-   for(int i = 1; i < InpStructureLookback - 1; i++)
-   {
-      // Bullish FVG: Gap between candle 3 high and candle 1 low
-      if(low[i-1] > high[i+1])
-      {
-         FVG fvg;
-         fvg.high = low[i-1];
-         fvg.low = high[i+1];
-         fvg.time = iTime(_Symbol, PERIOD_CURRENT, i);
-         fvg.bullish = true;
-         fvg.filled = (currentPrice <= fvg.low);
-         
-         int size = ArraySize(fairValueGaps);
-         ArrayResize(fairValueGaps, size + 1);
-         fairValueGaps[size] = fvg;
-      }
-      
-      // Bearish FVG: Gap between candle 1 high and candle 3 low
-      if(high[i-1] < low[i+1])
-      {
-         FVG fvg;
-         fvg.high = low[i+1];
-         fvg.low = high[i-1];
-         fvg.time = iTime(_Symbol, PERIOD_CURRENT, i);
-         fvg.bullish = false;
-         fvg.filled = (currentPrice >= fvg.high);
-         
-         int size = ArraySize(fairValueGaps);
-         ArrayResize(fairValueGaps, size + 1);
-         fairValueGaps[size] = fvg;
-      }
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Detect Liquidity Pools                                           |
-//+------------------------------------------------------------------+
-void DetectLiquidityPools()
-{
-   if(!InpTrackLiquidity)
-      return;
-      
-   ArrayResize(liquidityPools, 0);
-   
-   double high[], low[];
-   ArraySetAsSeries(high, true);
-   ArraySetAsSeries(low, true);
-   
-   CopyHigh(_Symbol, PERIOD_CURRENT, 0, InpStructureLookback, high);
-   CopyLow(_Symbol, PERIOD_CURRENT, 0, InpStructureLookback, low);
-   
-   double currentPrice = symbolInfo.Bid();
-   double buffer = InpLiquidityBuffer * symbolInfo.Point();
-   
-   // Find equal highs (liquidity above)
-   for(int i = 5; i < InpStructureLookback - 5; i++)
-   {
-      if(high[i] > high[i-1] && high[i] > high[i-2] && 
-         high[i] > high[i+1] && high[i] > high[i+2])
-      {
-         // Check for equal high nearby
-         for(int j = i + 5; j < MathMin(i + 20, InpStructureLookback); j++)
-         {
-            if(MathAbs(high[j] - high[i]) < buffer)
-            {
-               LiquidityPool lp;
-               lp.level = MathMax(high[i], high[j]);
-               lp.time = iTime(_Symbol, PERIOD_CURRENT, i);
-               lp.isHigh = true;
-               lp.swept = (currentPrice > lp.level);
-               
-               int size = ArraySize(liquidityPools);
-               ArrayResize(liquidityPools, size + 1);
-               liquidityPools[size] = lp;
-               break;
-            }
-         }
-      }
-   }
-   
-   // Find equal lows (liquidity below)
-   for(int i = 5; i < InpStructureLookback - 5; i++)
-   {
-      if(low[i] < low[i-1] && low[i] < low[i-2] && 
-         low[i] < low[i+1] && low[i] < low[i+2])
-      {
-         // Check for equal low nearby
-         for(int j = i + 5; j < MathMin(i + 20, InpStructureLookback); j++)
-         {
-            if(MathAbs(low[j] - low[i]) < buffer)
-            {
-               LiquidityPool lp;
-               lp.level = MathMin(low[i], low[j]);
-               lp.time = iTime(_Symbol, PERIOD_CURRENT, i);
-               lp.isHigh = false;
-               lp.swept = (currentPrice < lp.level);
-               
-               int size = ArraySize(liquidityPools);
-               ArrayResize(liquidityPools, size + 1);
-               liquidityPools[size] = lp;
-               break;
-            }
-         }
-      }
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Analyze Confluence                                               |
-//+------------------------------------------------------------------+
-void AnalyzeConfluence(int &buyScore, int &sellScore, double rsi, double macdMain, double macdSignal)
-{
-   buyScore = 0;
-   sellScore = 0;
-   
-   double currentPrice = symbolInfo.Bid();
-   double atr = GetATR();
-   
-   // 1. Trend Direction (+1)
-   if(trendBullish) buyScore++;
-   else sellScore++;
-   
-   // 2. Fibonacci Level (+2 for key levels)
-   for(int i = 0; i < 5; i++)
-   {
-      double tolerance = atr * 0.5;
-      if(MathAbs(currentPrice - fibRetracements[i]) < tolerance)
-      {
-         bool isKeyLevel = (fibLevels[i] == 0.382 || fibLevels[i] == 0.500 || fibLevels[i] == 0.618);
-         if(trendBullish) buyScore += (isKeyLevel ? 2 : 1);
-         else sellScore += (isKeyLevel ? 2 : 1);
-         break;
-      }
-   }
-   
-   // 3. RSI Filter (+1)
-   if(InpUseRSI)
-   {
-      if(rsi < InpRSIOversold) buyScore++;
-      if(rsi > InpRSIOverbought) sellScore++;
-   }
-   
-   // 4. MACD Filter (+1)
-   if(InpUseMACD)
-   {
-      if(macdMain > macdSignal && macdMain < 0) buyScore++; // Bullish cross below zero
-      if(macdMain < macdSignal && macdMain > 0) sellScore++; // Bearish cross above zero
-   }
-   
-   // 5. Break of Structure (+2)
-   if(InpRequireBOS && bosConfirmed)
-   {
-      if(trendBullish) buyScore += 2;
-      else sellScore += 2;
-   }
-   
-   // 6. Order Block (+2)
-   if(InpTrackOrderBlocks)
-   {
-      for(int i = 0; i < ArraySize(orderBlocks); i++)
-      {
-         if(!orderBlocks[i].mitigated)
-         {
-            if(orderBlocks[i].bullish && currentPrice >= orderBlocks[i].low && currentPrice <= orderBlocks[i].high)
-               buyScore += 2;
-            if(!orderBlocks[i].bullish && currentPrice >= orderBlocks[i].low && currentPrice <= orderBlocks[i].high)
-               sellScore += 2;
-         }
-      }
-   }
-   
-   // 7. Fair Value Gap (+1)
-   if(InpTrackFVG)
-   {
-      for(int i = 0; i < ArraySize(fairValueGaps); i++)
-      {
-         if(!fairValueGaps[i].filled)
-         {
-            if(fairValueGaps[i].bullish && currentPrice >= fairValueGaps[i].low && currentPrice <= fairValueGaps[i].high)
-               buyScore++;
-            if(!fairValueGaps[i].bullish && currentPrice >= fairValueGaps[i].low && currentPrice <= fairValueGaps[i].high)
-               sellScore++;
-         }
-      }
-   }
-   
-   // 8. Liquidity Sweep (+2)
-   if(InpEnterAfterSweep)
-   {
-      for(int i = 0; i < ArraySize(liquidityPools); i++)
-      {
-         if(liquidityPools[i].swept)
-         {
-            if(!liquidityPools[i].isHigh) buyScore += 2;  // Buy after low sweep
-            if(liquidityPools[i].isHigh) sellScore += 2;  // Sell after high sweep
-         }
-      }
-   }
-   
-   // 9. HTF Alignment (+2)
-   if(InpUseMTF && InpRequireHTFAlignment)
-   {
-      double htfRSI = GetHTFRSI();
-      if(htfRSI < 50 && trendBullish) buyScore += 2;
-      if(htfRSI > 50 && !trendBullish) sellScore += 2;
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Get Required Confluence Based on Mode                            |
-//+------------------------------------------------------------------+
-int GetRequiredConfluence()
-{
-   switch(InpAgentMode)
-   {
-      case AGENT_CONSERVATIVE: return 8;
-      case AGENT_BALANCED:     return 5;
-      case AGENT_AGGRESSIVE:   return 3;
-   }
-   return 5;
-}
-
-//+------------------------------------------------------------------+
-//| Can Open New Position                                            |
-//+------------------------------------------------------------------+
-bool CanOpenNewPosition()
-{
-   // Check position count
-   int openPositions = 0;
-   for(int i = PositionsTotal() - 1; i >= 0; i--)
-   {
-      if(position.SelectByIndex(i))
-      {
-         if(position.Magic() == InpMagicNumber && position.Symbol() == _Symbol)
-            openPositions++;
-      }
-   }
-   
-   return (openPositions < InpMaxPositions);
-}
-
-//+------------------------------------------------------------------+
-//| Execute Trade                                                    |
-//+------------------------------------------------------------------+
-void ExecuteTrade(ENUM_ORDER_TYPE type, double atr, int confluence)
-{
-   double price, sl, tp1, tp2, tp3;
-   double lotSize = CalculateLotSize(atr);
-   
-   if(type == ORDER_TYPE_BUY)
-   {
-      price = symbolInfo.Ask();
-      sl = price - (atr * 2);
-      tp1 = price + (atr * 2 * InpRiskReward1);
-      tp2 = price + (atr * 2 * InpRiskReward2);
-      tp3 = price + (atr * 2 * InpRiskReward3);
-   }
-   else
-   {
-      price = symbolInfo.Bid();
-      sl = price + (atr * 2);
-      tp1 = price - (atr * 2 * InpRiskReward1);
-      tp2 = price - (atr * 2 * InpRiskReward2);
-      tp3 = price - (atr * 2 * InpRiskReward3);
-   }
-   
-   // Normalize prices
-   sl = NormalizeDouble(sl, symbolInfo.Digits());
-   tp1 = NormalizeDouble(tp1, symbolInfo.Digits());
-   
-   string comment = StringFormat("%s|C:%d", InpAgentName, confluence);
-   
-   if(trade.PositionOpen(_Symbol, type, lotSize, price, sl, tp1, comment))
-   {
-      dailyTrades++;
-      Print("✅ ", (type == ORDER_TYPE_BUY ? "BUY" : "SELL"), " executed | Confluence: ", confluence, " | Lot: ", lotSize);
-      agentStatus = "TRADE EXECUTED";
-   }
-   else
-   {
-      Print("❌ Trade failed: ", trade.ResultRetcode(), " - ", trade.ResultRetcodeDescription());
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Calculate Lot Size                                               |
-//+------------------------------------------------------------------+
-double CalculateLotSize(double atr)
-{
-   double riskAmount = account.Balance() * (InpRiskPercent / 100);
-   double slPoints = atr * 2 / symbolInfo.Point();
-   double tickValue = symbolInfo.TickValue();
-   
-   double lotSize = riskAmount / (slPoints * tickValue);
-   
-   // Normalize lot size
-   double minLot = symbolInfo.LotsMin();
-   double maxLot = symbolInfo.LotsMax();
-   double lotStep = symbolInfo.LotsStep();
-   
-   lotSize = MathMax(minLot, MathMin(maxLot, lotSize));
-   lotSize = MathFloor(lotSize / lotStep) * lotStep;
-   
-   return NormalizeDouble(lotSize, 2);
-}
-
-//+------------------------------------------------------------------+
-//| Manage Open Positions                                            |
-//+------------------------------------------------------------------+
-void ManageOpenPositions()
-{
-   for(int i = PositionsTotal() - 1; i >= 0; i--)
-   {
-      if(!position.SelectByIndex(i))
-         continue;
-         
-      if(position.Magic() != InpMagicNumber || position.Symbol() != _Symbol)
-         continue;
-      
-      double currentPrice = (position.PositionType() == POSITION_TYPE_BUY) ? 
-                           symbolInfo.Bid() : symbolInfo.Ask();
-      double openPrice = position.PriceOpen();
-      double sl = position.StopLoss();
-      double tp = position.TakeProfit();
-      
-      // Check if TP1 hit for trailing
-      if(InpTrailAfterTP1)
-      {
-         double slDistance = MathAbs(openPrice - sl);
-         double tp1Level = (position.PositionType() == POSITION_TYPE_BUY) ?
-                          openPrice + (slDistance * InpRiskReward1) :
-                          openPrice - (slDistance * InpRiskReward1);
-         
-         bool passedTP1 = (position.PositionType() == POSITION_TYPE_BUY) ?
-                          (currentPrice >= tp1Level) : (currentPrice <= tp1Level);
-         
-         if(passedTP1)
-         {
-            double newSL;
-            double trailDist = InpTrailDistance * symbolInfo.Point();
-            
-            if(position.PositionType() == POSITION_TYPE_BUY)
-            {
-               newSL = currentPrice - trailDist;
-               if(newSL > sl)
-                  trade.PositionModify(position.Ticket(), newSL, tp);
-            }
-            else
-            {
-               newSL = currentPrice + trailDist;
-               if(newSL < sl)
-                  trade.PositionModify(position.Ticket(), newSL, tp);
-            }
-         }
-      }
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Get Indicator Values                                             |
-//+------------------------------------------------------------------+
-double GetRSI()
-{
-   if(!InpUseRSI || handleRSI == INVALID_HANDLE)
-      return 50;
-      
-   double buffer[];
-   ArraySetAsSeries(buffer, true);
-   CopyBuffer(handleRSI, 0, 0, 1, buffer);
-   return buffer[0];
-}
-
-double GetHTFRSI()
-{
-   if(!InpUseMTF || handleRSI_HTF == INVALID_HANDLE)
-      return 50;
-      
-   double buffer[];
-   ArraySetAsSeries(buffer, true);
-   CopyBuffer(handleRSI_HTF, 0, 0, 1, buffer);
-   return buffer[0];
-}
-
-void GetMACD(double &main, double &signal)
-{
-   if(!InpUseMACD || handleMACD == INVALID_HANDLE)
-   {
-      main = 0;
-      signal = 0;
-      return;
-   }
-   
-   double mainBuffer[], signalBuffer[];
-   ArraySetAsSeries(mainBuffer, true);
-   ArraySetAsSeries(signalBuffer, true);
-   
-   CopyBuffer(handleMACD, 0, 0, 1, mainBuffer);
-   CopyBuffer(handleMACD, 1, 0, 1, signalBuffer);
-   
-   main = mainBuffer[0];
-   signal = signalBuffer[0];
-}
-
-double GetATR()
-{
-   if(handleATR == INVALID_HANDLE)
-      return 0;
-      
-   double buffer[];
-   ArraySetAsSeries(buffer, true);
-   CopyBuffer(handleATR, 0, 0, 1, buffer);
-   return buffer[0];
-}
-
-//+------------------------------------------------------------------+
-//| Update Dashboard                                                 |
-//+------------------------------------------------------------------+
 void UpdateDashboard()
 {
-   if(!InpShowDashboard)
-      return;
-      
-   string prefix = "XAU_DASH_";
-   int x = 20, y = 30;
-   int lineHeight = 20;
-   color textColor = clrWhite;
+   string text = "🥇 XAU PRO v4.2 (Production) | " + EnumToString(InpSessionMode) + "\n";
+   text += "--------------------------------------\n";
+   text += "Price: " + DoubleToString(symbolInfo.Bid(), 2) + "\n";
+   text += "Trend: " + (trendBullish ? "BULLISH (Buy OBs Only)" : "BEARISH (Sell OBs Only)") + "\n";
+   text += "Active OBs: " + IntegerToString(ArraySize(activeOBs)) + " | FVGs: " + IntegerToString(ArraySize(activeFVGs)) + "\n";
+   text += "Spread: " + IntegerToString(symbolInfo.Spread()) + (symbolInfo.Spread() > InpMaxSpread ? " (HIGH!)" : " (OK)") + "\n";
    
-   // Background
-   ObjectCreate(0, prefix + "BG", OBJ_RECTANGLE_LABEL, 0, 0, 0);
-   ObjectSetInteger(0, prefix + "BG", OBJPROP_XDISTANCE, 10);
-   ObjectSetInteger(0, prefix + "BG", OBJPROP_YDISTANCE, 20);
-   ObjectSetInteger(0, prefix + "BG", OBJPROP_XSIZE, 280);
-   ObjectSetInteger(0, prefix + "BG", OBJPROP_YSIZE, 300);
-   ObjectSetInteger(0, prefix + "BG", OBJPROP_BGCOLOR, C'20,20,30');
-   ObjectSetInteger(0, prefix + "BG", OBJPROP_BORDER_TYPE, BORDER_FLAT);
-   ObjectSetInteger(0, prefix + "BG", OBJPROP_CORNER, CORNER_LEFT_UPPER);
-   ObjectSetInteger(0, prefix + "BG", OBJPROP_COLOR, clrGold);
-   
-   // Title
-   CreateLabel(prefix + "TITLE", x, y, "🤖 XAU PRO AGENT", clrGold, 12); y += lineHeight + 10;
-   CreateLabel(prefix + "LINE1", x, y, "━━━━━━━━━━━━━━━━━", clrGray, 10); y += lineHeight;
-   
-   // Status
-   color statusColor = (agentStatus == "TRADE EXECUTED") ? clrLime : 
-                       (agentStatus == "RISK LIMIT HIT") ? clrRed : clrYellow;
-   CreateLabel(prefix + "STATUS", x, y, "Status: " + agentStatus, statusColor, 10); y += lineHeight;
-   
-   // Mode
-   CreateLabel(prefix + "MODE", x, y, "Mode: " + EnumToString(InpAgentMode), clrCyan, 10); y += lineHeight;
-   
-   // Trend
-   string trendStr = trendBullish ? "🔼 BULLISH" : "🔽 BEARISH";
-   color trendColor = trendBullish ? InpBullColor : InpBearColor;
-   CreateLabel(prefix + "TREND", x, y, "Trend: " + trendStr, trendColor, 10); y += lineHeight;
-   
-   // Structure
-   string structStr = bosConfirmed ? "BOS ✓" : "BOS ✗";
-   structStr += chochConfirmed ? " | CHoCH ✓" : " | CHoCH ✗";
-   CreateLabel(prefix + "STRUCT", x, y, "Structure: " + structStr, clrWhite, 10); y += lineHeight;
-   
-   // Fibonacci
-   CreateLabel(prefix + "FIB", x, y, StringFormat("Fib Range: %.5f - %.5f", currentFibLow, currentFibHigh), clrWhite, 10); y += lineHeight;
-   
-   // Order Blocks
-   int activeOBs = 0;
-   for(int i = 0; i < ArraySize(orderBlocks); i++)
-      if(!orderBlocks[i].mitigated) activeOBs++;
-   CreateLabel(prefix + "OB", x, y, "Order Blocks: " + IntegerToString(activeOBs) + " active", clrOrange, 10); y += lineHeight;
-   
-   // FVGs
-   int activeFVGs = 0;
-   for(int i = 0; i < ArraySize(fairValueGaps); i++)
-      if(!fairValueGaps[i].filled) activeFVGs++;
-   CreateLabel(prefix + "FVG", x, y, "Fair Value Gaps: " + IntegerToString(activeFVGs) + " open", clrMagenta, 10); y += lineHeight;
-   
-   // Liquidity
-   CreateLabel(prefix + "LIQ", x, y, "Liquidity Pools: " + IntegerToString(ArraySize(liquidityPools)), clrAqua, 10); y += lineHeight;
-   
-   CreateLabel(prefix + "LINE2", x, y, "━━━━━━━━━━━━━━━━━", clrGray, 10); y += lineHeight;
-   
-   // Daily Stats
-   CreateLabel(prefix + "TRADES", x, y, StringFormat("Daily Trades: %d / %d", dailyTrades, InpMaxDailyTrades), clrWhite, 10); y += lineHeight;
-   
-   double currentEquity = account.Equity();
-   double dailyPnLPercent = (currentEquity - startingEquity) / startingEquity * 100;
-   color pnlColor = dailyPnLPercent >= 0 ? clrLime : clrRed;
-   CreateLabel(prefix + "PNL", x, y, StringFormat("Daily P&L: %.2f%%", dailyPnLPercent), pnlColor, 10); y += lineHeight;
-   
-   double dd = (peakEquity - currentEquity) / peakEquity * 100;
-   CreateLabel(prefix + "DD", x, y, StringFormat("Drawdown: %.2f%% / %.2f%%", dd, InpMaxTotalDD), clrWhite, 10);
+   Comment(text);
 }
-
-//+------------------------------------------------------------------+
-//| Create Label Helper                                              |
-//+------------------------------------------------------------------+
-void CreateLabel(string name, int x, int y, string text, color clr, int fontSize)
-{
-   if(ObjectFind(0, name) < 0)
-      ObjectCreate(0, name, OBJ_LABEL, 0, 0, 0);
-      
-   ObjectSetInteger(0, name, OBJPROP_XDISTANCE, x);
-   ObjectSetInteger(0, name, OBJPROP_YDISTANCE, y);
-   ObjectSetString(0, name, OBJPROP_TEXT, text);
-   ObjectSetString(0, name, OBJPROP_FONT, "Consolas");
-   ObjectSetInteger(0, name, OBJPROP_FONTSIZE, fontSize);
-   ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
-   ObjectSetInteger(0, name, OBJPROP_CORNER, CORNER_LEFT_UPPER);
-}
-
-//+------------------------------------------------------------------+
-//| Draw Fibonacci Levels on Chart                                   |
-//+------------------------------------------------------------------+
-void DrawFibonacciLevels()
-{
-   string prefix = "XAU_FIB_";
-   
-   // Delete old levels
-   ObjectsDeleteAll(0, prefix);
-   
-   datetime startTime = iTime(_Symbol, PERIOD_CURRENT, swingHighBar > swingLowBar ? swingHighBar : swingLowBar);
-   datetime endTime = TimeCurrent();
-   
-   // Draw main levels
-   for(int i = 0; i < 5; i++)
-   {
-      string name = prefix + DoubleToString(fibLevels[i] * 100, 1);
-      ObjectCreate(0, name, OBJ_TREND, 0, startTime, fibRetracements[i], endTime, fibRetracements[i]);
-      ObjectSetInteger(0, name, OBJPROP_COLOR, clrGold);
-      ObjectSetInteger(0, name, OBJPROP_STYLE, STYLE_DOT);
-      ObjectSetInteger(0, name, OBJPROP_WIDTH, 1);
-      ObjectSetString(0, name, OBJPROP_TEXT, DoubleToString(fibLevels[i] * 100, 1) + "%");
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Draw Order Block Zones                                           |
-//+------------------------------------------------------------------+
-void DrawOrderBlockZones()
-{
-   string prefix = "XAU_OB_";
-   
-   // Delete old zones
-   ObjectsDeleteAll(0, prefix);
-   
-   for(int i = 0; i < ArraySize(orderBlocks); i++)
-   {
-      if(orderBlocks[i].mitigated)
-         continue;
-         
-      string name = prefix + IntegerToString(i);
-      ObjectCreate(0, name, OBJ_RECTANGLE, 0, orderBlocks[i].time, orderBlocks[i].high, 
-                   TimeCurrent(), orderBlocks[i].low);
-      ObjectSetInteger(0, name, OBJPROP_COLOR, orderBlocks[i].bullish ? InpBullColor : InpBearColor);
-      ObjectSetInteger(0, name, OBJPROP_FILL, true);
-      ObjectSetInteger(0, name, OBJPROP_BACK, true);
-      ObjectSetInteger(0, name, OBJPROP_STYLE, STYLE_SOLID);
-   }
-}
-
-//+------------------------------------------------------------------+
