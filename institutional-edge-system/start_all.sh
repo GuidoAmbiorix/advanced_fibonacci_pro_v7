@@ -53,21 +53,21 @@ fi
 echo -e "${BLUE}[4/5] Starting Services...${NC}"
 
 echo "  - Starting Proxy Service..."
-docker-compose -f docker-compose.proxy.yml up -d
+docker compose -f docker-compose.proxy.yml up -d
 if [ $? -ne 0 ]; then
     echo -e "${RED}[ERROR] Failed to start Proxy.${NC}"
     exit 1
 fi
 
 echo "  - Starting Shared Infrastructure (RabbitMQ)..."
-docker-compose -f docker-compose.shared.yml up -d
+docker compose -f docker-compose.shared.yml up -d
 if [ $? -ne 0 ]; then
     echo -e "${RED}[ERROR] Failed to start Shared Infrastructure.${NC}"
     exit 1
 fi
 
 echo "  - Starting Fleet Commander..."
-docker-compose -f docker-compose.admin.yml up -d
+docker compose -f docker-compose.admin.yml up -d
 if [ $? -ne 0 ]; then
     echo -e "${RED}[ERROR] Failed to start Orchestrator.${NC}"
     exit 1
@@ -103,7 +103,7 @@ echo "NOTE: Each instance has its own dedicated MT5 terminal."
 echo "      Access VNC ports (3001+) to login to broker accounts."
 echo ""
 echo "To Stop Everything:"
-echo "  docker-compose -f docker-compose.admin.yml down"
-echo "  docker-compose -f docker-compose.proxy.yml down"
-echo "  docker-compose -f docker-compose.shared.yml down"
+echo "  docker compose -f docker-compose.admin.yml down"
+echo "  docker compose -f docker-compose.proxy.yml down"
+echo "  docker compose -f docker-compose.shared.yml down"
 echo ""
