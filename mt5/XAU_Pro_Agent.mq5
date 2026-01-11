@@ -1,12 +1,12 @@
 //+------------------------------------------------------------------+
 //|                                                 XAU_Pro_Agent.mq5 |
-//|          XAU Pro Engine v5.1 - ELITE TIER INSTITUTIONAL           |
-//|               "The Gold Standard" for XAUUSD Scalping            |
+//|          XAU Pro Engine v7.0 - FRONTEND SLOTS ALIGNED            |
+//|            SMC + EMA200 + Killzones (70% WR Target)              |
 //+------------------------------------------------------------------+
 #property copyright "XAU Pro Engine"
 #property link      "https://github.com/GuidoAmbiorix"
-#property version   "5.10"
-#property description "Elite Tier v5.1 (BOS/CHoCH + Partials + First Tap OB + Full Logic)"
+#property version   "7.00"
+#property description "v7.0: Inputs match Frontend Slots exactly. SMC + EMA200 Trend."
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -16,76 +16,79 @@
 #include <Trade\SymbolInfo.mqh>
 
 //+------------------------------------------------------------------+
-//| ENUMERATIONS                                                      |
+//| ENUMERATIONS (Match Frontend)                                     |
 //+------------------------------------------------------------------+
+enum ENUM_DIRECTION
+{
+   DIR_BOTH = 0,           // ↕️ Both
+   DIR_BUY_ONLY = 1,       // 🟢 Buy Only
+   DIR_SELL_ONLY = 2       // 🔴 Sell Only
+};
+
 enum ENUM_SESSION_MODE
 {
-   SESSION_LONDON = 0,     // 07:00 - 10:00 UTC
-   SESSION_NY = 1,         // 12:00 - 15:00 UTC
-   SESSION_OVERLAP = 2,    // 13:00 - 16:00 UTC
-   SESSION_BOTH = 3,       // London + NY
-   SESSION_ALL = 4         // 24/7 (Not Recommended)
+   SESSION_BOTH_KZ = 0,    // 🎯 London + NY Killzones
+   SESSION_LONDON_KZ = 1,  // 🇬🇧 London Killzone (07-10 UTC)
+   SESSION_NY_KZ = 2,      // 🇺🇸 NY Killzone (12-15 UTC)
+   SESSION_OVERLAP_KZ = 3, // ⚡ Overlap Only (13-16 UTC)
+   SESSION_ALL = 4         // 🌍 All Sessions
 };
 
-enum ENUM_ENTRY_PATH
+enum ENUM_SESSION_END
 {
-   PATH_AUTO = 0,          // Check both SMC and Fib
-   PATH_SMC_ONLY = 1,      // Order Blocks / FVG / Sweeps Only
-   PATH_FIB_ONLY = 2       // Golden Zone + Triple Confirmation Only
+   END_HOLD = 0,           // ✋ Hold Trades
+   END_CLOSE = 1,          // ❌ Close All
+   END_DISABLE_NEW = 2     // ⛔ No New Entries
+};
+
+enum ENUM_TSL_MODE
+{
+   TSL_OFF = 0,            // Off
+   TSL_ATR = 1,            // ATR
+   TSL_TIERED = 2          // Tiered
 };
 
 //+------------------------------------------------------------------+
-//| INPUT PARAMETERS                                                  |
+//| INPUT PARAMETERS (Match Frontend Slots EXACTLY)                   |
 //+------------------------------------------------------------------+
 
-input group "========== ELITE CONFIG v5.1 =========="
-input int             InpMagicNumber = 888888;            // Magic Number
-input ENUM_SESSION_MODE InpSessionMode = SESSION_BOTH;    // Trading Session (Killzones)
-input int             InpBrokerOffset = 2;                // Broker UTC Offset (e.g. 2 or 3)
-input ENUM_ENTRY_PATH InpEntryPath = PATH_AUTO;           // Entry Logic Path
-input int             InpMaxSpread = 25;                  // Max Spread (Points) - Safety
+input group "========== CORE =========="
+input int               InpMagicNumber = 888888;           // Magic Number
+input ENUM_DIRECTION    InpDirection = DIR_BOTH;           // Trade Direction
+input int               InpBrokerOffset = 2;               // Broker UTC Offset
 
-input group "========== TRADE MANAGEMENT (ELITE) =========="
-input bool     InpUsePartials = true;         // Enable Partial TP
-input double   InpPartialRR = 1.5;            // Partial TP at 1.5R 
-input double   InpPartialPct = 50.0;          // Close 50% of position
-input bool     InpMoveToBE = true;            // Move SL to BE after Partial
-input double   InpBECushion = 100;            // BE Cushion (points) -> Spread cover
+input group "========== SESSION CONTROL =========="
+input ENUM_SESSION_MODE InpSessionMode = SESSION_BOTH_KZ;  // Session Killzone
+input ENUM_SESSION_END  InpSessionEnd = END_DISABLE_NEW;   // Session End Action
+input bool              InpUseDailyBias = false;           // Use D1 Trend Bias
 
-input group "========== RISK MANAGEMENT =========="
-input double   InpRiskPercent = 1.0;          // Risk Per Trade (%)
-input double   InpRiskReward = 2.0;           // Risk:Reward Ratio (Final TP)
-input double   InpSL_ATR_Mult = 1.4;          // Stop Loss ATR Multiplier
-input double   InpMaxDailyDD = 3.0;           // Max Daily Drawdown (%)
-input int      InpMaxPositions = 1;           // Max Concurrent Positions
+input group "========== RISK / TP / SL =========="
+input double            InpRiskPercent = 0.2;              // Risk %
+input double            InpTPRatio = 1.5;                  // TP Ratio (R)
+input double            InpSL_ATR = 0.5;                   // SL ATR Multiplier
+input ENUM_TSL_MODE     InpTSLMode = TSL_ATR;              // TSL Mode
 
-input group "========== INDICATOR SETTINGS =========="
-// RSI
-input int      InpRSI_Period = 14;            // RSI Period
-input int      InpRSI_BuyLevel = 40;          // RSI Buy Level (Deep Discount)
-input int      InpRSI_SellLevel = 60;         // RSI Sell Level (Premium)
-// MACD (Fast Tuning)
-input int      InpMACD_Fast = 6;              // MACD Fast EMA
-input int      InpMACD_Slow = 18;             // MACD Slow EMA
-input int      InpMACD_Signal = 9;            // MACD Signal
-// Stochastic
-input int      InpStoch_K = 14;               // Stochastic %K
-input int      InpStoch_D = 3;                // Stochastic %D
-input int      InpStoch_Slowing = 3;          // Stochastic Slowing
+input group "========== MACD (Momentum) =========="
+input int               InpMACD_Fast = 5;                  // MACD Fast
+input int               InpMACD_Slow = 13;                 // MACD Slow
+input int               InpMACD_Signal = 6;                // MACD Signal
 
-input group "========== SMC SETTINGS =========="
-input bool     InpUseSMC = true;              // Enable SMC Logic
-input int      InpOB_Lookback = 20;           // Order Block Lookback (Detection)
-input double   InpDisplacement_Mult = 1.5;    // Displacement ATR Multiplier
-input bool     InpUseLiquiditySweeps = true;  // Require Liquidity Sweep
+input group "========== RSI (Value) =========="
+input int               InpRSI_Period = 9;                 // RSI Period
+input int               InpRSI_BuyLevel = 43;              // RSI Buy Ceiling
+input int               InpRSI_SellLevel = 57;             // RSI Sell Floor
 
-input group "========== FIBONACCI SETTINGS =========="
-input int      InpSwingLookback = 20;         // Swing Detection Lookback (Tighter for Structure)
-input bool     InpUseFibEntry = true;         // Enable Fib Golden Zone Entry
+input group "========== STRUCTURE =========="
+input int               InpZigZagLookback = 8;             // ZigZag Lookback
 
-input group "========== DISPLAY =========="
-input bool     InpShowDashboard = true;       // Show Dashboard
-input bool     InpShowZones = true;           // Draw Zones on Chart
+input group "========== SMART MONEY (SMC) =========="
+input bool              InpUseOB = true;                   // Enable Order Blocks
+input int               InpOB_Lookback = 14;               // OB Lookback
+input bool              InpUseSweep = true;                // Enable Liquidity Sweep
+input int               InpSweepLookback = 6;              // Sweep Lookback
+input bool              InpUseFVG = true;                  // Enable Fair Value Gap
+input double            InpFVG_MinATR = 0.3;               // FVG Min Size (ATR)
+
 
 //+------------------------------------------------------------------+
 //| GLOBAL VARIABLES                                                  |
@@ -96,12 +99,12 @@ CAccountInfo   account;
 CSymbolInfo    symbolInfo;
 
 // Indicator Handles
-int hRSI, hMACD, hStoch, hATR, hEMA;
+int hRSI, hMACD, hATR, hEMA;
 
 // State Variables
-double g_RSI, g_MACD_Main, g_MACD_Signal, g_Stoch_K, g_Stoch_D, g_ATR;
+double g_RSI, g_MACD_Main, g_MACD_Signal, g_ATR;
 double g_Prev_MACD_Main, g_Prev_MACD_Signal, g_Prev_MACD_Hist_Value; 
-double g_Prev_Stoch_K;
+double g_EMA200;  // EMA200 for trend detection
 
 // Market Structure (V5.1: CHoCH Added)
 enum ENUM_STRUCT_TREND { TREND_BULLISH, TREND_BEARISH, TREND_NEUTRAL };
@@ -155,18 +158,17 @@ int OnInit()
 
    hRSI = iRSI(NULL, 0, InpRSI_Period, PRICE_CLOSE);
    hMACD = iMACD(NULL, 0, InpMACD_Fast, InpMACD_Slow, InpMACD_Signal, PRICE_CLOSE);
-   hStoch = iStochastic(NULL, 0, InpStoch_K, InpStoch_D, InpStoch_Slowing, MODE_SMA, STO_LOWHIGH);
    hATR = iATR(NULL, 0, 14);
    hEMA = iMA(NULL, 0, 200, 0, MODE_EMA, PRICE_CLOSE); 
 
-   if(hRSI == INVALID_HANDLE || hMACD == INVALID_HANDLE || hStoch == INVALID_HANDLE || hATR == INVALID_HANDLE || hEMA == INVALID_HANDLE)
+   if(hRSI == INVALID_HANDLE || hMACD == INVALID_HANDLE || hATR == INVALID_HANDLE || hEMA == INVALID_HANDLE)
    {
       Print("Error initializing indicators");
       return INIT_FAILED;
    }
 
    dailyStartEquity = account.Equity();
-   Print("🥇 XAU Pro Agent v5.1 Initialized | ELITE TIER Logic Active");
+   Print("🥇 XAU Pro Agent v7.0 Initialized | Frontend Slots Aligned");
    
    return INIT_SUCCEEDED;
 }
@@ -175,10 +177,23 @@ void OnDeinit(const int reason)
 {
    IndicatorRelease(hRSI);
    IndicatorRelease(hMACD);
-   IndicatorRelease(hStoch);
    IndicatorRelease(hATR);
    IndicatorRelease(hEMA);
    ObjectsDeleteAll(0, "XAUPro_");
+}
+
+//+------------------------------------------------------------------+
+//| Check for new bar                                                |
+//+------------------------------------------------------------------+
+bool IsNewBar()
+{
+   datetime currentBarTime = iTime(_Symbol, 0, 0);
+   if(currentBarTime != lastBarTime)
+   {
+      lastBarTime = currentBarTime;
+      return true;
+   }
+   return false;
 }
 
 //+------------------------------------------------------------------+
@@ -188,8 +203,8 @@ void OnTick()
 {
    symbolInfo.RefreshRates();
    
-   // Dashboard update
-   if(InpShowDashboard) UpdateDashboard();
+   // Dashboard update (always show)
+   UpdateDashboard();
    
    // Trade Management
    ManageTrade();
@@ -201,19 +216,15 @@ void OnTick()
    inKillzone = CheckKillzone();
    if(!inKillzone && InpSessionMode != SESSION_ALL) 
    {
-      if(InpShowDashboard) Comment("⏳ OUTSIDE KILLZONE: Waiting for Session...");
       return; 
    }
 
-   // 2. Risk Check
-   if(!CheckRisk()) return;
-   if(symbolInfo.Spread() > InpMaxSpread) return;
-
-   // 3. Update Data & Structure
+   // 2. Update Data & Structure
    UpdateIndicators();
    UpdateStructureV5(); 
    
-   if(InpUseSMC)
+   // 3. SMC Zone Management
+   if(InpUseOB || InpUseFVG)
    {
       ManageOrderBlocks(); 
       ManageFVGs();        
@@ -221,79 +232,102 @@ void OnTick()
 
    // 4. Entry Logic
    if(position.Select(_Symbol)) return; 
-   if(dailyTrades >= 5) return; 
 
    bool signalBuy = false;
    bool signalSell = false;
    string strategy = "";
 
-   if((InpEntryPath == PATH_AUTO || InpEntryPath == PATH_SMC_ONLY) && InpUseSMC)
+   // Check SMC Entry
+   if(InpUseOB || InpUseSweep || InpUseFVG)
    {
       if(CheckSMCEntry("BUY")) { signalBuy = true; strategy = "SMC_OB_Liquidity"; }
       else if(CheckSMCEntry("SELL")) { signalSell = true; strategy = "SMC_OB_Liquidity"; }
    }
 
-   if(!signalBuy && !signalSell && (InpEntryPath == PATH_AUTO || InpEntryPath == PATH_FIB_ONLY) && InpUseFibEntry)
+   // Check Fib Entry if SMC didn't trigger
+   if(!signalBuy && !signalSell)
    {
       if(CheckFibEntry("BUY")) { signalBuy = true; strategy = "FIB_GoldenZone"; }
       else if(CheckFibEntry("SELL")) { signalSell = true; strategy = "FIB_GoldenZone"; }
    }
 
-   // 5. Execution
+   // 5. Direction Filter
+   if(InpDirection == DIR_BUY_ONLY && signalSell) { signalSell = false; }
+   if(InpDirection == DIR_SELL_ONLY && signalBuy) { signalBuy = false; }
+
+   // 6. Execution
    if(signalBuy) ExecuteTrade(ORDER_TYPE_BUY, strategy);
    if(signalSell) ExecuteTrade(ORDER_TYPE_SELL, strategy);
 }
 
 //+------------------------------------------------------------------+
-//| V5.0: Trade Management (Partials/BE)                             |
+//| Trade Management - TSL Modes (ATR/TIERED)                        |
 //+------------------------------------------------------------------+
 void ManageTrade()
 {
    if(!position.Select(_Symbol)) return;
    if(position.Magic() != InpMagicNumber) return;
    
-   string comment = position.Comment();
+   if(InpTSLMode == TSL_OFF) return;
+   
    double openPrice = position.PriceOpen();
    double currentPrice = position.PriceCurrent();
    double sl = position.StopLoss();
    double tp = position.TakeProfit();
    long type = position.PositionType();
-   double vol = position.Volume();
-   
-   double initialRisk = MathAbs(openPrice - sl);
-   if(initialRisk == 0) return; 
    
    double currentProfitPoints = 0;
    if(type == POSITION_TYPE_BUY) currentProfitPoints = currentPrice - openPrice;
    else                          currentProfitPoints = openPrice - currentPrice;
    
-   bool takenPartial = (StringFind(comment, "PARTIAL") >= 0);
+   double initialRisk = MathAbs(openPrice - sl);
+   if(initialRisk == 0) return;
    
-   if(InpUsePartials && !takenPartial)
+   // ATR TSL Mode: Trail SL by ATR distance
+   if(InpTSLMode == TSL_ATR && currentProfitPoints > initialRisk)
    {
-      double targetPoints = initialRisk * InpPartialRR;
-      if(currentProfitPoints >= targetPoints)
+      double atrDistance = g_ATR * InpSL_ATR;
+      double newSL = 0;
+      
+      if(type == POSITION_TYPE_BUY)
       {
-         double closeVol = NormalizeDouble(vol * (InpPartialPct / 100.0), 2);
-         double minVol = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
-         double step = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
-         
-         closeVol = MathFloor(closeVol / step) * step;
-         
-         if(closeVol >= minVol)
+         newSL = currentPrice - atrDistance;
+         if(newSL > sl && newSL < currentPrice)
          {
-            trade.PositionClosePartial(_Symbol, closeVol);
-            Print("💰 PARTIAL TAKEN: ", closeVol, " lots @ ", InpPartialRR, "R");
-            
-            if(InpMoveToBE)
-            {
-               double newSL = 0;
-               if(type == POSITION_TYPE_BUY) newSL = openPrice + (InpBECushion * _Point);
-               else                          newSL = openPrice - (InpBECushion * _Point);
-               
-               trade.PositionModify(_Symbol, newSL, tp);
-               Print("🛡️ SL MOVED TO BE (+Cushion)");
-            }
+            trade.PositionModify(_Symbol, newSL, tp);
+         }
+      }
+      else
+      {
+         newSL = currentPrice + atrDistance;
+         if(newSL < sl && newSL > currentPrice)
+         {
+            trade.PositionModify(_Symbol, newSL, tp);
+         }
+      }
+   }
+   
+   // TIERED TSL Mode: Move to BE at 1R, then trail
+   if(InpTSLMode == TSL_TIERED)
+   {
+      if(currentProfitPoints >= initialRisk && sl != openPrice)
+      {
+         // Move to Break-Even
+         trade.PositionModify(_Symbol, openPrice, tp);
+         Print("�️ TSL TIERED: SL moved to Break-Even");
+      }
+      else if(currentProfitPoints >= initialRisk * 1.5)
+      {
+         // Trail with ATR at 1.5R+
+         double atrDistance = g_ATR * InpSL_ATR;
+         double newSL = 0;
+         
+         if(type == POSITION_TYPE_BUY) newSL = currentPrice - atrDistance;
+         else                           newSL = currentPrice + atrDistance;
+         
+         if((type == POSITION_TYPE_BUY && newSL > sl) || (type == POSITION_TYPE_SELL && newSL < sl))
+         {
+            trade.PositionModify(_Symbol, newSL, tp);
          }
       }
    }
@@ -305,8 +339,8 @@ void ManageTrade()
 void UpdateStructureV5()
 {
    // 1. Get Latest Swing High/Low
-   int hb = iHighest(_Symbol, 0, MODE_HIGH, InpSwingLookback, 1);
-   int lb = iLowest(_Symbol, 0, MODE_LOW, InpSwingLookback, 1);
+   int hb = iHighest(_Symbol, 0, MODE_HIGH, InpZigZagLookback, 1);
+   int lb = iLowest(_Symbol, 0, MODE_LOW, InpZigZagLookback, 1);
    
    double hVal = iHigh(_Symbol, 0, hb);
    double lVal = iLow(_Symbol, 0, lb);
@@ -439,49 +473,44 @@ bool CheckCandleTrigger(string dir)
 
 bool CheckFibEntry(string dir)
 {
-   // Structural Filter: Trend must align (V5.1 strict)
-   if(dir == "BUY" && marketStructure == TREND_BEARISH) return false;
-   if(dir == "SELL" && marketStructure == TREND_BULLISH) return false;
-
-   // Simple Range Calc (Use active structure range?)
-   // For now, use simple swing loop
+   // =============================================================
+   // PYTHON ENGINE LOGIC: EMA200 Trend Filter (not structure-based)
+   // Python: is_bullish = current['close'] > current['ema200']
+   // =============================================================
+   double currentPrice = symbolInfo.Bid();
+   bool isEMABullish = currentPrice > g_EMA200;
+   bool isEMABearish = currentPrice < g_EMA200;
    
-   int hb = iHighest(_Symbol, 0, MODE_HIGH, InpSwingLookback, 1);
-   int lb = iLowest(_Symbol, 0, MODE_LOW, InpSwingLookback, 1);
+   if(dir == "BUY" && !isEMABullish) return false;
+   if(dir == "SELL" && !isEMABearish) return false;
+
+   // Swing Range Calculation
+   int hb = iHighest(_Symbol, 0, MODE_HIGH, InpZigZagLookback, 1);
+   int lb = iLowest(_Symbol, 0, MODE_LOW, InpZigZagLookback, 1);
    double hVal = iHigh(_Symbol, 0, hb);
    double lVal = iLow(_Symbol, 0, lb);
    
    double range = hVal - lVal;
    if(range <= g_ATR) return false;
 
-   double fib618, fib786;
-   double price = symbolInfo.Bid();
+   // =============================================================
+   // PYTHON ENGINE LOGIC: Zone Tolerance = ATR * 0.25
+   // Python: tolerance_price = current['atr'] * 0.25
+   // =============================================================
+   double tolerance = g_ATR * 0.25;
+   double price = currentPrice;
    
-   // Buying Pullback
+   // Golden Zone: 61.8% - 78.6% retracement
    if(dir == "BUY")
    {
-      fib618 = lVal + range * 0.618;
-      fib786 = lVal + range * 0.786; // Note: In BUY, higher price is LESS retracement? 
-      // Retracement from Low to High? No.
-      // Move is Low -> High. Retracement checks levels from High down to Low.
-      // 0 = High, 1 = Low.
-      // 61.8% Retracement = High - Range * 0.618.
-      // 78.6% Retracement = High - Range * 0.786.
-      
-      // My previous logic was: lVal + range * 0.618. That is 61.8% UP from Low.
-      // A deep pullback goes down.
-      // So Level = lVal + (range * (1.0 - 0.618)) = lVal + range*0.382 ?
-      // Let's stick to standard visuals.
-      // Golden Zone for BUY is usually 61.8% - 78.6% OF THE MOVE.
-      // Move = lVal to hVal.
-      // Price Retracts DOWN from hVal.
-      // So we want price to be between (hVal - range*0.618) and (hVal - range*0.786).
-      // Let's fix this math for V5.1 precision.
-      
+      // BUY: Price retraces DOWN from high -> look for deep discount
       double level618 = hVal - (range * 0.618);
       double level786 = hVal - (range * 0.786);
       
-      if(price <= level618 && price >= level786) // Inside Deep Discount
+      // Python: if abs(current_price - zone['price']) < tolerance_price
+      bool inZone = (price <= level618 + tolerance && price >= level786 - tolerance);
+      
+      if(inZone)
       {
           if(!CheckTripleConfirmation(dir)) return false;
           return CheckCandleTrigger(dir);
@@ -489,10 +518,13 @@ bool CheckFibEntry(string dir)
    }
    else // SELL
    {
+      // SELL: Price retraces UP from low -> look for premium zone
       double level618 = lVal + (range * 0.618);
       double level786 = lVal + (range * 0.786);
       
-      if(price >= level618 && price <= level786) // Inside Premium
+      bool inZone = (price >= level618 - tolerance && price <= level786 + tolerance);
+      
+      if(inZone)
       {
           if(!CheckTripleConfirmation(dir)) return false;
           return CheckCandleTrigger(dir);
@@ -507,26 +539,22 @@ bool CheckTripleConfirmation(string dir)
    double currentHist = g_MACD_Main - g_MACD_Signal;
    bool macdOk = (dir == "BUY") ? (currentHist > g_Prev_MACD_Hist_Value) : (currentHist < g_Prev_MACD_Hist_Value);
    
-   bool stochOk = false;
-   if(dir == "BUY") stochOk = (g_Stoch_K > g_Prev_Stoch_K) && (g_Stoch_K < 80);
-   else             stochOk = (g_Stoch_K < g_Prev_Stoch_K) && (g_Stoch_K > 20);
-
-   return rsiOk && macdOk && stochOk;
+   return rsiOk && macdOk;
 }
 
 void UpdateIndicators()
 {
-   double bufRSI[1], bufMACD_M[2], bufMACD_S[2], bufStoch_K[2], bufStoch_D[1], bufATR[1];
+   double bufRSI[1], bufMACD_M[2], bufMACD_S[2], bufATR[1], bufEMA[1];
    CopyBuffer(hRSI, 0, 1, 1, bufRSI);
    CopyBuffer(hMACD, 0, 1, 2, bufMACD_M); CopyBuffer(hMACD, 1, 1, 2, bufMACD_S);
-   CopyBuffer(hStoch, 0, 1, 2, bufStoch_K); CopyBuffer(hStoch, 1, 1, 1, bufStoch_D); 
    CopyBuffer(hATR, 0, 1, 1, bufATR);
+   CopyBuffer(hEMA, 0, 1, 1, bufEMA);  // EMA200
 
    g_RSI = bufRSI[0]; g_MACD_Main = bufMACD_M[1]; g_MACD_Signal = bufMACD_S[1];
    g_Prev_MACD_Main = bufMACD_M[0]; g_Prev_MACD_Signal = bufMACD_S[0];
    g_Prev_MACD_Hist_Value = g_Prev_MACD_Main - g_Prev_MACD_Signal;
-   g_Stoch_K = bufStoch_K[1]; g_Prev_Stoch_K = bufStoch_K[0]; g_Stoch_D = bufStoch_D[0];
    g_ATR = bufATR[0];
+   g_EMA200 = bufEMA[0];
 }
 
 bool CheckKillzone()
@@ -535,40 +563,29 @@ bool CheckKillzone()
    MqlDateTime dt; TimeToStruct(now, dt);
    int utcHour = (dt.hour - InpBrokerOffset + 24) % 24;
    
-   if(utcHour >= 24) utcHour -= 24; // logic fix just in case
+   if(utcHour >= 24) utcHour -= 24;
    
    bool london = (utcHour >= 7 && utcHour < 10);
    bool ny = (utcHour >= 12 && utcHour < 15);
+   bool overlap = (utcHour >= 13 && utcHour < 16);
    
-   if(InpSessionMode == SESSION_LONDON) return london;
-   if(InpSessionMode == SESSION_NY) return ny;
-   if(InpSessionMode == SESSION_OVERLAP) return (utcHour >= 13 && utcHour < 16); 
-   if(InpSessionMode == SESSION_BOTH) return (london || ny);
-   return true;
-}
-
-bool CheckRisk()
-{
-   datetime today = iTime(_Symbol, PERIOD_D1, 0);
-   if(today != lastTradeDate)
-   {
-      lastTradeDate = today; dailyTrades = 0; dailyStartEquity = account.Equity();
-   }
-   double dd = (dailyStartEquity - account.Equity()) / dailyStartEquity * 100.0;
-   if(dd >= InpMaxDailyDD) { Comment("⛔ DAILY DD HIT"); return false; }
-   return true;
+   if(InpSessionMode == SESSION_LONDON_KZ) return london;
+   if(InpSessionMode == SESSION_NY_KZ) return ny;
+   if(InpSessionMode == SESSION_OVERLAP_KZ) return overlap; 
+   if(InpSessionMode == SESSION_BOTH_KZ) return (london || ny);
+   return true; // SESSION_ALL
 }
 
 //+------------------------------------------------------------------+
-//| UTILS: Execution (V5.1 Tick Value Fixed)                         |
+//| Trade Execution (v7.0 - Uses InpSL_ATR and InpTPRatio)           |
 //+------------------------------------------------------------------+
 void ExecuteTrade(ENUM_ORDER_TYPE type, string comment)
 {
    double sl=0, tp=0;
    double price = (type == ORDER_TYPE_BUY) ? symbolInfo.Ask() : symbolInfo.Bid();
    
-   double slDist = g_ATR * InpSL_ATR_Mult;
-   double tpDist = slDist * InpRiskReward;
+   double slDist = g_ATR * InpSL_ATR;
+   double tpDist = slDist * InpTPRatio;
    
    if(type == ORDER_TYPE_BUY) { sl = price - slDist; tp = price + tpDist; }
    else                       { sl = price + slDist; tp = price - tpDist; }
@@ -576,35 +593,14 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, string comment)
    double equity = account.Equity();
    double riskAmount = equity * (InpRiskPercent / 100.0);
    
-   // V5.1 PRECISION: Tick Value Normalization
-   // LotSize = Risk / (SL_Points * TickValue)
    double tickValue = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
    double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
    
-   if(tickValue == 0 || tickSize == 0) 
-   {
-       // Fallback to contract size method if TickValue broken
-       double contractSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_CONTRACT_SIZE);
-       if(contractSize==0) contractSize=100;
-       double lotSize = riskAmount / (slDist * contractSize); // Approx
-   }
-   
-   double slPoints = slDist / _Point; 
-   // Note: TickValue is usually per 1 Lot per TickSize movement.
-   // Risk = Lots * (SL_Points * Point / TickSize) * TickValue 
-   // Simplify: Risk = Lots * SL_Points * TickValue (if Point=TickSize, or adjusted)
-   // Safe formula: Lots = Risk / ( (SL / TickSize) * TickValue )
-   
-   double lotSize = 0;
+   double lotSize = 0.01;
    if(tickSize > 0 && tickValue > 0)
    {
       double ticksRisk = slDist / tickSize;
       lotSize = riskAmount / (ticksRisk * tickValue);
-   }
-   else
-   {
-       // Basic fallback
-       lotSize = 0.01; 
    }
    
    lotSize = NormalizeDouble(lotSize, 2);
@@ -619,19 +615,29 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, string comment)
 
    if(trade.PositionOpen(_Symbol, type, lotSize, price, sl, tp, comment))
    {
-       dailyTrades++;
+      dailyTrades++;
+      Print("🟢 TRADE OPENED: ", comment, " Lots: ", lotSize, " SL: ", slDist/_Point, "pts TP: ", tpDist/_Point, "pts");
    }
 }
 
 // ... ManageOBs, ManageFVGs, CheckSMCEntry (Same as v5.0, just ensure they call the restored functions)
 bool CheckSMCEntry(string dir)
 {
-   if(dir == "BUY" && marketStructure == TREND_BEARISH) return false;
-   if(dir == "SELL" && marketStructure == TREND_BULLISH) return false;
+   // =============================================================
+   // PYTHON ENGINE LOGIC: EMA200 Trend Filter (not structure-based)
+   // Python: is_bullish = current['close'] > current['ema200']
+   // =============================================================
+   double currentPrice = symbolInfo.Bid();
+   bool isEMABullish = currentPrice > g_EMA200;
+   bool isEMABearish = currentPrice < g_EMA200;
+   
+   if(dir == "BUY" && !isEMABullish) return false;
+   if(dir == "SELL" && !isEMABearish) return false;
 
    bool inZone = false;
-   double price = symbolInfo.Bid();
+   double price = currentPrice;
    
+   // Check Order Blocks
    for(int i=0; i<ArraySize(activeOBs); i++)
    {
       if(activeOBs[i].mitigated || activeOBs[i].invalidated) continue;
@@ -642,6 +648,7 @@ bool CheckSMCEntry(string dir)
       }
    }
    
+   // Check FVGs if not in OB
    if(!inZone)
    {
        for(int i=0; i<ArraySize(activeFVGs); i++)
@@ -657,7 +664,11 @@ bool CheckSMCEntry(string dir)
    
    if(!inZone) return false;
 
-   if(InpUseLiquiditySweeps)
+   // =============================================================
+   // PYTHON ENGINE LOGIC: SMC requires Zone + Liquidity Sweep
+   // Python: if (smc_result['in_order_block'] or smc_result['in_fvg']) and smc_result['liquidity_swept']
+   // =============================================================
+   if(InpUseSweep)
    {
       if(!CheckLiquiditySweep(dir)) return false;
    }
@@ -669,7 +680,7 @@ void ManageOrderBlocks() { /* Same as V5.0 */
    double o1=iOpen(NULL,0,2), c1=iClose(NULL,0,2); 
    double o0=iOpen(NULL,0,1), c0=iClose(NULL,0,1); 
    double body0 = MathAbs(c0-o0);
-   bool displacement = body0 > (g_ATR * InpDisplacement_Mult);
+   bool displacement = body0 > (g_ATR * 1.5); // Fixed displacement multiplier
    
    if(displacement)
    {
@@ -731,16 +742,23 @@ void ManageFVGs() { /* Same as V5.0 */
 
 void UpdateDashboard()
 {
-   string trendStr = "NEUTRAL";
-   if(marketStructure == TREND_BULLISH) trendStr = "BULLISH (" + lastStructEvent + ")";
-   if(marketStructure == TREND_BEARISH) trendStr = "BEARISH (" + lastStructEvent + ")";
+   // EMA200 Trend (Python engine logic)
+   string emaTrend = (symbolInfo.Bid() > g_EMA200) ? "📈 BULLISH (Above EMA200)" : "📉 BEARISH (Below EMA200)";
+   
+   // Structure info (kept for reference)
+   string structStr = "NEUTRAL";
+   if(marketStructure == TREND_BULLISH) structStr = "BOS/CHoCH UP";
+   if(marketStructure == TREND_BEARISH) structStr = "BOS/CHoCH DOWN";
 
-   string text = "🥇 XAU PRO v5.1 (FUNCTIONAL) | " + EnumToString(InpSessionMode) + "\n";
+   string text = "🥇 XAU PRO v6.0 (PYTHON ENGINE) | " + EnumToString(InpSessionMode) + "\n";
    text += "--------------------------------------\n";
-   text += "Price: " + DoubleToString(symbolInfo.Bid(), 2) + "\n";
-   text += "Structure: " + trendStr + "\n";
+   text += "Price: " + DoubleToString(symbolInfo.Bid(), 2) + " | EMA200: " + DoubleToString(g_EMA200, 2) + "\n";
+   text += "Trend: " + emaTrend + "\n";
+   text += "Structure: " + structStr + " (" + lastStructEvent + ")\n";
    text += "Active OBs: " + IntegerToString(ArraySize(activeOBs)) + " | FVGs: " + IntegerToString(ArraySize(activeFVGs)) + "\n";
-   text += "Killzone: " + (inKillzone ? "YES" : "NO") + "\n";
+   text += "Killzone: " + (inKillzone ? "YES ✅" : "NO ⏳") + "\n";
    
    Comment(text);
 }
+
+// End of file
