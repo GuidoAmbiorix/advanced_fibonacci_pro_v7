@@ -134,6 +134,98 @@ class MT5Connector:
         """Public method to normalize symbol name."""
         return self._normalize_symbol(symbol)
 
+    def _normalize_price(self, symbol: str, price: float) -> float:
+        """
+        Normalize price to symbol's tick size and decimal digits.
+        This prevents MT5 error 10013 (Invalid Request) due to price precision issues.
+        """
+        if not self.connected or price is None or price <= 0:
+            return price
+        
+        try:
+            symbol_info = mt5.symbol_info(symbol)
+            if symbol_info is None:
+                return price
+            
+            digits = symbol_info.digits
+            tick_size = symbol_info.trade_tick_size
+            
+            # Align price to tick size, then round to correct decimal places
+            if tick_size > 0:
+                normalized = round(round(price / tick_size) * tick_size, digits)
+            else:
+                normalized = round(price, digits)
+            
+            return normalized
+        except Exception as e:
+            logger.warning(f"Price normalization failed for {symbol}: {e}")
+            return price
+
+    def _validate_stop_levels(
+        self, 
+        symbol: str, 
+        order_type: str, 
+        entry_price: float, 
+        stop_loss: float, 
+        take_profit: float
+    ) -> tuple:
+        """
+        Validate and adjust SL/TP to meet broker's minimum stop level requirements.
+        Returns adjusted (stop_loss, take_profit) tuple.
+        """
+        if not self.connected:
+            return stop_loss, take_profit
+        
+        try:
+            symbol_info = mt5.symbol_info(symbol)
+            if symbol_info is None:
+                return stop_loss, take_profit
+            
+            # Get minimum stop level in points
+            stop_level = symbol_info.trade_stops_level
+            point = symbol_info.point
+            
+            # Minimum distance = stop_level * point + safety buffer (2 points)
+            min_distance = (stop_level + 2) * point
+            
+            is_buy = order_type.upper() in ["BUY", "BUY_LIMIT", "BUY_STOP"]
+            
+            # Validate Stop Loss
+            if stop_loss and stop_loss > 0:
+                sl_distance = abs(entry_price - stop_loss)
+                if sl_distance < min_distance:
+                    old_sl = stop_loss
+                    if is_buy:
+                        stop_loss = entry_price - min_distance
+                    else:
+                        stop_loss = entry_price + min_distance
+                    stop_loss = self._normalize_price(symbol, stop_loss)
+                    logger.warning(
+                        f"⚠️ SL adjusted for {symbol}: {old_sl:.5f} → {stop_loss:.5f} "
+                        f"(min distance: {min_distance:.5f})"
+                    )
+            
+            # Validate Take Profit
+            if take_profit and take_profit > 0:
+                tp_distance = abs(entry_price - take_profit)
+                if tp_distance < min_distance:
+                    old_tp = take_profit
+                    if is_buy:
+                        take_profit = entry_price + min_distance
+                    else:
+                        take_profit = entry_price - min_distance
+                    take_profit = self._normalize_price(symbol, take_profit)
+                    logger.warning(
+                        f"⚠️ TP adjusted for {symbol}: {old_tp:.5f} → {take_profit:.5f} "
+                        f"(min distance: {min_distance:.5f})"
+                    )
+            
+            return stop_loss, take_profit
+            
+        except Exception as e:
+            logger.warning(f"Stop level validation failed for {symbol}: {e}")
+            return stop_loss, take_profit
+
     def connect(self) -> bool:
         """Connect to local dedicated MetaTrader 5 via RPyC"""
         try:
@@ -150,12 +242,27 @@ class MT5Connector:
                 # Establish connection
                 conn = rpyc.classic.connect(mt5_host, mt5_port)
                 
+                # Store connection for later use (deliver dictionaries)
+                self.rpyc_conn = conn
+                
                 # Force update instance config as a fallback
                 if hasattr(conn, '_config'):
                      conn._config['sync_request_timeout'] = 600
                 
                 mt5 = conn.modules.MetaTrader5
                 
+                # Define remote helper functions to handle dict casting
+                # This ensures MT5 receives a native dict, not an RPyC netref
+                conn.execute("""
+import MetaTrader5 as mt5_remote
+def proxy_order_check(req):
+    return mt5_remote.order_check(dict(req))
+def proxy_order_send(req):
+    return mt5_remote.order_send(dict(req))
+""")
+                self.proxy_order_check = conn.namespace['proxy_order_check']
+                self.proxy_order_send = conn.namespace['proxy_order_send']
+
                 # Re-initialize timeframe map with LOCALLY DEFINED constants 
                 # to avoid blocking RPyC calls on property access during startup
                 self.timeframe_map = {
@@ -163,7 +270,7 @@ class MT5Connector:
                     'M30': 30, 'H1': 16385, 'H4': 16388,
                     'D1': 16408, 'W1': 32769, 'MN1': 49153,
                 }
-                logger.info("✅ RPyC connection established")
+                logger.info("✅ RPyC connection established and proxies defined")
                 
             except Exception as e:
                 logger.error(f"❌ Failed to connect via RPyC: {e}")
@@ -374,20 +481,31 @@ class MT5Connector:
     def _get_filling_mode(self, symbol: str) -> int:
         """Determine the correct filling mode for the symbol"""
         if not self.connected:
-            return mt5.ORDER_FILLING_FOK
+            return mt5.ORDER_FILLING_IOC  # IOC is usually safest fallback
         try:
             symbol_info = mt5.symbol_info(symbol)
             if symbol_info is None:
-                return mt5.ORDER_FILLING_FOK
-            filling = symbol_info.filling_mode
-            if filling & 1:
-                return mt5.ORDER_FILLING_FOK
-            if filling & 2:
+                logger.warning(f"No symbol info for {symbol}, using IOC")
                 return mt5.ORDER_FILLING_IOC
-            return mt5.ORDER_FILLING_RETURN
+            
+            filling = symbol_info.filling_mode
+            logger.info(f"📊 Symbol {symbol} filling_mode flags: {filling} (binary: {bin(filling)})")
+            
+            # Try filling modes in order of typical broker compatibility
+            # IOC (2) is usually most compatible, then RETURN (4), then FOK (1)
+            if filling & 2:  # IOC
+                logger.info(f"✅ Using ORDER_FILLING_IOC for {symbol}")
+                return mt5.ORDER_FILLING_IOC
+            if filling & 1:  # FOK
+                logger.info(f"✅ Using ORDER_FILLING_FOK for {symbol}")
+                return mt5.ORDER_FILLING_FOK
+            
+            # If zero or only RETURN, try IOC as default
+            logger.warning(f"Filling mode {filling} unclear for {symbol}, trying IOC")
+            return mt5.ORDER_FILLING_IOC
         except Exception as e:
             logger.error(f"Error determining filling mode: {e}")
-            return mt5.ORDER_FILLING_FOK
+            return mt5.ORDER_FILLING_IOC
 
     def _check_slippage(self, expected_price: float, actual_price: float, symbol: str) -> bool:
         """
@@ -453,6 +571,16 @@ class MT5Connector:
                 if symbol_info is None:
                     return None
 
+                # Log symbol trading specs for debugging
+                logger.info(
+                    f"📋 Symbol {symbol} specs: "
+                    f"volume_min={symbol_info.volume_min}, "
+                    f"volume_max={symbol_info.volume_max}, "
+                    f"volume_step={symbol_info.volume_step}, "
+                    f"trade_mode={symbol_info.trade_mode}, "
+                    f"trade_contract_size={symbol_info.trade_contract_size}"
+                )
+
                 if not symbol_info.visible:
                     if not mt5.symbol_select(symbol, True):
                         logger.error("Failed to select symbol {}", symbol)
@@ -462,6 +590,13 @@ class MT5Connector:
                 if tick is None:
                     logger.error("Failed to get tick for {}", symbol)
                     return None
+                
+                # Validate tick prices
+                if tick.ask <= 0 or tick.bid <= 0:
+                    logger.error(f"Invalid tick prices for {symbol}: ask={tick.ask}, bid={tick.bid}. Market may be closed or symbol not found.")
+                    return {"success": False, "error": f"Invalid tick prices for {symbol}. Market may be closed."}
+
+                logger.info(f"📊 Tick for {symbol}: bid={tick.bid}, ask={tick.ask}")
 
                 # Map order types
                 order_type_map = {
@@ -503,25 +638,77 @@ class MT5Connector:
                 point = symbol_info.point
                 deviation = int(self.max_slippage_pips * 10)  # Convert pips to points
 
+                # ============ PRICE NORMALIZATION ============
+                # Normalize execution price to symbol's tick size
+                execution_price = self._normalize_price(symbol, execution_price)
+                
+                # Normalize and validate SL/TP
+                if stop_loss:
+                    stop_loss = self._normalize_price(symbol, stop_loss)
+                if take_profit:
+                    take_profit = self._normalize_price(symbol, take_profit)
+                
+                # Validate stop levels meet broker minimums
+                stop_loss, take_profit = self._validate_stop_levels(
+                    symbol, order_type, execution_price, stop_loss, take_profit
+                )
+                
+                # ============ VOLUME NORMALIZATION ============
+                # Round volume to broker's volume step
+                volume = round(volume / symbol_info.volume_step) * symbol_info.volume_step
+                volume = max(symbol_info.volume_min, min(volume, symbol_info.volume_max))
+
+                # Use larger deviation for crypto and volatile instruments
+                if 'BTC' in symbol or 'ETH' in symbol or 'XAU' in symbol:
+                    deviation = 100  # Much larger deviation for volatile instruments
+
+                # CRITICAL: Ensure all values are native Python types (for RPyC serialization)
                 request = {
-                    "action": action,
-                    "symbol": symbol,
-                    "volume": volume,
-                    "type": order_type_mt5,
-                    "price": execution_price,
-                    "deviation": deviation,
-                    "magic": 234000,
-                    "comment": comment,
-                    "type_time": mt5.ORDER_TIME_GTC,
-                    "type_filling": filling_mode,
+                    "action": int(action),
+                    "symbol": str(symbol),
+                    "volume": float(volume),
+                    "type": int(order_type_mt5),
+                    "price": float(execution_price),
+                    "deviation": int(deviation),
+                    "magic": int(234000),
+                    "comment": str(comment),
+                    "type_time": int(mt5.ORDER_TIME_GTC),
+                    "type_filling": int(filling_mode),
                 }
 
                 if stop_loss:
-                    request["sl"] = stop_loss
+                    request["sl"] = float(stop_loss)
                 if take_profit:
-                    request["tp"] = take_profit
+                    request["tp"] = float(take_profit)
 
-                result = mt5.order_send(request=request)
+                # Log full request for debugging
+                logger.info(f"📤 Sending order request: {request}")
+
+                # USE REMOTE PROXY FUNCTIONS IF AVAILABLE
+                # These wrappers strictly cast the input to dict() on the remote side
+                if hasattr(self, 'proxy_order_check'):
+                     check_result = self.proxy_order_check(request)
+                else:
+                     check_result = mt5.order_check(request)
+
+                if check_result is None:
+                    logger.error(f"❌ order_check returned None! last_error: {mt5.last_error()}")
+                elif check_result.retcode != 0:
+                    logger.warning(
+                        f"⚠️ order_check validation: retcode={check_result.retcode}, "
+                        f"comment={check_result.comment}, "
+                        f"balance={check_result.balance}, "
+                        f"equity={check_result.equity}, "
+                        f"margin={check_result.margin}, "
+                        f"margin_free={check_result.margin_free}"
+                    )
+                else:
+                    logger.info(f"✅ order_check passed: margin_free={check_result.margin_free}")
+                
+                if hasattr(self, 'proxy_order_send'):
+                    result = self.proxy_order_send(request)
+                else:
+                    result = mt5.order_send(request)
 
                 if result is None:
                     logger.error("Order send failed, error: {}", mt5.last_error())
@@ -537,8 +724,19 @@ class MT5Connector:
                         time.sleep(self.retry_delay_ms / 1000)
                         continue
                     
-                    logger.error("Order failed, retcode: {}, description: {}",
-                               result.retcode, result.comment)
+                    # Detailed error logging for debugging
+                    logger.error(
+                        f"❌ Order Failed - Request Details:\n"
+                        f"  Symbol: {symbol}\n"
+                        f"  Type: {order_type} (MT5: {order_type_mt5})\n"
+                        f"  Volume: {volume}\n"
+                        f"  Price: {execution_price}\n"
+                        f"  SL: {stop_loss}\n"
+                        f"  TP: {take_profit}\n"
+                        f"  Filling: {filling_mode}\n"
+                        f"  Deviation: {deviation}\n"
+                        f"  Result: {result.retcode} - {result.comment}"
+                    )
                     return {
                         "success": False,
                         "error": f"MT5 Error: {result.comment} ({result.retcode})"

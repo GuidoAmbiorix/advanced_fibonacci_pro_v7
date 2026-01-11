@@ -105,8 +105,27 @@ class DataLoader:
             return None
 
         # Ensure symbol is selected in Market Watch
-        if not mt5.symbol_select(symbol, True):
-            logger.error(f"Failed to select symbol {symbol} in MT5")
+        # Try with common broker prefixes/suffixes if base symbol fails
+        def try_symbol_variants(base_symbol: str) -> str:
+            """Try common broker symbol variations and return the first that works."""
+            # Common broker prefixes and suffixes
+            prefixes = ['', 'm', 'x', '.']
+            suffixes = ['', 'm', '.a', '.b', 'pro', 'i', '_SB']
+            
+            for prefix in prefixes:
+                for suffix in suffixes:
+                    variant = f"{prefix}{base_symbol}{suffix}"
+                    if mt5.symbol_select(variant, True):
+                        if variant != base_symbol:
+                            logger.info(f"✅ Symbol {base_symbol} resolved to {variant}")
+                        return variant
+            return None
+        
+        resolved_symbol = try_symbol_variants(symbol)
+        if resolved_symbol:
+            symbol = resolved_symbol
+        else:
+            logger.error(f"Failed to select symbol {symbol} in MT5 (tried common variants)")
             return None
 
         # Ensure dates are naive (MT5 preference)

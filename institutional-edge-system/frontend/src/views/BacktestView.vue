@@ -224,6 +224,15 @@
         >
           🔄 Load Positions
         </button>
+        <!-- 🆕 MANUAL TRADE BUTTON (Live mode only) -->
+        <button 
+          v-if="tradingMode === 'live'"
+          @click="showManualTradeModal = true"
+          :disabled="!activeAccount"
+          class="px-4 py-2 bg-gradient-to-r from-yellow-600 to-orange-500 hover:from-yellow-500 hover:to-orange-400 text-white rounded-lg font-semibold flex items-center transition-all shadow-lg shadow-yellow-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          🎯 Manual Trade
+        </button>
         <!-- Export CSV Button (Backtest mode only) -->
         <button 
           v-if="tradingMode === 'backtest'"
@@ -1073,6 +1082,104 @@
         </div>
       </div>
     </transition>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- 🎯 MANUAL TRADE MODAL                                                   -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <transition name="modal">
+      <div v-if="showManualTradeModal" 
+           class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+           @click.self="showManualTradeModal = false">
+        <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+          <!-- Header -->
+          <div class="px-6 py-4 border-b border-gray-700 bg-gradient-to-r from-yellow-600/20 to-orange-600/20">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+              🎯 Manual Trade
+            </h3>
+            <p class="text-sm text-gray-400 mt-1">Execute immediate market order</p>
+          </div>
+          
+          <!-- Form -->
+          <div class="p-6 space-y-4">
+            <!-- Symbol -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Symbol</label>
+              <select v-model="manualTradeForm.symbol"
+                      class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-yellow-500 focus:outline-none">
+                <option value="XAUUSD">🥇 XAUUSD (Gold)</option>
+                <option value="EURUSD">💶 EURUSD</option>
+                <option value="GBPUSD">💷 GBPUSD</option>
+                <option value="USDJPY">💴 USDJPY</option>
+                <option value="GBPJPY">😈 GBPJPY</option>
+                <option value="BTCUSD">₿ BTCUSD</option>
+              </select>
+            </div>
+            
+            <!-- Order Type -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Order Type</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button @click="manualTradeForm.orderType = 'BUY'"
+                        class="py-3 rounded-lg font-bold text-lg transition-all"
+                        :class="manualTradeForm.orderType === 'BUY' 
+                          ? 'bg-gradient-to-r from-green-600 to-emerald-500 text-white shadow-lg shadow-green-500/30' 
+                          : 'bg-gray-800 text-gray-400 hover:bg-gray-700'">
+                  📈 BUY
+                </button>
+                <button @click="manualTradeForm.orderType = 'SELL'"
+                        class="py-3 rounded-lg font-bold text-lg transition-all"
+                        :class="manualTradeForm.orderType === 'SELL' 
+                          ? 'bg-gradient-to-r from-red-600 to-rose-500 text-white shadow-lg shadow-red-500/30' 
+                          : 'bg-gray-800 text-gray-400 hover:bg-gray-700'">
+                  📉 SELL
+                </button>
+              </div>
+            </div>
+            
+            <!-- Volume -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Volume (Lots)</label>
+              <input type="number" v-model.number="manualTradeForm.volume"
+                     step="0.01" min="0.01" max="10"
+                     class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-yellow-500 focus:outline-none">
+            </div>
+            
+            <!-- SL/TP (Optional) -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-gray-400 mb-1">Stop Loss (0 = none)</label>
+                <input type="number" v-model.number="manualTradeForm.stopLoss"
+                       step="0.01"
+                       class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-yellow-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-sm text-gray-400 mb-1">Take Profit (0 = none)</label>
+                <input type="number" v-model.number="manualTradeForm.takeProfit"
+                       step="0.01"
+                       class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-yellow-500 focus:outline-none">
+              </div>
+            </div>
+          </div>
+          
+          <!-- Actions -->
+          <div class="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
+            <button @click="showManualTradeModal = false"
+                    class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">
+              Cancel
+            </button>
+            <button @click="executeManualTrade"
+                    :disabled="manualTradeLoading"
+                    class="px-6 py-2 font-bold rounded-lg transition-all disabled:opacity-50"
+                    :class="manualTradeForm.orderType === 'BUY' 
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white' 
+                      : 'bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-white'">
+              <span v-if="manualTradeLoading" class="animate-spin mr-2">⟳</span>
+              {{ manualTradeLoading ? 'Executing...' : `Execute ${manualTradeForm.orderType}` }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -1102,6 +1209,17 @@ const toastType = ref('info')  // 'success', 'error', 'info', 'warning'
 const showToast = ref(false)  // Show toast notification
 const showQuantPanel = ref(false)  // Quant Analysis panel visibility
 const currentSessionId = ref(null)  // Current backtest session ID for logs
+
+// Manual Trade Modal State
+const showManualTradeModal = ref(false)
+const manualTradeForm = ref({
+  symbol: 'XAUUSD',
+  orderType: 'BUY',
+  volume: 0.01,
+  stopLoss: 0,
+  takeProfit: 0
+})
+const manualTradeLoading = ref(false)
 
 // Trading Mode State
 const tradingMode = ref('backtest')  // 'backtest' or 'live'
@@ -1191,6 +1309,55 @@ const loadOpenPositions = async () => {
   }
 }
 
+// Execute Manual Trade
+const executeManualTrade = async () => {
+  if (!activeAccount.value) {
+    showToastNotification('Please select an account first', 'warning')
+    return
+  }
+  
+  manualTradeLoading.value = true
+  
+  try {
+    // Get symbol with prefix/suffix from account
+    const prefix = activeAccount.value?.symbol_prefix || ''
+    const suffix = activeAccount.value?.symbol_suffix || ''
+    let symbol = manualTradeForm.value.symbol
+    if (prefix && !symbol.startsWith(prefix)) {
+      symbol = prefix + symbol
+    }
+    if (suffix && !symbol.endsWith(suffix)) {
+      symbol = symbol + suffix
+    }
+    
+    const payload = {
+      account_id: activeAccount.value.id,
+      symbol: symbol,
+      order_type: manualTradeForm.value.orderType,
+      volume: manualTradeForm.value.volume,
+      stop_loss: manualTradeForm.value.stopLoss || null,
+      take_profit: manualTradeForm.value.takeProfit || null
+    }
+    
+    console.log('🎯 Executing manual trade:', payload)
+    
+    const response = await axios.post(`${API_URL}/api/trading/manual-order`, payload)
+    
+    if (response.data.success) {
+      showToastNotification(`✅ Trade executed! Ticket: ${response.data.ticket}`, 'success')
+      showManualTradeModal.value = false
+      // Reload positions to see the new trade
+      await loadOpenPositions()
+    } else {
+      showToastNotification(`❌ Trade failed: ${response.data.error}`, 'error')
+    }
+  } catch (error) {
+    console.error('Manual trade error:', error)
+    showToastNotification(`❌ Error: ${error.response?.data?.detail || error.message}`, 'error')
+  } finally {
+    manualTradeLoading.value = false
+  }
+}
 // SYMBOL PRESETS - Complete configurations per symbol (based on research)
 const symbolPresets = {
   'GBPJPY': { 

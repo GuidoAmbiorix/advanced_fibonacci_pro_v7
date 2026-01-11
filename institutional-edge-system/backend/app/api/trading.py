@@ -366,7 +366,34 @@ class LiveTradingSession:
         risk_percent = self.config['risk_percent']
         account_id = str(self.account.id)
         
+        # ============ PRE-TRADE VALIDATION ============
+        # Validate signal has required fields
+        if not hasattr(signal, 'entry_price') or not hasattr(signal, 'stop_loss'):
+            logger.error(f"❌ {self.session_id}: Invalid signal - missing entry_price or stop_loss")
+            return
+        
+        if signal.entry_price <= 0 or signal.stop_loss <= 0:
+            logger.error(f"❌ {self.session_id}: Invalid prices - entry={signal.entry_price}, sl={signal.stop_loss}")
+            return
+        
         sl_distance = abs(signal.entry_price - signal.stop_loss)
+        
+        # Validate SL distance is reasonable
+        # Minimum: 1 pip for forex, 50 cents for gold, 0.01 for JPY
+        min_sl_distance = 0.0001
+        if 'JPY' in symbol:
+            min_sl_distance = 0.01
+        elif 'XAU' in symbol or 'GOLD' in symbol:
+            min_sl_distance = 0.50
+        
+        if sl_distance < min_sl_distance:
+            logger.error(
+                f"❌ {self.session_id}: SL distance too small - {sl_distance:.5f} < {min_sl_distance} "
+                f"(entry={signal.entry_price}, sl={signal.stop_loss})"
+            )
+            return
+        
+        # ============ LOT SIZE CALCULATION ============
         lot_size = self.mt5.calculate_lot_size(
             symbol=symbol,
             risk_percent=risk_percent,
@@ -777,6 +804,74 @@ async def stop_all_trading():
     
     logger.info(f"🛑 STOPPED ALL {count} TRADING SESSIONS")
     return {"success": True, "message": f"Stopped {count} sessions"}
+
+
+class ManualOrderRequest(BaseModel):
+    account_id: int
+    symbol: str
+    order_type: str  # BUY or SELL
+    volume: float
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
+
+
+@router.post("/manual-order")
+async def execute_manual_order(
+    request: ManualOrderRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Execute an immediate market order.
+    This is for testing/manual trading from the frontend.
+    """
+    logger.info(f"🎯 Manual Order Request: {request.symbol} {request.order_type} {request.volume} lots")
+    
+    # Get account
+    account = db.query(MT5Account).filter(MT5Account.id == request.account_id).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    if not account.is_active:
+        raise HTTPException(status_code=400, detail="Account is not active")
+    
+    # Get MT5 connector
+    mt5 = get_mt5_connector(account)
+    if not mt5.connected:
+        raise HTTPException(status_code=500, detail="Failed to connect to MT5")
+    
+    # Validate order type
+    order_type = request.order_type.upper()
+    if order_type not in ["BUY", "SELL"]:
+        raise HTTPException(status_code=400, detail="Order type must be BUY or SELL")
+    
+    # Execute the order
+    result = mt5.open_position(
+        symbol=request.symbol,
+        order_type=order_type,
+        volume=request.volume,
+        stop_loss=request.stop_loss if request.stop_loss and request.stop_loss > 0 else None,
+        take_profit=request.take_profit if request.take_profit and request.take_profit > 0 else None,
+        comment="Manual-UI"
+    )
+    
+    if result is None:
+        logger.error("Manual order returned None")
+        return {"success": False, "error": "Order execution failed - no response from MT5"}
+    
+    if result.get("success"):
+        logger.info(f"✅ Manual Order Success: Ticket {result.get('ticket')}")
+        return {
+            "success": True,
+            "ticket": result.get("ticket"),
+            "price": result.get("price"),
+            "volume": result.get("volume"),
+            "symbol": request.symbol,
+            "order_type": order_type
+        }
+    else:
+        error = result.get("error", "Unknown error")
+        logger.error(f"❌ Manual Order Failed: {error}")
+        return {"success": False, "error": error}
 
 
 @router.post("/kill-switch/activate")
