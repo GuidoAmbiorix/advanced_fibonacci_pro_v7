@@ -1072,6 +1072,14 @@ def proxy_order_send(req):
             lot_size = risk_amount / risk_per_lot
             volume_step = symbol_info.volume_step
             lot_size = round(lot_size / volume_step) * volume_step
+            
+            # Check if we are forcing up to min volume
+            if lot_size < symbol_info.volume_min:
+                logger.warning(
+                    f"⚠️ Small Account Warning: Calculated lots ({lot_size}) < Min lots ({symbol_info.volume_min}). "
+                    f"Forcing trade size to {symbol_info.volume_min} lots. Risk % will be exceeded!"
+                )
+            
             lot_size = max(symbol_info.volume_min, min(lot_size, symbol_info.volume_max))
 
             logger.debug(
