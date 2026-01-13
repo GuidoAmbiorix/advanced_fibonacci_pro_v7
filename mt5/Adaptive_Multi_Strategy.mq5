@@ -18,31 +18,39 @@
 //+------------------------------------------------------------------+
 input group "========== STRATEGY TOGGLES =========="
 input bool InpEnable_Institutional = true;    // Institutional Sweep (Liquidity+CVD)
-input bool InpEnable_VWAP_Scalp    = true;    // VWAP Scalping (Mean Reversion)
+input bool InpEnable_VWAP_Scalp    = false;   // VWAP Scalping (Mean Reversion) - DISABLED FOR SAFETY
 input bool InpEnable_Fibonacci     = true;    // Fibonacci Golden Zone
 input bool InpEnable_Stochastic    = true;    // Stochastic Momentum Burst
 input bool InpEnable_Breakout      = false;   // Breakout Momentum (Lower WinRate)
+input int  InpSwap_Lookback        = 30;      // Lookback for Swings
+// input int  InpMax_Spread_Points    = 50;      // Max Spread removed
+input ENUM_TIMEFRAMES InpTrend_Timeframe = PERIOD_H4; // Trend Confirmation TF
+
+input group "========== CONFLUENCE FILTER =========="
+input bool InpUse_Confluence_Filter  = true;  // Enable Confluence Scoring
+input double InpMin_Confluence_Score = 5.5;   // Min Score to Trade (0-10)
 
 input group "========== RISK MANAGEMENT =========="
-input double InpMax_Drawdown_Percent = 7.0;   // Max Total Drawdown % (Funding Rule)
-input double InpDaily_Loss_Percent   = 3.0;   // Max Daily Loss % (Funding Rule)
-input int    InpMax_Daily_Trades     = 5;     // Max Trades Per Day (0 = Disable)
-input double InpTarget_Daily_Profit  = 2.0;   // Daily Profit Target % (0 = Disable)
-input double InpRisk_Per_Trade       = 1.0;   // Base Risk Per Trade %
-input double InpRisk_Reward_Ratio    = 1.5;   // Base Risk:Reward Ratio
+input double InpMax_Drawdown_Percent = 6.0;   // Max Total Drawdown % (Funding Rule)
+input double InpDaily_Loss_Percent   = 2.5;   // Max Daily Loss % (Funding Rule)
+input int    InpMax_Daily_Trades     = 3;     // Max Trades Per Day (0 = Disable)
+input double InpTarget_Daily_Profit  = 1.5;   // Daily Profit Target % (0 = Disable)
+input double InpRisk_Per_Trade       = 0.5;   // Base Risk Per Trade %
+input double InpRisk_Reward_Ratio    = 2.0;   // Base Risk:Reward Ratio
+input int    InpCooldownMinutes      = 45;    // Cooldown Minutes after Loss Streak
 
 input group "========== TRAILING STOP TIERS =========="
 input double InpTier1_Profit_R = 1.0;   // Tier 1: Profit (R)
-input double InpTier1_Lock_R   = 0.1;   // Tier 1: Lock (R)
+input double InpTier1_Lock_R   = 0.25;  // Tier 1: Lock (R)
 input double InpTier2_Profit_R = 2.0;   // Tier 2: Profit (R)
-input double InpTier2_Lock_R   = 1.2;   // Tier 2: Lock (R)
-input double InpTier3_Profit_R = 4.0;   // Tier 3: Profit (R)
-input double InpTier3_Lock_R   = 3.0;   // Tier 3: Lock (R)
+input double InpTier2_Lock_R   = 1.3;   // Tier 2: Lock (R)
+input double InpTier3_Profit_R = 3.5;   // Tier 3: Profit (R)
+input double InpTier3_Lock_R   = 2.8;   // Tier 3: Lock (R)
 
 input group "========== INDICATOR SETTINGS =========="
 input int InpRSI_Period      = 14;            // RSI Period
 input int InpADX_Period      = 14;            // ADX Period
-input int InpADX_Threshold   = 25;            // Trend Threshold (25+)
+input int InpADX_Threshold   = 22;            // Trend Threshold (25+)
 input int InpATR_Period      = 14;            // ATR Period
 input int InpStoch_K         = 14;            // Stochastic %K
 input int InpStoch_D         = 3;             // Stochastic %D
@@ -50,13 +58,14 @@ input int InpVariable_MA     = 20;            // Variable MA (VWAP Proxy)
 
 input group "========== KILLZONES (EST TIME) =========="
 input int    InpServerTimeOffset        = 2;     // Server Time Offset from EST (e.g. +2 for UTC+2)
+input bool   InpUse_KillZones           = true;  // Restrict to Kill Zones?
 input bool   InpUse_London_Killzone     = true;  // London Killzone (02:00-05:00 EST)
 input string InpLondon_Start            = "02:00";
 input string InpLondon_End              = "05:00";
 input bool   InpUse_NY_Killzone         = true;  // NY Killzone (08:00-11:00 EST)
 input string InpNY_Start                = "08:00";
 input string InpNY_End                  = "11:00";
-input bool   InpUse_LondonClose_Killzone= true;  // London Close (10:00-12:00 EST)
+input bool   InpUse_LondonClose_Killzone= false; // London Close (10:00-12:00 EST)
 input string InpLondonClose_Start       = "10:00";
 input string InpLondonClose_End         = "12:00";
 input bool   InpCloseTrades_At_SessionEnd = true; // Close all trades outside Killzones?
@@ -64,8 +73,8 @@ input bool   InpCloseTrades_At_SessionEnd = true; // Close all trades outside Ki
 input group "========== NEWS FILTER =========="
 input bool   InpUse_NewsFilter       = true;  // Enable News Filter
 input bool   InpNews_HighImpact_Only = true;  // High Impact Only
-input int    InpNews_Before_Mins     = 30;    // Pause Minutes Before News
-input int    InpNews_After_Mins      = 30;    // Pause Minutes After News
+input int    InpNews_Before_Mins     = 45;    // Pause Minutes Before News
+input int    InpNews_After_Mins      = 45;    // Pause Minutes After News
 
 input group "========== SYSTEM =========="
 input int InpMagicNumber     = 999999;        // Magic Number
@@ -87,7 +96,8 @@ int hVWAP; // Custom or approximation
 double AccountBalanceStartDay;
 datetime LastDayChecked;
 int DailyTradeCount;   // New: Track trades today
-double DailyRealizedPL; // New: Track Profit today
+double       DailyRealizedPL; // New: Track Profit today
+datetime     EngineCooldownUntil = 0; // Cooldown Timer
 
 enum ENUM_REGIME {
    REGIME_TRENDING,
@@ -113,8 +123,8 @@ int OnInit()
    hStoch = iStochastic(_Symbol, PERIOD_CURRENT, InpStoch_K, InpStoch_D, 3, MODE_SMA, STO_LOWHIGH);
    hMACD = iMACD(_Symbol, PERIOD_CURRENT, 12, 26, 9, PRICE_CLOSE);
    hEMA20 = iMA(_Symbol, PERIOD_CURRENT, 20, 0, MODE_EMA, PRICE_CLOSE);
-   hEMA50 = iMA(_Symbol, PERIOD_CURRENT, 50, 0, MODE_EMA, PRICE_CLOSE);
-   hEMA200 = iMA(_Symbol, PERIOD_CURRENT, 200, 0, MODE_EMA, PRICE_CLOSE);
+   hEMA50 = iMA(_Symbol, InpTrend_Timeframe, 50, 0, MODE_EMA, PRICE_CLOSE);
+   hEMA200 = iMA(_Symbol, InpTrend_Timeframe, 200, 0, MODE_EMA, PRICE_CLOSE);
    hVWAP = iMA(_Symbol, PERIOD_CURRENT, InpVariable_MA, 0, MODE_SMA, PRICE_TYPICAL); // SMA of Typical Price as VWAP Proxy
    
    if(hRSI == INVALID_HANDLE || hADX == INVALID_HANDLE || hATR == INVALID_HANDLE || 
@@ -176,13 +186,13 @@ void OnTick()
    // ...
    
    // 5. Execute Strategies
-   if(InpEnable_Institutional) RunInstitutionalStrategy(regime, rsi, atr, ema50, ema200);
-   if(InpEnable_VWAP_Scalp)    RunVWAPStrategy(regime, vwap, rsi, ema20, ema50, atr);
-   if(InpEnable_Fibonacci)     RunFibonacciStrategy(regime, ema20, ema50, atr, rsi);
-   if(InpEnable_Stochastic)    RunStochasticStrategy(regime, stochK, stochD, ema20, ema50, atr);
+   if(InpEnable_Institutional) RunInstitutionalStrategy(regime, rsi, atr, ema20, ema50, ema200, adx, stochK, stochD, macd, macdSig, vwap);
+   if(InpEnable_VWAP_Scalp)    RunVWAPStrategy(regime, vwap, rsi, ema20, ema50, ema200, atr, adx, stochK, stochD, macd, macdSig);
+   if(InpEnable_Fibonacci)     RunFibonacciStrategy(regime, ema20, ema50, ema200, atr, rsi, adx, stochK, stochD, macd, macdSig, vwap);
+   if(InpEnable_Stochastic)    RunStochasticStrategy(regime, stochK, stochD, ema20, ema50, ema200, atr, adx, rsi, macd, macdSig, vwap);
    
    // 6. Manage Open Trades (Trailing Stop)
-   ManageTrade();
+   // ManageTrade(); // Removed duplicate call
 }
 
 //+------------------------------------------------------------------+
@@ -311,21 +321,337 @@ void CalculateDailyStats()
    }
 }
 
+datetime GetLastTradeTime()
+{
+   HistorySelect(0, TimeCurrent());
+   int total = HistoryDealsTotal();
+   
+   for(int i = total - 1; i >= 0; i--)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
+      
+      if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_OUT_BY)
+      {
+         if(HistoryDealGetString(ticket, DEAL_SYMBOL) == _Symbol &&
+            HistoryDealGetInteger(ticket, DEAL_MAGIC) == InpMagicNumber)
+         {
+             return (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
+         }
+      }
+   }
+   return 0;
+}
+
+bool HasOpenTrade(string commentFilter)
+{
+   for(int i=PositionsTotal()-1; i>=0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(PositionSelectByTicket(ticket))
+      {
+         if(PositionGetString(POSITION_SYMBOL) == _Symbol && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
+         {
+            string comment = PositionGetString(POSITION_COMMENT);
+            if(StringFind(comment, commentFilter) >= 0) return true;
+         }
+      }
+   }
+   return false;
+}
+
 // Check Funding Firm Rules (Block New Entries)
 ENUM_REGIME DetectRegime(double adxVal, double atrVal)
 {
-   if(adxVal > InpADX_Threshold) return REGIME_TRENDING;
+   // Enhanced Regime Detection
+   // 1. Trend Strength (ADX)
+   bool isTrending = (adxVal > InpADX_Threshold);
    
-   // Simplistic volatility check (refine later if needed)
-   // if(atrVal > ... ) return REGIME_VOLATILE;
+   // 2. Volatility (ATR vs Average ATR) - Simplifying for now without history array access
+   // Ideally we maintain a running average or use another indicator handle
    
+   if(isTrending) return REGIME_TRENDING;
+   
+   // If not trending, check if it's dead or chopping
+   // For now, default to Ranging
    return REGIME_RANGING;
 }
 
 //+------------------------------------------------------------------+
-//| STRATEGY 1: INSTITUTIONAL SWEEP (High Win Rate)                  |
+//| CONFLUENCE HELPERS                                               |
 //+------------------------------------------------------------------+
-void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], double &ema50[], double &ema200[])
+double GetRegimeMultiplier(ENUM_REGIME regime, string factor)
+{
+   if(regime == REGIME_TRENDING)
+   {
+      if(factor == "TREND") return 1.4;
+      if(factor == "MEAN")  return 0.6;
+   }
+   if(regime == REGIME_RANGING)
+   {
+      if(factor == "TREND") return 0.6;
+      if(factor == "MEAN")  return 1.4;
+   }
+   return 1.0;
+}
+
+int GetRecentLosses(string commentFilter, int count)
+{
+   int losses = 0;
+   HistorySelect(iTime(_Symbol, PERIOD_D1, 0), TimeCurrent()); // Check today's history or wider? Let's check last N deals
+   // Actually simpler to check last N unique trades.
+   // Simplified: check last 'count' closed deals for this symbol/magic
+   
+   HistorySelect(0, TimeCurrent());
+   int total = HistoryDealsTotal();
+   int checked = 0;
+   
+   for(int i = total - 1; i >= 0; i--)
+   {
+      if(checked >= count) break;
+      
+      ulong ticket = HistoryDealGetTicket(i);
+      if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue; // Only exits
+      if(HistoryDealGetString(ticket, DEAL_SYMBOL) != _Symbol) continue;
+      
+      string comment = HistoryDealGetString(ticket, DEAL_COMMENT);
+      if(commentFilter != "" && StringFind(comment, commentFilter) < 0) continue; // Filter by strategy tag if set
+      
+      double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+      if(profit < 0) losses++;
+      else losses = 0; // Reset streak on win? User logic says "last 2 trades were SL". 
+                       // Usually "consecutive losses". Let's assume consecutive.
+      
+      checked++;
+   }
+   return losses;
+}
+
+double GetAdaptiveMinScore(string setupTag)
+{
+   int losses = GetRecentLosses(setupTag, 2);
+   if(losses >= 2) return InpMin_Confluence_Score + 1.5; // Adaptive: Require higher score after losses
+   return InpMin_Confluence_Score;
+}
+
+//+------------------------------------------------------------------+
+//| CONFLUENCE SCORE CALCULATOR V2 (Weighted & Adaptive)             |
+//+------------------------------------------------------------------+
+double CalculateConfluenceScore(bool isBuy, ENUM_REGIME regime, double &rsi[], double &stochK[], double &stochD[], double &macd[], double &macdSig[], double &ema20[], double &ema50[], double &ema200[], double &adx[], double &vwap[])
+{
+   double score = 0.0;
+   double close = iClose(_Symbol, PERIOD_CURRENT, 0);
+   
+   // 1. HTF Trend (Base 2.5) - Weighted by Regime
+   // EMA50 > EMA200
+   double trendWeight = 2.5 * GetRegimeMultiplier(regime, "TREND");
+   if(isBuy && ema50[0] > ema200[0]) score += trendWeight;
+   if(!isBuy && ema50[0] < ema200[0]) score += trendWeight;
+   
+   // 2. Killzone Active (Base 2.0)
+   if(IsKillZone()) score += 2.0;
+   
+   // 3. Setup Core / Local Momentum (Base 3.0) 
+   // We assume the caller already validated the Specific Trigger (e.g., Sweep, Cross).
+   // Here we rate the "Context" of that trigger:
+   // Local Trend Alignment: Price vs EMA20
+   double coreWeight = 3.0 * GetRegimeMultiplier(regime, "TREND");
+   if(isBuy && close > ema20[0]) score += 1.5; // Split core weight
+   if(!isBuy && close < ema20[0]) score += 1.5;
+   
+   // 4. Momentum (MACD+RSI) (Base 1.5)
+   double momWeight = 1.5;
+   bool macdAligned = (isBuy && macd[0] > macdSig[0]) || (!isBuy && macd[0] < macdSig[0]);
+   bool rsiAligned  = (isBuy && rsi[0] > 50) || (!isBuy && rsi[0] < 50);
+   
+   if(macdAligned && rsiAligned) score += momWeight;
+   else if(macdAligned || rsiAligned) score += (momWeight * 0.5);
+   
+   // 5. VWAP (Base 1.0) - Weighted by Mean Reversion Regime
+   // If Ranging, VWAP signals are strong mean reversion targets or anchors.
+   // If Trending, VWAP is dynamic support.
+   double vwapWeight = 1.0 * GetRegimeMultiplier(regime, "MEAN"); 
+   // Note: User logic says 'Mean Reversion' gets more weight in Range.
+   
+   // Logic: Position relative to VWAP
+   if(isBuy && close > vwap[0]) score += vwapWeight; // Bullish context
+   if(!isBuy && close < vwap[0]) score += vwapWeight; // Bearish context
+   
+   // 6. ADX Quality (Base 1.0)
+   if(adx[0] > InpADX_Threshold) score += 1.0;
+   
+   // 7. PENALTIES (Conflicts)
+   // RSI Extreme Conflict
+   if(isBuy && rsi[0] > 70) score -= 2.0;       // Buying Top?
+   if(!isBuy && rsi[0] < 30) score -= 2.0;      // Selling Bottom?
+   
+   // Regime Conflict (e.g. Buying High in Range)
+   if(regime == REGIME_RANGING)
+   {
+       // If Buying but Price > VWAP (Expensive in Range), penalize?
+       // This depends on strategy type. For now follow general guidance:
+       // "if Buying and Price > VWAP and Range -> -1.5"
+       if(isBuy && close > vwap[0]) score -= 1.5;
+       if(!isBuy && close < vwap[0]) score -= 1.5;
+   }
+   
+   return score;
+}
+
+//+------------------------------------------------------------------+
+//| QUALITY INDEX & DYNAMIC ENGINE                                   |
+//+------------------------------------------------------------------+
+double GetMaxScore(string setup)
+{
+   if(setup == "Inst")   return 9.5;
+   if(setup == "VWAP")   return 8.0;
+   if(setup == "Fib")    return 9.0;
+   if(setup == "Stoch")  return 7.5;
+   return 8.0;
+}
+
+double GetQualityIndex(double score, string setup)
+{
+   double maxScore = GetMaxScore(setup);
+   if(maxScore <= 0) return 0.0;
+   return MathMin(score / maxScore, 1.0);
+}
+
+double GetDynamicRisk(double quality, ENUM_REGIME regime)
+{
+   double base = InpRisk_Per_Trade;
+
+   // Quality scaling
+   if(quality >= 0.85) base *= 1.4;
+   else if(quality >= 0.75) base *= 1.2;
+   else if(quality <= 0.60) base *= 0.7;
+
+   // Regime safety
+   if(regime == REGIME_RANGING) base *= 0.9; // Range often choppier
+   // If we had REGIME_VOLATILE, we'd reduce more. Assuming current regimes:
+   // Trending vs Ranging vs Breakout.
+   
+   // Hard safety caps
+   base = MathMax(0.25, base);
+   base = MathMin(1.0, base);
+
+   return base;
+}
+
+double GetDynamicRR(double quality, ENUM_REGIME regime)
+{
+   double rr = InpRisk_Reward_Ratio;
+
+   // Quality Boost
+   if(quality >= 0.85) rr += 0.7;
+   else if(quality >= 0.75) rr += 0.4;
+   else if(quality <= 0.60) rr -= 0.3;
+
+   // Regime Adjustment
+   if(regime == REGIME_RANGING) rr -= 0.3; // Take profit sooner in range
+   if(regime == REGIME_TRENDING) rr += 0.3; // Let trend runs run
+
+   // Safety Caps
+   rr = MathMax(1.5, rr);
+   rr = MathMin(3.5, rr);
+
+   return rr;
+}
+
+bool IsEngineHealthy()
+{
+   datetime now = TimeCurrent();
+
+   // If cooldown active -> block trading
+   if(EngineCooldownUntil > now)
+   {
+      // Optional: Reduce log spam
+      return false; 
+   }
+
+   // Check recent loss streak
+   int losses = GetRecentLosses("", 5);
+
+   if(losses >= 3)
+   {
+      // LOGIC FIX:
+      // Only trigger a NEW cooldown if the latest loss happened AFTER the previous cooldown was set.
+      // If we haven't traded since the last cooldown, we shouldn't be penalized again for the same old history.
+      
+      datetime lastTradeTime = GetLastTradeTime();
+      if(lastTradeTime < EngineCooldownUntil)
+      {
+         // We have already served the time for these losses.
+         // Allow trading to resume to try and break the streak.
+         return true;
+      }
+      
+      EngineCooldownUntil = now + (InpCooldownMinutes * 60);
+      if(InpDebugMode)
+         Print("🔥 Cooldown TRIGGERED for ", InpCooldownMinutes, " minutes (loss streak)");
+      return false;
+   }
+
+   return true;
+}
+
+//+------------------------------------------------------------------+
+//| EXECUTION WRAPPER (Dynamic Risk)                                 |
+//+------------------------------------------------------------------+
+// Modified to accept custom Risk %
+void ExecuteTrade(ENUM_ORDER_TYPE type, double sl, double tp, string comment, double riskPct = 0.0)
+{
+   // 0. Engine Health Check
+   if(!IsEngineHealthy())
+   {
+      if(InpDebugMode) Print("🛑 Engine Cooldown Active: Too many recent losses.");
+      return;
+   }
+
+   // 1. Spread Check REMOVED per user request
+   // int spread = SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
+   // if(spread > InpMax_Spread_Points) ...
+
+   double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double slDist = MathAbs(price - sl);
+   
+   // Use Dynamic Risk if passed, otherwise default to InpRisk_Per_Trade
+   double effectiveRisk = (riskPct > 0.0) ? riskPct : InpRisk_Per_Trade;
+   
+   double volume = CalculateLotSizeWithRisk(slDist, effectiveRisk);
+   
+   if(InpDebugMode) Print("🚀 Executing ", comment, " | Risk: ", DoubleToString(effectiveRisk, 2), "% | Lot: ", volume);
+   
+   trade.PositionOpen(_Symbol, type, volume, price, sl, tp, comment);
+}
+
+// Helper to calc lot size based on risk % of Balance
+double CalculateLotSizeWithRisk(double slDistance, double riskPerc)
+{
+   double balance = accountInfo.Balance();
+   double riskAmount = balance * (riskPerc / 100.0);
+   
+   double tickValue = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
+   double tickSize  = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+   
+   if(tickSize == 0 || tickValue == 0) return 0.01;
+   
+   double points = slDistance / tickSize;
+   double lotSize = riskAmount / (points * tickValue);
+   
+   // Normalize
+   double step = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
+   lotSize = MathFloor(lotSize / step) * step;
+   
+   double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
+   
+   if(lotSize < minLot) lotSize = minLot;
+   if(lotSize > maxLot) lotSize = maxLot;
+   
+   return lotSize;
+}
+void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], double &ema20[], double &ema50[], double &ema200[], double &adx[], double &stochK[], double &stochD[], double &macd[], double &macdSig[], double &vwap[])
 {
    // 0. Kill Zone Filter (Critical)
    if(InpUse_KillZones && !IsKillZone()) return;
@@ -336,7 +662,7 @@ void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], 
        return;
    }
    
-   if(position.Select(_Symbol)) return; // One trade at a time per symbol
+   if(HasOpenTrade("Inst")) return; // Only one Institutional trade at a time
    
    // 1. Identify Liquidity POOLS (20 candle High/Low)
    // We look back 20 candles EXCLUDING current (1 to 21)
@@ -372,11 +698,36 @@ void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], 
       
       if(trendOk && rsiOk)
       {
+         // CONFLUENCE CHECK
+         double score = 0.0;
+         double minScore = GetAdaptiveMinScore("Inst");
+         
+         if(InpUse_Confluence_Filter)
+         {
+             score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+             if(score < minScore)
+             {
+                 if(InpDebugMode) Print("⚠️ Inst. Buy Skipped: Score ", score, " < ", minScore);
+                 return;
+             }
+         }
+         else
+         {
+             score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+         }
+
+         // DYNAMIC PARAMS
+         double quality = GetQualityIndex(score, "Inst");
+         double riskPct = GetDynamicRisk(quality, regime);
+         double dynRR   = GetDynamicRR(quality, regime);
+
          double sl = swingLow - (atr[0] * 0.5); // Tight SL behind the sweep
-         double tp = close + (close - sl) * InpRisk_Reward_Ratio;
+         double tp = close + (close - sl) * dynRR;
+         
+         string comment = StringFormat("Inst_Buy_Q%.2f", quality);
          
          if(InpDebugMode) Print("⚡ Institutional BUY: Sweep Low ", swingLow, " SL=", sl);
-         ExecuteTrade(ORDER_TYPE_BUY, sl, tp, "Inst_Sweep_Buy");
+         ExecuteTrade(ORDER_TYPE_BUY, sl, tp, comment, riskPct);
       }
    }
    
@@ -392,11 +743,36 @@ void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], 
       
       if(trendOk && rsiOk)
       {
+         // CONFLUENCE CHECK
+         double score = 0.0;
+         double minScore = GetAdaptiveMinScore("Inst");
+         
+         if(InpUse_Confluence_Filter)
+         {
+             score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+             if(score < minScore)
+             {
+                 if(InpDebugMode) Print("⚠️ Inst. Sell Skipped: Score ", score, " < ", minScore);
+                 return;
+             }
+         }
+         else
+         {
+             score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+         }
+         
+         // DYNAMIC PARAMS
+         double quality = GetQualityIndex(score, "Inst");
+         double riskPct = GetDynamicRisk(quality, regime);
+         double dynRR   = GetDynamicRR(quality, regime);
+
          double sl = swingHigh + (atr[0] * 0.5);
-         double tp = close - (sl - close) * InpRisk_Reward_Ratio;
+         double tp = close - (sl - close) * dynRR;
+         
+         string comment = StringFormat("Inst_Sell_Q%.2f", quality);
          
          if(InpDebugMode) Print("⚡ Institutional SELL: Sweep High ", swingHigh, " SL=", sl);
-         ExecuteTrade(ORDER_TYPE_SELL, sl, tp, "Inst_Sweep_Sell");
+         ExecuteTrade(ORDER_TYPE_SELL, sl, tp, comment, riskPct);
       }
    }
 }
@@ -464,7 +840,7 @@ void CheckSessionClose()
    // If we are NOT in a KillZone, Close All
    if(!IsKillZone())
    {
-      if(position.Select(_Symbol)) // If we have a position
+      if(position.Select(_Symbol) && position.Magic() == InpMagicNumber) // If we have a position with our Magic
       {
           // Close it
           trade.PositionClose(_Symbol);
@@ -473,96 +849,158 @@ void CheckSessionClose()
    }
 }
 
-// Execution Wrapper
-void ExecuteTrade(ENUM_ORDER_TYPE type, double sl, double tp, string comment)
-{
-   double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
-   double lot = CalculateLotSize(MathAbs(price - sl));
-   
-   trade.PositionOpen(_Symbol, type, lot, price, sl, tp, comment);
-}
-
-double CalculateLotSize(double slDist)
-{
-   if(slDist == 0) return 0.01;
-   
-   double tickValue = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
-   double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
-   double balance = accountInfo.Balance();
-   
-   double riskMoney = balance * InpRisk_Per_Trade / 100.0; // 1% Risk
-   double points = slDist / tickSize;
-   
-   double lot = riskMoney / (points * tickValue);
-   lot = MathFloor(lot * 100) / 100.0; // Round to 0.01
-   
-   double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
-   double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
-   
-   if(lot < minLot) lot = minLot;
-   if(lot > maxLot) lot = maxLot;
-   
-   return lot;
-}
+// Duplicate ExecuteTrade and CalculateLotSize removed. 
+// Using top-level dynamic ExecuteTrade and CalculateLotSizeWithRisk instead.
 
 //+------------------------------------------------------------------+
 //| TRADE MANAGEMENT (Tiered Trailing Stop)                          |
 //+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| TRADE MANAGEMENT (GOD MODE - Adaptive Trailing)                  |
+//+------------------------------------------------------------------+
+double GetTrailBoost(double quality)
+{
+   if(quality >= 0.85) return 1.35;
+   if(quality >= 0.75) return 1.15;
+   if(quality >= 0.65) return 1.00;
+   return 0.85;
+}
+
+double GetLastStructureSL(bool isBuy)
+{
+   int lookback = 10; // 10 candles
+   double level = isBuy ? iHigh(_Symbol, PERIOD_CURRENT, 1) : iLow(_Symbol, PERIOD_CURRENT, 1);
+   
+   // We look for LOCAL EXTREMES.
+   // For Buy: We want the recent LOWEST LOW to hide behind? 
+   // Actually for Trailing Buy: We want to trail behind HIGHER LOWS.
+   // But simple logic: Find lowest low in last N candles to protect against deep pullback?
+   // Standard Structure Trail: 
+   // Buy -> Trail below Lows. Sell -> Trail above Highs.
+   
+   if(isBuy) 
+   {
+       level = iLow(_Symbol, PERIOD_CURRENT, 1);
+       for(int i=2; i<=lookback; i++)
+       {
+          double low = iLow(_Symbol, PERIOD_CURRENT, i);
+          if(low < level) level = low;
+       }
+   }
+   else 
+   {
+       level = iHigh(_Symbol, PERIOD_CURRENT, 1);
+       for(int i=2; i<=lookback; i++)
+       {
+          double high = iHigh(_Symbol, PERIOD_CURRENT, i);
+          if(high > level) level = high;
+       }
+   }
+   return level;
+}
+
+double GetATRBuffer()
+{
+   double atrArr[];
+   if(CopyBuffer(hATR, 0, 0, 1, atrArr) > 0)
+   {
+      return atrArr[0] * 0.35; // 35% of ATR as buffer
+   }
+   return 0;
+}
+
+double ParseQualityFromComment(string comment)
+{
+   // Format: "Type_Side_Q0.95"
+   int start = StringFind(comment, "_Q");
+   if(start < 0) return 0.5; // Default if not found
+   
+   string qStr = StringSubstr(comment, start + 2); // Skip "_Q"
+   return StringToDouble(qStr);
+}
+
 void ManageTrade()
 {
-   if(!position.Select(_Symbol)) return;
-   if(position.Magic() != InpMagicNumber) return;
-   
-   double openPrice = position.PriceOpen();
-   double currentPrice = position.PriceCurrent();
-   double sl = position.StopLoss();
-   double tp = position.TakeProfit();
-   long type = position.PositionType();
-   
-   double currentProfitPoints = (type == POSITION_TYPE_BUY) ? (currentPrice - openPrice) : (openPrice - currentPrice);
-   double initialRisk = MathAbs(openPrice - sl);
-   
-   // Avoid division by zero
-   if(initialRisk == 0) return;
-   
-   double profitR = currentProfitPoints / initialRisk; // Profit in R
-   
-   // --- TIERED TRAILING STOP (Configurable) ---
-   // Tier 1: Profit >= X -> Lock Y
-   // Tier 2: Profit >= A -> Lock B
-   // Tier 3: Profit >= C -> Lock D
-   
-   double newSL = 0;
-   
-   if(type == POSITION_TYPE_BUY)
+   // Iterate ALL open positions (Multi-Strategy Aware)
+   for(int i=PositionsTotal()-1; i>=0; i--)
    {
-      double lockPrice = 0;
+      ulong ticket = PositionGetTicket(i);
+      if(!PositionSelectByTicket(ticket)) continue;
+      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
+      if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
+
+      // Parameters
+      bool isBuy = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY);
+      double open = PositionGetDouble(POSITION_PRICE_OPEN);
+      double currentPrice = PositionGetDouble(POSITION_PRICE_CURRENT);
+      double sl = PositionGetDouble(POSITION_SL);
+      double tp = PositionGetDouble(POSITION_TP);
+      string comment = PositionGetString(POSITION_COMMENT);
       
-      // Check Highest Tier First
-      if(profitR >= InpTier3_Profit_R)      lockPrice = openPrice + (initialRisk * InpTier3_Lock_R);
-      else if(profitR >= InpTier2_Profit_R) lockPrice = openPrice + (initialRisk * InpTier2_Lock_R);
-      else if(profitR >= InpTier1_Profit_R) lockPrice = openPrice + (initialRisk * InpTier1_Lock_R);
+      double risk = MathAbs(open - sl);
+      if(risk == 0) continue; // Safety
       
-      // Only move SL UP
-      if(lockPrice > 0 && lockPrice > sl)
+      double profitPoints = isBuy ? (currentPrice - open) : (open - currentPrice);
+      double profitR = profitPoints / risk;
+      
+      // Context
+      double quality = ParseQualityFromComment(comment);
+      double boost = GetTrailBoost(quality);
+      
+      // Helper Regime (Local Recalculation or use Global if updated)
+      // We can check ADX locally for boost
+      double adxArr[], atrArr[]; // temp
+      if(CopyBuffer(hADX, 0, 0, 1, adxArr) > 0 && CopyBuffer(hATR, 0, 0, 1, atrArr) > 0)
       {
-         trade.PositionModify(_Symbol, lockPrice, tp);
-         if(InpDebugMode) Print("🔄 TSL UPDATE (BUY): Profit ", DoubleToString(profitR,2), "R -> Locked ", DoubleToString((lockPrice-openPrice)/initialRisk, 2), "R");
+          ENUM_REGIME r = DetectRegime(adxArr[0], atrArr[0]);
+          if(r == REGIME_RANGING) boost *= 0.85; // Tighten
+          if(r == REGIME_TRENDING) boost *= 1.15; // Loosen
       }
-   }
-   else if(type == POSITION_TYPE_SELL)
-   {
-      double lockPrice = 0;
       
-      if(profitR >= InpTier3_Profit_R)      lockPrice = openPrice - (initialRisk * InpTier3_Lock_R);
-      else if(profitR >= InpTier2_Profit_R) lockPrice = openPrice - (initialRisk * InpTier2_Lock_R);
-      else if(profitR >= InpTier1_Profit_R) lockPrice = openPrice - (initialRisk * InpTier1_Lock_R);
+      double newSL = sl;
+      double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
       
-      // Only move SL DOWN (sl > lockPrice for SELL means current is higher/worse)
-      if(lockPrice > 0 && (sl == 0 || sl > lockPrice))
+      // 🔹 Phase 1 – BE+ (Bank Scalp)
+      if(profitR >= 1.0)
       {
-         trade.PositionModify(_Symbol, lockPrice, tp);
-         if(InpDebugMode) Print("🔄 TSL UPDATE (SELL): Profit ", DoubleToString(profitR,2), "R -> Locked ", DoubleToString((openPrice-lockPrice)/initialRisk, 2), "R");
+         double beLevel = open + (isBuy ? risk*0.15 : -risk*0.15);
+         if(isBuy) newSL = MathMax(newSL, beLevel);
+         else      newSL = MathMin(newSL, beLevel);
+      }
+
+      // 🔹 Phase 2 – Structure Lock (Institutional)
+      if(profitR >= 2.0)
+      {
+         double structure = GetLastStructureSL(isBuy);
+         double atrBuf = GetATRBuffer() * boost;
+
+         if(isBuy) newSL = MathMax(newSL, structure - atrBuf);
+         else      newSL = MathMin(newSL, structure + atrBuf);
+      }
+
+      // 🔹 Phase 3 – Run Mode (Protect Runners)
+      if(profitR >= 3.0)
+      {
+         // Trail closer: Price - 1.2R (Adjusted by Boost)
+         double trailDist = risk * 1.2 * boost;
+         if(isBuy) newSL = MathMax(newSL, currentPrice - trailDist);
+         else      newSL = MathMin(newSL, currentPrice + trailDist);
+      }
+      
+      // 🔄 EXECUTE UPDATE
+      // Only modify if significant change (> 2 points) to avoid spam
+      if(MathAbs(newSL - sl) > 2 * point)
+      {
+         bool modify = false;
+         if(isBuy && newSL > sl) modify = true;
+         if(!isBuy && (sl == 0 || newSL < sl)) modify = true;
+         
+         if(modify)
+         {
+             trade.PositionModify(_Symbol, newSL, tp);
+             if(InpDebugMode) 
+               Print("🦅 GOD MODE TSL (", isBuy?"BUY":"SELL", "): ", DoubleToString(profitR,1), "R -> Locked @ ", newSL);
+         }
       }
    }
 }
@@ -593,12 +1031,17 @@ bool IsNewsTime()
       int total = ArraySize(values);
       for(int i=0; i<total; i++)
       {
-         long eventId = values[i].event_id;
+         ulong eventId = values[i].event_id;
          MqlCalendarEvent event;
          if(CalendarEventById(eventId, event))
          {
+             MqlCalendarCountry countryDesc;
+             if(!CalendarCountryById(event.country_id, countryDesc)) continue;
+             string currency = countryDesc.currency; 
+             if(currency == "") continue;
+
              // Check Currency
-             if(StringFind(base, event.currency) < 0 && StringFind(quote, event.currency) < 0 && event.currency != "USD") // Always check USD? Optional.
+             if(StringFind(base, currency) < 0 && StringFind(quote, currency) < 0 && currency != "USD") // Always check USD? Optional.
                 continue;
              // But actually "USD" is usually in the pair if it matters.
              
@@ -619,7 +1062,7 @@ bool IsNewsTime()
              
              if(now >= (eventTime - InpNews_Before_Mins*60) && now <= (eventTime + InpNews_After_Mins*60))
              {
-                if(InpDebugMode) Print("📰 News Active: ", event.name, " (", event.currency, ")");
+                if(InpDebugMode) Print("📰 News Active: ", event.name, " (", currency, ")");
                 return true;
              }
          }
@@ -631,11 +1074,11 @@ bool IsNewsTime()
 //+------------------------------------------------------------------+
 //| STRATEGY 2: VWAP SCALPING (Mean Reversion)                       |
 //+------------------------------------------------------------------+
-void RunVWAPStrategy(ENUM_REGIME regime, double &vwap[], double &rsi[], double &ema20[], double &ema50[], double &atr[])
+void RunVWAPStrategy(ENUM_REGIME regime, double &vwap[], double &rsi[], double &ema20[], double &ema50[], double &ema200[], double &atr[], double &adx[], double &stochK[], double &stochD[], double &macd[], double &macdSig[])
 {
    // Only trade in Range/Trend, not Breakout
    if(regime == REGIME_BREAKOUT) return;
-   if(position.Select(_Symbol)) return;
+   if(HasOpenTrade("VWAP")) return;
 
    double close = iClose(_Symbol, PERIOD_CURRENT, 0);
    // vwap[], rsi[], etc. passed as arrays
@@ -647,11 +1090,37 @@ void RunVWAPStrategy(ENUM_REGIME regime, double &vwap[], double &rsi[], double &
       // Confirmation: RSI Oversold
       if(rsi[0] < 35)
       {
+          // CONFLUENCE CHECK
+          double score = 0.0;
+          double minScore = GetAdaptiveMinScore("VWAP");
+          
+          if(InpUse_Confluence_Filter)
+          {
+              score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+              if(score < minScore)
+              {
+                  if(InpDebugMode) Print("⚠️ VWAP Buy Skipped: Score ", score, " < ", minScore);
+                  return;
+              }
+          }
+          else
+          {
+              score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+          }
+
+         // DYNAMIC PARAMS
+         double quality = GetQualityIndex(score, "VWAP");
+         double riskPct = GetDynamicRisk(quality, regime);
+         // double dynRR = GetDynamicRR(quality, regime); // VWAP usually target is VWAP line, unless we want extension.
+         // Current logic: tp = vwap[0] + (vwap[0] - close) * 0.5;
+         
          double sl = close - (atr[0] * 1.5);
-         double tp = vwap[0] + (vwap[0] - close) * 0.5; // Target back to VWAP + extension
+         double tp = vwap[0] + (vwap[0] - close) * 0.5; 
+         
+         string comment = StringFormat("VWAP_Buy_Q%.2f", quality);
          
          if(InpDebugMode) Print("⚡ VWAP Scalp BUY: Price ", close, " < VWAP ", vwap[0]);
-         ExecuteTrade(ORDER_TYPE_BUY, sl, tp, "VWAP_Scalp_Buy");
+         ExecuteTrade(ORDER_TYPE_BUY, sl, tp, comment, riskPct);
       }
    }
    
@@ -661,11 +1130,35 @@ void RunVWAPStrategy(ENUM_REGIME regime, double &vwap[], double &rsi[], double &
    {
       if(rsi[0] > 65)
       {
+          // CONFLUENCE CHECK
+          double score = 0.0;
+          double minScore = GetAdaptiveMinScore("VWAP");
+          
+          if(InpUse_Confluence_Filter)
+          {
+              score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+              if(score < minScore)
+              {
+                  if(InpDebugMode) Print("⚠️ VWAP Sell Skipped: Score ", score, " < ", minScore);
+                  return;
+              }
+          }
+          else
+          {
+              score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+          }
+          
+         // DYNAMIC PARAMS
+         double quality = GetQualityIndex(score, "VWAP");
+         double riskPct = GetDynamicRisk(quality, regime);
+
          double sl = close + (atr[0] * 1.5);
          double tp = vwap[0] - (close - vwap[0]) * 0.5;
          
+         string comment = StringFormat("VWAP_Sell_Q%.2f", quality);
+         
          if(InpDebugMode) Print("⚡ VWAP Scalp SELL: Price ", close, " > VWAP ", vwap[0]);
-         ExecuteTrade(ORDER_TYPE_SELL, sl, tp, "VWAP_Scalp_Sell");
+         ExecuteTrade(ORDER_TYPE_SELL, sl, tp, comment, riskPct);
       }
    }
 }
@@ -673,9 +1166,9 @@ void RunVWAPStrategy(ENUM_REGIME regime, double &vwap[], double &rsi[], double &
 //+------------------------------------------------------------------+
 //| STRATEGY 4: STOCHASTIC MOMENTUM                                  |
 //+------------------------------------------------------------------+
-void RunStochasticStrategy(ENUM_REGIME regime, double &stochK[], double &stochD[], double &ema20[], double &ema50[], double &atr[])
+void RunStochasticStrategy(ENUM_REGIME regime, double &stochK[], double &stochD[], double &ema20[], double &ema50[], double &ema200[], double &atr[], double &adx[], double &rsi[], double &macd[], double &macdSig[], double &vwap[])
 {
-   if(position.Select(_Symbol)) return;
+   if(HasOpenTrade("Stoch")) return;
    
    bool uptrend = ema20[0] > ema50[0];
    bool downtrend = ema20[0] < ema50[0];
@@ -686,26 +1179,79 @@ void RunStochasticStrategy(ENUM_REGIME regime, double &stochK[], double &stochD[
       // Cross Check: K crosses above D
       if(stochK[1] < stochD[1] && stochK[0] > stochD[0])
       {
+          // CONFLUENCE CHECK
+          double score = 0.0;
+          double minScore = GetAdaptiveMinScore("Stoch");
+          
+          if(InpUse_Confluence_Filter)
+          {
+              score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+              if(score < minScore)
+              {
+                  if(InpDebugMode) Print("⚠️ Stoch Buy Skipped: Score ", score, " < ", minScore);
+                  return;
+              }
+          }
+          else
+          {
+              score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+          }
+          
+         // DYNAMIC PARAMS
+         double quality = GetQualityIndex(score, "Stoch");
+         double riskPct = GetDynamicRisk(quality, regime);
+         double dynRR   = GetDynamicRR(quality, regime);
+
          double close = iClose(_Symbol, PERIOD_CURRENT, 0);
          double sl = close - (atr[0] * 1.5);
-         double tp = close + (atr[0] * 3.0);
+         double tp = close + (atr[0] * (1.5 * dynRR)); // Adjust ATR multiplier by RR? Original was close + atr*3 (so RR ~2). 
+         // Let's us SL distance * RR
+         // SL dist = atr*1.5. TP dist = slDist * dynRR.
+         tp = close + ((atr[0] * 1.5) * dynRR);
+         
+         string comment = StringFormat("Stoch_Buy_Q%.2f", quality);
          
          if(InpDebugMode) Print("🚀 Stoch Buy: Cross Up in Trend");
-         ExecuteTrade(ORDER_TYPE_BUY, sl, tp, "Stoch_Mom_Buy");
+         ExecuteTrade(ORDER_TYPE_BUY, sl, tp, comment, riskPct);
       }
    }
    
-   // SELL: Downtrend + Stoch Cross DOWN in overbought (> 75)
+   // --- SELL ZONE ---
    else if(downtrend && stochK[1] > 75 && stochD[1] > 75)
    {
       if(stochK[1] > stochD[1] && stochK[0] < stochD[0])
       {
+          // CONFLUENCE CHECK
+          double score = 0.0;
+          double minScore = GetAdaptiveMinScore("Stoch");
+          
+          if(InpUse_Confluence_Filter)
+          {
+              score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+              if(score < minScore)
+              {
+                  if(InpDebugMode) Print("⚠️ Stoch Sell Skipped: Score ", score, " < ", minScore);
+                  return;
+              }
+          }
+          else
+          {
+              score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+          }
+          
+         // DYNAMIC PARAMS
+         double quality = GetQualityIndex(score, "Stoch");
+         double riskPct = GetDynamicRisk(quality, regime);
+         double dynRR   = GetDynamicRR(quality, regime);
+
          double close = iClose(_Symbol, PERIOD_CURRENT, 0);
          double sl = close + (atr[0] * 1.5);
-         double tp = close - (atr[0] * 3.0);
+         double tp = close - ((atr[0] * 1.5) * dynRR);
+         
+         string comment = StringFormat("Stoch_Sell_Q%.2f", quality);
          
          if(InpDebugMode) Print("🚀 Stoch Sell: Cross Down in Trend");
-         ExecuteTrade(ORDER_TYPE_SELL, sl, tp, "Stoch_Mom_Sell");
+         ExecuteTrade(ORDER_TYPE_SELL, sl, tp, comment, riskPct);
       }
    }
 }
@@ -713,9 +1259,9 @@ void RunStochasticStrategy(ENUM_REGIME regime, double &stochK[], double &stochD[
 //+------------------------------------------------------------------+
 //| STRATEGY 3: FIBONACCI GOLDEN ZONE                                |
 //+------------------------------------------------------------------+
-void RunFibonacciStrategy(ENUM_REGIME regime, double &ema20[], double &ema50[], double &atr[], double &rsi[])
+void RunFibonacciStrategy(ENUM_REGIME regime, double &ema20[], double &ema50[], double &ema200[], double &atr[], double &rsi[], double &adx[], double &stochK[], double &stochD[], double &macd[], double &macdSig[], double &vwap[])
 {
-   if(position.Select(_Symbol)) return;
+   if(HasOpenTrade("Fib")) return;
    
    // Find Swing Points (20 candles)
    int lookback = 20;
@@ -747,16 +1293,46 @@ void RunFibonacciStrategy(ENUM_REGIME regime, double &ema20[], double &ema50[], 
       {
          if(rsi[0] < 45) // Oversold confirmation in uptrend
          {
+             // CONFLUENCE CHECK
+             double score = 0.0;
+             double minScore = GetAdaptiveMinScore("Fib");
+             
+             if(InpUse_Confluence_Filter)
+             {
+                 score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+                 if(score < minScore)
+                 {
+                     if(InpDebugMode) Print("⚠️ Fib Buy Skipped: Score ", score, " < ", minScore);
+                     return;
+                 }
+             }
+             else
+             {
+                 score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+             }
+             
+             // DYNAMIC PARAMS
+             double quality = GetQualityIndex(score, "Fib");
+             double riskPct = GetDynamicRisk(quality, regime);
+             // Fib Strategy often has FIXED target (Recent High). 
+             // We can respect that or use RR. 
+             // Logic: tp = swingHigh. 
+             // SL = swingLow - atr*0.5.
+             // If we force Dynamic RR, we might overshoot swingHigh. 
+             // Better to stick to Structure Target for Fib, BUT use dynamic Risk.
+             
             double sl = swingLow - (atr[0] * 0.5); // Stop below swing low
             double tp = swingHigh; // Target recent high
             
+            string comment = StringFormat("Fib_Buy_Q%.2f", quality);
+            
             if(InpDebugMode) Print("📐 Fib Golden Zone BUY @ ", close);
-            ExecuteTrade(ORDER_TYPE_BUY, sl, tp, "Fib_Buy");
+            ExecuteTrade(ORDER_TYPE_BUY, sl, tp, comment, riskPct);
          }
       }
    }
    
-   // --- SELL ZONE (Retracement in Downtrend) ---
+   // --- SELL ZONE ---
    else if(ema20[0] < ema50[0])
    {
       double fib50 = swingHigh - (range * 0.50);
@@ -767,12 +1343,36 @@ void RunFibonacciStrategy(ENUM_REGIME regime, double &ema20[], double &ema50[], 
       {
          if(rsi[0] > 55)
          {
+             // CONFLUENCE CHECK
+             double score = 0.0;
+             double minScore = GetAdaptiveMinScore("Fib");
+             
+             if(InpUse_Confluence_Filter)
+             {
+                 score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+                 if(score < minScore)
+                 {
+                     if(InpDebugMode) Print("⚠️ Fib Sell Skipped: Score ", score, " < ", minScore);
+                     return;
+                 }
+             }
+             else
+             {
+                 score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+             }
+             
+             // DYNAMIC PARAMS
+             double quality = GetQualityIndex(score, "Fib");
+             double riskPct = GetDynamicRisk(quality, regime);
+
             double sl = swingHigh + (atr[0] * 0.5);
             double tp = swingLow;
             
+            string comment = StringFormat("Fib_Sell_Q%.2f", quality);
+            
             if(InpDebugMode) Print("📐 Fib Golden Zone SELL @ ", close);
-            ExecuteTrade(ORDER_TYPE_SELL, sl, tp, "Fib_Sell");
-         }
-      }
-   }
+            ExecuteTrade(ORDER_TYPE_SELL, sl, tp, comment, riskPct);
+          }
+       }
+    }
 }
