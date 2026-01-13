@@ -26,8 +26,18 @@ input bool InpEnable_Breakout      = false;   // Breakout Momentum (Lower WinRat
 input group "========== RISK MANAGEMENT =========="
 input double InpMax_Drawdown_Percent = 7.0;   // Max Total Drawdown % (Funding Rule)
 input double InpDaily_Loss_Percent   = 3.0;   // Max Daily Loss % (Funding Rule)
+input int    InpMax_Daily_Trades     = 5;     // Max Trades Per Day (0 = Disable)
+input double InpTarget_Daily_Profit  = 2.0;   // Daily Profit Target % (0 = Disable)
 input double InpRisk_Per_Trade       = 1.0;   // Base Risk Per Trade %
 input double InpRisk_Reward_Ratio    = 1.5;   // Base Risk:Reward Ratio
+
+input group "========== TRAILING STOP TIERS =========="
+input double InpTier1_Profit_R = 1.0;   // Tier 1: Profit (R)
+input double InpTier1_Lock_R   = 0.1;   // Tier 1: Lock (R)
+input double InpTier2_Profit_R = 2.0;   // Tier 2: Profit (R)
+input double InpTier2_Lock_R   = 1.2;   // Tier 2: Lock (R)
+input double InpTier3_Profit_R = 4.0;   // Tier 3: Profit (R)
+input double InpTier3_Lock_R   = 3.0;   // Tier 3: Lock (R)
 
 input group "========== INDICATOR SETTINGS =========="
 input int InpRSI_Period      = 14;            // RSI Period
@@ -38,9 +48,24 @@ input int InpStoch_K         = 14;            // Stochastic %K
 input int InpStoch_D         = 3;             // Stochastic %D
 input int InpVariable_MA     = 20;            // Variable MA (VWAP Proxy)
 
-input group "========== INSTITUTIONAL SETTINGS =========="
-input int InpSwap_Lookback   = 20;            // Liquidity Sweep Lookback
-input bool InpUse_KillZones  = true;          // Use Strict Kill Zones (London/NY)
+input group "========== KILLZONES (EST TIME) =========="
+input int    InpServerTimeOffset        = 2;     // Server Time Offset from EST (e.g. +2 for UTC+2)
+input bool   InpUse_London_Killzone     = true;  // London Killzone (02:00-05:00 EST)
+input string InpLondon_Start            = "02:00";
+input string InpLondon_End              = "05:00";
+input bool   InpUse_NY_Killzone         = true;  // NY Killzone (08:00-11:00 EST)
+input string InpNY_Start                = "08:00";
+input string InpNY_End                  = "11:00";
+input bool   InpUse_LondonClose_Killzone= true;  // London Close (10:00-12:00 EST)
+input string InpLondonClose_Start       = "10:00";
+input string InpLondonClose_End         = "12:00";
+input bool   InpCloseTrades_At_SessionEnd = true; // Close all trades outside Killzones?
+
+input group "========== NEWS FILTER =========="
+input bool   InpUse_NewsFilter       = true;  // Enable News Filter
+input bool   InpNews_HighImpact_Only = true;  // High Impact Only
+input int    InpNews_Before_Mins     = 30;    // Pause Minutes Before News
+input int    InpNews_After_Mins      = 30;    // Pause Minutes After News
 
 input group "========== SYSTEM =========="
 input int InpMagicNumber     = 999999;        // Magic Number
@@ -61,6 +86,8 @@ int hVWAP; // Custom or approximation
 // State Variables
 double AccountBalanceStartDay;
 datetime LastDayChecked;
+int DailyTradeCount;   // New: Track trades today
+double DailyRealizedPL; // New: Track Profit today
 
 enum ENUM_REGIME {
    REGIME_TRENDING,
@@ -129,10 +156,16 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-   // 1. Check Funding Rules (Daily Loss, Max DD)
+   // 1. Manage Open Trades (Trailing Stop) - Always run management!
+   ManageTrade();
+   
+   // 2. Session Close Check
+   CheckSessionClose();
+
+   // 3. Check Funding Rules (Daily Loss, Max DD, Daily Limits)
    if(!CheckFundingRules()) return;
    
-   // 2. Data Gathering
+   // 4. Data Gathering
    double rsi[], adx[], atr[], stochK[], stochD[], macd[], macdSig[], ema20[], ema50[], ema200[], vwap[];
    if(!GetIndicators(rsi, adx, atr, stochK, stochD, macd, macdSig, ema20, ema50, ema200, vwap)) return;
    
@@ -213,15 +246,72 @@ bool CheckFundingRules()
       return false;
    }
    
+   // --- NEW: Daily Limits Calculation ---
+   CalculateDailyStats();
+   
+   // 1. Max Daily Trades
+   if(InpMax_Daily_Trades > 0 && DailyTradeCount >= InpMax_Daily_Trades)
+   {
+      if(InpDebugMode) Print("STOP: Max Daily Trades Reached (" + IntegerToString(DailyTradeCount) + ")");
+      return false;
+   }
+   
+   // 2. Daily Profit Target
+   if(InpTarget_Daily_Profit > 0)
+   {
+      double profitSide = (DailyRealizedPL + (currentEquity - accountInfo.Balance())); // Realized + Floating? Usually target is Realized.
+      // Let's stick to Realized for "Target Reached, Stop Trading".
+      
+      double profitPct = (DailyRealizedPL / AccountBalanceStartDay) * 100.0;
+      if(profitPct >= InpTarget_Daily_Profit)
+      {
+         if(InpDebugMode) Print("STOP: Daily Profit Target Hit (" + DoubleToString(profitPct, 2) + "%)");
+         return false;
+      }
+   }
+   
    // Max Drawdown (Total)
    // NOTE: This assumes Deposit is initial. For true prop firm, usually fixed value or high water mark.
-   // Simplified for now based on Balance history could be complex. using Balance for simple check.
-   // Ideally pass InitialDeposit as input if needed exact.
    
    return true;
 }
 
-// Detect Market Regime
+//+------------------------------------------------------------------+
+//| UTILS                                                            |
+//+------------------------------------------------------------------+
+void CalculateDailyStats()
+{
+   DailyTradeCount = 0;
+   DailyRealizedPL = 0.0;
+   
+   // Get History for Today
+   HistorySelect(LastDayChecked, TimeCurrent());
+   int total = HistoryDealsTotal();
+   
+   for(int i=0; i<total; i++)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket > 0)
+      {
+         long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
+         long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
+         
+         if(magic == InpMagicNumber)
+         {
+            // Count Exits (Out or Out/By) as closed trades
+            if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_OUT_BY)
+            {
+               DailyTradeCount++;
+               DailyRealizedPL += HistoryDealGetDouble(ticket, DEAL_PROFIT);
+               DailyRealizedPL += HistoryDealGetDouble(ticket, DEAL_SWAP);
+               DailyRealizedPL += HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+            }
+         }
+      }
+   }
+}
+
+// Check Funding Firm Rules (Block New Entries)
 ENUM_REGIME DetectRegime(double adxVal, double atrVal)
 {
    if(adxVal > InpADX_Threshold) return REGIME_TRENDING;
@@ -239,6 +329,13 @@ void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], 
 {
    // 0. Kill Zone Filter (Critical)
    if(InpUse_KillZones && !IsKillZone()) return;
+   
+   // 0b. News Filter
+   if(InpUse_NewsFilter && IsNewsTime()) {
+       if(InpDebugMode) Print("⚠️ News Filter Active: Trade Blocked");
+       return;
+   }
+   
    if(position.Select(_Symbol)) return; // One trade at a time per symbol
    
    // 1. Identify Liquidity POOLS (20 candle High/Low)
@@ -304,22 +401,76 @@ void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], 
    }
 }
 
-// Kill Zone Logic (London 07-10, NY 13-17 UTC)
+// Kill Zone Logic (London 02-05, NY 08-11, Close 10-12 EST)
 bool IsKillZone()
 {
+   // Current Server Time
    datetime time = TimeCurrent();
    MqlDateTime dt;
    TimeToStruct(time, dt);
    
-   // Adjust for Broker Offset if needed (Input InpBrokerOffset usually)
-   // Assuming Server Time aligns with general sessions, or user adjusts inputs
-   // Simple check: London Open (8-11 Server?), NY Open (15-19 Server?)
-   // Defaulting to "Broad" active hours for now: 8 to 20
+   // Convert Server Time to EST Estimate (Simple Hour Offset)
+   // If Server is UTC+2 and EST is UTC-5, Offset should be -7? 
+   // User Input InpServerTimeOffset is "Server Offset from EST".
+   // e.g. If Server=14:00 and EST=07:00. Server is +7 hours ahead of EST.
+   // So EST_Time = Server_Time - Offset.
    
-   int h = dt.hour;
-   if( (h >= 8 && h <= 11) || (h >= 14 && h <= 18) ) return true;
+   int estHour = dt.hour - InpServerTimeOffset;
+   if(estHour < 0) estHour += 24;
+   if(estHour >= 24) estHour -= 24;
    
-   return false;
+   // Create a string "HH:MM" for comparison
+   string currentEST = StringFormat("%02d:%02d", estHour, dt.min);
+   
+   bool inLondon = false;
+   bool inNY = false;
+   bool inLondonClose = false;
+   
+   // London (02:00 - 05:00)
+   if(InpUse_London_Killzone) {
+      if(CheckTimeRange(currentEST, InpLondon_Start, InpLondon_End)) inLondon = true;
+   }
+   
+   // NY (08:00 - 11:00)
+   if(InpUse_NY_Killzone) {
+      if(CheckTimeRange(currentEST, InpNY_Start, InpNY_End)) inNY = true;
+   }
+   
+   // London Close (10:00 - 12:00)
+   if(InpUse_LondonClose_Killzone) {
+      if(CheckTimeRange(currentEST, InpLondonClose_Start, InpLondonClose_End)) inLondonClose = true;
+   }
+   
+   return (inLondon || inNY || inLondonClose);
+}
+
+// Helper: Check if Current "HH:MM" is inside Start "HH:MM" and End "HH:MM"
+bool CheckTimeRange(string current, string start, string end)
+{
+   if(start < end) {
+      // Normal range: 08:00 to 11:00
+      return (current >= start && current <= end);
+   } else {
+      // Overnight range: 22:00 to 02:00
+      return (current >= start || current <= end);
+   }
+}
+
+// Session Close Logic
+void CheckSessionClose()
+{
+   if(!InpCloseTrades_At_SessionEnd) return;
+   
+   // If we are NOT in a KillZone, Close All
+   if(!IsKillZone())
+   {
+      if(position.Select(_Symbol)) // If we have a position
+      {
+          // Close it
+          trade.PositionClose(_Symbol);
+          if(InpDebugMode) Print("⌛ Session End: Forced Close of " + _Symbol);
+      }
+   }
 }
 
 // Execution Wrapper
@@ -376,12 +527,10 @@ void ManageTrade()
    
    double profitR = currentProfitPoints / initialRisk; // Profit in R
    
-   // --- TIERED TRAILING STOP (Python Logic) ---
-   // 1.0R Profit -> Lock 0.1R (BreakEven + Buffer)
-   // 1.5R Profit -> Lock 0.5R (Secure Bank)
-   // 2.0R Profit -> Lock 1.2R (Winner)
-   // 3.0R Profit -> Lock 2.0R (Runner)
-   // 4.0R Profit -> Lock 3.0R
+   // --- TIERED TRAILING STOP (Configurable) ---
+   // Tier 1: Profit >= X -> Lock Y
+   // Tier 2: Profit >= A -> Lock B
+   // Tier 3: Profit >= C -> Lock D
    
    double newSL = 0;
    
@@ -389,11 +538,10 @@ void ManageTrade()
    {
       double lockPrice = 0;
       
-      if(profitR >= 4.0)      lockPrice = openPrice + (initialRisk * 3.0);
-      else if(profitR >= 3.0) lockPrice = openPrice + (initialRisk * 2.0);
-      else if(profitR >= 2.0) lockPrice = openPrice + (initialRisk * 1.2);
-      else if(profitR >= 1.5) lockPrice = openPrice + (initialRisk * 0.5);
-      else if(profitR >= 1.0) lockPrice = openPrice + (initialRisk * 0.1);
+      // Check Highest Tier First
+      if(profitR >= InpTier3_Profit_R)      lockPrice = openPrice + (initialRisk * InpTier3_Lock_R);
+      else if(profitR >= InpTier2_Profit_R) lockPrice = openPrice + (initialRisk * InpTier2_Lock_R);
+      else if(profitR >= InpTier1_Profit_R) lockPrice = openPrice + (initialRisk * InpTier1_Lock_R);
       
       // Only move SL UP
       if(lockPrice > 0 && lockPrice > sl)
@@ -406,21 +554,79 @@ void ManageTrade()
    {
       double lockPrice = 0;
       
-      if(profitR >= 4.0)      lockPrice = openPrice - (initialRisk * 3.0);
-      else if(profitR >= 3.0) lockPrice = openPrice - (initialRisk * 2.0);
-      else if(profitR >= 2.0) lockPrice = openPrice - (initialRisk * 1.2);
-      else if(profitR >= 1.5) lockPrice = openPrice - (initialRisk * 0.5);
-      else if(profitR >= 1.0) lockPrice = openPrice - (initialRisk * 0.1);
+      if(profitR >= InpTier3_Profit_R)      lockPrice = openPrice - (initialRisk * InpTier3_Lock_R);
+      else if(profitR >= InpTier2_Profit_R) lockPrice = openPrice - (initialRisk * InpTier2_Lock_R);
+      else if(profitR >= InpTier1_Profit_R) lockPrice = openPrice - (initialRisk * InpTier1_Lock_R);
       
-      // Only move SL DOWN (remember SL for sell is above price)
-      // wait, "sl > lockPrice" means current SL is HIGHER (worse) than new lock level.
-      // So we want to move it DOWN to lockPrice.
+      // Only move SL DOWN (sl > lockPrice for SELL means current is higher/worse)
       if(lockPrice > 0 && (sl == 0 || sl > lockPrice))
       {
          trade.PositionModify(_Symbol, lockPrice, tp);
          if(InpDebugMode) Print("🔄 TSL UPDATE (SELL): Profit ", DoubleToString(profitR,2), "R -> Locked ", DoubleToString((openPrice-lockPrice)/initialRisk, 2), "R");
       }
    }
+}
+
+//+------------------------------------------------------------------+
+//| NEWS FILTER                                                      |
+//+------------------------------------------------------------------+
+bool IsNewsTime()
+{
+   if(!InpUse_NewsFilter) return false;
+   
+   datetime now = TimeCurrent();
+   datetime start = now - (InpNews_After_Mins * 60); // Look back (for "After" impact)
+   datetime end   = now + (InpNews_Before_Mins * 60); // Look forward (for "Before" impact)
+   
+   // Get Calendar Values
+   MqlCalendarValue values[];
+   
+   // We search for events in the range [now - After, now + Before]
+   // If any High Impact event exists in this range, we are "In News Time".
+   
+   // Filter by Currency
+   string base = StringSubstr(_Symbol, 0, 3);
+   string quote = StringSubstr(_Symbol, 3, 3);
+   
+   if(CalendarValueHistory(values, start, end, NULL, NULL))
+   {
+      int total = ArraySize(values);
+      for(int i=0; i<total; i++)
+      {
+         long eventId = values[i].event_id;
+         MqlCalendarEvent event;
+         if(CalendarEventById(eventId, event))
+         {
+             // Check Currency
+             if(StringFind(base, event.currency) < 0 && StringFind(quote, event.currency) < 0 && event.currency != "USD") // Always check USD? Optional.
+                continue;
+             // But actually "USD" is usually in the pair if it matters.
+             
+             // Check Importance
+             if(InpNews_HighImpact_Only && event.importance != CALENDAR_IMPORTANCE_HIGH)
+                continue;
+                
+             // If we found a relevant event in the danger zone
+             // Check precise time:
+             // Danger Start = EventTime - Before
+             // Danger End   = EventTime + After
+             // We are at 'now'.
+             // EventTime is values[i].time (or event.time?) -> values[i].time refers to period usually.
+             // event.time_mode?
+             // Actually values[i].time is the event timestamp.
+             
+             datetime eventTime = values[i].time;
+             
+             if(now >= (eventTime - InpNews_Before_Mins*60) && now <= (eventTime + InpNews_After_Mins*60))
+             {
+                if(InpDebugMode) Print("📰 News Active: ", event.name, " (", event.currency, ")");
+                return true;
+             }
+         }
+      }
+   }
+   
+   return false;
 }
 //+------------------------------------------------------------------+
 //| STRATEGY 2: VWAP SCALPING (Mean Reversion)                       |
