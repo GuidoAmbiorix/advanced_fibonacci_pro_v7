@@ -38,6 +38,7 @@ input double InpTarget_Daily_Profit  = 1.5;   // Daily Profit Target % (0 = Disa
 input double InpRisk_Per_Trade       = 0.5;   // Base Risk Per Trade %
 input double InpRisk_Reward_Ratio    = 2.0;   // Base Risk:Reward Ratio
 input int    InpCooldownMinutes      = 45;    // Cooldown Minutes after Loss Streak
+input double InpMaxLot_Per_Trade     = 1.0;   // Safety: Max Lots per Trade allowed
 
 input group "========== TRAILING STOP TIERS =========="
 input double InpTier1_Profit_R = 1.0;   // Tier 1: Profit (R)
@@ -617,8 +618,28 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double sl, double tp, string comment, do
    
    // Use Dynamic Risk if passed, otherwise default to InpRisk_Per_Trade
    double effectiveRisk = (riskPct > 0.0) ? riskPct : InpRisk_Per_Trade;
+
+   // 🔒 CRITICAL: Cap XAUUSD Risk to 0.5% max if requested, or just rely on InpMaxLot check later.
+   // User suggestion: "if(_Symbol == "XAUUSD") effectiveRisk = MathMin(effectiveRisk, 0.5);"
+   // We will implement this safety cap for Gold specifically as requested.
+   if(StringFind(_Symbol, "XAU") >= 0) effectiveRisk = MathMin(effectiveRisk, 0.5);
    
    double volume = CalculateLotSizeWithRisk(slDist, effectiveRisk);
+
+   // 🔒 CRITICAL: Check Margin before trying to open
+   double marginRequired = 0.0;
+   if(!OrderCalcMargin(type, _Symbol, volume, price, marginRequired))
+   {
+       Print("❌ Margin Calc Failed for ", volume, " lots");
+       return;
+   }
+   
+   double freeMargin = AccountInfoDouble(ACCOUNT_FREEMARGIN);
+   if(marginRequired > freeMargin)
+   {
+       if(InpDebugMode) Print("⛔ MARGIN FAIL: Need ", DoubleToString(marginRequired, 2), " | Free ", DoubleToString(freeMargin, 2), " | Vol: ", volume);
+       return;
+   }
    
    if(InpDebugMode) Print("🚀 Executing ", comment, " | Risk: ", DoubleToString(effectiveRisk, 2), "% | Lot: ", volume);
    
@@ -648,6 +669,9 @@ double CalculateLotSizeWithRisk(double slDistance, double riskPerc)
    
    if(lotSize < minLot) lotSize = minLot;
    if(lotSize > maxLot) lotSize = maxLot;
+   
+   // 🔒 Safety Cap
+   if(lotSize > InpMaxLot_Per_Trade) lotSize = InpMaxLot_Per_Trade;
    
    return lotSize;
 }
