@@ -140,6 +140,10 @@ int OnInit()
    LastDayChecked = iTime(_Symbol, PERIOD_D1, 0);
 
    Print("Adaptive Multi-Strategy EA Initialized");
+   
+   // ⏰ Timer for Heartbeat (in case Market is closed/silent)
+   EventSetTimer(60); 
+   
    return(INIT_SUCCEEDED);
 }
 
@@ -157,6 +161,25 @@ void OnDeinit(const int reason)
    IndicatorRelease(hEMA50);
    IndicatorRelease(hEMA200);
    IndicatorRelease(hVWAP);
+   EventKillTimer();
+}
+
+//+------------------------------------------------------------------+
+//| ON TIMER (Independent of Ticks)                                  |
+//+------------------------------------------------------------------+
+void OnTimer()
+{
+   if(!InpDebugMode) return;
+   
+   // Check when was the last tick
+   datetime lastTick = (datetime)SymbolInfoInteger(_Symbol, SYMBOL_TIME);
+   datetime now = TimeCurrent();
+   
+   if(now - lastTick > 60) // No ticks for 60s
+   {
+       Print("⏳ Timer Heartbeat: No ticks received for ", (int)(now-lastTick), "s. Market may be CLOSED, on BREAK, or Disconnected.");
+       Print("   Server Time: ", TimeToString(now, TIME_MINUTES));
+   }
 }
 
 //+------------------------------------------------------------------+
@@ -173,6 +196,17 @@ void OnTick()
    // 2. Session Close Check
    CheckSessionClose();
 
+   // 💤 UX Improvement: Heartbeat IF outside KillZone
+   if(InpUse_KillZones && !IsKillZone())
+   {
+       static datetime lastHeartbeat = 0;
+       if(TimeCurrent() - lastHeartbeat >= 300) // Every 5 mins
+       {
+           Print("💤 Outside KillZone (London/NY) - Strategy Paused | Server Time: ", TimeToString(TimeCurrent(), TIME_MINUTES));
+           lastHeartbeat = TimeCurrent();
+       }
+   }
+
    // 3. Check Funding Rules (Daily Loss, Max DD, Daily Limits)
    if(!CheckFundingRules()) return;
    
@@ -182,6 +216,14 @@ void OnTick()
    
    // 3. Detect Market Regime
    ENUM_REGIME regime = DetectRegime(adx[0], atr[0]);
+
+   // 🔎 DEBUG: Show that we are alive and scanning
+   static datetime lastStatLog = 0;
+   if(InpDebugMode && (TimeCurrent() - lastStatLog > 60)) 
+   {
+       Print("🔎 Analyzing... | Regime: ", EnumToString(regime), " | ADX: ", DoubleToString(adx[0],1), " | ATR: ", DoubleToString(atr[0],5));
+       lastStatLog = TimeCurrent();
+   }
    
    // 4. Update Smart State (e.g., Daily High/Low for CVD)
    // ...
