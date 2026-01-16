@@ -1,3 +1,5 @@
 optuna
 pandas
+plotly
+streamlit
 lxml
