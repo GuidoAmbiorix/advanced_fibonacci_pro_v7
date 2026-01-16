@@ -299,6 +299,8 @@ void OnTick()
        if(runFibonacci)     active += "[Fib] ";
        if(runVWAP)          active += "[VWAP] ";
        if(runStoch)         active += "[Stoch] ";
+       
+       if(active == "") active = "[💤 WAITING FOR TREND] (ADX Low)";
        Print("🧠 Brain Active Modes: ", active);
    }
 
