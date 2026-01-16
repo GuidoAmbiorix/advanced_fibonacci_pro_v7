@@ -83,10 +83,24 @@ with st.sidebar:
     
     # EA & Market Settings
     with st.expander("📊 EA & Market Settings", expanded=True):
-        ea_path = st.text_input(
-            "EA Path (.ex5)",
-            r"C:\Users\gamparo\Desktop\Projects\advanced_fibonacci_pro_v7\mt5\Adaptive_Forex_Majors.ex5",
-            help="Full path to your Expert Advisor executable"
+        # Scan for EAs in project folder
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        mt5_dir = os.path.join(base_dir, "mt5")
+        found_eas = []
+        if os.path.exists(mt5_dir):
+            for f in os.listdir(mt5_dir):
+                if f.endswith(".mq5"): found_eas.append(f)
+        
+        selected_ea_file = st.selectbox(
+            "Select Bot Source (.mq5)", 
+            found_eas if found_eas else ["No .mq5 found"],
+            help="Select the source code to scan parameters from"
+        )
+        
+        ea_path_ex5 = st.text_input(
+            "Compiled Bot Path (.ex5)",
+            os.path.join(mt5_dir, selected_ea_file.replace(".mq5", ".ex5")) if found_eas else "",
+            help="Path to the compiled executable used by MT5 Tester"
         )
         
         col1, col2 = st.columns(2)
@@ -97,43 +111,16 @@ with st.sidebar:
         
         col3, col4 = st.columns(2)
         with col3:
-            date_from = st.date_input(
-                "From",
-                pd.to_datetime("2024-01-01"),
-                max_value=datetime.now()
-            )
+            date_from = st.date_input("From", pd.to_datetime("2024-01-01"))
         with col4:
-            date_to = st.date_input(
-                "To",
-                pd.to_datetime("2024-12-31"),
-                max_value=datetime.now()
-            )
+            date_to = st.date_input("To", pd.to_datetime("2024-12-31"))
     
     # Optimization Settings
     with st.expander("⚙️ Optimization Settings", expanded=True):
-        study_name = st.text_input(
-            "Study Name",
-            "Study_EURUSD_v1",
-            help="Unique identifier for this optimization run"
-        )
-        
-        n_trials = st.slider(
-            "Number of Trials",
-            min_value=10,
-            max_value=1000,
-            value=100,
-            step=10,
-            help="More trials = better results but longer runtime"
-        )
-        
-        deposit = st.number_input(
-            "Initial Deposit ($)",
-            min_value=1000,
-            max_value=1000000,
-            value=10000,
-            step=1000
-        )
-    
+        study_name = st.text_input("Study Name", f"Study_{selected_ea_file.replace('.mq5','')}_{symbol}", help="Unique identifier")
+        n_trials = st.slider("Trials", 10, 1000, 50)
+        deposit = st.number_input("Deposit ($)", 1000, 1000000, 10000, 1000)
+
     st.markdown("---")
     st.markdown("### 📈 Quick Stats")
     try:
@@ -146,12 +133,35 @@ with st.sidebar:
 
 # --- MAIN AREA ---
 
-# Create tabs for better organization
+# Create tabs
 tab1, tab2, tab3 = st.tabs(["⚙️ Parameter Setup", "🚀 Optimization", "📊 Results & Analytics"])
 
 with tab1:
-    st.markdown("### Define Parameter Search Space")
-    st.info("💡 Configure the ranges for each parameter that the AI will explore to find optimal values.")
+    st.markdown("### Auto-Discovery & Configuration")
+    
+    col_scan, col_info = st.columns([1, 3])
+    with col_scan:
+        if st.button("🔍 Scan Bot Parameters", type="primary", use_container_width=True):
+            if selected_ea_file and found_eas:
+                import mq5_parser
+                full_path = os.path.join(mt5_dir, selected_ea_file)
+                
+                with st.spinner(f"Parsing {selected_ea_file}..."):
+                    raw_params = mq5_parser.parse_mq5_inputs(full_path)
+                    optimized_config = mq5_parser.generate_optimization_config(raw_params)
+                    
+                    if optimized_config:
+                        st.session_state.params = optimized_config
+                        st.success(f"Found {len(optimized_config)} parameters!")
+                    else:
+                        st.warning("No optimizable parameters found (int/float inputs).")
+            else:
+                st.error("No valid .mq5 file selected.")
+
+    with col_info:
+        st.info("Click **Scan** to automatically extract inputs from the source code and generate intelligent ranges.")
+
+    st.markdown("#### Active Parameters")
     
     col1, col2 = st.columns([3, 1])
     
@@ -160,44 +170,26 @@ with tab1:
         edited_df = st.data_editor(
             st.session_state.params,
             column_config={
-                "name": st.column_config.TextColumn("Parameter Name", required=True, width="medium"),
-                "type": st.column_config.SelectboxColumn("Type", options=["int", "float"], required=True, width="small"),
-                "min": st.column_config.NumberColumn("Min Value", required=True, width="small"),
-                "max": st.column_config.NumberColumn("Max Value", required=True, width="small"),
-                "step": st.column_config.NumberColumn("Step Size", required=True, width="small"),
+                "name": st.column_config.TextColumn("Parameter", disabled=True),
+                "group": st.column_config.TextColumn("Group", disabled=True),
+                "type": st.column_config.TextColumn("Type", disabled=True, width="small"),
+                "min": st.column_config.NumberColumn("Min", required=True),
+                "max": st.column_config.NumberColumn("Max", required=True),
+                "step": st.column_config.NumberColumn("Step", required=True),
             },
             num_rows="dynamic",
             use_container_width=True,
             hide_index=True
         )
-        
         st.session_state.params = edited_df
     
     with col2:
-        st.markdown("#### Quick Actions")
-        if st.button("➕ Add Parameter"):
-            st.session_state.params.append({
-                "name": "NewParam",
-                "type": "float",
-                "min": 0.0,
-                "max": 10.0,
-                "step": 0.1
-            })
+        st.markdown("#### Actions")
+        if st.button("🧹 Clear All"):
+            st.session_state.params = []
             st.rerun()
-        
-        if st.button("🔄 Reset to Default"):
-            st.session_state.params = [
-                {"name": "InpRisk_Reward_Ratio", "type": "float", "min": 2.0, "max": 5.0, "step": 0.5},
-                {"name": "InpADX_Threshold", "type": "int", "min": 15, "max": 30, "step": 1},
-                {"name": "InpCooldownMinutes", "type": "int", "min": 15, "max": 120, "step": 15}
-            ]
+        if st.button("↩️ Undo Changes"):
             st.rerun()
-    
-    # Parameter validation
-    if len(edited_df) > 0:
-        st.success(f"✅ {len(edited_df)} parameters configured and ready for optimization")
-    else:
-        st.warning("⚠️ Please add at least one parameter to optimize")
 
 with tab2:
     st.markdown("### Launch Optimization")
@@ -215,7 +207,7 @@ with tab2:
     st.markdown("---")
     
     # Start button with validation
-    can_start = len(edited_df) > 0 and ea_path and study_name
+    can_start = len(edited_df) > 0 and ea_path_ex5 and study_name
     
     if not can_start:
         st.error("❌ Please configure all required settings before starting optimization")
@@ -234,7 +226,7 @@ with tab2:
             }
         
         ea_config = {
-            'ea_path': ea_path,
+            'ea_path': ea_path_ex5,
             'symbol': symbol,
             'timeframe': timeframe,
             'date_from': str(date_from).replace("-", "."),
