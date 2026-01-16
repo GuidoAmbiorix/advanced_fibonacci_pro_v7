@@ -5,14 +5,25 @@
 //+------------------------------------------------------------------+
 #property copyright "Institutional Edge Pro"
 #property link      "https://institutional-edge.com"
-#property version   "1.00"
-#property description "Mean Reversion & Liquidity Fade Engine"
+#property version   "1.10"
+#property description "Mean Reversion & Liquidity Fade Engine + Advanced Trail"
 #property strict
 
 #include <Trade\Trade.mqh>
 #include <Trade\PositionInfo.mqh>
 #include <Trade\SymbolInfo.mqh>
 #include <Trade\AccountInfo.mqh>
+
+//+------------------------------------------------------------------+
+//| ENUMS                                                            |
+//+------------------------------------------------------------------+
+enum ENUM_TRAIL_STATE
+{
+   TS_ENTRY_PROTECT    = 0, // Initial Stop (Wait for breakout)
+   TS_STRUCTURE_LOCK   = 1, // Move to BE / Structure
+   TS_MOMENTUM_TRAIL   = 2, // Tight trail on momentum
+   TS_EXHAUSTION_LOCK  = 3  // Lock profit on trend death
+};
 
 //+------------------------------------------------------------------+
 //| INPUTS                                                           |
@@ -28,6 +39,11 @@ input double InpRisk_Reward_Ratio    = 1.5;   // Low RR (1:1 - 1:1.5)
 input double InpMax_Drawdown_Percent = 5.0;   // Tight Equity Hard Stop
 input int    InpMaxHoldTime          = 240;   // Max Hold Time (Minutes)
 input int    InpMaxSpread_Points     = 25;    // Max Spread
+
+input group "========== ADVANCED TRAILING (OPTIONAL) =========="
+input bool   InpUse_Advanced_Trail   = true;  // Enable State Machine Trail
+input double InpTrail_Structure_R    = 1.0;   // R-Multiple to start Structure Trail
+input double InpTrail_Momentum_R     = 2.0;   // R-Multiple to start Momentum Trail (Tight)
 
 input group "========== STRATEGY PARAMETERS =========="
 input int    InpVWAP_Period         = 50;     // Rolling VWAP Proxy
@@ -70,6 +86,9 @@ double g_AsianHigh = 0;
 double g_AsianLow = 0;
 datetime g_LastAsianCheck = 0;
 
+// Trailing State (Single Position - Netting - Rotation Optimized)
+ENUM_TRAIL_STATE g_CurrentTrailState = TS_ENTRY_PROTECT;
+
 //+------------------------------------------------------------------+
 //| INIT                                                             |
 //+------------------------------------------------------------------+
@@ -106,7 +125,7 @@ int OnInit()
    AccountBalanceStartDay = accountInfo.Balance();
    AccountHighWaterMark = accountInfo.Equity();
    
-   Print("✅ Engine B (Rotation) Initialized on ", _Symbol);
+   Print("✅ Engine B (Rotation) + Trailing Initialized on ", _Symbol);
    return(INIT_SUCCEEDED);
 }
 
@@ -149,11 +168,22 @@ void OnTick()
    
    if(!GetIndicators(vwapUpper, vwapLower, vwapMid, bbUpper, bbLower, bbMid, adx, rsi, atr)) return;
    
-   // 3. Manage Open Trades (Time Exit + Fixed Risk)
+   // 3. Manage Open Trades (Time Exit + Trail)
    if(IsPositionOpen())
    {
+      // Time Exit & Partial
       ManageOpenTrades();
+      
+      // Advanced Trail (If Enabled)
+      if(InpUse_Advanced_Trail) ManageAdvancedTrail(atr[0], adx[0]);
+      
       return; 
+   }
+   else
+   {
+      // Reset State
+      if(g_CurrentTrailState != TS_ENTRY_PROTECT)
+          g_CurrentTrailState = TS_ENTRY_PROTECT;
    }
    
    // 4. Spread Check
@@ -218,70 +248,120 @@ void OnTick()
                ExecuteTrade(ORDER_TYPE_BUY, atr[0], "BB_Rev_Buy");
        }
    }
+   
 }
+
+//+------------------------------------------------------------------+
+//| ADVANCED TRAILING STOP (Rotation Tuned)                          |
+//+------------------------------------------------------------------+
+void ManageAdvancedTrail(double atr, double adx)
+{
+   if(!position.Select(_Symbol)) return;
+   if(position.Magic() != InpMagicNumber) return;
+   
+   double entry = position.PriceOpen();
+   double current = position.PriceCurrent();
+   double sl = position.StopLoss();
+   double tp = position.TakeProfit();
+   bool isBuy = (position.PositionType() == POSITION_TYPE_BUY);
+   
+   // Calculate Profilt in R (Assuming Initial Risk ~2.0 ATR for Rotation)
+   double riskUnit = atr * 2.0; 
+   if(riskUnit == 0) riskUnit = _Point * 100;
+   
+   double profitPoints = isBuy ? (current - entry) : (entry - current);
+   double profitR = profitPoints / riskUnit; 
+   
+   // 1. UPDATE STATE
+   if(g_CurrentTrailState == TS_ENTRY_PROTECT)
+   {
+      if(profitR >= InpTrail_Structure_R) g_CurrentTrailState = TS_STRUCTURE_LOCK;
+   }
+   else if(g_CurrentTrailState == TS_STRUCTURE_LOCK)
+   {
+      if(profitR >= InpTrail_Momentum_R) g_CurrentTrailState = TS_MOMENTUM_TRAIL;
+   }
+   else if(g_CurrentTrailState == TS_MOMENTUM_TRAIL)
+   {
+      if(adx < 15) g_CurrentTrailState = TS_EXHAUSTION_LOCK; // Even lower exhaustion for range
+   }
+   
+   // 2. CALCULATE NEW SL
+   double newSL = sl;
+   
+   switch(g_CurrentTrailState)
+   {
+      case TS_ENTRY_PROTECT:
+         // Break-even logic at 0.8R
+         if(profitR >= 0.8) 
+         {
+             double be = entry + (isBuy ? riskUnit*0.1 : -riskUnit*0.1); 
+             newSL = isBuy ? MathMax(sl, be) : MathMin(sl, be);
+         }
+         break;
+         
+      case TS_STRUCTURE_LOCK: 
+         {
+             // WIDER TRAIL for Rotation (1.5 ATR)
+             double trailDist = atr * 1.5;
+             double level = isBuy ? (current - trailDist) : (current + trailDist);
+             newSL = isBuy ? MathMax(sl, level) : MathMin(sl, level);
+         }
+         break;
+         
+      case TS_MOMENTUM_TRAIL: 
+         {
+             // WIDER TRAIL for Rotation (1.0 ATR)
+             double trailDist = atr * 1.0;
+             double level = isBuy ? (current - trailDist) : (current + trailDist);
+             newSL = isBuy ? MathMax(sl, level) : MathMin(sl, level);
+         }
+         break;
+         
+      case TS_EXHAUSTION_LOCK: 
+         {
+             // Lock profit
+             double trailDist = atr * 0.5;
+             double level = isBuy ? (current - trailDist) : (current + trailDist);
+             newSL = isBuy ? MathMax(sl, level) : MathMin(sl, level);
+         }
+         break;
+   }
+   
+   if(MathAbs(newSL - sl) > _Point)
+   {
+      trade.PositionModify(position.Ticket(), newSL, tp);
+      if(InpDebugMode) Print("🔄 Trail Update: State ", EnumToString(g_CurrentTrailState), " | R: ", DoubleToString(profitR, 2));
+   }
+}
+
 
 //+------------------------------------------------------------------+
 //| LOGIC                                                            |
 //+------------------------------------------------------------------+
 bool IsCorrectSession()
 {
-   // Simple Logic: check string
-   string s = _Symbol;
-   StringToUpper(s);
+   string s = _Symbol; StringToUpper(s);
    
-   datetime estTime = TimeCurrent() - (2 * 3600); // Helper offset
+   datetime estTime = TimeCurrent() - (2 * 3600); 
    MqlDateTime dt; TimeToStruct(estTime, dt);
    int h = dt.hour;
    
-   // EURGBP, USDCHF -> London Only (03-11 EST)
-   if(StringFind(s, "EURGBP") >= 0 || StringFind(s, "CHF") >= 0)
-   {
-       return (h >= 3 && h < 11);
-   }
-   // USDCAD -> NY Only (08-16 EST)
-   if(StringFind(s, "USDCAD") >= 0)
-   {
-       return (h >= 8 && h < 16);
-   }
-   // NZDUSD -> Asian + Early London (19-06 EST)
-   if(StringFind(s, "NZDUSD") >= 0)
-   {
-       if(h >= 19 || h < 6) return true;
-       return false;
-   }
-   // USDJPY -> Asian + NY (Skip gap?) -> 19-02, 08-12
-   if(StringFind(s, "USDJPY") >= 0)
-   {
-       if(h >= 19 || h < 2) return true; // Asian
-       if(h >= 8 && h < 12) return true; // NY
-       return false;
-   }
+   if(StringFind(s, "EURGBP") >= 0 || StringFind(s, "CHF") >= 0) return (h >= 3 && h < 11);
+   if(StringFind(s, "USDCAD") >= 0) return (h >= 8 && h < 16);
+   if(StringFind(s, "NZDUSD") >= 0) { if(h >= 19 || h < 6) return true; return false; }
+   if(StringFind(s, "USDJPY") >= 0) { if(h >= 19 || h < 2) return true; if(h >= 8 && h < 12) return true; return false; }
    
-   return true; // Default allow
+   return true; 
 }
 
 void UpdateAsianRange()
 {
-   // Logic: Find High/Low between InpAsian_Start_Time and InpAsian_End_Time
-   // Reset daily?
    datetime now = TimeCurrent();
    MqlDateTime dt; TimeToStruct(now, dt);
    
-   // Only update effectively once per bar or if time passed
-   // We scan PREVIOUS DAY's Asian session or Current Day's Asian?
-   // Usually Asian Session is valid for the current day's London/NY
-   // So we assume Asian ended.
-   
-   // Simplified: Just look back fixed bars if time matches?
-   // Or precise `CopyHigh` with start/end time
-   // This is complex to get right with server time differences.
-   // Institutional Hack: Use iHighest with time filter.
-   
-   // We update g_AsianHigh/Low only when session ends (e.g. at 02:00)
-   
    if(dt.hour == 3 && dt.min == 0) // Just after Asian close
    {
-       // Calculate range of last 6 hours
        int startBar = iBarShift(_Symbol, PERIOD_CURRENT, now - 6*3600);
        int endBar = iBarShift(_Symbol, PERIOD_CURRENT, now); // 0
        
@@ -300,18 +380,13 @@ void UpdateAsianRange()
 
 void ExecuteTrade(ENUM_ORDER_TYPE type, double atr, string comment)
 {
-   // Fixed Stop / Target
    double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_ASK) : SymbolInfoDouble(_Symbol, SYMBOL_BID);
-   
-   // Stop Loss: Wide Structural (2.0 ATR)
-   // Target: 1.5 ATR (Lower RR)
    double slDist = atr * 2.0; 
    double tpDist = atr * (2.0 * InpRisk_Reward_Ratio); 
    
    double sl = (type == ORDER_TYPE_BUY) ? price - slDist : price + slDist;
    double tp = (type == ORDER_TYPE_BUY) ? price + tpDist : price - tpDist;
    
-   // Calc Lots (Conservative 0.5%)
    double balance = accountInfo.Balance();
    double riskVal = balance * (InpRisk_Per_Trade / 100.0);
    double tickVal = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
@@ -334,11 +409,6 @@ void ManageOpenTrades()
       Print("⌛ Max Hold Time Reached - Closing Trade");
       return;
    }
-   
-   // 2. Partial Close (0.5R)
-   // We need to track partials. Simple check: Is Volume reduced?
-   // Or price > 0.5R?
-   // For now, Keep Simple: No complex management.
 }
 
 bool GetIndicators(double &vu[], double &vl[], double &vm[], double &bu[], double &bl[], double &bm[], double &adx[], double &rsi[], double &atr[])
@@ -346,15 +416,12 @@ bool GetIndicators(double &vu[], double &vl[], double &vm[], double &bu[], doubl
    CopyBuffer(hVWAP_Bands, 1, 0, 1, vu); // Upper
    CopyBuffer(hVWAP_Bands, 2, 0, 1, vl); // Lower
    CopyBuffer(hVWAP_Bands, 0, 0, 1, vm); // Base
-   
    CopyBuffer(hBollinger, 1, 0, 1, bu);
    CopyBuffer(hBollinger, 2, 0, 1, bl);
    CopyBuffer(hBollinger, 0, 0, 1, bm);
-   
    CopyBuffer(hADX, 0, 0, 2, adx);
    CopyBuffer(hRSI, 0, 0, 1, rsi);
    CopyBuffer(hATR, 0, 0, 1, atr);
-   
    return true;
 }
 
