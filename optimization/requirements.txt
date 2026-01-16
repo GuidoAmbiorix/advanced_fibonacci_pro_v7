@@ -3,3 +3,9 @@ pandas
 plotly
 streamlit
 lxml
+quantstats
+ta
+shap
+scikit-learn
+matplotlib
+requests

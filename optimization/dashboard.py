@@ -83,9 +83,21 @@ with st.sidebar:
     
     # EA & Market Settings
     with st.expander("📊 EA & Market Settings", expanded=True):
-        # Scan for EAs in project folder
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        mt5_dir = os.path.join(base_dir, "mt5")
+        # Scan for EAs - check Docker path first, then local
+        DATA_DIR = os.environ.get("DATA_DIR", "")
+        if DATA_DIR and os.path.exists(f"{DATA_DIR}/ea_sources"):
+            mt5_dir = f"{DATA_DIR}/ea_sources"
+            compiled_dir = f"{DATA_DIR}/ea_compiled"
+        else:
+            # Local development path
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            mt5_dir = os.path.join(base_dir, "mt5")
+            # Also check data/ea_sources for local Docker volume testing
+            alt_path = os.path.join(os.path.dirname(__file__), "data", "ea_sources")
+            if os.path.exists(alt_path):
+                mt5_dir = alt_path
+            compiled_dir = mt5_dir  # Same dir for local
+        
         found_eas = []
         if os.path.exists(mt5_dir):
             for f in os.listdir(mt5_dir):
@@ -97,11 +109,35 @@ with st.sidebar:
             help="Select the source code to scan parameters from"
         )
         
-        ea_path_ex5 = st.text_input(
-            "Compiled Bot Path (.ex5)",
-            os.path.join(mt5_dir, selected_ea_file.replace(".mq5", ".ex5")) if found_eas else "",
-            help="Path to the compiled executable used by MT5 Tester"
+        # Scan for compiled EAs (.ex5)
+        found_ex5s = []
+        if os.path.exists(compiled_dir):
+            for f in os.listdir(compiled_dir):
+                if f.endswith(".ex5"): found_ex5s.append(f)
+        
+        # Try to match the selected .mq5 to its .ex5
+        default_ex5_index = 0
+        if selected_ea_file:
+            expected_ex5 = selected_ea_file.replace(".mq5", ".ex5")
+            if expected_ex5 in found_ex5s:
+                default_ex5_index = found_ex5s.index(expected_ex5)
+        
+        selected_ex5 = st.selectbox(
+            "Compiled Bot (.ex5)",
+            found_ex5s if found_ex5s else ["No .ex5 found - Please Compile!"],
+            index=default_ex5_index,
+            help="Select the compiled executable for the Tester"
         )
+        
+        # Allow custom path override if needed
+        use_custom_path = st.checkbox("Use Custom EA Path", False)
+        if use_custom_path:
+             ea_path_ex5 = st.text_input("Custom .ex5 Path", "")
+        else:
+             if found_ex5s:
+                ea_path_ex5 = os.path.join(compiled_dir, selected_ex5)
+             else:
+                ea_path_ex5 = ""
         
         col1, col2 = st.columns(2)
         with col1:
@@ -134,7 +170,7 @@ with st.sidebar:
 # --- MAIN AREA ---
 
 # Create tabs
-tab1, tab2, tab3 = st.tabs(["⚙️ Parameter Setup", "🚀 Optimization", "📊 Results & Analytics"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["⚙️ Parameter Setup", "🚀 Optimization", "📊 Results", "🔬 Analytics", "🔧 Compile"])
 
 with tab1:
     st.markdown("### Auto-Discovery & Configuration")
@@ -387,6 +423,156 @@ with tab3:
         
         except Exception as e:
             st.error(f"❌ Error loading study: {str(e)}")
+
+# --- TAB 4: ADVANCED ANALYTICS ---
+with tab4:
+    st.markdown("### 🔬 Advanced Analytics")
+    st.info("Use SHAP to understand *why* certain parameters perform better.")
+    
+    # Study selector for SHAP
+    try:
+        db_url = "sqlite:///optimization.db"
+        storage = optuna.storages.RDBStorage(url=db_url)
+        available_studies_shap = storage.get_all_study_names()
+        
+        if available_studies_shap:
+            selected_study_shap = st.selectbox(
+                "Select Study for SHAP Analysis",
+                available_studies_shap,
+                key="shap_study_selector"
+            )
+            
+            if st.button("🧠 Run SHAP Analysis", type="primary"):
+                try:
+                    import analytics
+                    study_shap = optuna.load_study(study_name=selected_study_shap, storage=db_url)
+                    
+                    with st.spinner("Training explainability model... (requires 10+ trials)"):
+                        shap_values, feature_names, explainer, X = analytics.explain_optuna_params(study_shap)
+                    
+                    st.success("SHAP analysis complete!")
+                    
+                    # Feature Importance Table
+                    st.markdown("#### 📊 Parameter Importance Ranking")
+                    importance_df = analytics.get_feature_importance_df(shap_values, feature_names)
+                    st.dataframe(importance_df, use_container_width=True, hide_index=True)
+                    
+                    # SHAP Summary Plot
+                    st.markdown("#### 🎨 SHAP Summary Plot")
+                    fig = analytics.get_shap_summary_fig(shap_values, feature_names, X)
+                    st.pyplot(fig)
+                    
+                    st.markdown("""
+                    **How to Read This:**
+                    - Each dot is one trial
+                    - Red = high parameter value, Blue = low value
+                    - Position on X-axis shows impact on Profit Factor
+                    - Parameters at top are most important
+                    """)
+                    
+                except ValueError as ve:
+                    st.warning(f"⚠️ {str(ve)}")
+                except Exception as e:
+                    st.error(f"❌ SHAP Analysis Error: {str(e)}")
+        else:
+            st.info("📭 No studies available. Run an optimization first.")
+    except:
+        st.warning("⚠️ Database not accessible.")
+
+# --- TAB 5: COMPILE ---
+with tab5:
+    st.markdown("### 🔧 MQL5 Compiler")
+    st.info("Compile your .mq5 source files to .ex5 executables directly from the dashboard.")
+    
+    # Configuration
+    MT5_API_URL = os.environ.get("MT5_API_URL", "http://localhost:8080")
+    
+    # Check MT5 API Status
+    col_status, col_refresh = st.columns([3, 1])
+    with col_status:
+        try:
+            import requests
+            status_resp = requests.get(f"{MT5_API_URL}/status", timeout=5)
+            if status_resp.ok:
+                status_data = status_resp.json()
+                if status_data.get("metaeditor_installed"):
+                    st.success("✅ MT5 Container Connected - MetaEditor Available")
+                else:
+                    st.warning("⚠️ MT5 Connected but MetaEditor not found. Please install MT5 via VNC (port 5900)")
+            else:
+                st.error("❌ MT5 API returned error")
+        except requests.exceptions.ConnectionError:
+            st.error("❌ Cannot connect to MT5 container. Is it running? (`docker-compose up`)")
+        except Exception as e:
+            st.error(f"❌ API Error: {e}")
+    
+    with col_refresh:
+        if st.button("🔄 Refresh"):
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # File Lists
+    col_sources, col_compiled = st.columns(2)
+    
+    try:
+        files_resp = requests.get(f"{MT5_API_URL}/files", timeout=5)
+        files_data = files_resp.json() if files_resp.ok else {"sources": [], "compiled": []}
+    except:
+        files_data = {"sources": [], "compiled": []}
+    
+    with col_sources:
+        st.markdown("#### 📄 Source Files (.mq5)")
+        sources = files_data.get("sources", [])
+        
+        if sources:
+            for mq5_file in sources:
+                col_name, col_btn = st.columns([3, 1])
+                with col_name:
+                    st.text(f"📝 {mq5_file}")
+                with col_btn:
+                    if st.button("Compile", key=f"compile_{mq5_file}"):
+                        with st.spinner(f"Compiling {mq5_file}..."):
+                            try:
+                                resp = requests.get(f"{MT5_API_URL}/compile", params={"file": mq5_file}, timeout=120)
+                                result = resp.json()
+                                if result.get("success"):
+                                    st.success(f"✅ Compiled: {mq5_file}")
+                                else:
+                                    st.error(f"❌ Failed: {result.get('output', 'Unknown error')}")
+                            except Exception as e:
+                                st.error(f"❌ Error: {e}")
+        else:
+            st.info("No .mq5 files found in `/data/ea_sources/`")
+    
+    with col_compiled:
+        st.markdown("#### ✅ Compiled Files (.ex5)")
+        compiled = files_data.get("compiled", [])
+        
+        if compiled:
+            for ex5_file in compiled:
+                st.text(f"✓ {ex5_file}")
+        else:
+            st.info("No compiled files yet")
+    
+    # Compilation Log
+    st.markdown("---")
+    st.markdown("#### 📋 Last Compilation Log")
+    
+    try:
+        log_resp = requests.get(f"{MT5_API_URL}/log", timeout=5)
+        if log_resp.ok:
+            log_data = log_resp.json()
+            if log_data.get("file"):
+                status_icon = "✅" if log_data.get("success") else "❌"
+                st.markdown(f"**{status_icon} {log_data.get('file')}**")
+                st.code(log_data.get("output", "No output"), language="text")
+            else:
+                st.info("No compilation logs yet")
+        else:
+            st.info("Log not available")
+    except:
+        st.info("Cannot fetch logs - MT5 container may not be running")
 
 # Footer
 st.markdown("---")
