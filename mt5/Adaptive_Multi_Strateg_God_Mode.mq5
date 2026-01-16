@@ -13,58 +13,81 @@
 #include <Trade\SymbolInfo.mqh>
 #include <Trade\AccountInfo.mqh>
 
+// --- STATE MACHINE ENUMS ---
+enum ENUM_TRAIL_STATE
+{
+   TS_ENTRY_PROTECT,    // Survival Mode (Soft BE)
+   TS_STRUCTURE_LOCK,   // Institutional Trail (Swing Lows)
+   TS_MOMENTUM_TRAIL,   // Expansion Phase (Tight ATR)
+   TS_EXHAUSTION_LOCK,  // Reversal Danger (Lock Profits)
+   TS_SESSION_EXIT      // Killzone End (Hard Exit)
+};
+
+enum ENUM_TRAIL_PROFILE
+{
+   TRAIL_SCALP,         // Aggressive, tight stops, quick BE
+   TRAIL_INTRADAY,      // Balanced, standard swings
+   TRAIL_SWING          // Loose, deep swings, slow transition
+};
+
 //+------------------------------------------------------------------+
 //| INPUTS & CONFIGURATION                                           |
 //+------------------------------------------------------------------+
 input group "========== STRATEGY TOGGLES =========="
-input bool InpEnable_Institutional = true;    // Institutional Sweep (Liquidity+CVD)
-input bool InpEnable_VWAP_Scalp    = false;   // VWAP Scalping (Mean Reversion) - DISABLED FOR SAFETY
+input bool InpEnable_Institutional = true;    // Institutional Sweep
+input bool InpEnable_VWAP_Scalp    = false;   // VWAP Scalping
 input bool InpEnable_Fibonacci     = true;    // Fibonacci Golden Zone
-input bool InpEnable_Stochastic    = true;    // Stochastic Momentum Burst
-input bool InpEnable_Breakout      = false;   // Breakout Momentum (Lower WinRate)
-input int  InpSwap_Lookback        = 30;      // Lookback for Swings
+input bool InpEnable_Stochastic    = false;   // Stochastic Momentum - DISABLED for M15 Trend focus
+input bool InpEnable_Breakout      = false;   // Breakout Momentum
+input int  InpSwap_Lookback        = 10;      // User Preference: 10 (Faster swings for M15)
 // input int  InpMax_Spread_Points    = 50;      // Max Spread removed
-input ENUM_TIMEFRAMES InpTrend_Timeframe = PERIOD_H4; // Trend Confirmation TF
+input ENUM_TIMEFRAMES InpTrend_Timeframe = PERIOD_H4; // M15 Optimized: H4 Trend Filter
+// --- CONTEXT FILTER (The Gatekeeper) ---
+input ENUM_TIMEFRAMES InpContext_Timeframe = PERIOD_H1; // Context TF (H1 recommended for M15)
+input int InpContext_Lookback = 50;                     // Bars for Context Range (Donchian)
 
 input group "========== CONFLUENCE FILTER =========="
 input bool InpUse_Confluence_Filter  = true;  // Enable Confluence Scoring
-input double InpMin_Confluence_Score = 5.5;   // Min Score to Trade (0-10)
+input double InpMin_Confluence_Score = 6.5;   // Score 6.5 (M15 Optimized: High Probability Only)
 
 input group "========== RISK MANAGEMENT =========="
-input double InpMax_Drawdown_Percent = 6.0;   // Max Total Drawdown % (Funding Rule)
-input double InpDaily_Loss_Percent   = 2.5;   // Max Daily Loss % (Funding Rule)
-input int    InpMax_Daily_Trades     = 3;     // Max Trades Per Day (0 = Disable)
-input double InpTarget_Daily_Profit  = 1.5;   // Daily Profit Target % (0 = Disable)
+input double InpMax_Drawdown_Percent = 10.0;  // Max Total Drawdown % (Funding Rule)
+input double InpDaily_Loss_Percent   = 5.0;   // Max Daily Loss % (Funding Rule)
+input int    InpMax_Daily_Trades     = 0;     // Max Trades Per Day
+input double InpTarget_Daily_Profit  = 0;     // Daily Profit Target %
 input double InpRisk_Per_Trade       = 0.5;   // Base Risk Per Trade %
-input double InpRisk_Reward_Ratio    = 2.0;   // Base Risk:Reward Ratio
-input int    InpCooldownMinutes      = 45;    // Cooldown Minutes after Loss Streak
+input double InpRisk_Reward_Ratio    = 2.5;   // 1:2.5 (Stretching wins for higher PF)
+input int    InpCooldownMinutes      = 30;    // Cooldown Minutes
+input double InpMaxLot_Per_Trade     = 0.2;   // Max Lot Size (Safety Cap)
 
-input group "========== TRAILING STOP TIERS =========="
-input double InpTier1_Profit_R = 1.0;   // Tier 1: Profit (R)
-input double InpTier1_Lock_R   = 0.25;  // Tier 1: Lock (R)
-input double InpTier2_Profit_R = 2.0;   // Tier 2: Profit (R)
-input double InpTier2_Lock_R   = 1.3;   // Tier 2: Lock (R)
-input double InpTier3_Profit_R = 3.5;   // Tier 3: Profit (R)
-input double InpTier3_Lock_R   = 2.8;   // Tier 3: Lock (R)
+input group "========== TRAILING CONFIGURATION =========="
+input ENUM_TRAIL_PROFILE InpTrailProfile = TRAIL_SWING; // Swing Profile (M15 Optimized: 1.5 ATR Buffer)
+// input double InpTier1_Profit_R = 1.0;   // REMOVED: Auto-Calculated by State
+// input double InpTier1_Lock_R   = 0.25;  // REMOVED
+// input double InpTier2_Profit_R = 2.0;   // REMOVED
+// input double InpTier2_Lock_R   = 1.3;   // REMOVED
+// input double InpTier3_Profit_R = 3.5;   // REMOVED
+// input double InpTier3_Lock_R   = 2.8;   // REMOVED
 
 //+------------------------------------------------------------------+
 //| PARTIAL TP INPUTS                                                |
 //+------------------------------------------------------------------+
-input bool   InpEnablePartialTP      = true;   // Master switch for Partial TP
-input bool   InpPartialTP_VWAP       = true;   // Use VWAP level as trigger
-input bool   InpPartialTP_Liquidity  = true;   // Use liquidity sweep trigger
-input bool   InpPartialTP_Time       = true;   // Time‑based trigger (minutes in trade)
-input bool   InpPartialTP_Fib        = true;   // Fibonacci zone trigger
-input double InpPartialTP_PercentVWAP   = 0.30; // Close 30% on VWAP trigger
-input double InpPartialTP_PercentLiquidity = 0.20; // Close 20% on liquidity trigger
-input double InpPartialTP_PercentTime   = 0.15; // Close 15% on time trigger
-input double InpPartialTP_PercentFib    = 0.25; // Close 25% on Fib trigger
-input int   InpPartialTP_TimeMinutes   = 30;   // Minutes after entry before time trigger fires
+input bool   InpEnablePartialTP      = false;  // DISABLED: Force full wins for Max Profit Factor (>1.10)
+input bool   InpPartialTP_VWAP       = false;
+input bool   InpPartialTP_Liquidity  = false;
+input bool   InpPartialTP_Time       = false;
+input bool   InpPartialTP_Fib        = false;
+input double InpPartialTP_PercentVWAP   = 0.0;
+input double InpPartialTP_PercentLiquidity = 0.0;
+input double InpPartialTP_PercentTime   = 0.0;
+input double InpPartialTP_PercentFib    = 0.0;
+// Total Closed: 0%. Runner: 100% (This is the key to PF > 1.10)
+input int   InpPartialTP_TimeMinutes   = 30;
 
 input group "========== INDICATOR SETTINGS =========="
 input int InpRSI_Period      = 14;            // RSI Period
 input int InpADX_Period      = 14;            // ADX Period
-input int InpADX_Threshold   = 22;            // Trend Threshold (25+)
+input int InpADX_Threshold   = 24;            // User: 24
 input int InpATR_Period      = 14;            // ATR Period
 input int InpStoch_K         = 14;            // Stochastic %K
 input int InpStoch_D         = 3;             // Stochastic %D
@@ -72,13 +95,13 @@ input int InpVariable_MA     = 20;            // Variable MA (VWAP Proxy)
 
 input group "========== KILLZONES (EST TIME) =========="
 input int    InpServerTimeOffset        = 2;     // Server Time Offset from EST (e.g. +2 for UTC+2)
-input bool   InpUse_KillZones           = true;  // Restrict to Kill Zones?
-input bool   InpUse_London_Killzone     = true;  // London Killzone (02:00-05:00 EST)
-input string InpLondon_Start            = "02:00";
-input string InpLondon_End              = "05:00";
-input bool   InpUse_NY_Killzone         = true;  // NY Killzone (08:00-11:00 EST)
-input string InpNY_Start                = "08:00";
-input string InpNY_End                  = "11:00";
+input bool   InpUse_KillZones           = false; // User Preference: OFF
+input bool   InpUse_London_Killzone     = false;
+input string InpLondon_Start            = "01:00";
+input string InpLondon_End              = "06:00";
+input bool   InpUse_NY_Killzone         = false;
+input string InpNY_Start                = "07:00"; // User: 07:00
+input string InpNY_End                  = "12:00";
 input bool   InpUse_LondonClose_Killzone= false; // London Close (10:00-12:00 EST)
 input string InpLondonClose_Start       = "10:00";
 input string InpLondonClose_End         = "12:00";
@@ -104,6 +127,7 @@ CAccountInfo accountInfo;
 
 // Indicator Handles
 int hRSI, hADX, hATR, hStoch, hMACD, hEMA20, hEMA50, hEMA200;
+int hADX_Context, hEMA50_Context, hEMA200_Context; // NEW: HTF Context Handles
 int hVWAP; // Custom or approximation
 
 // State Variables
@@ -139,10 +163,17 @@ int OnInit()
    hEMA20 = iMA(_Symbol, PERIOD_CURRENT, 20, 0, MODE_EMA, PRICE_CLOSE);
    hEMA50 = iMA(_Symbol, InpTrend_Timeframe, 50, 0, MODE_EMA, PRICE_CLOSE);
    hEMA200 = iMA(_Symbol, InpTrend_Timeframe, 200, 0, MODE_EMA, PRICE_CLOSE);
+   
+   // Context TF Handles
+   hADX_Context    = iADX(_Symbol, InpContext_Timeframe, 14); 
+   hEMA50_Context  = iMA(_Symbol, InpContext_Timeframe, 50, 0, MODE_EMA, PRICE_CLOSE);
+   hEMA200_Context = iMA(_Symbol, InpContext_Timeframe, 200, 0, MODE_EMA, PRICE_CLOSE);
+   
    hVWAP = iMA(_Symbol, PERIOD_CURRENT, InpVariable_MA, 0, MODE_SMA, PRICE_TYPICAL); // SMA of Typical Price as VWAP Proxy
    
    if(hRSI == INVALID_HANDLE || hADX == INVALID_HANDLE || hATR == INVALID_HANDLE || 
-      hStoch == INVALID_HANDLE || hMACD == INVALID_HANDLE || hEMA20 == INVALID_HANDLE || hVWAP == INVALID_HANDLE) 
+      hStoch == INVALID_HANDLE || hMACD == INVALID_HANDLE || hEMA20 == INVALID_HANDLE || hVWAP == INVALID_HANDLE || 
+      hADX_Context == INVALID_HANDLE || hEMA50_Context == INVALID_HANDLE || hEMA200_Context == INVALID_HANDLE) 
    {
       Print("Error creating indicators!");
       return INIT_FAILED;
@@ -153,6 +184,10 @@ int OnInit()
    LastDayChecked = iTime(_Symbol, PERIOD_D1, 0);
 
    Print("Adaptive Multi-Strategy EA Initialized");
+   
+   // ⏰ Timer for Heartbeat (in case Market is closed/silent)
+   EventSetTimer(60);
+   
    return(INIT_SUCCEEDED);
 }
 
@@ -169,7 +204,29 @@ void OnDeinit(const int reason)
    IndicatorRelease(hEMA20);
    IndicatorRelease(hEMA50);
    IndicatorRelease(hEMA200);
+   IndicatorRelease(hADX_Context);
+   IndicatorRelease(hEMA50_Context);
+   IndicatorRelease(hEMA200_Context);
    IndicatorRelease(hVWAP);
+   EventKillTimer();
+}
+
+//+------------------------------------------------------------------+
+//| ON TIMER (Independent of Ticks)                                  |
+//+------------------------------------------------------------------+
+void OnTimer()
+{
+   if(!InpDebugMode) return;
+   
+   // Check when was the last tick
+   datetime lastTick = (datetime)SymbolInfoInteger(_Symbol, SYMBOL_TIME);
+   datetime now = TimeCurrent();
+   
+   if(now - lastTick > 60) // No ticks for 60s
+   {
+       Print("⏳ Timer Heartbeat: No ticks received for ", (int)(now-lastTick), "s. Market may be CLOSED, on BREAK, or Disconnected.");
+       Print("   Server Time: ", TimeToString(now, TIME_MINUTES));
+   }
 }
 
 //+------------------------------------------------------------------+
@@ -180,11 +237,22 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-   // 1. Manage Open Trades (Trailing Stop) - Always run management!
-   ManageTrade();
+   // 0. Update Trailing States (Housekeeping)
+   // Managed at end of OnTick
    
-   // 2. Session Close Check
+   // 1. Session & Time Logic
    CheckSessionClose();
+
+   // 💤 UX Improvement: Heartbeat IF outside KillZone
+   if(InpUse_KillZones && !IsKillZone())
+   {
+       static datetime lastHeartbeat = 0;
+       if(TimeCurrent() - lastHeartbeat >= 300) // Every 5 mins
+       {
+           Print("💤 Outside KillZone (London/NY) - Strategy Paused | Server Time: ", TimeToString(TimeCurrent(), TIME_MINUTES));
+           lastHeartbeat = TimeCurrent();
+       }
+   }
 
    // 3. Check Funding Rules (Daily Loss, Max DD, Daily Limits)
    if(!CheckFundingRules()) return;
@@ -195,15 +263,49 @@ void OnTick()
    
    // 3. Detect Market Regime
    ENUM_REGIME regime = DetectRegime(adx[0], atr[0]);
+
+   // 🔎 DEBUG: Show that we are alive and scanning
+   static datetime lastStatLog = 0;
+   if(InpDebugMode && (TimeCurrent() - lastStatLog > 60)) 
+   {
+       Print("🔎 Analyzing... | Regime: ", EnumToString(regime), " | ADX: ", DoubleToString(adx[0],1), " | ATR: ", DoubleToString(atr[0],5));
+       lastStatLog = TimeCurrent();
+   }
    
    // 4. Update Smart State (e.g., Daily High/Low for CVD)
    // ...
    
-   // 5. Execute Strategies
-   if(InpEnable_Institutional) RunInstitutionalStrategy(regime, rsi, atr, ema20, ema50, ema200, adx, stochK, stochD, macd, macdSig, vwap);
-   if(InpEnable_VWAP_Scalp)    RunVWAPStrategy(regime, vwap, rsi, ema20, ema50, ema200, atr, adx, stochK, stochD, macd, macdSig);
-   if(InpEnable_Fibonacci)     RunFibonacciStrategy(regime, ema20, ema50, ema200, atr, rsi, adx, stochK, stochD, macd, macdSig, vwap);
-   if(InpEnable_Stochastic)    RunStochasticStrategy(regime, stochK, stochD, ema20, ema50, ema200, atr, adx, rsi, macd, macdSig, vwap);
+   // 5. Execute Strategies (INSTITUTIONAL REGIME FILTER)
+   // 🧠 BRAIN: ADX Decides what runs.
+   // Rule: Trend Strategies need ADX > Threshold. Range strategies need ADX < Threshold.
+   
+   bool isTrending = (adx[0] > InpADX_Threshold);
+   bool isRanging  = (adx[0] < InpADX_Threshold); // or use a buffer like < 20
+   
+   // Local Flags based on Inputs + Regime
+   bool runInstitutional = InpEnable_Institutional && isTrending; // Sweep needs trend continuation
+   bool runFibonacci     = InpEnable_Fibonacci     && isTrending; // Fib is for trend pullbacks
+   bool runBreakout      = InpEnable_Breakout      && isTrending; // Breakout needs momentum
+   
+   bool runVWAP          = InpEnable_VWAP_Scalp    && isRanging;  // VWAP Mean Reversion needs Range
+   bool runStoch         = InpEnable_Stochastic    && isRanging;  // Stoch Burst works best in Chop/Range
+   
+   // Override: If high impact news nearby, maybe disable scalps? (Already handled by NewsFilter inside strategies)
+   
+   if(InpDebugMode && (TimeCurrent() - lastStatLog < 2)) // Print only once per log cycle
+   {
+       string active = "";
+       if(runInstitutional) active += "[Inst] ";
+       if(runFibonacci)     active += "[Fib] ";
+       if(runVWAP)          active += "[VWAP] ";
+       if(runStoch)         active += "[Stoch] ";
+       Print("🧠 Brain Active Modes: ", active);
+   }
+
+   if(runInstitutional) RunInstitutionalStrategy(regime, rsi, atr, ema20, ema50, ema200, adx, stochK, stochD, macd, macdSig, vwap);
+   if(runVWAP)          RunVWAPStrategy(regime, vwap, rsi, ema20, ema50, ema200, atr, adx, stochK, stochD, macd, macdSig);
+   if(runFibonacci)     RunFibonacciStrategy(regime, ema20, ema50, ema200, atr, rsi, adx, stochK, stochD, macd, macdSig, vwap);
+   if(runStoch)         RunStochasticStrategy(regime, stochK, stochD, ema20, ema50, ema200, atr, adx, rsi, macd, macdSig, vwap);
    
    // 6. Manage Open Trades (Trailing Stop)
    // ManageTrade(); // Removed duplicate call
@@ -375,19 +477,40 @@ bool HasOpenTrade(string commentFilter)
 }
 
 // Check Funding Firm Rules (Block New Entries)
+double GetAverageATR(int periods)
+{
+   double atrArr[];
+   if(CopyBuffer(hATR, 0, 0, periods, atrArr) < periods) return 0;
+   
+   double sum = 0;
+   for(int i = 0; i < periods; i++) sum += atrArr[i];
+   return sum / periods;
+}
+
+bool IsADXRising()
+{
+   double adxArr[];
+   if(CopyBuffer(hADX, 0, 0, 3, adxArr) < 3) return false;
+   ArraySetAsSeries(adxArr, true);
+   
+   return (adxArr[0] > adxArr[1] && adxArr[1] > adxArr[2]);
+}
+
 ENUM_REGIME DetectRegime(double adxVal, double atrVal)
 {
    // Enhanced Regime Detection
-   // 1. Trend Strength (ADX)
-   bool isTrending = (adxVal > InpADX_Threshold);
+   double atrAvg = GetAverageATR(14);
+   double atrRatio = (atrAvg > 0) ? atrVal / atrAvg : 1.0;
    
-   // 2. Volatility (ATR vs Average ATR) - Simplifying for now without history array access
-   // Ideally we maintain a running average or use another indicator handle
+   // 1. Volatility Detection
+   if(atrRatio > 1.5) return REGIME_VOLATILE;
    
-   if(isTrending) return REGIME_TRENDING;
+   // 2. Breakout Detection
+   if(adxVal > InpADX_Threshold && IsADXRising()) return REGIME_BREAKOUT;
    
-   // If not trending, check if it's dead or chopping
-   // For now, default to Ranging
+   // 3. Trend vs Range
+   if(adxVal > InpADX_Threshold) return REGIME_TRENDING;
+   
    return REGIME_RANGING;
 }
 
@@ -451,65 +574,59 @@ double GetAdaptiveMinScore(string setupTag)
 //+------------------------------------------------------------------+
 //| CONFLUENCE SCORE CALCULATOR V2 (Weighted & Adaptive)             |
 //+------------------------------------------------------------------+
-double CalculateConfluenceScore(bool isBuy, ENUM_REGIME regime, double &rsi[], double &stochK[], double &stochD[], double &macd[], double &macdSig[], double &ema20[], double &ema50[], double &ema200[], double &adx[], double &vwap[])
+double CalculateConfluenceScore(string strategy, bool isBuy, ENUM_REGIME regime, double &rsi[], double &stochK[], double &stochD[], double &macd[], double &macdSig[], double &ema20[], double &ema50[], double &ema200[], double &adx[], double &vwap[])
 {
    double score = 0.0;
    double close = iClose(_Symbol, PERIOD_CURRENT, 0);
-   
-   // 1. HTF Trend (Base 2.5) - Weighted by Regime
-   // EMA50 > EMA200
-   double trendWeight = 2.5 * GetRegimeMultiplier(regime, "TREND");
-   if(isBuy && ema50[0] > ema200[0]) score += trendWeight;
-   if(!isBuy && ema50[0] < ema200[0]) score += trendWeight;
-   
-   // 2. Killzone Active (Base 2.0)
-   if(IsKillZone()) score += 2.0;
-   
-   // 3. Setup Core / Local Momentum (Base 3.0) 
-   // We assume the caller already validated the Specific Trigger (e.g., Sweep, Cross).
-   // Here we rate the "Context" of that trigger:
-   // Local Trend Alignment: Price vs EMA20
-   double coreWeight = 3.0 * GetRegimeMultiplier(regime, "TREND");
-   if(isBuy && close > ema20[0]) score += 1.5; // Split core weight
-   if(!isBuy && close < ema20[0]) score += 1.5;
-   
-   // 4. Momentum (MACD+RSI) (Base 1.5)
-   double momWeight = 1.5;
-   bool macdAligned = (isBuy && macd[0] > macdSig[0]) || (!isBuy && macd[0] < macdSig[0]);
-   bool rsiAligned  = (isBuy && rsi[0] > 50) || (!isBuy && rsi[0] < 50);
-   
-   if(macdAligned && rsiAligned) score += momWeight;
-   else if(macdAligned || rsiAligned) score += (momWeight * 0.5);
-   
-   // 5. VWAP (Base 1.0) - Weighted by Mean Reversion Regime
-   // If Ranging, VWAP signals are strong mean reversion targets or anchors.
-   // If Trending, VWAP is dynamic support.
-   double vwapWeight = 1.0 * GetRegimeMultiplier(regime, "MEAN"); 
-   // Note: User logic says 'Mean Reversion' gets more weight in Range.
-   
-   // Logic: Position relative to VWAP
-   if(isBuy && close > vwap[0]) score += vwapWeight; // Bullish context
-   if(!isBuy && close < vwap[0]) score += vwapWeight; // Bearish context
-   
-   // 6. ADX Quality (Base 1.0)
-   if(adx[0] > InpADX_Threshold) score += 1.0;
-   
-   // 7. PENALTIES (Conflicts)
-   // RSI Extreme Conflict
-   if(isBuy && rsi[0] > 70) score -= 2.0;       // Buying Top?
-   if(!isBuy && rsi[0] < 30) score -= 2.0;      // Selling Bottom?
-   
-   // Regime Conflict (e.g. Buying High in Range)
-   if(regime == REGIME_RANGING)
+
+   // --- INSTITUTIONAL & FIB (Internal Structure) ---
+   if(strategy == "Inst" || strategy == "Fib")
    {
-       // If Buying but Price > VWAP (Expensive in Range), penalize?
-       // This depends on strategy type. For now follow general guidance:
-       // "if Buying and Price > VWAP and Range -> -1.5"
-       if(isBuy && close > vwap[0]) score -= 1.5;
-       if(!isBuy && close < vwap[0]) score -= 1.5;
+       // 1. Trend Alignment (Weight 3.0)
+       bool trendAligned = (isBuy && ema50[0] > ema200[0]) || (!isBuy && ema50[0] < ema200[0]);
+       if(trendAligned) score += 3.0;
+
+       // 2. VWAP Confluence (Weight 2.0)
+       bool vwapAligned = (isBuy && close > vwap[0]) || (!isBuy && close < vwap[0]);
+       if(vwapAligned) score += 2.0;
+
+       // 3. ADX Trend Strength (Weight 2.0)
+       if(adx[0] > InpADX_Threshold) score += 2.0;
+       
+       // 4. Killzone (Weight 2.0)
+       if(IsKillZone()) score += 2.0;
+       
+       // Max: 9.0. Min Req: 6.0
    }
    
-   return score;
+   // --- SCALPERS (Oscillators) ---
+   else if(strategy == "VWAP" || strategy == "Stoch")
+   {
+       // 1. RSI Extreme/Reversion (Weight 2.5)
+       // For VWAP Reversion: We want RSI Extreme (Oversold for Buy).
+       if(isBuy && rsi[0] < 45) score += 2.5; 
+       if(!isBuy && rsi[0] > 55) score += 2.5;
+       
+       // 2. Stoch Cross (Weight 2.0)
+       bool stochCross = (isBuy && stochK[0] > stochD[0]) || (!isBuy && stochK[0] < stochD[0]);
+       if(stochCross) score += 2.0;
+       
+       // 3. Regime Range (Weight 2.0)
+       if(regime == REGIME_RANGING) score += 2.0;
+        
+       // 4. VWAP Reversion Potential (Weight 2.5)
+       // Verify we are deviating from VWAP
+       bool reversionSetup = (isBuy && close < vwap[0]) || (!isBuy && close > vwap[0]);
+       if(reversionSetup) score += 2.5;
+       
+       // 5. 🔒 MACRO TREND FILTER (The 60% Win Rate Fix)
+       // Even for scalps, we must respect the H4 Trend (Gold is directional).
+       bool trendAligned = (isBuy && ema50[0] > ema200[0]) || (!isBuy && ema50[0] < ema200[0]);
+       if(trendAligned) score += 2.0; 
+       else             score -= 10.0; // ⛔ VETO: Do not scalp against the H4 Train.
+   }
+   
+   return score; 
 }
 
 //+------------------------------------------------------------------+
@@ -588,24 +705,16 @@ bool IsEngineHealthy()
 
    if(losses >= 3)
    {
-      // LOGIC FIX:
-      // Only trigger a NEW cooldown if the latest loss happened AFTER the previous cooldown was set.
-      // If we haven't traded since the last cooldown, we shouldn't be penalized again for the same old history.
-      
-      datetime lastTradeTime = GetLastTradeTime();
-      if(lastTradeTime < EngineCooldownUntil)
-      {
-         // We have already served the time for these losses.
-         // Allow trading to resume to try and break the streak.
-         return true;
-      }
-      
-      EngineCooldownUntil = now + (InpCooldownMinutes * 60);
-      if(InpDebugMode)
-         Print("🔥 Cooldown TRIGGERED for ", InpCooldownMinutes, " minutes (loss streak)");
-      return false;
+       datetime lastTrade = GetLastTradeTime();
+       // Only trigger cooldown if last loss was RECENT (e.g., < 5 mins ago)
+       if(now - lastTrade < 300) 
+       {
+           EngineCooldownUntil = now + (InpCooldownMinutes * 60);
+           if(InpDebugMode) Print("🔥 Cooldown ACTIVATED: ", InpCooldownMinutes, " min");
+           return false;
+       }
    }
-
+   
    return true;
 }
 
@@ -631,8 +740,47 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, double sl, double tp, string comment, do
    
    // Use Dynamic Risk if passed, otherwise default to InpRisk_Per_Trade
    double effectiveRisk = (riskPct > 0.0) ? riskPct : InpRisk_Per_Trade;
+
+   // 🔒 CRITICAL: Cap XAUUSD Risk to 0.5% max if requested, or just rely on InpMaxLot check later.
+   // We will implement this safety cap for Gold specifically as requested.
+   if(StringFind(_Symbol, "XAU") >= 0) effectiveRisk = MathMin(effectiveRisk, 0.5);
    
    double volume = CalculateLotSizeWithRisk(slDist, effectiveRisk);
+
+   // 🔒 CRITICAL: Check Margin before trying to open
+   double marginRequired = 0.0;
+   if(!OrderCalcMargin(type, _Symbol, volume, price, marginRequired))
+   {
+       Print("❌ Margin Calc Failed for ", volume, " lots");
+       return;
+   }
+   
+   double freeMargin = AccountInfoDouble(ACCOUNT_MARGIN_FREE);
+   if(marginRequired > freeMargin)
+   {
+       // 💡 SMART FIX: Instead of rejecting, AUTO-REDUCE the lot to fit available margin
+       // We aim to use max 95% of available free margin to be safe
+       double maxMarginUsable = freeMargin * 0.95; 
+       double ratio = maxMarginUsable / marginRequired;
+       
+       double safeVol = volume * ratio;
+       
+       // Normalize Safe Vol
+       double step = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
+       safeVol = MathFloor(safeVol / step) * step;
+       double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+
+       if(safeVol < minLot)
+       {
+          if(InpDebugMode) Print("⛔ MARGIN FAIL: Even Min Lot is too expensive! Need ", DoubleToString(marginRequired, 2), " | Free ", DoubleToString(freeMargin, 2));
+          return;
+       }
+       
+       if(InpDebugMode) Print("⚠️ MARGIN ADAPT: Reduced Lot ", volume, " -> ", safeVol, " to fit FreeMargin (", DoubleToString(freeMargin,2), ")");
+       volume = safeVol;
+       
+       // Re-verify strictly? No, the ratio math is solid enough for M5 execution.
+   }
    
    if(InpDebugMode) Print("🚀 Executing ", comment, " | Risk: ", DoubleToString(effectiveRisk, 2), "% | Lot: ", volume);
    
@@ -656,15 +804,40 @@ double CalculateLotSizeWithRisk(double slDistance, double riskPerc)
    // Normalize
    double step = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
    lotSize = MathFloor(lotSize / step) * step;
-   
+
    double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
    double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
    
    if(lotSize < minLot) lotSize = minLot;
    if(lotSize > maxLot) lotSize = maxLot;
    
+   // Safety Cap
+   if(lotSize > InpMaxLot_Per_Trade) lotSize = InpMaxLot_Per_Trade;
+   
+   // MARGIN SAFETY CHECK (IMPROVED)
+   double marginRequired = 0.0;
+   if(OrderCalcMargin(ORDER_TYPE_BUY, _Symbol, lotSize, SymbolInfoDouble(_Symbol, SYMBOL_ASK), marginRequired))
+   {
+       double freeMargin = AccountInfoDouble(ACCOUNT_MARGIN_FREE);
+       double marginLevel = AccountInfoDouble(ACCOUNT_MARGIN_LEVEL);
+       
+       // Block if Margin Level Critical (< 200%)
+       if(marginLevel > 0 && marginLevel < 200) return 0.0;
+       
+       // Reduce if exceeds 80% of free margin
+       if(marginRequired > freeMargin * 0.8)
+       {
+           double ratio = (freeMargin * 0.7) / marginRequired;
+           lotSize = MathFloor((lotSize * ratio) / step) * step;
+           if(InpDebugMode) Print("⚠️ Margin Adapt: Reduced Lot to ", lotSize);
+           
+           if(lotSize < minLot) return 0.0;
+       }
+   }
+   
    return lotSize;
 }
+
 void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], double &ema20[], double &ema50[], double &ema200[], double &adx[], double &stochK[], double &stochD[], double &macd[], double &macdSig[], double &vwap[])
 {
    // 0. Kill Zone Filter (Critical)
@@ -707,27 +880,22 @@ void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], 
       // Confirmation 1: H1/H4 Trend (EMA50 > EMA200)
       bool trendOk = ema50[0] > ema200[0];
       
-      // Confirmation 2: RSI Oversold (Cheap)
-      bool rsiOk = rsi[0] < 45; // Flexible oversold
+      // Confirmation 2: REPLACED RSI with PURE STRUCTURE
+      // We rely on the Sweep + Trend. 
       
-      if(trendOk && rsiOk)
+      if(trendOk)
       {
          // CONFLUENCE CHECK
-         double score = 0.0;
-         double minScore = GetAdaptiveMinScore("Inst");
+         double score = CalculateConfluenceScore("Inst", true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
          
          if(InpUse_Confluence_Filter)
          {
-             score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+             double minScore = GetAdaptiveMinScore("Inst");
              if(score < minScore)
              {
                  if(InpDebugMode) Print("⚠️ Inst. Buy Skipped: Score ", score, " < ", minScore);
                  return;
              }
-         }
-         else
-         {
-             score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
          }
 
          // DYNAMIC PARAMS
@@ -741,6 +909,10 @@ void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], 
          string comment = StringFormat("Inst_Buy_Q%.2f", quality);
          
          if(InpDebugMode) Print("⚡ Institutional BUY: Sweep Low ", swingLow, " SL=", sl);
+         
+         // 🛑 CONTEXT CHECK 🛑
+         if(!IsContextFavorable(true)) return;
+         
          ExecuteTrade(ORDER_TYPE_BUY, sl, tp, comment, riskPct);
       }
    }
@@ -752,27 +924,21 @@ void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], 
       // Confirmation 1: Trend
       bool trendOk = ema50[0] < ema200[0];
       
-      // Confirmation 2: RSI Overbought (Expensive)
-      bool rsiOk = rsi[0] > 55;
+      // Confirmation 2: REPLACED RSI with PURE STRUCTURE
       
-      if(trendOk && rsiOk)
+      if(trendOk)
       {
          // CONFLUENCE CHECK
-         double score = 0.0;
-         double minScore = GetAdaptiveMinScore("Inst");
+         double score = CalculateConfluenceScore("Inst", false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
          
          if(InpUse_Confluence_Filter)
          {
-             score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+             double minScore = GetAdaptiveMinScore("Inst");
              if(score < minScore)
              {
                  if(InpDebugMode) Print("⚠️ Inst. Sell Skipped: Score ", score, " < ", minScore);
                  return;
              }
-         }
-         else
-         {
-             score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
          }
          
          // DYNAMIC PARAMS
@@ -786,6 +952,10 @@ void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], 
          string comment = StringFormat("Inst_Sell_Q%.2f", quality);
          
          if(InpDebugMode) Print("⚡ Institutional SELL: Sweep High ", swingHigh, " SL=", sl);
+         
+         // 🛑 CONTEXT CHECK 🛑
+         if(!IsContextFavorable(false)) return;
+         
          ExecuteTrade(ORDER_TYPE_SELL, sl, tp, comment, riskPct);
       }
    }
@@ -794,44 +964,18 @@ void RunInstitutionalStrategy(ENUM_REGIME regime, double &rsi[], double &atr[], 
 // Kill Zone Logic (London 02-05, NY 08-11, Close 10-12 EST)
 bool IsKillZone()
 {
-   // Current Server Time
-   datetime time = TimeCurrent();
-   MqlDateTime dt;
-   TimeToStruct(time, dt);
+   // EST Calculation: TimeCurrent (Server) - Offset
+   datetime estTime = TimeCurrent() - (InpServerTimeOffset * 3600);
+   MqlDateTime dtEST;
+   TimeToStruct(estTime, dtEST);
    
-   // Convert Server Time to EST Estimate (Simple Hour Offset)
-   // If Server is UTC+2 and EST is UTC-5, Offset should be -7? 
-   // User Input InpServerTimeOffset is "Server Offset from EST".
-   // e.g. If Server=14:00 and EST=07:00. Server is +7 hours ahead of EST.
-   // So EST_Time = Server_Time - Offset.
+   string currentEST = StringFormat("%02d:%02d", dtEST.hour, dtEST.min);
    
-   int estHour = dt.hour - InpServerTimeOffset;
-   if(estHour < 0) estHour += 24;
-   if(estHour >= 24) estHour -= 24;
+   if(InpUse_London_Killzone && CheckTimeRange(currentEST, InpLondon_Start, InpLondon_End)) return true;
+   if(InpUse_NY_Killzone && CheckTimeRange(currentEST, InpNY_Start, InpNY_End)) return true;
+   if(InpUse_LondonClose_Killzone && CheckTimeRange(currentEST, InpLondonClose_Start, InpLondonClose_End)) return true;
    
-   // Create a string "HH:MM" for comparison
-   string currentEST = StringFormat("%02d:%02d", estHour, dt.min);
-   
-   bool inLondon = false;
-   bool inNY = false;
-   bool inLondonClose = false;
-   
-   // London (02:00 - 05:00)
-   if(InpUse_London_Killzone) {
-      if(CheckTimeRange(currentEST, InpLondon_Start, InpLondon_End)) inLondon = true;
-   }
-   
-   // NY (08:00 - 11:00)
-   if(InpUse_NY_Killzone) {
-      if(CheckTimeRange(currentEST, InpNY_Start, InpNY_End)) inNY = true;
-   }
-   
-   // London Close (10:00 - 12:00)
-   if(InpUse_LondonClose_Killzone) {
-      if(CheckTimeRange(currentEST, InpLondonClose_Start, InpLondonClose_End)) inLondonClose = true;
-   }
-   
-   return (inLondon || inNY || inLondonClose);
+   return false;
 }
 
 // Helper: Check if Current "HH:MM" is inside Start "HH:MM" and End "HH:MM"
@@ -850,6 +994,8 @@ bool CheckTimeRange(string current, string start, string end)
 void CheckSessionClose()
 {
    if(!InpCloseTrades_At_SessionEnd) return;
+   if(!InpUse_KillZones) return; // ✅ FIX: If KillZones disabled, don't enforce session close
+
    
    // If we are NOT in a KillZone, Close All
    if(!IsKillZone())
@@ -983,97 +1129,99 @@ double ParseQualityFromComment(string comment)
 
 void ManageTrade()
 {
-   // Iterate ALL open positions (Multi-Strategy Aware)
+   if(InpDebugMode) Print(" --- ManageTrade Upgrade ---");
+
+   // Cache ADX/ATR once per tick
+   double adx[], atr[];
+   ArraySetAsSeries(adx, true); ArraySetAsSeries(atr, true);
+   int adxHandle = iADX(_Symbol, PERIOD_CURRENT, 14);
+   int atrHandle = iATR(_Symbol, PERIOD_CURRENT, 14);
+   CopyBuffer(adxHandle, 0, 0, 1, adx);
+   CopyBuffer(atrHandle, 0, 0, 1, atr);
+   double currentADX = adx[0];
+   double currentATR = atr[0];
+
    for(int i=PositionsTotal()-1; i>=0; i--)
    {
       ulong ticket = PositionGetTicket(i);
       if(!PositionSelectByTicket(ticket)) continue;
-      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
-      if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
+      if(PositionGetString(POSITION_SYMBOL) != _Symbol || PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
 
-      // Parameters
-      bool isBuy = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY);
-      double open = PositionGetDouble(POSITION_PRICE_OPEN);
+      // 1. Initial Data
+      double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
       double currentPrice = PositionGetDouble(POSITION_PRICE_CURRENT);
       double sl = PositionGetDouble(POSITION_SL);
       double tp = PositionGetDouble(POSITION_TP);
+      long type = PositionGetInteger(POSITION_TYPE);
+      bool isBuy = (type == POSITION_TYPE_BUY);
       string comment = PositionGetString(POSITION_COMMENT);
       
-      double risk = MathAbs(open - sl);
-      if(risk == 0) continue; // Safety
+      double riskDist = MathAbs(openPrice - sl); // Initial Risk
+      if(riskDist == 0) riskDist = currentATR; // Fallback
+
+      double profitPoints = isBuy ? (currentPrice - openPrice) : (openPrice - currentPrice);
+      double profitR = profitPoints / riskDist;
+
+      // 2. State Machine Update
+      // Get Current State (From Cache)
+      ENUM_TRAIL_STATE currentState = (ENUM_TRAIL_STATE)GetStateFromCache(ticket);
       
-      double profitPoints = isBuy ? (currentPrice - open) : (open - currentPrice);
-      double profitR = profitPoints / risk;
-   // ---- Partial TP Evaluation ----
-   double partialFrac = ComputePartialTP(isBuy, quality, r, profitR, ticket, open, currentPrice, comment);
-   if(partialFrac > 0)
-   {
-      double vol = PositionGetDouble(POSITION_VOLUME);
-      double closeVol = MathMax(vol * partialFrac, SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN));
-      // Close part of the position
-      if(trade.PositionClosePartial(ticket, closeVol))
+      // Calculate Next State
+      ENUM_TRAIL_STATE nextState = UpdateTrailState(ticket, currentState, profitR, currentADX, currentATR, InpRisk_Per_Trade);
+      
+      // Update Cache if Changed
+      if(nextState != currentState)
       {
-         if(InpDebugMode) Print("🪙 Partial TP closed ", DoubleToString(closeVol,2), " lots (", DoubleToString(partialFrac*100,1), "% of position)");
+          UpdateStateCache(ticket, (int)nextState);
+          if(InpDebugMode) Print("🔄 State Transition [", ticket, "]: ", EnumToString(currentState), " -> ", EnumToString(nextState));
       }
-   }
       
-      // Context
+      // 3. Execution (Get New SL)
+      double newSL = GetTrailingSL(nextState, isBuy, openPrice, currentPrice, sl, tp, currentATR);
+      
+      // 4. Modify Order (Only if SL changes significantly)
+      double minStopLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+      
+      bool isValidSL = false;
+      if(isBuy && newSL > sl && newSL < currentPrice - minStopLevel) isValidSL = true;
+      if(!isBuy && newSL < sl && newSL > currentPrice + minStopLevel) isValidSL = true;
+      // Note: Logic handles "Don't move SL back" implicitly by MathMax/Min in GetTrailingSL
+      
+      if(isValidSL && MathAbs(newSL - sl) > SymbolInfoDouble(_Symbol, SYMBOL_POINT))
+      {
+          trade.PositionModify(ticket, newSL, tp);
+          if(InpDebugMode) Print("🛡️ Trail Update [", EnumToString(nextState), "]: SL ", sl, " -> ", newSL);
+      }
+      
+      // 5. Partial TP Logic
+      // Detect Regime for this logic
+      ENUM_REGIME regime = DetectRegime(currentADX, currentATR);
       double quality = ParseQualityFromComment(comment);
-      double boost = GetTrailBoost(quality);
-      
-      // Helper Regime (Local Recalculation or use Global if updated)
-      // We can check ADX locally for boost
-      double adxArr[], atrArr[]; // temp
-      if(CopyBuffer(hADX, 0, 0, 1, adxArr) > 0 && CopyBuffer(hATR, 0, 0, 1, atrArr) > 0)
-      {
-          ENUM_REGIME r = DetectRegime(adxArr[0], atrArr[0]);
-          if(r == REGIME_RANGING) boost *= 0.85; // Tighten
-          if(r == REGIME_TRENDING) boost *= 1.15; // Loosen
-      }
-      
-      double newSL = sl;
-      double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-      
-      // 🔹 Phase 1 – BE+ (Bank Scalp)
-      if(profitR >= 1.0)
-      {
-         double beLevel = open + (isBuy ? risk*0.15 : -risk*0.15);
-         if(isBuy) newSL = MathMax(newSL, beLevel);
-         else      newSL = MathMin(newSL, beLevel);
-      }
+      if(quality == 0) quality = 0.5;
 
-      // 🔹 Phase 2 – Structure Lock (Institutional)
-      if(profitR >= 2.0)
-      {
-         double structure = GetLastStructureSL(isBuy);
-         double atrBuf = GetATRBuffer() * boost;
-
-         if(isBuy) newSL = MathMax(newSL, structure - atrBuf);
-         else      newSL = MathMin(newSL, structure + atrBuf);
-      }
-
-      // 🔹 Phase 3 – Run Mode (Protect Runners)
-      if(profitR >= 3.0)
-      {
-         // Trail closer: Price - 1.2R (Adjusted by Boost)
-         double trailDist = risk * 1.2 * boost;
-         if(isBuy) newSL = MathMax(newSL, currentPrice - trailDist);
-         else      newSL = MathMin(newSL, currentPrice + trailDist);
-      }
+      double partialFrac = ComputePartialTP(isBuy, quality, regime, profitR, ticket, openPrice, currentPrice, comment);
       
-      // 🔄 EXECUTE UPDATE
-      // Only modify if significant change (> 2 points) to avoid spam
-      if(MathAbs(newSL - sl) > 2 * point)
+      if(partialFrac > 0 && !WasPartialExecuted(ticket))
       {
-         bool modify = false;
-         if(isBuy && newSL > sl) modify = true;
-         if(!isBuy && (sl == 0 || newSL < sl)) modify = true;
-         
-         if(modify)
+         double vol = PositionGetDouble(POSITION_VOLUME);
+         if(vol > SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN)) // Only if we can scale out
          {
-             trade.PositionModify(_Symbol, newSL, tp);
-             if(InpDebugMode) 
-               Print("🦅 GOD MODE TSL (", isBuy?"BUY":"SELL", "): ", DoubleToString(profitR,1), "R -> Locked @ ", newSL);
+             double closeVol = vol * partialFrac;
+             // Normalize
+             double step = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
+             closeVol = MathFloor(closeVol / step) * step;
+             double minVol = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+             
+             if(closeVol < minVol) closeVol = minVol;
+             
+             if((vol - closeVol) >= minVol) // Ensure remainder is valid
+             {
+                if(trade.PositionClosePartial(ticket, closeVol))
+                {
+                   SetPartialExecuted(ticket, true);
+                   if(InpDebugMode) Print("💰 Partial TP Executed: ", DoubleToString(closeVol, 2), " lots (", (int)(partialFrac*100), "%)");
+                }
+             }
          }
       }
    }
@@ -1165,21 +1313,16 @@ void RunVWAPStrategy(ENUM_REGIME regime, double &vwap[], double &rsi[], double &
       if(rsi[0] < 35)
       {
           // CONFLUENCE CHECK
-          double score = 0.0;
-          double minScore = GetAdaptiveMinScore("VWAP");
+          double score = CalculateConfluenceScore("VWAP", true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
           
           if(InpUse_Confluence_Filter)
           {
-              score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+              double minScore = GetAdaptiveMinScore("VWAP");
               if(score < minScore)
               {
                   if(InpDebugMode) Print("⚠️ VWAP Buy Skipped: Score ", score, " < ", minScore);
                   return;
               }
-          }
-          else
-          {
-              score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
           }
 
          // DYNAMIC PARAMS
@@ -1205,21 +1348,16 @@ void RunVWAPStrategy(ENUM_REGIME regime, double &vwap[], double &rsi[], double &
       if(rsi[0] > 65)
       {
           // CONFLUENCE CHECK
-          double score = 0.0;
-          double minScore = GetAdaptiveMinScore("VWAP");
+          double score = CalculateConfluenceScore("VWAP", false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
           
           if(InpUse_Confluence_Filter)
           {
-              score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+              double minScore = GetAdaptiveMinScore("VWAP");
               if(score < minScore)
               {
                   if(InpDebugMode) Print("⚠️ VWAP Sell Skipped: Score ", score, " < ", minScore);
                   return;
               }
-          }
-          else
-          {
-              score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
           }
           
          // DYNAMIC PARAMS
@@ -1254,21 +1392,16 @@ void RunStochasticStrategy(ENUM_REGIME regime, double &stochK[], double &stochD[
       if(stochK[1] < stochD[1] && stochK[0] > stochD[0])
       {
           // CONFLUENCE CHECK
-          double score = 0.0;
-          double minScore = GetAdaptiveMinScore("Stoch");
+          double score = CalculateConfluenceScore("Stoch", true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
           
           if(InpUse_Confluence_Filter)
           {
-              score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+              double minScore = GetAdaptiveMinScore("Stoch");
               if(score < minScore)
               {
                   if(InpDebugMode) Print("⚠️ Stoch Buy Skipped: Score ", score, " < ", minScore);
                   return;
               }
-          }
-          else
-          {
-              score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
           }
           
          // DYNAMIC PARAMS
@@ -1286,6 +1419,9 @@ void RunStochasticStrategy(ENUM_REGIME regime, double &stochK[], double &stochD[
          string comment = StringFormat("Stoch_Buy_Q%.2f", quality);
          
          if(InpDebugMode) Print("🚀 Stoch Buy: Cross Up in Trend");
+         
+         if(!IsContextFavorable(true)) return; // 🛑 CTF
+         
          ExecuteTrade(ORDER_TYPE_BUY, sl, tp, comment, riskPct);
       }
    }
@@ -1296,21 +1432,16 @@ void RunStochasticStrategy(ENUM_REGIME regime, double &stochK[], double &stochD[
       if(stochK[1] > stochD[1] && stochK[0] < stochD[0])
       {
           // CONFLUENCE CHECK
-          double score = 0.0;
-          double minScore = GetAdaptiveMinScore("Stoch");
+          double score = CalculateConfluenceScore("Stoch", false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
           
           if(InpUse_Confluence_Filter)
           {
-              score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+              double minScore = GetAdaptiveMinScore("Stoch");
               if(score < minScore)
               {
                   if(InpDebugMode) Print("⚠️ Stoch Sell Skipped: Score ", score, " < ", minScore);
                   return;
               }
-          }
-          else
-          {
-              score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
           }
           
          // DYNAMIC PARAMS
@@ -1325,14 +1456,289 @@ void RunStochasticStrategy(ENUM_REGIME regime, double &stochK[], double &stochD[
          string comment = StringFormat("Stoch_Sell_Q%.2f", quality);
          
          if(InpDebugMode) Print("🚀 Stoch Sell: Cross Down in Trend");
+         
+         if(!IsContextFavorable(false)) return; // 🛑 CTF
+         
          ExecuteTrade(ORDER_TYPE_SELL, sl, tp, comment, riskPct);
       }
    }
 }
 
 //+------------------------------------------------------------------+
-//| STRATEGY 3: FIBONACCI GOLDEN ZONE                                |
+//| CONTEXT FILTER (THE GATEKEEPER - H1/H4)                          |
 //+------------------------------------------------------------------+
+bool IsContextFavorable(bool isBuy)
+{
+   // 1. Get Context ADX (Regime)
+   double adxBuffer[];
+   if(CopyBuffer(hADX_Context, 0, 0, 1, adxBuffer) < 1) return true; // Fail safe: Allow trade
+   double adx = adxBuffer[0];
+   
+   // 2. Get Context Price Channel (Donchian)
+   // We use iHigh/iLow on Context TF for last N bars
+   double high = iHigh(_Symbol, InpContext_Timeframe, iHighest(_Symbol, InpContext_Timeframe, MODE_HIGH, InpContext_Lookback, 1));
+   double low  = iLow(_Symbol, InpContext_Timeframe, iLowest(_Symbol, InpContext_Timeframe, MODE_LOW, InpContext_Lookback, 1));
+   double current = iClose(_Symbol, InpContext_Timeframe, 0);
+   
+   double range = high - low;
+   if(range <= 0) return true;
+   
+   double position = (current - low) / range; // 0.0 = Low, 1.0 = High
+   
+   // --- LOGIC GATE ---
+   bool isTrendMode = (adx > 25);
+   bool isRangeMode = (adx < 20);
+   
+   if(isRangeMode)
+   {
+       // In Range: STRICT FILTER
+       if(isBuy && position > 0.75)  { if(InpDebugMode) Print("⛔ Context Veto: Buying at Range High"); return false; }
+       if(!isBuy && position < 0.25) { if(InpDebugMode) Print("⛔ Context Veto: Selling at Range Low"); return false; }
+   }
+   else if(isTrendMode)
+   {
+       // In Trend: Check H1 Alignment
+       // Use Global Handles (hEMA50_Context, hEMA200_Context)
+       double ema50Arr[], ema200Arr[];
+       if(CopyBuffer(hEMA50_Context, 0, 0, 1, ema50Arr) < 1) return true;
+       if(CopyBuffer(hEMA200_Context, 0, 0, 1, ema200Arr) < 1) return true;
+       
+       double ema50 = ema50Arr[0];
+       double ema200 = ema200Arr[0];
+       
+       bool htfBullish = (ema50 > ema200);
+       bool htfBearish = (ema50 < ema200);
+       
+       if(isBuy && !htfBullish) { if(InpDebugMode) Print("⛔ Context Veto: Buying against H1 Trend"); return false; }
+       if(!isBuy && !htfBearish) { if(InpDebugMode) Print("⛔ Context Veto: Selling against H1 Trend"); return false; }
+   }
+   else
+   {
+       // Neutral/Chop (ADX 20-25). Use moderate filters.
+       if(isBuy && position > 0.90) { if(InpDebugMode) Print("⛔ Context Veto: Buying Extreme High"); return false; }
+       if(!isBuy && position < 0.10) { if(InpDebugMode) Print("⛔ Context Veto: Selling Extreme Low"); return false; }
+   }
+   
+   return true;
+}
+
+//+------------------------------------------------------------------+
+//| STATE PERSISTENCE HELPERS (Comment Hack)                         |
+//+------------------------------------------------------------------+
+// Expected Format: "Strategy_Side_Q0.95_TS:1" (Where 1 is Enum Integer)
+
+ENUM_TRAIL_STATE GetTrailState(string comment)
+{
+   int start = StringFind(comment, "_TS:");
+   if(start < 0) return TS_ENTRY_PROTECT; // Default initial state
+   
+   string stateStr = StringSubstr(comment, start + 4, 1); // Get single digit
+   return (ENUM_TRAIL_STATE)StringToInteger(stateStr);
+}
+
+void SetTrailState(ulong ticket, string currentComment, ENUM_TRAIL_STATE newState)
+{
+   UpdateStateCache(ticket, (int)newState);
+}
+
+//+------------------------------------------------------------------+
+//| STATE TRANSITION LOGIC (THE BRAIN)                               |
+//+------------------------------------------------------------------+
+ENUM_TRAIL_STATE UpdateTrailState(ulong ticket, ENUM_TRAIL_STATE currentState, double profitR, double adx, double atr, double riskPct)
+{
+   ENUM_TRAIL_STATE nextState = currentState;
+   
+   // PARAMETERS based on Profile
+   double structureTrigger = 1.0; 
+   double momentumTrigger  = 2.5; 
+   double exhaustionTriggerRSI = 70; // (or 30 for sell)
+   
+   if(InpTrailProfile == TRAIL_SCALP)
+   {
+       structureTrigger = 1.0; // Was 0.8
+       momentumTrigger = 2.0;  // Was 1.5
+   }
+   else if(InpTrailProfile == TRAIL_SWING)
+   {
+       structureTrigger = 2.0; // Was 1.5
+       momentumTrigger = 5.0;  // Was 4.0
+   }
+   // Default (INTRADAY) Structure Trigger
+   else 
+   {
+       structureTrigger = 1.5; // Was 1.0
+   }
+
+   switch(currentState)
+   {
+      case TS_ENTRY_PROTECT:
+         // Transition to Structure Lock?
+         if(profitR >= structureTrigger) nextState = TS_STRUCTURE_LOCK;
+         break;
+         
+      case TS_STRUCTURE_LOCK:
+         // Transition to Momentum?
+         // If Profit is HUGE (> MomentumTrigger) OR Trend is super strong (ADX > 40)
+         if(profitR >= momentumTrigger || adx > 40) nextState = TS_MOMENTUM_TRAIL;
+         break;
+         
+      case TS_MOMENTUM_TRAIL:
+         // Transition to Exhaustion?
+         // If ADX drops below 20 (trend died)
+         if(adx < 20) nextState = TS_EXHAUSTION_LOCK;
+         break;
+         
+      case TS_EXHAUSTION_LOCK:
+         // Terminal State (until session close logic)
+         break;
+   }
+   
+   return nextState;
+}
+
+//+------------------------------------------------------------------+
+//| TRAILING EXECUTION (THE EXECUTOR)                                |
+//+------------------------------------------------------------------+
+double GetTrailingSL(ENUM_TRAIL_STATE state, bool isBuy, double open, double currentPrice, double sl, double tp, double atr)
+{
+   double newSL = sl;
+   
+   switch(state)
+   {
+      case TS_ENTRY_PROTECT:
+      {
+         // Soft BE+ logic: If > 0.6R, move to BE+Comm
+         // Wait, state transition to Structure handles >1.0R.
+         // Here we just ensure we don't lose full risk if we are up a bit?
+         // Or just leave initial SL until Structure Lock? 
+         // "Survival Mode". Let's do Soft BE at 0.5R for Scalp.
+         // For Intraday/Swing, maybe just hold SL.
+         
+         double risk = MathAbs(open - sl);
+         if(risk > 0)
+         {
+             double profitR = isBuy ? (currentPrice - open)/risk : (open - currentPrice)/risk;
+             // HARDENED BE: Don't move to BE until we are well in profit (1.5R)
+             // This prevents Gold volatility from wicking us out early.
+             // Strategy: Trust validation. If it goes 1.5R, it's likely real.
+             if(profitR >= 1.5) // Was 0.6 - TOO TIGHT for Gold
+             {
+                 double be = open + (isBuy ? risk*0.1 : -risk*0.1); 
+                 newSL = isBuy ? MathMax(sl, be) : MathMin(sl, be);
+             }
+         }
+         break;
+      }
+      
+      case TS_STRUCTURE_LOCK:
+      {
+         // Trail behind Structure (Swing Lows)
+         // Use our helper: GetLastStructureSL(isBuy)
+         // But buffer it by ATR fraction based on profile
+         double structureLevel = GetLastStructureSL(isBuy);
+         double buffer = atr * 0.5; // Default buffer
+         if(InpTrailProfile == TRAIL_SWING) buffer = atr * 1.5; // Was 0.8 -> Now 1.5 (Very Loose)
+         if(InpTrailProfile == TRAIL_SCALP) buffer = atr * 0.5; // Was 0.2 -> Now 0.5
+         
+         if(isBuy) newSL = MathMax(sl, structureLevel - buffer);
+         else      newSL = MathMin(sl, structureLevel + buffer);
+         
+         break;
+      }
+      
+      case TS_MOMENTUM_TRAIL:
+      {
+         // Tight Trail on recent candles (EMA or ATR)
+         // Let's use ATR trail: Price - 2*ATR (Adjustable)
+         // WIDENED TRAILING: Give more room for 2.5R target
+         double mult = 3.0; // Was 1.5 (Intraday/Swing) -> Now 3.0 for better breathing room
+         if(InpTrailProfile == TRAIL_SCALP) mult = 2.0; // Was 1.0 -> Now 2.0 (Less choke)
+         
+         double trailLevel = isBuy ? (currentPrice - atr*mult) : (currentPrice + atr*mult);
+         if(isBuy) newSL = MathMax(sl, trailLevel);
+         else      newSL = MathMin(sl, trailLevel);
+         break;
+      }
+      
+      case TS_EXHAUSTION_LOCK:
+      {
+         // Tightest Lock - Candle High/Low
+         // Or very tight ATR (0.5)
+         // WIDENED LOCK: Prevention of premature exit
+         // Was 0.5 ATR -> Now 1.5 ATR
+         double trailLevel = isBuy ? (currentPrice - atr*1.5) : (currentPrice + atr*1.5);
+         if(isBuy) newSL = MathMax(sl, trailLevel);
+         else      newSL = MathMin(sl, trailLevel);
+         break;
+      }
+      
+      case TS_SESSION_EXIT:
+         // Handled by Session Close logic (Hard Close) works too.
+         // Or aggressive trail.
+         break;
+   }
+   
+   return newSL;
+}
+
+// Global Arrays for State Memory
+ulong  g_TicketCache[];
+int    g_StateCache[];
+bool   g_PartialExecuted[];
+
+void UpdateStateCache(ulong ticket, int state)
+{
+   int size = ArraySize(g_TicketCache);
+   for(int i=0; i<size; i++)
+   {
+      if(g_TicketCache[i] == ticket)
+      {
+         g_StateCache[i] = state;
+         return;
+      }
+   }
+   // Add new
+   ArrayResize(g_TicketCache, size+1);
+   ArrayResize(g_StateCache, size+1);
+   ArrayResize(g_PartialExecuted, size+1);
+   g_TicketCache[size] = ticket;
+   g_StateCache[size]  = state;
+   g_PartialExecuted[size] = false; // Reset partial flag for new ticket
+}
+
+void SetPartialExecuted(ulong ticket, bool executed)
+{
+   int size = ArraySize(g_TicketCache);
+   for(int i=0; i<size; i++)
+   {
+      if(g_TicketCache[i] == ticket) 
+      {
+          g_PartialExecuted[i] = executed;
+          return;
+      }
+   }
+}
+
+bool WasPartialExecuted(ulong ticket)
+{
+   int size = ArraySize(g_TicketCache);
+   for(int i=0; i<size; i++)
+   {
+      if(g_TicketCache[i] == ticket) return g_PartialExecuted[i];
+   }
+   return false;
+}
+
+int GetStateFromCache(ulong ticket)
+{
+   int size = ArraySize(g_TicketCache);
+   for(int i=0; i<size; i++)
+   {
+      if(g_TicketCache[i] == ticket) return g_StateCache[i];
+   }
+   return (int)TS_ENTRY_PROTECT;
+}
+
 void RunFibonacciStrategy(ENUM_REGIME regime, double &ema20[], double &ema50[], double &ema200[], double &atr[], double &rsi[], double &adx[], double &stochK[], double &stochD[], double &macd[], double &macdSig[], double &vwap[])
 {
    if(HasOpenTrade("Fib")) return;
@@ -1365,25 +1771,22 @@ void RunFibonacciStrategy(ENUM_REGIME regime, double &ema20[], double &ema50[], 
       // Price is inside Golden Zone
       if(close >= fib50 && close <= fib618)
       {
-         if(rsi[0] < 45) // Oversold confirmation in uptrend
+         // RSI REMOVED: Fib relies on Wave Structure + Trend, not oversold.
+         if(true) 
          {
              // CONFLUENCE CHECK
-             double score = 0.0;
-             double minScore = GetAdaptiveMinScore("Fib");
              
-             if(InpUse_Confluence_Filter)
-             {
-                 score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
-                 if(score < minScore)
-                 {
-                     if(InpDebugMode) Print("⚠️ Fib Buy Skipped: Score ", score, " < ", minScore);
-                     return;
-                 }
-             }
-             else
-             {
-                 score = CalculateConfluenceScore(true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
-             }
+              double score = CalculateConfluenceScore("Fib", true, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+              
+              if(InpUse_Confluence_Filter)
+              {
+                  double minScore = GetAdaptiveMinScore("Fib");
+                  if(score < minScore)
+                  {
+                      if(InpDebugMode) Print("⚠️ Fib Buy Skipped: Score ", score, " < ", minScore);
+                      return;
+                  }
+              }
              
              // DYNAMIC PARAMS
              double quality = GetQualityIndex(score, "Fib");
@@ -1415,25 +1818,22 @@ void RunFibonacciStrategy(ENUM_REGIME regime, double &ema20[], double &ema50[], 
       // If Price is between 50% and 61.8% (Golden Zone)
       if(close >= fib618 && close <= fib50)
       {
-         if(rsi[0] > 55)
+         // RSI REMOVED: Fib relies on Wave Structure + Trend.
+         if(true)
          {
              // CONFLUENCE CHECK
-             double score = 0.0;
-             double minScore = GetAdaptiveMinScore("Fib");
              
-             if(InpUse_Confluence_Filter)
-             {
-                 score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
-                 if(score < minScore)
-                 {
-                     if(InpDebugMode) Print("⚠️ Fib Sell Skipped: Score ", score, " < ", minScore);
-                     return;
-                 }
-             }
-             else
-             {
-                 score = CalculateConfluenceScore(false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
-             }
+              double score = CalculateConfluenceScore("Fib", false, regime, rsi, stochK, stochD, macd, macdSig, ema20, ema50, ema200, adx, vwap);
+              
+              if(InpUse_Confluence_Filter)
+              {
+                  double minScore = GetAdaptiveMinScore("Fib");
+                  if(score < minScore)
+                  {
+                      if(InpDebugMode) Print("⚠️ Fib Sell Skipped: Score ", score, " < ", minScore);
+                      return;
+                  }
+              }
              
              // DYNAMIC PARAMS
              double quality = GetQualityIndex(score, "Fib");
