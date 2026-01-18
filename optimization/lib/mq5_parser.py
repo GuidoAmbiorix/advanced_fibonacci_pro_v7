@@ -105,8 +105,13 @@ def generate_optimization_config(params):
                     p_step = 1
                 
         elif p['type'] == 'float':
-            # Heuristic: +/- 50%
-            if default != 0:
+            # Heuristic for LOTS/VOLUME
+            if 'Lots' in p['name'] or 'Volume' in p['name']:
+                p_min = 0.01
+                p_max = 0.5 # Default conservative upper limit for checks
+                p_step = 0.01
+            # Standard Heuristic: +/- 50%
+            elif default != 0:
                 p_min = float(default * 0.5)
                 p_max = float(default * 1.5)
                 p_step = float(default * 0.1)

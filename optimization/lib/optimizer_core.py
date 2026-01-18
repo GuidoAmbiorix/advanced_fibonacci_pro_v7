@@ -142,6 +142,13 @@ def run_optimization_task(study_name, n_trials, param_config, ea_config, status_
         current_run_trial[0] += 1
         pf, dd, wr = objective(trial)
         
+        # Extract volume for display
+        vol = "-"
+        for k, v in trial.params.items():
+            if "Lot" in k or "Vol" in k:
+                vol = v
+                break
+
         # Report progress
         if status_callback:
             metrics = {
@@ -152,7 +159,8 @@ def run_optimization_task(study_name, n_trials, param_config, ea_config, status_
                 "win_rate": wr,
                 "timeframe": trial.user_attrs.get("timeframe", ""),
                 "leverage": trial.user_attrs.get("leverage", 0),
-                "deposit": trial.user_attrs.get("deposit", 0)
+                "deposit": trial.user_attrs.get("deposit", 0),
+                "volume": vol
             }
             status_callback(current_run_trial[0] - 1, n_trials, "Completed", metrics)
         

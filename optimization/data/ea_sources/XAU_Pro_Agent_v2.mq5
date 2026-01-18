@@ -63,7 +63,9 @@ input bool              InpUseDailyBias = true;            // Use D1 Trend Bias 
 input bool              InpDebugMode    = true;            // Enable Detailed Logging
 
 input group "========== RISK / TP / SL =========="
-input double            InpRiskPercent = 0.2;              // Risk %
+input double            InpFixedLots = 0.01;               // Fixed Lot Size (0.01 - 1.0)
+input bool              InpUseDynamicRisk = true;          // Use Risk % (False = Fixed Lots)
+input double            InpRiskPercent = 0.2;              // Risk % (Dynamic Only)
 input double            InpTPRatio = 2.5;                  // TP Ratio (R) - Python Bot Aligned
 input double            InpSL_ATR = 1.0;                   // SL ATR Multiplier (M15 Balanced)
 input ENUM_TSL_MODE     InpTSLMode = TSL_TIERED;           // TSL Mode (Rec: Tiered for BreakEven+Trail)
@@ -646,27 +648,30 @@ void ExecuteTrade(ENUM_ORDER_TYPE type, string comment)
    double equity = account.Equity();
    double riskAmount = equity * (InpRiskPercent / 100.0);
    
+   double lotSize = InpFixedLots;
    
-   double lotSize = 0.01;
-   double profitOneLot = 0.0;
-   
-   // Robust Lot Calculation using OrderCalcProfit (Handles TickValue/ContractSize automatically)
-   if(OrderCalcProfit(type, _Symbol, 1.0, price, finalSL, profitOneLot))
+   if(InpUseDynamicRisk)
    {
-       if(MathAbs(profitOneLot) > 0)
+       double profitOneLot = 0.0;
+       
+       // Robust Lot Calculation using OrderCalcProfit (Handles TickValue/ContractSize automatically)
+       if(OrderCalcProfit(type, _Symbol, 1.0, price, finalSL, profitOneLot))
        {
-           lotSize = riskAmount / MathAbs(profitOneLot);
+           if(MathAbs(profitOneLot) > 0)
+           {
+               lotSize = riskAmount / MathAbs(profitOneLot);
+           }
+           else
+           {
+               if(InpDebugMode) Print("Error: OrderCalcProfit returned 0 profit. Fallback to Fixed Lot.");
+               lotSize = InpFixedLots;
+           }
        }
        else
        {
-           if(InpDebugMode) Print("Error: OrderCalcProfit returned 0 profit. Fallback to min lot.");
-           lotSize = 0.01;
+           if(InpDebugMode) Print("Error: OrderCalcProfit Failed. Error=", GetLastError());
+           lotSize = InpFixedLots;
        }
-   }
-   else
-   {
-       if(InpDebugMode) Print("Error: OrderCalcProfit Failed. Error=", GetLastError());
-       lotSize = 0.01;
    }
    
    double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);

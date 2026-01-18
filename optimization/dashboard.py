@@ -307,6 +307,7 @@ with tab2:
                 tf = data.get('timeframe', '')
                 lev = data.get('leverage', 0)
                 dep = data.get('deposit', 0)
+                vol = data.get('volume', '-')
             else:
                 pf = float(data) if data else 0.0
                 net = 0.0
@@ -316,6 +317,7 @@ with tab2:
                 tf = ''
                 lev = 0
                 dep = 0
+                vol = '-'
                 
             metric_trial.metric("Current Trial", f"{trial_num + 1}/{total_trials}")
             metric_status.metric("Status", status)
@@ -331,6 +333,7 @@ with tab2:
                     "Max DD": f"{dd:.2f}%",
                     "Win Rate": f"{wr:.1f}%",
                     "Trades": trades,
+                    "Vol": vol,
                     "TF": tf,
                     "Lev": lev,
                     "Dep": f"${dep}"
@@ -385,11 +388,19 @@ with tab3:
         available_studies = [s.study_name for s in storage.get_all_studies()]
         
         if available_studies:
-            selected_study = st.selectbox(
-                "Select Study to Analyze",
-                available_studies,
-                index=available_studies.index(study_name) if study_name in available_studies else 0
-            )
+            # Filter studies
+            filter_text = st.text_input("🔍 Filter Studies", placeholder="Type to search (e.g. XAUUSD, H1, Lev500)...")
+            filtered_studies = [s for s in available_studies if filter_text.lower() in s.lower()] if filter_text else available_studies
+            
+            if not filtered_studies:
+                st.warning("No studies match your filter.")
+                selected_study = None
+            else:
+                selected_study = st.selectbox(
+                    "Select Study to Analyze",
+                    filtered_studies,
+                    index=0 # Reset index on filter change
+                )
         else:
             st.info("📭 No optimization studies found yet. Run an optimization to see results here.")
             selected_study = None
