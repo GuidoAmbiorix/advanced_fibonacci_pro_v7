@@ -10,14 +10,16 @@ services:
       dockerfile: Dockerfile
     container_name: optima_mt5
     ports:
-      - "5900:5900"   # VNC Access
-      - "6080:6080"   # noVNC Web Access (Browser)
+      - "3000:3000"
+      - "8001:8001"
       - "8080:8080"   # Compile API
+    environment:
+      - CUSTOM_USER=trader
+      - PASSWORD=trading
+      - VNCPASSWORD=trading
     volumes:
       - ./data:/data
-      - mt5_wine:/home/mt5/.wine  # Persist Wine/MT5 installation
-    environment:
-      - DISPLAY=:0
+      - mt5_config:/config
     networks:
       - optima_network
     restart: unless-stopped
@@ -46,7 +48,7 @@ services:
     restart: unless-stopped
 
 volumes:
-  mt5_wine:
+  mt5_config:
 
 networks:
   optima_network:

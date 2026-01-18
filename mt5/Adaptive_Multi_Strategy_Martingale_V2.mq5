@@ -435,7 +435,7 @@ void ManageMartingaleRecovery(double atr)
       return;
    
    // Calculate distance with SPREAD (CRITICAL FIX #6)
-   double spread = SymbolInfoDouble(_Symbol, SYMBOL_SPREAD) * SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+   double spread = SymbolInfoInteger(_Symbol, SYMBOL_SPREAD) * SymbolInfoDouble(_Symbol, SYMBOL_POINT);
    double triggerDistance = (InpMartingale_DistATR * atr) + spread;
    
    double currentPrice = (posType == POSITION_TYPE_BUY)

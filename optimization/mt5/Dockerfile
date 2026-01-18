@@ -1,64 +1,34 @@
-FROM ubuntu:22.04
+FROM gmag11/metatrader5_vnc:latest
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install Wine, VNC, and noVNC dependencies
-RUN dpkg --add-architecture i386 && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        wine \
-        wine32 \
-        wine64 \
-        xvfb \
-        x11vnc \
-        fluxbox \
-        wget \
-        cabextract \
-        nano \
-        python3 \
-        python3-pip \
-        supervisor \
-        novnc \
-        websockify \
-        net-tools \
-    && apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install FastAPI for compile API
-RUN pip3 install fastapi uvicorn
-
-# Create user
-RUN useradd -m -s /bin/bash mt5
-WORKDIR /home/mt5
-
-# Setup VNC password
-RUN mkdir -p /home/mt5/.vnc && \
-    x11vnc -storepasswd optima /home/mt5/.vnc/passwd
-
-# Copy scripts
-COPY entrypoint.sh /home/mt5/entrypoint.sh
-COPY compile_api.py /home/mt5/compile_api.py
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-RUN chmod +x /home/mt5/entrypoint.sh && \
-    chown -R mt5:mt5 /home/mt5
-
-# Environment
-ENV WINEPREFIX=/home/mt5/.wine
-ENV WINEARCH=win64
-ENV DISPLAY=:0
-
-# Create data directory
-RUN mkdir -p /data/ea_sources /data/ea_compiled /data/reports && \
-    chown -R mt5:mt5 /data
-
-# Switch to user for Wine init
-USER mt5
-RUN winecfg && sleep 3
-
+# Switch to root to install python dependencies
 USER root
 
-# Expose ports: VNC, noVNC (web), API
-EXPOSE 5900 6080 8080
+# Install python3-pip and venv if needed (Debian Bookworm)
+# Fix GPG error by removing broken winehq source which is not needed for python install
+RUN rm -f /etc/apt/sources.list.d/winehq-bookworm.sources && \
+    apt-get update && \
+    apt-get install -y python3-pip python3-venv sudo && \
+    rm -rf /var/lib/apt/lists/*
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Configure sudo to allow root to run wine as abc user without password
+RUN echo "root ALL=(abc) NOPASSWD: ALL" >> /etc/sudoers
+
+# Install FastAPI and Uvicorn
+# Using --break-system-packages because we are in a container and want global install
+RUN pip3 install fastapi uvicorn --break-system-packages
+
+# Set workdir
+WORKDIR /app
+
+# Copy API script
+COPY compile_api.py /app/compile_api.py
+COPY entrypoint_wrapper.sh /app/entrypoint_wrapper.sh
+
+# Make wrapper executable
+RUN chmod +x /app/entrypoint_wrapper.sh
+
+# Expose API port
+EXPOSE 8080
+
+# Override entrypoint to run our wrapper
+ENTRYPOINT ["/app/entrypoint_wrapper.sh"]

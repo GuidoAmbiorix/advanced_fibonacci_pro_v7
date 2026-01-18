@@ -160,9 +160,11 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 📈 Quick Stats")
     try:
-        db_url = "sqlite:///optimization.db"
+        DATA_DIR = os.environ.get("DATA_DIR", ".")
+        db_path = os.path.abspath(os.path.join(DATA_DIR, "optimization.db"))
+        db_url = f"sqlite:///{db_path}"
         storage = optuna.storages.RDBStorage(url=db_url)
-        studies = storage.get_all_study_names()
+        studies = [s.study_name for s in storage.get_all_studies()]
         st.metric("Total Studies", len(studies))
     except:
         st.metric("Total Studies", "0")
@@ -313,9 +315,11 @@ with tab3:
     
     # Study selector
     try:
-        db_url = "sqlite:///optimization.db"
+        DATA_DIR = os.environ.get("DATA_DIR", ".")
+        db_path = os.path.abspath(os.path.join(DATA_DIR, "optimization.db"))
+        db_url = f"sqlite:///{db_path}"
         storage = optuna.storages.RDBStorage(url=db_url)
-        available_studies = storage.get_all_study_names()
+        available_studies = [s.study_name for s in storage.get_all_studies()]
         
         if available_studies:
             selected_study = st.selectbox(
@@ -431,9 +435,11 @@ with tab4:
     
     # Study selector for SHAP
     try:
-        db_url = "sqlite:///optimization.db"
+        DATA_DIR = os.environ.get("DATA_DIR", ".")
+        db_path = os.path.abspath(os.path.join(DATA_DIR, "optimization.db"))
+        db_url = f"sqlite:///{db_path}"
         storage = optuna.storages.RDBStorage(url=db_url)
-        available_studies_shap = storage.get_all_study_names()
+        available_studies_shap = [s.study_name for s in storage.get_all_studies()]
         
         if available_studies_shap:
             selected_study_shap = st.selectbox(
