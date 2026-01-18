@@ -44,13 +44,14 @@ def parse_mq5_inputs(file_path):
             p_type_clean = "string"
             
             # Type Inference Logic
+            # Type Inference Logic
             if p_type == "bool":
-                p_type_clean = "bool"
+                p_type_clean = "categorical"
                 p_val = (p_val_raw.lower() == "true")
             elif p_type == "int":
                 p_type_clean = "int"
                 try: p_val = int(p_val_raw)
-                except: continue # Skip if complex expression
+                except: continue 
             elif p_type == "double" or p_type == "float":
                 p_type_clean = "float"
                 try: p_val = float(p_val_raw)
@@ -59,12 +60,12 @@ def parse_mq5_inputs(file_path):
                 p_type_clean = "string"
                 p_val = p_val_raw.replace('"', '')
             elif "ENUM" in p_type:
-                # Treat enums as categorical/int usually, but for optimizer we might skip or treat as int if we know ranges
-                # For simplicity, we skip enums in auto-discovery or treat as int
-                p_type_clean = "enum"
+                # Treat enums as int for optimization (0 to N)
+                p_type_clean = "int" 
+                p_val = 0 # Default assumption if we can't parse value
             
-            # We mostly care about int/float for optimization ranges
-            if p_type_clean in ["int", "float"]:
+            # Include int, float, and categorical (bool)
+            if p_type_clean in ["int", "float", "categorical"]:
                  params.append({
                     "name": p_name,
                     "type": p_type_clean,
@@ -86,16 +87,22 @@ def generate_optimization_config(params):
         p_step = 1
         
         if p['type'] == 'int':
-            # Heuristic: +/- 50%, or fixed steps
-            if default > 10:
-                p_min = int(default * 0.5)
-                p_max = int(default * 1.5)
-                p_step = max(1, int(default * 0.1))
+            # Heuristic for ENUMS or generic INTs
+            if p['name'].startswith('Inp') and ('Mode' in p['name'] or 'Type' in p['name']):
+                 # Likely an ENUM
+                 p_min = 0
+                 p_max = 4 # Default standard enum range
+                 p_step = 1
             else:
-                # Small integers (like periods)
-                p_min = max(1, default - 5)
-                p_max = default + 5
-                p_step = 1
+                # Standard Loop
+                if default > 10:
+                    p_min = int(default * 0.5)
+                    p_max = int(default * 1.5)
+                    p_step = max(1, int(default * 0.1))
+                else:
+                    p_min = max(0, default - 5)
+                    p_max = default + 5
+                    p_step = 1
                 
         elif p['type'] == 'float':
             # Heuristic: +/- 50%
@@ -103,14 +110,24 @@ def generate_optimization_config(params):
                 p_min = float(default * 0.5)
                 p_max = float(default * 1.5)
                 p_step = float(default * 0.1)
-                
-        config.append({
+        
+        # Build Config Dict
+        entry = {
             "name": p['name'],
             "type": p['type'],
             "min": p_min,
             "max": p_max,
             "step": p_step,
             "group": p['group']
-        })
+        }
+        
+        if p['type'] == 'categorical':
+            entry['choices'] = [True, False] # Default boolean
+            # Categorical doesn't use min/max/step in UI usually, but we keep structure
+            entry['min'] = 0
+            entry['max'] = 1
+            entry['step'] = 1
+            
+        config.append(entry)
         
     return config

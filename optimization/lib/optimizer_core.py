@@ -1,10 +1,10 @@
 import optuna
 import os
-import mt5_interface
+from lib.custom_backtester import get_backtester
 
-# DB PATH - Use DATA_DIR if available (Docker) or current dir (local)
-DATA_DIR = os.environ.get("DATA_DIR", ".")
-DB_PATH = f"sqlite:///{os.path.join(DATA_DIR, 'optimization.db')}"
+# DB PATH - Use absolute path for consistent access
+DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(__file__), "..", "data"))
+DB_PATH = f"sqlite:///{os.path.abspath(os.path.join(DATA_DIR, 'optimization.db'))}"
 
 def run_optimization_task(study_name, n_trials, param_config, ea_config, status_callback=None):
     """
@@ -50,40 +50,75 @@ def run_optimization_task(study_name, n_trials, param_config, ea_config, status_
         if status_callback:
             status_callback(trial.number, n_trials, "Running", 0.0)
             
-        # Run MT5 via remote API (no local files needed)
-        success = mt5_interface.run_mt5_test(
-            ini_path=None,  # Not used with remote API
-            report_path=None,  # Not used with remote API
-            ea_path=ea_config['ea_path'],
-            symbol=ea_config['symbol'],
-            timeframe=ea_config['timeframe'],
-            date_from=ea_config['date_from'],
-            date_to=ea_config['date_to'],
-            deposit=ea_config['deposit'],
-            params=trial_params
-        )
-        
-        # Get Result from the API
-        profit_factor = 0.0
-        if success:
-            profit_factor = mt5_interface.get_last_profit_factor()
-        
-        # Ensure we always return a valid float (Optuna doesn't like None, NaN, or Inf)
-        if profit_factor is None or profit_factor != profit_factor:  # Check for None or NaN
-            profit_factor = 0.0
-        if profit_factor == float('inf') or profit_factor == float('-inf'):
-            profit_factor = 0.0
-        # Clamp to reasonable range
-        profit_factor = max(0.0, min(profit_factor, 1000.0))
+        # Run backtest using CUSTOM BACKTESTER (MT5 Python API)
+        try:
+            backtester = get_backtester()
             
-        # Status Update
-        if status_callback:
-            status_callback(trial.number, n_trials, "Completed", profit_factor)
+            result = backtester.run_backtest(
+                ea_path=ea_config['ea_path'],
+                symbol=ea_config['symbol'],
+                timeframe=ea_config['timeframe'],
+                date_from=ea_config['date_from'],
+                date_to=ea_config['date_to'],
+                deposit=ea_config.get('deposit', 10000),
+                leverage=ea_config.get('leverage', 500),
+                parameters=trial_params,
+                progress_callback=lambda msg, pct: status_callback(
+                    trial.number, n_trials, msg, pct / 100.0
+                ) if status_callback else None
+            )
             
-        return float(profit_factor)  # Ensure it's definitely a float
+            profit_factor = result.get('profit_factor', 0.0)
+            net_profit = result.get('total_net_profit', 0.0)
+            trades_count = result.get('total_trades', 0)
+            max_dd = result.get('max_drawdown', 100.0)
+            win_rate = result.get('win_rate', 0.0)
 
-    # 2. Create/Load Study (SQLite Persistence with increased limits)
-    # Configure storage with larger limits for many parameters
+            # Save extra metrics
+            trial.set_user_attr("net_profit", net_profit)
+            trial.set_user_attr("trades", trades_count)
+            trial.set_user_attr("max_drawdown", max_dd)
+            trial.set_user_attr("win_rate", win_rate)
+            # Save context info
+            trial.set_user_attr("timeframe", ea_config['timeframe'])
+            trial.set_user_attr("leverage", ea_config.get('leverage', 500))
+            trial.set_user_attr("deposit", ea_config.get('deposit', 10000))
+            
+        except Exception as e:
+            print(f"❌ Backtest error: {e}")
+            profit_factor = 0.0
+            max_dd = 100.0
+        
+        # Ensure valid Profit Factor
+        if profit_factor is None or profit_factor != profit_factor: profit_factor = 0.0
+        if profit_factor == float('inf') or profit_factor == float('-inf'): profit_factor = 0.0
+        profit_factor = max(0.0, min(profit_factor, 1000.0))
+        
+        # Ensure valid Max Drawdown
+        if max_dd is None or max_dd != max_dd: max_dd = 100.0
+        max_dd = max(0.0, min(max_dd, 100.0))
+        
+        # Ensure Valid Win Rate
+        if win_rate is None or win_rate != win_rate: win_rate = 0.0
+        win_rate = max(0.0, min(win_rate, 100.0))
+            
+        return profit_factor, max_dd, win_rate
+
+    # 2. Configure Dynamic Optimization Goal
+    opt_goal = ea_config.get('optimization_goal', "Multi-Objective")
+    
+    directions = []
+    if "Win Rate" in opt_goal and "Multi" not in opt_goal:
+        directions = ["maximize"] # Just Win Rate
+    elif "Profit Factor" in opt_goal and "Multi" not in opt_goal:
+        directions = ["maximize"] # Just Profit
+    elif "Balanced" in opt_goal:
+        directions = ["maximize", "minimize"] # Profit, DD
+    else:
+        # Default Multi-Objective
+        directions = ["maximize", "minimize", "maximize"] # Profit, DD, WinRate
+
+    # 3. Create/Load Study
     storage = optuna.storages.RDBStorage(
         url=DB_PATH,
         engine_kwargs={"connect_args": {"timeout": 30}}
@@ -92,7 +127,7 @@ def run_optimization_task(study_name, n_trials, param_config, ea_config, status_
     study = optuna.create_study(
         study_name=study_name, 
         storage=storage, 
-        direction="maximize", 
+        directions=directions, 
         load_if_exists=True
     )
     
@@ -100,14 +135,37 @@ def run_optimization_task(study_name, n_trials, param_config, ea_config, status_
     starting_trial_count = len(study.trials)
     
     # 3. Optimize with Progress Reporting
-    # Adjust counter to show current run progress, not absolute trial numbers
+    # Track current trial in this run (not absolute trial number)
+    current_run_trial = [0]  # Use list to allow mutation in nested function
+    
     def adjusted_objective(trial):
-        result = objective(trial)
-        # Override the callback with corrected trial numbers
+        current_run_trial[0] += 1
+        pf, dd, wr = objective(trial)
+        
+        # Report progress
         if status_callback:
-            current_trial_in_run = trial.number - starting_trial_count + 1
-            status_callback(current_trial_in_run - 1, n_trials, "Completed", result if result else 0.0)
-        return result
+            metrics = {
+                "profit_factor": pf,
+                "net_profit": trial.user_attrs.get("net_profit", 0.0),
+                "trades": trial.user_attrs.get("trades", 0),
+                "max_drawdown": dd,
+                "win_rate": wr,
+                "timeframe": trial.user_attrs.get("timeframe", ""),
+                "leverage": trial.user_attrs.get("leverage", 0),
+                "deposit": trial.user_attrs.get("deposit", 0)
+            }
+            status_callback(current_run_trial[0] - 1, n_trials, "Completed", metrics)
+        
+        # Return based on Goal
+        if "Win Rate" in opt_goal and "Multi" not in opt_goal:
+            return wr
+        elif "Profit Factor" in opt_goal and "Multi" not in opt_goal:
+            return pf
+        elif "Balanced" in opt_goal:
+            return pf, dd
+        else:
+            return pf, dd, wr
+
     
     study.optimize(adjusted_objective, n_trials=n_trials)
     

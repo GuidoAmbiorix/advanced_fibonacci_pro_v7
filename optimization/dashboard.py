@@ -98,6 +98,7 @@ with st.sidebar:
                 mt5_dir = alt_path
             compiled_dir = mt5_dir  # Same dir for local
         
+        
         found_eas = []
         if os.path.exists(mt5_dir):
             for f in os.listdir(mt5_dir):
@@ -106,56 +107,55 @@ with st.sidebar:
         selected_ea_file = st.selectbox(
             "Select Bot Source (.mq5)", 
             found_eas if found_eas else ["No .mq5 found"],
-            help="Select the source code to scan parameters from"
+            help="MT5 can backtest directly from .mq5 source files"
         )
         
-        # Scan for compiled EAs (.ex5)
-        found_ex5s = []
-        if os.path.exists(compiled_dir):
-            for f in os.listdir(compiled_dir):
-                if f.endswith(".ex5"): found_ex5s.append(f)
-        
-        # Try to match the selected .mq5 to its .ex5
-        default_ex5_index = 0
-        if selected_ea_file:
-            expected_ex5 = selected_ea_file.replace(".mq5", ".ex5")
-            if expected_ex5 in found_ex5s:
-                default_ex5_index = found_ex5s.index(expected_ex5)
-        
-        selected_ex5 = st.selectbox(
-            "Compiled Bot (.ex5)",
-            found_ex5s if found_ex5s else ["No .ex5 found - Please Compile!"],
-            index=default_ex5_index,
-            help="Select the compiled executable for the Tester"
-        )
-        
-        # Allow custom path override if needed
-        use_custom_path = st.checkbox("Use Custom EA Path", False)
-        if use_custom_path:
-             ea_path_ex5 = st.text_input("Custom .ex5 Path", "")
+        # Use .mq5 file directly (no compilation needed for backtesting)
+        if selected_ea_file and found_eas:
+            ea_path_ex5 = os.path.join(mt5_dir, selected_ea_file)
         else:
-             if found_ex5s:
-                ea_path_ex5 = os.path.join(compiled_dir, selected_ex5)
-             else:
-                ea_path_ex5 = ""
+            ea_path_ex5 = ""
+        
+        # Show selected path
+        if ea_path_ex5:
+            st.success(f"✅ EA Path: `{ea_path_ex5}`")
+        else:
+            st.error("❌ No EA file selected")
         
         col1, col2 = st.columns(2)
         with col1:
-            symbol = st.selectbox("Symbol", ["EURUSD", "GBPUSD", "NZDUSD", "USDJPY", "XAUUSD"])
+            symbol = st.selectbox("Symbol", ["XAUUSD", "EURUSD", "GBPUSD", "NZDUSD", "USDJPY"])
         with col2:
-            timeframe = st.selectbox("Timeframe", ["PERIOD_M15", "PERIOD_H1", "PERIOD_H4"])
+            timeframe = st.selectbox("Timeframe", ["PERIOD_M15", "PERIOD_M1", "PERIOD_M5", "PERIOD_M30", "PERIOD_H1", "PERIOD_H4", "PERIOD_D1"])
         
         col3, col4 = st.columns(2)
         with col3:
-            date_from = st.date_input("From", pd.to_datetime("2024-01-01"))
+            date_from = st.date_input("From", pd.to_datetime("2025-01-01"))
         with col4:
-            date_to = st.date_input("To", pd.to_datetime("2024-12-31"))
+            date_to = st.date_input("To", pd.to_datetime("2025-12-31"))
+    
     
     # Optimization Settings
     with st.expander("⚙️ Optimization Settings", expanded=True):
-        study_name = st.text_input("Study Name", f"Study_{selected_ea_file.replace('.mq5','')}_{symbol}", help="Unique identifier")
+        
+        goal = st.selectbox(
+            "Optimization Goal", 
+            ["Max Win Rate", "Multi-Objective (Profit + DD + WinRate)", "Max Profit Factor", "Balanced (Profit/DD)"],
+            index=1,
+            help="Choose what the AI should prioritize."
+        )
+        
         n_trials = st.slider("Trials", 10, 1000, 50)
-        deposit = st.number_input("Deposit ($)", 1000, 1000000, 10000, 1000)
+        col1, col2 = st.columns(2)
+        with col1:
+            deposit = st.number_input("Deposit ($)", 10, 10000000, 10000, 10)
+        with col2:
+            leverage = st.number_input("Leverage", 1, 1000, 500, 50, help="Account leverage (e.g., 500 = 1:500)")
+            
+        default_study_name = f"Study_{selected_ea_file.replace('.mq5','')}_{symbol}_{timeframe}_Lev{leverage}"
+        study_name = st.text_input("Study Name", default_study_name, help="Unique identifier per configuration")
+
+
 
     st.markdown("---")
     st.markdown("### 📈 Quick Stats")
@@ -269,7 +269,9 @@ with tab2:
             'timeframe': timeframe,
             'date_from': str(date_from).replace("-", "."),
             'date_to': str(date_to).replace("-", "."),
-            'deposit': deposit
+            'deposit': deposit,
+            'leverage': leverage,
+            'optimization_goal': goal
         }
         
         # Progress tracking UI
@@ -282,14 +284,75 @@ with tab2:
         metric_status = col2.empty()
         metric_pf = col3.empty()
         
+        # Real-time results table
+        results_header = st.empty()
+        results_table = st.empty()
+        
+        # Use a dict to track unique trials by trial_number
+        if 'trial_results_dict' not in st.session_state:
+            st.session_state.trial_results_dict = {}
+        
         # Callback for progress updates
-        def progress_callback(trial_num, total_trials, status, pf):
+        def progress_callback(trial_num, total_trials, status, data):
             progress = min((trial_num + 1) / total_trials, 1.0)
             progress_bar.progress(progress)
             
+            # Handle data (dict or float)
+            if isinstance(data, dict):
+                pf = data.get('profit_factor', 0.0)
+                net = data.get('net_profit', 0.0)
+                trades = data.get('trades', 0)
+                dd = data.get('max_drawdown', 0.0)
+                wr = data.get('win_rate', 0.0)
+                tf = data.get('timeframe', '')
+                lev = data.get('leverage', 0)
+                dep = data.get('deposit', 0)
+            else:
+                pf = float(data) if data else 0.0
+                net = 0.0
+                trades = 0
+                dd = 0.0
+                wr = 0.0
+                tf = ''
+                lev = 0
+                dep = 0
+                
             metric_trial.metric("Current Trial", f"{trial_num + 1}/{total_trials}")
             metric_status.metric("Status", status)
-            metric_pf.metric("Last Profit Factor", f"{pf:.2f}" if pf else "N/A")
+            metric_pf.metric("Last Profit Factor", f"{pf:.2f}")
+            
+            # Update results table - Only add if trades > 0 (valid run)
+            if status == "Completed" and trades > 0:
+                trial_id = trial_num + 1
+                row = {
+                    "Trial": trial_id,
+                    "Profit Factor": round(pf, 2),
+                    "Net Profit": f"${net:.2f}",
+                    "Max DD": f"{dd:.2f}%",
+                    "Win Rate": f"{wr:.1f}%",
+                    "Trades": trades,
+                    "TF": tf,
+                    "Lev": lev,
+                    "Dep": f"${dep}"
+                }
+                
+                # Update or add result
+                st.session_state.trial_results_dict[trial_id] = row
+                
+                # Convert dict back to list for DataFrame
+                results_list = list(st.session_state.trial_results_dict.values())
+                df_results = pd.DataFrame(results_list)
+                
+                if not df_results.empty:
+                    # Sort dynamically based on goal
+                    if "Win Rate" in goal:
+                        df_results['WinRateVal'] = df_results['Win Rate'].str.rstrip('%').astype(float)
+                        df_results = df_results.sort_values(by="WinRateVal", ascending=False).drop(columns=['WinRateVal']).head(20)
+                    else:
+                        df_results = df_results.sort_values(by="Profit Factor", ascending=False).head(20)
+                    
+                    results_header.markdown(f"### 🏆 Top Results (Live) - Sorted by {'Win Rate' if 'Win Rate' in goal else 'Profit Factor'}")
+                    results_table.dataframe(df_results, use_container_width=True, hide_index=True)
         
         # Run optimization
         try:
@@ -315,7 +378,7 @@ with tab3:
     
     # Study selector
     try:
-        DATA_DIR = os.environ.get("DATA_DIR", ".")
+        DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
         db_path = os.path.abspath(os.path.join(DATA_DIR, "optimization.db"))
         db_url = f"sqlite:///{db_path}"
         storage = optuna.storages.RDBStorage(url=db_url)
@@ -364,32 +427,62 @@ with tab3:
                 st.markdown("---")
                 st.markdown("#### 📈 Optimization Analysis")
                 
-                viz_tab1, viz_tab2, viz_tab3, viz_tab4 = st.tabs([
-                    "History", "Parameter Importance", "Parallel Coordinates", "Slice Plot"
-                ])
+                is_multi_objective = len(study.directions) > 1
                 
-                with viz_tab1:
-                    fig1 = optuna.visualization.plot_optimization_history(study)
-                    fig1.update_layout(height=500)
-                    st.plotly_chart(fig1, use_container_width=True)
+                tabs_list = ["History", "Parameter Importance", "Parallel Coordinates", "Slice Plot"]
+                if is_multi_objective:
+                     tabs_list.insert(0, "Pareto Front")
                 
-                with viz_tab2:
+                viz_tabs = st.tabs(tabs_list)
+                
+                current_tab = 0
+                if is_multi_objective:
+                    with viz_tabs[current_tab]:
+                        try:
+                            # Detect objectives count
+                            n_objs = len(study.directions)
+                            if n_objs == 3:
+                                targets = ["Profit Factor", "Max Drawdown", "Win Rate"]
+                            else:
+                                targets = ["Profit Factor", "Max Drawdown"]
+                                
+                            fig_pareto = optuna.visualization.plot_pareto_front(study, target_names=targets)
+                            fig_pareto.update_layout(height=600) # Taller for 3D
+                            st.plotly_chart(fig_pareto, use_container_width=True)
+                            st.info(f"👆 Optimal trade-offs: {', '.join(targets)}")
+                        except Exception as e:
+                            st.warning(f"Could not plot Pareto Front: {e}")
+                    current_tab += 1
+
+                with viz_tabs[current_tab]:
                     try:
-                        fig2 = optuna.visualization.plot_param_importances(study)
+                        # For multi-objective, default to first objective (Profit) if not specified
+                        fig1 = optuna.visualization.plot_optimization_history(study, target=lambda t: t.values[0] if is_multi_objective else t.value, target_name="Profit Factor")
+                        fig1.update_layout(height=500)
+                        st.plotly_chart(fig1, use_container_width=True)
+                    except: st.warning("Graph not available")
+                
+                with viz_tabs[current_tab+1]:
+                    try:
+                        fig2 = optuna.visualization.plot_param_importances(study, target=lambda t: t.values[0] if is_multi_objective else t.value, target_name="Profit Factor")
                         fig2.update_layout(height=500)
                         st.plotly_chart(fig2, use_container_width=True)
                     except:
                         st.info("Not enough data to calculate parameter importance yet.")
                 
-                with viz_tab3:
-                    fig3 = optuna.visualization.plot_parallel_coordinate(study)
-                    fig3.update_layout(height=500)
-                    st.plotly_chart(fig3, use_container_width=True)
+                with viz_tabs[current_tab+2]:
+                    try:
+                        fig3 = optuna.visualization.plot_parallel_coordinate(study, target=lambda t: t.values[0] if is_multi_objective else t.value, target_name="Profit Factor")
+                        fig3.update_layout(height=500)
+                        st.plotly_chart(fig3, use_container_width=True)
+                    except: st.warning("Graph not available")
                 
-                with viz_tab4:
-                    fig4 = optuna.visualization.plot_slice(study)
-                    fig4.update_layout(height=500)
-                    st.plotly_chart(fig4, use_container_width=True)
+                with viz_tabs[current_tab+3]:
+                    try:
+                        fig4 = optuna.visualization.plot_slice(study, target=lambda t: t.values[0] if is_multi_objective else t.value, target_name="Profit Factor")
+                        fig4.update_layout(height=500)
+                        st.plotly_chart(fig4, use_container_width=True)
+                    except: st.warning("Graph not available")
                 
                 # Export options
                 st.markdown("---")
@@ -416,7 +509,19 @@ with tab3:
                 
                 with col2:
                     import json
-                    best_params_json = json.dumps(study.best_params, indent=2)
+                    try:
+                        best_params = study.best_params
+                    except RuntimeError:
+                        # Handle Multi-Objective Study (Pareto Front)
+                        # Pick the solution with highest Profit Factor (Objective 0)
+                        # Obj 0: Profit (max), Obj 1: DD (min), Obj 2: WinRate (max)
+                        best_trials = study.best_trials
+                        # Sort by Profit Factor desc
+                        best_trial = sorted(best_trials, key=lambda t: t.values[0], reverse=True)[0]
+                        best_params = best_trial.params
+                        st.info("ℹ️ Multi-Objective (3D): Showing params for Max Profit Factor solution from Pareto Set")
+                        
+                    best_params_json = json.dumps(best_params, indent=2)
                     st.download_button(
                         "📥 Download Best Params (JSON)",
                         best_params_json,

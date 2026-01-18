@@ -39,26 +39,26 @@ input bool InpEnable_VWAP_Scalp    = false;   // VWAP Scalping
 input bool InpEnable_Fibonacci     = true;    // Fibonacci Golden Zone
 input bool InpEnable_Stochastic    = false;   // Stochastic Momentum - DISABLED for M15 Trend focus
 input bool InpEnable_Breakout      = false;   // Breakout Momentum
-input int  InpSwap_Lookback        = 10;      // User Preference: 10 (Faster swings for M15)
+input int  InpSwap_Lookback        = 5;       // Optimized: 5 (Faster swings for M15)
 // input int  InpMax_Spread_Points    = 50;      // Max Spread removed
 input ENUM_TIMEFRAMES InpTrend_Timeframe = PERIOD_H4; // M15 Optimized: H4 Trend Filter
 // --- CONTEXT FILTER (The Gatekeeper) ---
 input ENUM_TIMEFRAMES InpContext_Timeframe = PERIOD_H1; // Context TF (H1 recommended for M15)
-input int InpContext_Lookback = 50;                     // Bars for Context Range (Donchian)
+input int InpContext_Lookback = 45;                     // Optimized: 45 (Bars for Context Range)
 
 input group "========== CONFLUENCE FILTER =========="
 input bool InpUse_Confluence_Filter  = true;  // Enable Confluence Scoring
-input double InpMin_Confluence_Score = 6.5;   // Score 6.5 (M15 Optimized: High Probability Only)
+input double InpMin_Confluence_Score = 3.9;   // Optimized: 3.9 (Balanced Probability)
 
 input group "========== RISK MANAGEMENT =========="
-input double InpMax_Drawdown_Percent = 10.0;  // Max Total Drawdown % (Funding Rule)
-input double InpDaily_Loss_Percent   = 5.0;   // Max Daily Loss % (Funding Rule)
-input int    InpMax_Daily_Trades     = 0;     // Max Trades Per Day
+input double InpMax_Drawdown_Percent = 7.0;   // Optimized: 7.0% (Funding Rule)
+input double InpDaily_Loss_Percent   = 3.0;   // Optimized: 3.0% (Funding Rule)
+input int    InpMax_Daily_Trades     = 3;     // Optimized: 3 trades per day
 input double InpTarget_Daily_Profit  = 0;     // Daily Profit Target %
-input double InpRisk_Per_Trade       = 0.5;   // Base Risk Per Trade %
-input double InpRisk_Reward_Ratio    = 2.5;   // 1:2.5 (Stretching wins for higher PF)
-input int    InpCooldownMinutes      = 30;    // Cooldown Minutes
-input double InpMaxLot_Per_Trade     = 0.2;   // Max Lot Size (Safety Cap)
+input double InpRisk_Per_Trade       = 0.25;  // Optimized: 0.25% Base Risk
+input double InpRisk_Reward_Ratio    = 3.25;  // Optimized: 1:3.25 (Higher PF)
+input int    InpCooldownMinutes      = 18;    // Optimized: 18 min cooldown
+input double InpMaxLot_Per_Trade     = 0.14;  // Optimized: 0.14 Max Lot
 
 input group "========== TRAILING CONFIGURATION =========="
 input ENUM_TRAIL_PROFILE InpTrailProfile = TRAIL_SWING; // Swing Profile (M15 Optimized: 1.5 ATR Buffer)
@@ -82,19 +82,19 @@ input double InpPartialTP_PercentLiquidity = 0.0;
 input double InpPartialTP_PercentTime   = 0.0;
 input double InpPartialTP_PercentFib    = 0.0;
 // Total Closed: 0%. Runner: 100% (This is the key to PF > 1.10)
-input int   InpPartialTP_TimeMinutes   = 30;
+input int   InpPartialTP_TimeMinutes   = 15;  // Optimized: 15 min
 
 input group "========== INDICATOR SETTINGS =========="
-input int InpRSI_Period      = 14;            // RSI Period
-input int InpADX_Period      = 14;            // ADX Period
-input int InpADX_Threshold   = 24;            // User: 24
-input int InpATR_Period      = 14;            // ATR Period
-input int InpStoch_K         = 14;            // Stochastic %K
-input int InpStoch_D         = 3;             // Stochastic %D
-input int InpVariable_MA     = 20;            // Variable MA (VWAP Proxy)
+input int InpRSI_Period      = 16;            // Optimized: 16 RSI Period
+input int InpADX_Period      = 20;            // Optimized: 20 ADX Period
+input int InpADX_Threshold   = 36;            // Optimized: 36 Threshold
+input int InpATR_Period      = 21;            // Optimized: 21 ATR Period
+input int InpStoch_K         = 13;            // Optimized: 13 Stochastic %K
+input int InpStoch_D         = 4;             // Optimized: 4 Stochastic %D
+input int InpVariable_MA     = 14;            // Optimized: 14 Variable MA
 
 input group "========== KILLZONES (EST TIME) =========="
-input int    InpServerTimeOffset        = 2;     // Server Time Offset from EST (e.g. +2 for UTC+2)
+input int    InpServerTimeOffset        = 3;     // Optimized: +3 Server Time Offset
 input bool   InpUse_KillZones           = false; // User Preference: OFF
 input bool   InpUse_London_Killzone     = false;
 input string InpLondon_Start            = "01:00";
@@ -110,11 +110,11 @@ input bool   InpCloseTrades_At_SessionEnd = true; // Close all trades outside Ki
 input group "========== NEWS FILTER =========="
 input bool   InpUse_NewsFilter       = true;  // Enable News Filter
 input bool   InpNews_HighImpact_Only = true;  // High Impact Only
-input int    InpNews_Before_Mins     = 45;    // Pause Minutes Before News
-input int    InpNews_After_Mins      = 45;    // Pause Minutes After News
+input int    InpNews_Before_Mins     = 46;    // Optimized: 46 min before news
+input int    InpNews_After_Mins      = 54;    // Optimized: 54 min after news
 
 input group "========== SYSTEM =========="
-input int InpMagicNumber     = 999999;        // Magic Number
+input int InpMagicNumber     = 1099993;       // Optimized Magic Number
 input bool InpDebugMode      = true;          // Enable Detailed Logs
 
 //+------------------------------------------------------------------+
