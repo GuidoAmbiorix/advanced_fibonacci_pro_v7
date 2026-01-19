@@ -457,6 +457,18 @@ class MT5Connector:
             logger.error("Failed to ensure correct account is active")
             return None
 
+        # HARD VALIDATION: Check for valid account state (Balance > 0)
+        acc = mt5.account_info()
+        if acc is None:
+             logger.critical("❌ MT5 ACCOUNT INVALID: account_info() returned None")
+             return {"success": False, "error": "MT5 Terminal not authenticated"}
+        
+        if acc.balance <= 0 or acc.equity <= 0:
+             logger.critical(
+                 f"❌ MT5 ACCOUNT UNFUNDED: Login={acc.login}, Balance={acc.balance}"
+             )
+             return {"success": False, "error": "MT5 account has zero balance/equity"}
+
         symbol = self._normalize_symbol(symbol)
 
         for attempt in range(self.max_retries):
@@ -532,6 +544,24 @@ class MT5Connector:
                     request["sl"] = stop_loss
                 if take_profit:
                     request["tp"] = take_profit
+
+                # Pre-check the order
+                check_result = mt5.order_check(request=request)
+                if check_result is None:
+                    logger.error(f"❌ order_check returned None! last_error: {mt5.last_error()}")
+                    return {"success": False, "error": "Order check failed (None)"}
+                elif check_result.retcode != 0:
+                    logger.error(
+                        f"❌ Pre-Order Validation Failed: retcode={check_result.retcode}, "
+                        f"comment='{check_result.comment}', "
+                        f"margin_free={check_result.margin_free}"
+                    )
+                    return {
+                        "success": False, 
+                        "error": f"Order Validation Failed: {check_result.comment} ({check_result.retcode})"
+                    }
+                else:
+                    logger.info(f"✅ order_check passed: margin_free={check_result.margin_free}")
 
                 result = mt5.order_send(request=request)
 
@@ -879,6 +909,24 @@ class MT5Connector:
                 
             ticks_at_risk = sl_distance / tick_size
             risk_per_lot = ticks_at_risk * tick_value
+            
+            # FIX: Sanity check for XAUUSD (Gold)
+            # Some brokers report weird tick_values (e.g. 0.01 instead of 1.0 for 100oz contract)
+            if ("XAU" in symbol or "GOLD" in symbol) and sl_distance > 0.5:
+                # Standard Lot (100oz) pays $100 per $1 move
+                # Mini Lot (10oz) pays $10 per $1 move
+                # Micro Lot (1oz) pays $1 per $1 move
+                
+                # If calculated risk_per_lot is wildly different from Contract Size calculation
+                contract_risk = sl_distance * symbol_info.trade_contract_size
+                
+                if risk_per_lot < (contract_risk * 0.1): # If it's < 10% of expected (e.g. $2.85 vs $285)
+                     logger.warning(
+                         f"⚠️ Tick Value anomaly detected for {symbol}. "
+                         f"TickVal: {tick_value}, Risk/Lot: {risk_per_lot:.2f}. "
+                         f"Using Contract Size ({symbol_info.trade_contract_size}) fallback: {contract_risk:.2f}"
+                     )
+                     risk_per_lot = contract_risk
             
             if risk_per_lot == 0:
                 return 0.01

@@ -563,6 +563,20 @@ def proxy_order_send(req):
             logger.error("Failed to ensure correct account is active")
             return None
 
+        # HARD VALIDATION: Check for valid account state (Balance > 0)
+        # This catches "No money" errors caused by disconnected/unauthenticated terminals
+        acc = mt5.account_info()
+        if acc is None:
+             logger.critical("❌ MT5 ACCOUNT INVALID: account_info() returned None (Not logged in?)")
+             return {"success": False, "error": "MT5 Terminal not authenticated"}
+        
+        if acc.balance <= 0 or acc.equity <= 0:
+             logger.critical(
+                 f"❌ MT5 ACCOUNT UNFUNDED/INVALID: Login={acc.login}, "
+                 f"Balance={acc.balance}, Equity={acc.equity}"
+             )
+             return {"success": False, "error": "MT5 account has zero balance/equity"}
+
         symbol = self._normalize_symbol(symbol)
 
         for attempt in range(self.max_retries):
@@ -693,15 +707,17 @@ def proxy_order_send(req):
 
                 if check_result is None:
                     logger.error(f"❌ order_check returned None! last_error: {mt5.last_error()}")
+                    return {"success": False, "error": "Order check failed (None)"}
                 elif check_result.retcode != 0:
-                    logger.warning(
-                        f"⚠️ order_check validation: retcode={check_result.retcode}, "
-                        f"comment={check_result.comment}, "
-                        f"balance={check_result.balance}, "
-                        f"equity={check_result.equity}, "
-                        f"margin={check_result.margin}, "
+                    logger.error(
+                        f"❌ Pre-Order Validation Failed: retcode={check_result.retcode}, "
+                        f"comment='{check_result.comment}', "
                         f"margin_free={check_result.margin_free}"
                     )
+                    return {
+                        "success": False, 
+                        "error": f"Order Validation Failed: {check_result.comment} ({check_result.retcode})"
+                    }
                 else:
                     logger.info(f"✅ order_check passed: margin_free={check_result.margin_free}")
                 

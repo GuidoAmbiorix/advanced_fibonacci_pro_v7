@@ -181,6 +181,8 @@ async def startup_event():
     from app.core.log_manager import log_manager
     logger.add(log_manager.sink, serialize=False, level="DEBUG", enqueue=True)
     logger.info("✅ Log Manager initialized")
+    logger.info("SL FIXED APPLIED V4.3")
+
 
     # Create database tables
     database.init_db()

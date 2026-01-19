@@ -66,8 +66,10 @@ class InstitutionalGoldEngine:
         self.rr_ratio = config.get('rr_ratio', 2.0)
         self.sl_atr_multiplier = config.get('sl_atr_multiplier', 1.4)
         
-        # Session Killzone (v3.0)
-        self.session_mode = config.get('session_mode', 'BOTH_KZ')
+        # Session Killzone (v4.1: Check both config keys, default to ALL)
+        self.session_mode = config.get('session_mode', config.get('trading_session', 'ALL'))
+        logger.info(f"⚙️ InstitutionalGoldEngine Session Mode: {self.session_mode}")
+
         
         # SMC v4.0 - Smart Money Concepts Analyzer
         self.smc = SMCAnalyzer(config)
@@ -75,12 +77,19 @@ class InstitutionalGoldEngine:
     def analyze(self, df: pd.DataFrame, df_higher_tf: Optional[pd.DataFrame] = None, df_daily: Optional[pd.DataFrame] = None) -> Dict:
         """
         Main Analysis Pipeline for Gold (SMC + Fib + Killzone Filter).
-        v3.0: Now includes session killzone check to reduce over-trading.
+        v4.2: Optimized for performance and robustness.
         """
-        if df is None or len(df) < 50: # Lowered threshold to 50 to match StructureAnalyzer
+        if df is None or len(df) < 50: 
              # Return valid structure object even for empty data to prevent AttributeError in caller
              empty_struct = self.structure_analyzer.analyze(pd.DataFrame() if df is None else df)
              return {'signals': [], 'structure': empty_struct}
+        
+        # 0. Prevent Mutation Side-Effects
+        df = df.copy()
+        if df_higher_tf is not None:
+             # Check if we need to copy (only if we're going to modify it)
+             # We modify it to add ema200, so valid.
+             df_higher_tf = df_higher_tf.copy()
              
         if len(df) < 200:
              # Still analyze structure for small datasets
@@ -112,6 +121,13 @@ class InstitutionalGoldEngine:
              atr_ind = AverageTrueRange(high=df['high'], low=df['low'], close=df['close'])
              df['atr'] = atr_ind.average_true_range()
 
+        # 1. NaN Guard (Critical for stability)
+        # Check specific columns explicitly to avoid Series vs DataFrame ambiguity
+        if df.iloc[-1][['rsi', 'macd_hist', 'stoch_k', 'atr']].isna().any():
+             logger.warning(f"⚠️ {self.symbol}: Indicators contain NaN values (RSI/MACD/Stoch/ATR). Skipping.")
+             structure = self.structure_analyzer.analyze(df)
+             return {'signals': [], 'structure': structure, 'reason': "NaN Indicators"}
+
         # --- v3.0: SESSION KILLZONE FILTER ---
         try:
             # Handle both DatetimeIndex and RangeIndex with 'time' column
@@ -127,22 +143,23 @@ class InstitutionalGoldEngine:
 
         current = df.iloc[-1]
         
-        # TIMEZONE MATH (User Reference)
+        # TIMEZONE MATH (Use UTC consistently)
         # Broker = UTC+2 (FundingPips Winter)
-        # User   = UTC-4 (RD/EST)
         try:
             from datetime import timedelta
+            # Calculate UTC time once
             utc_time = current_time - timedelta(hours=2)
             local_time = utc_time - timedelta(hours=4)
-        except:
+        except Exception as e:
+             logger.error(f"Timezone math error: {e}")
              utc_time = current_time
              local_time = current_time
 
-        # Prepare debug info immediately so it's available even if we skip
+        # Prepare debug info
         debug_info = {
             'rsi': current['rsi'],
             'macd_hist': current['macd_hist'],
-            'stoch': current.get('stoch_k', 0),
+            'stoch': current.get('stoch_k', 0),  # FIX: Typos safe access
             'in_zone': False,
             'indicators_aligned': False,
             'smc': {},
@@ -152,24 +169,24 @@ class InstitutionalGoldEngine:
             'time_local': str(local_time.time())
         }
 
-        if not self._is_in_killzone(current_time):
-            # Only log if we haven't logged recently? No, log every check for clarity now.
-            # Use INFO so user sees it clearly.
-            logger.info(f"⏳ SKIP KZ: Local {local_time.strftime('%H:%M')} | UTC {utc_time.strftime('%H:%M')} | Broker {current_time.strftime('%H:%M')} (Outside Session)")
-            structure = self.structure_analyzer.analyze(df)
+        # Validate Session Mode (Defensive)
+        if self.session_mode != 'ALL' and self.session_mode not in self.KILLZONES:
+             logger.warning(f"⚠️ Unknown session_mode '{self.session_mode}', defaulting to BOTH_KZ")
+
+        # 2. Performance: Analyze Structure ONCE
+        structure = self.structure_analyzer.analyze(df)
+
+        # Check Killzone using pure UTC time
+        if not self._is_in_killzone_utc(utc_time.hour):
+            logger.info(f"⏳ SKIP KZ: Local {local_time.strftime('%H:%M')} | UTC {utc_time.strftime('%H:%M')} (Outside Session)")
             return {
                 'signals': [], 
                 'structure': structure, 
-                'reason': f"Outside killzone (Local {local_time.strftime('%H:%M')})",
+                'reason': f"Outside killzone (UTC {utc_time.strftime('%H:%M')})",
                 'debug_info': debug_info 
             }
         
-        # logger.warning(f"✅ Passed KZ: {current_time}")
-        # -------------------------
-
-        # 2. Structure & Fibs
-        # -------------------
-        structure = self.structure_analyzer.analyze(df)
+        # 2b. Identify Fib Zones (reusing structure)
         fib_zones = self.fib_calculator.find_active_zones(structure, df.iloc[-1].close)
         
         # 3. Logic & Confluence
@@ -233,7 +250,8 @@ class InstitutionalGoldEngine:
             
             # SMC Golden Zone: 0.618 - 0.786
             # Retail buys at 0.50, Banks buy at 0.70ish
-            tolerance_price = current['atr'] * 0.25 
+            # Fix: Cap tolerance in high volatility
+            tolerance_price = min(current['atr'] * 0.25, current_price * 0.0008) 
             
             for zone in fib_zones:
                 if 0.61 <= zone['ratio'] <= 0.79: # Strict Deep Discount
@@ -281,13 +299,15 @@ class InstitutionalGoldEngine:
                  
             elif in_zone and indicators_aligned and price_action_trigger:
                  # Fib Path: Valid Structure + Fib Zone + Indicators + Candle Trigger
-                 self._create_signal(signals, 'BUY', current, structure, active_level, smc_result)
+                 # Prevent Double Signal
+                 if not signals:
+                    self._create_signal(signals, 'BUY', current, structure, active_level, smc_result)
 
         # --- SELL LOGIC ---
         elif signal_type == 'SELL':
             in_zone = False
             active_level = None
-            tolerance_price = current['atr'] * 0.25
+            tolerance_price = min(current['atr'] * 0.25, current_price * 0.0008)
             
             for zone in fib_zones:
                 if 0.61 <= zone['ratio'] <= 0.79:
@@ -321,21 +341,23 @@ class InstitutionalGoldEngine:
                  
             elif in_zone and indicators_aligned and price_action_trigger:
                  # Fib Path
-                 self._create_signal(signals, 'SELL', current, structure, active_level, smc_result)
+                 if not signals:
+                    self._create_signal(signals, 'SELL', current, structure, active_level, smc_result)
+
+
+        # Prepare final debug info (updating with execution state)
+        debug_info.update({
+             'in_zone': locals().get('in_zone', False),
+             'indicators_aligned': locals().get('indicators_aligned', False),
+             'smc': locals().get('smc_result', {}),
+             'price_action': locals().get('price_action_trigger', False)
+        })
 
         return {
             'signals': signals,
             'structure': structure,
             'fib_zones': fib_zones,
-            'debug_info': {
-                'rsi': current['rsi'],
-                'macd_hist': current['macd_hist'],
-                'stoch': current.get('slow_k', 0),
-                'in_zone': locals().get('in_zone', False),
-                'indicators_aligned': locals().get('indicators_aligned', False),
-                'smc': locals().get('smc_result', {}),
-                'price_action': locals().get('price_action_trigger', False)
-            }
+            'debug_info': debug_info
         }
 
     def update_news(self, events: List[Dict]):
@@ -346,24 +368,13 @@ class InstitutionalGoldEngine:
         if events:
             logger.debug(f"📰 InstitutionalGoldEngine received {len(events)} news events (No Filtering Active)")
 
-    def _is_in_killzone(self, current_time) -> bool:
+    def _is_in_killzone_utc(self, hour_utc: int) -> bool:
         """
-        v3.0: Check if current UTC hour is within the configured session killzone.
-        Returns True if we should trade, False if outside killzone.
-        
-        Auto-adjusts for Broker Time (UTC+2) by subtracting 2 hours.
+        v4.1: Pure UTC Killzone check.
+        Requires 'hour_utc' to be the already converted UTC hour.
         """
         if self.session_mode == 'ALL':
             return True
-        
-        try:
-            hour_broker = current_time.hour if hasattr(current_time, 'hour') else datetime.now().hour
-            # Hack: Broker is usually UTC+2 or UTC+3. User confirms Broker=15 when Local/RD=9 (UTC=13).
-            # So Broker = UTC + 2.
-            # Convert Broker Hour to UTC Hour:
-            hour_utc = (hour_broker - 2) % 24 
-        except:
-            return True  # Fail open if we can't determine time
         
         killzone_config = self.KILLZONES.get(self.session_mode, self.KILLZONES['BOTH_KZ'])
         
@@ -466,7 +477,13 @@ class InstitutionalGoldEngine:
         use_fallback = False
         
         if structure and structure.last_impulse_leg:
-             invalid_price = structure.last_impulse_leg['start'].price
+             start_node = structure.last_impulse_leg.get('start')
+             
+             if not hasattr(start_node, 'price'):
+                 use_fallback = True
+                 invalid_price = 0
+             else:
+                 invalid_price = start_node.price
              
              # Max Risk Distance: 3 ATR (to avoid huge stops on large impulses)
              max_sl_dist = atr * 3.0
@@ -559,7 +576,7 @@ class InstitutionalGoldEngine:
             'take_profit_1': tp1_price,
             'take_profit_2': tp1_price, 
             'strategy': 'XAU_PRO_v4 (SMC Enhanced)',
-            'confluence_score': 95 + (smc_info.get('smc_score', 0) * 2),  # Boost for SMC
+            'confluence_score': min(100, 95 + (smc_info.get('smc_score', 0) * 2)),  # Cap at 100
             'metadata': {
                 'fib_level': fib_level,
                 'rsi': current['rsi'],
