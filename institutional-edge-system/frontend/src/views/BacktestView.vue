@@ -4,192 +4,26 @@
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
     <!-- 🎨 MODERN KPI DASHBOARD HEADER (Glassmorphism + Gradients)              -->
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-slate-900/90 via-slate-800/90 to-slate-900/90 backdrop-blur-xl p-6 shadow-2xl">
-      <!-- Animated gradient orbs in background -->
-      <div class="absolute -top-20 -left-20 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
-      <div class="absolute -bottom-20 -right-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
-      
-      <!-- Top Row: Mode Toggle + Account Selector -->
-      <div class="relative z-10 flex justify-between items-center mb-6">
-        <!-- Modern Mode Toggle -->
-        <div class="flex items-center space-x-1 p-1 bg-gray-800/60 rounded-xl border border-gray-700/50">
-          <button 
-            @click="tradingMode = 'backtest'"
-            class="relative px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300"
-            :class="tradingMode === 'backtest' 
-              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30' 
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'"
-          >
-            <span class="flex items-center gap-2">
-              📊 <span>Backtest</span>
-            </span>
-          </button>
-          <button 
-            @click="tradingMode = 'live'"
-            class="relative px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300"
-            :class="tradingMode === 'live' 
-              ? 'bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-lg shadow-red-500/30' 
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'"
-          >
-            <span class="flex items-center gap-2">
-              <span v-if="tradingMode === 'live'" class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-              </span>
-              <span v-else>🔴</span>
-              <span>Live</span>
-            </span>
-          </button>
-          <button 
-            @click="tradingMode = 'paper'"
-            class="relative px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300"
-            :class="tradingMode === 'paper' 
-              ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg shadow-purple-500/30' 
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'"
-          >
-            <span class="flex items-center gap-2">
-              📋 <span>Paper</span>
-            </span>
-          </button>
-        </div>
-
-        <!-- GLOBAL KILL SWITCH (Admin) -->
-        <div class="flex items-center space-x-2 mr-4">
-          <button 
-            @click="toggleKillSwitch"
-            class="relative px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300 border shadow-lg"
-            :class="killSwitchActive 
-              ? 'bg-red-600 border-red-500 text-white animate-pulse hover:bg-red-700' 
-              : 'bg-emerald-900/30 border-emerald-500/30 text-emerald-400 hover:bg-emerald-800/50 hover:text-emerald-300'"
-          >
-            <span class="flex items-center gap-2">
-              <span v-if="killSwitchActive">💀 KILL SWITCH ACTIVE</span>
-              <span v-else>🛡️ SYSTEM SECURE</span>
-            </span>
-          </button>
-        </div>
-        
-        <!-- Connection Status Badge -->
-        <div class="flex items-center px-3 py-1.5 rounded-lg bg-gray-800/40 border border-gray-700/30">
-          <div v-if="socketConnected" class="flex items-center gap-2">
-            <span class="relative flex h-2.5 w-2.5">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-            </span>
-            <span class="text-xs text-green-400 font-medium">Connected</span>
-          </div>
-          <div v-else-if="socketReconnecting" class="flex items-center gap-2">
-            <svg class="w-3 h-3 text-yellow-400 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span class="text-xs text-yellow-400 font-medium">Reconnecting...</span>
-          </div>
-          <div v-else class="flex items-center gap-2">
-            <span class="relative flex h-2.5 w-2.5">
-              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-            </span>
-            <span class="text-xs text-red-400 font-medium">Disconnected</span>
-          </div>
-        </div>
-        
-        <!-- Account Selector -->
-        <div class="flex items-center space-x-3">
-          <select 
-            v-model="selectedAccountId"
-            @change="onAccountChange"
-            class="px-4 py-2.5 bg-gray-800/60 border border-gray-600/50 rounded-xl text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 backdrop-blur transition-all"
-            :disabled="tradingMode === 'backtest'"
-          >
-            <option :value="null">Select Account</option>
-            <option v-for="acc in accounts" :key="acc.id" :value="acc.id">
-              {{ acc.name }} ({{ acc.account_type }})
-            </option>
-          </select>
-          <router-link 
-            to="/accounts"
-            class="px-4 py-2.5 bg-gray-700/50 hover:bg-gray-600/50 text-white text-sm rounded-xl transition-all border border-gray-600/30 hover:border-gray-500/50"
-          >
-            ⚙️ Accounts
-          </router-link>
-        </div>
-      </div>
-      
-      <!-- KPI Cards Row -->
-      <div class="relative z-10 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <!-- Balance KPI -->
-        <div class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500/10 to-green-600/5 border border-emerald-500/20 p-4 hover:border-emerald-400/40 transition-all hover:scale-[1.02]">
-          <div class="absolute inset-0 bg-gradient-to-t from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          <div class="text-xs text-emerald-400/70 font-medium mb-1">💰 Balance</div>
-          <div class="text-xl font-bold text-emerald-400">${{ tradingMode === 'live' ? (activeAccount?.starting_balance || 10000).toLocaleString() : sharedConfig.initial_balance.toLocaleString() }}</div>
-          <div v-if="portfolioMetrics.netProfit !== 0" class="text-xs mt-1" :class="portfolioMetrics.netProfit >= 0 ? 'text-emerald-300' : 'text-red-400'">
-            {{ portfolioMetrics.netProfit >= 0 ? '↑' : '↓' }} {{ Math.abs(portfolioMetrics.netProfit).toFixed(0) }} ({{ ((portfolioMetrics.netProfit / sharedConfig.initial_balance) * 100).toFixed(1) }}%)
-          </div>
-        </div>
-        
-        <!-- Drawdown KPI -->
-        <div class="group relative overflow-hidden rounded-xl border p-4 transition-all hover:scale-[1.02]"
-             :class="riskStatus.total_dd_percent > 5 
-               ? 'bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/30' 
-               : 'bg-gradient-to-br from-blue-500/10 to-cyan-600/5 border-blue-500/20 hover:border-blue-400/40'">
-          <div class="text-xs font-medium mb-1" :class="riskStatus.total_dd_percent > 5 ? 'text-red-400/70' : 'text-blue-400/70'">📉 Max DD</div>
-          <div class="text-xl font-bold" :class="riskStatus.total_dd_percent > 5 ? 'text-red-400' : 'text-blue-400'">
-            {{ tradingMode === 'live' ? riskStatus.total_dd_percent?.toFixed(1) || '0.0' : portfolioMetrics.maxDrawdown?.toFixed(1) || '0.0' }}%
-          </div>
-          <div class="w-full bg-gray-700/50 rounded-full h-1.5 mt-2">
-            <div class="h-1.5 rounded-full transition-all duration-500"
-                 :class="riskStatus.total_dd_percent > 5 ? 'bg-red-500' : 'bg-blue-500'"
-                 :style="{ width: Math.min((tradingMode === 'live' ? riskStatus.total_dd_percent : portfolioMetrics.maxDrawdown) / 10 * 100, 100) + '%' }"></div>
-          </div>
-        </div>
-        
-        <!-- Win Rate KPI -->
-        <div class="group relative overflow-hidden rounded-xl border p-4 transition-all hover:scale-[1.02]"
-             :class="portfolioMetrics.winRate >= 50 
-               ? 'bg-gradient-to-br from-green-500/10 to-emerald-600/5 border-green-500/20 hover:border-green-400/40' 
-               : 'bg-gradient-to-br from-yellow-500/10 to-amber-600/5 border-yellow-500/20'">
-          <div class="text-xs font-medium mb-1" :class="portfolioMetrics.winRate >= 50 ? 'text-green-400/70' : 'text-yellow-400/70'">🎯 Win Rate</div>
-          <div class="text-xl font-bold" :class="portfolioMetrics.winRate >= 50 ? 'text-green-400' : 'text-yellow-400'">
-            {{ portfolioMetrics.winRate?.toFixed(1) || '0.0' }}%
-          </div>
-          <div class="text-xs mt-1 text-gray-400">{{ portfolioMetrics.totalTrades || 0 }} trades</div>
-        </div>
-        
-        <!-- Profit Factor KPI -->
-        <div class="group relative overflow-hidden rounded-xl border p-4 transition-all hover:scale-[1.02]"
-             :class="portfolioMetrics.profitFactor >= 1.5 
-               ? 'bg-gradient-to-br from-violet-500/10 to-purple-600/5 border-violet-500/20 hover:border-violet-400/40' 
-               : 'bg-gradient-to-br from-orange-500/10 to-amber-600/5 border-orange-500/20'">
-          <div class="text-xs font-medium mb-1" :class="portfolioMetrics.profitFactor >= 1.5 ? 'text-violet-400/70' : 'text-orange-400/70'">⚖️ Profit Factor</div>
-          <div class="text-xl font-bold" :class="portfolioMetrics.profitFactor >= 1.5 ? 'text-violet-400' : 'text-orange-400'">
-            {{ portfolioMetrics.profitFactor?.toFixed(2) || '0.00' }}
-          </div>
-        </div>
-        
-        <!-- Active Slots -->
-        <div class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-600/5 border border-cyan-500/20 p-4 hover:border-cyan-400/40 transition-all hover:scale-[1.02]">
-          <div class="text-xs text-cyan-400/70 font-medium mb-1">🎰 Active Slots</div>
-          <div class="text-xl font-bold text-cyan-400">{{ slots.filter(s => s.enabled).length }}</div>
-          <div class="text-xs mt-1 text-gray-400">of {{ slots.length }} total</div>
-        </div>
-        
-        <!-- Risk Exposure -->
-        <div class="group relative overflow-hidden rounded-xl border p-4 transition-all hover:scale-[1.02]"
-             :class="totalPotentialRisk > portfolioSynergy.max_risk 
-               ? 'bg-gradient-to-br from-red-500/10 to-rose-600/5 border-red-500/30' 
-               : 'bg-gradient-to-br from-teal-500/10 to-emerald-600/5 border-teal-500/20'">
-          <div class="text-xs font-medium mb-1" :class="totalPotentialRisk > portfolioSynergy.max_risk ? 'text-red-400/70' : 'text-teal-400/70'">⚡ Risk Exposure</div>
-          <div class="text-xl font-bold" :class="totalPotentialRisk > portfolioSynergy.max_risk ? 'text-red-400' : 'text-teal-400'">
-            {{ totalPotentialRisk.toFixed(1) }}%
-          </div>
-          <div class="w-full bg-gray-700/50 rounded-full h-1.5 mt-2">
-            <div class="h-1.5 rounded-full transition-all duration-500"
-                 :class="totalPotentialRisk > portfolioSynergy.max_risk ? 'bg-red-500' : totalPotentialRisk > portfolioSynergy.max_risk * 0.7 ? 'bg-yellow-500' : 'bg-teal-500'"
-                 :style="{ width: Math.min(totalPotentialRisk / portfolioSynergy.max_risk * 100, 100) + '%' }"></div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- 🎨 DASHBOARD HEADER (Controls + KPIs)                                   -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <DashboardHeader
+      v-model="tradingMode"
+      v-model:selectedAccountId="selectedAccountId"
+      :accounts="accounts"
+      :kill-switch-active="killSwitchActive"
+      :socket-connected="socketConnected"
+      :socket-reconnecting="socketReconnecting"
+      :portfolio-metrics="portfolioMetrics"
+      :risk-status="riskStatus"
+      :active-account="activeAccount"
+      :shared-config="sharedConfig"
+      :slots="slots"
+      :portfolio-synergy="portfolioSynergy"
+      :total-potential-risk="totalPotentialRisk"
+      @toggle-kill-switch="toggleKillSwitch"
+      @account-change="onAccountChange"
+    />
 
     <!-- Header -->
     <div class="flex justify-between items-center">
@@ -264,52 +98,19 @@
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
     <!-- 🎰 PORTFOLIO SLOTS (Modern Card Grid)                                   -->
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-slate-900/80 via-slate-800/80 to-slate-900/80 backdrop-blur-xl p-5 shadow-xl">
-      <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center space-x-3">
-          <h3 class="text-lg font-bold text-white flex items-center gap-2">
-            <span class="text-2xl">🎰</span> 
-            <span class="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Portfolio Slots</span>
-          </h3>
-          <button @click="addSlot" 
-                  class="group px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white text-xs font-semibold rounded-lg transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-400/30 hover:scale-105">
-            <span class="flex items-center gap-1">
-              <span class="group-hover:rotate-90 transition-transform duration-300">➕</span>
-              <span>Add Slot</span>
-            </span>
-          </button>
-        </div>
-        <div class="flex items-center space-x-3">
-          <!-- Capital Input -->
-          <div class="flex items-center gap-2 bg-gray-800/60 rounded-xl px-3 py-2 border border-gray-700/50">
-            <span class="text-xs text-gray-400">💵 Capital</span>
-            <input type="number" v-model.number="sharedConfig.initial_balance" 
-                   class="bg-transparent text-sm text-white w-20 focus:outline-none text-right font-mono">
-          </div>
-          <div class="hidden md:flex items-center gap-3 text-xs text-gray-400">
-            <span class="px-2 py-1 bg-gray-800/40 rounded-lg border border-gray-700/30">
-              Max Risk: <span class="text-yellow-400 font-semibold">{{ portfolioSynergy.max_risk }}%</span>
-            </span>
-            <span class="px-2 py-1 bg-gray-800/40 rounded-lg border border-gray-700/30">
-              Max/Symbol: <span class="text-cyan-400 font-semibold">{{ portfolioSynergy.max_positions }}</span>
-            </span>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Slot Cards Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <BacktestSlotCard
-          v-for="(slot, index) in slots" 
-          :key="slot.id"
-          v-model="slots[index]"
-          @save="saveSlot"
-          @clone="cloneSlot"
-          @delete="deleteSlot"
-          @preset="applySymbolPreset"
-        />
-      </div>
-    </div>
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- 🎰 PORTFOLIO SLOTS                                                      -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <SlotManager
+      :slots="slots"
+      :shared-config="sharedConfig"
+      :portfolio-synergy="portfolioSynergy"
+      @add-slot="addSlot"
+      @save-slot="saveSlot"
+      @clone-slot="cloneSlot"
+      @delete-slot="deleteSlot"
+      @apply-preset="applySymbolPreset"
+    />
 
 
 
@@ -402,45 +203,12 @@
     <div class="space-y-4">
       
       <!-- PORTFOLIO COMBINED SUMMARY - BACKTEST ONLY -->
-      <div v-if="tradingMode === 'backtest'" class="bg-gradient-to-r from-blue-900/40 to-purple-900/40 rounded-xl border border-blue-700 p-4">
-        <div class="flex justify-between items-center mb-3">
-          <h3 class="font-semibold text-white text-lg">📊 Portfolio Summary</h3>
-          <span class="text-xs text-gray-400">Combined results from all {{ slots.filter(s => s.enabled).length }} slots</span>
-        </div>
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <!-- Total Net Profit -->
-          <div class="bg-gray-800/60 rounded-lg p-3 text-center">
-            <div class="text-xs text-gray-500 mb-1">💰 Net Profit</div>
-            <div class="text-xl font-bold" :class="portfolioMetrics.netProfit >= 0 ? 'text-green-400' : 'text-red-400'">
-              {{ portfolioMetrics.netProfit >= 0 ? '+' : '' }}${{ portfolioMetrics.netProfit.toFixed(0) }}
-            </div>
-          </div>
-          <!-- Combined Win Rate -->
-          <div class="bg-gray-800/60 rounded-lg p-3 text-center">
-            <div class="text-xs text-gray-500 mb-1">🎯 Win Rate</div>
-            <div class="text-xl font-bold" :class="portfolioMetrics.winRate >= 50 ? 'text-green-400' : 'text-yellow-400'">
-              {{ portfolioMetrics.winRate.toFixed(1) }}%
-            </div>
-          </div>
-          <!-- Max Drawdown -->
-          <div class="bg-gray-800/60 rounded-lg p-3 text-center">
-            <div class="text-xs text-gray-500 mb-1">📉 Max DD</div>
-            <div class="text-xl font-bold text-red-400">{{ portfolioMetrics.maxDrawdown.toFixed(1) }}%</div>
-          </div>
-          <!-- Total Trades -->
-          <div class="bg-gray-800/60 rounded-lg p-3 text-center">
-            <div class="text-xs text-gray-500 mb-1">📈 Total Trades</div>
-            <div class="text-xl font-bold text-white">{{ portfolioMetrics.totalTrades }}</div>
-          </div>
-          <!-- Average Profit Factor -->
-          <div class="bg-gray-800/60 rounded-lg p-3 text-center">
-            <div class="text-xs text-gray-500 mb-1">⚖️ Profit Factor</div>
-            <div class="text-xl font-bold" :class="portfolioMetrics.profitFactor >= 1.5 ? 'text-green-400' : 'text-yellow-400'">
-              {{ portfolioMetrics.profitFactor.toFixed(2) }}
-            </div>
-          </div>
-        </div>
-      </div>
+      <KpiDashboard 
+        v-if="tradingMode === 'backtest'" 
+        :metrics="portfolioMetrics" 
+        :tradingMode="tradingMode"
+        :slotCount="slots.filter(s => s.enabled).length"
+      />
       
 
       
@@ -450,35 +218,15 @@
         <CorrelationHeatmap :symbols="enabledSymbols" />
         
         <!-- Portfolio Risk Summary -->
-        <div class="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <h3 class="text-sm font-semibold text-gray-300 mb-3">⚠️ Portfolio Risk</h3>
-          <div class="space-y-3">
-            <div>
-              <div class="flex justify-between text-xs mb-1">
-                <span class="text-gray-500">Potential Risk</span>
-                <span class="text-white">{{ totalPotentialRisk.toFixed(1) }}% / {{ portfolioSynergy.max_risk }}%</span>
-              </div>
-              <div class="w-full bg-gray-700 rounded-full h-2">
-                <div 
-                  class="h-2 rounded-full transition-all"
-                  :class="totalPotentialRisk > portfolioSynergy.max_risk ? 'bg-red-500' : totalPotentialRisk > portfolioSynergy.max_risk * 0.8 ? 'bg-yellow-500' : 'bg-green-500'"
-                  :style="{ width: Math.min(totalPotentialRisk / portfolioSynergy.max_risk * 100, 100) + '%' }"
-                ></div>
-              </div>
-              <div class="text-xs text-gray-600 mt-1">Active: {{ totalActiveRisk.toFixed(1) }}%</div>
-            </div>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-              <div class="bg-gray-900 rounded p-2">
-                <div class="text-gray-500">{{ tradingMode === 'live' ? 'Open Positions' : 'Total Trades' }}</div>
-                <div class="text-lg font-bold text-white">{{ tradingMode === 'live' ? openPositionCount : portfolioMetrics.totalTrades }}</div>
-              </div>
-              <div class="bg-gray-900 rounded p-2">
-                <div class="text-gray-500">Active Slots</div>
-                <div class="text-lg font-bold text-blue-400">{{ slots.filter(s => s.enabled).length }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <RiskOverview
+          :total-potential-risk="totalPotentialRisk"
+          :portfolio-synergy="portfolioSynergy"
+          :total-active-risk="totalActiveRisk"
+          :trading-mode="tradingMode"
+          :open-position-count="openPositionCount"
+          :metrics="portfolioMetrics"
+          :active-slot-count="slots.filter(s => s.enabled).length"
+        />
       </div>
       
       <!-- Per-Slot Results Grid (2x2) -->
@@ -561,48 +309,7 @@
         </div>
 
         <!-- Combined Trade History (All Slots) -->
-        <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-          <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-            <h3 class="font-semibold text-white">📋 All Trades</h3>
-            <span class="text-xs text-gray-500">{{ trades.length }} total</span>
-          </div>
-          <div class="overflow-x-auto max-h-64">
-            <table class="w-full text-left text-sm">
-              <thead class="bg-gray-900 text-gray-400 sticky top-0">
-                <tr>
-                  <th class="px-3 py-2">Symbol</th>
-                  <th class="px-3 py-2">Time</th>
-                  <th class="px-3 py-2">Duration</th>
-                  <th class="px-3 py-2">Type</th>
-                  <th class="px-3 py-2 text-right">Profit</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-700">
-                <tr v-if="trades.length === 0">
-                  <td colspan="5" class="px-4 py-6 text-center text-gray-500">No trades yet</td>
-                </tr>
-                <tr v-for="trade in trades.slice(0, 20)" :key="trade.id" class="hover:bg-gray-750">
-                  <td class="px-3 py-2 text-gray-300 text-xs">{{ trade.symbol || '-' }}</td>
-                  <td class="px-3 py-2 text-gray-400 text-xs">{{ formatDateTime(trade.exit_time) }}</td>
-                  <td class="px-3 py-2 text-xs">
-                    <span :class="getDurationColor(trade.entry_time, trade.exit_time)">
-                      {{ formatDuration(trade.entry_time, trade.exit_time) }}
-                    </span>
-                  </td>
-                  <td class="px-3 py-2">
-                    <span class="px-2 py-0.5 rounded text-xs font-medium"
-                          :class="trade.trade_type === 'BUY' ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'">
-                      {{ trade.trade_type }}
-                    </span>
-                  </td>
-                  <td class="px-3 py-2 text-right font-medium" :class="trade.profit >= 0 ? 'text-green-400' : 'text-red-400'">
-                    {{ trade.profit >= 0 ? '+' : '' }}${{ trade.profit?.toFixed(2) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <TradeHistoryTable :trades="trades" />
 
         <!-- Backtest Logs Panel -->
         <BacktestLogs :session-id="currentSessionId" />
@@ -776,11 +483,18 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
-import socket, { connectionState, connectSocket } from '../services/socket'
-import CorrelationHeatmap from '../components/CorrelationHeatmap.vue'
+import { useSocketTrading } from '../composables/useSocketTrading'
+import { usePortfolioMetrics } from '../composables/usePortfolioMetrics'
+import { useRiskManagement } from '../composables/useRiskManagement'
+import socket, { connectionState } from '../services/socket'
 
+import CorrelationHeatmap from '../components/CorrelationHeatmap.vue'
 import BacktestLogs from '../components/BacktestLogs.vue'
-import BacktestSlotCard from '../components/backtest/BacktestSlotCard.vue'
+import DashboardHeader from '../components/backtest/DashboardHeader.vue'
+import SlotManager from '../components/backtest/SlotManager.vue'
+import RiskOverview from '../components/backtest/RiskOverview.vue'
+import KpiDashboard from '../components/backtest/KpiDashboard.vue'
+import TradeHistoryTable from '../components/backtest/TradeHistoryTable.vue'
 import { SYMBOL_PRESETS } from '../constants/presets.js'
 
 // Socket connection state (reactive refs from socket.js)
@@ -797,6 +511,44 @@ const backtestStatus = ref('')  // Current backtest status message
 const toastMessage = ref('')  // Toast notification message
 const toastType = ref('info')  // 'success', 'error', 'info', 'warning'
 const showToast = ref(false)  // Show toast notification
+
+// Helper Constants & Functions
+const HIGH_VOLATILITY_SYMBOLS = ['XAUUSD', 'BTCUSD', 'ETHUSD']
+
+const getTFMins = (tf) => {
+  const map = {
+    'M1': 1, 'M5': 5, 'M15': 15, 'M30': 30,
+    'H1': 60, 'H4': 240, 'D1': 1440
+  }
+  return map[tf] || 0
+}
+
+const isBadSession = (symbol, session) => {
+  if (!symbol || !session) return false
+  if (session === 'ASIA' || session === 'ASIA_LONDON') {
+     if (symbol.includes('XAU')) return true
+     if ((symbol.includes('EUR') || symbol.includes('GBP')) && !symbol.includes('JPY')) return true
+  }
+  return false
+}
+
+
+
+// Toast Notification Helper (Enhanced)
+const showToastNotification = (message, type = 'info', duration = 3000) => {
+  // Map custom types to standard styles/icons if needed, or just pass valid types
+  // valid types: info, success, warning, error, risk, security
+  toastMessage.value = message
+  toastType.value = type
+  showToast.value = true
+  
+  // Longer duration for critical alerts
+  const realDuration = (type === 'risk' || type === 'error') ? 6000 : duration
+  
+  setTimeout(() => {
+    showToast.value = false
+  }, realDuration)
+}
 
 const currentSessionId = ref(null)  // Current backtest session ID for logs
 
@@ -816,7 +568,8 @@ const tradingMode = ref('backtest')  // 'backtest' or 'live'
 const accounts = ref([])
 const selectedAccountId = ref(null)
 const activeAccount = computed(() => accounts.value.find(a => a.id === selectedAccountId.value))
-const riskStatus = ref({ total_dd_percent: 0, daily_dd_percent: 0 })
+
+
 
 // Fetch accounts for live trading
 const fetchAccounts = async () => {
@@ -952,20 +705,7 @@ const executeManualTrade = async () => {
 // SYMBOL PRESETS - Moved to src/constants/presets.js
 const symbolPresets = SYMBOL_PRESETS
 
-// Store previous risk
-let previousRiskBeforeGold = 1.0
 
-// Handle symbol change
-const onSymbolChange = () => {
-  if (HIGH_VOLATILITY_SYMBOLS.includes(config.value.symbol)) {
-    if (config.value.risk_percent > 0.5) previousRiskBeforeGold = config.value.risk_percent
-    config.value.risk_percent = 0.5
-  } else {
-    if (config.value.risk_percent === 0.5 && previousRiskBeforeGold > 0.5) {
-      config.value.risk_percent = previousRiskBeforeGold
-    }
-  }
-}
 
 // Apply preset when symbol changes (v3.0: includes MACD + session)
 const applySymbolPreset = (slot) => {
@@ -1053,102 +793,7 @@ const enabledSymbols = computed(() => {
   return slots.value.filter(s => s.enabled).map(s => s.symbol)
 })
 
-// Computed: Total active risk (sum of risk % for slots with open positions)
-const totalActiveRisk = computed(() => {
-  return slots.value
-    .filter(s => s.enabled && s.trades.some(t => t.status === 'OPEN' || !t.exit_time))
-    .reduce((sum, s) => sum + (s.risk_percent || 1.0), 0)
-})
 
-// Computed: Total potential risk (sum of risk % for all enabled slots)
-const totalPotentialRisk = computed(() => {
-  return slots.value
-    .filter(s => s.enabled)
-    .reduce((sum, s) => sum + (s.risk_percent || 1.0), 0)
-})
-
-// Computed: Open position count
-const openPositionCount = computed(() => {
-  return slots.value.reduce((count, s) => {
-    return count + s.trades.filter(t => t.status === 'OPEN' || !t.exit_time).length
-  }, 0)
-})
-
-// PORTFOLIO COMBINED METRICS (computed from all enabled slots)
-const portfolioMetrics = computed(() => {
-  const enabledSlots = slots.value.filter(s => s.enabled)
-  
-  // Sum up all metrics
-  let totalNetProfit = 0
-  let totalTrades = 0
-  let totalWins = 0
-  let totalGrossProfit = 0
-  let totalGrossLoss = 0
-  let maxDrawdown = 0
-  
-  enabledSlots.forEach(slot => {
-    // Prefer results if available (finalized stats), otherwise calc from trades
-    const hasResults = slot.results && slot.results.total_trades !== undefined
-    
-    if (hasResults) {
-      if (slot.results.total_trades) {
-        totalTrades += slot.results.total_trades
-        totalWins += Math.round(slot.results.total_trades * (slot.results.win_rate || 0) / 100)
-      }
-      if (slot.results.net_profit !== undefined) totalNetProfit += slot.results.net_profit
-      if (slot.results.gross_profit) totalGrossProfit += slot.results.gross_profit
-      if (slot.results.gross_loss) totalGrossLoss += Math.abs(slot.results.gross_loss)
-      if (slot.results.max_drawdown && slot.results.max_drawdown > maxDrawdown) {
-        maxDrawdown = slot.results.max_drawdown
-      }
-    } else if (slot.trades && slot.trades.length > 0) {
-      // Fallback: Real-time calculation from trades list
-      const closedTrades = slot.trades.filter(t => t.exit_time || t.status === 'CLOSED')
-      
-      totalTrades += closedTrades.length
-      totalWins += closedTrades.filter(t => (t.profit || 0) > 0).length
-      totalNetProfit += closedTrades.reduce((sum, t) => sum + (t.profit || 0), 0)
-      
-      let runningBalance = 0
-      let peakBalance = 0
-      let currentDrawdown = 0
-      let slotMaxDrawdown = 0
-      
-      closedTrades.forEach(t => {
-        const profit = t.profit || 0
-        if (profit > 0) totalGrossProfit += profit
-        else totalGrossLoss += Math.abs(profit)
-        
-        // Calculate Max DD from trade sequence
-        runningBalance += profit
-        if (runningBalance > peakBalance) peakBalance = runningBalance
-        const dd = peakBalance - runningBalance
-        if (dd > slotMaxDrawdown) slotMaxDrawdown = dd
-      })
-      
-      // Convert absolute DD to approx % (assuming 10k or initial balance basis - simplistic for fallback)
-      // Ideally backend sends this, but for fallback we take the largest absolute drop
-      if (slotMaxDrawdown > 0) {
-         // Use a rough estimate if balance div not available, or just track largest absolute drop
-         // For portfolio view, we can track max relative DD if we knew starting balance
-         // Here we'll just use the largest DD found this session
-         if (slotMaxDrawdown > maxDrawdown) maxDrawdown = slotMaxDrawdown 
-      }
-    }
-  })
-  
-  // Calculate combined metrics
-  const winRate = totalTrades > 0 ? (totalWins / totalTrades * 100) : 0
-  const profitFactor = totalGrossLoss > 0 ? (totalGrossProfit / totalGrossLoss) : (totalGrossProfit > 0 ? 999 : 0)
-  
-  return {
-    netProfit: totalNetProfit,
-    winRate: winRate,
-    maxDrawdown: maxDrawdown,
-    totalTrades: totalTrades,
-    profitFactor: profitFactor
-  }
-})
 
 
 
@@ -1187,86 +832,20 @@ const sharedConfig = ref({
 
 const trades = ref([])
 
-// GLOBAL RISK STATE
-const killSwitchActive = ref(false)
-const riskStatus = ref({
-  max_dd_percent: 7.0,
-  current_dd_percent: 0.0,
-  kill_switch_reason: ''
-})
-const toggleKillSwitch = async () => {
-  try {
-    const newState = !killSwitchActive.value
-    // Optimistic update
-    killSwitchActive.value = newState
-    
-    await axios.post(`${API_URL}/api/settings/kill-switch`, { active: newState })
-    
-    showToastNotification(
-      newState ? '💀 GLOBAL KILL SWITCH ACTIVATED' : '🛡️ System Security Restored',
-      newState ? 'error' : 'success',
-      5000
-    )
-  } catch (e) {
-    console.error("Failed to toggle kill switch", e)
-    showToastNotification("Failed to toggle Kill Switch", 'error')
-    killSwitchActive.value = !killSwitchActive.value // Revert
-  }
-}
+
+
+// COMPOSABLES INITIALIZATION
+const { killSwitchActive, riskStatus, toggleKillSwitch } = useRiskManagement(API_URL, showToastNotification)
+
+const { 
+    portfolioMetrics, 
+    totalActiveRisk, 
+    totalPotentialRisk, 
+    openPositionCount 
+} = usePortfolioMetrics(slots)
 
 // High-volatility symbol detection
-const HIGH_VOLATILITY_SYMBOLS = ['XAUUSD', 'BTCUSD', 'ETHUSD']
 
-// Logic moved to bottom to fix order issues
-
-
-
-
-// Helper: Get timeframe in minutes for comparison
-const getTFMins = (tf) => {
-  const map = {
-    'M1': 1, 'M5': 5, 'M15': 15, 'M30': 30,
-    'H1': 60, 'H4': 240, 'D1': 1440
-  }
-  return map[tf] || 0
-}
-
-// Helper: Check for bad session/symbol combination
-const isBadSession = (symbol, session) => {
-  if (!symbol || !session) return false
-  
-  // Asia Session Warnings
-  if (session === 'ASIA' || session === 'ASIA_LONDON') {
-     // Gold is very low vol in Asia
-     if (symbol.includes('XAU')) return true
-     // EUR/GBP pairs (non-JPY) are often flat
-     if ((symbol.includes('EUR') || symbol.includes('GBP')) && !symbol.includes('JPY')) return true
-  }
-  
-  // NY Session Warnings
-  if (session === 'NY') {
-     // Some cross pairs might be lower vol, but generally NY is OK.
-     // Could warn for AUD/NZD specific crosses if needed.
-  }
-  
-  return false
-}
-
-// Toast Notification Helper (Enhanced)
-const showToastNotification = (message, type = 'info', duration = 3000) => {
-  // Map custom types to standard styles/icons if needed, or just pass valid types
-  // valid types: info, success, warning, error, risk, security
-  toastMessage.value = message
-  toastType.value = type
-  showToast.value = true
-  
-  // Longer duration for critical alerts
-  const realDuration = (type === 'risk' || type === 'error') ? 6000 : duration
-  
-  setTimeout(() => {
-    showToast.value = false
-  }, realDuration)
-}
 
 // Methods
 const runBacktest = async () => {
@@ -1302,28 +881,9 @@ const runBacktest = async () => {
   
 
   try {
-    // Connect socket and WAIT for it to be connected before starting
-    if (!socket.connected) {
-      socket.connect()
-      // Wait for socket to actually connect (up to 3 seconds)
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Socket connection timeout'))
-        }, 3000)
-        
-        socket.once('connect', () => {
-          clearTimeout(timeout)
-          console.log('✅ Socket connected for live trading')
-          resolve()
-        })
-        
-        // If already connected, resolve immediately
-        if (socket.connected) {
-          clearTimeout(timeout)
-          resolve()
-        }
-      })
-    }
+    // Ensure socket is connected
+    await ensureSocketConnected()
+    
     
     // LIVE MODE - Start real trading
     if (tradingMode.value === 'live') {
@@ -1479,227 +1039,22 @@ const runBacktest = async () => {
   }
 }
 
-// Socket Event Listeners
-const setupSocketListeners = () => {
-    socket.on('backtest_progress', (data) => {
-        // Find slot by session_id
-        const slot = slots.value.find(s => s.sessionId === data.session_id)
-        if (slot) {
-            slot.progress = Math.round(data.progress)
-            if (data.stats) {
-                slot.results = {
-                    ...slot.results,
-                    net_profit: data.stats.balance - sharedConfig.value.initial_balance,
-                    total_trades: data.stats.trades,
-                }
-            }
-        }
-
-    })
-
-    socket.on('backtest_trade', (data) => {
-        const trade = data.trade
-        const slot = slots.value.find(s => s.sessionId === data.session_id)
-        
-        if (trade.type === 'CLOSE') {
-            const tradeObj = {
-                id: Date.now() + Math.random(),
-                symbol: slot?.symbol || '-',  // Include symbol for combined table
-                entry_time: trade.entry_time,
-                exit_time: trade.exit_time,
-                trade_type: trade.trade_type,
-                entry_price: trade.entry_price,
-                exit_price: trade.price,
-                profit: trade.pnl,
-                balance_after: trade.balance
-            }
-            
-            // Add to slot's trades
-            if (slot) {
-                slot.trades.unshift(tradeObj)
-                slot.results.net_profit = trade.balance - sharedConfig.value.initial_balance
-            }
-            
-            // Also add to legacy trades
-            trades.value.unshift(tradeObj)
-
-        }
-    })
-
-    socket.on('backtest_complete', (data) => {
-        // Find and update the specific slot
-        const slot = slots.value.find(s => s.sessionId === data.session_id)
-        if (slot) {
-            slot.isRunning = false
-            slot.progress = 100
-            slot.results = data.results
-
-            // Show completion notification with results
-            const profit = data.results.net_profit || 0
-            const profitSign = profit >= 0 ? '+' : ''
-            showToastNotification(
-                `${slot.symbol} backtest complete! P/L: ${profitSign}$${profit.toFixed(2)}`,
-                profit >= 0 ? 'success' : 'warning',
-                4000
-            )
-        }
-
-        // Check if all slots are done
-        const anyRunning = slots.value.some(s => s.isRunning)
-        if (!anyRunning) {
-            isRunning.value = false
-            backtestStatus.value = ''
-
-            fetchHistory()
-            showToastNotification('All backtests completed!', 'success', 4000)
-        }
+// Initialize Socket Trading Composable
+const { ensureSocketConnected, setupSocketListeners, cleanupSocketListeners } = useSocketTrading(
+  slots,
+  sharedConfig,
+  trades,
+  isRunning,
+  backtestStatus,
+  killSwitchActive,
+  riskStatus,
+  tradingMode,
+  showToastNotification,
+  fetchHistory
+)
 
 
-    })
 
-    // Handle backtest errors
-    socket.on('backtest_error', (data) => {
-        console.error('❌ Backtest error:', data)
-        const slot = slots.value.find(s => s.sessionId === data.session_id)
-        if (slot) {
-            slot.isRunning = false
-            slot.progress = 0
-            showToastNotification(`${slot.symbol}: ${data.error}`, 'error', 6000)
-        }
-
-        // Check if all slots are done
-        const anyRunning = slots.value.some(s => s.isRunning)
-        if (!anyRunning) {
-            isRunning.value = false
-            backtestStatus.value = ''
-        }
-    })
-    
-    // 🔴 LIVE TRADING: Handle real-time trade updates
-    socket.on('live_trade_opened', (trade) => {
-        console.log('🔴 Live trade opened:', trade)
-
-        // Find the slot by session_id
-        const slot = slots.value.find(s => s.sessionId === trade.session_id)
-
-        const tradeObj = {
-            id: trade.ticket,
-            symbol: trade.symbol,
-            entry_time: trade.opened_at,
-            exit_time: null,  // Still open
-            trade_type: trade.type,
-            entry_price: trade.entry_price,
-            exit_price: null,  // Still open
-            stop_loss: trade.stop_loss,
-            take_profit: trade.take_profit,
-            volume: trade.volume,
-            profit: 0,  // Unknown until closed
-            status: 'OPEN'
-        }
-
-        // Add to slot's trades
-        if (slot) {
-            if (!slot.trades) slot.trades = []
-            slot.trades.unshift(tradeObj)
-        }
-
-        // Add to legacy trades for combined view
-        trades.value.unshift(tradeObj)
-
-        // Show notification
-        showToastNotification(
-            `🔴 ${trade.type} ${trade.symbol} @ ${trade.entry_price}`,
-            'info',
-            3000
-        )
-    })
-    
-    // 🔴 LIVE TRADING: Handle trade closed
-    socket.on('live_trade_closed', (data) => {
-        console.log('🔴 Live trade closed:', data)
-
-        // Update trade in slot
-        const slot = slots.value.find(s => s.sessionId === data.session_id)
-        if (slot) {
-            const trade = slot.trades.find(t => t.id === data.ticket)
-            if (trade) {
-                trade.status = 'CLOSED'
-                trade.exit_time = data.closed_at
-                trade.profit = data.pnl
-
-                // Show notification with P/L
-                const profitSign = data.pnl >= 0 ? '+' : ''
-                showToastNotification(
-                    `${trade.symbol} closed: ${profitSign}$${data.pnl.toFixed(2)}`,
-                    data.pnl >= 0 ? 'success' : 'error',
-                    4000
-                )
-            }
-        }
-
-        // Also update in legacy trades
-        const legacyTrade = trades.value.find(t => t.id === data.ticket)
-        if (legacyTrade) {
-            legacyTrade.status = 'CLOSED'
-            legacyTrade.exit_time = data.closed_at
-            legacyTrade.profit = data.pnl
-        }
-    })
-    
-    // 🔴 LIVE TRADING: Handle trailing stop moved
-    socket.on('trailing_stop_moved', (data) => {
-        console.log('📈 Trailing SL moved:', data)
-        
-        // Update trade SL in slot
-        const slot = slots.value.find(s => s.sessionId === data.session_id)
-        if (slot) {
-            const trade = slot.trades.find(t => t.id === data.ticket)
-            if (trade) {
-                trade.stop_loss = data.new_sl
-            }
-        }
-    })
-    
-    // 🔴 LIVE TRADING: Handle market updates (account + positions)
-    socket.on('market_update', (data) => {
-        // Only process in live mode
-        if (tradingMode.value !== 'live') return
-        
-        // Update position P&L in real-time
-        if (data.positions) {
-            data.positions.forEach(pos => {
-                // Find matching trade across all slots
-                slots.value.forEach(slot => {
-                    const trade = slot.trades?.find(t => t.id === pos.ticket)
-                    if (trade) {
-                        trade.profit = pos.profit
-                        trade.current_price = pos.price_current
-                    }
-                })
-                
-                // Also update legacy trades
-                const legacyTrade = trades.value.find(t => t.id === pos.ticket)
-                if (legacyTrade) {
-                    legacyTrade.profit = pos.profit
-                }
-            })
-        }
-    })
-
-    // 🛡️ RISK UPDATE: Global Risk Status
-    socket.on('risk_update', (data) => {
-        killSwitchActive.value = data.kill_switch
-        riskStatus.value = data
-        
-        if (data.kill_switch) {
-            // Force stop backtest if running
-            if (isRunning.value) {
-                isRunning.value = false
-                showToastNotification(`⚠️ System halted: ${data.kill_switch_reason}`, 'risk', 0)
-            }
-        }
-    })
-}
 
 const fetchHistory = async () => {
   try {
@@ -2068,13 +1423,16 @@ const getConfluenceDescription = (score) => {
 }
 
 
-// Init
-onMounted(() => {
-  connectSocket()  // Connect socket since autoConnect is false
+// Lifecycle
+onMounted(async () => {
+  // Initial data load
   fetchHistory()
+  fetchAccounts()
+  await loadSlots()
+  
+  // Socket setup
   setupSocketListeners()
-  fetchAccounts()  // Load accounts for live trading mode
-  loadSlots()  // Load slots from database
+  await loadOpenPositions()
 })
 
 // Export combined portfolio trades to CSV
@@ -2094,7 +1452,12 @@ const exportPortfolioCSV = () => {
   })
   
   if (allTrades.length === 0) {
-    alert('No trades to export.')
+    // Basic alert or toast - showToastNotification is better if available
+    if (typeof showToastNotification === 'function') {
+        showToastNotification('No trades to export', 'warning')
+    } else {
+        alert('No trades to export.')
+    }
     return
   }
   
@@ -2134,14 +1497,6 @@ const exportPortfolioCSV = () => {
 }
 
 onUnmounted(() => {
-    // Backtest events
-    socket.off('backtest_progress')
-    socket.off('backtest_trade')
-    socket.off('backtest_complete')
-    // Live trading events
-    socket.off('live_trade_opened')
-    socket.off('live_trade_closed')
-    socket.off('trailing_stop_moved')
-    socket.off('market_update')
+    cleanupSocketListeners()
 })
 </script>

@@ -47,7 +47,9 @@ async def run_chaos_test():
     # Simulate stable state
     risk_manager.initial_balance = 100000
     risk_manager.current_equity = 100000
-    risk_manager.update_metrics(100000, 100000)
+    # Seed history to satisfy len < 5 check
+    for _ in range(10):
+        risk_manager.update_metrics(100000, 100000)
     
     # Crash equity by 10% instantly
     crash_equity = 90000 

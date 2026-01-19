@@ -134,15 +134,22 @@ class RiskManager:
             return False, f"Frequency Guard: >{self.max_trades_per_hour} trades/hr"
 
         # 3. Max Drawdown (Total)
-        current_dd_pct = ((self.initial_balance - self.current_equity) / self.initial_balance) * 100
-        if current_dd_pct >= self.max_drawdown_pct:
-            self.trigger_kill_switch(f"Max Drawdown Exceeded ({current_dd_pct:.2f}% > {self.max_drawdown_pct}%)")
-            return False, "Max Drawdown Exceeded"
+        if self.initial_balance > 0:
+            current_dd_pct = ((self.initial_balance - self.current_equity) / self.initial_balance) * 100
+            if current_dd_pct >= self.max_drawdown_pct:
+                self.trigger_kill_switch(f"Max Drawdown Exceeded ({current_dd_pct:.2f}% > {self.max_drawdown_pct}%)")
+                return False, "Max Drawdown Exceeded"
+        else:
+            # If initial balance is 0, we can't calculate DD, assume safe or handle otherwise
+            current_dd_pct = 0.0
 
         # 4. Max Daily Loss
-        daily_loss_pct = ((self.starting_equity_of_day - self.current_equity) / self.starting_equity_of_day) * 100
-        if daily_loss_pct >= self.max_daily_loss_pct:
-            return False, f"Daily Loss Limit Hit ({daily_loss_pct:.2f}% >= {self.max_daily_loss_pct}%)"
+        if self.starting_equity_of_day > 0:
+            daily_loss_pct = ((self.starting_equity_of_day - self.current_equity) / self.starting_equity_of_day) * 100
+            if daily_loss_pct >= self.max_daily_loss_pct:
+                return False, f"Daily Loss Limit Hit ({daily_loss_pct:.2f}% >= {self.max_daily_loss_pct}%)"
+        else:
+                             daily_loss_pct = 0.0
 
         return True, "OK"
 
