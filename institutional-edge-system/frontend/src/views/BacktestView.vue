@@ -474,9 +474,21 @@
             <!-- Row 2: Risk/TP/SL -->
             <div class="grid grid-cols-3 gap-2">
               <div>
-                <label class="text-[10px] text-gray-500">Risk%</label>
-                <input type="number" v-model.number="slot.risk_percent" step="0.5" min="0.1" max="5" 
-                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
+                <div class="flex justify-between items-center mb-1">
+                   <label class="text-[10px] text-gray-500">Mode</label>
+                   <select v-model="slot.volume_mode" class="bg-gray-700 text-[10px] rounded px-1 text-blue-300 border-none h-4">
+                      <option value="RISK">Risk %</option>
+                      <option value="FIXED">Lots</option>
+                   </select>
+                </div>
+                <input v-if="slot.volume_mode === 'RISK' || !slot.volume_mode" 
+                       type="number" v-model.number="slot.risk_percent" step="0.5" min="0.1" max="5" 
+                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
+                       title="Risk percentage per trade">
+                <input v-else
+                       type="number" v-model.number="slot.fixed_volume" step="0.01" min="0.01" max="50" 
+                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-cyan-300 text-xs font-bold"
+                       title="Fixed lot size">
               </div>
               <div>
                 <label class="text-[10px] text-gray-500">TP R</label>
@@ -1553,7 +1565,7 @@ const slots = ref([
   { id: 0, symbol: 'EURJPY', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     // 🇪🇺🇯🇵 EURJPY: The Beast (Momentum)
     ...symbolPresets['EURJPY'], 
-    risk_percent: 0.5, timeframe: 'H1', 
+    risk_percent: 0.5, volume_mode: 'RISK', fixed_volume: 0.1, timeframe: 'H1', 
     tp_ratio: 2.0, sl_atr_multiplier: 1.2, 
     rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25,
     tsl_mode: 'TIERED', use_h1_trend_filter: true, // ✅ Momentum: H1 Filter ON
@@ -1567,7 +1579,7 @@ const slots = ref([
   { id: 1, symbol: 'XAUUSD', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     // 🥇 XAUUSD: Institutional Gold (High Win Rate)
     ...symbolPresets['XAUUSD'], 
-    risk_percent: 0.5, timeframe: 'M15', 
+    risk_percent: 0.5, volume_mode: 'RISK', fixed_volume: 0.1, timeframe: 'M15', 
     tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
     rsi_period: 9, rsi_overbought: 50, rsi_oversold: 50,
     zigzag_lookback: 10,
@@ -1577,7 +1589,7 @@ const slots = ref([
   { id: 2, symbol: 'EURGBP', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
     // 💶💷 EURGBP: The Channel (Range)
     ...symbolPresets['EURGBP'], 
-    risk_percent: 0.7, timeframe: 'H1', 
+    risk_percent: 0.7, volume_mode: 'RISK', fixed_volume: 0.1, timeframe: 'H1', 
     tp_ratio: 1.4, sl_atr_multiplier: 1.2, 
     rsi_period: 14, rsi_overbought: 60, rsi_oversold: 40,
     tsl_mode: 'ATR', tsl_atr_multiplier: 0.8, // Light trail
@@ -1929,6 +1941,8 @@ const runBacktest = async () => {
           symbol: symbol,
           direction_filter: slot.direction,
           risk_percent: slot.risk_percent,
+          volume_mode: slot.volume_mode || 'RISK',
+          fixed_volume: slot.fixed_volume || 0.1,
           tp_ratio: slot.tp_ratio,
           sl_atr_multiplier: slot.sl_atr_multiplier,
           tsl_mode: slot.tsl_mode,
@@ -1966,6 +1980,8 @@ const runBacktest = async () => {
           direction_filter: slot.direction,
           // Slot-specific settings (override shared)
           risk_percent: slot.risk_percent,
+          volume_mode: slot.volume_mode || 'RISK',
+          fixed_volume: slot.fixed_volume || 0.1,
           tp_ratio: slot.tp_ratio,
           sl_atr_multiplier: slot.sl_atr_multiplier,
           enable_vwap_strategy: slot.enable_vwap,
@@ -2304,6 +2320,8 @@ const addSlot = () => {
     ...defaultPreset,
     direction: 'BOTH',
     risk_percent: 1.0,
+    volume_mode: 'RISK',
+    fixed_volume: 0.1,
     timeframe: 'M5',
     tp_ratio: 2.0,
     sl_atr_multiplier: 1.5,
