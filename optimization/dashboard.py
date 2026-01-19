@@ -85,34 +85,25 @@ with st.sidebar:
     with st.expander("📊 EA & Market Settings", expanded=True):
         # Scan for EAs - check Docker path first, then local
         DATA_DIR = os.environ.get("DATA_DIR", "")
-        if DATA_DIR and os.path.exists(f"{DATA_DIR}/ea_sources"):
-            mt5_dir = f"{DATA_DIR}/ea_sources"
-            compiled_dir = f"{DATA_DIR}/ea_compiled"
-        else:
-            # Local development path
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            mt5_dir = os.path.join(base_dir, "mt5")
-            # Also check data/ea_sources for local Docker volume testing
-            alt_path = os.path.join(os.path.dirname(__file__), "data", "ea_sources")
-            if os.path.exists(alt_path):
-                mt5_dir = alt_path
-            compiled_dir = mt5_dir  # Same dir for local
-        
+        # Use MT5 Experts directory directly
+        MT5_EXPERTS_DIR = r"C:\Users\Ing Guido\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts"
         
         found_eas = []
-        if os.path.exists(mt5_dir):
-            for f in os.listdir(mt5_dir):
-                if f.endswith(".mq5"): found_eas.append(f)
+        if os.path.exists(MT5_EXPERTS_DIR):
+            # Show both .mq5 and .ex5 files
+            for f in os.listdir(MT5_EXPERTS_DIR):
+                if f.endswith((".mq5", ".ex5")): 
+                    found_eas.append(f)
         
         selected_ea_file = st.selectbox(
-            "Select Bot Source (.mq5)", 
-            found_eas if found_eas else ["No .mq5 found"],
-            help="MT5 can backtest directly from .mq5 source files"
+            "Select Bot (.mq5 or .ex5)", 
+            found_eas if found_eas else ["No EAs found"],
+            help="Select a compiled .ex5 or source .mq5 file from MT5 Experts folder"
         )
         
-        # Use .mq5 file directly (no compilation needed for backtesting)
+        # Build full path
         if selected_ea_file and found_eas:
-            ea_path_ex5 = os.path.join(mt5_dir, selected_ea_file)
+            ea_path_ex5 = os.path.join(MT5_EXPERTS_DIR, selected_ea_file)
         else:
             ea_path_ex5 = ""
         
@@ -124,7 +115,7 @@ with st.sidebar:
         
         col1, col2 = st.columns(2)
         with col1:
-            symbol = st.selectbox("Symbol", ["XAUUSD", "EURUSD", "GBPUSD", "NZDUSD", "USDJPY"])
+            symbol = st.selectbox("Symbol", ["XAUUSD", "XAUUSDm", "EURUSD", "EURUSDm", "GBPUSD", "NZDUSD", "USDJPY", "BTCUSD", "BTCUSDm"])
         with col2:
             timeframe = st.selectbox("Timeframe", ["PERIOD_M15", "PERIOD_M1", "PERIOD_M5", "PERIOD_M30", "PERIOD_H1", "PERIOD_H4", "PERIOD_D1"])
         
@@ -172,7 +163,7 @@ with st.sidebar:
 # --- MAIN AREA ---
 
 # Create tabs
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["⚙️ Parameter Setup", "🚀 Optimization", "📊 Results", "🔬 Analytics", "🔧 Compile"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["⚙️ Parameter Setup", "🚀 Optimization", "📊 Results", "🔬 Analytics", "🔧 Compile", "🧪 Quant Lab"])
 
 with tab1:
     st.markdown("### Auto-Discovery & Configuration")
@@ -182,9 +173,19 @@ with tab1:
         if st.button("🔍 Scan Bot Parameters", type="primary", use_container_width=True):
             if selected_ea_file and found_eas:
                 import mq5_parser
-                full_path = os.path.join(mt5_dir, selected_ea_file)
                 
-                with st.spinner(f"Parsing {selected_ea_file}..."):
+                # If .ex5 selected, try to find corresponding .mq5
+                full_path = ea_path_ex5
+                if full_path.endswith(".ex5"):
+                    mq5_path = full_path.replace(".ex5", ".mq5")
+                    if os.path.exists(mq5_path):
+                        full_path = mq5_path
+                        st.info(f"📝 Using source file: {os.path.basename(mq5_path)}")
+                    else:
+                        st.error(f"❌ Source file .mq5 not found. Cannot parse compiled .ex5 files.")
+                        st.stop()
+                
+                with st.spinner(f"Parsing {os.path.basename(full_path)}..."):
                     raw_params = mq5_parser.parse_mq5_inputs(full_path)
                     optimized_config = mq5_parser.generate_optimization_config(raw_params)
                     
@@ -308,6 +309,7 @@ with tab2:
                 lev = data.get('leverage', 0)
                 dep = data.get('deposit', 0)
                 vol = data.get('volume', '-')
+                sym = data.get('symbol', '-')
             else:
                 pf = float(data) if data else 0.0
                 net = 0.0
@@ -318,6 +320,7 @@ with tab2:
                 lev = 0
                 dep = 0
                 vol = '-'
+                sym = '-'
                 
             metric_trial.metric("Current Trial", f"{trial_num + 1}/{total_trials}")
             metric_status.metric("Status", status)
@@ -328,6 +331,7 @@ with tab2:
                 trial_id = trial_num + 1
                 row = {
                     "Trial": trial_id,
+                    "Symbol": sym,
                     "Profit Factor": round(pf, 2),
                     "Net Profit": f"${net:.2f}",
                     "Max DD": f"{dd:.2f}%",
@@ -604,48 +608,31 @@ with tab4:
 # --- TAB 5: COMPILE ---
 with tab5:
     st.markdown("### 🔧 MQL5 Compiler")
-    st.info("Compile your .mq5 source files to .ex5 executables directly from the dashboard.")
+    st.info("Compile your .mq5 source files to .ex5 executables using local MetaEditor.")
     
-    # Configuration
-    MT5_API_URL = os.environ.get("MT5_API_URL", "http://localhost:8080")
+    # Paths
+    METAEDITOR_PATH = r"C:\Program Files\MetaTrader 5\metaeditor64.exe"
+    MT5_EXPERTS_DIR = r"C:\Users\Ing Guido\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts"
+    EA_SOURCES_DIR = MT5_EXPERTS_DIR  # Use MT5 directory directly
     
-    # Check MT5 API Status
-    col_status, col_refresh = st.columns([3, 1])
-    with col_status:
-        try:
-            import requests
-            status_resp = requests.get(f"{MT5_API_URL}/status", timeout=5)
-            if status_resp.ok:
-                status_data = status_resp.json()
-                if status_data.get("metaeditor_installed"):
-                    st.success("✅ MT5 Container Connected - MetaEditor Available")
-                else:
-                    st.warning("⚠️ MT5 Connected but MetaEditor not found. Please install MT5 via VNC (port 5900)")
-            else:
-                st.error("❌ MT5 API returned error")
-        except requests.exceptions.ConnectionError:
-            st.error("❌ Cannot connect to MT5 container. Is it running? (`docker-compose up`)")
-        except Exception as e:
-            st.error(f"❌ API Error: {e}")
-    
-    with col_refresh:
-        if st.button("🔄 Refresh"):
-            st.rerun()
+    # Check MetaEditor
+    if os.path.exists(METAEDITOR_PATH):
+        st.success("✅ MetaEditor Found")
+    else:
+        st.error(f"❌ MetaEditor not found at {METAEDITOR_PATH}")
     
     st.markdown("---")
     
     # File Lists
     col_sources, col_compiled = st.columns(2)
     
-    try:
-        files_resp = requests.get(f"{MT5_API_URL}/files", timeout=5)
-        files_data = files_resp.json() if files_resp.ok else {"sources": [], "compiled": []}
-    except:
-        files_data = {"sources": [], "compiled": []}
+    # Get source files
+    sources = []
+    if os.path.exists(EA_SOURCES_DIR):
+        sources = [f for f in os.listdir(EA_SOURCES_DIR) if f.endswith(".mq5")]
     
     with col_sources:
         st.markdown("#### 📄 Source Files (.mq5)")
-        sources = files_data.get("sources", [])
         
         if sources:
             for mq5_file in sources:
@@ -656,20 +643,33 @@ with tab5:
                     if st.button("Compile", key=f"compile_{mq5_file}"):
                         with st.spinner(f"Compiling {mq5_file}..."):
                             try:
-                                resp = requests.get(f"{MT5_API_URL}/compile", params={"file": mq5_file}, timeout=120)
-                                result = resp.json()
-                                if result.get("success"):
+                                import subprocess
+                                source_path = os.path.join(EA_SOURCES_DIR, mq5_file)
+                                
+                                # Compile using MetaEditor CLI
+                                cmd = [METAEDITOR_PATH, "/compile:" + source_path, "/log"]
+                                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                                
+                                # Check if .ex5 exists
+                                ex5_path = source_path.replace(".mq5", ".ex5")
+                                if os.path.exists(ex5_path):
                                     st.success(f"✅ Compiled: {mq5_file}")
                                 else:
-                                    st.error(f"❌ Failed: {result.get('output', 'Unknown error')}")
+                                    st.error(f"❌ Compilation failed. Check MetaEditor logs.")
+                                    if result.stderr:
+                                        st.code(result.stderr, language="text")
                             except Exception as e:
                                 st.error(f"❌ Error: {e}")
         else:
-            st.info("No .mq5 files found in `/data/ea_sources/`")
+            st.info(f"No .mq5 files found in {EA_SOURCES_DIR}")
     
     with col_compiled:
         st.markdown("#### ✅ Compiled Files (.ex5)")
-        compiled = files_data.get("compiled", [])
+        
+        # Get compiled files
+        compiled = []
+        if os.path.exists(MT5_EXPERTS_DIR):
+            compiled = [f for f in os.listdir(MT5_EXPERTS_DIR) if f.endswith(".ex5")]
         
         if compiled:
             for ex5_file in compiled:
@@ -677,26 +677,173 @@ with tab5:
         else:
             st.info("No compiled files yet")
     
-    # Compilation Log
+    # Quick Compile All button
     st.markdown("---")
-    st.markdown("#### 📋 Last Compilation Log")
-    
-    try:
-        log_resp = requests.get(f"{MT5_API_URL}/log", timeout=5)
-        if log_resp.ok:
-            log_data = log_resp.json()
-            if log_data.get("file"):
-                status_icon = "✅" if log_data.get("success") else "❌"
-                st.markdown(f"**{status_icon} {log_data.get('file')}**")
-                st.code(log_data.get("output", "No output"), language="text")
-            else:
-                st.info("No compilation logs yet")
+    if st.button("🚀 Compile All"):
+        if sources:
+            progress_bar = st.progress(0)
+            for idx, mq5_file in enumerate(sources):
+                try:
+                    source_path = os.path.join(EA_SOURCES_DIR, mq5_file)
+                    
+                    cmd = [METAEDITOR_PATH, "/compile:" + source_path, "/log"]
+                    subprocess.run(cmd, capture_output=True, timeout=30)
+                    
+                    progress_bar.progress((idx + 1) / len(sources))
+                except Exception as e:
+                    st.warning(f"⚠️ Failed to compile {mq5_file}: {e}")
+            
+            st.success("✅ Batch compilation complete!")
         else:
-            st.info("Log not available")
-    except:
-        st.info("Cannot fetch logs - MT5 container may not be running")
+            st.warning("No .mq5 files to compile")
+
+
 
 # Footer
+
+# --- TAB 6: QUANT LAB ---
+with tab6:
+    st.header("🧪 Quant Lab: Genetic Alpha Discovery")
+    st.info("🧬 Evolutionary AI that discovers new trading formulas/indicators automatically.")
+    
+    # Import Quant Lab Modules Dynamically
+    ql_path = os.path.join(os.path.dirname(__file__), "quant_lab")
+    if ql_path not in sys.path:
+        sys.path.append(ql_path)
+    
+    col_q1, col_q2 = st.columns([1, 1])
+    
+    with col_q1:
+        st.subheader("1. ⛏️ Data Miner")
+        q_symbol = st.text_input("Symbol", "XAUUSD")
+        q_tf = st.selectbox("Timeframe", ["M1", "M5", "M15", "H1", "H4", "D1"], index=3)
+        q_bars = st.number_input("Bars needed", min_value=1000, value=20000, step=1000)
+        
+        if st.button("Download Training Data", type="primary"):
+            try:
+                import data_miner
+                with st.spinner(f"Downloading {q_bars} bars of {q_symbol}..."):
+                    # Redirect output capture not easily possible here without complexity, just run
+                    data_miner.run_miner(q_symbol, q_tf, q_bars)
+                    st.success(f"✅ Data for {q_symbol} {q_tf} downloaded successfully!")
+            except Exception as e:
+                st.error(f"Mining Failed: {e}")
+                
+    with col_q2:
+        st.subheader("2. 🧬 Genetic Engine")
+        
+        # Scan for CSVs
+        data_dir = os.path.join(ql_path, "data")
+        if os.path.exists(data_dir):
+            files = [f for f in os.listdir(data_dir) if f.endswith("_training.csv")]
+        else:
+            files = []
+            
+        if files:
+            q_file = st.selectbox("Select Training Dataset", files)
+            
+            if st.button("🧬 Evolve New Strategy"):
+                try:
+                    import genetic_miner
+                    target_path = os.path.join(data_dir, q_file)
+                    
+                    progress_text = "Operation in progress. Please wait."
+                    my_bar = st.progress(0, text=progress_text)
+                    
+                    with st.spinner("🧬 Evolving 20 generations of mathematical formulas... (This takes 30-60s)"):
+                        # We can't easily hook into gplearn progress, so just spinner
+                        best_program = genetic_miner.run_genetic_evolution(target_path)
+                        my_bar.progress(100, text="Evolution Complete!")
+                        
+                    st.success("🏆 Alpha Found!")
+                    st.code(str(best_program), language="lisp")
+                    st.caption("👆 That's the logic! (LISP format). 'mul'=multiply, 'sub'=subtract...")
+                    
+                    # Save for builder
+                    st.session_state['last_genetic_formula'] = str(best_program)
+                    
+                except Exception as e:
+                    st.error(f"Evolution Failed: {e}")
+                    
+            # 3. Builder
+            if 'last_genetic_formula' in st.session_state:
+                st.markdown("---")
+                st.subheader("3. 🔧 Bot Builder")
+                
+                # Scan available templates in mt5/ folder
+                mt5_master_dir = r"C:\Users\Ing Guido\Desktop\Proyectos\advanced_fibonacci_pro_v7\mt5"
+                if os.path.exists(mt5_master_dir):
+                     # Exclude generated bots to avoid recursion, keep originals
+                     templates = [f for f in os.listdir(mt5_master_dir) if f.endswith(".mq5") and "_Gen_" not in f] 
+                else:
+                     templates = []
+                
+                if not templates:
+                    st.error(f"No .mq5 templates found in {mt5_master_dir}")
+                else:
+                    selected_template = st.selectbox("Select Template Bot (Base)", templates)
+                    
+                    if st.button("🏗️ Build Genetic Bot Now", type="primary"):
+                        try:
+                            import mq5_builder
+                            
+                            source_ea = os.path.join(mt5_master_dir, selected_template)
+                            
+                            # Generated name: TemplateName_Gen_v1.mq5
+                            base_name = selected_template.replace(".mq5", "")
+                            target_filename = f"{base_name}_Gen_v1.mq5"
+                            target_ea = os.path.join(mt5_master_dir, target_filename)
+                            
+                            if not os.path.exists(source_ea):
+                                 st.error(f"❌ Critical: Master file not found at {source_ea}")
+                            else:
+                                # Check for markers first
+                                with open(source_ea, 'r', encoding='utf-8') as f:
+                                    if "[[GENETIC_LOGIC_START]]" not in f.read():
+                                        st.error(f"❌ The selected template '{selected_template}' does not have the injection markers!")
+                                        st.code("// [[GENETIC_LOGIC_START]]\n...\n// [[GENETIC_LOGIC_END]]", language="cpp")
+                                        st.stop()
+
+                                success = mq5_builder.inject_formula_into_ea(
+                                    st.session_state['last_genetic_formula'],
+                                    source_ea,
+                                    target_ea
+                                )
+                                if success:
+                                    st.success(f"✅ Bot Created Successfully: {target_filename}")
+                                    st.balloons()
+                                    
+                                    # 2. Copy to Optimization Sources
+                                    opt_source_path = os.path.join(r"C:\Users\Ing Guido\Desktop\Proyectos\advanced_fibonacci_pro_v7\optimization\data\ea_sources", target_filename)
+                                    try:
+                                        import shutil
+                                        os.makedirs(os.path.dirname(opt_source_path), exist_ok=True)
+                                        shutil.copy(target_ea, opt_source_path)
+                                        st.success(f"✅ Ready for Optimization: {target_filename}")
+                                    except Exception as e:
+                                        st.warning(f"⚠️ Failed to copy to Optimization Sources: {e}")
+
+                                    # 3. Copy to MT5 Terminal Experts
+                                    terminal_dir = r"C:\Users\Ing Guido\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts"
+                                    terminal_path = os.path.join(terminal_dir, target_filename)
+                                    try:
+                                        import shutil
+                                        shutil.copy(target_ea, terminal_path)
+                                        st.success("✅ Installed to MT5 Terminal Experts Folder!")
+                                    except Exception as e:
+                                        st.warning(f"⚠️ Could not auto-install to Terminal: {e}")
+                                        
+                                else:
+                                    st.error("Builder returned False.")
+                                
+                        except Exception as e:
+                            st.error(f"Build Failed: {e}")
+            else:
+                pass # logic for when to save session state is inside the button above
+                
+        else:
+            st.warning("⚠️ No data found. Run Data Miner first.")
+
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666; padding: 2rem;'>"

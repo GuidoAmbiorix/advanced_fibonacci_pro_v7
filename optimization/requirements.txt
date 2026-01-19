@@ -9,3 +9,5 @@ shap
 scikit-learn
 matplotlib
 requests
+gplearn
+MetaTrader5

@@ -34,39 +34,48 @@ def run_optimization_task(study_name, n_trials, param_config, ea_config, status_
                 counter += 1
             used_names.add(safe_p_name)
             
+            
             try:
                 if p_def['type'] == 'float':
                     trial_params[p_name] = trial.suggest_float(safe_p_name, p_def['min'], p_def['max'], step=p_def.get('step', None))
                 elif p_def['type'] == 'int':
                     trial_params[p_name] = trial.suggest_int(safe_p_name, int(p_def['min']), int(p_def['max']), step=int(p_def.get('step', 1)))
                 elif p_def['type'] == 'categorical':
+                    # Skip if no choices defined (boolean params without proper config)
+                    if 'choices' not in p_def or not p_def['choices']:
+                        continue
                     trial_params[p_name] = trial.suggest_categorical(safe_p_name, p_def['choices'])
             except Exception as e:
-                # If parameter suggestion fails, skip it and log
-                print(f"Warning: Failed to add parameter {safe_p_name}: {e}")
+                # If parameter suggestion fails, skip it silently
                 continue
                 
         # Report Trial Start
         if status_callback:
             status_callback(trial.number, n_trials, "Running", 0.0)
             
-        # Run backtest using CUSTOM BACKTESTER (MT5 Python API)
+        # Run backtest using REAL MT5 STRATEGY TESTER
         try:
-            backtester = get_backtester()
+            from lib.mt5_strategy_tester import get_mt5_tester
+            backtester = get_mt5_tester()
+            
+            # Format dates to MT5 Format (YYYY.MM.DD)
+            d_from = ea_config['date_from'].replace("-", ".")
+            d_to = ea_config['date_to'].replace("-", ".")
             
             result = backtester.run_backtest(
-                ea_path=ea_config['ea_path'],
+                ea_name=ea_config['ea_path'], # Filename relative to Experts
                 symbol=ea_config['symbol'],
                 timeframe=ea_config['timeframe'],
-                date_from=ea_config['date_from'],
-                date_to=ea_config['date_to'],
+                date_from=d_from,
+                date_to=d_to,
                 deposit=ea_config.get('deposit', 10000),
                 leverage=ea_config.get('leverage', 500),
-                parameters=trial_params,
-                progress_callback=lambda msg, pct: status_callback(
-                    trial.number, n_trials, msg, pct / 100.0
-                ) if status_callback else None
+                parameters=trial_params
             )
+            
+            # Since MT5 CLI is blocking, we report progress 0 -> 100 instantly
+            if status_callback:
+                status_callback(trial.number, n_trials, "Processing...", 50.0)
             
             profit_factor = result.get('profit_factor', 0.0)
             net_profit = result.get('total_net_profit', 0.0)
@@ -88,6 +97,7 @@ def run_optimization_task(study_name, n_trials, param_config, ea_config, status_
             print(f"❌ Backtest error: {e}")
             profit_factor = 0.0
             max_dd = 100.0
+            win_rate = 0.0
         
         # Ensure valid Profit Factor
         if profit_factor is None or profit_factor != profit_factor: profit_factor = 0.0
@@ -160,7 +170,8 @@ def run_optimization_task(study_name, n_trials, param_config, ea_config, status_
                 "timeframe": trial.user_attrs.get("timeframe", ""),
                 "leverage": trial.user_attrs.get("leverage", 0),
                 "deposit": trial.user_attrs.get("deposit", 0),
-                "volume": vol
+                "volume": vol,
+                "symbol": ea_config.get("symbol", "Unknown")
             }
             status_callback(current_run_trial[0] - 1, n_trials, "Completed", metrics)
         

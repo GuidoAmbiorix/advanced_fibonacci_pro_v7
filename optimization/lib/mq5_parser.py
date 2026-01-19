@@ -11,8 +11,28 @@ def parse_mq5_inputs(file_path):
 
     params = []
     
-    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-        lines = f.readlines()
+    lines = []
+    
+    # Try reading with different encodings
+    encodings = ['utf-8', 'utf-16', 'utf-16-le', 'cp1252']
+    
+    content = None
+    for enc in encodings:
+        try:
+            with open(file_path, "r", encoding=enc) as f:
+                content = f.read()
+            # Basic validation: check if content looks like text
+            if "input" in content or "#property" in content:
+                break
+        except Exception:
+            continue
+            
+    if content:
+        lines = content.splitlines()
+    else:
+        # Final fallback
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()
         
     current_group = "Default"
     

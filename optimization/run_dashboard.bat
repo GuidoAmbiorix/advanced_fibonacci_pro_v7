@@ -1,37 +1,24 @@
 @echo off
-cd /d "%~dp0"
-
+TITLE Quantum Trading Dashboard
 echo ===================================================
-echo 🛡️  OPTIMA: Institutional AI Optimization Dashboard
+echo 🚀 Starting Quantum Trading Dashboard
 echo ===================================================
 
 echo.
-echo 📦 Checking Python...
-python --version > nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo ❌ Python is not installed or not in PATH.
-    echo Please install Python 3.10+ and Add to PATH.
-    pause
-    exit /b
-)
-
-echo.
-echo 📦 Checking/Installing Dependencies...
+echo 📦 Checking Dependencies...
 pip install -r requirements.txt
 if %ERRORLEVEL% NEQ 0 (
-    echo ⚠️ pip install failed. Ensure internet connection.
+    echo ❌ Failed to install dependencies!
     pause
     exit /b
-) else (
-    echo ✅ Dependencies ready.
 )
 
 echo.
-echo 🚀 Launching Dashboard...
-echo    (Press Ctrl+C to stop)
-echo.
+echo 🧹 Cleaning previous session data...
+:: Optional: Remove-Item "data\optimization.db" -Force
 
-:: Use python -m streamlit to avoid PATH issues
-python -m streamlit run dashboard.py
+echo.
+echo 🌐 Launching Streamlit...
+python -m streamlit run dashboard.py --server.port 8501 --server.address localhost
 
 pause

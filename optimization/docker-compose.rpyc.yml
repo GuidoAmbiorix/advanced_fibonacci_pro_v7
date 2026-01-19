@@ -1,0 +1,33 @@
+version: '3.8'
+
+# ============================================================================
+# MT5 OPTIMIZATION - RPyC Server for Python Backtesting
+# ============================================================================
+# Uses gmag11/metatrader5_vnc image (proven to work)
+# ============================================================================
+
+services:
+  # ==========================================================================
+  # MT5 TERMINAL (with VNC + RPyC)
+  # ==========================================================================
+  mt5:
+    image: gmag11/metatrader5_vnc:latest
+    container_name: mt5_optimization_server
+    ports:
+      - "3000:3000"   # noVNC Web Interface (for manual setup/debug)
+      - "8001:8001"   # RPyC Server (for Python API access)
+    environment:
+      - CUSTOM_USER=trader
+      - PASSWORD=trading
+      - VNCPASSWORD=trading
+    volumes:
+      # Persist MT5 configuration and data
+      - mt5_config:/config
+    restart: unless-stopped
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  mt5_config:
+    name: mt5_optimization_config

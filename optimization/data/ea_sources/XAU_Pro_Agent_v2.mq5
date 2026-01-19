@@ -160,6 +160,24 @@ int dailyTrades = 0;
 double g_StructureSL = 0; // Structure-based SL storage
 
 //+------------------------------------------------------------------+
+//| FUNCTION PROTOTYPES (Forward Declarations)                        |
+//+------------------------------------------------------------------+
+void UpdateDashboard();
+void ManageTrade();
+bool IsNewBar();
+bool CheckKillzone();
+void UpdateIndicators();
+void UpdateStructure();
+void ManageOrderBlocks();
+void ManageFVGs();
+void ExecuteTrade(ENUM_ORDER_TYPE type, string comment);
+bool CheckCandleTrigger(string dir);
+bool CheckFibEntry(string dir);
+bool CheckTripleConfirmation(string dir);
+bool CheckSMCEntry(string dir);
+bool CheckLiquiditySweep(string dir);
+
+//+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()

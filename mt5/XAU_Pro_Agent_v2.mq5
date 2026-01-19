@@ -260,6 +260,24 @@ void OnTick()
    bool signalSell = false;
    string strategy = "";
    
+   // --- GENETIC ALPHA INJECTION POINT ---
+   // Python will inject formula here. 
+   // Features available for Genetic Engine:
+   double feat_RSI = g_RSI;
+   double feat_ATR = g_ATR;
+   double feat_Close = iClose(_Symbol, 0, 0);
+   double feat_Open = iOpen(_Symbol, 0, 0);
+   double feat_Mom = (iClose(_Symbol, 0, 0) - iClose(_Symbol, 0, 10)); // Simple Momentum
+   
+   // [[GENETIC_LOGIC_START]]
+   double geneticSignal = 0.0;
+   // [[GENETIC_LOGIC_END]]
+   
+   // Genetic Overrides (Threshold > 0.01 for raw return prediction)
+   if(geneticSignal > 0.001) { signalBuy = true; strategy = "Genetic_Alpha_Buy"; }
+   if(geneticSignal < -0.001) { signalSell = true; strategy = "Genetic_Alpha_Sell"; }
+   // -------------------------------------
+   
    // Trend Check (EMA 200) - Core Engine Logic
    double currentPrice = symbolInfo.Bid();
    bool isEMABullish = currentPrice > g_EMA200;
