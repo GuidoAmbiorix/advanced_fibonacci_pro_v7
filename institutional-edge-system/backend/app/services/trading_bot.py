@@ -13,7 +13,7 @@ from loguru import logger
 from app.engines.factory import EngineFactory
 from app.core.mt5_connector import MT5Connector
 from app.services.trade_manager import TradeManager
-# from app.services.risk_manager import AdaptiveRiskManager # Deleted
+from app.services.risk_manager import risk_manager # Global Singleton
 from app.services.portfolio_manager import PortfolioManager
 from app.services.discord_service import DiscordService
 from app.models.database import BotConfig, Trade, Signal
@@ -64,6 +64,10 @@ class TradingBot:
         """Start the trading bot"""
         self.is_running = True
         logger.info("Starting trading bot {}", self.bot_config_id)
+        
+        # Initialize Risk Manager
+        if self.mt5_connector:
+            await risk_manager.initialize(self.mt5_connector)
 
         # Connect to RabbitMQ
         await self.rabbitmq.connect()
@@ -582,6 +586,12 @@ class TradingBot:
                 return
         finally:
             db.close()
+            
+        # 0.2 RISK MANAGER GATEKEEPER (Global)
+        is_allowed, risk_reason = risk_manager.check_trade_allowed(signal.symbol, 0.0)
+        if not is_allowed:
+            await self._log_activity(f"🛡️ RISK CONTROL BLOCK: {risk_reason}", "error")
+            return
 
         # 1. Check Max Trades
         if self.open_positions_count >= self.config.max_trades:
@@ -763,6 +773,15 @@ class TradingBot:
             # Save trade to database
             trade_id = await self._save_trade(signal, result, lot_size)
             self.open_positions_count += 1
+            
+            # Risk Manager: Record Trade & Update Metrics
+            risk_manager.record_trade(signal.symbol, lot_size)
+            
+            # Quick metric update (async or fire-and-forget ideal, but blocking OK for safety)
+            acc_info = self.mt5_connector.get_account_info()
+            if acc_info:
+                risk_manager.update_metrics(acc_info.get('equity', 0), acc_info.get('balance', 0))
+                
             await self._log_activity(f"✅ Trade opened successfully - Ticket: {result['ticket']}", "success")
         else:
             error_msg = result.get('error', 'Unknown error') if result else 'Unknown error'

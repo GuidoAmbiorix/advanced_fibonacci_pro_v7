@@ -1,183 +1,232 @@
 """
-Risk Manager
-Simplified risk calculation - user controls risk directly
+Risk Manager Service
+Centralized risk control for the Institutional Edge System.
+Implements Global Kill Switch, Frequency Guard, and Equity Curve Protection.
 """
 
-from typing import Tuple
+import asyncio
+from typing import Tuple, List, Deque, Optional, Dict
+from datetime import datetime, timedelta
+from collections import deque
 from loguru import logger
+from app.core.config import settings
 
+# Global Singleton Instance
+risk_manager = None
 
-class AdaptiveRiskManager:
+class RiskManager:
     """
-    Simplified Risk Management System
-
+    Centralized Risk Management System (Institutional Grade)
+    
     Features:
-    - Uses configured base risk directly
-    - Consecutive loss reduction (safety feature)
-    - No automatic volatility or drawdown adjustments
+    - Global Kill Switch (Manual & Automatic)
+    - Trade Frequency Guard (Anti-Span)
+    - Equity Curve Guard (Anti-Crash)
+    - Max Daily Loss Circuit Breaker
+    - Discord Alerting Integration
     """
 
-    # Absolute maximum risk per trade
-    ABSOLUTE_MAX_RISK = 5.0  # 5% max
+    def __init__(self):
+        # Configuration
+        self.max_daily_loss_pct = settings.MAX_DAILY_LOSS_PERCENT
+        self.max_drawdown_pct = settings.MAX_DRAWDOWN_PERCENT
+        self.max_trades_per_hour = settings.RISK_MAX_TRADES_PER_HOUR
+        self.equity_guard_pct = settings.RISK_EQUITY_GUARD_TRIGGER_PERCENT
 
-    # Minimum risk (when heavily reduced) - lowered for backtesting flexibility
-    MINIMUM_RISK = 0.001  # 0.001%
+        # State - Kill Switch
+        self.kill_switch_active: bool = False
+        self.kill_switch_reason: str = ""
+        self.kill_switch_timestamp: Optional[datetime] = None
 
-    def __init__(self, base_risk_percent: float = None):
-        """Initialize Risk Manager
+        # State - Metrics
+        self.initial_balance: float = 0.0
+        self.current_equity: float = 0.0
+        self.starting_equity_of_day: float = 0.0 # Reset daily
+        self.last_day_reset: int = datetime.utcnow().day
 
-        Args:
-            base_risk_percent: Base risk % (if None, uses ABSOLUTE_MAX_RISK)
-        """
-        self.base_risk_percent = base_risk_percent if base_risk_percent else self.ABSOLUTE_MAX_RISK
-        logger.info(
-            f"RiskManager initialized - Base: {self.base_risk_percent}%, "
-            f"Max: {self.ABSOLUTE_MAX_RISK}%, Min: {self.MINIMUM_RISK}%"
-        )
-
-    def calculate_risk_percent(
-        self,
-        market_regime: str = "NORMAL",
-        consecutive_losses: int = 0,
-        current_volatility_percentile: float = 50.0,
-        current_drawdown: float = 0.0
-    ) -> Tuple[float, str]:
-        """
-        Calculate risk percentage for next trade
-
-        Args:
-            market_regime: Market regime (unused, kept for API compatibility)
-            consecutive_losses: Number of consecutive losing trades
-            current_volatility_percentile: Unused (kept for API compatibility)
-            current_drawdown: Unused (kept for API compatibility)
-
-        Returns:
-            Tuple of (risk_percent, reason)
-        """
-        risk = self.base_risk_percent
-        adjustments = []
-
-        # Only apply consecutive losses reduction (basic safety)
-        if consecutive_losses >= 5:
-            risk *= 0.25  # 75% reduction after 5 losses
-            adjustments.append(f"{consecutive_losses} losses → 75% reduction")
-        elif consecutive_losses >= 3:
-            risk *= 0.5  # 50% reduction after 3 losses
-            adjustments.append(f"{consecutive_losses} losses → 50% reduction")
-        elif consecutive_losses >= 2:
-            risk *= 0.75  # 25% reduction after 2 losses
-            adjustments.append(f"{consecutive_losses} losses → 25% reduction")
-
-        # Apply absolute limits
-        risk = min(risk, self.ABSOLUTE_MAX_RISK)
-        risk = max(risk, self.MINIMUM_RISK)
-
-        # Round to 2 decimals
-        risk = round(risk, 2)
-
-        # Build reason string
-        if adjustments:
-            reason = " | ".join(adjustments)
-        else:
-            reason = "Base risk - no adjustments"
-
-        return risk, reason
-
-    def should_trade(
-        self,
-        current_drawdown: float,
-        account_equity: float,
-        initial_balance: float
-    ) -> Tuple[bool, str]:
-        """
-        Determine if trading should be allowed
-
-        Args:
-            current_drawdown: Current DD percentage
-            account_equity: Current account equity
-            initial_balance: Initial account balance
-
-        Returns:
-            Tuple of (can_trade, reason)
-        """
-        # Check 1: Circuit breaker (100% DD - effectively disabled for backtesting)
-        if current_drawdown >= 100.0:
-            return False, f"Circuit breaker: Drawdown {current_drawdown:.2f}% >= 100%"
-
-        # Check 2: Equity too low (disabled for backtesting - let it blow up)
-        # if account_equity < (initial_balance * 0.5):
-        #     return False, f"Equity ${account_equity:.2f} < 50% of initial ${initial_balance:.2f}"
-
-        # All checks passed
-        return True, "Trading allowed"
-
-    def get_max_position_size(
-        self,
-        account_balance: float,
-        risk_percent: float,
-        sl_distance: float,
-        symbol: str = "EURUSD"
-    ) -> float:
-        """
-        Calculate maximum position size in lots using symbol-specific parameters.
-
-        Args:
-            account_balance: Account balance
-            risk_percent: Risk percentage to use
-            sl_distance: Stop loss distance in price units
-            symbol: Trading symbol (determines pip size and value)
-
-        Returns:
-            Position size in lots
-        """
-        from app.core.instrument_config import get_instrument_profile
+        # State - History
+        # Track trade timestamps for frequency guard
+        self.trade_timestamps: Deque[datetime] = deque(maxlen=self.max_trades_per_hour * 2)
         
-        profile = get_instrument_profile(symbol)
-        pip_size = profile.pip_size
-        pip_value = profile.pip_value_per_lot
+        # Track equity history for curve slope detection (last 60 checks ~ 1 hour if checked minutely)
+        self.equity_history: Deque[Tuple[datetime, float]] = deque(maxlen=60) 
+
+        # Socket
+        self.sio = None
+
+        logger.info(f"🛡️ RiskManager initialized | Max DD: {self.max_drawdown_pct}% | Max Daily: {self.max_daily_loss_pct}%")
+
+    def set_socket(self, sio_instance):
+        """Set Socket.IO instance for real-time updates"""
+        self.sio = sio_instance
+
+    async def emit_state(self):
+        """Broadcast current risk state to all clients"""
+        if not self.sio: return
         
-        # Apply risk multiplier for high-volatility instruments
-        adjusted_risk = risk_percent * profile.risk_multiplier
-        risk_amount = account_balance * (adjusted_risk / 100.0)
+        state = {
+            "kill_switch": self.kill_switch_active,
+            "kill_switch_reason": self.kill_switch_reason,
+            "max_dd_percent": self.max_drawdown_pct,
+            "max_daily_loss_percent": self.max_daily_loss_pct,
+            "current_dd_percent": ((self.initial_balance - self.current_equity) / self.initial_balance * 100) if self.initial_balance > 0 else 0,
+            "daily_loss_percent": ((self.starting_equity_of_day - self.current_equity) / self.starting_equity_of_day * 100) if self.starting_equity_of_day > 0 else 0,
+            "trades_this_hour": len([t for t in self.trade_timestamps if t > datetime.utcnow() - timedelta(hours=1)])
+        }
+        await self.sio.emit('risk_update', state)
 
-        if sl_distance == 0:
-            return 0.0
+    async def initialize(self, mt5_connector):
+        """Initialize with account data"""
+        if mt5_connector and mt5_connector.connected:
+            acc = mt5_connector.get_account_info()
+            if acc:
+                self.initial_balance = acc.get('balance', 0.0)
+                self.current_equity = acc.get('equity', 0.0)
+                self.starting_equity_of_day = self.current_equity
+                logger.info(f"🛡️ RiskManager Synced: Balance=${self.initial_balance}, Equity=${self.current_equity}")
 
-        # Convert SL distance to pips using symbol-specific pip size
-        sl_pips = sl_distance / pip_size
+    def trigger_kill_switch(self, reason: str, source: str = "SYSTEM"):
+        """Activates the Global Kill Switch"""
+        if self.kill_switch_active:
+            return # Already active
 
-        # Calculate lot size: Risk Amount / (SL in pips * pip value)
-        lot_size = risk_amount / (sl_pips * pip_value)
+        self.kill_switch_active = True
+        self.kill_switch_reason = reason
+        self.kill_switch_timestamp = datetime.utcnow()
+        
+        logger.critical(f"💀 GLOBAL KILL SWITCH TRIGGERED by {source}: {reason}")
+        
+        # Async alert
+        asyncio.create_task(self._send_alert(
+            title="💀 KILL SWITCH ACTIVATED",
+            message=f"Trading Halted Permanently.\n**Reason:** {reason}\n**Source:** {source}",
+            level="CRITICAL"
+        ))
+        asyncio.create_task(self.emit_state())
 
-        # Round to 2 decimals (standard lot precision)
-        lot_size = round(lot_size, 2)
+    def reset_kill_switch(self, source: str = "ADMIN"):
+        """Deactivates the Kill Switch"""
+        self.kill_switch_active = False
+        self.kill_switch_reason = ""
+        self.kill_switch_timestamp = None
+        logger.warning(f"🛡️ Kill Switch RESET by {source}. Trading Resumed.")
+        
+        asyncio.create_task(self._send_alert(
+            title="🛡️ Kill Switch Reset",
+            message=f"System operations resumed by {source}.",
+            level="SUCCESS"
+        ))
+        asyncio.create_task(self.emit_state())
 
-        # Minimum lot size
-        if lot_size < 0.01:
-            lot_size = 0.01
-
-        return lot_size
-
-    def get_adjusted_risk_for_symbol(
-        self,
-        base_risk: float,
-        symbol: str
-    ) -> float:
+    def check_trade_allowed(self, symbol: str, volume: float) -> Tuple[bool, str]:
         """
-        Get risk percentage adjusted for symbol volatility.
+        Master Gatekeeper: Can we open this trade?
+        """
+        # 0. Global Kill Switch
+        if self.kill_switch_active:
+            return False, f"KILL SWITCH ACTIVE: {self.kill_switch_reason}"
+
+        # 1. Update Metrics (ensure fresh data)
+        self._check_daily_reset()
+
+        # 2. Frequency Guard
+        if self._check_frequency_violation():
+            return False, f"Frequency Guard: >{self.max_trades_per_hour} trades/hr"
+
+        # 3. Max Drawdown (Total)
+        current_dd_pct = ((self.initial_balance - self.current_equity) / self.initial_balance) * 100
+        if current_dd_pct >= self.max_drawdown_pct:
+            self.trigger_kill_switch(f"Max Drawdown Exceeded ({current_dd_pct:.2f}% > {self.max_drawdown_pct}%)")
+            return False, "Max Drawdown Exceeded"
+
+        # 4. Max Daily Loss
+        daily_loss_pct = ((self.starting_equity_of_day - self.current_equity) / self.starting_equity_of_day) * 100
+        if daily_loss_pct >= self.max_daily_loss_pct:
+            return False, f"Daily Loss Limit Hit ({daily_loss_pct:.2f}% >= {self.max_daily_loss_pct}%)"
+
+        return True, "OK"
+
+    def record_trade(self, symbol: str, volume: float):
+        """Call this AFTER a trade is successfully opened"""
+        self.trade_timestamps.append(datetime.utcnow())
+        logger.info(f"🛡️ Trade recorded: {symbol} {volume} lots")
+
+    def update_metrics(self, current_equity: float, current_balance: float):
+        """Update internal state with latest account data (call periodically)"""
+        self.current_equity = current_equity
+        # Only update initial balance if it increases (profit lock-in) or purely purely tracking logic?
+        # Standard: Initial balance is deposit. High Water Mark is better for DD.
+        # For now, keep simple: Current Equity vs Initial Balance logic.
         
-        Args:
-            base_risk: Base risk percentage from config
-            symbol: Trading symbol
+        # Add to history for Curve Guard
+        now = datetime.utcnow()
+        self.equity_history.append((now, current_equity))
+        
+        # Check Equity Curve Guard
+        self._check_equity_curve_guard()
+        
+        # Periodic state emit (throttle if needed, but safe for now)
+        asyncio.create_task(self.emit_state())
+
+    def _check_daily_reset(self):
+        """Reset daily metrics at 00:00 UTC"""
+        today = datetime.utcnow().day
+        if today != self.last_day_reset:
+            logger.info(f"🔄 RiskManager: Daily Reset (Day {self.last_day_reset} -> {today})")
+            self.starting_equity_of_day = self.current_equity
+            self.last_day_reset = today
+
+    def _check_frequency_violation(self) -> bool:
+        """Check if too many trades in last hour"""
+        if len(self.trade_timestamps) < self.max_trades_per_hour:
+            return False
             
-        Returns:
-            Adjusted risk percentage
-        """
-        from app.core.instrument_config import get_instrument_profile
+        now = datetime.utcnow()
+        one_hour_ago = now - timedelta(hours=1)
         
-        profile = get_instrument_profile(symbol)
-        adjusted_risk = base_risk * profile.risk_multiplier
+        # Count trades since 1 hour ago
+        recent_trades = sum(1 for t in self.trade_timestamps if t > one_hour_ago)
         
-        # Round to 2 decimals
-        return round(adjusted_risk, 2)
+        if recent_trades >= self.max_trades_per_hour:
+            logger.warning(f"⚠️ High Risk: {recent_trades} trades in last hour (Max: {self.max_trades_per_hour})")
+            return True
+            
+        return False
 
+    def _check_equity_curve_guard(self):
+        """
+        Detect sharp equity drops (Crash Protection)
+        If Equity drops > X% in last hour, Kill Switch.
+        """
+        if len(self.equity_history) < 5:
+            return
+
+        now = datetime.utcnow()
+        one_hour_ago = now - timedelta(hours=1)
+        
+        # Get oldest reading within 1 hour
+        oldest_val = None
+        for t, equity in self.equity_history:
+            if t > one_hour_ago:
+                oldest_val = equity
+                break
+        
+        if oldest_val is None:
+            return
+
+        # Calculate Drop
+        drop_pct = ((oldest_val - self.current_equity) / oldest_val) * 100
+        
+        if drop_pct >= self.equity_guard_pct:
+            msg = f"📉 Equity Crash Detected: -{drop_pct:.2f}% in <1 hour"
+            self.trigger_kill_switch(msg, source="EQUITY_GUARD")
+
+    async def _send_alert(self, title, message, level):
+        try:
+            from app.services.alert_service import alert_service
+            await alert_service.send_alert(title, message, level)
+        except Exception as e:
+            logger.error(f"Failed to send risk alert: {e}")
+
+# Initialize Global Instance
+risk_manager = RiskManager()

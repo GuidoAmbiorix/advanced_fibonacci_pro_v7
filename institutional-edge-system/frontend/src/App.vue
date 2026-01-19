@@ -70,4 +70,38 @@ const isStreamMode = computed(() => route.path === '/stream')
 function togglePrivacy() {
   privacyMode.value = !privacyMode.value
 }
+
+// 🛡️ MEMORY WATCHDOG (Eternal Run Protection)
+import { onMounted, onUnmounted } from 'vue'
+
+const MAX_MEMORY_MIB = 500
+const CHECK_INTERVAL_MS = 60000 // Check every minute
+
+let memoryInterval = null
+
+const checkMemory = () => {
+  if (performance && performance.memory) {
+    const usedMB = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)
+    // console.debug(`🧠 Memory Usage: ${usedMB} MB`)
+    
+    if (usedMB > MAX_MEMORY_MIB) {
+      console.error(`🚨 HIGH MEMORY USAGE (${usedMB} MB) DETECTED! RELOADING TO PREVENT CRASH...`)
+      // Force garbage collection via reload
+      window.location.reload()
+    }
+  }
+}
+
+onMounted(() => {
+  if (performance && performance.memory) {
+     memoryInterval = setInterval(checkMemory, CHECK_INTERVAL_MS)
+     console.log('🛡️ Memory Watchdog Active')
+  } else {
+    // console.warn('⚠️ performance.memory API not supported in this browser')
+  }
+})
+
+onUnmounted(() => {
+  if (memoryInterval) clearInterval(memoryInterval)
+})
 </script>

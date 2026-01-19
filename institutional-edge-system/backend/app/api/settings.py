@@ -73,3 +73,36 @@ async def update_risk_profile(bot_id: int, settings: dict, db: Session = Depends
     db.commit()
     db.refresh(profile)
     return profile
+
+# ============================================================================
+# GLOBAL RISK CONTROL (KILL SWITCH)
+# ============================================================================
+from app.services.risk_manager import risk_manager
+from pydantic import BaseModel
+
+class KillSwitchValid(BaseModel):
+    active: bool
+
+@router.post("/kill-switch")
+async def set_global_kill_switch(payload: KillSwitchValid):
+    """
+    Manually toggle Global Kill Switch
+    """
+    if payload.active:
+        risk_manager.trigger_kill_switch("Manual Admin Override", source="USER_REQUEST")
+    else:
+        risk_manager.reset_kill_switch(source="USER_REQUEST")
+    
+    return {
+        "status": "success", 
+        "kill_switch": risk_manager.kill_switch_active,
+        "reason": risk_manager.kill_switch_reason
+    }
+
+@router.get("/kill-switch")
+async def get_kill_switch_status():
+    """Get current Kill Switch status"""
+    return {
+        "active": risk_manager.kill_switch_active,
+        "reason": risk_manager.kill_switch_reason
+    }

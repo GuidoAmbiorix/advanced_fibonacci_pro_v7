@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     MAX_RISK_PERCENT: float = 5.0
     MAX_DRAWDOWN_PERCENT: float = 7.0  # Max Total Drawdown
     MAX_DAILY_LOSS_PERCENT: float = 3.0 # Max Daily Loss
+    RISK_MAX_TRADES_PER_HOUR: int = 10
+    RISK_EQUITY_GUARD_TRIGGER_PERCENT: float = 5.0 # Stop if equity drops 5% quickly
     MIN_CONFLUENCE_SCORE: int = 6
 
     # Database

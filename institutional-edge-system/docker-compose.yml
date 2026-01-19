@@ -37,11 +37,18 @@ services:
       - MT5_LOGIN=${MT5_LOGIN}
       - MT5_PASSWORD=${MT5_PASSWORD}
       - MT5_SERVER=${MT5_SERVER}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
     depends_on:
       - mt5
     volumes:
       - ${PROJECT_ROOT_HOST:-.}/backend/app:/app/app
       - backend_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - bot-net
       - trading_network

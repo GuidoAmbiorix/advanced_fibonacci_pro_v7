@@ -107,9 +107,17 @@ class MT5Connector:
             }
         else:
             self.timeframe_map = {
-                'M1': 1, 'M5': 5, 'M15': 15, 'M30': 30,
                 'H1': 60, 'H4': 240, 'D1': 1440, 'W1': 10080, 'MN1': 43200,
             }
+
+        # ============ CIRCUIT BREAKER STATE ============
+        self.circuit_breaker = {
+            "MARKET_CLOSED": {"active": False, "cooldown": 3600, "last_trigger": 0},
+            "CONNECTION_UNSTABLE": {"active": False, "cooldown": 300, "last_trigger": 0},
+            "CONTEXT_BUSY": {"active": False, "cooldown": 5, "last_trigger": 0}
+        }
+        self.last_heartbeat = 0
+
 
     def _normalize_symbol(self, symbol: str) -> str:
         """Normalize symbol name by handling broker suffixes."""
@@ -122,13 +130,44 @@ class MT5Connector:
         suffix = settings.MT5_SYMBOL_SUFFIX
         if suffix and not symbol.endswith(suffix):
             suffixed_symbol = f"{symbol}{suffix}"
-            info = mt5.symbol_info(suffixed_symbol)
-            if info is not None:
-                logger.info(f"Symbol {symbol} resolved to {suffixed_symbol}")
+            if self._cache_symbol_specs(suffixed_symbol): # Cache on discovery
+                logger.info(f"Symbol {symbol} resolved to {suffixed_symbol} (Cached)")
                 return suffixed_symbol
                 
         logger.warning(f"Could not normalize symbol {symbol}. Suffix: {suffix}")
         return symbol
+
+    def _cache_symbol_specs(self, symbol: str) -> bool:
+        """
+        Cache symbol specifications to avoid repeated RPyC calls and ensure consistent normalization.
+        """
+        if not self.connected:
+            return False
+            
+        if symbol in self.symbol_specs_cache:
+            return True
+
+        try:
+            info = mt5.symbol_info(symbol)
+            if info is None:
+                return False
+
+            self.symbol_specs_cache[symbol] = {
+                "digits": info.digits,
+                "point": info.point,
+                "min_vol": info.volume_min,
+                "max_vol": info.volume_max,
+                "step_vol": info.volume_step,
+                "tick_size": info.trade_tick_size,
+                "contract_size": info.trade_contract_size,
+                "trade_mode": info.trade_mode
+            }
+            logger.debug(f"📝 Cached specs for {symbol}: step={info.volume_step}, min={info.volume_min}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to cache specs for {symbol}: {e}")
+            return False
+
 
     def normalize_symbol(self, symbol: str, symbol_type: str = "forex") -> str:
         """Public method to normalize symbol name."""
@@ -160,6 +199,39 @@ class MT5Connector:
         except Exception as e:
             logger.warning(f"Price normalization failed for {symbol}: {e}")
             return price
+
+    def _validate_volume_strict(self, symbol: str, volume: float) -> Tuple[float, str]:
+        """
+        Strictly validate and normalize volume against cached contract specs.
+        Returns: (normalized_volume, error_message)
+        """
+        if symbol not in self.symbol_specs_cache:
+            if not self._cache_symbol_specs(symbol):
+                return volume, "Symbol specs not found"
+
+        specs = self.symbol_specs_cache[symbol]
+        
+        # 1. Check strict positive
+        if volume <= 0:
+            return 0.0, "Volume must be positive"
+
+        # 2. Normalize to step
+        step = specs['step_vol']
+        if step > 0:
+            normalized = round(volume / step) * step
+            normalized = round(normalized, 2) # FP precision fix
+        else:
+            normalized = volume
+
+        # 3. Check bounds
+        if normalized < specs['min_vol']:
+             return specs['min_vol'], f"Volume {volume} below min {specs['min_vol']}"
+        
+        if normalized > specs['max_vol']:
+             return specs['max_vol'], f"Volume {volume} above max {specs['max_vol']}"
+
+        return normalized, ""
+
 
     def _validate_stop_levels(
         self, 
@@ -318,6 +390,80 @@ def proxy_order_send(req):
         except Exception as e:
             logger.error(f"CRITICAL ERROR in connect(): {e}")
             return False
+
+    def check_heartbeat(self) -> bool:
+        """
+        Component 1.2: Advanced Heartbeat System
+        Verifies:
+        1. RPyC Connection is alive
+        2. MT5 Terminal is responsive
+        3. Account is accessible
+        """
+        if not self.connected or not mt5:
+            return False
+
+        try:
+            # 1. RPyC Ping
+            if hasattr(self, 'rpyc_conn') and self.rpyc_conn.closed:
+                logger.warning("💔 Heartbeat Failed: RPyC connection closed")
+                self.connected = False
+                return False
+
+            # 2. MT5 Responsiveness (Fast call)
+            # terminal_info() is fast and verified terminal process state
+            term_info = mt5.terminal_info()
+            if term_info is None:
+                logger.warning("💔 Heartbeat Failed: terminal_info returned None")
+                return False
+
+            # 3. Account Data Check (Data flow verify)
+            # Just reading one property to ensure data access works
+            equity = mt5.account_info().equity
+            
+            # Update Timestamp
+            self.last_heartbeat = time.time()
+            return True
+
+        except Exception as e:
+             logger.warning(f"💔 Heartbeat Failed with Exception: {e}")
+             return False
+
+    def _check_circuit_breaker(self) -> Tuple[bool, str]:
+        """
+        Component 1.2: State-Aware Circuit Breaker
+        Returns: (is_blocked, reason)
+        """
+        for state, config in self.circuit_breaker.items():
+            if config["active"]:
+                elapsed = time.time() - config["last_trigger"]
+                if elapsed < config["cooldown"]:
+                    return True, f"Circuit Breaker: {state} active ({int(config['cooldown'] - elapsed)}s remaining)"
+                else:
+                    # Auto-reset
+                    logger.info(f"✅ Circuit Breaker: {state} cooldown expired. Resuming.")
+                    config["active"] = False
+        return False, ""
+
+    def _trigger_circuit_breaker(self, state: str):
+        """Trigger a specific circuit breaker state"""
+        if state in self.circuit_breaker:
+            self.circuit_breaker[state]["active"] = True
+            self.circuit_breaker[state]["last_trigger"] = time.time()
+            logger.warning(f"🔥 Circuit Breaker TRIGGERED: {state}. Pausing execution for {self.circuit_breaker[state]['cooldown']}s")
+            
+            # Send Alert
+            asyncio.create_task(self._send_breaker_alert(state))
+
+    async def _send_breaker_alert(self, state):
+        try:
+            from app.services.alert_service import alert_service
+            await alert_service.send_alert(
+                title="Circuit Breaker Triggered",
+                message=f"Trading paused due to state: **{state}**",
+                level="WARNING"
+            )
+        except:
+             pass
 
     def disconnect(self):
         """Disconnect from MT5"""
@@ -563,6 +709,13 @@ def proxy_order_send(req):
             logger.error("Failed to ensure correct account is active")
             return None
 
+        # ============ CIRCUIT BREAKER CHECK ============
+        is_blocked, reason = self._check_circuit_breaker()
+        if is_blocked:
+            logger.warning(f"⛔ Order Rejected: {reason}")
+            return {"success": False, "error": reason}
+
+
         # HARD VALIDATION: Check for valid account state (Balance > 0)
         # This catches "No money" errors caused by disconnected/unauthenticated terminals
         acc = mt5.account_info()
@@ -581,19 +734,33 @@ def proxy_order_send(req):
 
         for attempt in range(self.max_retries):
             try:
+                # Get fresh symbol info first (needed for visibility check and cache)
                 symbol_info = mt5.symbol_info(symbol)
                 if symbol_info is None:
                     return None
 
-                # Log symbol trading specs for debugging
-                logger.info(
-                    f"📋 Symbol {symbol} specs: "
-                    f"volume_min={symbol_info.volume_min}, "
-                    f"volume_max={symbol_info.volume_max}, "
-                    f"volume_step={symbol_info.volume_step}, "
-                    f"trade_mode={symbol_info.trade_mode}, "
-                    f"trade_contract_size={symbol_info.trade_contract_size}"
-                )
+                # Ensure cache is populated
+                if not self._cache_symbol_specs(symbol):
+                    logger.error(f"Failed to cache specs for {symbol}")
+                    # Fallback to symbol_info if cache fails, but cache failure implies symbol_info failure usually
+                    
+                # Use cache if available, otherwise fallback (though cache should exist now)
+                specs = self.symbol_specs_cache.get(symbol)
+                if specs:
+                    # STRICT Volume Validation via Cache
+                    volume, vol_err = self._validate_volume_strict(symbol, volume)
+                    if vol_err:
+                        logger.warning(f"Volume adjusted: {vol_err}. New vol: {volume}")
+                
+                    # Log symbol trading specs for debugging
+                    logger.info(
+                        f"📋 Trading {symbol}: "
+                        f"Vol={volume} (Min={specs['min_vol']}, Max={specs['max_vol']}) "
+                        f"Contract={specs['contract_size']}"
+                    )
+                else:
+                    # Fallback log
+                    logger.warning(f"Using non-cached path for {symbol}")
 
                 if not symbol_info.visible:
                     if not mt5.symbol_select(symbol, True):
@@ -667,10 +834,10 @@ def proxy_order_send(req):
                     symbol, order_type, execution_price, stop_loss, take_profit
                 )
                 
-                # ============ VOLUME NORMALIZATION ============
-                # Round volume to broker's volume step
-                volume = round(volume / symbol_info.volume_step) * symbol_info.volume_step
-                volume = max(symbol_info.volume_min, min(volume, symbol_info.volume_max))
+                # ============ VOLUME NORMALIZATION (Already done via _validate_volume_strict) ============
+                # But kept for safety
+                # volume = round(volume / symbol_info.volume_step) * symbol_info.volume_step
+                # volume = max(symbol_info.volume_min, min(volume, symbol_info.volume_max))
 
                 # Use larger deviation for crypto and volatile instruments
                 if 'BTC' in symbol or 'ETH' in symbol or 'XAU' in symbol:
@@ -757,6 +924,18 @@ def proxy_order_send(req):
                         "success": False,
                         "error": f"MT5 Error: {result.comment} ({result.retcode})"
                     }
+                
+                # ============ CIRCUIT BREAKER TRIGGERS ============
+                # Check for specific failure modes to trigger circuit breaker
+                if result.retcode == mt5.TRADE_RETCODE_MARKET_CLOSED:
+                    self._trigger_circuit_breaker("MARKET_CLOSED")
+                elif result.retcode == mt5.TRADE_RETCODE_CONNECTION:
+                    self._trigger_circuit_breaker("CONNECTION_UNSTABLE")
+                elif result.retcode == mt5.TRADE_RETCODE_TIMEOUT:
+                    self._trigger_circuit_breaker("CONNECTION_UNSTABLE")
+                elif result.retcode == 10018: # MARKET_CLOSED for some brokers
+                    self._trigger_circuit_breaker("MARKET_CLOSED")
+
 
                 # Check slippage on market orders
                 if not is_pending:

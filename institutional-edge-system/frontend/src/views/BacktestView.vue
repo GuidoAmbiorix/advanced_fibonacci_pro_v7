@@ -52,6 +52,22 @@
             </span>
           </button>
         </div>
+
+        <!-- GLOBAL KILL SWITCH (Admin) -->
+        <div class="flex items-center space-x-2 mr-4">
+          <button 
+            @click="toggleKillSwitch"
+            class="relative px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300 border shadow-lg"
+            :class="killSwitchActive 
+              ? 'bg-red-600 border-red-500 text-white animate-pulse hover:bg-red-700' 
+              : 'bg-emerald-900/30 border-emerald-500/30 text-emerald-400 hover:bg-emerald-800/50 hover:text-emerald-300'"
+          >
+            <span class="flex items-center gap-2">
+              <span v-if="killSwitchActive">💀 KILL SWITCH ACTIVE</span>
+              <span v-else>🛡️ SYSTEM SECURE</span>
+            </span>
+          </button>
+        </div>
         
         <!-- Connection Status Badge -->
         <div class="flex items-center px-3 py-1.5 rounded-lg bg-gray-800/40 border border-gray-700/30">
@@ -283,412 +299,19 @@
       
       <!-- Slot Cards Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div v-for="slot in slots" :key="slot.id"
-             class="group relative overflow-hidden rounded-xl border transition-all duration-300 hover:scale-[1.01]"
-             :class="slot.isRunning
-               ? 'bg-gradient-to-br from-blue-800/60 to-purple-900/60 border-blue-400/70 shadow-xl shadow-blue-500/30'
-               : slot.enabled
-                 ? 'bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-blue-500/50 shadow-lg shadow-blue-500/10'
-                 : 'bg-gray-900/50 border-gray-700/50 opacity-60'">
-
-          <!-- Animated border for running slots -->
-          <div v-if="slot.isRunning" class="absolute inset-0 pointer-events-none">
-            <div class="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 animate-pulse"></div>
-          </div>
-
-          <!-- Slot glow effect when enabled -->
-          <div v-if="slot.enabled && !slot.isRunning" class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-          
-          <!-- Slot Header -->
-          <div class="relative z-10 p-3 flex justify-between items-center border-b border-gray-700/50">
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <div class="relative">
-                <input type="checkbox" v-model="slot.enabled" @change="saveSlot(slot)"
-                       :disabled="slot.isRunning"
-                       class="sr-only peer">
-                <div class="w-5 h-5 rounded bg-gray-700 border border-gray-600 peer-checked:bg-gradient-to-r peer-checked:from-blue-600 peer-checked:to-cyan-500 peer-checked:border-transparent transition-all flex items-center justify-center"
-                     :class="slot.isRunning ? 'opacity-50 cursor-not-allowed' : ''">
-                  <svg v-if="slot.enabled" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-sm font-bold" :class="slot.enabled ? 'text-white' : 'text-gray-400'">
-                  Slot {{ slot.id + 1 }}
-                </span>
-                <!-- Running indicator -->
-                <span v-if="slot.isRunning" class="flex items-center gap-1 px-1.5 py-0.5 bg-blue-500/20 rounded text-[10px] text-blue-300">
-                  <span class="animate-spin">⟳</span>
-                  Running
-                </span>
-              </div>
-            </label>
-            <div class="flex items-center space-x-1">
-              <!-- Clone Button -->
-              <button @click="cloneSlot(slot)"
-                      :disabled="slot.isRunning"
-                      class="p-1 rounded hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-30"
-                      title="Clone Slot Settings">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                </svg>
-              </button>
-              <!-- Expand Button -->
-              <button @click="slot.expanded = !slot.expanded"
-                      class="p-1 rounded hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors">
-                <svg class="w-4 h-4 transition-transform" :class="slot.expanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </button>
-              <!-- Delete Button -->
-              <button @click="deleteSlot(slot.id)"
-                      :disabled="slot.isRunning"
-                      class="p-1 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors disabled:opacity-30"
-                      title="Delete Slot">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <!-- Symbol + Direction (always visible) -->
-          <div class="p-3 space-y-2">
-            <select v-model="slot.symbol" :disabled="!slot.enabled" 
-                    @change="applySymbolPreset(slot)"
-                    class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-sm disabled:opacity-50">
-              <option v-for="(preset, sym) in symbolPresets" :key="sym" :value="sym">
-                {{ preset.emoji }} {{ preset.name }}
-              </option>
-            </select>
-            <!-- Symbol Info -->
-            <div v-if="symbolPresets[slot.symbol]" class="text-[10px] text-gray-500 px-1">
-              {{ symbolPresets[slot.symbol].description }}
-              <span class="ml-1 px-1 rounded" 
-                    :class="symbolPresets[slot.symbol].volatility === 'EXTREME' ? 'bg-red-900 text-red-400' :
-                            symbolPresets[slot.symbol].volatility === 'HIGH' ? 'bg-orange-900 text-orange-400' :
-                            symbolPresets[slot.symbol].volatility === 'MEDIUM' ? 'bg-yellow-900 text-yellow-400' :
-                            'bg-green-900 text-green-400'">
-                {{ symbolPresets[slot.symbol].volatility }}
-              </span>
-            </div>
-            <select v-model="slot.direction" :disabled="!slot.enabled"
-                    class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs disabled:opacity-50"
-                    :class="slot.direction === 'BUY_ONLY' ? 'text-green-400' : slot.direction === 'SELL_ONLY' ? 'text-red-400' : 'text-gray-300'">
-              <option value="BOTH">↕️ Both</option>
-              <option value="BUY_ONLY">🟢 Buy Only</option>
-              <option value="SELL_ONLY">🔴 Sell Only</option>
-            </select>
-          </div>
-          
-          <!-- Expandable Config (FULL INDEPENDENCE) -->
-          <div v-if="slot.expanded && slot.enabled" class="p-3 border-t border-gray-700 space-y-3 bg-gray-850">
-            
-            <!-- Row 0: Engine Selection -->
-            <div class="flex items-center justify-between bg-gray-800 p-2 rounded border border-gray-700">
-               <span class="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Engine</span>
-                <div class="flex space-x-1">
-                   <button @click="slot.engine_type = 'XAU_PRO'" 
-                           class="px-2 py-1 text-[10px] rounded transition-colors bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold shadow-lg shadow-yellow-500/20 cursor-default">
-                     🥇 Institutional Gold (XAU PRO)
-                   </button>
-                </div>
-                </div>
-            </div>
-
-            <!-- Row 1: Timeframe + Confirmation + TSL -->
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="text-[10px] text-gray-500">Timeframe</label>
-                <select v-model="slot.timeframe" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                  <option value="M1">M1</option>
-                  <option value="M5">M5</option>
-                  <option value="M15">M15</option>
-                  <option value="H1">H1</option>
-                  <option value="H4">H4</option>
-                </select>
-              </div>
-               <div>
-                <label class="text-[10px] text-gray-500">Confirm TF</label>
-                <select v-model="slot.confirmation_timeframe" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
-                        :class="{'border-red-500': getTFMins(slot.confirmation_timeframe) < getTFMins(slot.timeframe)}">
-                  <option :value="null">Auto</option>
-                  <option value="M5">M5</option>
-                  <option value="M15">M15</option>
-                  <option value="M30">M30</option>
-                  <option value="H1">H1</option>
-                  <option value="H4">H4</option>
-                  <option value="D1">D1</option>
-                </select>
-              </div>
-              <div>
-                <label class="text-[10px] text-gray-500">TSL Mode</label>
-                <select v-model="slot.tsl_mode" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                  <option value="OFF">Off</option>
-                  <option value="ATR">ATR</option>
-                  <option value="TIERED">Tiered</option>
-                </select>
-              </div>
-            </div>
-            
-            <!-- Institutional Session Control -->
-            <div class="p-2 bg-blue-900/10 rounded border border-blue-500/20 space-y-2">
-              <div class="flex justify-between items-center">
-                 <span class="text-[10px] font-bold text-blue-300 uppercase tracking-wider">🏛️ Institutional Control</span>
-                 <span v-if="isBadSession(slot.symbol, slot.trading_session)" class="text-[9px] text-yellow-400 font-medium px-1.5 py-0.5 bg-yellow-900/30 rounded border border-yellow-500/30">
-                    ⚠ Low Volatility Warning
-                 </span>
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                  <div>
-                     <label class="text-[10px] text-gray-500">Session Killzone v3.0</label>
-                     <select v-model="slot.session_mode" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-[10px]">
-                        <option value="BOTH_KZ">🎯 London + NY Killzones (Recommended)</option>
-                        <option value="LONDON_KZ">🇬🇧 London Killzone (07-10 UTC)</option>
-                        <option value="NY_KZ">🇺🇸 NY Killzone (12-15 UTC)</option>
-                        <option value="OVERLAP_KZ">⚡ Overlap Only (13-16 UTC)</option>
-                        <option value="ALL">🌍 All Sessions (Not Recommended)</option>
-                     </select>
-                  </div>
-                 <div>
-                    <label class="text-[10px] text-gray-500">Session End</label>
-                    <select v-model="slot.session_end_action" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-[10px]">
-                       <option value="HOLD">✋ Hold Trades</option>
-                       <option value="CLOSE">❌ Close All</option>
-                       <option value="DISABLE_NEW">⛔ No New Entries</option>
-                    </select>
-                 </div>
-              </div>
-              
-              <!-- D1 Bias Toggle -->
-              <div class="flex items-center space-x-2 pt-1 border-t border-blue-500/20 mt-1">
-                 <input type="checkbox" v-model="slot.use_daily_bias" :id="'bias-'+slot.slot_number" 
-                        class="w-3 h-3 rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900">
-                 <label :for="'bias-'+slot.slot_number" class="text-[10px] text-gray-400 select-none cursor-pointer hover:text-blue-300 transition-colors">
-                    Filter Trades with Daily Trend (D1 Bias)
-                 </label>
-              </div>
-            </div>
-            
-            <!-- Row 2: Risk/TP/SL -->
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <div class="flex justify-between items-center mb-1">
-                   <label class="text-[10px] text-gray-500">Mode</label>
-                   <select v-model="slot.volume_mode" class="bg-gray-700 text-[10px] rounded px-1 text-blue-300 border-none h-4">
-                      <option value="RISK">Risk %</option>
-                      <option value="FIXED">Lots</option>
-                   </select>
-                </div>
-                <input v-if="slot.volume_mode === 'RISK' || !slot.volume_mode" 
-                       type="number" v-model.number="slot.risk_percent" step="0.5" min="0.1" max="5" 
-                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
-                       title="Risk percentage per trade">
-                <input v-else
-                       type="number" v-model.number="slot.fixed_volume" step="0.01" min="0.01" max="50" 
-                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-cyan-300 text-xs font-bold"
-                       title="Fixed lot size">
-              </div>
-              <div>
-                <label class="text-[10px] text-gray-500">TP R</label>
-                <input type="number" v-model.number="slot.tp_ratio" step="0.5" min="1" max="5" 
-                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-              </div>
-              <div>
-                <label class="text-[10px] text-gray-500">SL ATR</label>
-                <input type="number" v-model.number="slot.sl_atr_multiplier" step="0.5" min="0.5" max="3" 
-                       class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-              </div>
-            </div>
-            
-            <!-- XAU PRO CONFIGURATION -->
-            <div class="space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
-               <!-- MACD Momentum -->
-               <div class="p-2 bg-yellow-900/10 rounded border border-yellow-600/30">
-                  <div class="mb-2 flex items-center gap-2">
-                     <span class="text-[10px] font-bold text-yellow-400 uppercase tracking-wider">⚡ Momentum (MACD)</span>
-                  </div>
-                  <div class="grid grid-cols-3 gap-2">
-                     <div>
-                        <label class="text-[10px] text-gray-400">Fast</label>
-                        <input type="number" v-model.number="slot.config.macd_fast" placeholder="8"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                     </div>
-                     <div>
-                        <label class="text-[10px] text-gray-400">Slow</label>
-                        <input type="number" v-model.number="slot.config.macd_slow" placeholder="21"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                     </div>
-                     <div>
-                        <label class="text-[10px] text-gray-400">Signal</label>
-                        <input type="number" v-model.number="slot.config.macd_signal" placeholder="5"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                     </div>
-                  </div>
-               </div>
-
-               <!-- RSI Value -->
-               <div class="p-2 bg-purple-900/10 rounded border border-purple-600/30">
-                  <div class="mb-2 flex items-center gap-2">
-                     <span class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">📊 Value (RSI)</span>
-                  </div>
-                  <div class="grid grid-cols-3 gap-2">
-                     <div>
-                        <label class="text-[10px] text-gray-400">Period</label>
-                        <input type="number" v-model.number="slot.config.rsi_period" placeholder="14"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                     </div>
-                     <div>
-                        <label class="text-[10px] text-gray-400">Buy Ceiling</label>
-                        <input type="number" v-model.number="slot.config.rsi_buy_threshold" placeholder="45"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-green-200 text-xs">
-                     </div>
-                     <div>
-                        <label class="text-[10px] text-gray-400">Sell Floor</label>
-                        <input type="number" v-model.number="slot.config.rsi_sell_threshold" placeholder="55"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-red-200 text-xs">
-                     </div>
-                  </div>
-               </div>
-               
-               <!-- Structure & Risk -->
-               <div class="p-2 bg-blue-900/10 rounded border border-blue-500/20">
-                  <div class="mb-2 flex items-center gap-2">
-                     <span class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">🛡️ Structure (v3.0)</span>
-                  </div>
-                  <div class="grid grid-cols-1 gap-2">
-                     <div>
-                         <label class="text-[10px] text-gray-400">ZigZag Lookback (Recommended: 12)</label>
-                         <input type="number" v-model.number="slot.zigzag_lookback" min="3" max="20" placeholder="12"
-                                class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                     </div>
-                  </div>
-               </div>
-               
-               <!-- SMC v4.0 - Smart Money Concepts -->
-               <div class="p-2 bg-purple-900/10 rounded border border-purple-500/20">
-                  <div class="mb-2 flex items-center gap-2">
-                     <span class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">🧠 Smart Money (v4.0)</span>
-                  </div>
-                  <div class="grid grid-cols-2 gap-2">
-                     <!-- Order Blocks -->
-                     <div class="flex items-center gap-2">
-                        <input type="checkbox" v-model="slot.enable_order_blocks" class="w-3 h-3 accent-purple-500">
-                        <label class="text-[10px] text-gray-400">Order Blocks</label>
-                     </div>
-                     <div>
-                        <label class="text-[10px] text-gray-400">OB Lookback</label>
-                        <input type="number" v-model.number="slot.ob_lookback" min="5" max="50" placeholder="20"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                     </div>
-                     
-                     <!-- Liquidity Sweep -->
-                     <div class="flex items-center gap-2">
-                        <input type="checkbox" v-model="slot.enable_liquidity_sweep" class="w-3 h-3 accent-purple-500">
-                        <label class="text-[10px] text-gray-400">Liquidity Sweep</label>
-                     </div>
-                     <div>
-                        <label class="text-[10px] text-gray-400">Sweep Lookback</label>
-                        <input type="number" v-model.number="slot.sweep_lookback" min="5" max="30" placeholder="10"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                     </div>
-                     
-                     <!-- Fair Value Gap -->
-                     <div class="flex items-center gap-2">
-                        <input type="checkbox" v-model="slot.enable_fvg" class="w-3 h-3 accent-purple-500">
-                        <label class="text-[10px] text-gray-400">Fair Value Gap</label>
-                     </div>
-                     <div>
-                        <label class="text-[10px] text-gray-400">FVG Min (ATR)</label>
-                        <input type="number" v-model.number="slot.fvg_min_size_atr" step="0.1" min="0.1" max="2" placeholder="0.5"
-                               class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-
-
-
-
-             <!-- LEGACY ENGINE CONTROLS (Only if explicitly Adaptive) -->
-
-
-              
-
-              
-
-
-
-
-
-
-          
-            <!-- Action Bar -->
-            <div class="pt-3 mt-2 border-t border-gray-700 flex justify-end">
-               <button @click="saveSlot(slot)" 
-                       class="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold rounded-lg shadow-lg flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95">
-                 <span>💾</span>
-                 <span>Save Configuration</span>
-               </button>
-            </div>
-
-          <!-- Progress / Results -->
-          <div class="p-2 border-t border-gray-700">
-            <!-- Running - Enhanced Progress Bar -->
-            <div v-if="slot.isRunning" class="space-y-1">
-              <div class="flex justify-between items-center text-xs">
-                <span class="text-blue-300 font-medium flex items-center gap-1">
-                  <span class="animate-pulse">◉</span>
-                  Processing...
-                </span>
-                <span class="text-blue-400 font-bold">{{ slot.progress }}%</span>
-              </div>
-              <div class="relative w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 animate-pulse opacity-20"></div>
-                <div class="relative bg-gradient-to-r from-blue-600 to-cyan-500 h-2 rounded-full transition-all duration-500 shadow-lg shadow-blue-500/50"
-                     :style="{ width: slot.progress + '%' }">
-                  <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 animate-pulse"></div>
-                </div>
-              </div>
-            </div>
-            <!-- Results - Enhanced Display -->
-            <div v-else-if="slot.results?.win_rate" class="space-y-1">
-              <div class="flex justify-between items-center text-xs">
-                <span class="font-semibold" :class="slot.results.net_profit >= 0 ? 'text-green-400' : 'text-red-400'">
-                  {{ slot.results.net_profit >= 0 ? '↑ ' : '↓ ' }}
-                  {{ slot.results.net_profit >= 0 ? '+' : '' }}${{ slot.results.net_profit?.toFixed(2) }}
-                </span>
-                <div class="flex items-center gap-2">
-                  <span class="text-gray-400">WR:</span>
-                  <span :class="slot.results.win_rate >= 50 ? 'text-green-400 font-semibold' : 'text-yellow-400'">
-                    {{ slot.results.win_rate?.toFixed(1) }}%
-                  </span>
-                </div>
-              </div>
-              <div class="flex justify-between text-[10px] text-gray-500">
-                <span>{{ slot.results.total_trades || 0 }} trades</span>
-                <span v-if="slot.results.profit_factor">
-                  PF: <span :class="slot.results.profit_factor >= 1.5 ? 'text-green-400' : 'text-yellow-400'">
-                    {{ slot.results.profit_factor?.toFixed(2) }}
-                  </span>
-                </span>
-              </div>
-            </div>
-            <!-- Ready State -->
-            <div v-else class="text-xs text-gray-600 text-center py-1">
-              <span class="opacity-50">Ready to trade</span>
-            </div>
-          </div>
-        </div>
+        <BacktestSlotCard
+          v-for="(slot, index) in slots" 
+          :key="slot.id"
+          v-model="slots[index]"
+          @save="saveSlot"
+          @clone="cloneSlot"
+          @delete="deleteSlot"
+          @preset="applySymbolPreset"
+        />
       </div>
     </div>
 
-    <!-- Legacy Progress Bar (for single run compatibility) -->
-    <div v-if="isRunning" class="w-full bg-gray-700 rounded-full h-2.5 mb-6">
-      <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" :style="{ width: progress + '%' }"></div>
-    </div>
+
 
 
     <!-- Portfolio Settings (Shared: Dates + Balance) - BACKTEST ONLY -->
@@ -819,52 +442,7 @@
         </div>
       </div>
       
-      <!-- ═══════════════════════════════════════════════════════════════════════ -->
-      <!-- 📊 QUANTITATIVE ANALYSIS PANEL (from Dr. Chan's book)                  -->
-      <!-- ═══════════════════════════════════════════════════════════════════════ -->
-      <div v-if="tradingMode === 'backtest' && portfolioMetrics.totalTrades > 0" class="mt-4">
-        <!-- Collapsible Header -->
-        <div 
-          @click="showQuantPanel = !showQuantPanel"
-          class="flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all bg-gradient-to-r from-purple-900/30 to-cyan-900/30 border border-purple-500/30 hover:border-purple-400/50"
-        >
-          <div class="flex items-center gap-3">
-            <span class="text-2xl">📈</span>
-            <div>
-              <h3 class="font-bold text-white">Quantitative Analysis</h3>
-              <p class="text-xs text-gray-400">Advanced metrics from "Quantitative Trading" by Dr. Ernest Chan</p>
-            </div>
-          </div>
-          <div class="flex items-center gap-3">
-            <!-- Quick Bias Status -->
-            <BiasAlert :trades="trades" :auto-run="portfolioMetrics.totalTrades > 20" />
-            <svg class="w-5 h-5 text-gray-400 transition-transform" :class="showQuantPanel ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </div>
-        </div>
-        
-        <!-- Expanded Panel -->
-        <div v-if="showQuantPanel" class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <!-- Enhanced Metrics -->
-          <EnhancedMetrics :metrics="quantMetrics" />
-          
-          <!-- OOS Validation -->
-          <OOSValidation :trades="trades" />
-        </div>
-        
-        <!-- Link to Full Quant Analysis Page -->
-        <div v-if="showQuantPanel" class="mt-4 text-center">
-          <router-link 
-            to="/quant-analysis" 
-            class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-purple-500/25"
-          >
-            <span>🔬</span>
-            <span>Open Full Quant Analysis Center</span>
-            <span>→</span>
-          </router-link>
-        </div>
-      </div>
+
       
       <!-- Correlation & Risk Analysis Row -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1200,10 +778,10 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import socket, { connectionState, connectSocket } from '../services/socket'
 import CorrelationHeatmap from '../components/CorrelationHeatmap.vue'
-import OOSValidation from '../components/OOSValidation.vue'
-import EnhancedMetrics from '../components/EnhancedMetrics.vue'
-import BiasAlert from '../components/BiasAlert.vue'
+
 import BacktestLogs from '../components/BacktestLogs.vue'
+import BacktestSlotCard from '../components/backtest/BacktestSlotCard.vue'
+import { SYMBOL_PRESETS } from '../constants/presets.js'
 
 // Socket connection state (reactive refs from socket.js)
 const socketConnected = connectionState.isConnected
@@ -1219,7 +797,7 @@ const backtestStatus = ref('')  // Current backtest status message
 const toastMessage = ref('')  // Toast notification message
 const toastType = ref('info')  // 'success', 'error', 'info', 'warning'
 const showToast = ref(false)  // Show toast notification
-const showQuantPanel = ref(false)  // Quant Analysis panel visibility
+
 const currentSessionId = ref(null)  // Current backtest session ID for logs
 
 // Manual Trade Modal State
@@ -1371,146 +949,8 @@ const executeManualTrade = async () => {
   }
 }
 // SYMBOL PRESETS - Complete configurations per symbol (based on research)
-const symbolPresets = {
-  'GBPJPY': { 
-    name: 'GBP/JPY', emoji: '😈', volatility: 'HIGH',
-    timeframe: 'M5', tsl_mode: 'TIERED',
-    risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
-    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',  // Trade both directions for more opportunities
-    description: 'The Beast 🔥 High volatility, strong trends' 
-  },
-  'EURUSD': { 
-    name: 'EUR/USD', emoji: '💶', volatility: 'LOW',
-    timeframe: 'M5', tsl_mode: 'ATR',
-    risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.0, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',  // Most liquid, ranges well both directions
-    description: 'Most liquid - Tight stops, trade both directions' 
-  },
-  'XAUUSD': { 
-    name: 'XAU/USD', emoji: '🥇', volatility: 'EXTREME',
-    engine_type: 'XAU_PRO',  // Use InstitutionalGoldEngine with SMC v4.1
-    // v4.1 SMC Enhanced (Order Blocks + Liquidity Sweeps + FVG - AND Logic)
-    timeframe: 'M15', tsl_mode: 'ATR',
-    risk_percent: 0.5, tp_ratio: 2.0, sl_atr_multiplier: 1.4,
-    rsi_period: 14, rsi_overbought: 60, rsi_oversold: 40,
-    min_confluence: 5, max_duration: 2,
-    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    zigzag_lookback: 12,
-    macd_fast: 6, macd_slow: 18, macd_signal: 9,
-    session_mode: 'BOTH_KZ',
-    // SMC v4.1 Settings (Sweep REQUIRED + OB/FVG)
-    enable_order_blocks: true, ob_lookback: 20,
-    enable_liquidity_sweep: true, sweep_lookback: 10,
-    enable_fvg: true, fvg_min_size_atr: 0.5,
-    direction: 'BOTH', 
-    description: 'Gold 🥇 v4.1 SMC (Sweep+Zone, ~70% WR)' 
-  },
-  'USDJPY': { 
-    name: 'USD/JPY', emoji: '🇯🇵', volatility: 'MEDIUM',
-    timeframe: 'M5', tsl_mode: 'ATR',
-    risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.0, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',  // Trade both directions for more opportunities
-    description: 'Smooth trends - Tight SL, let profits run' 
-  },
-  'AUDJPY': { 
-    name: 'AUD/JPY', emoji: '🦘', volatility: 'MEDIUM',
-    timeframe: 'M5', tsl_mode: 'ATR',
-    risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: false, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',  // Trade both directions for more opportunities
-    description: 'Carry trade pair - Positive swap on long' 
-  },
-  'NZDJPY': { 
-    name: 'NZD/JPY', emoji: '🥝', volatility: 'MEDIUM',
-    timeframe: 'M15', tsl_mode: 'TIERED',
-    risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.5, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: false, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',  // Trade both directions for more opportunities
-    description: 'Carry trade pair - Positive swap on long' 
-  },
-  'EURCHF': { 
-    name: 'EUR/CHF', emoji: '🇨🇭', volatility: 'LOW',
-    timeframe: 'M15', tsl_mode: 'OFF',
-    risk_percent: 1.5, tp_ratio: 1.5, sl_atr_multiplier: 0.75, 
-    rsi_period: 14, rsi_overbought: 65, rsi_oversold: 35, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: true, enable_institutional: false, enable_fibonacci: true,
-    direction: 'BOTH',  // Range trading pair, both directions work
-    description: 'Range Trading ↔️ Both directions - Low volatility' 
-  },
-  'EURGBP': { 
-    name: 'EUR/GBP', emoji: '💶💷', volatility: 'LOW',
-    timeframe: 'M5', tsl_mode: 'ATR',
-    risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.0, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',
-    description: 'Channel 💶💷 Range trading - Low volatility' 
-  },
-  // ===== NEW PAIRS (Researched optimal settings 2024) =====
-  'EURJPY': { 
-    name: 'EUR/JPY', emoji: '🇪🇺🇯🇵', volatility: 'HIGH',
-    timeframe: 'M5', tsl_mode: 'TIERED',  // High volatility needs tiered protection
-    risk_percent: 0.75, tp_ratio: 2.0, sl_atr_multiplier: 1.5,  // Medium-tight stops
-    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',  // High volatility cross - trade both directions
-    description: 'EUR/JPY 🔥 High volatility cross - Fast moves' 
-  },
-  'USDCHF': { 
-    name: 'USD/CHF', emoji: '🇺🇸🇨🇭', volatility: 'LOW',
-    timeframe: 'M5', tsl_mode: 'TIERED',  // Low volatility, TIERED mode
-    risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.0,  // Tight stops for range trading
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',  // Range pair, mirrors EURUSD inversely
-    description: 'USD/CHF ↔️ Range trading - Mirrors EURUSD' 
-  },
-  // ===== LOW CORRELATION PAIRS FOR DIVERSIFICATION =====
-  'AUDUSD': { 
-    name: 'AUD/USD', emoji: '🦘', volatility: 'MEDIUM',
-    timeframe: 'M5', tsl_mode: 'TIERED',  // Commodity pair, moderate volatility
-    risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.5,  // Medium stops
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',  // Commodity currency, moves independently of EUR/JPY
-    description: 'AUD/USD 🦘 Commodity pair - Low correlation with majors' 
-  },
-  'USDCAD': { 
-    name: 'USD/CAD', emoji: '🍁', volatility: 'MEDIUM',
-    timeframe: 'M5', tsl_mode: 'TIERED',  // Oil-linked, moderate volatility
-    risk_percent: 1.0, tp_ratio: 2.0, sl_atr_multiplier: 1.5,  // Medium stops
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',  // Oil-linked, different drivers from EUR/JPY pairs
-    description: 'USD/CAD 🍁 Oil-linked - Independent of European pairs' 
-  },
-  '#BTCUSD': { 
-    name: 'Bitcoin', emoji: '₿', volatility: 'EXTREME',
-    timeframe: 'M15', tsl_mode: 'TIERED',
-    risk_percent: 0.5, tp_ratio: 2.0, sl_atr_multiplier: 2.0,  // Wide stops for crypto volatility
-    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',  // High volatility = trade both directions
-    description: 'Bitcoin ₿ Extreme volatility - Wide stops, fast moves' 
-  },
-  'GBPUSD': { 
-    name: 'GBP/USD', emoji: '💷', volatility: 'MEDIUM',
-    timeframe: 'M5', tsl_mode: 'ATR',
-    risk_percent: 1.0, tp_ratio: 1.5, sl_atr_multiplier: 1.2, 
-    rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30, min_confluence: 7, max_duration: 2,
-    enable_vwap: true, enable_stoch: true, enable_institutional: true, enable_fibonacci: true,
-    direction: 'BOTH',
-    description: 'Cable 💷 Strong trends - Liquid pair' 
-  }
-}
+// SYMBOL PRESETS - Moved to src/constants/presets.js
+const symbolPresets = SYMBOL_PRESETS
 
 // Store previous risk
 let previousRiskBeforeGold = 1.0
@@ -1710,42 +1150,7 @@ const portfolioMetrics = computed(() => {
   }
 })
 
-// QUANTITATIVE METRICS (maps portfolioMetrics to EnhancedMetrics format)
-const quantMetrics = computed(() => {
-  const pm = portfolioMetrics.value
-  
-  // Calculate Sharpe estimate from available data
-  // Sharpe = (Return / Stdev) - simplified estimate
-  const avgTrade = pm.totalTrades > 0 ? pm.netProfit / pm.totalTrades : 0
-  const estimatedStdDev = Math.abs(pm.netProfit * 0.5 / Math.sqrt(pm.totalTrades || 1))
-  const sharpe = estimatedStdDev > 0 ? (avgTrade / estimatedStdDev) * Math.sqrt(252) : 0
-  
-  // Calmar = CAGR / MaxDD
-  const calmar = pm.maxDrawdown > 0 ? (pm.netProfit / sharedConfig.value.initial_balance * 100) / pm.maxDrawdown : 0
-  
-  // Estimate Kelly fraction from win rate and profit factor
-  const p = pm.winRate / 100
-  const b = pm.profitFactor || 1
-  const kellyFraction = b > 0 ? Math.max(0, (b * p - (1 - p)) / b) : 0
-  
-  return {
-    sharpe_ratio: sharpe,
-    sortino_ratio: sharpe * 1.2, // Estimate: Sortino typically higher
-    calmar_ratio: calmar,
-    cagr: (pm.netProfit / sharedConfig.value.initial_balance) * 100,
-    omega_ratio: pm.profitFactor > 0 ? pm.profitFactor * 0.8 : 1.0,
-    kelly_fraction: kellyFraction,
-    half_kelly: kellyFraction / 2,
-    ulcer_index: Math.sqrt(pm.maxDrawdown),
-    max_drawdown_percent: pm.maxDrawdown,
-    max_drawdown: pm.netProfit < 0 ? Math.abs(pm.netProfit * 0.3) : pm.maxDrawdown * sharedConfig.value.initial_balance / 100,
-    max_drawdown_duration_days: pm.maxDrawdown > 0 ? Math.ceil(pm.maxDrawdown * 2) : 0,
-    avg_drawdown_duration_days: pm.maxDrawdown > 0 ? Math.ceil(pm.maxDrawdown / 2) : 0,
-    best_trade: pm.netProfit > 0 ? pm.netProfit / pm.totalTrades * 2.5 : 0,
-    median_trade: pm.totalTrades > 0 ? pm.netProfit / pm.totalTrades : 0,
-    worst_trade: pm.totalTrades > 0 ? -Math.abs(pm.netProfit / pm.totalTrades * 1.5) : 0
-  }
-})
+
 
 // SHARED CONFIG (applies to all slots)
 const sharedConfig = ref({
@@ -1779,14 +1184,35 @@ const sharedConfig = ref({
   min_confluence_score: 7
 })
 
-// Legacy single-slot references for backward compatibility
-const config = ref({
-  symbol: 'GBPJPY',
-  ...sharedConfig.value
-})
-const progress = ref(0)
-const results = ref({})
+
 const trades = ref([])
+
+// GLOBAL RISK STATE
+const killSwitchActive = ref(false)
+const riskStatus = ref({
+  max_dd_percent: 7.0,
+  current_dd_percent: 0.0,
+  kill_switch_reason: ''
+})
+const toggleKillSwitch = async () => {
+  try {
+    const newState = !killSwitchActive.value
+    // Optimistic update
+    killSwitchActive.value = newState
+    
+    await axios.post(`${API_URL}/api/settings/kill-switch`, { active: newState })
+    
+    showToastNotification(
+      newState ? '💀 GLOBAL KILL SWITCH ACTIVATED' : '🛡️ System Security Restored',
+      newState ? 'error' : 'success',
+      5000
+    )
+  } catch (e) {
+    console.error("Failed to toggle kill switch", e)
+    showToastNotification("Failed to toggle Kill Switch", 'error')
+    killSwitchActive.value = !killSwitchActive.value // Revert
+  }
+}
 
 // High-volatility symbol detection
 const HIGH_VOLATILITY_SYMBOLS = ['XAUUSD', 'BTCUSD', 'ETHUSD']
@@ -1794,34 +1220,7 @@ const HIGH_VOLATILITY_SYMBOLS = ['XAUUSD', 'BTCUSD', 'ETHUSD']
 // Logic moved to bottom to fix order issues
 
 
-// Handle timeframe change - auto-set strategy mode and reset confirmation TF
-const onTimeframeChange = () => {
-  // Reset confirmation timeframe to auto
-  config.value.confirmation_timeframe = null
-  
-  // Auto-set strategy mode based on timeframe
-  if (['M1', 'M5', 'M15'].includes(config.value.timeframe)) {
-    config.value.strategy_mode = 'SCALP'
-    // Lower confluence for scalping
-    if (config.value.min_confluence_score > 6) {
-      config.value.min_confluence_score = 5
-    }
-  } else {
-    config.value.strategy_mode = 'SWING'
-  }
-}
 
-// Get auto-detected HTF based on execution timeframe
-const getAutoHTF = (tf) => {
-  const htfMap = {
-    'M1': 'M5',
-    'M5': 'M15',
-    'M15': 'H1',
-    'H1': 'H4',
-    'H4': 'D1'
-  }
-  return htfMap[tf] || 'H4'
-}
 
 // Helper: Get timeframe in minutes for comparison
 const getTFMins = (tf) => {
@@ -1853,14 +1252,20 @@ const isBadSession = (symbol, session) => {
   return false
 }
 
-// Toast Notification Helper
+// Toast Notification Helper (Enhanced)
 const showToastNotification = (message, type = 'info', duration = 3000) => {
+  // Map custom types to standard styles/icons if needed, or just pass valid types
+  // valid types: info, success, warning, error, risk, security
   toastMessage.value = message
   toastType.value = type
   showToast.value = true
+  
+  // Longer duration for critical alerts
+  const realDuration = (type === 'risk' || type === 'error') ? 6000 : duration
+  
   setTimeout(() => {
     showToast.value = false
-  }, duration)
+  }, realDuration)
 }
 
 // Methods
@@ -1894,9 +1299,8 @@ const runBacktest = async () => {
   
   // Also reset legacy state
   trades.value = []
-  results.value = {}
-  progress.value = 0
   
+
   try {
     // Connect socket and WAIT for it to be connected before starting
     if (!socket.connected) {
@@ -2090,11 +1494,7 @@ const setupSocketListeners = () => {
                 }
             }
         }
-        // Also update legacy progress (average of all running slots)
-        const runningSlots = slots.value.filter(s => s.isRunning)
-        if (runningSlots.length > 0) {
-            progress.value = Math.round(runningSlots.reduce((sum, s) => sum + s.progress, 0) / runningSlots.length)
-        }
+
     })
 
     socket.on('backtest_trade', (data) => {
@@ -2122,7 +1522,7 @@ const setupSocketListeners = () => {
             
             // Also add to legacy trades
             trades.value.unshift(tradeObj)
-            results.value.net_profit = trade.balance - sharedConfig.value.initial_balance
+
         }
     })
 
@@ -2149,15 +1549,12 @@ const setupSocketListeners = () => {
         if (!anyRunning) {
             isRunning.value = false
             backtestStatus.value = ''
-            progress.value = 100
+
             fetchHistory()
             showToastNotification('All backtests completed!', 'success', 4000)
         }
 
-        // Update legacy results with first completed slot
-        if (Object.keys(results.value).length === 0) {
-            results.value = data.results
-        }
+
     })
 
     // Handle backtest errors
@@ -2286,6 +1683,20 @@ const setupSocketListeners = () => {
                     legacyTrade.profit = pos.profit
                 }
             })
+        }
+    })
+
+    // 🛡️ RISK UPDATE: Global Risk Status
+    socket.on('risk_update', (data) => {
+        killSwitchActive.value = data.kill_switch
+        riskStatus.value = data
+        
+        if (data.kill_switch) {
+            // Force stop backtest if running
+            if (isRunning.value) {
+                isRunning.value = false
+                showToastNotification(`⚠️ System halted: ${data.kill_switch_reason}`, 'risk', 0)
+            }
         }
     })
 }

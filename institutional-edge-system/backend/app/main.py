@@ -23,6 +23,9 @@ from app.api import regime, validation
 from app.core.mt5_connector import MT5Connector
 from app.core.trading_engine import TradingEngine
 from app.schemas import schemas
+from app.core.middleware import RequestIDMiddleware
+from app.services.alert_service import alert_service
+import sys
 
 # ============================================================================
 # APPLICATION SETUP
@@ -33,6 +36,13 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="Professional Trading System with Smart Money Concepts",
 )
+
+
+# Trusted Host Middleware (Security)
+# app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS or ["*"])
+
+# Request ID Middleware (Correlation IDs)
+app.add_middleware(RequestIDMiddleware)
 
 # CORS Middleware
 app.add_middleware(
@@ -179,8 +189,26 @@ async def startup_event():
     
     # Initialize Log Manager (System Logs)
     from app.core.log_manager import log_manager
-    logger.add(log_manager.sink, serialize=False, level="DEBUG", enqueue=True)
-    logger.info("✅ Log Manager initialized")
+    # Configure Loguru to use JSON format for structured logging
+    logger.remove()
+    logger.add(
+        sys.stdout, 
+        format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message} | {extra}", 
+        level="INFO",
+        serialize=True # Enable JSON logging
+    )
+    # Also keep file logging
+    logger.add(log_manager.sink, serialize=True, level="DEBUG", enqueue=True, rotation="10 MB")
+    
+    logger.info("✅ Log Manager initialized with Structured JSON Logging")
+    
+    # Notify Discord
+    await alert_service.send_alert(
+        title="System Startup", 
+        message=f"Institutional Edge Pro v{settings.APP_VERSION} initialized successfully.",
+        level="SUCCESS",
+        fields=[{"name": "Environment", "value": settings.INSTANCE_NAME, "inline": True}]
+    )
     logger.info("SL FIXED APPLIED V4.3")
 
 
@@ -266,17 +294,29 @@ async def startup_event():
     from app.services.trading_bot import BotManager
     bot_manager = BotManager(mt5_connector, sio)
     logger.info("Bot manager initialized")
+
+    # Initialize Risk Manager with Global Socket
+    from app.services.risk_manager import risk_manager
+    risk_manager.set_socket(sio)
+    logger.info("🛡️ Risk Manager socket connected")
+
     
     # Start Broadcast Loop
     asyncio.create_task(broadcast_market_data())
 
     logger.info("API started successfully on {}:{}", settings.HOST, settings.PORT)
-
-
+    
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
     logger.info("Shutting down...")
+    
+    await alert_service.send_alert(
+        title="System Shutdown",
+        message="System is shutting down...",
+        level="WARNING"
+    )
+    await alert_service.close()
 
     # Stop all bots
     if bot_manager:
@@ -306,11 +346,20 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint with Functional Verification"""
+    mt5_ok = False
+    if mt5_connector:
+        # Use simple boolean property if check_heartbeat is expensive or use the new method
+        mt5_ok = mt5_connector.check_heartbeat()
+        
     return {
-        "status": "healthy",
+        "status": "healthy" if mt5_ok else "degraded",
         "timestamp": datetime.utcnow(),
-        "mt5_status": "connected" if (mt5_connector and mt5_connector.connected) else "disconnected",
+        "mt5_status": "connected" if mt5_ok else "disconnected",
+        "services": {
+            "mt5": "up" if mt5_ok else "down",
+            "database": "up" # Assumed up if we are here, could add DB check
+        }
     }
 
 
