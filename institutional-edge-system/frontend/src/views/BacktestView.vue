@@ -112,9 +112,6 @@
       @apply-preset="applySymbolPreset"
     />
 
-
-
-
     <!-- Portfolio Settings (Shared: Dates + Balance) - BACKTEST ONLY -->
     <div v-if="tradingMode === 'backtest'" class="bg-gray-800 rounded-xl border border-gray-700 p-4 mb-6">
       <div class="flex justify-between items-center mb-3">
