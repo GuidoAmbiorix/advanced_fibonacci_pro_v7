@@ -316,6 +316,9 @@
 
         <!-- Backtest Logs Panel -->
         <BacktestLogs :session-id="currentSessionId" />
+
+        <!-- System Logs Panel (Real-time Backend Output) -->
+        <SystemLogsPanel />
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
@@ -498,6 +501,7 @@ import SlotManager from '../components/backtest/SlotManager.vue'
 import RiskOverview from '../components/backtest/RiskOverview.vue'
 import KpiDashboard from '../components/backtest/KpiDashboard.vue'
 import TradeHistoryTable from '../components/backtest/TradeHistoryTable.vue'
+import SystemLogsPanel from '../components/backtest/SystemLogsPanel.vue'
 import { useSlotManager } from '../composables/useSlotManager'
 
 // Socket connection state (reactive refs from socket.js)

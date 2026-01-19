@@ -1,390 +1,429 @@
 <template>
-  <div class="group relative overflow-hidden rounded-xl border transition-all duration-300 hover:scale-[1.01]"
+  <div class="group relative overflow-hidden rounded-xl border transition-all duration-300"
        :class="slot.isRunning
-         ? 'bg-gradient-to-br from-blue-800/60 to-purple-900/60 border-blue-400/70 shadow-xl shadow-blue-500/30'
+         ? 'bg-gradient-to-br from-blue-900/40 to-purple-900/40 border-blue-400/50 shadow-xl'
          : slot.enabled
-           ? 'bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-blue-500/50 shadow-lg shadow-blue-500/10'
-           : 'bg-gray-900/50 border-gray-700/50 opacity-60'">
+         ? 'bg-gradient-to-br from-slate-800/90 to-slate-900/90 border-slate-600/50 shadow-lg hover:shadow-xl hover:border-slate-500/60'
+         : 'bg-gray-900/60 border-gray-700/50 opacity-70'">
 
     <!-- Animated border for running slots -->
     <div v-if="slot.isRunning" class="absolute inset-0 pointer-events-none">
       <div class="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 animate-pulse"></div>
     </div>
 
-    <!-- Slot glow effect when enabled -->
-    <div v-if="slot.enabled && !slot.isRunning" class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-    
-    <!-- Slot Header -->
-    <div class="relative z-10 p-3 flex justify-between items-center border-b border-gray-700/50">
-      <label class="flex items-center space-x-2 cursor-pointer">
-        <div class="relative">
-          <input type="checkbox" v-model="slot.enabled" @change="$emit('save', slot)"
-                 :disabled="slot.isRunning"
-                 class="sr-only peer">
-          <div class="w-5 h-5 rounded bg-gray-700 border border-gray-600 peer-checked:bg-gradient-to-r peer-checked:from-blue-600 peer-checked:to-cyan-500 peer-checked:border-transparent transition-all flex items-center justify-center"
-               :class="slot.isRunning ? 'opacity-50 cursor-not-allowed' : ''">
-            <svg v-if="slot.enabled" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- HEADER                                                                   -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="p-4 border-b border-slate-700/50">
+      <div class="flex items-center justify-between">
+        <!-- Left: Toggle & Title -->
+        <div class="flex items-center gap-3">
+          <!-- Modern Toggle Switch -->
+          <button
+            @click="toggleEnabled"
+            :disabled="slot.isRunning"
+            class="relative w-12 h-6 rounded-full transition-all"
+            :class="[
+              slot.enabled 
+                ? 'bg-gradient-to-r from-blue-500 to-cyan-500' 
+                : 'bg-gray-700',
+              slot.isRunning ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'
+            ]"
+          >
+            <div 
+              class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform flex items-center justify-center shadow-md"
+              :class="slot.enabled ? 'translate-x-6' : ''"
+            >
+              <svg v-if="slot.enabled" class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+          </button>
+
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold" :class="slot.enabled ? 'text-white' : 'text-gray-400'">
+                Slot {{ slot.id + 1 }}
+              </h3>
+              <!-- Running Status Badge -->
+              <span v-if="slot.isRunning" class="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/20 rounded-full text-xs text-blue-300 border border-blue-400/30">
+                <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
+                Processing {{ slot.progress }}%
+              </span>
+            </div>
+            <!-- Session Warning -->
+            <div v-if="validation.sessionWarning" class="flex items-center gap-1 mt-1 text-xs text-yellow-400">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <span>Low volatility expected for this session</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Actions -->
+        <div class="flex items-center gap-1">
+          <button @click="$emit('clone', slot)"
+                  :disabled="slot.isRunning"
+                  class="p-2 rounded-lg hover:bg-blue-500/10 text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-30"
+                  title="Clone Configuration">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
             </svg>
-          </div>
+          </button>
+          <button @click="slot.expanded = !slot.expanded"
+                  class="p-2 rounded-lg hover:bg-slate-700/50 text-gray-400 hover:text-white transition-colors">
+            <svg class="w-4 h-4 transition-transform" :class="slot.expanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+          <button @click="$emit('delete', slot.id)"
+                  :disabled="slot.isRunning"
+                  class="p-2 rounded-lg hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors disabled:opacity-30"
+                  title="Delete Slot">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+          </button>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-bold" :class="slot.enabled ? 'text-white' : 'text-gray-400'">
-            Slot {{ slot.id + 1 }}
-          </span>
-          <!-- Running indicator -->
-          <span v-if="slot.isRunning" class="flex items-center gap-1 px-1.5 py-0.5 bg-blue-500/20 rounded text-[10px] text-blue-300">
-            <span class="animate-spin">⟳</span>
-            Running
-          </span>
-        </div>
-      </label>
-      <div class="flex items-center space-x-1">
-        <!-- Clone Button -->
-        <button @click="$emit('clone', slot)"
-                :disabled="slot.isRunning"
-                class="p-1 rounded hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-30"
-                title="Clone Slot Settings">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-          </svg>
-        </button>
-        <!-- Expand Button -->
-        <button @click="slot.expanded = !slot.expanded"
-                class="p-1 rounded hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors">
-          <svg class="w-4 h-4 transition-transform" :class="slot.expanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
-        </button>
-        <!-- Delete Button -->
-        <button @click="$emit('delete', slot.id)"
-                :disabled="slot.isRunning"
-                class="p-1 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors disabled:opacity-30"
-                title="Delete Slot">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-          </svg>
-        </button>
       </div>
     </div>
-    
-    <!-- Symbol + Direction (always visible) -->
-    <div class="p-3 space-y-2">
-      <select v-model="slot.symbol" :disabled="!slot.enabled" 
-              @change="$emit('preset', slot)"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-sm disabled:opacity-50">
-        <option v-for="(preset, sym) in presets" :key="sym" :value="sym">
-          {{ preset.emoji }} {{ preset.name }}
-        </option>
-      </select>
-      <!-- Symbol Info -->
-      <div v-if="presets[slot.symbol]" class="text-[10px] text-gray-500 px-1">
-        {{ presets[slot.symbol].description }}
-        <span class="ml-1 px-1 rounded" 
-              :class="presets[slot.symbol].volatility === 'EXTREME' ? 'bg-red-900 text-red-400' :
-                      presets[slot.symbol].volatility === 'HIGH' ? 'bg-orange-900 text-orange-400' :
-                      presets[slot.symbol].volatility === 'MEDIUM' ? 'bg-yellow-900 text-yellow-400' :
-                      'bg-green-900 text-green-400'">
-          {{ presets[slot.symbol].volatility }}
-        </span>
-      </div>
-      <select v-model="slot.direction" :disabled="!slot.enabled"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs disabled:opacity-50"
-              :class="slot.direction === 'BUY_ONLY' ? 'text-green-400' : slot.direction === 'SELL_ONLY' ? 'text-red-400' : 'text-gray-300'">
-        <option value="BOTH">↕️ Both</option>
-        <option value="BUY_ONLY">🟢 Buy Only</option>
-        <option value="SELL_ONLY">🔴 Sell Only</option>
-      </select>
-    </div>
-    
-    <!-- Expandable Config (FULL INDEPENDENCE) -->
-    <div v-if="slot.expanded && slot.enabled" class="p-3 border-t border-gray-700 space-y-3 bg-gray-850">
-      
-      <!-- Row 0: Engine Selection -->
-      <div class="flex items-center justify-between bg-gray-800 p-2 rounded border border-gray-700">
-         <span class="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Engine</span>
-          <div class="flex space-x-1">
-             <button @click="slot.engine_type = 'XAU_PRO'" 
-                     class="px-2 py-1 text-[10px] rounded transition-colors bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold shadow-lg shadow-yellow-500/20 cursor-default">
-               🥇 Institutional Gold (XAU PRO)
-             </button>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- COMPACT SUMMARY (Always Visible)                                         -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="p-4 space-y-3">
+      <!-- Symbol & Direction Row -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-gray-400 mb-1.5">Trading Pair</label>
+          <select v-model="slot.symbol" :disabled="!slot.enabled"
+                  @change="$emit('preset', slot)"
+                  class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+            <option v-for="(preset, sym) in presets" :key="sym" :value="sym">
+              {{ preset.emoji }} {{ preset.name }}
+            </option>
+          </select>
+          <div class="mt-1 flex items-center justify-between">
+            <span class="text-xs text-gray-500">{{ presets[slot.symbol]?.description }}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded border"
+                  :class="volatilityClass">
+              {{ presets[slot.symbol]?.volatility }}
+            </span>
           </div>
-      </div>
+        </div>
 
-      <!-- Row 1: Timeframe + Confirmation + TSL -->
-      <div class="grid grid-cols-3 gap-2">
         <div>
-          <label class="text-[10px] text-gray-500">Timeframe</label>
-          <select v-model="slot.timeframe" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-            <option value="M1">M1</option>
-            <option value="M5">M5</option>
-            <option value="M15">M15</option>
-            <option value="H1">H1</option>
-            <option value="H4">H4</option>
-          </select>
-        </div>
-         <div>
-          <label class="text-[10px] text-gray-500">Confirm TF</label>
-          <select v-model="slot.confirmation_timeframe" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
-                  :class="{'border-red-500': getTFMins(slot.confirmation_timeframe) < getTFMins(slot.timeframe)}">
-            <option :value="null">Auto</option>
-            <option value="M5">M5</option>
-            <option value="M15">M15</option>
-            <option value="M30">M30</option>
-            <option value="H1">H1</option>
-            <option value="H4">H4</option>
-            <option value="D1">D1</option>
-          </select>
-        </div>
-        <div>
-          <label class="text-[10px] text-gray-500">TSL Mode</label>
-          <select v-model="slot.tsl_mode" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-            <option value="OFF">Off</option>
-            <option value="ATR">ATR</option>
-            <option value="TIERED">Tiered</option>
+          <label class="block text-xs text-gray-400 mb-1.5">Direction</label>
+          <select v-model="slot.direction" :disabled="!slot.enabled"
+                  class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  :class="directionClass">
+            <option value="BOTH">↕️ Both Directions</option>
+            <option value="BUY_ONLY">🟢 Long Only</option>
+            <option value="SELL_ONLY">🔴 Short Only</option>
           </select>
         </div>
       </div>
-      
-      <!-- Institutional Session Control -->
-      <div class="p-2 bg-blue-900/10 rounded border border-blue-500/20 space-y-2">
-        <div class="flex justify-between items-center">
-           <span class="text-[10px] font-bold text-blue-300 uppercase tracking-wider">🏛️ Institutional Control</span>
-           <span v-if="isBadSession(slot.symbol, slot.trading_session)" class="text-[9px] text-yellow-400 font-medium px-1.5 py-0.5 bg-yellow-900/30 rounded border border-yellow-500/30">
-              ⚠ Low Volatility Warning
-           </span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-            <div>
-               <label class="text-[10px] text-gray-500">Session Killzone v3.0</label>
-               <select v-model="slot.session_mode" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-[10px]">
-                  <option value="BOTH_KZ">🎯 London + NY Killzones (Recommended)</option>
-                  <option value="LONDON_KZ">🇬🇧 London Killzone (07-10 UTC)</option>
-                  <option value="NY_KZ">🇺🇸 NY Killzone (12-15 UTC)</option>
-                  <option value="OVERLAP_KZ">⚡ Overlap Only (13-16 UTC)</option>
-                  <option value="ALL">🌍 All Sessions (Not Recommended)</option>
-               </select>
-            </div>
-           <div>
-              <label class="text-[10px] text-gray-500">Session End</label>
-              <select v-model="slot.session_end_action" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-[10px]">
-                 <option value="HOLD">✋ Hold Trades</option>
-                 <option value="CLOSE">❌ Close All</option>
-                 <option value="DISABLE_NEW">⛔ No New Entries</option>
-              </select>
-           </div>
-        </div>
-        
-        <!-- D1 Bias Toggle -->
-        <div class="flex items-center space-x-2 pt-1 border-t border-blue-500/20 mt-1">
-           <input type="checkbox" v-model="slot.use_daily_bias" :id="'bias-'+slot.id" 
-                  class="w-3 h-3 rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900">
-           <label :for="'bias-'+slot.id" class="text-[10px] text-gray-400 select-none cursor-pointer hover:text-blue-300 transition-colors">
-              Filter Trades with Daily Trend (D1 Bias)
-           </label>
-        </div>
-      </div>
-      
-      <!-- Row 2: Risk/TP/SL -->
-      <div class="grid grid-cols-3 gap-2">
-        <div>
-          <div class="flex justify-between items-center mb-1">
-             <label class="text-[10px] text-gray-500">Mode</label>
-             <select v-model="slot.volume_mode" class="bg-gray-700 text-[10px] rounded px-1 text-blue-300 border-none h-4">
-                <option value="RISK">Risk %</option>
-                <option value="FIXED">Lots</option>
-             </select>
-          </div>
-          <input v-if="slot.volume_mode === 'RISK' || !slot.volume_mode" 
-                 type="number" v-model.number="slot.risk_percent" step="0.5" min="0.1" max="5" 
-                 class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
-                 title="Risk percentage per trade">
-          <input v-else
-                 type="number" v-model.number="slot.fixed_volume" step="0.01" min="0.01" max="50" 
-                 class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-cyan-300 text-xs font-bold"
-                 title="Fixed lot size">
-        </div>
-        <div>
-          <label class="text-[10px] text-gray-500">TP R</label>
-          <input type="number" v-model.number="slot.tp_ratio" step="0.5" min="1" max="5" 
-                 class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-        </div>
-        <div>
-          <label class="text-[10px] text-gray-500">SL ATR</label>
-          <input type="number" v-model.number="slot.sl_atr_multiplier" step="0.5" min="0.5" max="3" 
-                 class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-        </div>
-      </div>
-      
-      <!-- XAU PRO CONFIGURATION -->
-      <div class="space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
-         <!-- MACD Momentum -->
-         <div class="p-2 bg-yellow-900/10 rounded border border-yellow-600/30">
-            <div class="mb-2 flex items-center gap-2">
-               <span class="text-[10px] font-bold text-yellow-400 uppercase tracking-wider">⚡ Momentum (MACD)</span>
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-               <div>
-                  <label class="text-[10px] text-gray-400">Fast</label>
-                  <input type="number" v-model.number="slot.config.macd_fast" placeholder="8"
-                         class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-               </div>
-               <div>
-                  <label class="text-[10px] text-gray-400">Slow</label>
-                  <input type="number" v-model.number="slot.config.macd_slow" placeholder="21"
-                         class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-               </div>
-               <div>
-                  <label class="text-[10px] text-gray-400">Signal</label>
-                  <input type="number" v-model.number="slot.config.macd_signal" placeholder="5"
-                         class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-               </div>
-            </div>
-         </div>
 
-         <!-- RSI Value -->
-         <div class="p-2 bg-purple-900/10 rounded border border-purple-600/30">
-            <div class="mb-2 flex items-center gap-2">
-               <span class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">📊 Value (RSI)</span>
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-               <div>
-                  <label class="text-[10px] text-gray-400">Period</label>
-                  <input type="number" v-model.number="slot.config.rsi_period" placeholder="14"
-                         class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-               </div>
-               <div>
-                  <label class="text-[10px] text-gray-400">Buy Ceiling</label>
-                  <input type="number" v-model.number="slot.config.rsi_buy_threshold" placeholder="45"
-                         class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-green-200 text-xs">
-               </div>
-               <div>
-                  <label class="text-[10px] text-gray-400">Sell Floor</label>
-                  <input type="number" v-model.number="slot.config.rsi_sell_threshold" placeholder="55"
-                         class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-red-200 text-xs">
-               </div>
-            </div>
-         </div>
-         
-         <!-- Structure & Risk -->
-         <div class="p-2 bg-blue-900/10 rounded border border-blue-500/20">
-            <div class="mb-2 flex items-center gap-2">
-               <span class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">🛡️ Structure (v3.0)</span>
-            </div>
-            <div class="grid grid-cols-1 gap-2">
-               <div>
-                   <label class="text-[10px] text-gray-400">ZigZag Lookback (Recommended: 12)</label>
-                   <input type="number" v-model.number="slot.zigzag_lookback" min="3" max="20" placeholder="12"
-                          class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-               </div>
-            </div>
-         </div>
-         
-         <!-- SMC v4.0 - Smart Money Concepts -->
-         <div class="p-2 bg-purple-900/10 rounded border border-purple-500/20">
-            <div class="mb-2 flex items-center gap-2">
-               <span class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">🧠 Smart Money (v4.0)</span>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-               <!-- Order Blocks -->
-               <div class="flex items-center gap-2">
-                  <input type="checkbox" v-model="slot.enable_order_blocks" class="w-3 h-3 accent-purple-500">
-                  <label class="text-[10px] text-gray-400">Order Blocks</label>
-               </div>
-               <div>
-                  <label class="text-[10px] text-gray-400">OB Lookback</label>
-                  <input type="number" v-model.number="slot.ob_lookback" min="5" max="50" placeholder="20"
-                         class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-               </div>
-               
-               <!-- Liquidity Sweep -->
-               <div class="flex items-center gap-2">
-                  <input type="checkbox" v-model="slot.enable_liquidity_sweep" class="w-3 h-3 accent-purple-500">
-                  <label class="text-[10px] text-gray-400">Liquidity Sweep</label>
-               </div>
-               <div>
-                  <label class="text-[10px] text-gray-400">Sweep Lookback</label>
-                  <input type="number" v-model.number="slot.sweep_lookback" min="5" max="30" placeholder="10"
-                         class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-               </div>
-               
-               <!-- Fair Value Gap -->
-               <div class="flex items-center gap-2">
-                  <input type="checkbox" v-model="slot.enable_fvg" class="w-3 h-3 accent-purple-500">
-                  <label class="text-[10px] text-gray-400">Fair Value Gap</label>
-               </div>
-               <div>
-                  <label class="text-[10px] text-gray-400">FVG Min (ATR)</label>
-                  <input type="number" v-model.number="slot.fvg_min_size_atr" step="0.1" min="0.1" max="2" placeholder="0.5"
-                         class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white text-xs">
-               </div>
-            </div>
-         </div>
-      </div>
-
-    
-      <!-- Action Bar -->
-      <div class="pt-3 mt-2 border-t border-gray-700 flex justify-end">
-         <button @click="$emit('save', slot)" 
-                 class="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold rounded-lg shadow-lg flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95">
-           <span>💾</span>
-           <span>Save Configuration</span>
-         </button>
-      </div>
-
-    <!-- Progress / Results -->
-    <div class="p-2 border-t border-gray-700">
-      <!-- Running - Enhanced Progress Bar -->
-      <div v-if="slot.isRunning" class="space-y-1">
-        <div class="flex justify-between items-center text-xs">
-          <span class="text-blue-300 font-medium flex items-center gap-1">
-            <span class="animate-pulse">◉</span>
-            Processing...
-          </span>
-          <span class="text-blue-400 font-bold">{{ slot.progress }}%</span>
-        </div>
-        <div class="relative w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-          <div class="absolute inset-0 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 animate-pulse opacity-20"></div>
-          <div class="relative bg-gradient-to-r from-blue-600 to-cyan-500 h-2 rounded-full transition-all duration-500 shadow-lg shadow-blue-500/50"
+      <!-- Results / Progress Bar -->
+      <div v-if="slot.isRunning" class="space-y-2">
+        <div class="relative w-full bg-slate-700/50 rounded-full h-2 overflow-hidden">
+          <div class="absolute h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-500"
                :style="{ width: slot.progress + '%' }">
             <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 animate-pulse"></div>
           </div>
         </div>
       </div>
-      <!-- Results - Enhanced Display -->
-      <div v-else-if="slot.results?.win_rate" class="space-y-1">
-        <div class="flex justify-between items-center text-xs">
-          <span class="font-semibold" :class="slot.results.net_profit >= 0 ? 'text-green-400' : 'text-red-400'">
-            {{ slot.results.net_profit >= 0 ? '↑ ' : '↓ ' }}
-            {{ slot.results.net_profit >= 0 ? '+' : '' }}${{ slot.results.net_profit?.toFixed(2) }}
-          </span>
-          <div class="flex items-center gap-2">
-            <span class="text-gray-400">WR:</span>
-            <span :class="slot.results.win_rate >= 50 ? 'text-green-400 font-semibold' : 'text-yellow-400'">
-              {{ slot.results.win_rate?.toFixed(1) }}%
-            </span>
+      
+      <div v-else-if="slot.results?.win_rate" class="grid grid-cols-3 gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+        <div class="text-center">
+          <div class="text-lg font-bold" :class="slot.results.net_profit >= 0 ? 'text-green-400' : 'text-red-400'">
+            {{ slot.results.net_profit >= 0 ? '+' : '' }}${{ slot.results.net_profit?.toFixed(0) }}
           </div>
+          <div class="text-xs text-gray-400">P&L</div>
         </div>
-        <div class="flex justify-between text-[10px] text-gray-500">
-          <span>{{ slot.results.total_trades || 0 }} trades</span>
-          <span v-if="slot.results.profit_factor">
-            PF: <span :class="slot.results.profit_factor >= 1.5 ? 'text-green-400' : 'text-yellow-400'">
-              {{ slot.results.profit_factor?.toFixed(2) }}
-            </span>
-          </span>
+        <div class="text-center">
+          <div class="text-lg font-bold" :class="slot.results.win_rate >= 50 ? 'text-green-400' : 'text-yellow-400'">
+            {{ slot.results.win_rate?.toFixed(1) }}%
+          </div>
+          <div class="text-xs text-gray-400">Win Rate</div>
+        </div>
+        <div class="text-center">
+          <div class="text-lg font-bold text-blue-400">{{ slot.results.total_trades || 0 }}</div>
+          <div class="text-xs text-gray-400">Trades</div>
         </div>
       </div>
-      <!-- Ready State -->
-      <div v-else class="text-xs text-gray-600 text-center py-1">
-        <span class="opacity-50">Ready to trade</span>
+      
+      <div v-else class="text-center py-3 text-sm text-gray-500">
+        {{ slot.enabled ? '⚡ Ready to trade' : '💤 Disabled' }}
       </div>
     </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- EXPANDED CONFIGURATION                                                   -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <div v-if="slot.expanded && slot.enabled" class="border-t border-slate-700/50 p-4 space-y-4 bg-slate-900/30">
+      
+      <!-- Core Settings -->
+      <div class="space-y-3">
+        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Core Settings</h4>
+        
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1.5">Timeframe</label>
+            <select v-model="slot.timeframe"
+                    class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+              <option value="M1">1 Minute</option>
+              <option value="M5">5 Minutes</option>
+              <option value="M15">15 Minutes</option>
+              <option value="H1">1 Hour</option>
+              <option value="H4">4 Hours</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-400 mb-1.5 flex items-center gap-1">
+              Confirmation TF
+              <div class="group relative">
+                <svg class="w-3 h-3 cursor-help text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="hidden group-hover:block absolute z-10 w-48 p-2 bg-slate-800 border border-slate-600 rounded text-xs text-gray-300 -top-2 left-5 shadow-xl">
+                  Higher timeframe for trend confirmation. Must be ≥ entry timeframe.
+                </div>
+              </div>
+            </label>
+            <select v-model="slot.confirmation_timeframe"
+                    class="w-full bg-slate-800 border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2"
+                    :class="validation.confirmTFValid 
+                      ? 'border-slate-600 focus:ring-blue-500/50' 
+                      : 'border-red-500 focus:ring-red-500/50'">
+              <option :value="null">Auto (Same as TF)</option>
+              <option value="M5">5 Minutes</option>
+              <option value="M15">15 Minutes</option>
+              <option value="H1">1 Hour</option>
+              <option value="H4">4 Hours</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-400 mb-1.5">Trailing Stop</label>
+            <select v-model="slot.tsl_mode"
+                    class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+              <option value="OFF">Disabled</option>
+              <option value="ATR">ATR-Based</option>
+              <option value="TIERED">Tiered Profit</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Risk Management with Sliders -->
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-xs text-gray-400">Position Size</label>
+              <select v-model="slot.volume_mode"
+                      class="bg-slate-700 text-xs rounded px-2 py-0.5 text-blue-300 border-none">
+                <option value="RISK">% Risk</option>
+                <option value="FIXED">Fixed Lots</option>
+              </select>
+            </div>
+            <template v-if="slot.volume_mode === 'FIXED'">
+              <input type="number" v-model.number="slot.fixed_volume"
+                     step="0.01" min="0.01"
+                     class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-cyan-300 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50">
+            </template>
+            <template v-else>
+              <div class="space-y-1">
+                <input type="range" v-model.number="slot.risk_percent"
+                       min="0.1" max="5" step="0.1"
+                       class="w-full accent-blue-500">
+                <div class="text-sm font-bold text-center" :class="riskLevelClass">
+                  {{ slot.risk_percent }}%
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-400 mb-1.5">Take Profit (R)</label>
+            <div class="space-y-1">
+              <input type="range" v-model.number="slot.tp_ratio"
+                     min="1" max="5" step="0.5"
+                     class="w-full accent-green-500">
+              <div class="text-sm font-bold text-center text-green-400">
+                {{ slot.tp_ratio }}R
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-400 mb-1.5">Stop Loss (ATR)</label>
+            <div class="space-y-1">
+              <input type="range" v-model.number="slot.sl_atr_multiplier"
+                     min="0.5" max="3" step="0.5"
+                     class="w-full accent-red-500">
+              <div class="text-sm font-bold text-center text-red-400">
+                {{ slot.sl_atr_multiplier }}× ATR
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Session Controls -->
+      <div class="p-3 bg-blue-900/10 rounded-lg border border-blue-500/20 space-y-3">
+        <h4 class="text-xs font-semibold text-blue-300 uppercase tracking-wider flex items-center gap-2">
+          🏛️ Session Management
+        </h4>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1.5">Trading Session</label>
+            <select v-model="slot.session_mode"
+                    class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+              <option value="BOTH_KZ">🎯 London + NY Killzones</option>
+              <option value="LONDON_KZ">🇬🇧 London Only</option>
+              <option value="NY_KZ">🇺🇸 NY Only</option>
+              <option value="OVERLAP_KZ">⚡ Overlap Only</option>
+              <option value="ALL">🌍 All Sessions</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-400 mb-1.5">Session End Action</label>
+            <select v-model="slot.session_end_action"
+                    class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+              <option value="HOLD">✋ Hold Positions</option>
+              <option value="CLOSE">❌ Close All</option>
+              <option value="DISABLE_NEW">⛔ Block New Entries</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" v-model="slot.use_daily_bias"
+                 class="w-4 h-4 rounded bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-900">
+          <span class="text-sm text-gray-300">Filter with Daily Trend (D1 Bias)</span>
+        </label>
+      </div>
+
+      <!-- Advanced Settings Toggle -->
+      <button @click="showAdvanced = !showAdvanced"
+              class="w-full py-2 px-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-600 rounded-lg text-sm text-gray-300 flex items-center justify-between transition-colors">
+        <span>Advanced Indicators & SMC</span>
+        <svg class="w-4 h-4 transition-transform" :class="showAdvanced ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+
+      <!-- Advanced Settings Panel -->
+      <div v-if="showAdvanced" class="space-y-3 animate-fadeIn">
+        <!-- MACD -->
+        <div class="p-3 bg-yellow-900/10 rounded-lg border border-yellow-600/30">
+          <h5 class="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2">⚡ MACD Momentum</h5>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Fast</label>
+              <input type="number" v-model.number="slot.config.macd_fast" placeholder="8"
+                     class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-sm">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Slow</label>
+              <input type="number" v-model.number="slot.config.macd_slow" placeholder="21"
+                     class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-sm">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Signal</label>
+              <input type="number" v-model.number="slot.config.macd_signal" placeholder="5"
+                     class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-sm">
+            </div>
+          </div>
+        </div>
+
+        <!-- RSI -->
+        <div class="p-3 bg-purple-900/10 rounded-lg border border-purple-600/30">
+          <h5 class="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-2">📊 RSI Value</h5>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Period</label>
+              <input type="number" v-model.number="slot.config.rsi_period" placeholder="14"
+                     class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-sm">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Buy ≤</label>
+              <input type="number" v-model.number="slot.config.rsi_buy_threshold" placeholder="45"
+                     class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-green-300 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Sell ≥</label>
+              <input type="number" v-model.number="slot.config.rsi_sell_threshold" placeholder="55"
+                     class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-red-300 text-sm">
+            </div>
+          </div>
+        </div>
+
+        <!-- Structure (ZigZag) -->
+        <div class="p-3 bg-blue-900/10 rounded-lg border border-blue-500/20">
+          <h5 class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">🛡️ Structure (v3.0)</h5>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">ZigZag Lookback (Recommended: 12)</label>
+            <input type="number" v-model.number="slot.zigzag_lookback" min="3" max="20" placeholder="12"
+                   class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-sm">
+          </div>
+        </div>
+
+        <!-- Smart Money Concepts -->
+        <div class="p-3 bg-purple-900/10 rounded-lg border border-purple-500/20">
+          <h5 class="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3">🧠 Smart Money Concepts</h5>
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" v-model="slot.enable_order_blocks"
+                     class="w-4 h-4 rounded bg-slate-700 border-slate-600 text-purple-500">
+              <span class="text-sm text-gray-300">Order Blocks</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" v-model="slot.enable_liquidity_sweep"
+                     class="w-4 h-4 rounded bg-slate-700 border-slate-600 text-purple-500">
+              <span class="text-sm text-gray-300">Liquidity Sweep Detection</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" v-model="slot.enable_fvg"
+                     class="w-4 h-4 rounded bg-slate-700 border-slate-600 text-purple-500">
+              <span class="text-sm text-gray-300">Fair Value Gaps</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save Button -->
+      <div class="pt-4 border-t border-slate-700/50">
+        <button @click="handleSave"
+                class="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+          <template v-if="saveStatus === 'saving'">
+            <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <span>Saving...</span>
+          </template>
+          <template v-else-if="saveStatus === 'saved'">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>Saved Successfully!</span>
+          </template>
+          <template v-else>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+            </svg>
+            <span>Save Configuration</span>
+          </template>
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { SYMBOL_PRESETS } from '@/constants/presets'
 
 const props = defineProps({
@@ -396,12 +435,71 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'save', 'clone', 'delete', 'preset'])
 
+// Local state
+const showAdvanced = ref(false)
+const saveStatus = ref(null)
+
+// Two-way binding for slot
 const slot = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
 })
 
 const presets = SYMBOL_PRESETS
+
+// Validation logic
+const validation = computed(() => {
+  const confirmTFValid = !slot.value.confirmation_timeframe || 
+    getTFMins(slot.value.confirmation_timeframe) >= getTFMins(slot.value.timeframe)
+  
+  const sessionWarning = isBadSession(slot.value.symbol, slot.value.session_mode)
+  
+  const riskLevel = slot.value.volume_mode === 'RISK' 
+    ? (slot.value.risk_percent > 3 ? 'high' : slot.value.risk_percent > 2 ? 'medium' : 'safe')
+    : 'fixed'
+
+  return { confirmTFValid, sessionWarning, riskLevel }
+})
+
+// Computed classes
+const volatilityClass = computed(() => {
+  const vol = presets[slot.value.symbol]?.volatility
+  if (vol === 'EXTREME') return 'bg-red-900/30 text-red-400 border-red-500/30'
+  if (vol === 'HIGH') return 'bg-orange-900/30 text-orange-400 border-orange-500/30'
+  if (vol === 'MEDIUM') return 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30'
+  return 'bg-green-900/30 text-green-400 border-green-500/30'
+})
+
+const directionClass = computed(() => {
+  if (slot.value.direction === 'BUY_ONLY') return 'text-green-400'
+  if (slot.value.direction === 'SELL_ONLY') return 'text-red-400'
+  return 'text-white'
+})
+
+const riskLevelClass = computed(() => {
+  if (validation.value.riskLevel === 'high') return 'text-red-400'
+  if (validation.value.riskLevel === 'medium') return 'text-yellow-400'
+  return 'text-green-400'
+})
+
+// Methods
+const toggleEnabled = () => {
+  if (!slot.value.isRunning) {
+    slot.value.enabled = !slot.value.enabled
+    emit('save', slot.value)
+  }
+}
+
+const handleSave = () => {
+  saveStatus.value = 'saving'
+  emit('save', slot.value)
+  setTimeout(() => {
+    saveStatus.value = 'saved'
+    setTimeout(() => {
+      saveStatus.value = null
+    }, 2000)
+  }, 500)
+}
 
 // Helper: Get timeframe in minutes
 const getTFMins = (tf) => {
@@ -415,14 +513,27 @@ const getTFMins = (tf) => {
 // Helper: Check for bad session/symbol combination
 const isBadSession = (symbol, session) => {
   if (!symbol || !session) return false
-  
-  // Asia Session Warnings
   if (session === 'ASIA' || session === 'ASIA_LONDON') {
-     // Gold is very low vol in Asia
-     if (symbol.includes('XAU')) return true
-     // EUR/GBP pairs (non-JPY) are often flat
-     if ((symbol.includes('EUR') || symbol.includes('GBP')) && !symbol.includes('JPY')) return true
+    if (symbol.includes('XAU')) return true
+    if ((symbol.includes('EUR') || symbol.includes('GBP')) && !symbol.includes('JPY')) return true
   }
   return false
 }
 </script>
+
+<style scoped>
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

@@ -15,7 +15,7 @@ from loguru import logger
 
 from app.core.config import settings
 from app.models.database import Base, User, BotConfig, Trade
-from app.api import database, auth, stats, fundamentals, settings as settings_api, news, logs, backtest, market, accounts, trading, portfolio, slots
+from app.api import database, auth, stats, fundamentals, settings as settings_api, news, logs, backtest, market, accounts, trading, portfolio, slots, signals
 # TradingView Integration APIs
 from app.api import annotations, grid, backtest_advanced
 # Quantitative Trading APIs (kelly removed - module deleted)
@@ -66,6 +66,7 @@ app.include_router(accounts.router, prefix="/api/accounts", tags=["accounts"])
 app.include_router(trading.router, prefix="/api/trading", tags=["trading"])
 app.include_router(portfolio.router, prefix="/api/portfolio", tags=["portfolio"])
 app.include_router(slots.router, prefix="/api/slots", tags=["slots"])
+app.include_router(signals.router, prefix="/api/signals", tags=["signals"])
 
 # TradingView Integration - Phase 3, 4, 5
 app.include_router(annotations.router, prefix="/api", tags=["tradingview-annotations"])
