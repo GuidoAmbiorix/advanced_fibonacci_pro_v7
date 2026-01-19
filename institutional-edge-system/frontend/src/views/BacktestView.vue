@@ -306,7 +306,13 @@
         </div>
 
         <!-- Combined Trade History (All Slots) -->
-        <TradeHistoryTable :trades="trades" />
+        <!-- Combined Trade History (All Slots) -->
+        <TradeHistoryTable 
+          :trades="trades"
+          :format-date-time="formatDateTime"
+          :format-duration="formatDuration"
+          :get-duration-color="getDurationColor"
+        />
 
         <!-- Backtest Logs Panel -->
         <BacktestLogs :session-id="currentSessionId" />
@@ -492,7 +498,7 @@ import SlotManager from '../components/backtest/SlotManager.vue'
 import RiskOverview from '../components/backtest/RiskOverview.vue'
 import KpiDashboard from '../components/backtest/KpiDashboard.vue'
 import TradeHistoryTable from '../components/backtest/TradeHistoryTable.vue'
-import { SYMBOL_PRESETS } from '../constants/presets.js'
+import { useSlotManager } from '../composables/useSlotManager'
 
 // Socket connection state (reactive refs from socket.js)
 const socketConnected = connectionState.isConnected
@@ -503,7 +509,9 @@ const API_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 // State
 const isRunning = ref(false)  // Global running state (any slot running)
+const progress = ref(0)       // Global progress
 const history = ref([])
+const results = ref({}) // Session results container
 const backtestStatus = ref('')  // Current backtest status message
 const toastMessage = ref('')  // Toast notification message
 const toastType = ref('info')  // 'success', 'error', 'info', 'warning'
@@ -582,6 +590,7 @@ const fetchAccounts = async () => {
     console.error('Failed to fetch accounts:', error)
   }
 }
+
 
 const onAccountChange = async () => {
   if (selectedAccountId.value && tradingMode.value === 'live') {
@@ -738,46 +747,7 @@ const applySymbolPreset = (slot) => {
 }
 
 // MULTI-SYMBOL SLOTS - Optimized for stability (M15 + H1 Conf + Wide Stops + NO Partial TP)
-const slots = ref([
-  { id: 0, symbol: 'EURJPY', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    // 🇪🇺🇯🇵 EURJPY: The Beast (Momentum)
-    ...symbolPresets['EURJPY'], 
-    risk_percent: 0.5, volume_mode: 'RISK', fixed_volume: 0.1, timeframe: 'H1', 
-    tp_ratio: 2.0, sl_atr_multiplier: 1.2, 
-    rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25,
-    tsl_mode: 'TIERED', use_h1_trend_filter: true, // ✅ Momentum: H1 Filter ON
-    tsl_activation_r: 1.0, // Activate at 1R
-    max_duration: 4, // Max hold 4 hours
-    partial_tp_on: false, min_confluence_score: 7, description: 'The Beast Cross (H1 Momentum - Safe Mode)',
-    // Engine Config
-    engine_type: 'ADAPTIVE', zigzag_lookback: 5,
-    config: {}
-  },  
-  { id: 1, symbol: 'XAUUSD', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    // 🥇 XAUUSD: Institutional Gold (High Win Rate)
-    ...symbolPresets['XAUUSD'], 
-    risk_percent: 0.5, volume_mode: 'RISK', fixed_volume: 0.1, timeframe: 'M15', 
-    tp_ratio: 2.0, sl_atr_multiplier: 1.5, 
-    rsi_period: 9, rsi_overbought: 50, rsi_oversold: 50,
-    zigzag_lookback: 10,
-    description: 'Gold 🥇 High Win Rate - Optimized M15', 
-    config: {} 
-  },  
-  { id: 2, symbol: 'EURGBP', enabled: true, expanded: true, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    // 💶💷 EURGBP: The Channel (Range)
-    ...symbolPresets['EURGBP'], 
-    risk_percent: 0.7, volume_mode: 'RISK', fixed_volume: 0.1, timeframe: 'H1', 
-    tp_ratio: 1.4, sl_atr_multiplier: 1.2, 
-    rsi_period: 14, rsi_overbought: 60, rsi_oversold: 40,
-    tsl_mode: 'ATR', tsl_atr_multiplier: 0.8, // Light trail
-    use_h1_trend_filter: false, // ❌ Range: H1 Filter OFF
-    stoch_k_period: 9, stoch_d_period: 3, vwap_use_trend_filter: false, // Range Settings
-    max_duration: 4, // Max hold 4 hours
-    partial_tp_on: false, min_confluence_score: 7, description: 'Channel Scalper (H1 Range - Safe Mode)', config: {} },  
-  { id: 3, symbol: 'AUDJPY', enabled: false, expanded: false, isRunning: false, progress: 0, results: {}, trades: [], sessionId: null,
-    // 🦘🇯🇵 AUDJPY: Risk Proxy
-    ...symbolPresets['AUDJPY'], risk_percent: 0.75, timeframe: 'M5', tp_ratio: 2.0, sl_atr_multiplier: 1.5, partial_tp_on: false, min_confluence_score: 7, description: 'Risk Proxy Scalper', config: {} }   
-])
+
 
 // Portfolio Synergy Settings
 const portfolioSynergy = ref({
@@ -832,6 +802,18 @@ const trades = ref([])
 
 
 // COMPOSABLES INITIALIZATION
+
+// 1. Slot Management (Initialize first as other composables depend on `slots`)
+const { 
+  slots, 
+  addSlot, 
+  cloneSlot, 
+  deleteSlot, 
+  applySymbolPreset, 
+  saveSlot, 
+  loadSlots 
+} = useSlotManager(API_URL, showToastNotification)
+
 const { killSwitchActive, riskStatus, toggleKillSwitch } = useRiskManagement(API_URL, showToastNotification)
 
 const { 
@@ -1064,282 +1046,8 @@ const fetchHistory = async () => {
 
 // ==================== SLOT CRUD METHODS ====================
 
-// Add a new slot
-const addSlot = () => {
-  const newId = Math.max(...slots.value.map(s => s.id)) + 1
-  const defaultPreset = symbolPresets['EURUSD']
-  
-  slots.value.push({
-    id: newId,
-    dbId: null,  // Will be set when saved to DB
-    symbol: 'EURUSD',
-    enabled: true,
-    expanded: true,
-    isRunning: false,
-    progress: 0,
-    results: {},
-    trades: [],
-    sessionId: null,
-    ...defaultPreset,
-    direction: 'BOTH',
-    risk_percent: 1.0,
-    volume_mode: 'RISK',
-    fixed_volume: 0.1,
-    timeframe: 'M5',
-    tp_ratio: 2.0,
-    sl_atr_multiplier: 1.5,
-    rsi_period: 14,
-    rsi_overbought: 70,
-    rsi_oversold: 30,
-    min_confluence: 7,
-    max_duration: 2,
-    enable_vwap: true,
-    enable_stoch: true,
-    enable_institutional: true,
-    enable_fibonacci: true,
-    tsl_mode: 'TIERED',
-    partial_tp_on: true,
-    
-    engine_type: 'XAU_PRO',  // Default to Pro Engine
-    
-    // Institutional Defaults (v3.0)
-    confirmation_timeframe: null,
-    trading_session: 'BOTH_KZ',
-    session_mode: 'BOTH_KZ',  // v3.0 Killzone
-    session_end_action: 'HOLD',
-    macd_fast: 12, macd_slow: 26, macd_signal: 9, 
-    zigzag_lookback: 12,
-    
-    // SMC v4.0 Defaults
-    enable_order_blocks: true, ob_lookback: 20,
-    enable_liquidity_sweep: true, sweep_lookback: 10,
-    enable_fvg: true, fvg_min_size_atr: 0.5,
-    
-    // Filters
-    use_adx_filter: false,
-    use_h1_trend_filter: false,
-    vwap_use_trend_filter: true,
 
-    config: {}
-  })
-  
-  console.log(`➕ Added new slot ${newId}`)
-}
 
-// Clone an existing slot
-const cloneSlot = (sourceSlot) => {
-  const newId = Math.max(...slots.value.map(s => s.id)) + 1
-
-  // Clone all settings from source slot
-  const clonedSlot = {
-    ...sourceSlot,
-    id: newId,
-    dbId: null,  // New slot doesn't have DB id yet
-    config: JSON.parse(JSON.stringify(sourceSlot.config || {})), // Deep copy config
-    enabled: false,  // Start disabled so user can review settings
-    expanded: true,  // Show expanded so user sees cloned settings
-    isRunning: false,
-    progress: 0,
-    results: {},
-    trades: [],
-    sessionId: null
-  }
-
-  slots.value.push(clonedSlot)
-  showToastNotification(`Cloned ${sourceSlot.symbol} to Slot ${newId + 1}`, 'success', 3000)
-  console.log(`📋 Cloned slot ${sourceSlot.id} to new slot ${newId}`)
-}
-
-// Delete a slot
-const deleteSlot = async (slotId) => {
-  const slot = slots.value.find(s => s.id === slotId)
-  if (!slot) return
-  
-  // If slot has DB id, delete from server
-  if (slot.dbId) {
-    try {
-      await axios.delete(`${API_URL}/api/slots/${slot.dbId}`)
-      console.log(`🗑️ Deleted slot ${slot.dbId} from server`)
-    } catch (error) {
-      console.error('Failed to delete slot from server:', error)
-    }
-  }
-  
-  // Remove from local state
-  slots.value = slots.value.filter(s => s.id !== slotId)
-  console.log(`🗑️ Removed slot ${slotId}`)
-}
-
-// Save a single slot to DB (debounced)
-let saveTimeout = null
-const saveSlot = async (slot) => {
-  // Debounce saves
-  if (saveTimeout) clearTimeout(saveTimeout)
-  
-  saveTimeout = setTimeout(async () => {
-    try {
-      const payload = {
-        bot_config_id: 1,  // Default config ID
-        symbol: slot.symbol,
-        direction_filter: slot.direction || 'BOTH',
-        timeframe: slot.timeframe || 'M5',
-        risk_percent: slot.risk_percent || 1.0,
-        tp_ratio: slot.tp_ratio || 2.0,
-        sl_atr_multiplier: slot.sl_atr_multiplier || 1.5,
-        tsl_mode: slot.tsl_mode || 'TIERED',
-        rsi_period: slot.config?.rsi_period || slot.rsi_period || 14,
-        rsi_overbought: slot.config?.rsi_sell_threshold || slot.rsi_overbought || 70,
-        rsi_oversold: slot.config?.rsi_buy_threshold || slot.rsi_oversold || 30,
-        min_confluence_score: slot.min_confluence || 7,
-        max_trade_duration_hours: slot.max_duration || 0,
-        enable_vwap_strategy: slot.enable_vwap !== false,
-        enable_stoch_strategy: slot.enable_stoch !== false,
-        enable_institutional_strategy: slot.enable_institutional !== false,
-        enable_fibonacci_strategy: slot.enable_fibonacci !== false,
-        partial_tp_on: slot.partial_tp_on !== false,
-        partial_tp_amount: 1.0,
-        enabled: slot.enabled !== false,
-        
-        // Institutional
-        confirmation_timeframe: slot.confirmation_timeframe || null,
-        trading_session: slot.session_mode || slot.trading_session || 'ALL',
-        session_end_action: slot.session_end_action || 'HOLD',
-        use_daily_bias: slot.use_daily_bias || false,
-
-        // Engine Type & Config
-        engine_type: slot.engine_type || 'XAU_PRO',
-        
-        // MACD
-        macd_fast: slot.config?.macd_fast || 12,
-        macd_slow: slot.config?.macd_slow || 26,
-        macd_signal: slot.config?.macd_signal || 9,
-
-        // Stoch
-        stoch_k_period: slot.stoch_k_period || 14,
-        stoch_d_period: slot.stoch_d_period || 3,
-
-        // Structure & SMC
-        zigzag_lookback: slot.zigzag_lookback || 12,
-        enable_order_blocks: slot.enable_order_blocks !== false,
-        ob_lookback: slot.ob_lookback || 20,
-        enable_liquidity_sweep: slot.enable_liquidity_sweep !== false,
-        sweep_lookback: slot.sweep_lookback || 10,
-        enable_fvg: slot.enable_fvg !== false,
-        fvg_min_size_atr: slot.fvg_min_size_atr || 0.5,
-
-        // Filters
-        use_adx_filter: slot.use_adx_filter || false,
-        use_h1_trend_filter: slot.use_h1_trend_filter || false,
-        vwap_use_trend_filter: slot.vwap_use_trend_filter !== false
-      }
-      
-      if (slot.dbId) {
-        // Update existing
-        await axios.put(`${API_URL}/api/slots/${slot.dbId}`, payload)
-        console.log(`💾 Updated slot ${slot.dbId}`)
-        showToastNotification('✅ Configuration Saved!', 'success')
-      } else {
-        // Create new
-        const response = await axios.post(`${API_URL}/api/slots/`, payload)
-        slot.dbId = response.data.id
-        console.log(`💾 Created slot ${slot.dbId}`)
-        showToastNotification('✅ New Slot Created!', 'success')
-      }
-    } catch (error) {
-      // Handle 404 (Slot not found in DB but exists in Frontend) - Retry as Create
-      if (error.response && error.response.status === 404 && slot.dbId) {
-        console.warn(`⚠️ Slot ${slot.dbId} not found in DB (404). Re-creating...`)
-        try {
-           const response = await axios.post(`${API_URL}/api/slots/`, payload)
-           slot.dbId = response.data.id
-           console.log(`💾 Re-created slot as ID ${slot.dbId}`)
-           showToastNotification('Sync: Slot re-created on server', 'info')
-        } catch (createError) {
-           console.error('Failed to re-create slot:', createError)
-        }
-      } else {
-        console.error('Failed to save slot:', error)
-        showToastNotification('❌ Failed to save: ' + (error.response?.data?.detail || error.message), 'error')
-      }
-    }
-  }, 500)  // 500ms debounce
-}
-
-// Load slots from database
-const loadSlots = async () => {
-  try {
-    const response = await axios.get(`${API_URL}/api/slots/`)
-    const dbSlots = response.data
-    
-    if (dbSlots.length > 0) {
-      // Replace local slots with DB slots
-      slots.value = dbSlots.map((dbSlot, index) => ({
-        id: index,
-        dbId: dbSlot.id,
-        symbol: dbSlot.symbol,
-        enabled: dbSlot.enabled,
-        expanded: index === 0,  // First slot expanded
-        isRunning: false,
-        progress: 0,
-        results: {},
-        trades: [],
-        sessionId: null,
-        direction: dbSlot.direction_filter,
-        timeframe: dbSlot.timeframe,
-        risk_percent: dbSlot.risk_percent,
-        tp_ratio: dbSlot.tp_ratio,
-        sl_atr_multiplier: dbSlot.sl_atr_multiplier,
-        tsl_mode: dbSlot.tsl_mode,
-        rsi_period: dbSlot.rsi_period,
-        rsi_overbought: dbSlot.rsi_overbought,
-        rsi_oversold: dbSlot.rsi_oversold,
-        min_confluence: dbSlot.min_confluence_score,
-        max_duration: dbSlot.max_trade_duration_hours,
-        enable_vwap: dbSlot.enable_vwap_strategy,
-        enable_stoch: dbSlot.enable_stoch_strategy,
-        enable_institutional: dbSlot.enable_institutional_strategy,
-        enable_fibonacci: dbSlot.enable_fibonacci_strategy,
-        partial_tp_on: dbSlot.partial_tp_on,
-        
-        // Institutional
-        confirmation_timeframe: dbSlot.confirmation_timeframe,
-        trading_session: dbSlot.trading_session,
-        session_mode: dbSlot.trading_session, // Map DB trading_session to UI session_mode
-        session_end_action: dbSlot.session_end_action,
-        use_daily_bias: dbSlot.use_daily_bias,
-
-        // Engine & SMC
-        engine_type: dbSlot.engine_type || 'XAU_PRO',
-        zigzag_lookback: dbSlot.zigzag_lookback,
-        
-        enable_order_blocks: dbSlot.enable_order_blocks,
-        ob_lookback: dbSlot.ob_lookback,
-        enable_liquidity_sweep: dbSlot.enable_liquidity_sweep,
-        sweep_lookback: dbSlot.sweep_lookback,
-        enable_fvg: dbSlot.enable_fvg,
-        fvg_min_size_atr: dbSlot.fvg_min_size_atr,
-        
-        // Filters
-        use_adx_filter: dbSlot.use_adx_filter,
-        use_h1_trend_filter: dbSlot.use_h1_trend_filter,
-        vwap_use_trend_filter: dbSlot.vwap_use_trend_filter,
-        
-        // Config Object for UI Binding
-        config: {
-            macd_fast: dbSlot.macd_fast,
-            macd_slow: dbSlot.macd_slow,
-            macd_signal: dbSlot.macd_signal,
-            rsi_period: dbSlot.rsi_period,
-            rsi_buy_threshold: dbSlot.rsi_oversold, // Map DB oversold to UI buy_threshold
-            rsi_sell_threshold: dbSlot.rsi_overbought // Map DB overbought to UI sell_threshold
-        } || {}
-      }))
-      console.log(`📦 Loaded ${dbSlots.length} slots from database`)
-    }
-  } catch (error) {
-    console.error('Failed to load slots from database:', error)
-  }
-}
 
 const loadSession = async (sessionId) => {
   try {
