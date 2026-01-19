@@ -430,8 +430,8 @@ const getSymbolEmoji = (symbol) => {
 
 watch(autoScan, (enabled) => {
   if (enabled) {
-    autoScanInterval = setInterval(scanSignals, 30000) // Every 30s
-    showToast('Auto-scan enabled (every 30s)', 'info')
+    autoScanInterval = setInterval(scanSignals, 300000) // Every 5 minutes
+    showToast('Auto-scan enabled (every 5 min)', 'info')
   } else {
     if (autoScanInterval) clearInterval(autoScanInterval)
     showToast('Auto-scan disabled', 'info')

@@ -16,6 +16,7 @@ from app.api import database
 from app.core.socket_server import sio
 from app.engines.xau_pro.core import InstitutionalGoldEngine
 from app.services.mt5_connector import mt5_connector
+from app.services.alert_service import alert_service
 from loguru import logger
 
 router = APIRouter()
@@ -234,9 +235,67 @@ async def _scan_symbol(symbol: str, timeframe: str) -> List[dict]:
             # Emit via WebSocket
             await sio.emit('signal_generated', formatted.dict())
             logger.info(f"📡 Signal emitted: {formatted.symbol} {formatted.signal_type} @ {formatted.price}")
+            
+            # Send to Discord
+            await _send_signal_to_discord(formatted)
         
         return signals
         
     except Exception as e:
         logger.error(f"❌ Engine analysis failed for {symbol}: {e}")
         return []
+
+
+async def _send_signal_to_discord(signal: SignalResponse):
+    """
+    Format and send signal to Discord via alert_service.
+    Uses the DISCORD_WEBHOOK_SIGNALS_URL for dedicated signals channel.
+    """
+    try:
+        # Determine emoji based on signal type
+        emoji = "📈" if signal.signal_type == "BUY" else "📉"
+        
+        # Format price with appropriate decimals
+        decimals = 2 if "XAU" in signal.symbol or "JPY" in signal.symbol else 5
+        
+        # Build message
+        title = f"{emoji} {signal.signal_type} Signal: {signal.symbol}"
+        message = f"**Strategy:** {signal.strategy}\n**Timeframe:** {signal.timeframe}"
+        
+        # Build fields for Discord embed
+        fields = [
+            {"name": "🎯 Entry", "value": f"`{signal.price:.{decimals}f}`", "inline": True},
+            {"name": "🛑 Stop Loss", "value": f"`{signal.stop_loss:.{decimals}f}`", "inline": True},
+            {"name": "💰 Take Profit", "value": f"`{signal.take_profit_1:.{decimals}f}`", "inline": True},
+            {"name": "📊 Score", "value": f"`{signal.confluence_score}/100`", "inline": True},
+        ]
+        
+        # Add SMC metadata if present
+        if signal.metadata:
+            smc_tags = []
+            if signal.metadata.get('in_order_block'):
+                smc_tags.append("🟣 Order Block")
+            if signal.metadata.get('liquidity_swept'):
+                smc_tags.append("🟡 Liquidity Sweep")
+            if signal.metadata.get('in_fvg'):
+                smc_tags.append("🔵 Fair Value Gap")
+            if signal.metadata.get('fib_level'):
+                smc_tags.append(f"📐 Fib {signal.metadata['fib_level']}")
+            
+            if smc_tags:
+                fields.append({"name": "🧠 SMC Confluence", "value": "\n".join(smc_tags), "inline": False})
+        
+        # Determine level (color) based on confluence score
+        level = "SUCCESS" if signal.confluence_score >= 90 else "INFO"
+        
+        await alert_service.send_alert(
+            title=title,
+            message=message,
+            level=level,
+            fields=fields
+        )
+        
+        logger.info(f"📣 Signal sent to Discord: {signal.symbol} {signal.signal_type}")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to send signal to Discord: {e}")
