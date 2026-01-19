@@ -450,16 +450,21 @@ class InstitutionalGoldEngine:
     def _create_signal(self, signals, direction, current, structure, fib_level, smc_result=None):
         """
         Constructs the signal object with Risk Management
-        v4.0: Includes SMC confluence data
+        v4.1: Fixed SL calculation to always be on correct side of entry
         """
         current_price = current.close
         atr = current['atr']
         
+        # Minimum SL distance (0.5 ATR to prevent "Invalid stops" errors)
+        min_sl_distance = atr * 0.5
+        
         # SMC / Institutional Stop Loss
-        # SMC / Institutional Stop Loss
-        # We look for the INVALIDATION point (Structure start) + 1 ATR breathing room
+        # We look for the INVALIDATION point (Structure start) + ATR breathing room
         
         # FIX M5 CRASH: structure.last_impulse_leg can be None if zigzag undefined
+        sl_price = None
+        use_fallback = False
+        
         if structure and structure.last_impulse_leg:
              invalid_price = structure.last_impulse_leg['start'].price
              
@@ -467,36 +472,70 @@ class InstitutionalGoldEngine:
              max_sl_dist = atr * 3.0
              
              if direction == 'BUY':
-                dist_to_struct = current_price - invalid_price
-                if dist_to_struct > max_sl_dist:
-                    sl_price = current_price - (atr * self.sl_atr_multiplier) 
+                # For BUY: invalid_price MUST be below current_price
+                if invalid_price < current_price:
+                    dist_to_struct = current_price - invalid_price
+                    if dist_to_struct > max_sl_dist:
+                        sl_price = current_price - (atr * self.sl_atr_multiplier) 
+                    else:
+                        sl_price = invalid_price - (atr * 0.2) 
                 else:
-                    sl_price = invalid_price - (atr * 0.2) 
+                    # Structure invalid for BUY - use ATR fallback
+                    use_fallback = True
+                    logger.debug(f"⚠️ BUY: Structure invalid_price ({invalid_price:.2f}) >= entry ({current_price:.2f}), using ATR SL")
                     
-                tp_dist = abs(current_price - sl_price) * self.rr_ratio
-                tp1_price = current_price + tp_dist
              else: # SELL
-                dist_to_struct = invalid_price - current_price
-                if dist_to_struct > max_sl_dist:
-                    sl_price = current_price + (atr * self.sl_atr_multiplier)
+                # For SELL: invalid_price MUST be above current_price
+                if invalid_price > current_price:
+                    dist_to_struct = invalid_price - current_price
+                    if dist_to_struct > max_sl_dist:
+                        sl_price = current_price + (atr * self.sl_atr_multiplier)
+                    else:
+                        sl_price = invalid_price + (atr * 0.2)
                 else:
-                    sl_price = invalid_price + (atr * 0.2)
-
-                tp_dist = abs(sl_price - current_price) * self.rr_ratio
-                tp1_price = current_price - tp_dist
-                
+                    # Structure invalid for SELL - use ATR fallback
+                    use_fallback = True
+                    logger.debug(f"⚠️ SELL: Structure invalid_price ({invalid_price:.2f}) <= entry ({current_price:.2f}), using ATR SL")
         else:
-             # Fallback if structure is missing (e.g. M5 early data)
-             # Use Standard ATR SL
+             use_fallback = True
+             
+        # Fallback: Use Standard ATR SL
+        if use_fallback or sl_price is None:
              sl_dist = atr * self.sl_atr_multiplier
-             tp_dist = sl_dist * self.rr_ratio
              
              if direction == 'BUY':
                  sl_price = current_price - sl_dist
-                 tp1_price = current_price + tp_dist
              else:
                  sl_price = current_price + sl_dist
-                 tp1_price = current_price - tp_dist
+                 
+        # CRITICAL VALIDATION: Ensure SL is on correct side with minimum distance
+        if direction == 'BUY':
+            sl_distance = current_price - sl_price
+            if sl_distance < min_sl_distance:
+                # Force minimum SL distance
+                sl_price = current_price - min_sl_distance
+                logger.warning(f"⚙️ BUY SL adjusted: was too close ({sl_distance:.2f}), now {min_sl_distance:.2f} ATR")
+            # Final sanity check
+            if sl_price >= current_price:
+                sl_price = current_price - (atr * self.sl_atr_multiplier)
+                logger.error(f"🚨 BUY SL was ABOVE entry! Forced to ATR-based: {sl_price:.5f}")
+        else:  # SELL
+            sl_distance = sl_price - current_price
+            if sl_distance < min_sl_distance:
+                # Force minimum SL distance
+                sl_price = current_price + min_sl_distance
+                logger.warning(f"⚙️ SELL SL adjusted: was too close ({sl_distance:.2f}), now {min_sl_distance:.2f} ATR")
+            # Final sanity check
+            if sl_price <= current_price:
+                sl_price = current_price + (atr * self.sl_atr_multiplier)
+                logger.error(f"🚨 SELL SL was BELOW entry! Forced to ATR-based: {sl_price:.5f}")
+                
+        # Calculate TP based on validated SL
+        tp_dist = abs(current_price - sl_price) * self.rr_ratio
+        if direction == 'BUY':
+            tp1_price = current_price + tp_dist
+        else:
+            tp1_price = current_price - tp_dist
             
 
 
