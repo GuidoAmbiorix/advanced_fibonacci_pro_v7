@@ -1407,3 +1407,7 @@ def proxy_order_send(req):
         except Exception as e:
             logger.error(f"Error fetching calendar: {e}")
             return []
+
+# Initialize Global Instance
+# We pass the full settings dict so the connector can extract MT5 credentials
+mt5_connector = MT5Connector(settings.dict())
