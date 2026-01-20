@@ -24,7 +24,7 @@ from app.backtesting.reporter import ReportGenerator
 
 from app.core.adaptive_multi_strategy_engine import AdaptiveMultiStrategyEngine
 from app.engines.golden.core import GoldenEngine
-from app.engines.xau_pro.core import InstitutionalGoldEngine  # SMC v4.1
+from app.engines.xau_pro.core import InstitutionalProEngine  # SMC v5.0
 from app.core.strategy_factory import StrategyFactory
 from app.services.risk_manager import AdaptiveRiskManager
 from app.services.portfolio_manager import PortfolioManager, Position
@@ -118,37 +118,38 @@ class BacktestEngine:
             
             return GoldenEngine(golden_config)
         
-        elif self.config.engine_type == 'XAU_PRO':
-            # InstitutionalGoldEngine with SMC v4.1
-            xau_config = self.config.engine_config.copy()
+        elif self.config.engine_type in ['XAU_PRO', 'INSTITUTIONAL', 'PRO']:
+            # InstitutionalProEngine (Multi-Asset)
+            inst_config = self.config.engine_config.copy()
             
             # Core params
-            xau_config['symbol'] = self.config.symbol
-            xau_config['timeframe'] = self.config.timeframe
-            xau_config['rr_ratio'] = self.config.tp_ratio
-            xau_config['sl_atr_multiplier'] = self.config.sl_atr_multiplier
+            inst_config['symbol'] = self.config.symbol
+            inst_config['timeframe'] = self.config.timeframe
+            inst_config['rr_ratio'] = self.config.tp_ratio
+            inst_config['sl_atr_multiplier'] = self.config.sl_atr_multiplier
             
             # Structure
-            if 'structure' not in xau_config: xau_config['structure'] = {}
-            xau_config['structure']['zigzag_lookback'] = getattr(self.config, 'zigzag_lookback', 12)
+            if 'structure' not in inst_config: inst_config['structure'] = {}
+            inst_config['structure']['zigzag_lookback'] = getattr(self.config, 'zigzag_lookback', 12)
             
-            # Session Killzone
-            xau_config['session_mode'] = getattr(self.config, 'session_mode', 'BOTH_KZ')
+            # Session Killzone - Managed internally by engine now, but pass if overridden
+            if hasattr(self.config, 'session_mode'):
+                 inst_config['session_mode'] = self.config.session_mode
             
             # SMC v4.1 Parameters
-            xau_config['enable_order_blocks'] = getattr(self.config, 'enable_order_blocks', True)
-            xau_config['ob_lookback'] = getattr(self.config, 'ob_lookback', 20)
-            xau_config['enable_liquidity_sweep'] = getattr(self.config, 'enable_liquidity_sweep', True)
-            xau_config['sweep_lookback'] = getattr(self.config, 'sweep_lookback', 10)
-            xau_config['enable_fvg'] = getattr(self.config, 'enable_fvg', True)
-            xau_config['fvg_min_size_atr'] = getattr(self.config, 'fvg_min_size_atr', 0.5)
+            inst_config['enable_order_blocks'] = getattr(self.config, 'enable_order_blocks', True)
+            inst_config['ob_lookback'] = getattr(self.config, 'ob_lookback', 20)
+            inst_config['enable_liquidity_sweep'] = getattr(self.config, 'enable_liquidity_sweep', True)
+            inst_config['sweep_lookback'] = getattr(self.config, 'sweep_lookback', 10)
+            inst_config['enable_fvg'] = getattr(self.config, 'enable_fvg', True)
+            inst_config['fvg_min_size_atr'] = getattr(self.config, 'fvg_min_size_atr', 0.5)
             
             # RSI thresholds
-            xau_config['rsi_buy_threshold'] = getattr(self.config, 'rsi_oversold', 40)
-            xau_config['rsi_sell_threshold'] = getattr(self.config, 'rsi_overbought', 60)
+            inst_config['rsi_buy_threshold'] = getattr(self.config, 'rsi_oversold', 40)
+            inst_config['rsi_sell_threshold'] = getattr(self.config, 'rsi_overbought', 60)
             
-            logger.info(f"🥇 XAU_PRO Engine initialized with SMC v4.1: session={xau_config['session_mode']}, sweep_required=AND_logic")
-            return InstitutionalGoldEngine(xau_config)
+            logger.info(f"🥇 INSTITUTIONAL PRO Engine initialized: symbol={inst_config['symbol']}")
+            return InstitutionalProEngine(inst_config)
             
         else:
             # LEGACY: Adaptive Multi-Strategy

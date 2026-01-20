@@ -3,14 +3,14 @@ from loguru import logger
 
 # Import Engines
 from app.engines.golden.core import GoldenEngine
-from app.engines.xau_pro.core import InstitutionalGoldEngine
+from app.engines.xau_pro.core import InstitutionalProEngine
 
 class EngineFactory:
     """
     Factory to instantiate the Trading Engine.
     
     Pivot Update:
-    - XAU_PRO: The new Institutional Gold Engine (Default).
+    - INSTITUTIONAL / XAU_PRO: The new Institutional Pro Engine (Multi-Asset).
     - GOLDEN: Kept for legacy compatibility / Reference.
     """
     
@@ -20,17 +20,17 @@ class EngineFactory:
         
         logger.info(f"🏭 EngineFactory: Requesting engine type '{engine_type}'")
         
-        if engine_type == 'XAU_PRO':
-            return InstitutionalGoldEngine(config)
+        if engine_type in ['INSTITUTIONAL', 'XAU_PRO', 'PRO']:
+            return InstitutionalProEngine(config)
             
         elif engine_type == 'GOLDEN':
             return GoldenEngine(config)
             
         # Map Legacy/Deleted engines to the new Gold Standard (or Golden)
         elif engine_type in ['SILVER', 'BRONZE', 'PLATINUM', 'ADAPTIVE']:
-             logger.warning(f"⚠️ Legacy engine '{engine_type}' requested. Mapping to XAU_PRO.")
-             return InstitutionalGoldEngine(config)
-            
+             logger.warning(f"⚠️ Legacy engine '{engine_type}' requested. Mapping to INSTITUTIONAL PRO.")
+             return InstitutionalProEngine(config)
+             
         else:
-            logger.warning(f"Unknown engine type '{engine_type}', defaulting to XAU_PRO")
-            return InstitutionalGoldEngine(config)
+            logger.warning(f"Unknown engine type '{engine_type}', defaulting to INSTITUTIONAL PRO")
+            return InstitutionalProEngine(config)

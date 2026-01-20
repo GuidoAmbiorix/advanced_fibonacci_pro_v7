@@ -1392,7 +1392,7 @@ const symbolPresets = {
   },
   'XAUUSD': { 
     name: 'XAU/USD', emoji: '🥇', volatility: 'EXTREME',
-    engine_type: 'XAU_PRO',  // Use InstitutionalGoldEngine with SMC v4.1
+    engine_type: 'INSTITUTIONAL',  // Use InstitutionalProEngine
     // v4.1 SMC Enhanced (Order Blocks + Liquidity Sweeps + FVG - AND Logic)
     timeframe: 'M15', tsl_mode: 'ATR',
     risk_percent: 0.5, tp_ratio: 2.0, sl_atr_multiplier: 1.4,
@@ -2033,8 +2033,8 @@ const runBacktest = async () => {
                   tp1_ratio: slot.tp_ratio,
                   enable_trailing_stop: slot.tsl_mode !== 'OFF'
               }
-          } : slot.engine_type === 'XAU_PRO' ? {
-              // XAU_PRO (InstitutionalGoldEngine) Configuration
+          } : ['XAU_PRO', 'INSTITUTIONAL', 'PRO'].includes(slot.engine_type) ? {
+              // Institutional Pro Engine Configuration
               structure: {
                   zigzag_lookback: slot.zigzag_lookback || 12
               },
@@ -2302,65 +2302,127 @@ const fetchHistory = async () => {
 // ==================== SLOT CRUD METHODS ====================
 
 // Add a new slot
-const addSlot = () => {
-  const newId = Math.max(...slots.value.map(s => s.id)) + 1
+// Add a new slot
+const addSlot = async () => {
+    // 1. Prepare default payload
   const defaultPreset = symbolPresets['EURUSD']
-  
-  slots.value.push({
-    id: newId,
-    dbId: null,  // Will be set when saved to DB
+  const payload = {
+    bot_config_id: 1, // Default
     symbol: 'EURUSD',
-    enabled: true,
-    expanded: true,
-    isRunning: false,
-    progress: 0,
-    results: {},
-    trades: [],
-    sessionId: null,
-    ...defaultPreset,
-    direction: 'BOTH',
-    risk_percent: 1.0,
-    volume_mode: 'RISK',
-    fixed_volume: 0.1,
+    direction_filter: 'BOTH',
     timeframe: 'M5',
+    risk_percent: 1.0,
     tp_ratio: 2.0,
     sl_atr_multiplier: 1.5,
+    tsl_mode: 'TIERED',
     rsi_period: 14,
     rsi_overbought: 70,
     rsi_oversold: 30,
-    min_confluence: 7,
-    max_duration: 2,
-    enable_vwap: true,
-    enable_stoch: true,
-    enable_institutional: true,
-    enable_fibonacci: true,
-    tsl_mode: 'TIERED',
+    min_confluence_score: 7,
+    max_trade_duration_hours: 0,
+    // Strategies
+    enable_vwap_strategy: true,
+    enable_stoch_strategy: true,
+    enable_institutional_strategy: true,
+    enable_fibonacci_strategy: true,
     partial_tp_on: true,
+    partial_tp_amount: 1.0,
+    enabled: true,
     
-    engine_type: 'XAU_PRO',  // Default to Pro Engine
-    
-    // Institutional Defaults (v3.0)
-    confirmation_timeframe: null,
-    trading_session: 'BOTH_KZ',
-    session_mode: 'BOTH_KZ',  // v3.0 Killzone
+    // Institutional 
+    trading_session: 'ALL',
     session_end_action: 'HOLD',
-    macd_fast: 12, macd_slow: 26, macd_signal: 9, 
-    zigzag_lookback: 12,
+    use_daily_bias: false,
+
+    // Engine
+    engine_type: 'INSTITUTIONAL',
     
-    // SMC v4.0 Defaults
-    enable_order_blocks: true, ob_lookback: 20,
-    enable_liquidity_sweep: true, sweep_lookback: 10,
-    enable_fvg: true, fvg_min_size_atr: 0.5,
+    // SMC & Structure
+    zigzag_lookback: 10,
+    enable_order_blocks: true,
+    ob_lookback: 20,
+    enable_liquidity_sweep: true,
+    sweep_lookback: 10,
+    enable_fvg: true,
+    fvg_min_size_atr: 0.5,
     
     // Filters
     use_adx_filter: false,
     use_h1_trend_filter: false,
-    vwap_use_trend_filter: true,
+    vwap_use_trend_filter: true
+  }
 
-    config: {}
-  })
-  
-  console.log(`➕ Added new slot ${newId}`)
+  try {
+      // 2. Call API to create slot immediately
+      const response = await axios.post(`${API_URL}/api/slots/`, payload)
+      const dbSlot = response.data
+      
+      // 3. Add to local state
+      slots.value.push({
+        id: Math.max(...slots.value.map(s => s.id), 0) + 1, // Frontend ID
+        dbId: dbSlot.id,
+        symbol: dbSlot.symbol,
+        enabled: dbSlot.enabled,
+        expanded: true,
+        isRunning: false,
+        progress: 0,
+        results: {},
+        trades: [],
+        sessionId: null,
+        
+        // Settings
+        ...defaultPreset, // Load UI defaults first
+        
+        // Override with DB values
+        direction: dbSlot.direction_filter,
+        timeframe: dbSlot.timeframe,
+        risk_percent: dbSlot.risk_percent,
+        tp_ratio: dbSlot.tp_ratio,
+        sl_atr_multiplier: dbSlot.sl_atr_multiplier,
+        tsl_mode: dbSlot.tsl_mode,
+        rsi_period: dbSlot.rsi_period,
+        rsi_overbought: dbSlot.rsi_overbought,
+        rsi_oversold: dbSlot.rsi_oversold,
+        min_confluence: dbSlot.min_confluence_score,
+        max_duration: dbSlot.max_trade_duration_hours,
+        
+        enable_vwap: dbSlot.enable_vwap_strategy,
+        enable_stoch: dbSlot.enable_stoch_strategy,
+        enable_institutional: dbSlot.enable_institutional_strategy,
+        enable_fibonacci: dbSlot.enable_fibonacci_strategy,
+        partial_tp_on: dbSlot.partial_tp_on,
+        
+        // Institutional
+        trading_session: dbSlot.trading_session,
+        session_mode: dbSlot.trading_session,
+        session_end_action: dbSlot.session_end_action,
+        use_daily_bias: dbSlot.use_daily_bias,
+        
+        // Engine
+        engine_type: dbSlot.engine_type,
+        zigzag_lookback: dbSlot.zigzag_lookback,
+        
+        enable_order_blocks: dbSlot.enable_order_blocks,
+        ob_lookback: dbSlot.ob_lookback,
+        enable_liquidity_sweep: dbSlot.enable_liquidity_sweep,
+        sweep_lookback: dbSlot.sweep_lookback,
+        enable_fvg: dbSlot.enable_fvg,
+        fvg_min_size_atr: dbSlot.fvg_min_size_atr,
+        
+        use_adx_filter: dbSlot.use_adx_filter,
+        use_h1_trend_filter: dbSlot.use_h1_trend_filter,
+        vwap_use_trend_filter: dbSlot.vwap_use_trend_filter,
+        
+        config: {}
+      })
+      
+      showToastNotification(`✅ Created Slot ${dbSlot.id} (EURUSD)`, 'success')
+      console.log(`➕ Added new slot ${dbSlot.id}`)
+      
+  } catch (error) {
+      console.error('Failed to create slot:', error)
+      showToastNotification('Failed to create slot: ' + (error.response?.data?.detail || error.message), 'error')
+  }
 }
 
 // Clone an existing slot
@@ -2444,7 +2506,7 @@ const saveSlot = async (slot) => {
         use_daily_bias: slot.use_daily_bias || false,
 
         // Engine Type & Config
-        engine_type: slot.engine_type || 'XAU_PRO',
+        engine_type: slot.engine_type || 'INSTITUTIONAL',
         
         // MACD
         macd_fast: slot.config?.macd_fast || 12,
@@ -2546,7 +2608,8 @@ const loadSlots = async () => {
         use_daily_bias: dbSlot.use_daily_bias,
 
         // Engine & SMC
-        engine_type: dbSlot.engine_type || 'XAU_PRO',
+        // Engine & SMC
+        engine_type: dbSlot.engine_type || 'INSTITUTIONAL',
         zigzag_lookback: dbSlot.zigzag_lookback,
         
         enable_order_blocks: dbSlot.enable_order_blocks,

@@ -11,19 +11,16 @@ from app.engines.golden.structure import StructureAnalyzer
 from app.engines.golden.fibonacci import FibonacciCalculator
 from app.engines.xau_pro.smc import SMCAnalyzer
 
-class InstitutionalGoldEngine:
+class InstitutionalProEngine:
     """
-    🥇 INSTITUTIONAL GOLD ENGINE (XAU_PRO) v4.0 - SMC Enhanced
+    🥇 INSTITUTIONAL PRO ENGINE v5.0 - Multi-Asset SMC
     
-    The "Gold Standard" for High-Volatility Asset Scalping.
+    The "Gold Standard" logic now generalized for all assets (Forex, Crypto, Indices).
     
-    v4.0 Changes:
-    1. Smart Money Concepts: Order Blocks, Liquidity Sweeps, FVG
-    2. Session Killzones: London (07-10 UTC) + NY (12-15 UTC) only
-    3. RSI Thresholds: Buy ≤ 40, Sell ≥ 60
-    4. MACD: 6/18/9 | ZigZag: 12 | SL ATR: 1.4
-    
-    Target: > 70% Win Rate on XAUUSD M15.
+    v5.0 Changes:
+    1. Dynamic Symbol Adaptation: Automated defaults for XAU, BTC, EURUSD, etc.
+    2. Configurable Tolerance: Logic depends on ATR, not fixed price points.
+    3. Session Agnostic: Defaults to 'ALL' for Crypto, 'LONDON/NY' for Forex.
     """
     
     # Session Killzone Definitions (UTC)
@@ -37,26 +34,29 @@ class InstitutionalGoldEngine:
     
     def __init__(self, config: Dict):
         self.config = config
-        self.symbol = config.get('symbol', 'XAUUSD')
+        self.symbol = config.get('symbol', 'XAUUSD').upper()
         self.timeframe = config.get('timeframe', 'M15')
         
+        # Load defaults based on symbol type (Crypto vs Forex vs Metals)
+        defaults = self._get_symbol_defaults(self.symbol)
+        
         # --- Component Initialization (v3.0: ZigZag 12) ---
-        self.structure_analyzer = StructureAnalyzer(config.get('structure', {'zigzag_lookback': 12}))
+        self.structure_analyzer = StructureAnalyzer(config.get('structure', {'zigzag_lookback': defaults['zigzag']}))
         self.fib_calculator = FibonacciCalculator(config.get('fibonacci', {}))
         
         # --- Trend EMAs ---
         self.ema_trend_period = config.get('ema_trend', 200)
         self.ema_fast_trend = 50
         
-        # MACD (v3.0: 6/18/9 for noise reduction)
-        self.macd_fast = config.get('macd_fast', 6)
-        self.macd_slow = config.get('macd_slow', 18)
-        self.macd_signal = config.get('macd_signal', 9)
+        # MACD
+        self.macd_fast = config.get('macd_fast', defaults['macd_fast'])
+        self.macd_slow = config.get('macd_slow', defaults['macd_slow'])
+        self.macd_signal = config.get('macd_signal', defaults['macd_signal'])
         
-        # RSI (v3.0: Tighter thresholds based on trade data)
+        # RSI
         self.rsi_period = config.get('rsi_period', 14)
-        self.rsi_buy_threshold = config.get('rsi_buy_threshold', 40)  # Only deep discount
-        self.rsi_sell_threshold = config.get('rsi_sell_threshold', 60) # Only premium zone
+        self.rsi_buy_threshold = config.get('rsi_buy_threshold', defaults['rsi_buy']) 
+        self.rsi_sell_threshold = config.get('rsi_sell_threshold', defaults['rsi_sell'])
         
         # Stochastic (14, 3, 3)
         self.stoch_k = config.get('stoch_k', 14)
@@ -64,20 +64,57 @@ class InstitutionalGoldEngine:
         
         # Risk (v3.0: ATR 1.4)
         self.rr_ratio = config.get('rr_ratio', 2.0)
-        self.sl_atr_multiplier = config.get('sl_atr_multiplier', 1.4)
+        self.sl_atr_multiplier = config.get('sl_atr_multiplier', defaults['sl_atr'])
         
-        # Session Killzone (v4.1: Check both config keys, default to ALL)
-        self.session_mode = config.get('session_mode', config.get('trading_session', 'ALL'))
-        logger.info(f"⚙️ InstitutionalGoldEngine Session Mode: {self.session_mode}")
+        # Tolerance Multiplier (New in v5.0)
+        self.tolerance_multiplier = config.get('tolerance_multiplier', 0.25)
+        
+        # Session Killzone
+        self.session_mode = config.get('session_mode', config.get('trading_session', defaults['session']))
+        logger.info(f"⚙️ InstitutionalProEngine ({self.symbol}): Session={self.session_mode} | RSI={self.rsi_buy_threshold}/{self.rsi_sell_threshold}")
 
         
         # SMC v4.0 - Smart Money Concepts Analyzer
         self.smc = SMCAnalyzer(config)
         
+    def _get_symbol_defaults(self, symbol: str) -> Dict:
+        """
+        Return optimized defaults based on asset class.
+        """
+        # 1. CRYPTO (BTC, ETH, SOL) - High Volatility, 24/7
+        if any(x in symbol for x in ['BTC', 'ETH', 'SOL', 'XRP', 'BNB']):
+            return {
+                'macd_fast': 12, 'macd_slow': 26, 'macd_signal': 9, # Standard is better for crypto trend
+                'rsi_buy': 35, 'rsi_sell': 65, # Wider RSI
+                'sl_atr': 2.0, # Wider stops
+                'zigzag': 5, # Faster reactions
+                'session': 'ALL' # Crypto never sleeps
+            }
+            
+        # 2. METALS (XAU, XAG) - Mean Reverting + Trending
+        elif 'XAU' in symbol or 'GOLD' in symbol:
+            return {
+                'macd_fast': 6, 'macd_slow': 18, 'macd_signal': 9, # Optimized for Gold scalping
+                'rsi_buy': 40, 'rsi_sell': 60, # Tight ranges
+                'sl_atr': 1.4,
+                'zigzag': 12,
+                'session': 'BOTH_KZ' # Volatility is key
+            }
+            
+        # 3. FOREX MAJORS (EUR, GBP, JPY)
+        else:
+             return {
+                'macd_fast': 12, 'macd_slow': 26, 'macd_signal': 9,
+                'rsi_buy': 30, 'rsi_sell': 70, # Standard Oversold/Overbought
+                'sl_atr': 1.0, # Tighter stops for fx
+                'zigzag': 10,
+                'session': 'BOTH_KZ' if 'JPY' not in symbol else 'ALL' # JPY moves in Asia too
+            }
+        
     def analyze(self, df: pd.DataFrame, df_higher_tf: Optional[pd.DataFrame] = None, df_daily: Optional[pd.DataFrame] = None) -> Dict:
         """
-        Main Analysis Pipeline for Gold (SMC + Fib + Killzone Filter).
-        v4.2: Optimized for performance and robustness.
+        Main Analysis Pipeline (SMC + Fib + Killzone Filter).
+        v5.0: Configurable for any asset class.
         """
         if df is None or len(df) < 50: 
              # Return valid structure object even for empty data to prevent AttributeError in caller
@@ -87,12 +124,9 @@ class InstitutionalGoldEngine:
         # 0. Prevent Mutation Side-Effects
         df = df.copy()
         if df_higher_tf is not None:
-             # Check if we need to copy (only if we're going to modify it)
-             # We modify it to add ema200, so valid.
              df_higher_tf = df_higher_tf.copy()
              
         if len(df) < 200:
-             # Still analyze structure for small datasets
              structure = self.structure_analyzer.analyze(df)
              return {'signals': [], 'structure': structure}
         
@@ -122,13 +156,12 @@ class InstitutionalGoldEngine:
              df['atr'] = atr_ind.average_true_range()
 
         # 1. NaN Guard (Critical for stability)
-        # Check specific columns explicitly to avoid Series vs DataFrame ambiguity
         if df.iloc[-1][['rsi', 'macd_hist', 'stoch_k', 'atr']].isna().any():
-             logger.warning(f"⚠️ {self.symbol}: Indicators contain NaN values (RSI/MACD/Stoch/ATR). Skipping.")
+             # logger.warning(f"⚠️ {self.symbol}: Indicators contain NaN values (RSI/MACD/Stoch/ATR). Skipping.")
              structure = self.structure_analyzer.analyze(df)
              return {'signals': [], 'structure': structure, 'reason': "NaN Indicators"}
 
-        # --- v3.0: SESSION KILLZONE FILTER ---
+        # --- SESSION KILLZONE FILTER ---
         try:
             # Handle both DatetimeIndex and RangeIndex with 'time' column
             if isinstance(df.index, pd.DatetimeIndex):
@@ -144,14 +177,12 @@ class InstitutionalGoldEngine:
         current = df.iloc[-1]
         
         # TIMEZONE MATH (Use UTC consistently)
-        # Broker = UTC+2 (FundingPips Winter)
         try:
             from datetime import timedelta
             # Calculate UTC time once
-            utc_time = current_time - timedelta(hours=2)
+            utc_time = current_time - timedelta(hours=2) # Broker offset approx
             local_time = utc_time - timedelta(hours=4)
         except Exception as e:
-             logger.error(f"Timezone math error: {e}")
              utc_time = current_time
              local_time = current_time
 
@@ -159,26 +190,22 @@ class InstitutionalGoldEngine:
         debug_info = {
             'rsi': current['rsi'],
             'macd_hist': current['macd_hist'],
-            'stoch': current.get('stoch_k', 0),  # FIX: Typos safe access
+            'stoch': current.get('stoch_k', 0),
             'in_zone': False,
             'indicators_aligned': False,
             'smc': {},
             'price_action': False,
             'time_broker': str(current_time.time()),
             'time_utc': str(utc_time.time()),
-            'time_local': str(local_time.time())
+            'session_mode': self.session_mode
         }
-
-        # Validate Session Mode (Defensive)
-        if self.session_mode != 'ALL' and self.session_mode not in self.KILLZONES:
-             logger.warning(f"⚠️ Unknown session_mode '{self.session_mode}', defaulting to BOTH_KZ")
 
         # 2. Performance: Analyze Structure ONCE
         structure = self.structure_analyzer.analyze(df)
 
         # Check Killzone using pure UTC time
         if not self._is_in_killzone_utc(utc_time.hour):
-            logger.info(f"⏳ SKIP KZ: Local {local_time.strftime('%H:%M')} | UTC {utc_time.strftime('%H:%M')} (Outside Session)")
+            # logger.debug(f"⏳ SKIP KZ: UTC {utc_time.strftime('%H:%M')} (Outside {self.session_mode})")
             return {
                 'signals': [], 
                 'structure': structure, 
@@ -197,18 +224,14 @@ class InstitutionalGoldEngine:
         current_price = current.close
         
         # --- STELLAR TREND LOGIC (M15 EMA Only) ---
-        # "Smart Trend" = Price vs EMA200. 
-        # Structure is used for Entry Context, not blocking Trend.
-        
         signal_type = None
         
         # EMA Trend Check
         is_bullish = current['close'] > current['ema200']
         is_bearish = current['close'] < current['ema200']
         
-        # M5 SCALPING SAFETY: Require HTF (M30/H1) Confirmation
-        timeframe = self.config.get('timeframe', '15m')
-        if timeframe.upper() == 'M5' and df_higher_tf is not None and len(df_higher_tf) > 50:
+        # HTF Confirmation
+        if self.timeframe.upper() == 'M5' and df_higher_tf is not None and len(df_higher_tf) > 50:
              # Calculate HTF EMA200 if missing
              if 'ema200' not in df_higher_tf.columns:
                  df_higher_tf['ema200'] = EMAIndicator(close=df_higher_tf['close'], window=200).ema_indicator()
@@ -217,41 +240,26 @@ class InstitutionalGoldEngine:
              htf_bullish = htf_last['close'] > htf_last['ema200']
              htf_bearish = htf_last['close'] < htf_last['ema200']
              
-             # Filter: Must align with HTF
-             if is_bullish and not htf_bullish: 
-                 is_bullish = False
-                 # logger.info(f"🚫 M5 Bullish Signal Vetoed by HTF Bearish Trend")
-                 
-             if is_bearish and not htf_bearish: 
-                 is_bearish = False
-                 # logger.info(f"🚫 M5 Bearish Signal Vetoed by HTF Bullish Trend")
+             if is_bullish and not htf_bullish: is_bullish = False
+             if is_bearish and not htf_bearish: is_bearish = False
 
         if is_bullish:
             signal_type = 'BUY'
         elif is_bearish:
             signal_type = 'SELL'
             
-        # Structure Confirmation (Optional/Bonus, not blocking)
-        # if structure.trend != 'UP' and signal_type == 'BUY': ... (We ignore this for volume)
-
         if not signal_type:
              return {'signals': [], 'structure': structure} 
-        
-        # logger.warning(f"✅ Trend Aligned: {signal_type} @ {current_price}") 
-        
-        # logger.warning(f"✅ Trend Aligned: {signal_type} @ {current_price}") 
 
- 
+        # --- DYNAMIC TOLERANCE (v5.0) ---
+        # Instead of hardcoded 0.0008, use ATR fraction
+        # This scales for BTC (60000) and EURUSD (1.05)
+        tolerance_price = current['atr'] * self.tolerance_multiplier 
             
         # --- BUY LOGIC ---
         if signal_type == 'BUY':
             in_zone = False
             active_level = None
-            
-            # SMC Golden Zone: 0.618 - 0.786
-            # Retail buys at 0.50, Banks buy at 0.70ish
-            # Fix: Cap tolerance in high volatility
-            tolerance_price = min(current['atr'] * 0.25, current_price * 0.0008) 
             
             for zone in fib_zones:
                 if 0.61 <= zone['ratio'] <= 0.79: # Strict Deep Discount
@@ -260,23 +268,14 @@ class InstitutionalGoldEngine:
                         active_level = zone['ratio']
                         break
             
-            # ENTRY FLIP: 
-            # 1. Triple Confirmation (Indicators aligned)
-            # 2. Candlestick Trigger (Pinbar/Engulfing)
-            
             indicators_aligned = self._triple_confirmation(current, prev, 'BUY')
             price_action_trigger = self._validate_entry_trigger(current, prev, 'BUY')
             
-            # SMC v4.3: Decoupled Entry Logic
-            # Path A: SMC Strategy (Structure + OB/FVG + Trigger)
-            # Path B: Fib Strategy (Structure + Golden Zone + Indicators + Trigger)
-            
-            # Re-enable SMC check (undoing debug bypass)
+            # SMC Logic
             smc_enabled = self.smc.ob_enabled or self.smc.fvg_enabled
             is_smc_entry = False
             
             if smc_enabled:
-                # v4.1 STRICT: SMC Sweep + Zone Required
                 smc_result = self.smc.get_smc_confluence(
                     df, 'BUY', current_price, current['atr'],
                     candle_high=current['high'], candle_low=current['low']
@@ -284,22 +283,14 @@ class InstitutionalGoldEngine:
                 if (smc_result['in_order_block'] or smc_result['in_fvg']) and smc_result['liquidity_swept']:
                     is_smc_entry = True
             else:
-                 smc_result = {} # Init for later use
-            
-            # Debug SMC Failure
-            if not is_smc_entry and smc_enabled:
-                 pass # logger.warning(f"❌ SMC FAIL: No Entry (Zone/Sweep missing? Swept={smc_result.get('liquidity_swept')})")
-            elif not smc_enabled:
-                smc_result = {}
+                 smc_result = {} 
 
             # Combined Entry Logic
             if is_smc_entry and price_action_trigger:
-                 logger.info(f"🚀 SMC BUY TRIGGERED! Prob: {smc_result}")
+                 # logger.info(f"🚀 SMC BUY: {smc_result.get('smc_details')}")
                  self._create_signal(signals, 'BUY', current, structure, None, smc_result)
                  
             elif in_zone and indicators_aligned and price_action_trigger:
-                 # Fib Path: Valid Structure + Fib Zone + Indicators + Candle Trigger
-                 # Prevent Double Signal
                  if not signals:
                     self._create_signal(signals, 'BUY', current, structure, active_level, smc_result)
 
@@ -307,7 +298,6 @@ class InstitutionalGoldEngine:
         elif signal_type == 'SELL':
             in_zone = False
             active_level = None
-            tolerance_price = min(current['atr'] * 0.25, current_price * 0.0008)
             
             for zone in fib_zones:
                 if 0.61 <= zone['ratio'] <= 0.79:
@@ -319,7 +309,6 @@ class InstitutionalGoldEngine:
             indicators_aligned = self._triple_confirmation(current, prev, 'SELL')
             price_action_trigger = self._validate_entry_trigger(current, prev, 'SELL')
             
-            # SMC v4.3: Decoupled Entry Logic (SELL)
             smc_enabled = self.smc.ob_enabled or self.smc.fvg_enabled
             is_smc_entry = False
             
@@ -328,24 +317,19 @@ class InstitutionalGoldEngine:
                     df, 'SELL', current_price, current['atr'],
                     candle_high=current['high'], candle_low=current['low']
                 )
-                # v4.1 STRICT: SMC Sweep + Zone Required
                 if (smc_result['in_order_block'] or smc_result['in_fvg']) and smc_result['liquidity_swept']:
                     is_smc_entry = True
             else:
                 smc_result = {}
             
-            # Combined Entry Logic
             if is_smc_entry and price_action_trigger:
-                 # SMC Path
                  self._create_signal(signals, 'SELL', current, structure, None, smc_result)
                  
             elif in_zone and indicators_aligned and price_action_trigger:
-                 # Fib Path
                  if not signals:
                     self._create_signal(signals, 'SELL', current, structure, active_level, smc_result)
 
-
-        # Prepare final debug info (updating with execution state)
+        # Prepare final debug info
         debug_info.update({
              'in_zone': locals().get('in_zone', False),
              'indicators_aligned': locals().get('indicators_aligned', False),
@@ -363,10 +347,9 @@ class InstitutionalGoldEngine:
     def update_news(self, events: List[Dict]):
         """
         Update high-impact news events for filtering.
-        Current implementation: Log only (Pass-through).
         """
         if events:
-            logger.debug(f"📰 InstitutionalGoldEngine received {len(events)} news events (No Filtering Active)")
+            pass # logger.debug(f"News update: {len(events)} events")
 
     def _is_in_killzone_utc(self, hour_utc: int) -> bool:
         """
@@ -389,8 +372,7 @@ class InstitutionalGoldEngine:
 
     def _triple_confirmation(self, current, prev, direction: str) -> bool:
         """
-        v3.0: RSI + MACD + Stochastic check with DATA-DRIVEN thresholds.
-        RSI Buy <= 40, RSI Sell >= 60 (from trade analysis)
+        v3.0: RSI + MACD + Stochastic check with CONFIGURABLE thresholds.
         """
         # RSI
         rsi = current['rsi']
@@ -404,25 +386,25 @@ class InstitutionalGoldEngine:
         prev_stoch = prev['stoch_k']
         
         if direction == "BUY":
-            # v3.0: RSI must be in deep discount zone (<= buy threshold)
+            # RSI must be in deep discount zone (<= buy threshold)
             rsi_ok = rsi <= self.rsi_buy_threshold
             
             # MACD: Rising histogram (Momentum shift)
             macd_ok = macd_hist > prev_macd
             
-            # Stoch: Rising and not overbought
+            # Stoch: Rising and not overbought (generic 80)
             stoch_ok = stoch_k > prev_stoch and stoch_k < 80
             
             return rsi_ok and macd_ok and stoch_ok
             
         else: # SELL
-            # v3.0: RSI must be in premium zone (>= sell threshold)
+            # RSI must be in premium zone (>= sell threshold)
             rsi_ok = rsi >= self.rsi_sell_threshold
             
             # MACD: Falling
             macd_ok = macd_hist < prev_macd
             
-            # Stoch: Falling and not oversold
+            # Stoch: Falling and not oversold (generic 20)
             stoch_ok = stoch_k < prev_stoch and stoch_k > 20
             
             return rsi_ok and macd_ok and stoch_ok
@@ -461,7 +443,7 @@ class InstitutionalGoldEngine:
     def _create_signal(self, signals, direction, current, structure, fib_level, smc_result=None):
         """
         Constructs the signal object with Risk Management
-        v4.1: Fixed SL calculation to always be on correct side of entry
+        v5.0: Pro Engine generalized logic
         """
         current_price = current.close
         atr = current['atr']
@@ -472,7 +454,6 @@ class InstitutionalGoldEngine:
         # SMC / Institutional Stop Loss
         # We look for the INVALIDATION point (Structure start) + ATR breathing room
         
-        # FIX M5 CRASH: structure.last_impulse_leg can be None if zigzag undefined
         sl_price = None
         use_fallback = False
         
@@ -497,10 +478,7 @@ class InstitutionalGoldEngine:
                     else:
                         sl_price = invalid_price - (atr * 0.2) 
                 else:
-                    # Structure invalid for BUY - use ATR fallback
                     use_fallback = True
-                    logger.debug(f"⚠️ BUY: Structure invalid_price ({invalid_price:.2f}) >= entry ({current_price:.2f}), using ATR SL")
-                    
              else: # SELL
                 # For SELL: invalid_price MUST be above current_price
                 if invalid_price > current_price:
@@ -510,9 +488,7 @@ class InstitutionalGoldEngine:
                     else:
                         sl_price = invalid_price + (atr * 0.2)
                 else:
-                    # Structure invalid for SELL - use ATR fallback
                     use_fallback = True
-                    logger.debug(f"⚠️ SELL: Structure invalid_price ({invalid_price:.2f}) <= entry ({current_price:.2f}), using ATR SL")
         else:
              use_fallback = True
              
@@ -525,38 +501,28 @@ class InstitutionalGoldEngine:
              else:
                  sl_price = current_price + sl_dist
                  
-        # CRITICAL VALIDATION: Ensure SL is on correct side with minimum distance
+        # CRITICAL VALIDATION
         if direction == 'BUY':
             sl_distance = current_price - sl_price
             if sl_distance < min_sl_distance:
-                # Force minimum SL distance
                 sl_price = current_price - min_sl_distance
-                logger.warning(f"⚙️ BUY SL adjusted: was too close ({sl_distance:.2f}), now {min_sl_distance:.2f} ATR")
-            # Final sanity check
             if sl_price >= current_price:
                 sl_price = current_price - (atr * self.sl_atr_multiplier)
-                logger.error(f"🚨 BUY SL was ABOVE entry! Forced to ATR-based: {sl_price:.5f}")
         else:  # SELL
             sl_distance = sl_price - current_price
             if sl_distance < min_sl_distance:
-                # Force minimum SL distance
                 sl_price = current_price + min_sl_distance
-                logger.warning(f"⚙️ SELL SL adjusted: was too close ({sl_distance:.2f}), now {min_sl_distance:.2f} ATR")
-            # Final sanity check
             if sl_price <= current_price:
                 sl_price = current_price + (atr * self.sl_atr_multiplier)
-                logger.error(f"🚨 SELL SL was BELOW entry! Forced to ATR-based: {sl_price:.5f}")
                 
-        # Calculate TP based on validated SL
+        # Calculate TP
         tp_dist = abs(current_price - sl_price) * self.rr_ratio
         if direction == 'BUY':
             tp1_price = current_price + tp_dist
         else:
             tp1_price = current_price - tp_dist
-            
 
-
-        # SMC metadata (v4.0)
+        # SMC metadata
         smc_info = {}
         if smc_result:
             smc_info = {
@@ -575,8 +541,8 @@ class InstitutionalGoldEngine:
             'stop_loss': sl_price,
             'take_profit_1': tp1_price,
             'take_profit_2': tp1_price, 
-            'strategy': 'XAU_PRO_v4 (SMC Enhanced)',
-            'confluence_score': min(100, 95 + (smc_info.get('smc_score', 0) * 2)),  # Cap at 100
+            'strategy': f"INSTITUTIONAL_PRO_{self.symbol}",
+            'confluence_score': min(100, 95 + (smc_info.get('smc_score', 0) * 2)),
             'metadata': {
                 'fib_level': fib_level,
                 'rsi': current['rsi'],
@@ -587,5 +553,5 @@ class InstitutionalGoldEngine:
         }
         signals.append(signal)
         smc_tag = f" | SMC: {', '.join(smc_info.get('smc_details', []))}" if smc_info.get('smc_details') else ""
-        logger.info(f"🥇 GOLD SNIPER v4.0: {direction} @ {current_price} | Fib {fib_level} | RSI {current['rsi']:.1f}{smc_tag}")
+        logger.info(f"💎 PRO SIGNAL [{self.symbol}]: {direction} @ {current_price} | RSI {current['rsi']:.1f}{smc_tag}")
 
