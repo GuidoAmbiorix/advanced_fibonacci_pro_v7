@@ -62,13 +62,7 @@ class MT5Order:
 class MT5Bridge:
     """
     Bridge for MT5 API communication.
-    
-    Handles:
-    - Connection management
-    - Account info
-    - Position reading/modification
-    - Order execution
-    - History retrieval
+    Supports both local MetaTrader5 package and RPyC connection to Docker sidecar.
     """
     
     def __init__(self, magic_number: int = 100000):
@@ -78,55 +72,131 @@ class MT5Bridge:
         Args:
             magic_number: Base magic number for this EA
         """
-        if not MT5_AVAILABLE:
-            raise ImportError("MetaTrader5 package is required")
-        
         self.magic_number = magic_number
         self.connected = False
         self._account_info = None
-    
+        self.use_rpyc = False
+        self.rpc_conn = None
+        self.mt5 = None  # The MT5 module (local or proxied)
+
+        # Check for RPyC environment
+        import os
+        if os.environ.get('MT5_HOST'):
+            self.use_rpyc = True
+            print(f"MT5Bridge: Configured for RPyC connection to {os.environ.get('MT5_HOST')}")
+        elif MT5_AVAILABLE:
+            self.mt5 = mt5
+        else:
+            print("Warning: Local MetaTrader5 not installed and no RPyC host configured.")
+
     def connect(self, login: int = None, password: str = None, server: str = None) -> bool:
         """
         Connect to MT5 terminal.
-        
-        Args:
-            login: Account login (optional if already logged in)
-            password: Account password
-            server: Broker server name
-            
-        Returns:
-            True if connected successfully
         """
-        # Initialize MT5
-        if not mt5.initialize():
-            error = mt5.last_error()
-            print(f"MT5 initialization failed: {error}")
+        if self.use_rpyc:
+            return self._connect_rpyc()
+        
+        if not self.mt5:
+            return False
+
+        # Initialize local MT5
+        if not self.mt5.initialize():
+            print(f"MT5 initialization failed: {self.mt5.last_error()}")
             return False
         
         # Login if credentials provided
         if login and password and server:
-            if not mt5.login(login, password, server):
-                error = mt5.last_error()
-                print(f"MT5 login failed: {error}")
+            if not self.mt5.login(login, password, server):
+                print(f"MT5 login failed: {self.mt5.last_error()}")
                 return False
         
         self.connected = True
-        self._account_info = mt5.account_info()
-        
-        print(f"Connected to MT5: {self._account_info.name} ({self._account_info.server})")
+        self._account_info = self.mt5.account_info()
+        print(f"Connected to Local MT5: {self._account_info.name} ({self._account_info.server})")
         return True
-    
+
+    def _connect_rpyc(self) -> bool:
+        """Establish RPyC connection to sidecar with enhanced robustness."""
+        import rpyc
+        import os
+        import time
+
+        host = os.environ.get('MT5_HOST', 'localhost')
+        port = int(os.environ.get('MT5_PORT', 18812))
+        
+        print(f"Connecting to MT5 via RPyC at {host}:{port}...")
+        
+        try:
+            # Retry loop for Docker startup race conditions
+            for i in range(5):
+                try:
+                    # Use classic connect as per robust example
+                    self.rpc_conn = rpyc.classic.connect(host, port)
+                    
+                    # Set config for timeout and pickling
+                    if hasattr(self.rpc_conn, '_config'):
+                        self.rpc_conn._config['sync_request_timeout'] = 300
+                        self.rpc_conn._config['allow_pickle'] = True
+                        
+                    break
+                except Exception as e:
+                    print(f"Connection attempt {i+1} failed: {e}")
+                    time.sleep(2)
+            
+            if not self.rpc_conn:
+                return False
+
+            # Get the exposed MT5 service module directly
+            self.mt5 = self.rpc_conn.modules.MetaTrader5
+            
+            # Inject Proxy Functions for proper dict handling
+            # This is critical for order_send to work over RPyC
+            print("Injecting proxy functions...")
+            self.rpc_conn.execute("""
+import MetaTrader5 as mt5_remote
+def proxy_order_check(req):
+    return mt5_remote.order_check(dict(req))
+def proxy_order_send(req):
+    return mt5_remote.order_send(dict(req))
+""")
+            self.proxy_order_check = self.rpc_conn.namespace['proxy_order_check']
+            self.proxy_order_send = self.rpc_conn.namespace['proxy_order_send']
+            
+            # Check initialization on remote
+            if not self.mt5.initialize():
+                 print(f"Remote MT5 not initialized: {self.mt5.last_error()}")
+                 return False
+
+            self.connected = True
+            try:
+                self._account_info = self.mt5.account_info()
+                if self._account_info:
+                     print(f"Connected to Remote MT5 (Sidecar): {self._account_info.login}")
+            except:
+                print("Connected, but failed to get account info")
+                
+            return True
+
+        except Exception as e:
+            print(f"RPyC connection error: {e}")
+            return False
+
     def disconnect(self):
         """Disconnect from MT5."""
-        mt5.shutdown()
+        if self.mt5:
+            self.mt5.shutdown()
+        
+        if self.rpc_conn:
+            self.rpc_conn.close()
+            
         self.connected = False
     
     def get_account_info(self) -> Dict[str, Any]:
         """Get account information."""
-        if not self.connected:
+        if not self.connected or not self.mt5:
             return {}
         
-        info = mt5.account_info()
+        info = self.mt5.account_info()
         if info is None:
             return {}
         
@@ -135,17 +205,70 @@ class MT5Bridge:
             'balance': info.balance,
             'equity': info.equity,
             'margin': info.margin,
-            'free_margin': info.margin_free,
+            'margin_free': info.margin_free,
             'profit': info.profit,
             'leverage': info.leverage,
             'currency': info.currency,
             'server': info.server,
             'name': info.name,
         }
+
+    def get_global_variable(self, name: str) -> float:
+        """Get a global variable value from MT5."""
+        if not self.mt5: return 0.0
+        try:
+            return self.mt5.global_variable_get(name)
+        except:
+            return 0.0
+
+    def get_governor_status(self) -> Dict[str, Any]:
+        """Read Portfolio Governor state from Global Variables."""
+        return {
+            'active': self.get_global_variable("GV_GOVERNOR_ACTIVE"),
+            'risk_mult': self.get_global_variable("GV_RISK_MULTIPLIER"),
+            'drawdown': self.get_global_variable("GV_CURRENT_DD"),
+            'exposure': self.get_global_variable("GV_TOTAL_EXPOSURE"),
+            'rolling_pf': self.get_global_variable("GV_ROLLING_PF"),
+            'group_usd': self.get_global_variable("GV_GROUP_USD_RISK"),
+        }
+
+    def set_global_variable(self, name: str, value: float) -> bool:
+        """Set a global variable value in MT5."""
+        if not self.mt5: return False
+        try:
+            return self.mt5.global_variable_set(name, value)
+        except:
+            return False
+
+    def set_governor_status(self, active: bool) -> bool:
+        """Enable or Disable the Portfolio Governor."""
+        val = 1.0 if active else 0.0
+        return self.set_global_variable("GV_GOVERNOR_ACTIVE", val)
+
+    def run_backtest(self, config_content: str) -> str:
+        """Invokes the remote backtest runner."""
+        if not self.use_rpyc or not self.rpc_conn:
+            return "Error: RPyC not connected"
+        try:
+            # Call the function defined in the server's __main__ scope
+            return self.rpc_conn.modules.__main__.run_backtest(config_content)
+        except Exception as e:
+            return f"RPC Error: {e}"
+
+    def launch_bot(self, symbol: str = "XAUUSD") -> str:
+        """Invokes the remote bot launch (chart open + template)."""
+        if not self.use_rpyc or not self.rpc_conn:
+            return "Error: RPyC not connected"
+        try:
+            return self.rpc_conn.modules.__main__.open_chart_with_ea(symbol)
+        except Exception as e:
+            return f"RPC Error: {e}"
     
     def get_symbol_info(self, symbol: str) -> Dict[str, Any]:
         """Get symbol information."""
-        info = mt5.symbol_info(symbol)
+        if not self.mt5: return {}
+        
+        info = self.mt5.symbol_info(symbol)
         if info is None:
             return {}
         
@@ -164,27 +287,39 @@ class MT5Bridge:
         }
     
     def get_positions(self, symbol: str = None) -> List[MT5Position]:
-        """
-        Get open positions.
-        
-        Args:
-            symbol: Filter by symbol (optional)
-            
-        Returns:
-            List of MT5Position objects
-        """
+        """Get open positions."""
+        if not self.mt5: return []
+
         if symbol:
-            positions = mt5.positions_get(symbol=symbol)
+            positions = self.mt5.positions_get(symbol=symbol)
         else:
-            positions = mt5.positions_get()
+            positions = self.mt5.positions_get()
         
         if positions is None:
             return []
         
+        # When using RPyC, 'positions' is a netref tuple of netref objects.
+        # Iterating it is slow over network.
+        # Ideally we fetch by value, but for simplicity we iterate.
+        # Optimization: Use rpyc.utils.classic.obtain(positions) if RPyC
+        
+        if self.use_rpyc:
+            import rpyc
+            # Fetch the whole structure at once
+            positions = rpyc.utils.classic.obtain(positions)
+
         # Filter by magic number
         result = []
         for pos in positions:
-            if pos.magic == self.magic_number or self.magic_number == 0:
+            # Handle RPyC object vs Local namedtuple
+            # The 'obtain' above converts them to local dicts/tuples usually, or we access fields
+            try:
+                p_magic = pos.magic
+            except AttributeError:
+                # If obtained as dict or struct
+                p_magic = getattr(pos, 'magic', 0)
+
+            if p_magic == self.magic_number or self.magic_number == 0:
                 result.append(MT5Position(
                     ticket=pos.ticket,
                     symbol=pos.symbol,
@@ -214,24 +349,11 @@ class MT5Bridge:
         comment: str = "",
         deviation: int = 10
     ) -> Tuple[bool, int, str]:
-        """
-        Place a trade order.
-        
-        Args:
-            symbol: Trading symbol
-            order_type: Order type (BUY, SELL, etc.)
-            volume: Lot size
-            price: Price (0 for market orders)
-            sl: Stop loss price
-            tp: Take profit price
-            comment: Order comment
-            deviation: Maximum deviation in points
-            
-        Returns:
-            (success, ticket, message)
-        """
+        """Place a trade order."""
+        if not self.mt5: return False, 0, "Not connected"
+
         # Get current prices
-        tick = mt5.symbol_info_tick(symbol)
+        tick = self.mt5.symbol_info_tick(symbol)
         if tick is None:
             return False, 0, "Failed to get tick"
         
@@ -242,11 +364,20 @@ class MT5Bridge:
             elif order_type == OrderType.SELL:
                 price = tick.bid
         
+        # MT5 constants needed. If RPyC, we need to access them from the remote module
+        # or use hardcoded values if we are sure they match.
+        # Safe way: get them from self.mt5 module
+        TRADE_ACTION_DEAL = self.mt5.TRADE_ACTION_DEAL if self.use_rpyc else mt5.TRADE_ACTION_DEAL
+        TRADE_ACTION_PENDING = self.mt5.TRADE_ACTION_PENDING if self.use_rpyc else mt5.TRADE_ACTION_PENDING
+        ORDER_TIME_GTC = self.mt5.ORDER_TIME_GTC if self.use_rpyc else mt5.ORDER_TIME_GTC
+        ORDER_FILLING_IOC = self.mt5.ORDER_FILLING_IOC if self.use_rpyc else mt5.ORDER_FILLING_IOC
+        TRADE_RETCODE_DONE = self.mt5.TRADE_RETCODE_DONE if self.use_rpyc else mt5.TRADE_RETCODE_DONE
+
         # Determine action type
         if order_type in [OrderType.BUY, OrderType.SELL]:
-            action = mt5.TRADE_ACTION_DEAL
+            action = TRADE_ACTION_DEAL
         else:
-            action = mt5.TRADE_ACTION_PENDING
+            action = TRADE_ACTION_PENDING
         
         # Build request
         request = {
@@ -255,22 +386,25 @@ class MT5Bridge:
             "volume": volume,
             "type": int(order_type),
             "price": price,
-            "sl": sl,
-            "tp": tp,
+            "sl": float(sl), # RPyC picky about types sometimes
+            "tp": float(tp),
             "deviation": deviation,
             "magic": self.magic_number,
             "comment": comment,
-            "type_time": mt5.ORDER_TIME_GTC,
-            "type_filling": mt5.ORDER_FILLING_IOC,
+            "type_time": ORDER_TIME_GTC,
+            "type_filling": ORDER_FILLING_IOC,
         }
         
         # Send order
-        result = mt5.order_send(request)
+        if self.use_rpyc and hasattr(self, 'proxy_order_send'):
+             result = self.proxy_order_send(request)
+        else:
+             result = self.mt5.order_send(request)
         
         if result is None:
             return False, 0, "Order send failed - no result"
         
-        if result.retcode != mt5.TRADE_RETCODE_DONE:
+        if result.retcode != TRADE_RETCODE_DONE:
             return False, 0, f"Order failed: {result.comment}"
         
         return True, result.order, "OK"
@@ -281,19 +415,11 @@ class MT5Bridge:
         sl: float = None,
         tp: float = None
     ) -> Tuple[bool, str]:
-        """
-        Modify an open position.
-        
-        Args:
-            ticket: Position ticket
-            sl: New stop loss (None to keep current)
-            tp: New take profit (None to keep current)
-            
-        Returns:
-            (success, message)
-        """
+        """Modify an open position."""
+        if not self.mt5: return False, "Not connected"
+
         # Get position
-        position = mt5.positions_get(ticket=ticket)
+        position = self.mt5.positions_get(ticket=ticket)
         if not position:
             return False, "Position not found"
         
@@ -303,20 +429,26 @@ class MT5Bridge:
         new_sl = sl if sl is not None else pos.sl
         new_tp = tp if tp is not None else pos.tp
         
+        TRADE_ACTION_SLTP = self.mt5.TRADE_ACTION_SLTP if self.use_rpyc else mt5.TRADE_ACTION_SLTP
+        TRADE_RETCODE_DONE = self.mt5.TRADE_RETCODE_DONE if self.use_rpyc else mt5.TRADE_RETCODE_DONE
+
         request = {
-            "action": mt5.TRADE_ACTION_SLTP,
+            "action": TRADE_ACTION_SLTP,
             "symbol": pos.symbol,
             "position": ticket,
-            "sl": new_sl,
-            "tp": new_tp,
+            "sl": float(new_sl),
+            "tp": float(new_tp),
         }
         
-        result = mt5.order_send(request)
+        if self.use_rpyc and hasattr(self, 'proxy_order_send'):
+             result = self.proxy_order_send(request)
+        else:
+             result = self.mt5.order_send(request)
         
         if result is None:
             return False, "Modify failed - no result"
         
-        if result.retcode != mt5.TRADE_RETCODE_DONE:
+        if result.retcode != TRADE_RETCODE_DONE:
             return False, f"Modify failed: {result.comment}"
         
         return True, "OK"
@@ -327,40 +459,34 @@ class MT5Bridge:
         volume: float = None,
         deviation: int = 10
     ) -> Tuple[bool, str]:
-        """
-        Close a position (fully or partially).
-        
-        Args:
-            ticket: Position ticket
-            volume: Volume to close (None for full close)
-            deviation: Maximum deviation
-            
-        Returns:
-            (success, message)
-        """
-        # Get position
-        position = mt5.positions_get(ticket=ticket)
+        """Close a position."""
+        if not self.mt5: return False, "Not connected"
+
+        position = self.mt5.positions_get(ticket=ticket)
         if not position:
             return False, "Position not found"
         
         pos = position[0]
         close_volume = volume if volume else pos.volume
         
-        # Get current price
-        tick = mt5.symbol_info_tick(pos.symbol)
+        tick = self.mt5.symbol_info_tick(pos.symbol)
         if tick is None:
             return False, "Failed to get tick"
         
-        # Determine close price
+        ORDER_TYPE_SELL = self.mt5.ORDER_TYPE_SELL if self.use_rpyc else mt5.ORDER_TYPE_SELL
+        ORDER_TYPE_BUY = self.mt5.ORDER_TYPE_BUY if self.use_rpyc else mt5.ORDER_TYPE_BUY
+        TRADE_ACTION_DEAL = self.mt5.TRADE_ACTION_DEAL if self.use_rpyc else mt5.TRADE_ACTION_DEAL
+        TRADE_RETCODE_DONE = self.mt5.TRADE_RETCODE_DONE if self.use_rpyc else mt5.TRADE_RETCODE_DONE
+
         if pos.type == 0:  # Buy -> close at bid
             close_price = tick.bid
-            close_type = mt5.ORDER_TYPE_SELL
+            close_type = ORDER_TYPE_SELL
         else:  # Sell -> close at ask
             close_price = tick.ask
-            close_type = mt5.ORDER_TYPE_BUY
+            close_type = ORDER_TYPE_BUY
         
         request = {
-            "action": mt5.TRADE_ACTION_DEAL,
+            "action": TRADE_ACTION_DEAL,
             "symbol": pos.symbol,
             "volume": close_volume,
             "type": close_type,
@@ -371,12 +497,15 @@ class MT5Bridge:
             "comment": "Close",
         }
         
-        result = mt5.order_send(request)
+        if self.use_rpyc and hasattr(self, 'proxy_order_send'):
+             result = self.proxy_order_send(request)
+        else:
+             result = self.mt5.order_send(request)
         
         if result is None:
             return False, "Close failed - no result"
         
-        if result.retcode != mt5.TRADE_RETCODE_DONE:
+        if result.retcode != TRADE_RETCODE_DONE:
             return False, f"Close failed: {result.comment}"
         
         return True, "OK"
@@ -388,43 +517,46 @@ class MT5Bridge:
         count: int = 500,
         start: datetime = None
     ) -> Optional[Any]:
-        """
-        Get OHLCV data from MT5.
-        
-        Args:
-            symbol: Symbol name
-            timeframe: Timeframe string (M1, M5, M15, H1, H4, D1)
-            count: Number of bars
-            start: Start datetime (optional)
-            
-        Returns:
-            pandas DataFrame with OHLCV data
-        """
+        """Get OHLCV data."""
+        if not self.mt5: return None
         import pandas as pd
         
         # Map timeframe string to MT5 constant
+        # Need to handle RPyC remote constants if needed
+        # Or just map locally if values are standard integers (they are)
+        # But safer to ask the module
+        
+        # Helper to get attr from local or remote module
+        def get_attr(name):
+             return getattr(self.mt5, name) if self.use_rpyc else getattr(mt5, name)
+
         tf_map = {
-            'M1': mt5.TIMEFRAME_M1,
-            'M5': mt5.TIMEFRAME_M5,
-            'M15': mt5.TIMEFRAME_M15,
-            'M30': mt5.TIMEFRAME_M30,
-            'H1': mt5.TIMEFRAME_H1,
-            'H4': mt5.TIMEFRAME_H4,
-            'D1': mt5.TIMEFRAME_D1,
-            'W1': mt5.TIMEFRAME_W1,
-            'MN1': mt5.TIMEFRAME_MN1,
+            'M1': get_attr('TIMEFRAME_M1'),
+            'M5': get_attr('TIMEFRAME_M5'),
+            'M15': get_attr('TIMEFRAME_M15'),
+            'M30': get_attr('TIMEFRAME_M30'),
+            'H1': get_attr('TIMEFRAME_H1'),
+            'H4': get_attr('TIMEFRAME_H4'),
+            'D1': get_attr('TIMEFRAME_D1'),
+            'W1': get_attr('TIMEFRAME_W1'),
+            'MN1': get_attr('TIMEFRAME_MN1'),
         }
         
-        tf = tf_map.get(timeframe.upper(), mt5.TIMEFRAME_M15)
+        tf = tf_map.get(timeframe.upper(), get_attr('TIMEFRAME_M15'))
         
         # Get rates
         if start:
-            rates = mt5.copy_rates_from(symbol, tf, start, count)
+            rates = self.mt5.copy_rates_from(symbol, tf, start, count)
         else:
-            rates = mt5.copy_rates_from_pos(symbol, tf, 0, count)
+            rates = self.mt5.copy_rates_from_pos(symbol, tf, 0, count)
         
         if rates is None or len(rates) == 0:
             return None
+            
+        # Optimization: Fetch numpy array by value if RPyC
+        if self.use_rpyc:
+             import rpyc
+             rates = rpyc.utils.classic.obtain(rates)
         
         # Convert to DataFrame
         df = pd.DataFrame(rates)
@@ -433,34 +565,24 @@ class MT5Bridge:
         
         return df
     
-    def get_history(
-        self,
-        start: datetime,
-        end: datetime = None,
-        symbol: str = None
-    ) -> List[Dict]:
-        """
-        Get trade history.
-        
-        Args:
-            start: Start datetime
-            end: End datetime (default: now)
-            symbol: Filter by symbol
-            
-        Returns:
-            List of trade dictionaries
-        """
+    def get_history(self, start: datetime, end: datetime = None, symbol: str = None) -> List[Dict]:
+        """Get trade history."""
+        if not self.mt5: return []
         if end is None:
             end = datetime.now()
         
         # Get deals
         if symbol:
-            deals = mt5.history_deals_get(start, end, group=symbol)
+            deals = self.mt5.history_deals_get(start, end, group=symbol)
         else:
-            deals = mt5.history_deals_get(start, end)
-        
+            deals = self.mt5.history_deals_get(start, end)
+            
         if deals is None:
             return []
+            
+        if self.use_rpyc:
+             import rpyc
+             deals = rpyc.utils.classic.obtain(deals)
         
         result = []
         for deal in deals:

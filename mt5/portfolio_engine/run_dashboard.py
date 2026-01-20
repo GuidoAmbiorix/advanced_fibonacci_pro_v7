@@ -1,126 +1,89 @@
 """
 Run Dashboard
-Entry point for launching the portfolio dashboard visualization.
+Entry point for launching the portfolio dashboard.
 """
-
-import sys
-from pathlib import Path
-import pandas as pd
+import argparse
 import asyncio
+import sys
 
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-
-def run_static_dashboard(symbols: list = ['XAUUSD', 'NAS100']):
-    """Run a static dashboard with sample data."""
-    from visualization.dashboard import Dashboard
-    from run_backtest import load_sample_data
-    
-    print(f"\n{'='*60}")
-    print(f"  📊 PORTFOLIO DASHBOARD")
-    print(f"  Symbols: {', '.join(symbols)}")
-    print(f"{'='*60}\n")
-    
-    # Create dashboard
-    dashboard = Dashboard(symbols, layout='2x1')
-    
-    # Load data for each symbol
-    for symbol in symbols:
-        df = load_sample_data(symbol)
-        dashboard.set_symbol_data(symbol, df)
-    
-    # Update metrics with sample values
-    dashboard.update_metrics(
-        equity=10250.00,
-        dd=2.5,
-        pf=1.85,
-        positions=3
-    )
-    
-    print("🚀 Launching dashboard...")
-    print("   Close the window to exit.\n")
-    
-    dashboard.show(block=True)
-
-
-def run_chart_demo():
-    """Run a simple chart demonstration."""
-    from visualization.chart_manager import ChartManager
-    from run_backtest import load_sample_data
-    
-    print(f"\n{'='*60}")
-    print(f"  📈 CHART DEMO")
-    print(f"{'='*60}\n")
-    
-    # Load sample data
-    df = load_sample_data('XAUUSD')
-    
-    # Create chart
-    cm = ChartManager(title="XAUUSD M15", toolbox=True)
-    cm.set_data(df)
-    
-    # Add 200 EMA
-    ema_200 = df['close'].ewm(span=200, adjust=False).mean()
-    ema_df = pd.DataFrame({
-        'time': df.index,
-        'EMA 200': ema_200
-    })
-    cm.add_line('EMA 200', ema_df, color='#2962FF', width=2)
-    
-    # Add some sample Fibonacci levels
-    recent_high = df['high'].rolling(20).max().iloc[-1]
-    recent_low = df['low'].rolling(20).min().iloc[-1]
-    
-    cm.add_horizontal_line(recent_high, color='#4CAF50', label='Swing High')
-    cm.add_horizontal_line(recent_low, color='#F44336', label='Swing Low')
-    
-    # Add golden zone
-    swing_range = recent_high - recent_low
-    fib_618 = recent_high - (swing_range * 0.618)
-    fib_786 = recent_high - (swing_range * 0.786)
-    
-    cm.add_horizontal_line(fib_618, color='#FF9800', label='61.8%')
-    cm.add_horizontal_line(fib_786, color='#FF5722', label='78.6%')
-    
-    # Add topbar info
-    cm.add_topbar_text('symbol', 'XAUUSD')
-    cm.add_topbar_text('tf', 'M15')
-    
-    print("🚀 Launching chart...")
-    print("   Use drawing tools on the left")
-    print("   Close the window to exit.\n")
-    
-    cm.show(block=True)
-
+from execution.mt5_bridge import MT5Bridge
 
 def main():
-    """Main entry point."""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Portfolio Dashboard')
-    parser.add_argument('--demo', '-d', action='store_true',
-                        help='Run chart demo')
-    parser.add_argument('--symbols', nargs='+', default=['XAUUSD', 'NAS100'],
-                        help='Symbols to display')
+    parser = argparse.ArgumentParser(description='Run Portfolio Dashboard')
+    parser.add_argument('--symbols', type=str, nargs='+', default=['XAUUSD', 'EURUSD'],
+                      help='Symbols to display')
+    parser.add_argument('--layout', type=str, default='2x2',
+                      help='Chart layout (e.g. 2x2, 3x1)')
+    parser.add_argument('--web', action='store_true',
+                      help='Run in Web-only mode (bypasses local GUI dependencies)')
+    parser.add_argument('--port', type=int, default=8080,
+                      help='Port for Web Dashboard')
     
     args = parser.parse_args()
     
-    try:
-        if args.demo:
-            run_chart_demo()
-        else:
-            run_static_dashboard(args.symbols)
+    print(f"Starting dashboard for: {args.symbols}")
+    
+    # Initialize Bridge (supports RPyC auto-detection)
+    bridge = MT5Bridge()
+    if not bridge.connect():
+        print("Failed to connect to MT5 (Local or Remote). Continuing anyway for demo...")
+        # In a real scenario, we might want to exit, but for dev we let it run
+    
+    if args.web:
+        print("Launching Web Dashboard...")
+        try:
+            from visualization.web_dashboard import WebDashboard
+            dashboard = WebDashboard(bridge, args.symbols)
+            dashboard.start_background_updater()
+            dashboard.run_server(port=args.port)
+        except ImportError as e:
+            print(f"Failed to load Web Dashboard: {e}")
+            sys.exit(1)
+        except Exception as e:
+            print(f"Web Dashboard Error: {e}")
+            sys.exit(1)
             
-    except ImportError as e:
-        print(f"\n❌ Error: {e}")
-        print("\n💡 Install required packages:")
-        print("   pip install lightweight-charts pywebview")
-        
-    except Exception as e:
-        print(f"\n❌ Error: {e}")
-        raise
+    else:
+        # Legacy GUI Mode (Windows Local)
+        try:
+            from visualization.dashboard import Dashboard
+            
+            dashboard = Dashboard(args.symbols, args.layout)
+            
+            # Simple update loop for GUI
+            # Note: This is simplified. The original code had specific async logic.
+            # Ideally we refactor Dashboard to accept the bridge too, but leaving as is for compatibility if dependencies exist.
+            
+            async def update_data():
+                data = {'ohlcv': {}}
+                for sym in args.symbols:
+                    df = bridge.get_ohlcv(sym, count=100)
+                    if df is not None:
+                        data['ohlcv'][sym] = df
+                        
+                acc = bridge.get_account_info()
+                if acc:
+                    data['metrics'] = {
+                        'equity': acc.get('equity', 0),
+                        'dd': 0.0, # Calculation needed
+                        'pf': 0.0,
+                        'positions': len(bridge.get_positions())
+                    }
+                return data
 
+            # Run dashboard
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(dashboard.run_live(update_data))
+            
+        except ImportError as e:
+             print(f"GUI dependencies missing ({e}). Try running with --web")
+             sys.exit(1)
+        except Exception as e:
+             print(f"GUI Error: {e}")
+             sys.exit(1)
 
 if __name__ == '__main__':
     main()

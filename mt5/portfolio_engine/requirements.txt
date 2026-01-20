@@ -6,11 +6,17 @@ numpy>=1.24.0
 PyYAML>=6.0
 
 # Visualization (TradingView-style charts)
-lightweight-charts>=1.0.0
-pywebview>=4.0.0
+streamlit-lightweight-charts-ntf>=0.4.0
 
-# MT5 Connection
-MetaTrader5>=5.0.45
+# MT5 Connection (Optional for Linux/Docker, required for Windows/Sidecar)
+MetaTrader5>=5.0.45; sys_platform == 'win32'
+rpyc>=5.3.0,<6.0.0
+
+# Web Dashboard
+# Web Dashboard (Streamlit)
+streamlit>=1.30.0
+watchdog>=3.0.0
+
 
 # GUI Support (Explicitly fix pythonnet version)
 pythonnet==3.0.0rc6
