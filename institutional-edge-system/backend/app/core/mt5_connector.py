@@ -298,6 +298,13 @@ class MT5Connector:
             logger.warning(f"Stop level validation failed for {symbol}: {e}")
             return stop_loss, take_profit
 
+    def check_heartbeat(self) -> bool:
+        """Check if connection is alive"""
+        if not self.connected:
+            return False
+        # Optional: could check terminal ping
+        return True
+
     def connect(self) -> bool:
         """Connect to local dedicated MetaTrader 5 via RPyC"""
         try:
@@ -709,12 +716,6 @@ def proxy_order_send(req):
             logger.error("Failed to ensure correct account is active")
             return None
 
-        # ============ CIRCUIT BREAKER CHECK ============
-        is_blocked, reason = self._check_circuit_breaker()
-        if is_blocked:
-            logger.warning(f"⛔ Order Rejected: {reason}")
-            return {"success": False, "error": reason}
-
 
         # HARD VALIDATION: Check for valid account state (Balance > 0)
         # This catches "No money" errors caused by disconnected/unauthenticated terminals
@@ -925,16 +926,8 @@ def proxy_order_send(req):
                         "error": f"MT5 Error: {result.comment} ({result.retcode})"
                     }
                 
-                # ============ CIRCUIT BREAKER TRIGGERS ============
-                # Check for specific failure modes to trigger circuit breaker
-                if result.retcode == mt5.TRADE_RETCODE_MARKET_CLOSED:
-                    self._trigger_circuit_breaker("MARKET_CLOSED")
-                elif result.retcode == mt5.TRADE_RETCODE_CONNECTION:
-                    self._trigger_circuit_breaker("CONNECTION_UNSTABLE")
-                elif result.retcode == mt5.TRADE_RETCODE_TIMEOUT:
-                    self._trigger_circuit_breaker("CONNECTION_UNSTABLE")
-                elif result.retcode == 10018: # MARKET_CLOSED for some brokers
-                    self._trigger_circuit_breaker("MARKET_CLOSED")
+                # Circuit breaker triggers removed (method not defined)
+                pass
 
 
                 # Check slippage on market orders

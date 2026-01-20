@@ -15,7 +15,7 @@ import pandas as pd
 from app.api import database
 from app.core.socket_server import sio
 from app.engines.xau_pro.core import InstitutionalGoldEngine
-from app.services.mt5_connector import mt5_connector
+from app.core.mt5_connector import mt5_connector
 from app.services.alert_service import alert_service
 from loguru import logger
 

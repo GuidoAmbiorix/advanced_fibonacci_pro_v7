@@ -65,6 +65,7 @@ class InstanceResponse(BaseModel):
     status: str
     ports: dict
     urls: dict
+    error_preview: Optional[str] = None
 
 def get_docker_client():
     return docker.from_env()
@@ -85,6 +86,7 @@ async def list_instances():
         container_name = f"institutional_backend_{instance_name}"
         status = "STOPPED"
         ports = {}
+        error_preview = None
         
         # Read .env for ports
         env_path = path / ".env"
@@ -97,6 +99,14 @@ async def list_instances():
                          ports['vnc'] = line.strip().split("=")[1]
                     if "API_PORT=" in line:
                         ports['api'] = line.strip().split("=")[1]
+        
+        # Check for persistent deployment errors (failed builds, etc)
+        deployment_err_file = path / "deployment_error.log"
+        if deployment_err_file.exists():
+            try:
+                error_preview = deployment_err_file.read_text()[-300:]
+            except:
+                pass
 
         try:
             container = client.containers.get(container_name)
@@ -129,6 +139,19 @@ async def list_instances():
                     status = "RUNNING (API Port Missing)"
             else:
                 status = container.status.upper()
+                if status in ["EXITED", "RESTARTING", "DEAD"]:
+                    try:
+                        # Fetch last errors for immediate visibility
+                        logs = container.logs(tail=5).decode('utf-8', errors='ignore')
+                        if logs:
+                            # Clean up ANSI codes if needed, or just truncate
+                            import re
+                            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+                            clean_logs = ansi_escape.sub('', logs)
+                            error_preview = (clean_logs[-300:] + '...') if len(clean_logs) > 300 else clean_logs
+                    except Exception as e:
+                        print(f"Error fetching logs for {instance_name}: {e}")
+
         except docker.errors.NotFound:
             pass
             
@@ -139,7 +162,8 @@ async def list_instances():
             "urls": {
                 "dashboard": f"http://localhost:{ports.get('web', '80')}", 
                 "vnc": f"http://localhost:{ports.get('vnc', '3000')}"
-            }
+            },
+            "error_preview": error_preview
         })
     return instances
 
@@ -283,12 +307,31 @@ def start_instance_task(target_dir, name):
         
         if result.returncode != 0:
              print(f"ERROR: docker-compose up failed with code {result.returncode}")
+             # Capture deployment error for frontend visibility
+             try:
+                 error_msg = f"Docker Compose Error (Code {result.returncode}):\n"
+                 error_msg += result.stderr[-500:] if result.stderr else (result.stdout[-500:] if result.stdout else "Unknown error")
+                 (target_dir / "deployment_error.log").write_text(error_msg)
+             except Exception as e:
+                 print(f"Failed to write error log: {e}")
+        else:
+             # Success - clear previous error log
+             try:
+                 error_log_file = target_dir / "deployment_error.log"
+                 if error_log_file.exists():
+                     error_log_file.unlink()
+             except Exception:
+                 pass
+
         print(f"DEBUG: docker-compose up stdout: {result.stdout}")
         print(f"DEBUG: docker-compose up stderr: {result.stderr}")
-        if result.returncode != 0:
-             print(f"ERROR: docker-compose up failed with code {result.returncode}")
+
     except Exception as e:
         print(f"Error starting {name}: {e}")
+        try:
+             (target_dir / "deployment_error.log").write_text(f"Internal Orchestrator Error: {str(e)}")
+        except:
+             pass
 
 @app.post("/instances/{name}/start")
 def start_instance(name: str, background_tasks: BackgroundTasks):
@@ -363,17 +406,30 @@ def get_instance_logs(name: str, lines: int = 100, service: str = "backend"):
     
     container_name = f"institutional_{service}_{name}"
     try:
-        result = subprocess.run(
-            ["docker", "logs", "--tail", str(lines), container_name],
-            capture_output=True, text=True
-        )
+        client = get_docker_client()
+        container = client.containers.get(container_name)
+        logs = container.logs(tail=lines).decode('utf-8', errors='replace')
+        
         return {
-            "logs": result.stdout + result.stderr,
+            "logs": logs,
             "container": container_name,
             "lines": lines
         }
+    except docker.errors.NotFound:
+         # Fallback to deployment error log if container missing
+         try:
+             err_log = target_dir / "deployment_error.log"
+             if err_log.exists():
+                 return {
+                     "logs": f"Container {container_name} not found.\n\nDEPLOYMENT ERROR LOG:\n" + err_log.read_text(),
+                     "container": "N/A",
+                     "lines": lines
+                 }
+         except:
+             pass
+         return {"error": f"Container {container_name} not found and no deployment log.", "logs": ""}
     except Exception as e:
-        return {"error": str(e), "logs": ""}
+        return {"error": str(e), "logs": f"Error retrieving logs: {str(e)}"}
 
 
 @app.get("/instances/{name}/metrics")

@@ -235,5 +235,78 @@ class RiskManager:
         except Exception as e:
             logger.error(f"Failed to send risk alert: {e}")
 
+
+class AdaptiveRiskManager:
+    """
+    Adaptive Risk Manager for Position Sizing
+    
+    Adjusts risk % based on:
+    - Consecutive losses (Kelly-style reduction)
+    - Market volatility
+    - Current drawdown
+    """
+    
+    def __init__(self, base_risk_percent: float = 1.0):
+        self.base_risk_percent = base_risk_percent
+        self.min_risk_percent = 0.1
+        self.max_risk_percent = 3.0
+        
+        # Circuit breaker thresholds
+        self.max_consecutive_losses = 5
+        self.max_drawdown_halt = 15.0  # Halt at 15% DD
+        
+    def calculate_risk_percent(
+        self,
+        market_regime: str = "NORMAL",
+        consecutive_losses: int = 0,
+        current_volatility_percentile: float = 50.0,
+        current_drawdown: float = 0.0
+    ) -> Tuple[float, str]:
+        """
+        Calculate adaptive risk percentage
+        
+        Returns:
+            Tuple of (risk_percent, reason_string)
+        """
+        risk = self.base_risk_percent
+        reason = "Base risk"
+        
+        # CIRCUIT BREAKER: Max drawdown
+        if current_drawdown >= self.max_drawdown_halt:
+            return 0.0, f"HALT: Drawdown {current_drawdown:.1f}% >= {self.max_drawdown_halt}%"
+        
+        # CIRCUIT BREAKER: Max consecutive losses
+        if consecutive_losses >= self.max_consecutive_losses:
+            return 0.0, f"HALT: {consecutive_losses} consecutive losses >= {self.max_consecutive_losses}"
+        
+        # Reduce risk after losses (Kelly-style)
+        if consecutive_losses > 0:
+            reduction_factor = 1.0 - (consecutive_losses * 0.15)  # 15% reduction per loss
+            reduction_factor = max(0.25, reduction_factor)  # Min 25% of base
+            risk *= reduction_factor
+            reason = f"Reduced after {consecutive_losses} losses"
+        
+        # Adjust for volatility (reduce in high vol)
+        if current_volatility_percentile > 80:
+            risk *= 0.7
+            reason += " + High vol"
+        elif current_volatility_percentile < 20:
+            risk *= 1.2  # Slightly increase in low vol
+            reason += " + Low vol"
+        
+        # Adjust for market regime
+        if market_regime == "RANGING":
+            risk *= 0.8
+            reason += " + Ranging"
+        elif market_regime == "TRENDING":
+            risk *= 1.1
+            reason += " + Trending"
+        
+        # Clamp to min/max
+        risk = max(self.min_risk_percent, min(self.max_risk_percent, risk))
+        
+        return risk, reason
+
+
 # Initialize Global Instance
 risk_manager = RiskManager()

@@ -711,44 +711,8 @@ const executeManualTrade = async () => {
     manualTradeLoading.value = false
   }
 }
-// SYMBOL PRESETS - Complete configurations per symbol (based on research)
-// SYMBOL PRESETS - Moved to src/constants/presets.js
-const symbolPresets = SYMBOL_PRESETS
-
-
-
-// Apply preset when symbol changes (v3.0: includes MACD + session)
-const applySymbolPreset = (slot) => {
-  const preset = symbolPresets[slot.symbol]
-  if (preset) {
-    slot.timeframe = preset.timeframe
-    slot.tsl_mode = preset.tsl_mode
-    slot.risk_percent = preset.risk_percent
-    slot.tp_ratio = preset.tp_ratio
-    slot.sl_atr_multiplier = preset.sl_atr_multiplier
-    slot.rsi_period = preset.rsi_period
-    slot.rsi_overbought = preset.rsi_overbought
-    slot.rsi_oversold = preset.rsi_oversold
-    slot.min_confluence = preset.min_confluence
-    slot.max_duration = preset.max_duration
-    slot.enable_vwap = preset.enable_vwap
-    slot.enable_stoch = preset.enable_stoch
-    slot.enable_institutional = preset.enable_institutional
-    slot.enable_fibonacci = preset.enable_fibonacci
-    slot.direction = preset.direction
-    if (preset.zigzag_lookback) slot.zigzag_lookback = preset.zigzag_lookback
-    
-    // v3.0: MACD & Session Killzone support
-    if (preset.macd_fast) slot.macd_fast = preset.macd_fast
-    if (preset.macd_slow) slot.macd_slow = preset.macd_slow
-    if (preset.macd_signal) slot.macd_signal = preset.macd_signal
-    if (preset.session_mode) slot.session_mode = preset.session_mode
-    
-    // Save & Notify
-    if (typeof saveSlot === 'function') saveSlot(slot)
-    if (typeof showToastNotification === 'function') showToastNotification('Auto-configured ' + slot.symbol + ' (v3.0)', 'info', 2000)
-  }
-}
+// SYMBOL PRESETS - Now managed by useSlotManager composable
+// (applySymbolPreset is destructured from useSlotManager at line ~817)
 
 // MULTI-SYMBOL SLOTS - Optimized for stability (M15 + H1 Conf + Wide Stops + NO Partial TP)
 

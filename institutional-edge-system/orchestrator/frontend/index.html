@@ -148,6 +148,27 @@
               >
             </div>
 
+            <!-- Error Preview Widget -->
+            <div
+              v-if="instance.error_preview"
+              class="mb-4 p-3 bg-red-900/30 rounded-lg border border-red-800"
+            >
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold text-red-400">
+                  <i class="fas fa-exclamation-triangle mr-1"></i> Startup Error
+                </span>
+                <button
+                  @click="showLogs(instance.name)"
+                  class="text-xs text-blue-400 hover:text-blue-300 underline"
+                >
+                  View Full Logs
+                </button>
+              </div>
+              <div class="text-xs font-mono text-gray-300 break-words leading-tight whitespace-pre-wrap">
+                {{ instance.error_preview }}
+              </div>
+            </div>
+
             <!-- Metrics Widget -->
             <div
               v-if="instanceMetrics[instance.name]"
@@ -245,6 +266,14 @@
                 class="flex-1 bg-green-600 hover:bg-green-700 py-2 rounded text-sm transition-colors"
               >
                 <i class="fas fa-play mr-1"></i> Start
+              </button>
+
+              <button
+                @click="showLogs(instance.name)"
+                class="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-sm transition-colors text-white"
+                title="View Logs"
+              >
+                <i class="fas fa-file-alt"></i>
               </button>
 
               <!-- Actions Dropdown -->

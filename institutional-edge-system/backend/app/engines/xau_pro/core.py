@@ -2,8 +2,15 @@ import pandas as pd
 from typing import Dict, List, Optional
 from loguru import logger
 from datetime import datetime
-from ta.trend import MACD, EMAIndicator
-from ta.momentum import RSIIndicator, StochasticOscillator
+try:
+    from ta.trend import MACD, EMAIndicator
+    from ta.momentum import RSIIndicator, StochasticOscillator
+except ImportError:
+    logger.error("CRITICAL: 'ta' library not found. Install via 'pip install ta'. XAU Engine disabled.")
+    MACD = None
+    EMAIndicator = None
+    RSIIndicator = None
+    StochasticOscillator = None
 
 # Reuse robust components from Golden Engine (assuming it remains as a library)
 # If Golden is deleted, these need to be moved to a shared 'common' directory.

@@ -123,6 +123,10 @@ class MT5Connector:
         """Public method to normalize symbol name."""
         return self._normalize_symbol(symbol)
 
+    def check_heartbeat(self) -> bool:
+        """Check if connection is alive"""
+        return self.connected
+
     def connect(self) -> bool:
         """Connect to local dedicated MetaTrader 5 via RPyC"""
         try:

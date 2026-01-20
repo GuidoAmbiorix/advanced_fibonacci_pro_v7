@@ -210,7 +210,7 @@ async def startup_event():
         level="SUCCESS",
         fields=[{"name": "Environment", "value": settings.INSTANCE_NAME, "inline": True}]
     )
-    logger.info("SL FIXED APPLIED V4.3")
+    logger.info("SL FIXED (STARTUP PATCHED) V4.4")
 
 
     # Create database tables
