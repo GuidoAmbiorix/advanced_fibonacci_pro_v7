@@ -12,6 +12,9 @@ pywebview>=4.0.0
 # MT5 Connection
 MetaTrader5>=5.0.45
 
+# GUI Support (Explicitly fix pythonnet version)
+pythonnet==3.0.0rc6
+
 # Async support
 asyncio-extras>=1.3.0
 

@@ -75,7 +75,8 @@ def calculate_rsi_numpy(
         avg_loss[i] = (avg_loss[i-1] * (period - 1) + losses[i]) / period
     
     # Calculate RSI
-    rs = np.where(avg_loss != 0, avg_gain / avg_loss, 100)
+    # Use np.divide to avoid RuntimeWarning for division by zero
+    rs = np.divide(avg_gain, avg_loss, out=np.full_like(avg_gain, 100), where=avg_loss!=0)
     rsi = 100 - (100 / (1 + rs))
     
     # Prepend NaN to match original length
