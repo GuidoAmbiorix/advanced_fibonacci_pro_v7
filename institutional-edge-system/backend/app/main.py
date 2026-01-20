@@ -172,20 +172,76 @@ async def connect_mt5_background():
     
     logger.error("❌ MT5 connection failed after timeout - running in disconnected mode")
 
+    logger.error("❌ MT5 connection failed after timeout - running in disconnected mode")
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize on startup"""
     logger.info("Starting Institutional Edge Pro API...")
     
-    # Initialize Log Manager (System Logs)
+    # Initialize Log Manager
     from app.core.log_manager import log_manager
     logger.add(log_manager.sink, serialize=False, level="DEBUG", enqueue=True)
     logger.info("✅ Log Manager initialized")
     logger.info("SL FIXED APPLIED V4.3")
 
-
     # Create database tables
     database.init_db()
+    
+    # --- AUTO-MIGRATION: Fix Missing Columns ---
+    try:
+        from sqlalchemy import text
+        db = database.SessionLocal()
+        bind = db.bind
+        dialect = bind.dialect.name
+        
+        columns = [
+            ("engine_type", "VARCHAR DEFAULT 'ADAPTIVE'"),
+            ("engine_config", "TEXT DEFAULT '{}'"),
+            ("confirmation_timeframe", "VARCHAR"),
+            ("session_mode", "VARCHAR DEFAULT 'BOTH_KZ'"),
+            ("zigzag_lookback", "INTEGER DEFAULT 12"),
+            ("enable_order_blocks", "BOOLEAN DEFAULT TRUE"),
+            ("ob_lookback", "INTEGER DEFAULT 20"),
+            ("enable_liquidity_sweep", "BOOLEAN DEFAULT TRUE"),
+            ("sweep_lookback", "INTEGER DEFAULT 10"),
+            ("enable_fvg", "BOOLEAN DEFAULT TRUE"),
+            ("fvg_min_size_atr", "FLOAT DEFAULT 0.5"),
+            ("trading_session", "VARCHAR DEFAULT 'BOTH_KZ'"),
+            ("session_end_action", "VARCHAR DEFAULT 'HOLD'"),
+            ("session_start_utc", "VARCHAR DEFAULT '07:00'"),
+            ("session_end_utc", "VARCHAR DEFAULT '15:00'"),
+            ("use_daily_bias", "BOOLEAN DEFAULT FALSE"),
+            ("use_h1_trend_filter", "BOOLEAN DEFAULT FALSE"),
+            ("stoch_k_period", "INTEGER DEFAULT 14"),
+            ("stoch_d_period", "INTEGER DEFAULT 3"),
+            ("vwap_use_trend_filter", "BOOLEAN DEFAULT TRUE"),
+        ]
+        
+        migrated_count = 0
+        for col, dtype in columns:
+            try:
+                if dialect == 'postgresql':
+                    sql = f"ALTER TABLE bot_slots ADD COLUMN IF NOT EXISTS {col} {dtype}"
+                    if 'TEXT' in dtype: sql = sql.replace('TEXT', 'JSONB')
+                else:
+                    sql = f"ALTER TABLE bot_slots ADD COLUMN {col} {dtype}"
+                
+                db.execute(text(sql))
+                db.commit()
+                migrated_count += 1
+            except Exception:
+                db.rollback()
+                pass # Expected if exists
+        
+        if migrated_count > 0:
+            logger.info(f"✅ Auto-Migration: Checked {len(columns)} columns")
+            
+        db.close()
+    except Exception as e:
+        logger.error(f"❌ Auto-Migration Failed: {e}")
+
+    # --- AUTO-SEEDING ---
 
     # --- AUTO-SEEDING: Ensure Default Configuration Exists ---
     from app.db.seed_db import seed_database
