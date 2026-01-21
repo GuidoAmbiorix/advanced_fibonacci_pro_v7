@@ -14,6 +14,9 @@
 #include <Trade\PositionInfo.mqh>
 #include <Trade\AccountInfo.mqh>
 #include "Include\PortfolioGlobals.mqh"
+#include "Include\GovernorAllocator.mqh"
+
+CGovernorAllocator allocator;
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
