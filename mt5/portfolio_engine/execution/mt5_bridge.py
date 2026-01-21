@@ -122,45 +122,35 @@ class MT5Bridge:
         import time
 
         host = os.environ.get('MT5_HOST', 'localhost')
-        port = int(os.environ.get('MT5_PORT', 18812))
+        port = int(os.environ.get('MT5_PORT', 8002))
         
-        print(f"Connecting to MT5 via RPyC at {host}:{port}...")
+        print(f"Connecting to MT5 Sidecar at {host}:{port}...")
         
         try:
             # Retry loop for Docker startup race conditions
-            for i in range(5):
+            for i in range(10):
                 try:
-                    # Use classic connect as per robust example
                     self.rpc_conn = rpyc.classic.connect(host, port)
-                    
-                    # Set config for timeout and pickling
-                    if hasattr(self.rpc_conn, '_config'):
-                        self.rpc_conn._config['sync_request_timeout'] = 300
-                        self.rpc_conn._config['allow_pickle'] = True
-                        
                     break
                 except Exception as e:
                     print(f"Connection attempt {i+1} failed: {e}")
-                    time.sleep(2)
+                    time.sleep(3)
             
             if not self.rpc_conn:
                 return False
 
-            # Get the exposed MT5 service module directly
-            self.mt5 = self.rpc_conn.modules.MetaTrader5
+            # Get the mt5 proxy from our sidecar's get_mt5_proxy()
+            print("Fetching MT5 Proxy from Sidecar...")
+            self.mt5 = self.rpc_conn.modules.__main__.get_mt5_proxy()
             
-            # Inject Proxy Functions for proper dict handling
-            # This is critical for order_send to work over RPyC
-            print("Injecting proxy functions...")
-            self.rpc_conn.execute("""
-import MetaTrader5 as mt5_remote
-def proxy_order_check(req):
-    return mt5_remote.order_check(dict(req))
-def proxy_order_send(req):
-    return mt5_remote.order_send(dict(req))
-""")
-            self.proxy_order_check = self.rpc_conn.namespace['proxy_order_check']
-            self.proxy_order_send = self.rpc_conn.namespace['proxy_order_send']
+            if self.mt5 is None:
+                print("Error: Sidecar failed to initialize mt5linux proxy.")
+                return False
+            
+            # Link Proxy Functions from sidecar
+            print("Linking sidecar proxy functions...")
+            self.proxy_order_check = self.rpc_conn.modules.__main__.order_check
+            self.proxy_order_send = self.rpc_conn.modules.__main__.order_send
             
             # Check initialization on remote
             if not self.mt5.initialize():
@@ -214,10 +204,10 @@ def proxy_order_send(req):
         }
 
     def get_global_variable(self, name: str) -> float:
-        """Get a global variable value from MT5."""
-        if not self.mt5: return 0.0
+        """Get a global variable value via sidecar safe helper."""
+        if not self.use_rpyc or not self.rpc_conn: return 0.0
         try:
-            return self.mt5.global_variable_get(name)
+            return float(self.rpc_conn.modules.__main__.safe_get_global_variable(name))
         except:
             return 0.0
 
@@ -517,14 +507,40 @@ def proxy_order_send(req):
         count: int = 500,
         start: datetime = None
     ) -> Optional[Any]:
-        """Get OHLCV data."""
+        """Get OHLCV data (delegated to sidecar for RPyC)."""
+        if self.use_rpyc and self.rpc_conn:
+            try:
+                rates = self.rpc_conn.modules.__main__.get_ohlcv(symbol, timeframe, count)
+                if rates is not None and len(rates) > 0:
+                    import pandas as pd
+                    try:
+                        # 'rates' is a numpy structured array (via obtain) or list of tuples
+                        # pd.DataFrame(rates) handles structured arrays by using field names as columns
+                        df = pd.DataFrame(rates)
+                        
+                        # Ensure 'time' column exists
+                        if 'time' not in df.columns and 0 in df.columns:
+                            # Fallback if it came as tuples without names
+                             columns = ['time', 'open', 'high', 'low', 'close', 'tick_volume', 'spread', 'real_volume']
+                             if df.shape[1] == 8:
+                                  df.columns = columns
+                    
+                        if 'time' in df.columns:
+                            df['time'] = pd.to_datetime(df['time'], unit='s')
+                            df.set_index('time', inplace=True)
+                            return df
+                    except Exception as e:
+                         print(f"Data conversion error: {e}")
+                         return None
+                    else:
+                        print("RPyC OHLCV Error: 'time' column missing from dataframe")
+                        return None
+            except Exception as e:
+                print(f"RPyC OHLCV Error: {e}")
+            return None
+            
         if not self.mt5: return None
         import pandas as pd
-        
-        # Map timeframe string to MT5 constant
-        # Need to handle RPyC remote constants if needed
-        # Or just map locally if values are standard integers (they are)
-        # But safer to ask the module
         
         # Helper to get attr from local or remote module
         def get_attr(name):

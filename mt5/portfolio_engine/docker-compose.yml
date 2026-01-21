@@ -1,53 +1,47 @@
-
-
 services:
   mt5:
     image: gmag11/metatrader5_vnc:latest
     container_name: trading_mt5
     ports:
-      - "3000:3000"   # VNC Web Interface
-      - "8001:8001"   # RPyC Server (Internal Port)
+      - "3000:3000"   # VNC
+      - "8001:8001"   # Internal Bridge (RPyC)
+      - "8002:8002"   # Sidecar (RPyC Extended)
     environment:
       - CUSTOM_USER=trader
       - PASSWORD=trading
       - VNCPASSWORD=trading
-    user: "1000:1000"
-    mem_limit: 6G
-    mem_reservation: 2G
-    shm_size: '2gb'
+      - TZ=America/New_York
+      - WINEDEBUG=-all
     volumes:
       - mt5_config:/config
-      - ./execution:/app  # Mount execution dir to run sidecar
+      - ./execution:/app
       - ./startup.sh:/custom-cont-init.d/99-fix-deps:ro
-      - ../portafolio_manager:/config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/PortfolioManager
+      - ../portafolio_manager:/mnt/experts
       - mt5_reports:/reports
     networks:
       - trading_network
     restart: unless-stopped
-    # Override command to run our sidecar script alongside MT5 (via Wine)
-    # Note: The base image likely has an ENTRYPOINT we need to respect.
-    # We will rely on manually starting the server or wrapping it.
-    # For simplicity, we just run the image as is, and the USER must
-    # manually run the python script via VNC or we exec into it.
-    # BETTER: We can use a command wrapper if the image supports it.
-    # Retaining default command for now, we will exec the server later.
+    mem_limit: 8G
+    mem_reservation: 4G
+    shm_size: '2gb'
 
   portfolio_engine:
     build: .
     container_name: portfolio_engine
     ports:
-      - "8501:8501" # Streamlit Dashboard
+      - "8501:8501"
     volumes:
       - ./:/app
       - mt5_reports:/reports
     environment:
       - MT5_HOST=mt5
-      - MT5_PORT=8001
+      - MT5_PORT=8002
       - PYTHONUNBUFFERED=1
     depends_on:
       - mt5
     networks:
       - trading_network
+    restart: unless-stopped
 
 networks:
   trading_network:

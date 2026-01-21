@@ -115,7 +115,11 @@ int OnInit()
    
    trade.SetExpertMagicNumber(InpMagicNumber);
    trade.SetDeviationInPoints(10);
-   trade.SetTypeFilling(ORDER_FILLING_FOK);
+   // Use more robust filling mode detection
+   int filling = (int)SymbolInfoInteger(_Symbol, SYMBOL_FILLING_MODE);
+   if((filling & SYMBOL_FILLING_FOK) != 0) trade.SetTypeFilling(ORDER_FILLING_FOK);
+   else if((filling & SYMBOL_FILLING_IOC) != 0) trade.SetTypeFilling(ORDER_FILLING_IOC);
+   else trade.SetTypeFilling(ORDER_FILLING_RETURN);
    
    hRSI = iRSI(_Symbol, PERIOD_CURRENT, InpRSI_Period, PRICE_CLOSE);
    hATR = iATR(_Symbol, PERIOD_CURRENT, 14);
@@ -467,39 +471,57 @@ int CountPositions()
 bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label)
 {
    double price = (type == ORDER_TYPE_BUY) ? symbolInfo.Ask() : symbolInfo.Bid();
-   double slDist = g_ATR * 1.0;
+   double slDist = g_ATR * 1.5; // Increased multiplier for safety
+   
+   // Ensure SL respects STOPS_LEVEL
+   double stopsLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+   if(slDist < stopsLevel + 10 * _Point) slDist = stopsLevel + 10 * _Point;
    
    double sl = (type == ORDER_TYPE_BUY) ? price - slDist : price + slDist;
+   sl = NormalizeDouble(sl, (int)symbolInfo.Digits());
    double tp = 0; // Unlimited
    
    double lots = CalculateLotSize(slDist, riskPct);
    string comment = "SE|" + label + "|S" + IntegerToString(g_currentConfluence);
+   
+   PrintFormat("🚀 Trade Attempt: %s %.2f @ %.5f SL: %.5f (Risk: %.2f%%)", 
+               EnumToString(type), lots, price, sl, riskPct);
    
    if(trade.PositionOpen(_Symbol, type, lots, price, sl, tp, comment))
    {
       int sz = ArraySize(g_partialsClosed);
       ArrayResize(g_partialsClosed, sz + 1);
       g_partialsClosed[sz] = false;
-      Print((type == ORDER_TYPE_BUY ? "🟢" : "🔴"), " ", label, " | Risk:", riskPct, "% | Score:", g_currentConfluence);
+      Print((type == ORDER_TYPE_BUY ? "🟢 SUCCESS: Buy Opened" : "🔴 SUCCESS: Sell Opened"));
       return true;
    }
+   
+   PrintFormat("❌ Trade FAILED: %d - %s", trade.ResultRetcode(), trade.ResultComment());
    return false;
 }
 
 double CalculateLotSize(double slDist, double riskPct)
 {
    double equity = account.Equity();
+   if(equity <= 0) equity = account.Balance();
+   
    double riskAmt = equity * (riskPct / 100.0);
    double tv = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
    double ts = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
-   if(ts == 0 || tv == 0) return SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   
+   // Safety Check: Avoid Division by Zero or invalid data
+   if(ts <= 0 || tv <= 0 || slDist <= 0) return SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   
    double lots = riskAmt / ((slDist / ts) * tv);
+   
    double minL = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
    double maxL = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
    double step = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
+   
    if(lots < minL) lots = minL;
    if(lots > maxL) lots = maxL;
-   lots = MathFloor(lots / step) * step;
+   
+   lots = MathFloor(lots / step + 0.000001) * step;
    return NormalizeDouble(lots, 2);
 }
 

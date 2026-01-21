@@ -9,7 +9,7 @@ class AutomationManager:
         self.reports_dir = reports_dir
 
     def generate_ini(self, 
-                     expert="PortfolioManager\\Portfolio_Governor.mq5", 
+                     expert="PortfolioManager\\Symbol_Engine.mq5", 
                      symbol="XAUUSD", 
                      period="M15", 
                      deposit=10000, 

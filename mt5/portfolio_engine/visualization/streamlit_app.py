@@ -86,176 +86,169 @@ with st.sidebar:
             count += 1
         st.warning(f"Close signal sent for {count} positions (Demo stub)")
 
-# Main Dashboard
+# --- MAIN UI ---
 st.title("Institutional Dashboard")
 
-# 1. Metrics Row
-col1, col2, col3, col4 = st.columns(4)
+# Top Level Tabs
+tab_live, tab_backtest, tab_settings = st.tabs(["📈 Live Dashboard", "🧪 strategy Tester", "⚙️ Settings"])
 
-acc = bridge.get_account_info()
-if acc:
-    col1.metric("Equity", f"${acc.get('equity', 0):,.2f}")
-    col2.metric("Balance", f"${acc.get('balance', 0):,.2f}")
-    col3.metric("Profit", f"${acc.get('profit', 0):,.2f}", 
-                delta_color="normal" if acc.get('profit', 0) >= 0 else "inverse")
-    col4.metric("Margin Free", f"${acc.get('margin_free', 0):,.2f}")
-else:
-    col1.metric("Equity", "---")
-    col2.metric("Balance", "---")
-    col3.metric("Profit", "---")
-    col4.metric("Margin Free", "---")
+with tab_live:
+    # 1. Metrics Row
+    col1, col2, col3, col4 = st.columns(4)
 
-# Governor Status (MQL5 Integration)
-st.divider()
-st.subheader("🧠 Portfolio Governor")
-gov = bridge.get_governor_status()
+    acc = bridge.get_account_info()
+    if acc:
+        col1.metric("Equity", f"${acc.get('equity', 0):,.2f}")
+        col2.metric("Balance", f"${acc.get('balance', 0):,.2f}")
+        col3.metric("Profit", f"${acc.get('profit', 0):,.2f}", 
+                    delta_color="normal" if acc.get('profit', 0) >= 0 else "inverse")
+        col4.metric("Margin Free", f"${acc.get('margin_free', 0):,.2f}")
+    else:
+        col1.info("Connecting to MT5...")
 
-g1, g2, g3, g4 = st.columns(4)
-g1.metric("Risk Multiplier", f"{gov.get('risk_mult', 0)*100:.0f}%", 
-          help="Global risk scaling factor controlled by the Brain")
-g2.metric("Drawdown", f"{gov.get('drawdown', 0):.2f}%", delta=None)
-g3.metric("Total Exposure", f"{gov.get('exposure', 0):.2f}%")
-g4.metric("Rolling PF", f"{gov.get('rolling_pf', 0):.2f}")
-
-if gov.get('active', 0) == 0:
-    st.caption("⚠️ Governor Offline (Run 'Portfolio_Governor.mq5' in MT5)")
-else:
-    st.caption("✅ Governor Active - Monitoring Risk")
-
-st.divider()
-
-# 2. Charts
-st.subheader("Live Market Data")
-symbols = ['XAUUSD', 'EURUSD'] # Could be dynamic
-tabs = st.tabs(symbols)
-
-# Import here to avoid top-level dependency issues during hot-reload
-try:
-    from streamlit_lightweight_charts_ntf import renderLightweightCharts
-except ImportError:
-    st.error("Please install streamlit-lightweight-charts-ntf")
-    renderLightweightCharts = None
-
-for i, sym in enumerate(symbols):
-    with tabs[i]:
-        df = bridge.get_ohlcv(sym, timeframe='M15', count=200)
-        if df is not None and not df.empty and renderLightweightCharts:
-            # Format data for lightweight-charts
-            # Needs list of dicts: time (unix), open, high, low, close
-            chart_data = []
-            for t, row in df.iterrows():
-                # t is Timestamp (index)
-                chart_data.append({
-                    "time": int(t.timestamp()),
-                    "open": row['open'],
-                    "high": row['high'],
-                    "low": row['low'],
-                    "close": row['close']
-                })
-
-            chartOptions = {
-                "layout": {
-                    "textColor": 'white',
-                    "background": {"type": 'solid', "color": '#0E1117'}
-                },
-                "grid": {
-                    "vertLines": {"color": "#333"},
-                    "horzLines": {"color": "#333"},
-                }
-            }
-            
-            seriesCandlestickChart = [{
-                "seriesType": "Candlestick",
-                "data": chart_data,
-                "options": {
-                    "upColor": '#26a69a', 
-                    "downColor": '#ef5350', 
-                    "borderVisible": False, 
-                    "wickUpColor": '#26a69a', 
-                    "wickDownColor": '#ef5350'
-                }
-            }]
-
-            renderLightweightCharts(
-                seriesCandlestickChart, 
-                chartOptions, 
-                height=500
-            )
-        else:
-            if not renderLightweightCharts:
-                st.warning("Library missing.")
-            else:
-                st.warning(f"No data for {sym}")
-
-# 3. Active Positions
-st.subheader("Active Positions")
-positions = bridge.get_positions()
-if positions:
-    df_pos = pd.DataFrame(positions)
-    st.dataframe(
-        df_pos,
-        use_container_width=True,
-        column_config={
-            "ticket": st.column_config.NumberColumn("Ticket", format="%d"),
-            "time": st.column_config.DatetimeColumn("Time", format="D MMM, HH:mm"),
-            "profit": st.column_config.NumberColumn("Profit", format="$%.2f"),
-        }
-    )
-else:
-    st.info("No active positions")
-
-# Auto-Refresh Logic
-if auto_refresh:
-    time.sleep(refresh_rate)
-    st.rerun()
-
-# --- BACKTESTING PAGE ---
-with st.sidebar:
+    # Governor Status (MQL5 Integration)
     st.divider()
-    st.header("🧪 Strategy Tester")
-    show_tester = st.toggle("Show Tester Mode", value=False)
+    st.subheader("🧠 Portfolio Governor Status")
+    gov = bridge.get_governor_status()
 
-if show_tester:
-    st.markdown("## 🧪 Custom Strategy Tester")
+    g1, g2, g3, g4 = st.columns(4)
+    g1.metric("Risk Multiplier", f"{gov.get('risk_mult', 0)*100:.0f}%")
+    g2.metric("Drawdown", f"{gov.get('drawdown', 0):.2f}%")
+    g3.metric("Total Exposure", f"{gov.get('exposure', 0):.2f}%")
+    g4.metric("Rolling PF", f"{gov.get('rolling_pf', 0):.2f}")
+
+    if gov.get('active', 0) == 0:
+        st.warning("⚠️ Governor Offline (Run 'Portfolio_Governor.mq5' in MT5)")
     
-    with st.form("backtest_form"):
+    st.divider()
+
+    # 2. Charts
+    st.subheader("Live Market Data")
+    symbols_to_show = ['XAUUSD', 'EURUSD']
+    chart_tabs = st.tabs(symbols_to_show)
+
+    try:
+        from streamlit_lightweight_charts_ntf import renderLightweightCharts
+    except ImportError:
+        renderLightweightCharts = None
+
+    for i, sym in enumerate(symbols_to_show):
+        with chart_tabs[i]:
+            df = bridge.get_ohlcv(sym, timeframe='M15', count=100)
+            if df is not None and not df.empty and renderLightweightCharts:
+                chart_data = []
+                for t, row in df.iterrows():
+                    chart_data.append({
+                        "time": int(t.timestamp()),
+                        "open": row['open'],
+                        "high": row['high'],
+                        "low": row['low'],
+                        "close": row['close']
+                    })
+
+                chartOptions = {
+                    "height": 400,
+                    "layout": {"textColor": 'white', "background": {"type": 'solid', "color": '#0E1117'}},
+                    "grid": {"vertLines": {"color": "#333"}, "horzLines": {"color": "#333"}}
+                }
+                
+                series = [{
+                    "seriesType": "Candlestick",
+                    "data": chart_data,
+                    "options": {"upColor": '#26a69a', "downColor": '#ef5350'}
+                }]
+
+                renderLightweightCharts([{"chart": chartOptions, "series": series}], key=f"chart_{sym}")
+            else:
+                st.info(f"Waiting for {sym} data...")
+                if df is not None and not df.empty:
+                    st.line_chart(df[['close']])
+
+    # 3. Active Positions
+    st.subheader("Active Positions")
+    positions = bridge.get_positions()
+    if positions:
+        st.dataframe(pd.DataFrame(positions), use_container_width=True)
+    else:
+        st.info("No active positions found with Magic Number " + str(bridge.magic_number))
+
+with tab_backtest:
+    st.header("🧪 Strategy Tester (Remote)")
+    st.markdown("""
+    Run backtests on the remote MT5 server. This will generate a report and show you the results here.
+    """)
+    
+    with st.form("backtest_form_v2"):
         c1, c2, c3 = st.columns(3)
-        bt_symbol = c1.selectbox("Symbol", ["XAUUSD", "EURUSD"])
+        bt_symbol = c1.selectbox("Symbol", ["XAUUSD", "EURUSD", "GBPUSD"])
         bt_period = c2.selectbox("Period", ["M15", "H1", "H4"])
-        bt_model = c3.selectbox("Model", ["OHLC (Fast)", "Every Tick (Precise)"], index=0)
+        bt_model = c3.selectbox("Model", ["Every Tick (Precise)", "OHLC (Fast)"], index=1)
         
-        c4, c5 = st.columns(2)
+        c4, c5, c6 = st.columns(3)
         bt_start = c4.date_input("Start Date", datetime(2024, 1, 1))
         bt_end = c5.date_input("End Date", datetime(2024, 1, 31))
+        bt_deposit = c6.number_input("Initial Deposit", 1000, 100000, 10000)
         
-        run_bt = st.form_submit_button("🚀 Run Backtest")
+        run_bt = st.form_submit_button("🚀 Start Backtest")
         
     if run_bt:
         from execution.automation_manager import AutomationManager
         am = AutomationManager()
         
-        # 1. Generate INI config
         model_int = 1 if "OHLC" in bt_model else 0
         ini_content = am.generate_ini(
+            expert="PortfolioManager\\\\Symbol_Engine.mq5",
             symbol=bt_symbol,
             period=bt_period,
+            deposit=bt_deposit,
             date_from=bt_start.strftime("%Y.%m.%d"),
             date_to=bt_end.strftime("%Y.%m.%d"),
             model=model_int
         )
         
-        # 2. Run Remote Backtest
-        with st.spinner("Running Backtest on Server... (This may take a while)"):
+        with st.status("🛠️ Running Backtest...") as status:
+            st.write("Generating config...")
             logs = bridge.run_backtest(ini_content)
+            st.write("Parsing results...")
+            df_res = am.parse_report()
+            status.update(label="Backtest Finished!", state="complete")
             
-        st.text_area("Server Logs", logs, height=150)
-        
-        # 3. Parse Report
-        if "Exit Code: 0" in logs or "Exit Code" in logs: # Checking general completion
-             st.success("Backtest Completed!")
-             df_res = am.parse_report()
-             if not df_res.empty:
-                 st.dataframe(df_res)
-                 # TODO: Add Equity Curve Plot here using df_res
-             else:
-                 st.warning("No trades found in report or parsing failed.")
+        if not df_res.empty:
+            st.success(f"Backtest completed! Found {len(df_res)} deals.")
+            st.dataframe(df_res)
+        else:
+            st.warning("Backtest finished but no trades were found. Check logs below.")
+            with st.expander("Show Server Logs"):
+                st.text(logs)
+
+with tab_settings:
+    st.header("⚙️ Configuration")
+    st.write("Shared Magic Number Range:")
+    st.number_input("Base Magic", value=bridge.magic_number, key="magic_base")
+    st.divider()
+    st.write("Auto-Refresh Settings:")
+    if st.button("Manually Sync Data"):
+        bridge.connect()
+        st.rerun()
+
+# --- SIDEBAR UPDATES ---
+with st.sidebar:
+    st.divider()
+    st.header("🚀 Bot Quick Launch")
+    st.info("Attaches Symbol_Engine.mq5 to a new chart")
+    symbol_quick = st.selectbox("Symbol", ["XAUUSD", "EURUSD"], key="quick_sym")
+    if st.button("🚀 Launch Symbol Engine", use_container_width=True):
+         with st.spinner(f"Launching {symbol_quick}..."):
+            res = bridge.launch_bot(symbol_quick)
+            st.toast(res)
+    
+    st.divider()
+    if st.button("🔴 Emergency Stop (Pause Governor)", type="primary", use_container_width=True):
+        bridge.set_governor_status(False)
+        st.error("GOVERNOR PAUSED")
+
+# Auto-Refresh Logic (Last line)
+if auto_refresh:
+    time.sleep(refresh_rate)
+    st.rerun()
+
