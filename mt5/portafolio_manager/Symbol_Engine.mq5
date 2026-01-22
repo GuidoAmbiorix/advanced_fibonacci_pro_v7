@@ -495,6 +495,20 @@ void OnTick()
    double buyScore = CalculateConfluenceScore(1);
    double sellScore = CalculateConfluenceScore(-1);
 
+   // Apply adaptive filter (pattern bonus/penalty)
+   if(InpEnableLearning && InpEnableAdaptiveFilters && performanceAnalyzer.IsLearningActive())
+   {
+      ConfluenceFactors buyFactors;
+      BuildConfluenceFactors(buyFactors, 1, buyScore);
+      double buyBonus = adaptiveFilter.GetAdjustedConfluence(buyScore, buyFactors) - buyScore;
+      buyScore += buyBonus;
+
+      ConfluenceFactors sellFactors;
+      BuildConfluenceFactors(sellFactors, -1, sellScore);
+      double sellBonus = adaptiveFilter.GetAdjustedConfluence(sellScore, sellFactors) - sellScore;
+      sellScore += sellBonus;
+   }
+
    // Bias Penalty
    if(g_bias == 1) sellScore -= 1.0;
    if(g_bias == -1) buyScore -= 1.0;
@@ -540,6 +554,24 @@ void OnTick()
 
       // Apply tier multiplier
       baseRisk *= GetTierSizeMultiplier(tier);
+
+      // Apply adaptive risk (if enabled and learning active)
+      if(InpEnableLearning && InpEnableAdaptiveRisk && adaptiveRisk.IsAdaptationEnabled())
+      {
+         ENUM_KILLZONE currentKZ = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
+         ConfluenceFactors factors;
+         BuildConfluenceFactors(factors, bestDirection, bestScore);
+
+         // Check if should skip trade based on poor context
+         if(adaptiveRisk.ShouldSkipTrade(currentKZ, g_currentRegime))
+         {
+            Print("Adaptive Risk: Trade skipped due to poor context performance");
+            return;  // Exit OnTick without trading
+         }
+
+         // Calculate adaptive risk
+         baseRisk = adaptiveRisk.CalculateAdaptiveRisk(currentKZ, g_currentRegime, factors, quality);
+      }
 
       // GOVERNOR REQUEST
       GovernorRequest req = allocator.BuildRequest(
@@ -769,27 +801,42 @@ void ManagePositions()
 
       ENTRY_QUALITY quality = g_states[sIdx].quality;
 
-      // --- REGIME-AWARE PARAMETERS ---
+      // --- REGIME-AWARE PARAMETERS (with Adaptive Exits if enabled) ---
       double partTP = InpPartialTP_R;
       double trailStart = InpTrailStart_R;
+      double beTrigger = InpBE_Threshold_R;
+      double partialPercent = InpPartialClosePercent;
 
-      if(g_currentRegime == REGIME_TREND) {
-          partTP *= 1.2;
-          trailStart *= 1.2;
-      } else if(g_currentRegime == REGIME_RANGE) {
-          partTP *= 0.8;
-          trailStart *= 0.8;
+      // Use Adaptive Exit Manager if enabled
+      if(InpEnableLearning && InpEnableAdaptiveExits && adaptiveExit.IsAdaptationEnabled())
+      {
+         ExitParameters adaptiveParams = adaptiveExit.GetAdaptiveParameters(g_currentRegime, quality, g_ATR, risk);
+         trailStart = adaptiveParams.trailStartR;
+         beTrigger = adaptiveParams.beThresholdR;
+         partTP = adaptiveParams.partialTPR;
+         partialPercent = adaptiveParams.partialPercent;
       }
+      else
+      {
+         // Default regime adjustments
+         if(g_currentRegime == REGIME_TREND) {
+             partTP *= 1.2;
+             trailStart *= 1.2;
+         } else if(g_currentRegime == REGIME_RANGE) {
+             partTP *= 0.8;
+             trailStart *= 0.8;
+         }
 
-      if(quality == EQ_WEAK) { partTP *= 0.8; trailStart *= 0.7; }
-      if(quality == EQ_ELITE) { partTP *= 1.5; trailStart *= 1.5; }
+         if(quality == EQ_WEAK) { partTP *= 0.8; trailStart *= 0.7; }
+         if(quality == EQ_ELITE) { partTP *= 1.5; trailStart *= 1.5; }
+      }
 
       if(InpTrailingMode >= 1)
       {
-         // 1. Partial TP
+         // 1. Partial TP (using adaptive parameters)
          if(!g_states[sIdx].partialClosed && profitR >= partTP)
          {
-            double closeVol = NormalizeDouble(vol * (InpPartialClosePercent / 100.0), 2);
+            double closeVol = NormalizeDouble(vol * (partialPercent / 100.0), 2);
             double minV = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
             if(closeVol >= minV && (vol - closeVol) >= minV)
             {
@@ -802,10 +849,7 @@ void ManagePositions()
             }
          }
 
-         // 2. Adaptive Break-Even
-         double learnedBE = learning.GetLearnedBE(risk);
-         double beTrigger = (learnedBE > 0) ? learnedBE : InpBE_Threshold_R;
-
+         // 2. Break-Even (using adaptive trigger if not already set)
          if(profitR >= beTrigger && MathAbs(sl - open) > _Point)
          {
             bool better = (pType == POSITION_TYPE_BUY) ? sl < open : (sl > open || sl == 0);
@@ -947,6 +991,28 @@ void UpdateModules()
    if(InpUseNewsFilter) newsFilter.Update();
    if(InpUseKillzoneFilter) killzoneOptimizer.Update();
    if(InpUseKelly) kellySizer.Update();
+}
+
+//+------------------------------------------------------------------+
+//| Build Confluence Factors Structure for Adaptive Filtering         |
+//+------------------------------------------------------------------+
+void BuildConfluenceFactors(ConfluenceFactors &factors, int direction, double score)
+{
+   // Estimate factors from score (simplified)
+   // In future: capture actual factors during CalculateConfluenceScore
+   factors.trendAligned = (score >= 1.0);
+   factors.structureBreak = (score >= 2.0);
+   factors.fibZone = (score >= 3.0);
+   factors.rsiMomentum = (score >= 4.0);
+   factors.orderBlock = (score >= 5.0);
+   factors.fvg = (score >= 6.0);
+   factors.liquiditySweep = (score >= 7.0);
+   factors.killzoneActive = InpUseKillzoneFilter && killzoneOptimizer.IsTradingAllowed();
+   factors.mtfAligned = (score >= 8.0);
+
+   factors.killzone = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
+   factors.regime = g_currentRegime;
+   factors.confluenceScore = score;
 }
 
 //+------------------------------------------------------------------+
