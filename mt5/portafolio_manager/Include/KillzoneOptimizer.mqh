@@ -62,7 +62,7 @@ public:
       m_focusPrimeOnly = focusPrimeOnly;
 
       // Detect symbol type
-      m_symbolType = GetSymbolType(m_symbol);
+      m_symbolType = ::GetSymbolType(m_symbol);
       m_isUSIndex = IsUSIndex(m_symbol);
 
       // Apply symbol-specific defaults if enabled
@@ -95,7 +95,7 @@ public:
       m_enableLondonClose = enableLondonClose;
 
       // Detect symbol type
-      m_symbolType = GetSymbolType(m_symbol);
+      m_symbolType = ::GetSymbolType(m_symbol);
       m_isUSIndex = IsUSIndex(m_symbol);
 
       return true;

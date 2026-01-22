@@ -12,10 +12,11 @@
 
 enum MARKET_REGIME
 {
-   REGIME_UNKNOWN = -1,
-   REGIME_TREND   = 0,
-   REGIME_RANGE   = 1,
-   REGIME_CHAOS   = 2
+   REGIME_UNKNOWN  = -1,
+   REGIME_TREND    = 0,
+   REGIME_RANGE    = 1,
+   REGIME_VOLATILE = 2,
+   REGIME_CHAOS    = 3
 };
 
 //+------------------------------------------------------------------+
@@ -49,10 +50,11 @@ public:
    {
       switch(r)
       {
-         case REGIME_TREND: return "🌊 TRENDING";
-         case REGIME_RANGE: return "🦀 RANGING";
-         case REGIME_CHAOS: return "⚡ CHAOS";
-         default: return "❓ UNKNOWN";
+         case REGIME_TREND:    return "TRENDING";
+         case REGIME_RANGE:    return "RANGING";
+         case REGIME_VOLATILE: return "VOLATILE";
+         case REGIME_CHAOS:    return "CHAOS";
+         default:              return "UNKNOWN";
       }
    }
 };
