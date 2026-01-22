@@ -20,6 +20,18 @@
 #include "Include\Learning_MFE_MAE.mqh"
 #include "Include\GovernorAllocator.mqh"
 
+// Smart Money Concepts Modules
+#include "Include\SMC_StructureBreak.mqh"
+#include "Include\SMC_OrderBlocks.mqh"
+#include "Include\SMC_FairValueGap.mqh"
+#include "Include\SMC_LiquiditySweep.mqh"
+
+// Multi-Timeframe and Filters
+#include "Include\MTF_Confluence.mqh"
+#include "Include\NewsFilter.mqh"
+#include "Include\SessionOptimizer.mqh"
+#include "Include\KellyPositionSizer.mqh"
+
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
 //+------------------------------------------------------------------+
@@ -87,6 +99,34 @@ input double            InpTrailATR_Mult = 1.2;
 input group "======= SPREAD ======="
 input int               InpMaxSpreadPoints = 50;
 
+input group "======= SMC - SMART MONEY CONCEPTS ======="
+input bool              InpUseSMC = true;                 // Enable SMC Analysis
+input int               InpSMC_SwingLookback = 20;        // Swing Lookback Bars
+input double            InpSMC_MinImpulseATR = 2.0;       // Min Impulse (ATR mult)
+input double            InpSMC_MinFVG_ATR = 0.5;          // Min FVG Size (ATR mult)
+
+input group "======= MULTI-TIMEFRAME ======="
+input bool              InpUseMTF = true;                 // Enable MTF Analysis
+input ENUM_TIMEFRAMES   InpHTF = PERIOD_H4;               // Higher Timeframe
+input ENUM_TIMEFRAMES   InpMTF = PERIOD_H1;               // Medium Timeframe
+input int               InpMTF_EMAPeriod = 50;            // MTF EMA Period
+
+input group "======= NEWS FILTER ======="
+input bool              InpUseNewsFilter = true;          // Enable News Filter
+input int               InpNewsMinutesBefore = 30;        // Minutes Before News
+input int               InpNewsMinutesAfter = 30;         // Minutes After News
+
+input group "======= SESSION OPTIMIZER ======="
+input bool              InpUseSessionFilter = true;       // Enable Session Filter
+input bool              InpSkipAsianSession = false;      // Skip Asian Session
+input bool              InpFocusOverlapOnly = false;      // Focus on Overlap Only
+
+input group "======= KELLY POSITION SIZING ======="
+input bool              InpUseKelly = true;               // Enable Kelly Sizing
+input double            InpKellyFraction = 0.5;           // Kelly Fraction (0.5=Half Kelly)
+input double            InpDailyMaxDD = 3.0;              // Daily Max Drawdown %
+input double            InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown %
+
 //+------------------------------------------------------------------+
 //| GLOBALS                                                           |
 //+------------------------------------------------------------------+
@@ -101,6 +141,18 @@ CMarketRegime     regime;
 CKillSwitch       killSwitch;
 CLearningEngine   learning;
 CGovernorAllocator allocator;
+
+// SMC MODULE OBJECTS
+CSMCStructureBreak  smcStructure;
+CSMCOrderBlocks     smcOrderBlocks;
+CSMCFairValueGap    smcFVG;
+CSMCLiquiditySweep  smcLiquidity;
+
+// ADVANCED FILTER OBJECTS
+CMTFConfluence      mtfAnalysis;
+CNewsFilter         newsFilter;
+CSessionOptimizer   sessionOptimizer;
+CKellyPositionSizer kellySizer;
 
 int hRSI, hATR, hEMA;
 double g_RSI, g_RSI_Prev, g_ATR, g_EMA, g_EMA_Prev, g_ATR_MA;
@@ -155,13 +207,59 @@ int OnInit()
    failSafe.Init(InpMaxSpreadPoints);
    ArrayResize(g_states, 0);
 
+   // Initialize SMC Modules
+   if(InpUseSMC)
+   {
+      if(!smcStructure.Init(_Symbol, PERIOD_CURRENT, InpSMC_SwingLookback))
+         Print("Warning: SMC Structure module init failed");
+
+      if(!smcOrderBlocks.Init(_Symbol, PERIOD_CURRENT, 50, 5, InpSMC_MinImpulseATR))
+         Print("Warning: SMC Order Blocks module init failed");
+
+      if(!smcFVG.Init(_Symbol, PERIOD_CURRENT, 50, 10, InpSMC_MinFVG_ATR))
+         Print("Warning: SMC FVG module init failed");
+
+      if(!smcLiquidity.Init(_Symbol, PERIOD_CURRENT, InpSMC_SwingLookback))
+         Print("Warning: SMC Liquidity module init failed");
+   }
+
+   // Initialize MTF Analysis
+   if(InpUseMTF)
+   {
+      if(!mtfAnalysis.Init(_Symbol, InpHTF, InpMTF, PERIOD_CURRENT, InpMTF_EMAPeriod))
+         Print("Warning: MTF Confluence module init failed");
+   }
+
+   // Initialize News Filter
+   if(InpUseNewsFilter)
+   {
+      newsFilter.Init(_Symbol, InpNewsMinutesBefore, InpNewsMinutesAfter, true);
+   }
+
+   // Initialize Session Optimizer
+   if(InpUseSessionFilter)
+   {
+      sessionOptimizer.Init(_Symbol, InpBrokerUTCOffset, InpSkipAsianSession, InpFocusOverlapOnly);
+   }
+
+   // Initialize Kelly Position Sizer
+   if(InpUseKelly)
+   {
+      kellySizer.Init(InpRiskBase, 0.25, 1.0, InpKellyFraction, 30, InpDailyMaxDD, InpWeeklyMaxDD);
+   }
+
    // Check if Governor is running
    string govStatus = allocator.IsGovernorActive() ? "Connected" : "Standalone";
 
    Print("===========================================");
-   Print("  SYMBOL ENGINE: ", _Symbol);
+   Print("  SYMBOL ENGINE v2.0: ", _Symbol);
    Print("  Magic: ", InpMagicNumber);
    Print("  Governor: ", govStatus);
+   Print("  SMC: ", InpUseSMC ? "ON" : "OFF");
+   Print("  MTF: ", InpUseMTF ? "ON" : "OFF");
+   Print("  News Filter: ", InpUseNewsFilter ? "ON" : "OFF");
+   Print("  Session Filter: ", InpUseSessionFilter ? "ON" : "OFF");
+   Print("  Kelly Sizing: ", InpUseKelly ? "ON" : "OFF");
    Print("===========================================");
 
    return INIT_SUCCEEDED;
@@ -172,6 +270,19 @@ void OnDeinit(const int reason)
    if(hRSI != INVALID_HANDLE) IndicatorRelease(hRSI);
    if(hATR != INVALID_HANDLE) IndicatorRelease(hATR);
    if(hEMA != INVALID_HANDLE) IndicatorRelease(hEMA);
+
+   // Cleanup SMC modules
+   if(InpUseSMC)
+   {
+      smcStructure.Deinit();
+      smcOrderBlocks.Deinit();
+      smcFVG.Deinit();
+      smcLiquidity.Deinit();
+   }
+
+   // Cleanup MTF
+   if(InpUseMTF) mtfAnalysis.Deinit();
+
    Comment("");
 }
 
@@ -229,11 +340,23 @@ void OnTick()
    if(!IsNewBar()) return;
    if(!UpdateIndicators()) return;
 
+   // --- UPDATE ALL MODULES ON NEW BAR ---
+   UpdateModules();
+
    // --- MODULE: FAIL SAFE ---
    if(!failSafe.IsExecutionSafe()) return;
 
    // --- MODULE: KILL SWITCH ---
    if(!killSwitch.IsEnabled()) return;
+
+   // --- MODULE: NEWS FILTER ---
+   if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) return;
+
+   // --- MODULE: SESSION FILTER ---
+   if(InpUseSessionFilter && !sessionOptimizer.IsTradingAllowed()) return;
+
+   // --- MODULE: KELLY POSITION SIZER (DD LIMITS) ---
+   if(InpUseKelly && !kellySizer.IsTradingAllowed()) return;
 
    // --- MODULE: MARKET REGIME ---
    g_currentRegime = regime.Detect(g_ATR, g_ATR_MA, g_EMA, g_EMA_Prev);
@@ -253,7 +376,7 @@ void OnTick()
    // Check Governor Trading Permission
    if(!IsTradingEnabled()) return;
 
-   // Calculate confluence
+   // Calculate confluence (new 12-point system)
    double buyScore = CalculateConfluenceScore(1);
    double sellScore = CalculateConfluenceScore(-1);
 
@@ -261,19 +384,52 @@ void OnTick()
    if(g_bias == 1) sellScore -= 1.0;
    if(g_bias == -1) buyScore -= 1.0;
 
+   // MTF Bias Penalty (if trading against HTF)
+   if(InpUseMTF)
+   {
+      if(!mtfAnalysis.IsDirectionAligned(1) && mtfAnalysis.GetBias() != BIAS_NEUTRAL)
+         buyScore -= 1.5;
+      if(!mtfAnalysis.IsDirectionAligned(-1) && mtfAnalysis.GetBias() != BIAS_NEUTRAL)
+         sellScore -= 1.5;
+   }
+
    // ENTRY
    if(g_positionCount == 0)
    {
       double bestScore = (buyScore > sellScore) ? buyScore : sellScore;
+      int bestDirection = (buyScore > sellScore) ? 1 : -1;
+
+      // Get Entry Tier from new confluence system
+      ENUM_ENTRY_TIER tier = GetEntryTier(bestScore);
+      if(tier == TIER_NO_TRADE) return;  // Score < 5 = no trade
 
       // Calculate Quality using Learning Module Logic
       ENTRY_QUALITY quality = learning.CalculateQuality(bestScore);
       if(quality == EQ_WEAK) return;
 
+      // Calculate base risk
+      double baseRisk = InpRiskBase;
+
+      // Apply Kelly sizing if enabled
+      if(InpUseKelly)
+      {
+         baseRisk = kellySizer.GetRiskForQuality(quality);
+
+         // Apply additional multipliers
+         double newsMultiplier = InpUseNewsFilter ? newsFilter.GetNewsRiskMultiplier() : 1.0;
+         double sessionMultiplier = InpUseSessionFilter ? sessionOptimizer.GetRiskMultiplier() : 1.0;
+         double regimeMultiplier = (g_currentRegime == REGIME_TREND) ? 1.0 : 0.8;
+
+         baseRisk = kellySizer.GetAdjustedRisk(quality, newsMultiplier, sessionMultiplier, regimeMultiplier);
+      }
+
+      // Apply tier multiplier
+      baseRisk *= GetTierSizeMultiplier(tier);
+
       // GOVERNOR REQUEST
       GovernorRequest req = allocator.BuildRequest(
           _Symbol,
-          InpRiskBase,
+          baseRisk,
           killSwitch.GetWinRate(),
           killSwitch.GetRollingR(),
           (int)g_currentRegime
@@ -283,13 +439,16 @@ void OnTick()
 
       if(approvedRisk > 0.05)
       {
-          if(buyScore >= InpMinConfluenceEntry && (InpDirection == 0 || InpDirection == 1))
+          // Use new thresholds: minimum 5 points for entry (was InpMinConfluenceEntry)
+          double minEntry = CONFLUENCE_GOOD;  // 5.0
+
+          if(buyScore >= minEntry && (InpDirection == 0 || InpDirection == 1))
           {
              g_currentConfluence = buyScore;
              g_entryDirection = 1;
              ExecuteTrade(ORDER_TYPE_BUY, approvedRisk, "Entry", quality);
           }
-          else if(sellScore >= InpMinConfluenceEntry && (InpDirection == 0 || InpDirection == 2))
+          else if(sellScore >= minEntry && (InpDirection == 0 || InpDirection == 2))
           {
              g_currentConfluence = sellScore;
              g_entryDirection = -1;
@@ -492,17 +651,45 @@ void ManagePositions()
 
 void OnTrade()
 {
-   // Handle Closed Trades for KillSwitch logic
+   // Handle Closed Trades for KillSwitch and Kelly logic
    HistorySelect(TimeCurrent() - 60, TimeCurrent());
    for(int i=0; i<HistoryDealsTotal(); i++)
    {
        ulong ticket = HistoryDealGetTicket(i);
        if(HistoryDealGetInteger(ticket, DEAL_ENTRY) == DEAL_ENTRY_OUT)
        {
+           long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
+           if(magic != InpMagicNumber) continue;  // Only our trades
+
            double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
            double rOutcome = (profit > 0) ? 1.0 : -1.0;
+
+           // Estimate R multiple from profit (rough estimate)
+           double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+           if(equity > 0)
+           {
+               double profitPct = (profit / equity) * 100.0;
+               rOutcome = profitPct / InpRiskBase;  // Convert to R multiple
+           }
+
            killSwitch.OnTradeClosed(rOutcome);
            learning.OnTradeClosed(ticket);
+
+           // Update Kelly sizer with trade result
+           if(InpUseKelly)
+           {
+              // Get quality from state if available
+              ENTRY_QUALITY quality = EQ_GOOD;
+              for(int s = 0; s < ArraySize(g_states); s++)
+              {
+                 if(g_states[s].ticket == ticket)
+                 {
+                    quality = g_states[s].quality;
+                    break;
+                 }
+              }
+              kellySizer.AddTradeResult(rOutcome, quality);
+           }
        }
    }
 }
@@ -513,7 +700,7 @@ void OnTrade()
 void CheckAddOnOpportunity()
 {
    double totalR = GetTotalProfitR();
-   int currentScore = CalculateConfluenceScore(g_entryDirection);
+   double currentScore = CalculateConfluenceScore(g_entryDirection);
 
    if(!g_addOn1Triggered && g_positionCount < InpMaxPositions)
    {
@@ -553,26 +740,51 @@ void CheckAddOnOpportunity()
 }
 
 //+------------------------------------------------------------------+
-//| Confluence Score (0-6)                                            |
+//| Update all SMC and filter modules                                 |
 //+------------------------------------------------------------------+
-int CalculateConfluenceScore(int direction)
+void UpdateModules()
 {
-   int score = 0;
+   // Update SMC modules
+   if(InpUseSMC)
+   {
+      smcStructure.Update();
+      smcOrderBlocks.Update();
+      smcFVG.Update();
+      smcLiquidity.Update();
+   }
+
+   // Update MTF analysis
+   if(InpUseMTF) mtfAnalysis.Update();
+
+   // Update filters
+   if(InpUseNewsFilter) newsFilter.Update();
+   if(InpUseSessionFilter) sessionOptimizer.Update();
+   if(InpUseKelly) kellySizer.Update();
+}
+
+//+------------------------------------------------------------------+
+//| NEW Confluence Score (0-12) - Enhanced with SMC                   |
+//+------------------------------------------------------------------+
+double CalculateConfluenceScore(int direction)
+{
+   double score = 0;
    double currentPrice = symbolInfo.Bid();
 
-   // 1. Trend
+   // ============ ORIGINAL FACTORS (0-6) ============
+
+   // 1. Trend (EMA 200 + slope) - 1.0 point
    double emaSlope = g_EMA - g_EMA_Prev;
    bool slopeStrong = MathAbs(emaSlope) >= (g_ATR * InpEMA_MinSlope);
-   if(direction == 1 && currentPrice > g_EMA && emaSlope > 0 && slopeStrong) score++;
-   if(direction == -1 && currentPrice < g_EMA && emaSlope < 0 && slopeStrong) score++;
+   if(direction == 1 && currentPrice > g_EMA && emaSlope > 0 && slopeStrong) score += 1.0;
+   if(direction == -1 && currentPrice < g_EMA && emaSlope < 0 && slopeStrong) score += 1.0;
 
-   // 2. Structure
+   // 2. Structure - 1.0 point
    int highestBar = iHighest(_Symbol, PERIOD_CURRENT, MODE_HIGH, InpSwingLookback, 1);
    int lowestBar = iLowest(_Symbol, PERIOD_CURRENT, MODE_LOW, InpSwingLookback, 1);
-   if(direction == 1 && lowestBar < highestBar) score++;
-   if(direction == -1 && highestBar < lowestBar) score++;
+   if(direction == 1 && lowestBar < highestBar) score += 1.0;
+   if(direction == -1 && highestBar < lowestBar) score += 1.0;
 
-   // 3. Fib Zone
+   // 3. Fib Zone - 1.0 point
    if(highestBar >= 0 && lowestBar >= 0)
    {
       double swingHigh = iHigh(_Symbol, PERIOD_CURRENT, highestBar);
@@ -586,33 +798,57 @@ int CalculateConfluenceScore(int direction)
          {
             double f618 = swingHigh - (range * InpFibLevelLow);
             double f786 = swingHigh - (range * InpFibLevelHigh);
-            if(currentPrice <= f618 + tolerance && currentPrice >= f786 - tolerance) score++;
+            if(currentPrice <= f618 + tolerance && currentPrice >= f786 - tolerance) score += 1.0;
          }
          else
          {
             double f618 = swingLow + (range * InpFibLevelLow);
             double f786 = swingLow + (range * InpFibLevelHigh);
-            if(currentPrice >= f618 - tolerance && currentPrice <= f786 + tolerance) score++;
+            if(currentPrice >= f618 - tolerance && currentPrice <= f786 + tolerance) score += 1.0;
          }
       }
    }
 
-   // 4. RSI level
-   if(direction == 1 && g_RSI <= InpRSI_Oversold) score++;
-   if(direction == -1 && g_RSI >= InpRSI_Overbought) score++;
+   // 4. RSI level - 1.0 point
+   if(direction == 1 && g_RSI <= InpRSI_Oversold) score += 1.0;
+   if(direction == -1 && g_RSI >= InpRSI_Overbought) score += 1.0;
 
-   // 5. RSI momentum
+   // 5. RSI momentum - 0.5 point
    if(InpRSI_Momentum)
    {
-      if(direction == 1 && g_RSI > g_RSI_Prev) score++;
-      if(direction == -1 && g_RSI < g_RSI_Prev) score++;
+      if(direction == 1 && g_RSI > g_RSI_Prev) score += 0.5;
+      if(direction == -1 && g_RSI < g_RSI_Prev) score += 0.5;
    }
-   else score++;
 
-   // 6. Displacement
-   if(CheckDisplacement(direction)) score++;
+   // 6. Displacement - 1.0 point
+   if(CheckDisplacement(direction)) score += 1.0;
 
-   return score;
+   // ============ NEW SMC FACTORS (0-6 additional) ============
+
+   if(InpUseSMC)
+   {
+      // 7. HTF Trend Alignment (MTF) - up to 2.0 points
+      if(InpUseMTF)
+         score += mtfAnalysis.GetConfluenceScore(direction);
+
+      // 8. Structure Break (BOS aligned) - up to 1.0 point
+      score += smcStructure.GetConfluenceScore(direction);
+
+      // 9. Order Block Entry - up to 1.5 points
+      score += smcOrderBlocks.GetConfluenceScore(direction);
+
+      // 10. Fair Value Gap - up to 1.0 point
+      score += smcFVG.GetConfluenceScore(direction);
+
+      // 11. Liquidity Sweep - up to 1.5 points
+      score += smcLiquidity.GetConfluenceScore(direction);
+   }
+
+   // 12. Session Timing Bonus - up to 0.5 points
+   if(InpUseSessionFilter)
+      score += sessionOptimizer.GetConfluenceScore();
+
+   return score;  // Max possible: ~12 points
 }
 
 //+------------------------------------------------------------------+
@@ -744,28 +980,66 @@ void UpdateDashboard()
 {
    double price = symbolInfo.Bid();
    double totalR = GetTotalProfitR();
-   int buyS = CalculateConfluenceScore(1);
-   int sellS = CalculateConfluenceScore(-1);
+   double buyS = CalculateConfluenceScore(1);
+   double sellS = CalculateConfluenceScore(-1);
 
    string govStatus = allocator.IsGovernorActive() ? "Connected " + DoubleToString(GetRiskMultiplier()*100,0) + "%" : "Standalone";
    string tradingStatus = IsTradingEnabled() ? "ACTIVE" : "BLOCKED";
 
+   // Check for blocks
+   if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) tradingStatus = "NEWS BLOCKED";
+   if(InpUseSessionFilter && !sessionOptimizer.IsTradingAllowed()) tradingStatus = "SESSION OFF";
+   if(InpUseKelly && !kellySizer.IsTradingAllowed()) tradingStatus = "DD LIMIT";
+
    string txt = "===========================================\n";
-   txt += "  SYMBOL ENGINE: " + _Symbol + "\n";
+   txt += "  SYMBOL ENGINE v2.0: " + _Symbol + "\n";
    txt += "===========================================\n";
    txt += "Governor: " + govStatus + "\n";
    txt += "Trading: " + tradingStatus + "\n";
    txt += "-------------------------------------------\n";
    txt += "Price: " + DoubleToString(price, (int)symbolInfo.Digits()) + "\n";
    txt += "RSI: " + DoubleToString(g_RSI, 1) + "\n";
-   txt += "Session: " + (g_inSession ? "Active" : "Inactive") + "\n";
+
+   // Session info
+   if(InpUseSessionFilter)
+      txt += "Session: " + sessionOptimizer.GetSessionName() + " (" + sessionOptimizer.GetQualityName() + ")\n";
+   else
+      txt += "Session: " + (g_inSession ? "Active" : "Inactive") + "\n";
+
+   // News info
+   if(InpUseNewsFilter)
+      txt += newsFilter.ToString() + "\n";
+
    txt += "-------------------------------------------\n";
-   txt += "BUY Score: " + IntegerToString(buyS) + "/6\n";
-   txt += "SELL Score: " + IntegerToString(sellS) + "/6\n";
-   txt += "Min: " + IntegerToString(InpMinConfluenceEntry) + "/6\n";
+
+   // SMC Status
+   if(InpUseSMC)
+   {
+      txt += "STRUCTURE: " + smcStructure.StructureToString() + "\n";
+      txt += smcOrderBlocks.ToString() + " | " + smcFVG.ToString() + "\n";
+      txt += smcLiquidity.ToString() + "\n";
+   }
+
+   // MTF Status
+   if(InpUseMTF)
+      txt += mtfAnalysis.ToString() + "\n";
+
+   txt += "-------------------------------------------\n";
+   txt += "BUY Score: " + DoubleToString(buyS, 1) + "/12\n";
+   txt += "SELL Score: " + DoubleToString(sellS, 1) + "/12\n";
+   txt += "Entry Min: 5.0/12 (Good) | 6.0 (Strong) | 8.0 (Elite)\n";
    txt += "-------------------------------------------\n";
    txt += "Positions: " + IntegerToString(g_positionCount) + "/" + IntegerToString(InpMaxPositions) + "\n";
    txt += "Total R: " + DoubleToString(totalR, 2) + "\n";
+
+   // Kelly stats
+   if(InpUseKelly)
+   {
+      txt += "-------------------------------------------\n";
+      txt += kellySizer.ToString() + "\n";
+      txt += "Daily DD: " + DoubleToString(kellySizer.GetDailyDD(), 2) + "/" + DoubleToString(InpDailyMaxDD, 1) + "%\n";
+   }
+
    txt += "===========================================\n";
 
    Comment(txt);

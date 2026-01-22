@@ -1,46 +1,46 @@
-; EURUSD - Optimized for Most Liquid Major Pair
+; AUDUSD (Aussie) - Commodity/Risk Currency
 ; Enhanced with SMC (Smart Money Concepts) for Institutional-Level Trading
-; Best Performance: Clean technicals, London and NY sessions
-; Risk Profile: Conservative with precise entries
-; Target: Win Rate 68-78%, Profit Factor 2.2+
-; Correlation: +0.95 with GBPUSD, -0.95 with USDCHF
+; Best Performance: Asian/Early London, Risk-on sentiment, China data
+; Risk Profile: Moderate - commodity currency sensitivity
+; Target: Win Rate 65-72%, Profit Factor 2.0+
+; Correlation: +0.60 with XAUUSD (commodity), +0.87 with NZDUSD, Risk barometer
 
-InpMagicNumber=100002
+InpMagicNumber=100005
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ; ====== SESSION CONFIGURATION ======
-; EUR performs excellently in both London and NY sessions
-; Peak liquidity ensures tight spreads and clean moves
+; AUD active Asian -> London transition
+; China/Australia data releases drive early moves
 InpSessionFilter=1
-InpLondonStart=7
-InpLondonEnd=16
-InpNYStart=12
-InpNYEnd=20
+InpLondonStart=6
+InpLondonEnd=15
+InpNYStart=13
+InpNYEnd=19
 
 ; ====== FIBONACCI ZONES ======
-; Tight zones for precise EUR entries
-; Most liquid pair = most precise levels
+; Medium zones - AUD respects technicals well
+; Clean price action during Asian session
 InpSwingLookback=22
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.18
+InpZoneTolerance=0.22
 
 ; ====== DISPLACEMENT FILTER ======
-; Moderate filter for EUR - cleaner moves than volatile pairs
+; Moderate filter - AUD can move on risk sentiment shifts
 InpUseDisplacement=true
-InpDisplacementATR=1.2
+InpDisplacementATR=1.3
 InpDisplacementLookback=5
 
 ; ====== RSI CONFIGURATION ======
-; Standard bands for balanced, liquid pair
+; Standard bands - AUD trends with risk sentiment
 InpRSI_Period=14
 InpRSI_Oversold=40
 InpRSI_Overbought=60
 InpRSI_Momentum=true
 
 ; ====== TREND FILTER ======
-; Moderate slope - EUR trends are gradual but consistent
+; Moderate slope - AUD follows commodity/risk cycles
 InpEMA_Period=200
 InpUseTrendFilter=true
 InpEMA_MinSlope=0.10
@@ -48,39 +48,38 @@ InpEMA_MinSlope=0.10
 ; ====== CHOP FILTER ======
 ; Standard volatility filter
 InpUseChopFilter=true
-InpChopThreshold=0.75
+InpChopThreshold=0.72
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE SYSTEM ======
-; Standard threshold for liquid pair
-; Quality over quantity approach
+; Standard threshold for commodity pair
 InpMinConfluenceEntry=5.0
 InpEnableAddOns=true
-InpAddOn1_R=1.5
+InpAddOn1_R=1.6
 InpAddOn2_R=2.8
 InpMaxPositions=3
 
 ; ====== RISK MANAGEMENT ======
-; Moderate base for consistent growth
-InpRiskBase=0.55
-InpRiskAddOn1=0.30
-InpRiskAddOn2=0.20
+; Moderate risk - can gap on China data
+InpRiskBase=0.50
+InpRiskAddOn1=0.28
+InpRiskAddOn2=0.18
 
 ; ====== EXIT STRATEGY ======
-; Balanced targets for ranging/trending conditions
+; Balanced targets for trending/ranging
 InpTrailingMode=1
 InpPartialTP_R=1.6
 InpPartialClosePercent=45.0
 InpBE_Threshold_R=1.2
 InpTrailStart_R=2.2
-InpTrailATR_Mult=1.1
+InpTrailATR_Mult=1.2
 
 ; ====== SPREAD FILTER ======
-; Tight spread requirement - EUR should have best spreads
-InpMaxSpreadPoints=12
+; Medium spread tolerance
+InpMaxSpreadPoints=18
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
-; Full SMC suite - EUR respects institutional levels
+; Full SMC suite - AUD has clean institutional flows
 InpUseSMC=true
 InpSMC_SwingLookback=22
 InpSMC_MinImpulseATR=2.2
@@ -88,29 +87,29 @@ InpSMC_MinFVG_ATR=0.50
 
 ; ====== MULTI-TIMEFRAME ANALYSIS ======
 ; H4 bias, H1 confirmation
-; Clean HTF structure on EUR
+; Risk sentiment visible on HTF
 InpUseMTF=true
 InpHTF=16388
 InpMTF=16385
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
-; Filter EUR and USD high-impact news
-; Standard buffer sufficient for liquid pair
+; Important for AUD - RBA decisions, China PMI
+; Standard buffer sufficient
 InpUseNewsFilter=true
-InpNewsMinutesBefore=30
+InpNewsMinutesBefore=35
 InpNewsMinutesAfter=30
 
 ; ====== SESSION OPTIMIZER ======
-; Focus on London session for EUR
-; Overlap provides best opportunities
+; Include Asian session - AUD primary session
+; Best during Asian-London overlap
 InpUseSessionFilter=true
-InpSkipAsianSession=true
+InpSkipAsianSession=false
 InpFocusOverlapOnly=false
 
 ; ====== KELLY POSITION SIZING ======
-; Half-Kelly for consistent scaling
+; Half-Kelly for safe scaling
 InpUseKelly=true
 InpKellyFraction=0.5
-InpDailyMaxDD=3.0
-InpWeeklyMaxDD=6.0
+InpDailyMaxDD=2.8
+InpWeeklyMaxDD=5.5

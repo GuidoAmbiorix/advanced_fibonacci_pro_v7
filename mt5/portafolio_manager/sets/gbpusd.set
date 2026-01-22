@@ -1,40 +1,121 @@
+; GBPUSD (Cable) - Optimized for Volatile Major Pair
+; Enhanced with SMC (Smart Money Concepts) for Institutional-Level Trading
+; Best Performance: Strong London moves, news reactions, impulsive trends
+; Risk Profile: Moderate with medium stops
+; Target: Win Rate 65-75%, Profit Factor 2.0+
+; Correlation: +0.95 with EURUSD, Strong GBP news sensitivity
+
 InpMagicNumber=100003
 InpDirection=0
 InpBrokerUTCOffset=2
+
+; ====== SESSION CONFIGURATION ======
+; GBP strongest during London session
+; Explosive moves at London open and UK news
 InpSessionFilter=1
 InpLondonStart=7
 InpLondonEnd=16
-InpNYStart=12
-InpNYEnd=21
-InpSwingLookback=20
+InpNYStart=13
+InpNYEnd=19
+
+; ====== FIBONACCI ZONES ======
+; Medium zones for volatile Cable
+; GBP respects fibs but with wider wicks
+InpSwingLookback=24
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.25
+
+; ====== DISPLACEMENT FILTER ======
+; Strong filter for impulsive GBP moves
+; Cable needs clear momentum confirmation
 InpUseDisplacement=true
-InpDisplacementATR=1.2
-InpDisplacementLookback=5
+InpDisplacementATR=1.5
+InpDisplacementLookback=4
+
+; ====== RSI CONFIGURATION ======
+; Slightly wider bands for volatile pair
 InpRSI_Period=14
-InpRSI_Oversold=45
-InpRSI_Overbought=55
+InpRSI_Oversold=38
+InpRSI_Overbought=62
 InpRSI_Momentum=true
+
+; ====== TREND FILTER ======
+; Moderate slope for GBP trends
+; Cable can trend hard or range violently
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.08
+InpEMA_MinSlope=0.12
+
+; ====== CHOP FILTER ======
+; Standard volatility filter
 InpUseChopFilter=true
-InpChopThreshold=0.75
+InpChopThreshold=0.70
 InpATR_MA_Period=20
-InpMinConfluenceEntry=4
+
+; ====== CONFLUENCE SYSTEM ======
+; Higher threshold for quality GBP setups
+; Wait for strong confluence before entry
+InpMinConfluenceEntry=5.5
 InpEnableAddOns=true
-InpAddOn1_R=1.5
-InpAddOn2_R=2.5
+InpAddOn1_R=1.8
+InpAddOn2_R=3.0
 InpMaxPositions=3
-InpRiskBase=0.4
-InpRiskAddOn1=0.20
-InpRiskAddOn2=0.10
+
+; ====== RISK MANAGEMENT ======
+; Moderate base for volatile pair
+InpRiskBase=0.50
+InpRiskAddOn1=0.28
+InpRiskAddOn2=0.18
+
+; ====== EXIT STRATEGY ======
+; Extended targets for GBP runners
+; Cable can run hard when it trends
 InpTrailingMode=1
-InpPartialTP_R=1.5
-InpPartialClosePercent=40.0
-InpBE_Threshold_R=1.2
-InpTrailStart_R=2.0
-InpTrailATR_Mult=1.2
-InpMaxSpreadPoints=30
+InpPartialTP_R=1.8
+InpPartialClosePercent=45.0
+InpBE_Threshold_R=1.3
+InpTrailStart_R=2.5
+InpTrailATR_Mult=1.4
+
+; ====== SPREAD FILTER ======
+; Medium spread tolerance for Cable
+InpMaxSpreadPoints=20
+
+; ====== SMC - SMART MONEY CONCEPTS ======
+; Full SMC - GBP reacts excellently to SMC levels
+; Higher impulse requirement for valid signals
+InpUseSMC=true
+InpSMC_SwingLookback=24
+InpSMC_MinImpulseATR=2.5
+InpSMC_MinFVG_ATR=0.55
+
+; ====== MULTI-TIMEFRAME ANALYSIS ======
+; H4 for bias, H1 for confirmation
+; Strong HTF alignment critical for Cable
+InpUseMTF=true
+InpHTF=16388
+InpMTF=16385
+InpMTF_EMAPeriod=50
+
+; ====== NEWS FILTER ======
+; Essential for GBP - highly reactive to UK/US news
+; Extended buffer for BOE decisions
+InpUseNewsFilter=true
+InpNewsMinutesBefore=45
+InpNewsMinutesAfter=35
+
+; ====== SESSION OPTIMIZER ======
+; Focus on London session for GBPUSD
+; Best moves at London open
+InpUseSessionFilter=true
+InpSkipAsianSession=true
+InpFocusOverlapOnly=false
+
+; ====== KELLY POSITION SIZING ======
+; Half-Kelly for safe scaling
+; Tighter DD limits for volatile pair
+InpUseKelly=true
+InpKellyFraction=0.5
+InpDailyMaxDD=2.5
+InpWeeklyMaxDD=5.5

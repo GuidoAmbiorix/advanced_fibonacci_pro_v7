@@ -1,0 +1,118 @@
+; USDCHF (Swissie) - Safe Haven Hedge Pair
+; Enhanced with SMC (Smart Money Concepts) for Institutional-Level Trading
+; Best Performance: London session, Risk-off flows, Natural EURUSD hedge
+; Risk Profile: Conservative - CHF is ultimate safe haven
+; Target: Win Rate 65-75%, Profit Factor 2.0+
+; Correlation: -0.95 with EURUSD (perfect hedge), Safe haven like Gold
+
+InpMagicNumber=100006
+InpDirection=0
+InpBrokerUTCOffset=2
+
+; ====== SESSION CONFIGURATION ======
+; CHF most active during European hours
+; SNB aligned with ECB policy
+InpSessionFilter=1
+InpLondonStart=7
+InpLondonEnd=16
+InpNYStart=13
+InpNYEnd=19
+
+; ====== FIBONACCI ZONES ======
+; Tight zones - CHF pairs are precise
+; SNB intervention creates clear levels
+InpSwingLookback=20
+InpFibLevelLow=0.618
+InpFibLevelHigh=0.786
+InpZoneTolerance=0.20
+
+; ====== DISPLACEMENT FILTER ======
+; Moderate filter - CHF can move sharply on risk events
+InpUseDisplacement=true
+InpDisplacementATR=1.2
+InpDisplacementLookback=5
+
+; ====== RSI CONFIGURATION ======
+; Standard bands - CHF respects technicals
+InpRSI_Period=14
+InpRSI_Oversold=40
+InpRSI_Overbought=60
+InpRSI_Momentum=true
+
+; ====== TREND FILTER ======
+; Moderate slope - CHF pairs can range or trend
+InpEMA_Period=200
+InpUseTrendFilter=true
+InpEMA_MinSlope=0.10
+
+; ====== CHOP FILTER ======
+; Standard volatility filter
+InpUseChopFilter=true
+InpChopThreshold=0.74
+InpATR_MA_Period=20
+
+; ====== CONFLUENCE SYSTEM ======
+; Standard threshold for quality entries
+; Use as hedge when EURUSD position is open
+InpMinConfluenceEntry=5.0
+InpEnableAddOns=true
+InpAddOn1_R=1.5
+InpAddOn2_R=2.6
+InpMaxPositions=3
+
+; ====== RISK MANAGEMENT ======
+; Conservative risk - CHF can gap on SNB
+InpRiskBase=0.45
+InpRiskAddOn1=0.25
+InpRiskAddOn2=0.15
+
+; ====== EXIT STRATEGY ======
+; Balanced targets - CHF pairs can range
+InpTrailingMode=1
+InpPartialTP_R=1.5
+InpPartialClosePercent=45.0
+InpBE_Threshold_R=1.2
+InpTrailStart_R=2.0
+InpTrailATR_Mult=1.1
+
+; ====== SPREAD FILTER ======
+; Tight spread tolerance - liquid pair
+InpMaxSpreadPoints=15
+
+; ====== SMC - SMART MONEY CONCEPTS ======
+; Full SMC suite - institutional CHF flows
+; SNB creates clear institutional levels
+InpUseSMC=true
+InpSMC_SwingLookback=20
+InpSMC_MinImpulseATR=2.0
+InpSMC_MinFVG_ATR=0.48
+
+; ====== MULTI-TIMEFRAME ANALYSIS ======
+; H4 bias, H1 confirmation
+; Clean structure on HTF
+InpUseMTF=true
+InpHTF=16388
+InpMTF=16385
+InpMTF_EMAPeriod=50
+
+; ====== NEWS FILTER ======
+; Critical for CHF - SNB surprises are devastating
+; Extended buffer for SNB decisions
+InpUseNewsFilter=true
+InpNewsMinutesBefore=60
+InpNewsMinutesAfter=45
+
+; ====== SESSION OPTIMIZER ======
+; Focus on European session
+; CHF most liquid during London
+InpUseSessionFilter=true
+InpSkipAsianSession=true
+InpFocusOverlapOnly=false
+
+; ====== KELLY POSITION SIZING ======
+; Conservative Kelly - CHF can gap massively
+; Remember 2015 SNB event
+InpUseKelly=true
+InpKellyFraction=0.4
+InpDailyMaxDD=2.5
+InpWeeklyMaxDD=5.0

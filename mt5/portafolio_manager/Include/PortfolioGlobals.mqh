@@ -1,6 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                          PortfolioGlobals.mqh    |
 //|          Shared definitions for Portfolio Manager System         |
+//|                 Enhanced with SMC and Advanced Filters            |
 //+------------------------------------------------------------------+
 #ifndef PORTFOLIO_GLOBALS_MQH
 #define PORTFOLIO_GLOBALS_MQH
@@ -23,6 +24,28 @@
 #define GV_GROUP_GBP_RISK        "PG_GroupGBP"
 #define GV_GROUP_METALS_RISK     "PG_GroupMetals"
 #define GV_GROUP_INDICES_RISK    "PG_GroupIndices"
+
+// Daily/Weekly Limits
+#define GV_DAILY_DD              "PG_DailyDD"              // Today's drawdown %
+#define GV_WEEKLY_DD             "PG_WeeklyDD"             // This week's drawdown %
+#define GV_DAILY_START_EQUITY    "PG_DailyStartEquity"     // Equity at day start
+#define GV_WEEKLY_START_EQUITY   "PG_WeeklyStartEquity"    // Equity at week start
+
+// Session Status
+#define GV_CURRENT_SESSION       "PG_CurrentSession"       // Current trading session
+#define GV_SESSION_QUALITY       "PG_SessionQuality"       // Session quality rating
+
+// News Filter Status
+#define GV_NEWS_BLOCKED          "PG_NewsBlocked"          // 1 = in news window
+#define GV_NEWS_NEXT_TIME        "PG_NewsNextTime"         // Next news event time
+
+// Market Regime
+#define GV_MARKET_REGIME         "PG_MarketRegime"         // Current market regime
+
+// Correlation Matrix
+#define GV_CORR_EUR_GBP          "PG_CorrEURGBP"           // EUR/GBP correlation
+#define GV_CORR_USD_JPY          "PG_CorrUSDJPY"           // USD/JPY correlation
+#define GV_CORR_GOLD_USD         "PG_CorrGoldUSD"          // Gold/USD correlation
 
 //+------------------------------------------------------------------+
 //| CORRELATION GROUPS                                                |
@@ -144,5 +167,123 @@ double GetTotalExposure()
    if(!IsGovernorActive()) return 0;
    return GlobalVariableGet(GV_TOTAL_EXPOSURE);
 }
+
+//+------------------------------------------------------------------+
+//| GET DAILY DRAWDOWN                                                |
+//+------------------------------------------------------------------+
+double GetDailyDD()
+{
+   if(!IsGovernorActive()) return 0;
+   if(!GlobalVariableCheck(GV_DAILY_DD)) return 0;
+   return GlobalVariableGet(GV_DAILY_DD);
+}
+
+//+------------------------------------------------------------------+
+//| GET WEEKLY DRAWDOWN                                               |
+//+------------------------------------------------------------------+
+double GetWeeklyDD()
+{
+   if(!IsGovernorActive()) return 0;
+   if(!GlobalVariableCheck(GV_WEEKLY_DD)) return 0;
+   return GlobalVariableGet(GV_WEEKLY_DD);
+}
+
+//+------------------------------------------------------------------+
+//| CHECK IF IN NEWS WINDOW                                           |
+//+------------------------------------------------------------------+
+bool IsInNewsWindow()
+{
+   if(!GlobalVariableCheck(GV_NEWS_BLOCKED)) return false;
+   return GlobalVariableGet(GV_NEWS_BLOCKED) == 1;
+}
+
+//+------------------------------------------------------------------+
+//| GET CURRENT SESSION                                               |
+//+------------------------------------------------------------------+
+int GetCurrentSession()
+{
+   if(!GlobalVariableCheck(GV_CURRENT_SESSION)) return 0;
+   return (int)GlobalVariableGet(GV_CURRENT_SESSION);
+}
+
+//+------------------------------------------------------------------+
+//| GET SESSION QUALITY                                               |
+//+------------------------------------------------------------------+
+int GetSessionQuality()
+{
+   if(!GlobalVariableCheck(GV_SESSION_QUALITY)) return 0;
+   return (int)GlobalVariableGet(GV_SESSION_QUALITY);
+}
+
+//+------------------------------------------------------------------+
+//| CONFLUENCE SCORE THRESHOLDS                                       |
+//+------------------------------------------------------------------+
+#define CONFLUENCE_ELITE    8.0   // Elite entry: 8+/12 points
+#define CONFLUENCE_STRONG   6.0   // Strong entry: 6-7.9/12 points
+#define CONFLUENCE_GOOD     5.0   // Good entry: 5-5.9/12 points
+#define CONFLUENCE_WEAK     0.0   // Weak entry: <5/12 points - NO TRADE
+
+//+------------------------------------------------------------------+
+//| ENTRY TIER ENUM (for new confluence system)                       |
+//+------------------------------------------------------------------+
+enum ENUM_ENTRY_TIER
+{
+   TIER_NO_TRADE = 0,   // Score < 5: Skip
+   TIER_GOOD = 1,       // Score 5-5.9: 60% position
+   TIER_STRONG = 2,     // Score 6-7.9: 80% position
+   TIER_ELITE = 3       // Score 8+: 100% position
+};
+
+//+------------------------------------------------------------------+
+//| GET ENTRY TIER FROM CONFLUENCE SCORE                              |
+//+------------------------------------------------------------------+
+ENUM_ENTRY_TIER GetEntryTier(double confluenceScore)
+{
+   if(confluenceScore >= CONFLUENCE_ELITE) return TIER_ELITE;
+   if(confluenceScore >= CONFLUENCE_STRONG) return TIER_STRONG;
+   if(confluenceScore >= CONFLUENCE_GOOD) return TIER_GOOD;
+   return TIER_NO_TRADE;
+}
+
+//+------------------------------------------------------------------+
+//| GET POSITION SIZE MULTIPLIER FOR TIER                             |
+//+------------------------------------------------------------------+
+double GetTierSizeMultiplier(ENUM_ENTRY_TIER tier)
+{
+   switch(tier)
+   {
+      case TIER_ELITE:  return 1.0;    // 100%
+      case TIER_STRONG: return 0.8;    // 80%
+      case TIER_GOOD:   return 0.6;    // 60%
+      default:          return 0.0;    // No trade
+   }
+}
+
+//+------------------------------------------------------------------+
+//| CORRELATION THRESHOLDS                                            |
+//+------------------------------------------------------------------+
+#define CORR_HIGH_POSITIVE    0.70    // High positive correlation
+#define CORR_HIGH_NEGATIVE   -0.70    // High negative correlation
+#define CORR_REDUCTION_FACTOR 0.50    // Size reduction for correlated pairs
+
+//+------------------------------------------------------------------+
+//| PAIR CORRELATION STRUCTURE                                        |
+//+------------------------------------------------------------------+
+struct PairCorrelation
+{
+   string pair1;
+   string pair2;
+   double correlation;
+};
+
+//+------------------------------------------------------------------+
+//| KNOWN CORRELATIONS (Static reference)                             |
+//+------------------------------------------------------------------+
+// These are approximate average correlations for reference
+// EURUSD/GBPUSD: +0.85 (high positive)
+// EURUSD/USDCHF: -0.90 (high negative)
+// XAUUSD/EURUSD: +0.60 (medium positive)
+// USDJPY/XAUUSD: -0.70 (medium negative)
+// AUDUSD/NZDUSD: +0.90 (high positive)
 
 #endif

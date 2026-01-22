@@ -40,6 +40,16 @@ input double InpPF_Reduced = 1.2;              // PF Level: Reduced Risk
 input double InpPF_Pause = 1.0;                // PF Level: Pause Trading
 input double InpPF_ReducedMult = 0.7;          // Risk Mult when PF < Normal
 
+input group "═══════ DAILY/WEEKLY LIMITS ═══════"
+input double InpDailyMaxDD = 3.0;              // Daily Max Drawdown (%)
+input double InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown (%)
+input double InpMonthlyMaxDD = 10.0;           // Monthly Max Drawdown (%)
+
+input group "═══════ CORRELATION GUARD ═══════"
+input bool   InpUseCorrelationGuard = true;    // Enable Correlation Guard
+input double InpHighCorrelation = 0.70;        // High Correlation Threshold
+input double InpCorrelationReduction = 0.50;   // Size Reduction Factor
+
 input group "═══════ MAGIC NUMBER RANGE ═══════"
 input int    InpMagicBase = 100000;            // Magic Number Base
 input int    InpMagicRange = 999;              // Magic Number Range (Base to Base+Range)
@@ -59,6 +69,36 @@ datetime g_lastUpdate = 0;
 // Trade history for rolling PF
 double g_tradeResults[];  // Store last N trade results
 int g_tradeCount = 0;
+
+// Daily/Weekly/Monthly tracking
+double g_dailyStartEquity = 0;
+double g_weeklyStartEquity = 0;
+double g_monthlyStartEquity = 0;
+datetime g_lastDayCheck = 0;
+datetime g_lastWeekCheck = 0;
+datetime g_lastMonthCheck = 0;
+bool g_dailyLimitHit = false;
+bool g_weeklyLimitHit = false;
+bool g_monthlyLimitHit = false;
+
+// Correlation matrix (pre-defined known correlations)
+struct SymbolCorrelation
+{
+   string symbol1;
+   string symbol2;
+   double correlation;
+};
+
+SymbolCorrelation g_correlations[] = {
+   {"EURUSD", "GBPUSD", 0.85},
+   {"EURUSD", "USDCHF", -0.90},
+   {"GBPUSD", "EURGBP", -0.75},
+   {"AUDUSD", "NZDUSD", 0.90},
+   {"USDJPY", "EURJPY", 0.80},
+   {"XAUUSD", "EURUSD", 0.60},
+   {"XAUUSD", "USDJPY", -0.50},
+   {"XAUUSD", "DXY", -0.80}
+};
 
 //+------------------------------------------------------------------+
 //| Expert initialization                                             |
@@ -85,17 +125,34 @@ int OnInit()
    g_peakEquity = account.Equity();
    ArrayResize(g_tradeResults, InpRollingTrades);
    ArrayInitialize(g_tradeResults, 0);
-   
-   Print("═══════════════════════════════════════════════════════════");
-   Print("  🧠 PORTFOLIO GOVERNOR v1.0 ACTIVATED");
-   Print("═══════════════════════════════════════════════════════════");
-   Print("  📊 Max Portfolio Risk: ", InpMaxPortfolioRisk, "%");
-   Print("  📊 Max Symbol Risk: ", InpMaxSymbolRisk, "%");
-   Print("  📊 Max Group Risk: ", InpMaxGroupRisk, "%");
-   Print("  📉 DD Pause Level: ", InpDD_Pause, "%");
-   Print("  📈 PF Pause Level: < ", InpPF_Pause);
-   Print("═══════════════════════════════════════════════════════════");
-   
+
+   // Initialize daily/weekly/monthly tracking
+   g_dailyStartEquity = account.Equity();
+   g_weeklyStartEquity = account.Equity();
+   g_monthlyStartEquity = account.Equity();
+   g_lastDayCheck = TimeCurrent();
+   g_lastWeekCheck = TimeCurrent();
+   g_lastMonthCheck = TimeCurrent();
+
+   // Set initial GV values for daily/weekly
+   GlobalVariableSet(GV_DAILY_DD, 0);
+   GlobalVariableSet(GV_WEEKLY_DD, 0);
+   GlobalVariableSet(GV_DAILY_START_EQUITY, g_dailyStartEquity);
+   GlobalVariableSet(GV_WEEKLY_START_EQUITY, g_weeklyStartEquity);
+
+   Print("===============================================================");
+   Print("  PORTFOLIO GOVERNOR v2.0 ACTIVATED");
+   Print("===============================================================");
+   Print("  Max Portfolio Risk: ", InpMaxPortfolioRisk, "%");
+   Print("  Max Symbol Risk: ", InpMaxSymbolRisk, "%");
+   Print("  Max Group Risk: ", InpMaxGroupRisk, "%");
+   Print("  DD Pause Level: ", InpDD_Pause, "%");
+   Print("  PF Pause Level: < ", InpPF_Pause);
+   Print("  Daily Max DD: ", InpDailyMaxDD, "%");
+   Print("  Weekly Max DD: ", InpWeeklyMaxDD, "%");
+   Print("  Correlation Guard: ", InpUseCorrelationGuard ? "ON" : "OFF");
+   Print("===============================================================");
+
    return INIT_SUCCEEDED;
 }
 
@@ -118,21 +175,183 @@ void OnTick()
    // Throttle updates
    if(TimeCurrent() - g_lastUpdate < InpUpdateSeconds) return;
    g_lastUpdate = TimeCurrent();
-   
+
+   // 0. Check period resets (daily/weekly/monthly)
+   CheckPeriodReset();
+
    // 1. Calculate portfolio metrics
    CalculatePortfolioMetrics();
-   
-   // 2. Update risk multiplier
+
+   // 2. Calculate daily/weekly drawdowns
+   CalculatePeriodDrawdowns();
+
+   // 3. Update risk multiplier
    UpdateRiskMultiplier();
-   
-   // 3. Update trading enabled status
+
+   // 4. Update trading enabled status
    UpdateTradingStatus();
-   
-   // 4. Update dashboard
+
+   // 5. Update dashboard
    UpdateDashboard();
-   
-   // 5. Publish update timestamp
+
+   // 6. Publish update timestamp
    GlobalVariableSet(GV_LAST_UPDATE, (double)TimeCurrent());
+}
+
+//+------------------------------------------------------------------+
+//| Check for period reset (new day/week/month)                       |
+//+------------------------------------------------------------------+
+void CheckPeriodReset()
+{
+   MqlDateTime current, lastDay, lastWeek, lastMonth;
+   TimeToStruct(TimeCurrent(), current);
+   TimeToStruct(g_lastDayCheck, lastDay);
+   TimeToStruct(g_lastWeekCheck, lastWeek);
+   TimeToStruct(g_lastMonthCheck, lastMonth);
+
+   // New day check
+   if(current.day != lastDay.day || current.mon != lastDay.mon)
+   {
+      g_dailyStartEquity = account.Equity();
+      g_dailyLimitHit = false;
+      g_lastDayCheck = TimeCurrent();
+      GlobalVariableSet(GV_DAILY_START_EQUITY, g_dailyStartEquity);
+      Print("New trading day - Daily DD reset. Start Equity: ", g_dailyStartEquity);
+   }
+
+   // New week check (Monday)
+   if(current.day_of_week == 1 && lastWeek.day_of_week != 1)
+   {
+      g_weeklyStartEquity = account.Equity();
+      g_weeklyLimitHit = false;
+      g_lastWeekCheck = TimeCurrent();
+      GlobalVariableSet(GV_WEEKLY_START_EQUITY, g_weeklyStartEquity);
+      Print("New trading week - Weekly DD reset. Start Equity: ", g_weeklyStartEquity);
+   }
+
+   // New month check
+   if(current.mon != lastMonth.mon)
+   {
+      g_monthlyStartEquity = account.Equity();
+      g_monthlyLimitHit = false;
+      g_lastMonthCheck = TimeCurrent();
+      Print("New trading month - Monthly DD reset. Start Equity: ", g_monthlyStartEquity);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Calculate daily/weekly drawdowns                                  |
+//+------------------------------------------------------------------+
+void CalculatePeriodDrawdowns()
+{
+   double currentEquity = account.Equity();
+
+   // Daily DD
+   double dailyDD = 0;
+   if(g_dailyStartEquity > 0)
+   {
+      dailyDD = ((g_dailyStartEquity - currentEquity) / g_dailyStartEquity) * 100.0;
+      GlobalVariableSet(GV_DAILY_DD, dailyDD);
+
+      if(dailyDD >= InpDailyMaxDD && !g_dailyLimitHit)
+      {
+         g_dailyLimitHit = true;
+         Print("DAILY DD LIMIT HIT: ", DoubleToString(dailyDD, 2), "% >= ", InpDailyMaxDD, "%");
+      }
+   }
+
+   // Weekly DD
+   double weeklyDD = 0;
+   if(g_weeklyStartEquity > 0)
+   {
+      weeklyDD = ((g_weeklyStartEquity - currentEquity) / g_weeklyStartEquity) * 100.0;
+      GlobalVariableSet(GV_WEEKLY_DD, weeklyDD);
+
+      if(weeklyDD >= InpWeeklyMaxDD && !g_weeklyLimitHit)
+      {
+         g_weeklyLimitHit = true;
+         Print("WEEKLY DD LIMIT HIT: ", DoubleToString(weeklyDD, 2), "% >= ", InpWeeklyMaxDD, "%");
+      }
+   }
+
+   // Monthly DD
+   if(g_monthlyStartEquity > 0)
+   {
+      double monthlyDD = ((g_monthlyStartEquity - currentEquity) / g_monthlyStartEquity) * 100.0;
+      if(monthlyDD >= InpMonthlyMaxDD && !g_monthlyLimitHit)
+      {
+         g_monthlyLimitHit = true;
+         Print("MONTHLY DD LIMIT HIT: ", DoubleToString(monthlyDD, 2), "% >= ", InpMonthlyMaxDD, "%");
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Get correlation between two symbols                               |
+//+------------------------------------------------------------------+
+double GetSymbolCorrelation(string sym1, string sym2)
+{
+   // Normalize symbols
+   string s1 = sym1, s2 = sym2;
+   StringToUpper(s1);
+   StringToUpper(s2);
+
+   // Remove common suffixes
+   StringReplace(s1, ".PRO", "");
+   StringReplace(s2, ".PRO", "");
+
+   // Check predefined correlations
+   for(int i = 0; i < ArraySize(g_correlations); i++)
+   {
+      if((g_correlations[i].symbol1 == s1 && g_correlations[i].symbol2 == s2) ||
+         (g_correlations[i].symbol1 == s2 && g_correlations[i].symbol2 == s1))
+      {
+         return g_correlations[i].correlation;
+      }
+   }
+
+   // Check if same correlation group
+   ENUM_CORR_GROUP group1 = GetCorrelationGroup(s1);
+   ENUM_CORR_GROUP group2 = GetCorrelationGroup(s2);
+
+   if(group1 == group2 && group1 != GROUP_OTHER)
+      return 0.70;  // Assume moderate correlation within same group
+
+   return 0.0;  // Unknown correlation
+}
+
+//+------------------------------------------------------------------+
+//| Check if adding position would exceed correlation limits          |
+//+------------------------------------------------------------------+
+double GetCorrelationAdjustedRisk(string symbol, double requestedRisk)
+{
+   if(!InpUseCorrelationGuard) return requestedRisk;
+
+   double adjustedRisk = requestedRisk;
+   double maxCorrelation = 0;
+
+   // Scan existing positions for correlated pairs
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      if(position.SelectByIndex(i))
+      {
+         string existingSym = position.Symbol();
+         if(existingSym == symbol) continue;  // Skip same symbol
+
+         double corr = MathAbs(GetSymbolCorrelation(symbol, existingSym));
+         if(corr > maxCorrelation) maxCorrelation = corr;
+      }
+   }
+
+   // Apply reduction if high correlation exists
+   if(maxCorrelation >= InpHighCorrelation)
+   {
+      adjustedRisk *= InpCorrelationReduction;
+      // Print("Correlation guard: ", symbol, " reduced to ", DoubleToString(adjustedRisk, 2),
+      //       "% (corr=", DoubleToString(maxCorrelation, 2), ")");
+   }
+
+   return adjustedRisk;
 }
 
 //+------------------------------------------------------------------+
@@ -308,17 +527,48 @@ void UpdateTradingStatus()
 {
    double dd = GlobalVariableGet(GV_CURRENT_DD);
    double pf = GlobalVariableGet(GV_ROLLING_PF);
-   
+
    bool enabled = true;
-   
+   string reason = "";
+
    // Pause on extreme DD
    if(dd >= InpDD_Pause)
+   {
       enabled = false;
-   
+      reason = "Portfolio DD >= " + DoubleToString(InpDD_Pause, 1) + "%";
+   }
+
    // Pause on very bad PF
-   if(pf < InpPF_Pause && g_tradeCount >= 20) // Need enough trades
+   if(pf < InpPF_Pause && g_tradeCount >= 20)
+   {
       enabled = false;
-   
+      reason = "PF < " + DoubleToString(InpPF_Pause, 2);
+   }
+
+   // Pause on daily DD limit
+   if(g_dailyLimitHit)
+   {
+      enabled = false;
+      reason = "Daily DD limit hit";
+   }
+
+   // Pause on weekly DD limit
+   if(g_weeklyLimitHit)
+   {
+      enabled = false;
+      reason = "Weekly DD limit hit";
+   }
+
+   // Pause on monthly DD limit
+   if(g_monthlyLimitHit)
+   {
+      enabled = false;
+      reason = "Monthly DD limit hit";
+   }
+
+   if(!enabled && reason != "")
+      Print("Trading PAUSED: ", reason);
+
    GlobalVariableSet(GV_TRADING_ENABLED, enabled ? 1 : 0);
 }
 
@@ -333,22 +583,25 @@ bool CanOpenTrade(string symbol, double requestedRisk, double &approvedRisk)
       approvedRisk = 0;
       return false;
    }
-   
+
    double totalExposure = GlobalVariableGet(GV_TOTAL_EXPOSURE);
    double riskMult = GlobalVariableGet(GV_RISK_MULTIPLIER);
-   
+
    // Apply risk multiplier
    double scaledRisk = requestedRisk * riskMult;
-   
+
+   // Apply correlation guard adjustment
+   scaledRisk = GetCorrelationAdjustedRisk(symbol, scaledRisk);
+
    // Check portfolio limit
    if(totalExposure + scaledRisk > InpMaxPortfolioRisk)
    {
       scaledRisk = MathMax(0, InpMaxPortfolioRisk - totalExposure);
    }
-   
+
    // Check symbol limit
    scaledRisk = MathMin(scaledRisk, InpMaxSymbolRisk);
-   
+
    // Check group limit
    ENUM_CORR_GROUP group = GetCorrelationGroup(symbol);
    string gvKey = GetGroupGVKey(group);
@@ -360,7 +613,7 @@ bool CanOpenTrade(string symbol, double requestedRisk, double &approvedRisk)
          scaledRisk = MathMax(0, InpMaxGroupRisk - groupRisk);
       }
    }
-   
+
    approvedRisk = scaledRisk;
    return (scaledRisk > 0.05); // Minimum viable risk
 }
@@ -375,31 +628,45 @@ void UpdateDashboard()
    double exposure = GlobalVariableGet(GV_TOTAL_EXPOSURE);
    double riskMult = GlobalVariableGet(GV_RISK_MULTIPLIER);
    bool enabled = GlobalVariableGet(GV_TRADING_ENABLED) == 1;
-   
-   string status = enabled ? "🟢 ACTIVE" : "🔴 PAUSED";
-   string ddColor = (dd < InpDD_Normal) ? "🟢" : ((dd < InpDD_Pause) ? "🟡" : "🔴");
-   string pfColor = (pf >= InpPF_Normal) ? "🟢" : ((pf >= InpPF_Pause) ? "🟡" : "🔴");
-   
-   string text = "═══════════════════════════════════════════\n";
-   text += "  🧠 PORTFOLIO GOVERNOR v1.0\n";
-   text += "═══════════════════════════════════════════\n";
+
+   double dailyDD = GlobalVariableGet(GV_DAILY_DD);
+   double weeklyDD = GlobalVariableGet(GV_WEEKLY_DD);
+
+   string status = enabled ? "ACTIVE" : "PAUSED";
+   if(g_dailyLimitHit) status = "DAILY LIMIT";
+   else if(g_weeklyLimitHit) status = "WEEKLY LIMIT";
+   else if(g_monthlyLimitHit) status = "MONTHLY LIMIT";
+
+   string ddColor = (dd < InpDD_Normal) ? "[OK]" : ((dd < InpDD_Pause) ? "[WARN]" : "[CRIT]");
+   string pfColor = (pf >= InpPF_Normal) ? "[OK]" : ((pf >= InpPF_Pause) ? "[WARN]" : "[CRIT]");
+   string dailyColor = (dailyDD < InpDailyMaxDD * 0.5) ? "[OK]" : ((dailyDD < InpDailyMaxDD) ? "[WARN]" : "[CRIT]");
+   string weeklyColor = (weeklyDD < InpWeeklyMaxDD * 0.5) ? "[OK]" : ((weeklyDD < InpWeeklyMaxDD) ? "[WARN]" : "[CRIT]");
+
+   string text = "===============================================\n";
+   text += "  PORTFOLIO GOVERNOR v2.0\n";
+   text += "===============================================\n";
    text += "Status: " + status + "\n";
-   text += "───────────────────────────────────────────\n";
+   text += "-----------------------------------------------\n";
    text += "Equity: $" + DoubleToString(account.Equity(), 2) + "\n";
-   text += ddColor + " DD: " + DoubleToString(dd, 2) + "% (Pause: " + DoubleToString(InpDD_Pause, 1) + "%)\n";
-   text += pfColor + " PF: " + DoubleToString(pf, 2) + " (Last " + IntegerToString(MathMin(g_tradeCount, InpRollingTrades)) + " trades)\n";
-   text += "───────────────────────────────────────────\n";
-   text += "📊 Exposure: " + DoubleToString(exposure, 2) + "% / " + DoubleToString(InpMaxPortfolioRisk, 1) + "%\n";
-   text += "⚖️ Risk Mult: " + DoubleToString(riskMult * 100, 0) + "%\n";
-   text += "───────────────────────────────────────────\n";
+   text += ddColor + " Portfolio DD: " + DoubleToString(dd, 2) + "% (Pause: " + DoubleToString(InpDD_Pause, 1) + "%)\n";
+   text += pfColor + " Rolling PF: " + DoubleToString(pf, 2) + " (Last " + IntegerToString(MathMin(g_tradeCount, InpRollingTrades)) + " trades)\n";
+   text += "-----------------------------------------------\n";
+   text += "PERIOD DRAWDOWNS:\n";
+   text += dailyColor + " Daily: " + DoubleToString(dailyDD, 2) + "% / " + DoubleToString(InpDailyMaxDD, 1) + "%\n";
+   text += weeklyColor + " Weekly: " + DoubleToString(weeklyDD, 2) + "% / " + DoubleToString(InpWeeklyMaxDD, 1) + "%\n";
+   text += "-----------------------------------------------\n";
+   text += "Exposure: " + DoubleToString(exposure, 2) + "% / " + DoubleToString(InpMaxPortfolioRisk, 1) + "%\n";
+   text += "Risk Mult: " + DoubleToString(riskMult * 100, 0) + "%\n";
+   text += "Corr Guard: " + (InpUseCorrelationGuard ? "ON" : "OFF") + "\n";
+   text += "-----------------------------------------------\n";
    text += "GROUP EXPOSURE:\n";
    text += "  USD: " + DoubleToString(GlobalVariableGet(GV_GROUP_USD_RISK), 2) + "%\n";
    text += "  JPY: " + DoubleToString(GlobalVariableGet(GV_GROUP_JPY_RISK), 2) + "%\n";
    text += "  GBP: " + DoubleToString(GlobalVariableGet(GV_GROUP_GBP_RISK), 2) + "%\n";
    text += "  Metals: " + DoubleToString(GlobalVariableGet(GV_GROUP_METALS_RISK), 2) + "%\n";
    text += "  Indices: " + DoubleToString(GlobalVariableGet(GV_GROUP_INDICES_RISK), 2) + "%\n";
-   text += "═══════════════════════════════════════════\n";
-   
+   text += "===============================================\n";
+
    Comment(text);
 }
 //+------------------------------------------------------------------+
