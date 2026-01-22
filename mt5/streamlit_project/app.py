@@ -1,6 +1,7 @@
 import streamlit as st
 from src.connector import MT5Connector
 from src import DataEngine, PerformanceAnalytics, PatternGeneric
+from src.portfolio import PortfolioGovernor, GovernorMode
 from components import (
     display_kpi_metrics,
     ChartBuilder,
@@ -10,6 +11,16 @@ from components import (
     render_symbol_performance,
     render_time_analysis,
     render_monthly_performance
+)
+from components.governor_components import (
+    render_symbol_scores_table,
+    render_correlation_heatmap,
+    render_group_cards,
+    render_currency_exposure,
+    render_governor_controls,
+    render_sync_status,
+    render_active_group_summary,
+    render_group_comparison_table
 )
 import pandas as pd
 import MetaTrader5 as mt5
@@ -130,8 +141,9 @@ with st.spinner("📥 Fetching Trade History..."):
 analytics = PerformanceAnalytics(trades_df) if not trades_df.empty else None
 
 # Tabs
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📊 Live Dashboard",
+    "🎯 Portfolio Governor",
     "📈 Performance Analytics",
     "🔎 Trade Inspector",
     "💹 Symbol & Time Analysis",
@@ -252,8 +264,130 @@ with tab1:
     else:
         st.info(f"No closed trades found in the last {days_to_fetch} days.")
 
-# ==================== TAB 2: PERFORMANCE ANALYTICS ====================
+# ==================== TAB 2: PORTFOLIO GOVERNOR ====================
 with tab2:
+    st.markdown("#### 🎯 Portfolio Governor")
+    st.markdown("*Intelligent portfolio selection - operate 4 symbols from 20 candidates*")
+    
+    # Initialize Portfolio Governor (cached in session state)
+    if 'portfolio_governor' not in st.session_state:
+        st.session_state.portfolio_governor = PortfolioGovernor(
+            performance_data=trades_df if not trades_df.empty else None
+        )
+    
+    governor = st.session_state.portfolio_governor
+    
+    # Refresh button
+    col1, col2, col3 = st.columns([1, 1, 4])
+    with col1:
+        if st.button("🔄 Refresh All", key="gov_refresh"):
+            with st.spinner("Refreshing portfolio data..."):
+                governor.refresh_all()
+                st.success("Portfolio data refreshed!")
+    with col2:
+        st.write(f"Last refresh: {governor.last_refresh.strftime('%H:%M:%S') if governor.last_refresh else 'Never'}")
+    
+    st.divider()
+    
+    # Two column layout
+    left_col, right_col = st.columns([1, 1])
+    
+    with left_col:
+        st.markdown("### 📊 Symbol Scores")
+        
+        # Get symbol scores
+        if not governor.symbol_scores:
+            with st.spinner("Calculating scores..."):
+                scores_df = governor.refresh_scores()
+        else:
+            scores_df = governor.symbol_scorer.get_all_symbol_scores()
+        
+        render_symbol_scores_table(scores_df)
+        
+        st.divider()
+        
+        # Currency Exposure
+        st.markdown("### 💱 Currency Exposure")
+        exposure = governor.get_currency_exposure()
+        render_currency_exposure(exposure)
+    
+    with right_col:
+        st.markdown("### 🔥 Correlation Heatmap")
+        
+        # Get correlation matrix
+        corr_matrix = governor.correlation_engine.get_correlation_heatmap_data()
+        if corr_matrix.empty:
+            with st.spinner("Calculating correlations..."):
+                governor.refresh_correlations(force=True)
+                corr_matrix = governor.correlation_engine.get_correlation_heatmap_data()
+        
+        render_correlation_heatmap(corr_matrix, height=400)
+    
+    st.divider()
+    
+    # Group Selection
+    st.markdown("### 🎲 Candidate Groups")
+    st.caption(f"Showing top 5 from {governor.group_ranker.total_valid_groups} valid combinations")
+    
+    # Generate groups if needed
+    if not governor.candidate_groups:
+        with st.spinner("Generating groups..."):
+            governor.generate_groups()
+    
+    # Render group cards
+    if governor.candidate_groups:
+        selected_id = render_group_cards(
+            groups=governor.candidate_groups,
+            active_id=governor.active_group_id
+        )
+        
+        # Handle selection
+        if selected_id != governor.active_group_id:
+            governor.select_group(selected_id)
+            st.rerun()
+    
+    st.divider()
+    
+    # Active Group Summary
+    if governor.active_group:
+        render_active_group_summary(
+            symbols=governor.active_group,
+            symbol_scores=governor.symbol_scores,
+            group_info=governor.candidate_groups[governor.active_group_id] if governor.candidate_groups else {}
+        )
+    
+    st.divider()
+    
+    # Governor Controls
+    controls = render_governor_controls(
+        mode=governor.mode.value,
+        is_locked=governor.mode == GovernorMode.LOCKED
+    )
+    
+    # Handle control actions
+    if controls["lock_clicked"]:
+        if governor.mode == GovernorMode.LOCKED:
+            governor.unlock_group()
+            st.success("🔓 Portfolio unlocked")
+        else:
+            if governor.lock_group():
+                st.success("🔒 Portfolio locked for session")
+        st.rerun()
+    
+    if controls["sync_clicked"]:
+        with st.spinner("Syncing with MT5..."):
+            sync_result = governor.sync_with_mt5()
+            render_sync_status(sync_result)
+    
+    if controls["auto_select"] and governor.mode != GovernorMode.AUTO:
+        governor.set_mode(GovernorMode.AUTO)
+        governor.select_best_group()
+        st.rerun()
+    elif not controls["auto_select"] and governor.mode == GovernorMode.AUTO:
+        governor.set_mode(GovernorMode.MANUAL)
+
+# ==================== TAB 3: PERFORMANCE ANALYTICS ====================
+with tab3:
     st.markdown("#### 📈 Advanced Performance Analysis")
 
     if not trades_df.empty and analytics:
@@ -314,8 +448,8 @@ with tab2:
     else:
         st.info("No trade data available for performance analysis")
 
-# ==================== TAB 3: TRADE INSPECTOR ====================
-with tab3:
+# ==================== TAB 4: TRADE INSPECTOR ====================
+with tab4:
     st.subheader("🔍 Deep Dive Trade Inspector")
 
     if not trades_df.empty:
@@ -388,8 +522,8 @@ with tab3:
     else:
         st.info("No trades available for inspection")
 
-# ==================== TAB 4: SYMBOL & TIME ANALYSIS ====================
-with tab4:
+# ==================== TAB 5: SYMBOL & TIME ANALYSIS ====================
+with tab5:
     st.markdown("#### 💹 Symbol & Time Performance Analysis")
 
     if not trades_df.empty and analytics:
@@ -448,8 +582,8 @@ with tab4:
     else:
         st.info("No trade data available for symbol & time analysis")
 
-# ==================== TAB 5: PATTERN INTELLIGENCE ====================
-with tab5:
+# ==================== TAB 6: PATTERN INTELLIGENCE ====================
+with tab6:
     st.markdown("#### 🧩 Pattern Intelligence")
 
     if trades_df.empty:
@@ -485,8 +619,8 @@ with tab5:
         else:
             st.info("No pattern data available")
 
-# ==================== TAB 6: ADVANCED STATS ====================
-with tab6:
+# ==================== TAB 7: ADVANCED STATS ====================
+with tab7:
     st.markdown("#### ⚙️ Advanced Statistics & Risk Metrics")
 
     if not trades_df.empty and analytics:

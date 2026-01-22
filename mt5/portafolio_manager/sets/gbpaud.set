@@ -1,82 +1,84 @@
-; AUDUSD - The Aussie - Commodity Currency
-; Correlated with risk sentiment and commodity prices
-; Best Performance: Asian and NY sessions
-; Risk Profile: Moderate - sensitive to China data
-; Target: Win Rate 63-73%, Profit Factor 1.9+
-; Correlation: +0.75 with NZD, +0.60 with Gold
+; GBPAUD - Pound Australian Dollar Cross
+; Highly volatile cross pair
+; Best Performance: London and Asian overlaps
+; Risk Profile: High - extreme volatility
+; Target: Win Rate 59-67%, Profit Factor 2.2+
+; Correlation: Risk sentiment, commodity differentials
 
 ; ====== IDENTITY ======
-InpMagicNumber=100006
+InpMagicNumber=100016
 ; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ; ====== KILLZONES ======
-; AUD most active during Asian session
+; London and Asian sessions
 InpUseKillzoneFilter=true
 InpUseSymbolDefaults=true
 InpAutoDST=true
 InpEnableAsianKZ=true
-InpEnableLondonOpenKZ=false
-InpEnableNYKZ=true
+InpEnableLondonOpenKZ=true
+InpEnableNYKZ=false
 InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=false
 
 ; ====== FIBONACCI ======
-InpSwingLookback=21
+; Wider zones for volatility
+InpSwingLookback=19
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.22
+InpZoneTolerance=0.35
 
 ; ====== DISPLACEMENT ======
 InpUseDisplacement=true
-InpDisplacementATR=1.3
-InpDisplacementLookback=5
+InpDisplacementATR=1.7
+InpDisplacementLookback=4
 
 ; ====== RSI ======
 InpRSI_Period=14
-InpRSI_Oversold=38
-InpRSI_Overbought=62
+InpRSI_Oversold=33
+InpRSI_Overbought=67
 InpRSI_Momentum=true
 
 ; ====== TREND ======
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.11
+InpEMA_MinSlope=0.17
 
 ; ====== CHOP FILTER ======
 InpUseChopFilter=true
-InpChopThreshold=0.75
+InpChopThreshold=0.82
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=5
+InpMinConfluenceEntry=6
 InpEnableAddOns=true
-InpAddOn1_R=1.6
-InpAddOn2_R=2.8
-InpMaxPositions=3
+InpAddOn1_R=2.3
+InpAddOn2_R=3.8
+InpMaxPositions=2
 
 ; ====== RISK (Before Governor Scaling) ======
-InpRiskBase=0.45
-InpRiskAddOn1=0.28
-InpRiskAddOn2=0.18
+; Lower risk for extreme volatility
+InpRiskBase=0.35
+InpRiskAddOn1=0.20
+InpRiskAddOn2=0.12
 
 ; ====== EXIT ======
 InpTrailingMode=1
-InpPartialTP_R=1.7
-InpPartialClosePercent=42.0
-InpBE_Threshold_R=1.3
-InpTrailStart_R=2.2
-InpTrailATR_Mult=1.1
+InpPartialTP_R=2.2
+InpPartialClosePercent=38.0
+InpBE_Threshold_R=1.6
+InpTrailStart_R=2.7
+InpTrailATR_Mult=1.45
 
 ; ====== SPREAD ======
-InpMaxSpreadPoints=18
+InpMaxSpreadPoints=38
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 InpUseSMC=true
-InpSMC_SwingLookback=21
-InpSMC_MinImpulseATR=2.1
-InpSMC_MinFVG_ATR=0.52
+InpSMC_SwingLookback=19
+InpSMC_MinImpulseATR=3.0
+InpSMC_MinFVG_ATR=0.70
 
 ; ====== MULTI-TIMEFRAME ======
 InpUseMTF=true
@@ -85,16 +87,15 @@ InpMTF=16385
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
-; Monitor AUD, USD, and China data
 InpUseNewsFilter=true
-InpNewsMinutesBefore=35
-InpNewsMinutesAfter=35
+InpNewsMinutesBefore=45
+InpNewsMinutesAfter=40
 
 ; ====== KELLY POSITION SIZING ======
 InpUseKelly=true
-InpKellyFraction=0.45
-InpDailyMaxDD=2.8
-InpWeeklyMaxDD=5.5
+InpKellyFraction=0.35
+InpDailyMaxDD=2.2
+InpWeeklyMaxDD=4.3
 
 ; ====== LEARNING & ADAPTATION ======
 InpEnableLearning=true

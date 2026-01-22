@@ -1,122 +1,116 @@
-; XAUUSD (Gold) - Optimized for High Volatility Trending Instrument
-; Enhanced with SMC (Smart Money Concepts) for Institutional-Level Trading
-; Best Performance: Strong trends, London-NY overlap, USD news reactions
-; Risk Profile: Moderate with adaptive sizing
-; Target: Win Rate 65-75%, Profit Factor 2.0+
-; Correlation: Positive with AUDUSD, Negative with USDJPY/USDCHF
+; XAUUSD - Gold - Ultimate Safe Haven Asset
+; High volatility, strong trending, reacts to USD and risk sentiment
+; Best Performance: NY session, economic uncertainty periods
+; Risk Profile: Aggressive - wide swings but trending
+; Target: Win Rate 58-68%, Profit Factor 2.5+
+; Correlation: -0.70 with USD, +0.60 with AUD
 
-InpMagicNumber=100001
+; ====== IDENTITY ======
+InpMagicNumber=100007
+; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
 
-; ====== SESSION CONFIGURATION ======
-; Gold moves best during NY session (strong USD correlation)
-; Peak volatility: London-NY overlap (13:00-17:00 UTC)
-InpSessionFilter=1
-InpLondonStart=8
-InpLondonEnd=16
-InpNYStart=13
-InpNYEnd=21
+; ====== KILLZONES ======
+; Gold most active during London and NY
+InpUseKillzoneFilter=true
+InpUseSymbolDefaults=true
+InpAutoDST=true
+InpEnableAsianKZ=false
+InpEnableLondonOpenKZ=true
+InpEnableNYKZ=true
+InpEnableLondonCloseKZ=false
+InpFocusPrimeOnly=true
 
-; ====== FIBONACCI ZONES ======
-; Wider zones for volatile instrument - Gold respects 0.618/0.786 well
-; Increased lookback for significant swing points
-InpSwingLookback=28
+; ====== FIBONACCI ======
+; Wider zones due to high volatility
+InpSwingLookback=18
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.32
+InpZoneTolerance=0.35
 
-; ====== DISPLACEMENT FILTER ======
-; Strong momentum filter - Gold needs powerful impulses
-; Higher ATR multiplier filters weak moves
+; ====== DISPLACEMENT ======
+; Strong displacements common in gold
 InpUseDisplacement=true
 InpDisplacementATR=1.8
 InpDisplacementLookback=4
 
-; ====== RSI CONFIGURATION ======
-; Wider bands for trending instrument
-; Gold trends hard - don't fight momentum
+; ====== RSI ======
+; Wide RSI bands for extreme moves
 InpRSI_Period=14
-InpRSI_Oversold=38
-InpRSI_Overbought=62
+InpRSI_Oversold=32
+InpRSI_Overbought=68
 InpRSI_Momentum=true
 
-; ====== TREND FILTER ======
-; Strong trend requirement - Gold trends are powerful
-; Higher slope filters choppy periods
+; ====== TREND ======
+; Strong trends - higher slope requirement
 InpEMA_Period=200
 InpUseTrendFilter=true
 InpEMA_MinSlope=0.18
 
 ; ====== CHOP FILTER ======
-; Strict volatility filter for clean entries
 InpUseChopFilter=true
-InpChopThreshold=0.68
+InpChopThreshold=0.85
 InpATR_MA_Period=20
 
-; ====== CONFLUENCE SYSTEM ======
-; Higher threshold for quality Gold signals
-; Extended targets for trending instrument
-InpMinConfluenceEntry=5.5
+; ====== CONFLUENCE ======
+; Higher threshold for volatile asset
+InpMinConfluenceEntry=6
 InpEnableAddOns=true
-InpAddOn1_R=2.0
-InpAddOn2_R=3.5
+InpAddOn1_R=2.5
+InpAddOn2_R=4.0
 InpMaxPositions=3
 
-; ====== RISK MANAGEMENT ======
-; Moderate base risk with scaling on winners
-InpRiskBase=0.50
-InpRiskAddOn1=0.25
-InpRiskAddOn2=0.15
+; ====== RISK (Before Governor Scaling) ======
+; Lower base risk due to volatility
+InpRiskBase=0.35
+InpRiskAddOn1=0.20
+InpRiskAddOn2=0.12
 
-; ====== EXIT STRATEGY ======
-; Extended targets for trending Gold
-; Partial at 2R, trail from 2.8R
+; ====== EXIT ======
+; Wider targets for gold's trending nature
 InpTrailingMode=1
-InpPartialTP_R=2.0
-InpPartialClosePercent=50.0
-InpBE_Threshold_R=1.5
-InpTrailStart_R=2.8
-InpTrailATR_Mult=1.6
+InpPartialTP_R=2.5
+InpPartialClosePercent=35.0
+InpBE_Threshold_R=1.8
+InpTrailStart_R=3.0
+InpTrailATR_Mult=1.5
 
-; ====== SPREAD FILTER ======
-; Gold has wider spreads - adjust accordingly
-InpMaxSpreadPoints=50
+; ====== SPREAD ======
+; Allow wider spreads for gold
+InpMaxSpreadPoints=30
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
-; Full SMC suite for institutional edge
-; Higher impulse requirement for valid OBs
 InpUseSMC=true
-InpSMC_SwingLookback=28
-InpSMC_MinImpulseATR=2.8
-InpSMC_MinFVG_ATR=0.65
+InpSMC_SwingLookback=18
+InpSMC_MinImpulseATR=3.0
+InpSMC_MinFVG_ATR=0.70
 
-; ====== MULTI-TIMEFRAME ANALYSIS ======
-; H4 bias, H1 confirmation, M15 entry
-; Strong HTF alignment required for Gold
+; ====== MULTI-TIMEFRAME ======
 InpUseMTF=true
 InpHTF=16388
 InpMTF=16385
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
-; Critical for Gold - reacts violently to USD news
-; Extended buffer for high-impact events
+; Critical for gold - reacts strongly to news
 InpUseNewsFilter=true
 InpNewsMinutesBefore=60
-InpNewsMinutesAfter=45
-
-; ====== SESSION OPTIMIZER ======
-; Focus on London-NY overlap for best Gold moves
-; Skip Asian - low volatility, wide spreads
-InpUseSessionFilter=true
-InpSkipAsianSession=true
-InpFocusOverlapOnly=true
+InpNewsMinutesAfter=60
 
 ; ====== KELLY POSITION SIZING ======
-; Half-Kelly for safe scaling
-; Strict DD limits for volatile instrument
 InpUseKelly=true
-InpKellyFraction=0.5
-InpDailyMaxDD=2.5
-InpWeeklyMaxDD=5.0
+InpKellyFraction=0.35
+InpDailyMaxDD=2.0
+InpWeeklyMaxDD=4.0
+
+; ====== LEARNING & ADAPTATION ======
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+InpMinTradesForLearning=50
+
+; ====== ADAPTIVE BEHAVIOR (Advanced) ======
+InpEnableAdaptiveRisk=false
+InpEnableAdaptiveExits=false
+InpEnableAdaptiveFilters=false

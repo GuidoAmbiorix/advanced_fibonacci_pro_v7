@@ -5,41 +5,44 @@
 ; Target: Win Rate 68-78%, Profit Factor 2.2+
 ; Correlation: +0.95 with GBPUSD, -0.95 with USDCHF
 
+; ====== IDENTITY ======
 InpMagicNumber=100002
+; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
 
-; ====== SESSION CONFIGURATION ======
-; EUR performs excellently in both London and NY sessions
-; Peak liquidity ensures tight spreads and clean moves
-InpSessionFilter=1
-InpLondonStart=7
-InpLondonEnd=16
-InpNYStart=12
-InpNYEnd=20
+; ====== KILLZONES ======
+; EUR performs excellently in both London and NY killzones
+InpUseKillzoneFilter=true
+InpUseSymbolDefaults=true
+InpAutoDST=true
+InpEnableAsianKZ=false
+InpEnableLondonOpenKZ=true
+InpEnableNYKZ=true
+InpEnableLondonCloseKZ=false
+InpFocusPrimeOnly=false
 
-; ====== FIBONACCI ZONES ======
+; ====== FIBONACCI ======
 ; Tight zones for precise EUR entries
-; Most liquid pair = most precise levels
 InpSwingLookback=22
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.18
 
-; ====== DISPLACEMENT FILTER ======
+; ====== DISPLACEMENT ======
 ; Moderate filter for EUR - cleaner moves than volatile pairs
 InpUseDisplacement=true
 InpDisplacementATR=1.2
 InpDisplacementLookback=5
 
-; ====== RSI CONFIGURATION ======
+; ====== RSI ======
 ; Standard bands for balanced, liquid pair
 InpRSI_Period=14
 InpRSI_Oversold=40
 InpRSI_Overbought=60
 InpRSI_Momentum=true
 
-; ====== TREND FILTER ======
+; ====== TREND ======
 ; Moderate slope - EUR trends are gradual but consistent
 InpEMA_Period=200
 InpUseTrendFilter=true
@@ -51,22 +54,21 @@ InpUseChopFilter=true
 InpChopThreshold=0.75
 InpATR_MA_Period=20
 
-; ====== CONFLUENCE SYSTEM ======
+; ====== CONFLUENCE ======
 ; Standard threshold for liquid pair
-; Quality over quantity approach
-InpMinConfluenceEntry=5.0
+InpMinConfluenceEntry=5
 InpEnableAddOns=true
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
 InpMaxPositions=3
 
-; ====== RISK MANAGEMENT ======
+; ====== RISK (Before Governor Scaling) ======
 ; Moderate base for consistent growth
 InpRiskBase=0.55
 InpRiskAddOn1=0.30
 InpRiskAddOn2=0.20
 
-; ====== EXIT STRATEGY ======
+; ====== EXIT ======
 ; Balanced targets for ranging/trending conditions
 InpTrailingMode=1
 InpPartialTP_R=1.6
@@ -75,7 +77,7 @@ InpBE_Threshold_R=1.2
 InpTrailStart_R=2.2
 InpTrailATR_Mult=1.1
 
-; ====== SPREAD FILTER ======
+; ====== SPREAD ======
 ; Tight spread requirement - EUR should have best spreads
 InpMaxSpreadPoints=12
 
@@ -86,9 +88,8 @@ InpSMC_SwingLookback=22
 InpSMC_MinImpulseATR=2.2
 InpSMC_MinFVG_ATR=0.50
 
-; ====== MULTI-TIMEFRAME ANALYSIS ======
-; H4 bias, H1 confirmation
-; Clean HTF structure on EUR
+; ====== MULTI-TIMEFRAME ======
+; H4 bias, H1 confirmation - Clean HTF structure on EUR
 InpUseMTF=true
 InpHTF=16388
 InpMTF=16385
@@ -96,17 +97,9 @@ InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
 ; Filter EUR and USD high-impact news
-; Standard buffer sufficient for liquid pair
 InpUseNewsFilter=true
 InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
-
-; ====== SESSION OPTIMIZER ======
-; Focus on London session for EUR
-; Overlap provides best opportunities
-InpUseSessionFilter=true
-InpSkipAsianSession=true
-InpFocusOverlapOnly=false
 
 ; ====== KELLY POSITION SIZING ======
 ; Half-Kelly for consistent scaling
@@ -114,3 +107,14 @@ InpUseKelly=true
 InpKellyFraction=0.5
 InpDailyMaxDD=3.0
 InpWeeklyMaxDD=6.0
+
+; ====== LEARNING & ADAPTATION ======
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+InpMinTradesForLearning=50
+
+; ====== ADAPTIVE BEHAVIOR (Advanced) ======
+InpEnableAdaptiveRisk=false
+InpEnableAdaptiveExits=false
+InpEnableAdaptiveFilters=false

@@ -1,118 +1,112 @@
-; USDJPY (Gopher) - Safe Haven Currency Pair
-; Enhanced with SMC (Smart Money Concepts) for Institutional-Level Trading
-; Best Performance: Tokyo/NY sessions, BOJ/Fed policy divergence
-; Risk Profile: Conservative - JPY is safe haven
-; Target: Win Rate 65-75%, Profit Factor 2.0+
-; Correlation: Low/Negative with EURUSD, Negative with XAUUSD (risk-off hedge)
+; USDJPY - Traditional Safe Haven Pair
+; Strong trending characteristics, respects technical levels
+; Best Performance: Asian and NY sessions, risk-off environments
+; Risk Profile: Moderate - smooth trending moves
+; Target: Win Rate 65-75%, Profit Factor 2.1+
+; Correlation: -0.80 with GBPUSD, +0.70 with USD Index
 
+; ====== IDENTITY ======
 InpMagicNumber=100004
+; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
 
-; ====== SESSION CONFIGURATION ======
-; USDJPY unique - Tokyo + NY sessions most active
-; JPY carries during Asian, USD drives during NY
-InpSessionFilter=1
-InpLondonStart=7
-InpLondonEnd=15
-InpNYStart=13
-InpNYEnd=21
+; ====== KILLZONES ======
+; JPY active in Asian and NY sessions
+InpUseKillzoneFilter=true
+InpUseSymbolDefaults=true
+InpAutoDST=true
+InpEnableAsianKZ=true
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=true
+InpEnableLondonCloseKZ=false
+InpFocusPrimeOnly=false
 
-; ====== FIBONACCI ZONES ======
-; Medium zones - JPY pairs can be precise
-; Strong respect for round numbers
-InpSwingLookback=22
+; ====== FIBONACCI ======
+; Precise levels - JPY respects technicals well
+InpSwingLookback=25
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.22
+InpZoneTolerance=0.20
 
-; ====== DISPLACEMENT FILTER ======
-; Moderate filter - JPY can move smoothly or explosively
+; ====== DISPLACEMENT ======
 InpUseDisplacement=true
 InpDisplacementATR=1.3
 InpDisplacementLookback=5
 
-; ====== RSI CONFIGURATION ======
-; Standard bands - JPY trends well when BOJ/Fed diverge
+; ====== RSI ======
+; Standard RSI settings
 InpRSI_Period=14
 InpRSI_Oversold=40
 InpRSI_Overbought=60
 InpRSI_Momentum=true
 
-; ====== TREND FILTER ======
-; Strong trend filter - JPY pairs can trend for months
-; BOJ policy creates extended trends
+; ====== TREND ======
+; Strong trending pair
 InpEMA_Period=200
 InpUseTrendFilter=true
 InpEMA_MinSlope=0.12
 
 ; ====== CHOP FILTER ======
-; Standard volatility filter
 InpUseChopFilter=true
-InpChopThreshold=0.72
+InpChopThreshold=0.75
 InpATR_MA_Period=20
 
-; ====== CONFLUENCE SYSTEM ======
-; Standard threshold for quality entries
-; JPY pairs give good signals when filtered
-InpMinConfluenceEntry=5.0
+; ====== CONFLUENCE ======
+InpMinConfluenceEntry=5
 InpEnableAddOns=true
-InpAddOn1_R=1.6
-InpAddOn2_R=2.8
+InpAddOn1_R=1.8
+InpAddOn2_R=3.0
 InpMaxPositions=3
 
-; ====== RISK MANAGEMENT ======
-; Moderate risk - JPY pairs can gap on BOJ news
+; ====== RISK (Before Governor Scaling) ======
 InpRiskBase=0.50
-InpRiskAddOn1=0.28
-InpRiskAddOn2=0.18
+InpRiskAddOn1=0.30
+InpRiskAddOn2=0.20
 
-; ====== EXIT STRATEGY ======
-; Extended targets - JPY trends can run far
+; ====== EXIT ======
+; Wider targets for trending moves
 InpTrailingMode=1
-InpPartialTP_R=1.7
+InpPartialTP_R=1.8
 InpPartialClosePercent=45.0
 InpBE_Threshold_R=1.3
 InpTrailStart_R=2.3
 InpTrailATR_Mult=1.2
 
-; ====== SPREAD FILTER ======
-; Medium spread tolerance
-InpMaxSpreadPoints=18
+; ====== SPREAD ======
+InpMaxSpreadPoints=15
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
-; Full SMC suite - institutional JPY flows are massive
 InpUseSMC=true
-InpSMC_SwingLookback=22
-InpSMC_MinImpulseATR=2.2
-InpSMC_MinFVG_ATR=0.52
+InpSMC_SwingLookback=25
+InpSMC_MinImpulseATR=2.0
+InpSMC_MinFVG_ATR=0.55
 
-; ====== MULTI-TIMEFRAME ANALYSIS ======
-; H4 bias critical for JPY pairs
-; BOJ intervention levels visible on HTF
+; ====== MULTI-TIMEFRAME ======
 InpUseMTF=true
 InpHTF=16388
 InpMTF=16385
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
-; Critical for JPY - BOJ surprises can be violent
-; Extended buffer for BOJ meetings
+; Monitor both USD and JPY news
 InpUseNewsFilter=true
-InpNewsMinutesBefore=60
-InpNewsMinutesAfter=45
-
-; ====== SESSION OPTIMIZER ======
-; Include Asian session - JPY active
-; But best during overlap periods
-InpUseSessionFilter=true
-InpSkipAsianSession=false
-InpFocusOverlapOnly=false
+InpNewsMinutesBefore=30
+InpNewsMinutesAfter=30
 
 ; ====== KELLY POSITION SIZING ======
-; Half-Kelly with tighter limits
-; JPY can gap significantly
 InpUseKelly=true
 InpKellyFraction=0.5
-InpDailyMaxDD=2.5
-InpWeeklyMaxDD=5.0
+InpDailyMaxDD=3.0
+InpWeeklyMaxDD=6.0
+
+; ====== LEARNING & ADAPTATION ======
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+InpMinTradesForLearning=50
+
+; ====== ADAPTIVE BEHAVIOR (Advanced) ======
+InpEnableAdaptiveRisk=false
+InpEnableAdaptiveExits=false
+InpEnableAdaptiveFilters=false

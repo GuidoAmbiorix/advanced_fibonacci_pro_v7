@@ -1,18 +1,18 @@
-; AUDUSD - The Aussie - Commodity Currency
-; Correlated with risk sentiment and commodity prices
+; CADJPY - Canadian Yen Cross - Oil Proxy
+; Oil correlation with safe haven
 ; Best Performance: Asian and NY sessions
-; Risk Profile: Moderate - sensitive to China data
-; Target: Win Rate 63-73%, Profit Factor 1.9+
-; Correlation: +0.75 with NZD, +0.60 with Gold
+; Risk Profile: Moderate - commodity dynamics
+; Target: Win Rate 62-70%, Profit Factor 2.0+
+; Correlation: +0.70 with oil prices
 
 ; ====== IDENTITY ======
-InpMagicNumber=100006
+InpMagicNumber=100018
 ; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ; ====== KILLZONES ======
-; AUD most active during Asian session
+; Asian and NY sessions
 InpUseKillzoneFilter=true
 InpUseSymbolDefaults=true
 InpAutoDST=true
@@ -23,10 +23,10 @@ InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=false
 
 ; ====== FIBONACCI ======
-InpSwingLookback=21
+InpSwingLookback=22
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.22
+InpZoneTolerance=0.23
 
 ; ====== DISPLACEMENT ======
 InpUseDisplacement=true
@@ -35,8 +35,8 @@ InpDisplacementLookback=5
 
 ; ====== RSI ======
 InpRSI_Period=14
-InpRSI_Oversold=38
-InpRSI_Overbought=62
+InpRSI_Oversold=39
+InpRSI_Overbought=61
 InpRSI_Momentum=true
 
 ; ====== TREND ======
@@ -46,37 +46,37 @@ InpEMA_MinSlope=0.11
 
 ; ====== CHOP FILTER ======
 InpUseChopFilter=true
-InpChopThreshold=0.75
+InpChopThreshold=0.74
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
 InpMinConfluenceEntry=5
 InpEnableAddOns=true
-InpAddOn1_R=1.6
-InpAddOn2_R=2.8
+InpAddOn1_R=1.7
+InpAddOn2_R=2.9
 InpMaxPositions=3
 
 ; ====== RISK (Before Governor Scaling) ======
-InpRiskBase=0.45
-InpRiskAddOn1=0.28
+InpRiskBase=0.47
+InpRiskAddOn1=0.27
 InpRiskAddOn2=0.18
 
 ; ====== EXIT ======
 InpTrailingMode=1
 InpPartialTP_R=1.7
-InpPartialClosePercent=42.0
+InpPartialClosePercent=43.0
 InpBE_Threshold_R=1.3
 InpTrailStart_R=2.2
-InpTrailATR_Mult=1.1
+InpTrailATR_Mult=1.15
 
 ; ====== SPREAD ======
-InpMaxSpreadPoints=18
+InpMaxSpreadPoints=22
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 InpUseSMC=true
-InpSMC_SwingLookback=21
+InpSMC_SwingLookback=22
 InpSMC_MinImpulseATR=2.1
-InpSMC_MinFVG_ATR=0.52
+InpSMC_MinFVG_ATR=0.51
 
 ; ====== MULTI-TIMEFRAME ======
 InpUseMTF=true
@@ -85,16 +85,16 @@ InpMTF=16385
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
-; Monitor AUD, USD, and China data
+; Monitor CAD, JPY, and oil inventory
 InpUseNewsFilter=true
-InpNewsMinutesBefore=35
+InpNewsMinutesBefore=40
 InpNewsMinutesAfter=35
 
 ; ====== KELLY POSITION SIZING ======
 InpUseKelly=true
-InpKellyFraction=0.45
+InpKellyFraction=0.47
 InpDailyMaxDD=2.8
-InpWeeklyMaxDD=5.5
+InpWeeklyMaxDD=5.6
 
 ; ====== LEARNING & ADAPTATION ======
 InpEnableLearning=true
