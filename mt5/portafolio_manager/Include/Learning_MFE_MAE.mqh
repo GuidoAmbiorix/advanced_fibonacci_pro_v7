@@ -30,6 +30,7 @@ struct TradeState
 //| LEARNING MODULE                                                   |
 //| Responsibility: "How does price behave AFTER entry?"             |
 //|                 + Owning Trade State & Quality                   |
+//|                 + Persistent Memory (File Storage)               |
 //+------------------------------------------------------------------+
 class CLearningEngine
 {
@@ -37,11 +38,52 @@ private:
    TradeState m_states[];
    double     m_avgMFE;
    double     m_avgMAE;
-   
+
+   // Persistence
+   string     m_symbol;
+   string     m_dataFile;
+   bool       m_persistenceEnabled;
+
 public:
-   CLearningEngine() : m_avgMFE(0), m_avgMAE(0) 
+   CLearningEngine() : m_avgMFE(0), m_avgMAE(0), m_symbol(""), m_persistenceEnabled(false)
    {
       ArrayResize(m_states, 0);
+   }
+
+   //+------------------------------------------------------------------+
+   //| Initialize with persistence                                       |
+   //+------------------------------------------------------------------+
+   bool Init(string symbol, bool enablePersistence = true)
+   {
+      m_symbol = symbol;
+      m_persistenceEnabled = enablePersistence;
+
+      if(m_persistenceEnabled)
+      {
+         m_dataFile = "SymbolEngine_Learning_" + m_symbol + ".dat";
+
+         // Try to load existing data
+         if(!LoadFromFile())
+         {
+            Print("Learning: Starting fresh (no saved data)");
+         }
+         else
+         {
+            Print("Learning: Loaded MFE=", DoubleToString(m_avgMFE, 5),
+                  " MAE=", DoubleToString(m_avgMAE, 5));
+         }
+      }
+
+      return true;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Deinitialize - save data on exit                                 |
+   //+------------------------------------------------------------------+
+   void Deinit()
+   {
+      if(m_persistenceEnabled)
+         SaveToFile();
    }
    
    // --- STATE MANAGEMENT ---
@@ -142,12 +184,109 @@ public:
    double GetAvgMFE() { return m_avgMFE; }
    double GetAvgMAE() { return m_avgMAE; }
 
+   //+------------------------------------------------------------------+
+   //| Get MFE/MAE for specific ticket                                  |
+   //+------------------------------------------------------------------+
+   bool GetMFEMAE(ulong ticket, double &mfe, double &mae)
+   {
+      int idx = FindIndex(ticket);
+      if(idx == -1) return false;
+
+      mfe = m_states[idx].mfe;
+      mae = m_states[idx].mae;
+      return true;
+   }
+
 private:
    int FindIndex(ulong ticket)
    {
       for(int i=0; i<ArraySize(m_states); i++)
          if(m_states[i].ticket == ticket) return i;
       return -1;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Save learning data to file                                       |
+   //+------------------------------------------------------------------+
+   bool SaveToFile()
+   {
+      if(!m_persistenceEnabled) return false;
+
+      int fileHandle = FileOpen(m_dataFile, FILE_WRITE|FILE_BIN|FILE_COMMON);
+
+      if(fileHandle == INVALID_HANDLE)
+      {
+         Print("Learning ERROR: Cannot save to file");
+         return false;
+      }
+
+      // Write version
+      int version = 1;
+      FileWriteInteger(fileHandle, version);
+
+      // Write averages
+      FileWriteDouble(fileHandle, m_avgMFE);
+      FileWriteDouble(fileHandle, m_avgMAE);
+
+      // Write symbol
+      FileWriteString(fileHandle, m_symbol);
+
+      // Write timestamp
+      FileWriteLong(fileHandle, TimeCurrent());
+
+      FileClose(fileHandle);
+
+      Print("Learning: Saved data to file | MFE=", DoubleToString(m_avgMFE, 5),
+            " MAE=", DoubleToString(m_avgMAE, 5));
+      return true;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Load learning data from file                                     |
+   //+------------------------------------------------------------------+
+   bool LoadFromFile()
+   {
+      if(!m_persistenceEnabled) return false;
+      if(!FileIsExist(m_dataFile, FILE_COMMON)) return false;
+
+      int fileHandle = FileOpen(m_dataFile, FILE_READ|FILE_BIN|FILE_COMMON);
+
+      if(fileHandle == INVALID_HANDLE)
+      {
+         Print("Learning WARNING: Cannot load from file");
+         return false;
+      }
+
+      // Read version
+      int version = FileReadInteger(fileHandle);
+
+      if(version != 1)
+      {
+         Print("Learning WARNING: Unsupported file version");
+         FileClose(fileHandle);
+         return false;
+      }
+
+      // Read averages
+      m_avgMFE = FileReadDouble(fileHandle);
+      m_avgMAE = FileReadDouble(fileHandle);
+
+      // Read symbol (verify it matches)
+      string savedSymbol = FileReadString(fileHandle);
+      if(savedSymbol != m_symbol)
+      {
+         Print("Learning WARNING: Symbol mismatch (saved:", savedSymbol, " current:", m_symbol, ")");
+         FileClose(fileHandle);
+         return false;
+      }
+
+      // Read timestamp (for info)
+      datetime savedTime = (datetime)FileReadLong(fileHandle);
+
+      FileClose(fileHandle);
+
+      Print("Learning: Loaded data from ", TimeToString(savedTime, TIME_DATE));
+      return true;
    }
 };
 

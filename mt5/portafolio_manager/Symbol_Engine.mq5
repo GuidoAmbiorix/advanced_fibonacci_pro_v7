@@ -32,6 +32,17 @@
 #include "Include\KillzoneOptimizer.mqh"
 #include "Include\KellyPositionSizer.mqh"
 
+// Learning & Memory Modules
+#include "Include\Memory\TradeJournal.mqh"
+#include "Include\Memory\PatternMemory.mqh"
+#include "Include\Learning\PerformanceAnalyzer.mqh"
+#include "Include\Learning\PatternRecognizer.mqh"
+
+// Adaptive Modules
+#include "Include\Adaptive\AdaptiveRiskManager.mqh"
+#include "Include\Adaptive\AdaptiveExitManager.mqh"
+#include "Include\Adaptive\AdaptiveFilterManager.mqh"
+
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
 //+------------------------------------------------------------------+
@@ -127,6 +138,17 @@ input double            InpKellyFraction = 0.5;           // Kelly Fraction (0.5
 input double            InpDailyMaxDD = 3.0;              // Daily Max Drawdown %
 input double            InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown %
 
+input group "======= LEARNING & ADAPTATION ======="
+input bool              InpEnableLearning = true;         // Enable Learning System
+input bool              InpLogTradesToFile = true;        // Log Trades to CSV
+input int               InpLearningHistory = 180;         // Days of History to Load
+input int               InpMinTradesForLearning = 50;     // Min Trades Before Learning
+
+input group "======= ADAPTIVE BEHAVIOR (Advanced) ======="
+input bool              InpEnableAdaptiveRisk = false;    // Enable Adaptive Risk
+input bool              InpEnableAdaptiveExits = false;   // Enable Adaptive Exits
+input bool              InpEnableAdaptiveFilters = false; // Enable Adaptive Filters
+
 //+------------------------------------------------------------------+
 //| GLOBALS                                                           |
 //+------------------------------------------------------------------+
@@ -153,6 +175,17 @@ CMTFConfluence      mtfAnalysis;
 CNewsFilter         newsFilter;
 CKillzoneOptimizer  killzoneOptimizer;
 CKellyPositionSizer kellySizer;
+
+// LEARNING & MEMORY OBJECTS
+CTradeJournal       tradeJournal;
+CPatternMemory      patternMemory;
+CPerformanceAnalyzer performanceAnalyzer;
+CPatternRecognizer  patternRecognizer;
+
+// ADAPTIVE OBJECTS
+CAdaptiveRiskManager   adaptiveRisk;
+CAdaptiveExitManager   adaptiveExit;
+CAdaptiveFilterManager adaptiveFilter;
 
 int hRSI, hATR, hEMA;
 double g_RSI, g_RSI_Prev, g_ATR, g_EMA, g_EMA_Prev, g_ATR_MA;
@@ -205,6 +238,12 @@ int OnInit()
 
    failSafe.Init(InpMaxSpreadPoints);
    ArrayResize(g_states, 0);
+
+   // Initialize Learning Engine with persistence
+   if(InpEnableLearning)
+   {
+      learning.Init(_Symbol, true);  // Enable persistence
+   }
 
    // Initialize SMC Modules
    if(InpUseSMC)
@@ -259,6 +298,55 @@ int OnInit()
       kellySizer.Init(InpRiskBase, 0.25, 1.0, InpKellyFraction, 30, InpDailyMaxDD, InpWeeklyMaxDD);
    }
 
+   // Initialize Trade Journal (Learning System)
+   if(InpEnableLearning && InpLogTradesToFile)
+   {
+      if(!tradeJournal.Init(_Symbol, InpLearningHistory))
+         Print("Warning: Trade Journal initialization failed");
+   }
+
+   // Initialize Performance Analyzer
+   if(InpEnableLearning)
+   {
+      if(!performanceAnalyzer.Init(_Symbol, &tradeJournal, InpMinTradesForLearning))
+         Print("Warning: Performance Analyzer initialization failed");
+   }
+
+   // Initialize Pattern Memory & Recognizer
+   if(InpEnableLearning)
+   {
+      if(!patternMemory.Init(_Symbol, true, 10))
+         Print("Warning: Pattern Memory initialization failed");
+
+      if(!patternRecognizer.Init(_Symbol, &patternMemory, 15, 0.65, 0.5))
+         Print("Warning: Pattern Recognizer initialization failed");
+   }
+
+   // Initialize Adaptive Modules
+   if(InpEnableLearning)
+   {
+      // Adaptive Risk Manager
+      if(!adaptiveRisk.Init(_Symbol, &performanceAnalyzer, &patternRecognizer,
+                            InpRiskBase, 0.1, 0.5, InpEnableAdaptiveRisk))
+         Print("Warning: Adaptive Risk Manager initialization failed");
+
+      // Adaptive Exit Manager
+      ExitParameters exitParams;
+      exitParams.trailStartR = InpTrailStart_R;
+      exitParams.trailDistanceATR = InpTrailATR_Mult;
+      exitParams.beThresholdR = InpBE_Threshold_R;
+      exitParams.partialTPR = InpPartialTP_R;
+      exitParams.partialPercent = InpPartialClosePercent;
+
+      if(!adaptiveExit.Init(_Symbol, &learning, exitParams, InpEnableAdaptiveExits))
+         Print("Warning: Adaptive Exit Manager initialization failed");
+
+      // Adaptive Filter Manager
+      if(!adaptiveFilter.Init(_Symbol, &patternRecognizer, &performanceAnalyzer,
+                              InpMinConfluenceEntry, InpEnableAdaptiveFilters))
+         Print("Warning: Adaptive Filter Manager initialization failed");
+   }
+
    // Check if Governor is running
    string govStatus = allocator.IsGovernorActive() ? "Connected" : "Standalone";
 
@@ -271,6 +359,17 @@ int OnInit()
    Print("  News Filter: ", InpUseNewsFilter ? "ON" : "OFF");
    Print("  Killzone Filter: ", InpUseKillzoneFilter ? "ON" : "OFF");
    Print("  Kelly Sizing: ", InpUseKelly ? "ON" : "OFF");
+   Print("  Learning System: ", InpEnableLearning ? "ON" : "OFF");
+   if(InpEnableLearning && InpLogTradesToFile)
+      Print("  Trade Journal: ACTIVE (", InpLearningHistory, " days history)");
+   if(InpEnableLearning)
+   {
+      Print("  Performance Analyzer: ACTIVE (", performanceAnalyzer.GetTradeCount(), " trades loaded)");
+      Print("  Pattern Learning: ACTIVE (", patternMemory.GetPatternCount(), " patterns loaded)");
+      Print("  Adaptive Risk: ", InpEnableAdaptiveRisk ? "ON" : "OFF");
+      Print("  Adaptive Exits: ", InpEnableAdaptiveExits ? "ON" : "OFF");
+      Print("  Adaptive Filters: ", InpEnableAdaptiveFilters ? "ON" : "OFF");
+   }
    Print("===========================================");
 
    return INIT_SUCCEEDED;
@@ -293,6 +392,13 @@ void OnDeinit(const int reason)
 
    // Cleanup MTF
    if(InpUseMTF) mtfAnalysis.Deinit();
+
+   // Save learning data before exit
+   if(InpEnableLearning)
+   {
+      learning.Deinit();
+      patternMemory.Deinit();
+   }
 
    Comment("");
 }
@@ -507,6 +613,32 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       g_states[sz].initialRisk = slDist;
       g_states[sz].quality = quality;
 
+      // LOG TO TRADE JOURNAL
+      if(InpEnableLearning && InpLogTradesToFile)
+      {
+         TradeContext ctx;
+         ctx.ticket = ticket;
+         ctx.entryTime = TimeCurrent();
+         ctx.symbol = _Symbol;
+         ctx.killzone = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
+         MqlDateTime dt;
+         TimeToStruct(TimeCurrent(), dt);
+         ctx.dayOfWeek = dt.day_of_week;
+         ctx.regime = g_currentRegime;
+         ctx.quality = quality;
+         ctx.confluenceScore = g_currentConfluence;
+         ctx.direction = (type == ORDER_TYPE_BUY) ? 1 : -1;
+         ctx.entryPrice = price;
+         ctx.sl = sl;
+         ctx.tp = 0;
+         ctx.lots = lots;
+         ctx.riskPercent = riskPct;
+         ctx.winRateAtEntry = killSwitch.GetWinRate();
+         ctx.rollingRAtEntry = killSwitch.GetRollingR();
+
+         tradeJournal.LogEntry(ctx);
+      }
+
       Print("Opened ", EnumToString(type), " Ticket:", ticket, " Quality:", EnumToString(quality));
       return true;
    }
@@ -533,6 +665,52 @@ void ManagePositions()
          {
              int deals = HistoryDealsTotal();
              for(int d=0; d<deals; d++) profitMoney += HistoryDealGetDouble(HistoryDealGetTicket(d), DEAL_PROFIT);
+
+             // Get trade details for logging
+             double risk = g_states[i].initialRisk;
+             double profitR = (risk > 0) ? profitMoney / (account.Equity() * (g_states[i].initialRisk / 100.0)) : 0;
+
+             // Get MFE/MAE from learning engine
+             double mfe = 0, mae = 0;
+             learning.GetMFEMAE(ticket, mfe, mae);
+
+             // LOG EXIT TO TRADE JOURNAL
+             if(InpEnableLearning && InpLogTradesToFile)
+             {
+                ExitContext exitCtx;
+                exitCtx.exitTime = TimeCurrent();
+                exitCtx.exitPrice = 0;  // Get from history if needed
+                exitCtx.exitType = (profitMoney > 0) ? "TP" : "SL";
+                exitCtx.profitR = profitR;
+                exitCtx.profitMoney = profitMoney;
+                exitCtx.durationMinutes = 0;  // Calculate if needed
+                exitCtx.mfe = mfe;
+                exitCtx.mae = mae;
+                exitCtx.partialClosed = g_states[i].partialClosed;
+
+                tradeJournal.LogExit(ticket, exitCtx);
+
+                // Update Pattern Database
+                // Note: We reconstruct a simplified ConfluenceFactors from available data
+                // Future enhancement: Store full factors at entry time
+                ConfluenceFactors factors;
+                factors.killzone = exitCtx.exitType == "TP" ? KILLZONE_LONDON_OPEN : KILLZONE_NONE;  // Placeholder
+                factors.regime = g_currentRegime;
+                factors.confluenceScore = g_currentConfluence;
+                // Individual factors would need to be captured at entry for full accuracy
+                // For now, we estimate based on score
+                factors.trendAligned = (g_currentConfluence >= 1.0);
+                factors.structureBreak = (g_currentConfluence >= 2.0);
+                factors.fibZone = (g_currentConfluence >= 3.0);
+                factors.rsiMomentum = (g_currentConfluence >= 4.0);
+                factors.orderBlock = (g_currentConfluence >= 5.0);
+                factors.fvg = (g_currentConfluence >= 6.0);
+                factors.liquiditySweep = (g_currentConfluence >= 7.0);
+                factors.killzoneActive = InpUseKillzoneFilter && killzoneOptimizer.IsTradingAllowed();
+                factors.mtfAligned = (g_currentConfluence >= 8.0);
+
+                patternRecognizer.UpdatePatternDatabase(factors, profitR);
+             }
 
              // Commit to Learning Engine
              learning.OnTradeClosed(ticket);
@@ -1037,6 +1215,85 @@ void UpdateDashboard()
       txt += "-------------------------------------------\n";
       txt += kellySizer.ToString() + "\n";
       txt += "Daily DD: " + DoubleToString(kellySizer.GetDailyDD(), 2) + "/" + DoubleToString(InpDailyMaxDD, 1) + "%\n";
+   }
+
+   // Learning System stats
+   if(InpEnableLearning && InpLogTradesToFile)
+   {
+      txt += "-------------------------------------------\n";
+      txt += "LEARNING SYSTEM\n";
+      txt += "Trades Logged: " + IntegerToString(tradeJournal.GetTotalTrades()) + "\n";
+      txt += "Open Trades: " + IntegerToString(tradeJournal.GetOpenTrades()) + "\n";
+
+      int totalTrades = tradeJournal.GetTotalTrades();
+      bool learningActive = (totalTrades >= InpMinTradesForLearning);
+      txt += "Status: " + (learningActive ? "ACTIVE" : "Collecting Data") + "\n";
+
+      if(!learningActive && totalTrades > 0)
+         txt += "Progress: " + IntegerToString(totalTrades) + "/" + IntegerToString(InpMinTradesForLearning) + " trades\n";
+
+      // Show performance analytics if learning is active
+      if(learningActive)
+      {
+         performanceAnalyzer.RefreshData();
+         ContextStats overall = performanceAnalyzer.GetOverallStats();
+
+         if(overall.tradeCount > 0)
+         {
+            txt += "Win Rate: " + DoubleToString(overall.winRate * 100, 1) + "% | ";
+            txt += "Avg R: " + DoubleToString(overall.avgR, 2) + "\n";
+            txt += "Expectancy: " + DoubleToString(overall.expectancy, 3) + "R | ";
+            txt += "PF: " + DoubleToString(overall.profitFactor, 2) + "\n";
+
+            // Show best performing contexts
+            ENUM_KILLZONE bestKZ = performanceAnalyzer.GetBestKillzone();
+            if(bestKZ != KILLZONE_NONE)
+            {
+               txt += "Best Killzone: " + KillzoneToString(bestKZ);
+               ContextStats kzStats = performanceAnalyzer.GetStatsByKillzone(bestKZ);
+               txt += " (WR: " + DoubleToString(kzStats.winRate * 100, 1) + "%)\n";
+            }
+
+            MARKET_REGIME bestRegime = performanceAnalyzer.GetBestRegime();
+            if(bestRegime != REGIME_UNKNOWN)
+            {
+               txt += "Best Regime: " + IntegerToString((int)bestRegime);
+               ContextStats regStats = performanceAnalyzer.GetStatsByRegime(bestRegime);
+               txt += " (E: " + DoubleToString(regStats.expectancy, 2) + "R)\n";
+            }
+
+            // Show pattern recognition stats
+            int patternCount = patternMemory.GetPatternCount();
+            if(patternCount > 0)
+            {
+               txt += "\nPATTERN LEARNING\n";
+               txt += patternRecognizer.GetStatsString() + "\n";
+            }
+
+            // Show adaptive module status
+            if(InpEnableAdaptiveRisk || InpEnableAdaptiveExits || InpEnableAdaptiveFilters)
+            {
+               txt += "\nADAPTIVE BEHAVIOR\n";
+
+               if(InpEnableAdaptiveRisk)
+               {
+                  ENUM_KILLZONE currentKZ = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
+                  txt += adaptiveRisk.GetAdjustmentSummary(currentKZ, g_currentRegime) + "\n";
+               }
+
+               if(InpEnableAdaptiveExits)
+               {
+                  txt += adaptiveExit.GetAdjustmentSummary(g_currentRegime) + "\n";
+               }
+
+               if(InpEnableAdaptiveFilters)
+               {
+                  ENUM_KILLZONE currentKZ = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
+                  txt += adaptiveFilter.GetFilterStatus(currentKZ, g_currentRegime) + "\n";
+               }
+            }
+         }
+      }
    }
 
    txt += "===========================================\n";
