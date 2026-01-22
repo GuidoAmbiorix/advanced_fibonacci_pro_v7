@@ -31,9 +31,13 @@
 #define GV_DAILY_START_EQUITY    "PG_DailyStartEquity"     // Equity at day start
 #define GV_WEEKLY_START_EQUITY   "PG_WeeklyStartEquity"    // Equity at week start
 
-// Session Status
-#define GV_CURRENT_SESSION       "PG_CurrentSession"       // Current trading session
-#define GV_SESSION_QUALITY       "PG_SessionQuality"       // Session quality rating
+// Session Status (Legacy - kept for backwards compatibility)
+#define GV_CURRENT_SESSION       "PG_CurrentSession"       // Current trading session (legacy)
+#define GV_SESSION_QUALITY       "PG_SessionQuality"       // Session quality rating (legacy)
+
+// Killzone Status (New ICT-based system)
+#define GV_CURRENT_KILLZONE      "PG_CurrentKillzone"       // Current killzone
+#define GV_KILLZONE_QUALITY      "PG_KillzoneQuality"      // Killzone quality rating
 
 // News Filter Status
 #define GV_NEWS_BLOCKED          "PG_NewsBlocked"          // 1 = in news window
@@ -213,6 +217,24 @@ int GetSessionQuality()
 {
    if(!GlobalVariableCheck(GV_SESSION_QUALITY)) return 0;
    return (int)GlobalVariableGet(GV_SESSION_QUALITY);
+}
+
+//+------------------------------------------------------------------+
+//| GET CURRENT KILLZONE                                              |
+//+------------------------------------------------------------------+
+int GetCurrentKillzone()
+{
+   if(!GlobalVariableCheck(GV_CURRENT_KILLZONE)) return 0;
+   return (int)GlobalVariableGet(GV_CURRENT_KILLZONE);
+}
+
+//+------------------------------------------------------------------+
+//| GET KILLZONE QUALITY                                              |
+//+------------------------------------------------------------------+
+int GetKillzoneQuality()
+{
+   if(!GlobalVariableCheck(GV_KILLZONE_QUALITY)) return 0;
+   return (int)GlobalVariableGet(GV_KILLZONE_QUALITY);
 }
 
 //+------------------------------------------------------------------+

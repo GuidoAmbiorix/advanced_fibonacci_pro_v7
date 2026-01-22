@@ -29,7 +29,7 @@
 // Multi-Timeframe and Filters
 #include "Include\MTF_Confluence.mqh"
 #include "Include\NewsFilter.mqh"
-#include "Include\SessionOptimizer.mqh"
+#include "Include\KillzoneOptimizer.mqh"
 #include "Include\KellyPositionSizer.mqh"
 
 //+------------------------------------------------------------------+
@@ -42,12 +42,10 @@ input group "======= DIRECTION ======="
 input int               InpDirection = 0;                 // 0=Both, 1=Buy, 2=Sell
 input int               InpBrokerUTCOffset = 2;
 
-input group "======= SESSION ======="
-input int               InpSessionFilter = 1;             // 0=All, 1=London+NY
-input int               InpLondonStart = 7;
-input int               InpLondonEnd = 16;
-input int               InpNYStart = 12;
-input int               InpNYEnd = 21;
+input group "======= KILLZONES ======="
+input bool              InpUseKillzoneFilter = true;      // Enable Killzone Filter
+input bool              InpUseSymbolDefaults = true;      // Use Symbol-Specific Defaults
+input bool              InpAutoDST = true;                // Auto-adjust for DST
 
 input group "======= FIBONACCI ======="
 input int               InpSwingLookback = 20;
@@ -116,10 +114,12 @@ input bool              InpUseNewsFilter = true;          // Enable News Filter
 input int               InpNewsMinutesBefore = 30;        // Minutes Before News
 input int               InpNewsMinutesAfter = 30;         // Minutes After News
 
-input group "======= SESSION OPTIMIZER ======="
-input bool              InpUseSessionFilter = true;       // Enable Session Filter
-input bool              InpSkipAsianSession = false;      // Skip Asian Session
-input bool              InpFocusOverlapOnly = false;      // Focus on Overlap Only
+input group "======= KILLZONE SELECTION (if not using Symbol Defaults) ======="
+input bool              InpEnableAsianKZ = false;         // Enable Asian Killzone
+input bool              InpEnableLondonOpenKZ = true;     // Enable London Open Killzone
+input bool              InpEnableNYKZ = true;             // Enable NY Killzone
+input bool              InpEnableLondonCloseKZ = false;   // Enable London Close Killzone
+input bool              InpFocusPrimeOnly = false;        // Only Trade Prime Killzones
 
 input group "======= KELLY POSITION SIZING ======="
 input bool              InpUseKelly = true;               // Enable Kelly Sizing
@@ -151,14 +151,13 @@ CSMCLiquiditySweep  smcLiquidity;
 // ADVANCED FILTER OBJECTS
 CMTFConfluence      mtfAnalysis;
 CNewsFilter         newsFilter;
-CSessionOptimizer   sessionOptimizer;
+CKillzoneOptimizer  killzoneOptimizer;
 CKellyPositionSizer kellySizer;
 
 int hRSI, hATR, hEMA;
 double g_RSI, g_RSI_Prev, g_ATR, g_EMA, g_EMA_Prev, g_ATR_MA;
 
 datetime lastBarTime = 0;
-bool g_inSession = false;
 
 int g_entryDirection = 0;
 double g_currentConfluence = 0;
@@ -236,10 +235,22 @@ int OnInit()
       newsFilter.Init(_Symbol, InpNewsMinutesBefore, InpNewsMinutesAfter, true);
    }
 
-   // Initialize Session Optimizer
-   if(InpUseSessionFilter)
+   // Initialize Killzone Optimizer
+   if(InpUseKillzoneFilter)
    {
-      sessionOptimizer.Init(_Symbol, InpBrokerUTCOffset, InpSkipAsianSession, InpFocusOverlapOnly);
+      if(InpUseSymbolDefaults)
+      {
+         // Use symbol-specific defaults
+         killzoneOptimizer.Init(_Symbol, InpBrokerUTCOffset, true, InpAutoDST, InpFocusPrimeOnly);
+      }
+      else
+      {
+         // Use manual killzone selection
+         killzoneOptimizer.Init(_Symbol, InpBrokerUTCOffset,
+                                InpEnableAsianKZ, InpEnableLondonOpenKZ,
+                                InpEnableNYKZ, InpEnableLondonCloseKZ,
+                                InpFocusPrimeOnly, InpAutoDST);
+      }
    }
 
    // Initialize Kelly Position Sizer
@@ -258,7 +269,7 @@ int OnInit()
    Print("  SMC: ", InpUseSMC ? "ON" : "OFF");
    Print("  MTF: ", InpUseMTF ? "ON" : "OFF");
    Print("  News Filter: ", InpUseNewsFilter ? "ON" : "OFF");
-   Print("  Session Filter: ", InpUseSessionFilter ? "ON" : "OFF");
+   Print("  Killzone Filter: ", InpUseKillzoneFilter ? "ON" : "OFF");
    Print("  Kelly Sizing: ", InpUseKelly ? "ON" : "OFF");
    Print("===========================================");
 
@@ -352,8 +363,8 @@ void OnTick()
    // --- MODULE: NEWS FILTER ---
    if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) return;
 
-   // --- MODULE: SESSION FILTER ---
-   if(InpUseSessionFilter && !sessionOptimizer.IsTradingAllowed()) return;
+   // --- MODULE: KILLZONE FILTER ---
+   if(InpUseKillzoneFilter && !killzoneOptimizer.IsTradingAllowed()) return;
 
    // --- MODULE: KELLY POSITION SIZER (DD LIMITS) ---
    if(InpUseKelly && !kellySizer.IsTradingAllowed()) return;
@@ -363,8 +374,6 @@ void OnTick()
    if(g_currentRegime == REGIME_CHAOS) return;
 
    // PRE-ENTRY FILTERS
-   g_inSession = CheckSessionFilter();
-   if(!g_inSession) return;
    if(!CheckSpread()) return;
 
    // 1. RSI Compression Filter
@@ -417,10 +426,10 @@ void OnTick()
 
          // Apply additional multipliers
          double newsMultiplier = InpUseNewsFilter ? newsFilter.GetNewsRiskMultiplier() : 1.0;
-         double sessionMultiplier = InpUseSessionFilter ? sessionOptimizer.GetRiskMultiplier() : 1.0;
+         double killzoneMultiplier = InpUseKillzoneFilter ? killzoneOptimizer.GetRiskMultiplier() : 1.0;
          double regimeMultiplier = (g_currentRegime == REGIME_TREND) ? 1.0 : 0.8;
 
-         baseRisk = kellySizer.GetAdjustedRisk(quality, newsMultiplier, sessionMultiplier, regimeMultiplier);
+         baseRisk = kellySizer.GetAdjustedRisk(quality, newsMultiplier, killzoneMultiplier, regimeMultiplier);
       }
 
       // Apply tier multiplier
@@ -758,7 +767,7 @@ void UpdateModules()
 
    // Update filters
    if(InpUseNewsFilter) newsFilter.Update();
-   if(InpUseSessionFilter) sessionOptimizer.Update();
+   if(InpUseKillzoneFilter) killzoneOptimizer.Update();
    if(InpUseKelly) kellySizer.Update();
 }
 
@@ -844,9 +853,9 @@ double CalculateConfluenceScore(int direction)
       score += smcLiquidity.GetConfluenceScore(direction);
    }
 
-   // 12. Session Timing Bonus - up to 0.5 points
-   if(InpUseSessionFilter)
-      score += sessionOptimizer.GetConfluenceScore();
+   // 12. Killzone Timing Bonus - up to 0.5 points
+   if(InpUseKillzoneFilter)
+      score += killzoneOptimizer.GetConfluenceScore();
 
    return score;  // Max possible: ~12 points
 }
@@ -901,14 +910,6 @@ bool UpdateIndicators()
    }
 
    return true;
-}
-
-bool CheckSessionFilter()
-{
-   if(InpSessionFilter == 0) return true;
-   MqlDateTime dt; TimeToStruct(TimeCurrent(), dt);
-   int utc = (dt.hour - InpBrokerUTCOffset + 24) % 24;
-   return ((utc >= InpLondonStart && utc < InpLondonEnd) || (utc >= InpNYStart && utc < InpNYEnd));
 }
 
 bool CheckChopFilter()
@@ -988,7 +989,7 @@ void UpdateDashboard()
 
    // Check for blocks
    if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) tradingStatus = "NEWS BLOCKED";
-   if(InpUseSessionFilter && !sessionOptimizer.IsTradingAllowed()) tradingStatus = "SESSION OFF";
+   if(InpUseKillzoneFilter && !killzoneOptimizer.IsTradingAllowed()) tradingStatus = "KILLZONE OFF";
    if(InpUseKelly && !kellySizer.IsTradingAllowed()) tradingStatus = "DD LIMIT";
 
    string txt = "===========================================\n";
@@ -1000,11 +1001,9 @@ void UpdateDashboard()
    txt += "Price: " + DoubleToString(price, (int)symbolInfo.Digits()) + "\n";
    txt += "RSI: " + DoubleToString(g_RSI, 1) + "\n";
 
-   // Session info
-   if(InpUseSessionFilter)
-      txt += "Session: " + sessionOptimizer.GetSessionName() + " (" + sessionOptimizer.GetQualityName() + ")\n";
-   else
-      txt += "Session: " + (g_inSession ? "Active" : "Inactive") + "\n";
+   // Killzone info
+   if(InpUseKillzoneFilter)
+      txt += killzoneOptimizer.ToString() + "\n";
 
    // News info
    if(InpUseNewsFilter)
