@@ -1,12 +1,17 @@
 """
 Group Generator - Generate valid 4-symbol combinations.
 Applies correlation and diversity rules to filter candidates.
+Supports parallel processing for performance optimization.
 """
 
 from itertools import combinations
 from typing import List, Dict, Set, Optional
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import streamlit as st
 
+from ..config import config
+from ..logger import get_logger, LogContext
 from .symbol_metadata import (
     SYMBOL_METADATA,
     SymbolClass,
@@ -16,37 +21,48 @@ from .symbol_metadata import (
 )
 from .correlation_engine import CorrelationEngine
 
+logger = get_logger(__name__)
+
 
 class GroupGenerator:
     """
     Generates valid trading groups (4 symbols each).
-    
+
     Rules:
-    - Maximum 2 symbols with same primary driver
-    - Maximum 1 high correlation (>0.75) pair per group
-    - Must include at least 2 different asset classes
+    - Maximum N symbols with same primary driver (configurable)
+    - Maximum correlation threshold (configurable)
+    - Must include at least N different asset classes (configurable)
     - Should have mix of Risk-On and Risk-Off
     """
-    
-    # Generation rules
-    MAX_SAME_DRIVER = 2
-    MAX_HIGH_CORRELATION = 0.75
-    MIN_ASSET_CLASSES = 2
-    
+
     def __init__(
-        self, 
+        self,
         correlation_engine: Optional[CorrelationEngine] = None,
-        symbols: Optional[List[str]] = None
+        symbols: Optional[List[str]] = None,
+        use_parallel: bool = True
     ):
         """
         Initialize group generator.
-        
+
         Args:
             correlation_engine: Engine for real-time correlations
             symbols: List of available symbols (defaults to all 20)
+            use_parallel: Enable parallel processing for group generation
         """
         self.symbols = symbols or get_all_symbols()
         self.correlation_engine = correlation_engine or CorrelationEngine()
+        self.use_parallel = use_parallel
+
+        # Load rules from config
+        self.MAX_SAME_DRIVER = config.MAX_SAME_DRIVER
+        self.MAX_HIGH_CORRELATION = config.CORRELATION_HIGH_THRESHOLD
+        self.MIN_ASSET_CLASSES = config.MIN_ASSET_CLASSES
+        self.GROUP_SIZE = config.GROUP_SIZE
+
+        logger.info(
+            f"GroupGenerator initialized: {len(self.symbols)} symbols, "
+            f"parallel={use_parallel}"
+        )
     
     def _get_symbol_drivers(self, symbols: List[str]) -> Dict[str, int]:
         """Count symbols by primary driver."""
@@ -147,42 +163,106 @@ class GroupGenerator:
         """
         return [list(combo) for combo in combinations(self.symbols, group_size)]
     
+    def _process_combination(self, combo: tuple) -> Optional[Dict]:
+        """
+        Process a single combination and return group info if valid.
+
+        Args:
+            combo: Tuple of symbols
+
+        Returns:
+            Group info dict or None if invalid
+        """
+        combo_list = list(combo)
+
+        if not self.is_valid_group(combo_list):
+            return None
+
+        # Calculate group metrics
+        return {
+            "symbols": combo_list,
+            "max_correlation": self.correlation_engine.get_group_max_correlation(combo_list),
+            "avg_correlation": self.correlation_engine.get_group_avg_correlation(combo_list),
+            "risk_balance": self._calculate_risk_balance(combo_list),
+            "classes": [c.value for c in self._get_symbol_classes(combo_list)],
+            "drivers": self._get_symbol_drivers(combo_list)
+        }
+
     def generate_valid_groups(
-        self, 
-        group_size: int = 4,
+        self,
+        group_size: Optional[int] = None,
         max_groups: Optional[int] = None
     ) -> List[Dict]:
         """
         Generate valid groups that pass all rules.
-        
+        Supports parallel processing for better performance.
+
         Args:
-            group_size: Number of symbols per group (default 4)
+            group_size: Number of symbols per group (defaults to config.GROUP_SIZE)
             max_groups: Maximum groups to return (None = all)
-            
+
         Returns:
             List of dicts with group info and metrics
         """
-        valid_groups = []
-        all_combos = self.generate_all_combinations(group_size)
-        
-        for combo in all_combos:
-            if self.is_valid_group(combo):
-                # Calculate group metrics
-                group_info = {
-                    "symbols": combo,
-                    "max_correlation": self.correlation_engine.get_group_max_correlation(combo),
-                    "avg_correlation": self.correlation_engine.get_group_avg_correlation(combo),
-                    "risk_balance": self._calculate_risk_balance(combo),
-                    "classes": [c.value for c in self._get_symbol_classes(combo)],
-                    "drivers": self._get_symbol_drivers(combo)
-                }
-                
-                valid_groups.append(group_info)
-                
-                if max_groups and len(valid_groups) >= max_groups:
-                    break
-        
-        return valid_groups
+        group_size = group_size or self.GROUP_SIZE
+
+        try:
+            with LogContext(logger, f"generate_valid_groups (size={group_size})"):
+                all_combos = list(combinations(self.symbols, group_size))
+                total_combos = len(all_combos)
+
+                logger.info(f"Checking {total_combos} possible combinations")
+
+                valid_groups = []
+
+                if self.use_parallel and total_combos > 100:
+                    # Use parallel processing for large combination sets
+                    logger.info("Using parallel processing for group generation")
+
+                    with ThreadPoolExecutor(max_workers=4) as executor:
+                        # Submit all combinations for processing
+                        futures = {
+                            executor.submit(self._process_combination, combo): combo
+                            for combo in all_combos
+                        }
+
+                        # Collect results as they complete
+                        for future in as_completed(futures):
+                            if max_groups and len(valid_groups) >= max_groups:
+                                # Cancel remaining futures
+                                for f in futures:
+                                    f.cancel()
+                                break
+
+                            try:
+                                result = future.result()
+                                if result:
+                                    valid_groups.append(result)
+                            except Exception as e:
+                                logger.warning(f"Error processing combination: {e}")
+
+                else:
+                    # Sequential processing for smaller sets
+                    logger.info("Using sequential processing for group generation")
+
+                    for combo in all_combos:
+                        result = self._process_combination(combo)
+                        if result:
+                            valid_groups.append(result)
+
+                            if max_groups and len(valid_groups) >= max_groups:
+                                break
+
+                logger.info(
+                    f"Found {len(valid_groups)} valid groups out of "
+                    f"{total_combos} combinations ({len(valid_groups)/total_combos*100:.1f}%)"
+                )
+
+                return valid_groups
+
+        except Exception as e:
+            logger.error(f"Error generating valid groups: {e}", exc_info=True)
+            return []
     
     def filter_by_correlation(
         self, 

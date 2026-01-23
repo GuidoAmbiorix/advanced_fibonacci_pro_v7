@@ -9,6 +9,7 @@ from enum import Enum
 import pandas as pd
 from pathlib import Path
 
+from ..config import config
 from .symbol_metadata import get_all_symbols, SYMBOL_METADATA
 from .set_parser import parse_all_sets
 from .correlation_engine import CorrelationEngine
@@ -28,7 +29,7 @@ class GovernorMode(Enum):
 class PortfolioGovernor:
     """
     Main Portfolio Governor - Orchestrates portfolio selection.
-    
+
     Manages:
     - Symbol universe (20 symbols from .set files)
     - Real-time scoring and correlation
@@ -36,8 +37,8 @@ class PortfolioGovernor:
     - Active group selection
     - MT5 EA communication
     """
-    
-    DEFAULT_SETS_PATH = Path(r"C:\Users\gamparo\Desktop\Projects\advanced_fibonacci_pro_v7\mt5\portafolio_manager\sets")
+
+    DEFAULT_SETS_PATH = config.MT5_SETS_PATH
     
     def __init__(
         self,
@@ -60,8 +61,8 @@ class PortfolioGovernor:
         # Initialize engines
         self.correlation_engine = CorrelationEngine(
             symbols=self.available_symbols,
-            timeframe="H1",
-            bars=100
+            timeframe=config.CORRELATION_TIMEFRAME,
+            bars=config.CORRELATION_BARS
         )
         self.symbol_scorer = SymbolScorer(performance_data=performance_data)
         self.group_generator = GroupGenerator(

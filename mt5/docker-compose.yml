@@ -13,8 +13,6 @@ services:
       - VNCPASSWORD=trading
     volumes:
       - mt5_config:/config
-      # Mounting the agent to a visible location in the container
-      - ./XAU_Pro_Agent.mq5:/config/XAU_Pro_Agent.mq5
     networks:
       - trading_network
     restart: unless-stopped

@@ -2,6 +2,8 @@ import streamlit as st
 from src.connector import MT5Connector
 from src import DataEngine, PerformanceAnalytics, PatternGeneric
 from src.portfolio import PortfolioGovernor, GovernorMode
+from src.config import config
+from src.logger import initialize_logging, get_logger, shutdown_logging
 from components import (
     display_kpi_metrics,
     ChartBuilder,
@@ -27,13 +29,19 @@ import MetaTrader5 as mt5
 from datetime import timedelta, datetime
 import time
 
+# Initialize logging system
+initialize_logging()
+logger = get_logger(__name__)
+
 # Page Config
 st.set_page_config(
-    page_title="Elite MT5 Trading Analytics",
+    page_title=config.PAGE_TITLE,
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+logger.info("Application started")
 
 # Custom CSS for better aesthetics
 st.markdown("""

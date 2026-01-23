@@ -9,13 +9,14 @@ from .correlation_engine import CorrelationEngine
 from .symbol_scorer import SymbolScorer
 from .group_generator import GroupGenerator
 from .group_ranker import GroupRanker
-from .portfolio_governor import PortfolioGovernor
+from .portfolio_governor import PortfolioGovernor, GovernorMode
 from .ea_communicator import EACommunicator
+from .portfolio_tracker import PortfolioTracker
 
 __all__ = [
     "SYMBOL_METADATA",
     "SymbolClass",
-    "RiskProfile", 
+    "RiskProfile",
     "VolatilityLevel",
     "parse_set_file",
     "parse_all_sets",
@@ -24,5 +25,7 @@ __all__ = [
     "GroupGenerator",
     "GroupRanker",
     "PortfolioGovernor",
+    "GovernorMode",
     "EACommunicator",
+    "PortfolioTracker",
 ]

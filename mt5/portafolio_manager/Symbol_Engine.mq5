@@ -96,6 +96,16 @@ input group "======= RISK (Before Governor Scaling) ======="
 input double            InpRiskBase = 0.25;
 input double            InpRiskAddOn1 = 0.15;
 input double            InpRiskAddOn2 = 0.10;
+input double            InpMaxRisk = 0.75;               // Maximum Risk % (Kelly Limit)
+input double            InpMaxLotsPerTrade = 0.5;        // Max Lots Per Trade
+input bool              InpEnableMarginCheck = true;     // Validate Margin Before Opening
+
+input group "======= TAKE PROFIT ======="
+input int               InpTPMode = 2;                    // 0=None, 1=Fixed, 2=Adaptive, 3=Hybrid
+input double            InpFixedTP_R = 3.0;               // Fixed TP (R-multiple)
+input double            InpMinTP_R = 1.5;                 // Minimum TP (R-multiple)
+input double            InpMaxTP_R = 5.0;                 // Maximum TP (R-multiple)
+input bool              InpTPUseLearnedMFE = true;        // Use Learned MFE for TP
 
 input group "======= EXIT ======="
 input int               InpTrailingMode = 1;              // 0=Off, 1=Runner, 2=Full
@@ -295,7 +305,28 @@ int OnInit()
    // Initialize Kelly Position Sizer
    if(InpUseKelly)
    {
-      kellySizer.Init(InpRiskBase, 0.25, 1.0, InpKellyFraction, 30, InpDailyMaxDD, InpWeeklyMaxDD);
+      // Adjust maxRisk based on account size for safety
+      double maxRiskAdjusted = InpMaxRisk;
+      double equity = account.Equity();
+
+      // Auto-adjust for small accounts to prevent margin issues
+      if(equity < 10000)
+      {
+         maxRiskAdjusted = MathMin(InpMaxRisk, 0.5);   // Small accounts: max 0.5%
+         Print("Small account ($", DoubleToString(equity, 2), ") - maxRisk limited to ", maxRiskAdjusted, "%");
+      }
+      else if(equity < 50000)
+      {
+         maxRiskAdjusted = MathMin(InpMaxRisk, 0.75);  // Medium accounts: max 0.75%
+         Print("Medium account ($", DoubleToString(equity, 2), ") - maxRisk limited to ", maxRiskAdjusted, "%");
+      }
+      else
+      {
+         maxRiskAdjusted = InpMaxRisk;  // Large accounts: use input parameter
+         Print("Large account ($", DoubleToString(equity, 2), ") - using maxRisk: ", maxRiskAdjusted, "%");
+      }
+
+      kellySizer.Init(InpRiskBase, 0.25, maxRiskAdjusted, InpKellyFraction, 30, InpDailyMaxDD, InpWeeklyMaxDD);
    }
 
    // Initialize Trade Journal (Learning System)
@@ -439,6 +470,77 @@ double GetSymbolEdgeFactor()
    if(winRate > 0.6) return 1.2;
    if(winRate < 0.45) return 0.7;
    return 1.0;
+}
+
+//+------------------------------------------------------------------+
+//| Calculate Take Profit Level                                      |
+//+------------------------------------------------------------------+
+double CalculateTakeProfit(double price, double slDist, int direction,
+                          ENTRY_QUALITY quality, double atr)
+{
+   if(InpTPMode == 0) return 0;  // No TP
+
+   double tpR = 0;
+
+   // MODE 1: Fixed TP
+   if(InpTPMode == 1)
+   {
+      tpR = InpFixedTP_R;
+   }
+   // MODE 2 & 3: Adaptive TP
+   else if(InpTPMode == 2 || InpTPMode == 3)
+   {
+      // Check if should use fixed TP based on regime
+      if(InpEnableAdaptiveExits && adaptiveExit.ShouldUseFixedTP(g_currentRegime, quality))
+      {
+         // Use AdaptiveExitManager's learned TP calculation
+         tpR = adaptiveExit.CalculateFixedTP(g_currentRegime, quality, atr, slDist);
+      }
+      else if(InpTPUseLearnedMFE)
+      {
+         // Fallback: Use MFE-based calculation
+         double avgMFE = learning.GetAvgMFE();
+         if(avgMFE > 0 && atr > 0)
+         {
+            tpR = (avgMFE / atr) * 0.75;  // 75% of learned MFE
+         }
+         else
+         {
+            tpR = InpFixedTP_R;  // Fallback to fixed if no learning data
+         }
+      }
+      else
+      {
+         tpR = InpFixedTP_R;  // No learning data available
+      }
+
+      // Quality adjustments
+      if(quality == EQ_ELITE) tpR *= 1.2;
+      else if(quality == EQ_STRONG) tpR *= 1.1;
+      else if(quality == EQ_WEAK) tpR *= 0.8;
+
+      // Regime adjustments
+      if(g_currentRegime == REGIME_TREND) tpR *= 1.3;
+      else if(g_currentRegime == REGIME_RANGE) tpR *= 0.85;
+      else if(g_currentRegime == REGIME_VOLATILE) tpR *= 1.1;
+   }
+
+   // Clamp to min/max
+   if(tpR < InpMinTP_R) tpR = InpMinTP_R;
+   if(tpR > InpMaxTP_R) tpR = InpMaxTP_R;
+
+   // Calculate TP price
+   double tpDist = slDist * tpR;
+   double tp = (direction == 1) ? price + tpDist : price - tpDist;
+
+   // Ensure TP meets broker requirements
+   double stopsLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+   if(direction == 1 && (tp - price) < stopsLevel)
+      tp = price + stopsLevel + 10 * _Point;
+   else if(direction == -1 && (price - tp) < stopsLevel)
+      tp = price - stopsLevel - 10 * _Point;
+
+   return NormalizeDouble(tp, (int)symbolInfo.Digits());
 }
 
 //+------------------------------------------------------------------+
@@ -629,7 +731,21 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
 
    string comment = "SE|" + label + "|Q" + IntegerToString((int)quality);
 
-   if(trade.PositionOpen(_Symbol, type, lots, price, sl, 0, comment))
+   // Calculate TP
+   int dir = (type == ORDER_TYPE_BUY) ? 1 : -1;
+   double tp = CalculateTakeProfit(price, slDist, dir, quality, g_ATR);
+
+   // Validate margin availability BEFORE opening position
+   if(!CheckMarginRequirement(_Symbol, type, lots))
+   {
+      Print("TRADE REJECTED: Insufficient margin for ", DoubleToString(lots, 2), " lots of ", _Symbol);
+      Print("  Risk%: ", DoubleToString(riskPct, 3), " | Quality: ", EnumToString(quality));
+      failSafe.ReportFailure();
+      return false;
+   }
+
+   // Open position with TP
+   if(trade.PositionOpen(_Symbol, type, lots, price, sl, tp, comment))
    {
       ulong ticket = trade.ResultOrder();
       if(ticket == 0) if(PositionSelect(_Symbol)) ticket = PositionGetInteger(POSITION_TICKET);
@@ -662,7 +778,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
          ctx.direction = (type == ORDER_TYPE_BUY) ? 1 : -1;
          ctx.entryPrice = price;
          ctx.sl = sl;
-         ctx.tp = 0;
+         ctx.tp = tp;
          ctx.lots = lots;
          ctx.riskPercent = riskPct;
          ctx.winRateAtEntry = killSwitch.GetWinRate();
@@ -671,7 +787,13 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
          tradeJournal.LogEntry(ctx);
       }
 
-      Print("Opened ", EnumToString(type), " Ticket:", ticket, " Quality:", EnumToString(quality));
+      // Log with TP information
+      string tpInfo = (tp > 0) ?
+         " TP:" + DoubleToString(tp, (int)symbolInfo.Digits()) +
+         " (" + DoubleToString((MathAbs(tp - price) / slDist), 2) + "R)" :
+         " No TP";
+      Print("Opened ", EnumToString(type), " Ticket:", ticket,
+            " Quality:", EnumToString(quality), tpInfo);
       return true;
    }
 
@@ -831,6 +953,14 @@ void ManagePositions()
          if(quality == EQ_ELITE) { partTP *= 1.5; trailStart *= 1.5; }
       }
 
+      // Skip trailing if Mode 2 (Adaptive only) and TP is set
+      if(InpTPMode == 2 && tp > 0 && InpTrailingMode == 0)
+      {
+         continue;  // Let TP handle exit
+      }
+
+      // Mode 3 (Hybrid): Allow trailing even with TP set
+      // Mode 1 (Fixed): Respect InpTrailingMode setting
       if(InpTrailingMode >= 1)
       {
          // 1. Partial TP (using adaptive parameters)
@@ -1214,8 +1344,53 @@ double CalculateLotSize(double slDist, double riskPct)
    if(lots < minL) lots = minL;
    if(lots > maxL) lots = maxL;
 
+   // Additional safety limit for position size
+   if(lots > InpMaxLotsPerTrade)
+   {
+      Print("Lots capped from ", DoubleToString(lots, 3), " to ", DoubleToString(InpMaxLotsPerTrade, 2), " (InpMaxLotsPerTrade)");
+      lots = InpMaxLotsPerTrade;
+   }
+
    lots = MathFloor(lots / step + 0.000001) * step;
    return NormalizeDouble(lots, 2);
+}
+
+//+------------------------------------------------------------------+
+//| Check if sufficient margin available for position                 |
+//+------------------------------------------------------------------+
+bool CheckMarginRequirement(string symbol, ENUM_ORDER_TYPE type, double lots)
+{
+   // Skip check if disabled
+   if(!InpEnableMarginCheck) return true;
+
+   double freeMargin = account.FreeMargin();
+   double requiredMargin = 0;
+
+   // Calculate required margin for this position
+   double price = (type == ORDER_TYPE_BUY) ? SymbolInfoDouble(symbol, SYMBOL_ASK) : SymbolInfoDouble(symbol, SYMBOL_BID);
+
+   if(!OrderCalcMargin(type, symbol, lots, price, requiredMargin))
+   {
+      Print("ERROR: Cannot calculate margin requirement for ", symbol, " ", DoubleToString(lots, 2), " lots");
+      return false;
+   }
+
+   // Require at least 150% of needed margin for safety buffer
+   double safetyMultiplier = 1.5;
+   double safetyMargin = requiredMargin * safetyMultiplier;
+
+   if(freeMargin < safetyMargin)
+   {
+      Print("MARGIN CHECK FAILED for ", symbol, ":");
+      Print("  Required: ", DoubleToString(requiredMargin, 2),
+            " | Free: ", DoubleToString(freeMargin, 2),
+            " | Safety needed: ", DoubleToString(safetyMargin, 2));
+      Print("  Lots: ", DoubleToString(lots, 2),
+            " | Type: ", EnumToString(type));
+      return false;
+   }
+
+   return true;
 }
 
 //+------------------------------------------------------------------+
@@ -1271,6 +1446,34 @@ void UpdateDashboard()
    txt += "BUY Score: " + DoubleToString(buyS, 1) + "/12\n";
    txt += "SELL Score: " + DoubleToString(sellS, 1) + "/12\n";
    txt += "Entry Min: 5.0/12 (Good) | 6.0 (Strong) | 8.0 (Elite)\n";
+   txt += "-------------------------------------------\n";
+
+   // TP Mode Info
+   string tpMode = "OFF";
+   if(InpTPMode == 1) tpMode = "Fixed " + DoubleToString(InpFixedTP_R, 1) + "R";
+   else if(InpTPMode == 2) tpMode = "Adaptive (MFE-based)";
+   else if(InpTPMode == 3) tpMode = "Hybrid (Adaptive+Trail)";
+
+   txt += "TP Mode: " + tpMode + "\n";
+
+   // Show learned MFE/MAE if learning active
+   if(InpEnableLearning && InpTPUseLearnedMFE)
+   {
+      double avgMFE = learning.GetAvgMFE();
+      double avgMAE = learning.GetAvgMAE();
+      if(avgMFE > 0 || avgMAE > 0)
+      {
+         txt += "Learned MFE: " + DoubleToString(avgMFE / _Point, 0) + " pts | ";
+         txt += "MAE: " + DoubleToString(avgMAE / _Point, 0) + " pts\n";
+
+         if(g_ATR > 0 && avgMFE > 0)
+         {
+            double projectedTPR = (avgMFE / g_ATR) * 0.75;
+            txt += "Projected TP: " + DoubleToString(projectedTPR, 1) + "R\n";
+         }
+      }
+   }
+
    txt += "-------------------------------------------\n";
    txt += "Positions: " + IntegerToString(g_positionCount) + "/" + IntegerToString(InpMaxPositions) + "\n";
    txt += "Total R: " + DoubleToString(totalR, 2) + "\n";
