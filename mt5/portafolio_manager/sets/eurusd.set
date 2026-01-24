@@ -1,12 +1,14 @@
-; EURUSD - Optimized for Most Liquid Major Pair
+; EURUSD - Most Liquid Major Pair - Institutional Grade Setup
 ; Enhanced with SMC (Smart Money Concepts) for Institutional-Level Trading
-; Best Performance: Clean technicals, London and NY sessions
+; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
+; Best Performance: London-NY overlap (cleanest technicals, highest liquidity)
 ; Risk Profile: Conservative with precise entries
 ; Target: Win Rate 68-78%, Profit Factor 2.2+
 ; Correlation: +0.95 with GBPUSD, -0.95 with USDCHF
 
 ; ====== IDENTITY ======
 InpMagicNumber=100002
+
 ; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
@@ -67,6 +69,17 @@ InpMaxPositions=3
 InpRiskBase=0.55
 InpRiskAddOn1=0.30
 InpRiskAddOn2=0.20
+InpMaxRisk=0.75
+InpMaxLotsPerTrade=0.5
+InpEnableMarginCheck=true
+
+; ====== TAKE PROFIT ======
+; Adaptive TP for clean EUR structure
+InpTPMode=2
+InpFixedTP_R=3.0
+InpMinTP_R=1.5
+InpMaxTP_R=5.0
+InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 ; Balanced targets for ranging/trending conditions

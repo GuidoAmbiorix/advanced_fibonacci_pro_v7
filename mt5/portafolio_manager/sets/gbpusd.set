@@ -1,12 +1,15 @@
 ; GBPUSD - The Cable - Volatile Major with Strong Trends
 ; Enhanced with SMC for capturing institutional moves
-; Best Performance: London session and major news events
+; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
+; Best Performance: London session (explosive moves, deeper sweeps)
 ; Risk Profile: Moderate - wider stops due to volatility
 ; Target: Win Rate 62-72%, Profit Factor 2.0+
 ; Correlation: +0.95 with EURUSD, -0.80 with USDJPY
+; Characteristics: More impulsive moves, larger daily range, prone to sharp sweeps
 
 ; ====== IDENTITY ======
 InpMagicNumber=100003
+
 ; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
@@ -23,7 +26,7 @@ InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=true
 
 ; ====== FIBONACCI ======
-; Wider zones due to volatility
+; Wider zones due to volatility and deeper sweeps
 InpSwingLookback=20
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
@@ -63,10 +66,21 @@ InpAddOn2_R=3.5
 InpMaxPositions=3
 
 ; ====== RISK (Before Governor Scaling) ======
-; Lower base risk due to volatility
+; Lower base risk due to volatility and wider stops
 InpRiskBase=0.40
 InpRiskAddOn1=0.25
 InpRiskAddOn2=0.15
+InpMaxRisk=0.75
+InpMaxLotsPerTrade=0.5
+InpEnableMarginCheck=true
+
+; ====== TAKE PROFIT ======
+; Adaptive TP for trending nature
+InpTPMode=2
+InpFixedTP_R=3.5
+InpMinTP_R=2.0
+InpMaxTP_R=6.0
+InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 ; Wider targets for trending nature

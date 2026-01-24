@@ -92,7 +92,7 @@ public:
    //| Evaluate Entry with Adaptive Filtering                           |
    //+------------------------------------------------------------------+
    FilterDecision EvaluateEntry(double rawConfluence, ConfluenceFactors &factors,
-                                 ENUM_KILLZONE killzone, MARKET_REGIME regime)
+                                 ENUM_KILLZONE killzone, MARKET_REGIME mktRegime)
    {
       FilterDecision decision;
       decision.adjustedConfluence = rawConfluence;
@@ -122,7 +122,7 @@ public:
       decision.adjustedConfluence = rawConfluence + decision.patternBonus;
 
       // Calculate dynamic minimum threshold
-      decision.minThreshold = CalculateDynamicThreshold(factors, killzone, regime);
+      decision.minThreshold = CalculateDynamicThreshold(factors, killzone, mktRegime);
 
       // Make decision
       decision.allowEntry = (decision.adjustedConfluence >= decision.minThreshold);
@@ -140,9 +140,9 @@ public:
    //| Should Take Entry (Simplified)                                   |
    //+------------------------------------------------------------------+
    bool ShouldTakeEntry(double rawConfluence, ConfluenceFactors &factors,
-                        ENUM_KILLZONE killzone, MARKET_REGIME regime)
+                        ENUM_KILLZONE killzone, MARKET_REGIME mktRegime)
    {
-      FilterDecision decision = EvaluateEntry(rawConfluence, factors, killzone, regime);
+      FilterDecision decision = EvaluateEntry(rawConfluence, factors, killzone, mktRegime);
       return decision.allowEntry;
    }
 
@@ -162,7 +162,7 @@ public:
    //| Calculate Dynamic Minimum Confluence Threshold                   |
    //+------------------------------------------------------------------+
    double CalculateDynamicThreshold(ConfluenceFactors &factors,
-                                     ENUM_KILLZONE killzone, MARKET_REGIME regime)
+                                     ENUM_KILLZONE killzone, MARKET_REGIME mktRegime)
    {
       double threshold = m_baseMinConfluence;
 
@@ -203,7 +203,7 @@ public:
       }
 
       // Adjust threshold by regime performance
-      ContextStats regStats = m_performanceAnalyzer.GetStatsByRegime(regime);
+      ContextStats regStats = m_performanceAnalyzer.GetStatsByRegime(mktRegime);
       if(regStats.tradeCount >= m_minSampleSize)
       {
          if(regStats.expectancy < 0)
@@ -282,7 +282,7 @@ public:
    //+------------------------------------------------------------------+
    //| Get Filter Status String for Dashboard                           |
    //+------------------------------------------------------------------+
-   string GetFilterStatus(ENUM_KILLZONE killzone, MARKET_REGIME regime)
+   string GetFilterStatus(ENUM_KILLZONE killzone, MARKET_REGIME mktRegime)
    {
       if(!m_adaptationEnabled)
          return "Adaptive Filters: OFF";
@@ -295,8 +295,8 @@ public:
       // Current threshold
       ConfluenceFactors dummyFactors;  // Empty factors for generic threshold
       dummyFactors.killzone = killzone;
-      dummyFactors.regime = regime;
-      double currentThreshold = CalculateDynamicThreshold(dummyFactors, killzone, regime);
+      dummyFactors.regime = mktRegime;
+      double currentThreshold = CalculateDynamicThreshold(dummyFactors, killzone, mktRegime);
 
       txt += "Current Threshold: " + DoubleToString(currentThreshold, 1) + "/12";
 

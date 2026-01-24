@@ -108,13 +108,13 @@ public:
    //+------------------------------------------------------------------+
    //| Get statistics by market regime                                  |
    //+------------------------------------------------------------------+
-   ContextStats GetStatsByRegime(MARKET_REGIME regime)
+   ContextStats GetStatsByRegime(MARKET_REGIME mktRegime)
    {
       ContextStats stats;
 
       for(int i = 0; i < m_tradeCount; i++)
       {
-         if(m_trades[i].entry.regime == regime)
+         if(m_trades[i].entry.regime == mktRegime)
          {
             AddTradeToStats(m_trades[i], stats);
          }
@@ -185,14 +185,14 @@ public:
    //+------------------------------------------------------------------+
    //| Get statistics by combined context                               |
    //+------------------------------------------------------------------+
-   ContextStats GetStatsByContext(ENUM_KILLZONE killzone, MARKET_REGIME regime)
+   ContextStats GetStatsByContext(ENUM_KILLZONE killzone, MARKET_REGIME mktRegime)
    {
       ContextStats stats;
 
       for(int i = 0; i < m_tradeCount; i++)
       {
          if(m_trades[i].entry.killzone == killzone &&
-            m_trades[i].entry.regime == regime)
+            m_trades[i].entry.regime == mktRegime)
          {
             AddTradeToStats(m_trades[i], stats);
          }
@@ -221,9 +221,9 @@ public:
    //+------------------------------------------------------------------+
    //| Get expectancy for specific context                              |
    //+------------------------------------------------------------------+
-   double GetExpectancy(ENUM_KILLZONE killzone, MARKET_REGIME regime)
+   double GetExpectancy(ENUM_KILLZONE killzone, MARKET_REGIME mktRegime)
    {
-      ContextStats stats = GetStatsByContext(killzone, regime);
+      ContextStats stats = GetStatsByContext(killzone, mktRegime);
       return stats.expectancy;
    }
 
@@ -335,11 +335,11 @@ private:
    //+------------------------------------------------------------------+
    //| Add single trade to statistics                                   |
    //+------------------------------------------------------------------+
-   void AddTradeToStats(TradeRecord &trade, ContextStats &stats)
+   void AddTradeToStats(TradeRecord &tradeRec, ContextStats &stats)
    {
       stats.tradeCount++;
 
-      double profitR = trade.exit.profitR;
+      double profitR = tradeRec.exit.profitR;
 
       if(profitR > 0)
       {

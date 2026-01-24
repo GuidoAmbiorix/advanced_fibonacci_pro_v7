@@ -374,7 +374,7 @@ private:
    //+------------------------------------------------------------------+
    //| Update Best Context for Pattern                                  |
    //+------------------------------------------------------------------+
-   void UpdateBestContext(int idx, ENUM_KILLZONE killzone, MARKET_REGIME regime, double profitR)
+   void UpdateBestContext(int idx, ENUM_KILLZONE killzone, MARKET_REGIME mktRegime, double profitR)
    {
       // Simple tracking: just note the context, real analysis in PerformanceAnalyzer
       // This is a placeholder for future enhancement
@@ -382,7 +382,7 @@ private:
          m_patterns[idx].bestKillzone = killzone;
 
       if(m_patterns[idx].bestRegime == REGIME_UNKNOWN)
-         m_patterns[idx].bestRegime = regime;
+         m_patterns[idx].bestRegime = mktRegime;
    }
 
    //+------------------------------------------------------------------+

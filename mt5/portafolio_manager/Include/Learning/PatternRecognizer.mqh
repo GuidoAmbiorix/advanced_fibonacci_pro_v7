@@ -52,12 +52,12 @@ public:
    //+------------------------------------------------------------------+
    //| Initialize Pattern Recognizer                                    |
    //+------------------------------------------------------------------+
-   bool Init(string symbol, CPatternMemory* patternMemory,
+   bool Init(string symbol, CPatternMemory* pMemory,
              int minSampleSize = 15, double minWinRate = 0.65,
              double minExpectancy = 0.5)
    {
       m_symbol = symbol;
-      m_patternMemory = patternMemory;
+      m_patternMemory = pMemory;
       m_minSampleSize = minSampleSize;
       m_minWinRate = minWinRate;
       m_minExpectancy = minExpectancy;

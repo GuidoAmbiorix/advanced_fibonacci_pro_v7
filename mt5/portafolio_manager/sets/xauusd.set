@@ -1,18 +1,21 @@
 ; XAUUSD - Gold - Ultimate Safe Haven Asset
-; High volatility, strong trending, reacts to USD and risk sentiment
-; Best Performance: NY session, economic uncertainty periods
-; Risk Profile: Aggressive - wide swings but trending
+; High volatility, strong trending with liquidity sweeps
+; Best Timeframe: H1-H4 (Day Trading), M15-M30 (Aggressive Scalping)
+; Best Performance: NY session (8 AM New York + COMEX open), London steady activity
+; Risk Profile: Aggressive - wide swings but trending, prone to liquidity sweeps
 ; Target: Win Rate 58-68%, Profit Factor 2.5+
 ; Correlation: -0.70 with USD, +0.60 with AUD
+; Characteristics: Explosive moves around US news, clean Fair Value Gaps, institutional favorite
 
 ; ====== IDENTITY ======
 InpMagicNumber=100007
+
 ; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ; ====== KILLZONES ======
-; Gold most active during London and NY
+; Gold most active during London and NY (NY preferred for institutional activity)
 InpUseKillzoneFilter=true
 InpUseSymbolDefaults=true
 InpAutoDST=true
@@ -23,14 +26,14 @@ InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=true
 
 ; ====== FIBONACCI ======
-; Wider zones due to high volatility
+; Wider zones due to high volatility and liquidity sweeps
 InpSwingLookback=18
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.35
 
 ; ====== DISPLACEMENT ======
-; Strong displacements common in gold
+; Strong displacements common in gold (institutional moves)
 InpUseDisplacement=true
 InpDisplacementATR=1.8
 InpDisplacementLookback=4
@@ -49,6 +52,7 @@ InpUseTrendFilter=true
 InpEMA_MinSlope=0.18
 
 ; ====== CHOP FILTER ======
+; Higher threshold to avoid choppy gold sessions
 InpUseChopFilter=true
 InpChopThreshold=0.85
 InpATR_MA_Period=20
@@ -66,6 +70,17 @@ InpMaxPositions=3
 InpRiskBase=0.35
 InpRiskAddOn1=0.20
 InpRiskAddOn2=0.12
+InpMaxRisk=0.75
+InpMaxLotsPerTrade=0.5
+InpEnableMarginCheck=true
+
+; ====== TAKE PROFIT ======
+; Wider TP for gold's trending nature
+InpTPMode=2
+InpFixedTP_R=4.0
+InpMinTP_R=2.5
+InpMaxTP_R=7.0
+InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 ; Wider targets for gold's trending nature
@@ -81,6 +96,7 @@ InpTrailATR_Mult=1.5
 InpMaxSpreadPoints=30
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
+; Critical for gold - institutional liquidity sweeps are common
 InpUseSMC=true
 InpSMC_SwingLookback=18
 InpSMC_MinImpulseATR=3.0
@@ -93,12 +109,13 @@ InpMTF=16385
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
-; Critical for gold - reacts strongly to news
+; Critical for gold - reacts strongly to US economic news
 InpUseNewsFilter=true
 InpNewsMinutesBefore=60
 InpNewsMinutesAfter=60
 
 ; ====== KELLY POSITION SIZING ======
+; Conservative Kelly for high volatility
 InpUseKelly=true
 InpKellyFraction=0.35
 InpDailyMaxDD=2.0

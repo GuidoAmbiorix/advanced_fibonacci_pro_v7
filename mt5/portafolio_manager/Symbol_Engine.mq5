@@ -494,7 +494,7 @@ double CalculateTakeProfit(double price, double slDist, int direction,
       if(InpEnableAdaptiveExits && adaptiveExit.ShouldUseFixedTP(g_currentRegime, quality))
       {
          // Use AdaptiveExitManager's learned TP calculation
-         tpR = adaptiveExit.CalculateFixedTP(g_currentRegime, quality, atr, slDist);
+         tpR = adaptiveExit.CalculateFixedTP(g_currentRegime, quality, atr);
       }
       else if(InpTPUseLearnedMFE)
       {

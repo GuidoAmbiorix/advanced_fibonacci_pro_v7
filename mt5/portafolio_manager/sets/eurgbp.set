@@ -1,18 +1,21 @@
 ; EURGBP - Euro Pound Cross - European Majors Differential
-; Low volatility, ranging tendency
-; Best Performance: European session, central bank divergence
-; Risk Profile: Conservative - low volatility
+; Low volatility, strong mean-reverting tendency
+; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
+; Best Performance: European session (London Open), mean reversion during quiet hours
+; Risk Profile: Conservative - low volatility, stable macroeconomic relationship
 ; Target: Win Rate 66-74%, Profit Factor 1.9+
 ; Correlation: Low with USD pairs, pure European dynamic
+; Characteristics: Cleaner pullbacks, tight ranges, excellent for mean reversion
 
 ; ====== IDENTITY ======
 InpMagicNumber=100012
+
 ; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ; ====== KILLZONES ======
-; European session focused
+; European session focused - less active during NY
 InpUseKillzoneFilter=true
 InpUseSymbolDefaults=true
 InpAutoDST=true
@@ -23,34 +26,39 @@ InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=false
 
 ; ====== FIBONACCI ======
-; Tight zones for low volatility
+; Tight zones for low volatility and precise entries
 InpSwingLookback=26
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.15
 
 ; ====== DISPLACEMENT ======
+; Lower displacement threshold for range-bound pair
 InpUseDisplacement=true
 InpDisplacementATR=1.0
 InpDisplacementLookback=5
 
 ; ====== RSI ======
+; Tight bands for mean-reverting pair
 InpRSI_Period=14
 InpRSI_Oversold=43
 InpRSI_Overbought=57
 InpRSI_Momentum=true
 
 ; ====== TREND ======
+; Lower slope requirement - trends are gradual
 InpEMA_Period=200
 InpUseTrendFilter=true
 InpEMA_MinSlope=0.08
 
 ; ====== CHOP FILTER ======
+; Lower threshold - accept more ranging conditions
 InpUseChopFilter=true
 InpChopThreshold=0.68
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
+; Standard threshold
 InpMinConfluenceEntry=5
 InpEnableAddOns=true
 InpAddOn1_R=1.3
@@ -58,11 +66,24 @@ InpAddOn2_R=2.3
 InpMaxPositions=3
 
 ; ====== RISK (Before Governor Scaling) ======
+; Higher base risk due to low volatility
 InpRiskBase=0.58
 InpRiskAddOn1=0.33
 InpRiskAddOn2=0.23
+InpMaxRisk=0.75
+InpMaxLotsPerTrade=0.5
+InpEnableMarginCheck=true
+
+; ====== TAKE PROFIT ======
+; Conservative TP for mean-reverting nature
+InpTPMode=2
+InpFixedTP_R=2.5
+InpMinTP_R=1.3
+InpMaxTP_R=4.0
+InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
+; Tighter targets for ranging conditions
 InpTrailingMode=1
 InpPartialTP_R=1.4
 InpPartialClosePercent=48.0
@@ -86,6 +107,7 @@ InpMTF=16385
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
+; Filter European news events
 InpUseNewsFilter=true
 InpNewsMinutesBefore=35
 InpNewsMinutesAfter=30

@@ -55,11 +55,11 @@ public:
    //+------------------------------------------------------------------+
    //| Initialize Adaptive Exit Manager                                 |
    //+------------------------------------------------------------------+
-   bool Init(string symbol, CLearningEngine* learning,
+   bool Init(string symbol, CLearningEngine* learningEngine,
              ExitParameters &baseParams, bool enableAdaptation = false)
    {
       m_symbol = symbol;
-      m_learning = learning;
+      m_learning = learningEngine;
       m_baseParams = baseParams;
       m_adaptationEnabled = enableAdaptation;
 
@@ -81,7 +81,7 @@ public:
    //+------------------------------------------------------------------+
    //| Calculate Adaptive Trail Start                                   |
    //+------------------------------------------------------------------+
-   double CalculateTrailStart(MARKET_REGIME regime, ENTRY_QUALITY quality, double atr)
+   double CalculateTrailStart(MARKET_REGIME mktRegime, ENTRY_QUALITY quality, double atr)
    {
       // Start with base
       double trailStartR = m_baseParams.trailStartR;
@@ -90,7 +90,7 @@ public:
          return trailStartR;
 
       // Adjust by regime
-      switch(regime)
+      switch(mktRegime)
       {
          case REGIME_TREND:
             trailStartR *= 1.2;  // Trail later in trends (let winners run)
@@ -142,7 +142,7 @@ public:
    //+------------------------------------------------------------------+
    //| Calculate Adaptive Trail Distance                                |
    //+------------------------------------------------------------------+
-   double CalculateTrailDistance(MARKET_REGIME regime, double atr)
+   double CalculateTrailDistance(MARKET_REGIME mktRegime, double atr)
    {
       // Start with base
       double trailMult = m_baseParams.trailDistanceATR;
@@ -154,7 +154,7 @@ public:
       trailMult *= m_symbolVolatilityMultiplier;
 
       // Adjust by regime
-      switch(regime)
+      switch(mktRegime)
       {
          case REGIME_TREND:
             trailMult *= 1.4;  // Wider trail in trends
@@ -229,7 +229,7 @@ public:
    //+------------------------------------------------------------------+
    //| Calculate Adaptive Partial TP Level                              |
    //+------------------------------------------------------------------+
-   double CalculatePartialTPR(MARKET_REGIME regime, ENTRY_QUALITY quality)
+   double CalculatePartialTPR(MARKET_REGIME mktRegime, ENTRY_QUALITY quality)
    {
       // Start with base
       double partialR = m_baseParams.partialTPR;
@@ -238,7 +238,7 @@ public:
          return partialR;
 
       // Adjust by regime
-      switch(regime)
+      switch(mktRegime)
       {
          case REGIME_TREND:
             partialR *= 1.15;  // Take partial later in trends
@@ -278,7 +278,7 @@ public:
    //+------------------------------------------------------------------+
    //| Calculate Adaptive Partial Close Percent                         |
    //+------------------------------------------------------------------+
-   double CalculatePartialPercent(MARKET_REGIME regime, ENTRY_QUALITY quality)
+   double CalculatePartialPercent(MARKET_REGIME mktRegime, ENTRY_QUALITY quality)
    {
       // Start with base
       double percent = m_baseParams.partialPercent;
@@ -287,7 +287,7 @@ public:
          return percent;
 
       // Adjust by regime
-      switch(regime)
+      switch(mktRegime)
       {
          case REGIME_TREND:
             percent *= 0.8;  // Close less in trends (let more run)
@@ -327,16 +327,16 @@ public:
    //+------------------------------------------------------------------+
    //| Get Complete Exit Parameters                                     |
    //+------------------------------------------------------------------+
-   ExitParameters GetAdaptiveParameters(MARKET_REGIME regime, ENTRY_QUALITY quality,
+   ExitParameters GetAdaptiveParameters(MARKET_REGIME mktRegime, ENTRY_QUALITY quality,
                                          double atr, double riskPoints)
    {
       ExitParameters params;
 
-      params.trailStartR = CalculateTrailStart(regime, quality, atr);
-      params.trailDistanceATR = CalculateTrailDistance(regime, atr) / atr;  // Convert back to multiplier
+      params.trailStartR = CalculateTrailStart(mktRegime, quality, atr);
+      params.trailDistanceATR = CalculateTrailDistance(mktRegime, atr) / atr;  // Convert back to multiplier
       params.beThresholdR = CalculateBEThreshold(quality, riskPoints);
-      params.partialTPR = CalculatePartialTPR(regime, quality);
-      params.partialPercent = CalculatePartialPercent(regime, quality);
+      params.partialTPR = CalculatePartialTPR(mktRegime, quality);
+      params.partialPercent = CalculatePartialPercent(mktRegime, quality);
 
       return params;
    }
@@ -344,17 +344,17 @@ public:
    //+------------------------------------------------------------------+
    //| Should Use Fixed TP Instead of Trail                             |
    //+------------------------------------------------------------------+
-   bool ShouldUseFixedTP(MARKET_REGIME regime, ENTRY_QUALITY quality)
+   bool ShouldUseFixedTP(MARKET_REGIME mktRegime, ENTRY_QUALITY quality)
    {
       if(!m_adaptationEnabled)
          return false;
 
       // Use fixed TP in ranging markets with weaker entries
-      if(regime == REGIME_RANGE && (quality == EQ_WEAK || quality == EQ_GOOD))
+      if(mktRegime == REGIME_RANGE && (quality == EQ_WEAK || quality == EQ_GOOD))
          return true;
 
       // Use fixed TP in highly volatile conditions
-      if(regime == REGIME_VOLATILE)
+      if(mktRegime == REGIME_VOLATILE)
          return true;
 
       return false;
@@ -363,7 +363,7 @@ public:
    //+------------------------------------------------------------------+
    //| Calculate Fixed TP Level                                         |
    //+------------------------------------------------------------------+
-   double CalculateFixedTP(MARKET_REGIME regime, ENTRY_QUALITY quality, double atr)
+   double CalculateFixedTP(MARKET_REGIME mktRegime, ENTRY_QUALITY quality, double atr)
    {
       double tpR = 2.0;  // Default 2R
 
@@ -378,7 +378,7 @@ public:
       }
 
       // Adjust by regime
-      switch(regime)
+      switch(mktRegime)
       {
          case REGIME_TREND:
             tpR *= 1.3;
@@ -410,7 +410,7 @@ public:
    //+------------------------------------------------------------------+
    //| Get Adjustment Summary for Dashboard                             |
    //+------------------------------------------------------------------+
-   string GetAdjustmentSummary(MARKET_REGIME regime)
+   string GetAdjustmentSummary(MARKET_REGIME mktRegime)
    {
       if(!m_adaptationEnabled)
          return "Exit Adaptation: OFF";
@@ -425,7 +425,7 @@ public:
 
       // Show regime adjustment
       string regimeAdj = "Regime: ";
-      switch(regime)
+      switch(mktRegime)
       {
          case REGIME_TREND:    regimeAdj += "TREND (Wider trail)"; break;
          case REGIME_RANGE:    regimeAdj += "RANGE (Tighter)"; break;

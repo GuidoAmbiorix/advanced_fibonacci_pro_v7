@@ -81,7 +81,7 @@ public:
    //+------------------------------------------------------------------+
    //| Calculate Adaptive Risk for Entry                                |
    //+------------------------------------------------------------------+
-   double CalculateAdaptiveRisk(ENUM_KILLZONE killzone, MARKET_REGIME regime,
+   double CalculateAdaptiveRisk(ENUM_KILLZONE killzone, MARKET_REGIME mktRegime,
                                  ConfluenceFactors &factors, ENTRY_QUALITY quality)
    {
       // Start with base risk
@@ -100,7 +100,7 @@ public:
       risk *= killzoneMultiplier;
 
       // Apply regime multiplier
-      double regimeMultiplier = GetRegimeMultiplier(regime);
+      double regimeMultiplier = GetRegimeMultiplier(mktRegime);
       risk *= regimeMultiplier;
 
       // Apply pattern multiplier
@@ -125,7 +125,7 @@ public:
    //+------------------------------------------------------------------+
    //| Calculate Risk for Add-On Position                               |
    //+------------------------------------------------------------------+
-   double CalculateAddOnRisk(ENUM_KILLZONE killzone, MARKET_REGIME regime,
+   double CalculateAddOnRisk(ENUM_KILLZONE killzone, MARKET_REGIME mktRegime,
                              ConfluenceFactors &factors, int addOnLevel)
    {
       // Add-ons are more conservative
@@ -139,7 +139,7 @@ public:
 
       // Apply same multipliers but more conservatively
       double killzoneMultiplier = GetKillzoneMultiplier(killzone);
-      double regimeMultiplier = GetRegimeMultiplier(regime);
+      double regimeMultiplier = GetRegimeMultiplier(mktRegime);
       double patternMultiplier = m_patternRecognizer.GetRecommendedRiskMultiplier(factors);
 
       // Average the multipliers (more conservative)
@@ -160,7 +160,7 @@ public:
    //+------------------------------------------------------------------+
    //| Should Skip Trade Based on Poor Context Performance              |
    //+------------------------------------------------------------------+
-   bool ShouldSkipTrade(ENUM_KILLZONE killzone, MARKET_REGIME regime)
+   bool ShouldSkipTrade(ENUM_KILLZONE killzone, MARKET_REGIME mktRegime)
    {
       if(!m_adaptationEnabled) return false;
       if(!m_performanceAnalyzer.IsLearningActive()) return false;
@@ -179,7 +179,7 @@ public:
       }
 
       // Check regime performance
-      ContextStats regStats = m_performanceAnalyzer.GetStatsByRegime(regime);
+      ContextStats regStats = m_performanceAnalyzer.GetStatsByRegime(mktRegime);
       if(regStats.tradeCount >= m_minSampleSize)
       {
          // Skip if regime has very negative expectancy
@@ -192,7 +192,7 @@ public:
       }
 
       // Check combined context
-      ContextStats contextStats = m_performanceAnalyzer.GetStatsByContext(killzone, regime);
+      ContextStats contextStats = m_performanceAnalyzer.GetStatsByContext(killzone, mktRegime);
       if(contextStats.tradeCount >= 20)  // Lower threshold for combined
       {
          // Skip if specific context is very bad
@@ -210,7 +210,7 @@ public:
    //+------------------------------------------------------------------+
    //| Get Risk Adjustment Summary for Dashboard                        |
    //+------------------------------------------------------------------+
-   string GetAdjustmentSummary(ENUM_KILLZONE killzone, MARKET_REGIME regime)
+   string GetAdjustmentSummary(ENUM_KILLZONE killzone, MARKET_REGIME mktRegime)
    {
       if(!m_adaptationEnabled)
          return "Adaptation: OFF";
@@ -225,7 +225,7 @@ public:
       txt += "Killzone: " + DoubleToString((kzMult - 1.0) * 100, 0) + "%";
 
       // Regime adjustment
-      double regMult = GetRegimeMultiplier(regime);
+      double regMult = GetRegimeMultiplier(mktRegime);
       txt += " | Regime: " + DoubleToString((regMult - 1.0) * 100, 0) + "%\n";
 
       // Recent performance
@@ -264,9 +264,9 @@ private:
    //+------------------------------------------------------------------+
    //| Get Regime Performance Multiplier                                |
    //+------------------------------------------------------------------+
-   double GetRegimeMultiplier(MARKET_REGIME regime)
+   double GetRegimeMultiplier(MARKET_REGIME mktRegime)
    {
-      ContextStats stats = m_performanceAnalyzer.GetStatsByRegime(regime);
+      ContextStats stats = m_performanceAnalyzer.GetStatsByRegime(mktRegime);
 
       if(stats.tradeCount < m_minSampleSize)
          return 1.0;  // Not enough data
