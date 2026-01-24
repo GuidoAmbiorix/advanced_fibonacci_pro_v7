@@ -1,5 +1,12 @@
 # Quick Start Guide
 
+## Overview
+
+This setup includes:
+1. **MT5 Container** (Wine + MT5 + Python API Server)
+2. **Streamlit Dashboard** (Monitoring & Analytics)
+3. **HTTP API Bridge** (Connects dashboard to MT5)
+
 ## Prerequisites
 - Wireguard VPN container running on network `wireguard-vpn_vpn_network`
 - Docker and Docker Compose installed

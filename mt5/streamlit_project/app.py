@@ -1,5 +1,5 @@
 import streamlit as st
-from src.connector import MT5Connector
+from src.connector_wrapper import MT5Connector
 from src import DataEngine, PerformanceAnalytics, PatternGeneric
 from src.portfolio import PortfolioGovernor, GovernorMode
 from src.config import config

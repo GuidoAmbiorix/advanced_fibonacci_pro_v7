@@ -1,0 +1,29 @@
+FROM gmag11/metatrader5_vnc:latest
+
+# Switch to root to install packages
+USER root
+
+# Install Python and dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create directory for API server
+RUN mkdir -p /app
+WORKDIR /app
+
+# Copy API server and requirements
+COPY mt5_api_requirements.txt .
+RUN pip3 install --no-cache-dir -r mt5_api_requirements.txt
+
+COPY mt5_api_server.py .
+COPY mt5_entrypoint.sh /app/mt5_entrypoint.sh
+RUN chmod +x /app/mt5_entrypoint.sh
+
+# Expose API port
+EXPOSE 8001
+
+# Use custom entrypoint
+ENTRYPOINT ["/app/mt5_entrypoint.sh"]

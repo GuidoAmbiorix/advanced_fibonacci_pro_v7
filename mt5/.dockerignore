@@ -1,0 +1,14 @@
+*.md
+*.txt
+*.html
+*.csv
+*.pine
+*.mq5
+!mt5_api_server.py
+!mt5_api_requirements.txt
+!mt5_entrypoint.sh
+.git
+.vscode
+.claude
+streamlit_project
+portafolio_manager

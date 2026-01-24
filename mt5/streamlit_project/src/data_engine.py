@@ -3,7 +3,7 @@ import pandas as pd
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
-from src.connector import MT5Connector
+from src.connector_wrapper import MT5Connector
 from src.types import Trade
 from src.logger import get_logger, log_mt5_error, LogContext, log_data_quality
 from src.config import config

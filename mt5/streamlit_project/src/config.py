@@ -120,6 +120,16 @@ class Config:
     DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
     ENABLE_PROFILING = os.getenv("ENABLE_PROFILING", "false").lower() == "true"
 
+    # ========== MT5 HTTP API Settings ==========
+    USE_MT5_HTTP_API = os.getenv("USE_MT5_HTTP_API", "false").lower() == "true"
+    MT5_HOST = os.getenv("MT5_HOST", "trading_mt5")
+    MT5_PORT = int(os.getenv("MT5_PORT", "8001"))
+
+    @classmethod
+    def get(cls, key: str, default=None):
+        """Get configuration value by key."""
+        return getattr(cls, key, os.getenv(key, default))
+
     @classmethod
     def validate(cls) -> bool:
         """
@@ -131,8 +141,8 @@ class Config:
         Raises:
             ValueError if critical settings are invalid
         """
-        # Validate paths
-        if not cls.MT5_SETS_PATH.exists():
+        # Validate paths (skip if using HTTP API)
+        if not cls.USE_MT5_HTTP_API and not cls.MT5_SETS_PATH.exists():
             raise ValueError(f"MT5 Sets path does not exist: {cls.MT5_SETS_PATH}")
 
         # Ensure directories exist

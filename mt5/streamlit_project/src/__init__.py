@@ -1,4 +1,4 @@
-from .connector import MT5Connector
+from .connector_wrapper import MT5Connector
 from .data_engine import DataEngine
 from .data_engine_cached import CachedDataEngine
 from .types import Trade

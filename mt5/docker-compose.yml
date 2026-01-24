@@ -1,57 +1,33 @@
-version: '3.8'
-
 services:
   mt5:
     image: gmag11/metatrader5_vnc:latest
     container_name: trading_mt5
     ports:
       - "3000:3000"
-      - "8001:8001"
     environment:
       - CUSTOM_USER=trader
       - PASSWORD=trading
       - VNCPASSWORD=trading
+      - WINEDLLOVERRIDES=mscoree,mshtml=
+      - WINEPREFIX=/config/.wine
     volumes:
       - mt5_config:/config
-      - ./portafolio_manager:/mt5/MQL5/Experts/portafolio_manager
+      - ./portafolio_manager:/config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
     networks:
-      trading_network:
       vpn_network:
         ipv4_address: 10.13.13.20
-    restart: unless-stopped
-
-  streamlit_dashboard:
-    build:
-      context: ./streamlit_project
-      dockerfile: Dockerfile
-    container_name: trading_dashboard
-    ports:
-      - "8501:8501"
-    environment:
-      - MT5_HOST=trading_mt5
-      - MT5_PORT=8001
-      - MT5_SETS_PATH=/app/sets
-    volumes:
-      - ./streamlit_project:/app
-      - ./portafolio_manager/sets:/app/sets:ro
-      - streamlit_logs:/app/logs
-      - streamlit_data:/app/data
-    networks:
-      trading_network:
-      vpn_network:
-        ipv4_address: 10.13.13.21
-    depends_on:
-      - mt5
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
     restart: unless-stopped
 
 volumes:
   mt5_config:
-  streamlit_logs:
-  streamlit_data:
 
 networks:
-  trading_network:
-    driver: bridge
   vpn_network:
     external: true
     name: wireguard-vpn_vpn_network
