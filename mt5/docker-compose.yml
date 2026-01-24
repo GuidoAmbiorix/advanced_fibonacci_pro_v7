@@ -13,12 +13,43 @@ services:
       - VNCPASSWORD=trading
     volumes:
       - mt5_config:/config
+      - ./portafolio_manager:/mt5/MQL5/Experts/portafolio_manager
     networks:
       - trading_network
+      - vpn_network
+    restart: unless-stopped
+
+  streamlit_dashboard:
+    build:
+      context: ./streamlit_project
+      dockerfile: Dockerfile
+    container_name: trading_dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - MT5_HOST=trading_mt5
+      - MT5_PORT=8001
+      - MT5_SETS_PATH=/app/sets
+    volumes:
+      - ./streamlit_project:/app
+      - ./portafolio_manager/sets:/app/sets:ro
+      - streamlit_logs:/app/logs
+      - streamlit_data:/app/data
+    networks:
+      - trading_network
+      - vpn_network
+    depends_on:
+      - mt5
     restart: unless-stopped
 
 volumes:
   mt5_config:
+  streamlit_logs:
+  streamlit_data:
 
 networks:
   trading_network:
+    driver: bridge
+  vpn_network:
+    external: true
+    name: wireguard-vpn_vpn_network
