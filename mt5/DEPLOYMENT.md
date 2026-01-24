@@ -10,17 +10,17 @@ This deployment sets up a complete MT5 trading platform with:
 ## Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│         Wireguard VPN Network           │
-│                                         │
-│  ┌──────────────┐   ┌────────────────┐ │
-│  │  MT5 (Wine)  │◄──┤   Streamlit    │ │
-│  │              │   │   Dashboard    │ │
-│  │  Port: 3000  │   │   Port: 8501   │ │
-│  │  Port: 8001  │   │                │ │
-│  └──────────────┘   └────────────────┘ │
-│                                         │
-└─────────────────────────────────────────┘
+┌───────────────────────────────────────────────────┐
+│      Wireguard VPN Network (10.13.13.0/24)        │
+│                                                   │
+│  ┌──────────────────┐   ┌──────────────────────┐ │
+│  │  MT5 (Wine)      │◄──┤  Streamlit Dashboard │ │
+│  │  10.13.13.20     │   │  10.13.13.21         │ │
+│  │  Port: 3000      │   │  Port: 8501          │ │
+│  │  Port: 8001      │   │                      │ │
+│  └──────────────────┘   └──────────────────────┘ │
+│                                                   │
+└───────────────────────────────────────────────────┘
 ```
 
 ## Prerequisites
@@ -83,7 +83,13 @@ curl http://localhost:8501
 
 ## Service Access
 
-- **MT5 VNC**: http://localhost:3000 (user: trader, password: trading)
+### Through Wireguard VPN (Recommended):
+- **MT5 VNC**: http://10.13.13.20:3000 (user: trader, password: trading)
+- **Streamlit Dashboard**: http://10.13.13.21:8501
+- **MT5 API**: http://10.13.13.20:8001
+
+### Local Access (on server):
+- **MT5 VNC**: http://localhost:3000
 - **Streamlit Dashboard**: http://localhost:8501
 - **MT5 API**: http://localhost:8001
 
@@ -92,6 +98,8 @@ curl http://localhost:8501
 Both services are connected to two networks:
 - `trading_network`: Internal communication between MT5 and Dashboard
 - `wireguard-vpn_vpn_network`: External VPN network (10.13.13.0/24)
+  - MT5 Container: **10.13.13.20**
+  - Streamlit Dashboard: **10.13.13.21**
 
 ## Managing the Deployment
 

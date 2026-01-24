@@ -15,8 +15,9 @@ services:
       - mt5_config:/config
       - ./portafolio_manager:/mt5/MQL5/Experts/portafolio_manager
     networks:
-      - trading_network
-      - vpn_network
+      trading_network:
+      vpn_network:
+        ipv4_address: 10.13.13.20
     restart: unless-stopped
 
   streamlit_dashboard:
@@ -36,8 +37,9 @@ services:
       - streamlit_logs:/app/logs
       - streamlit_data:/app/data
     networks:
-      - trading_network
-      - vpn_network
+      trading_network:
+      vpn_network:
+        ipv4_address: 10.13.13.21
     depends_on:
       - mt5
     restart: unless-stopped
