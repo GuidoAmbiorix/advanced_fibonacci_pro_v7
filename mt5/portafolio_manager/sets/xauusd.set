@@ -131,3 +131,14 @@ InpMinTradesForLearning=50
 InpEnableAdaptiveRisk=false
 InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=false
+
+; ====== SESSION GOVERNOR ======
+; Session-level control: max trades, P&L limits, confidence tracking
+; XAUUSD: Conservative limits due to extreme volatility
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=2
+InpMaxProfitPerSession_R=6.0
+InpMaxLossPerSession_R=1.8
+InpMinSessionConfidence=0.48
+InpTradeCooldownMinutes=25
+InpEnableSessionBlacklist=true

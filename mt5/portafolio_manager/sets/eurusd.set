@@ -131,3 +131,13 @@ InpMinTradesForLearning=50
 InpEnableAdaptiveRisk=false
 InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=false
+
+; ====== SESSION GOVERNOR ======
+; Session-level control: max trades, P&L limits, confidence tracking
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=3
+InpMaxProfitPerSession_R=5.0
+InpMaxLossPerSession_R=2.0
+InpMinSessionConfidence=0.4
+InpTradeCooldownMinutes=15
+InpEnableSessionBlacklist=true

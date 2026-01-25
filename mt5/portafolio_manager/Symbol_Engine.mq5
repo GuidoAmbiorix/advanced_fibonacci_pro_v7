@@ -19,6 +19,7 @@
 #include "Include\KillSwitch.mqh"
 #include "Include\Learning_MFE_MAE.mqh"
 #include "Include\GovernorAllocator.mqh"
+#include "Include\SessionGovernor.mqh"
 
 // Smart Money Concepts Modules
 #include "Include\SMC_StructureBreak.mqh"
@@ -159,6 +160,15 @@ input bool              InpEnableAdaptiveRisk = false;    // Enable Adaptive Ris
 input bool              InpEnableAdaptiveExits = false;   // Enable Adaptive Exits
 input bool              InpEnableAdaptiveFilters = false; // Enable Adaptive Filters
 
+input group "======= SESSION GOVERNOR ======="
+input bool              InpUseSessionGovernor = true;     // Enable Session Governor
+input int               InpMaxTradesPerSession = 3;       // Max Trades Per Session
+input double            InpMaxProfitPerSession_R = 5.0;   // Max Profit Per Session (R)
+input double            InpMaxLossPerSession_R = 2.0;     // Max Loss Per Session (R)
+input double            InpMinSessionConfidence = 0.4;    // Min Session Confidence (0-1)
+input int               InpTradeCooldownMinutes = 15;     // Cooldown Between Trades (minutes)
+input bool              InpEnableSessionBlacklist = true; // Enable Session Blacklist
+
 //+------------------------------------------------------------------+
 //| GLOBALS                                                           |
 //+------------------------------------------------------------------+
@@ -173,6 +183,7 @@ CMarketRegime     regime;
 CKillSwitch       killSwitch;
 CLearningEngine   learning;
 CGovernorAllocator allocator;
+CSessionGovernor  sessionGov;
 
 // SMC MODULE OBJECTS
 CSMCStructureBreak  smcStructure;
@@ -378,6 +389,16 @@ int OnInit()
          Print("Warning: Adaptive Filter Manager initialization failed");
    }
 
+   // Initialize Session Governor
+   if(InpUseSessionGovernor && InpUseKillzoneFilter)
+   {
+      if(!sessionGov.Init(_Symbol, &killzoneOptimizer,
+                          InpMaxTradesPerSession, InpMaxProfitPerSession_R,
+                          InpMaxLossPerSession_R, InpMinSessionConfidence,
+                          InpTradeCooldownMinutes, InpEnableSessionBlacklist))
+         Print("Warning: Session Governor initialization failed");
+   }
+
    // Check if Governor is running
    string govStatus = allocator.IsGovernorActive() ? "Connected" : "Standalone";
 
@@ -391,6 +412,7 @@ int OnInit()
    Print("  Killzone Filter: ", InpUseKillzoneFilter ? "ON" : "OFF");
    Print("  Kelly Sizing: ", InpUseKelly ? "ON" : "OFF");
    Print("  Learning System: ", InpEnableLearning ? "ON" : "OFF");
+   Print("  Session Governor: ", InpUseSessionGovernor ? "ON" : "OFF");
    if(InpEnableLearning && InpLogTradesToFile)
       Print("  Trade Journal: ACTIVE (", InpLearningHistory, " days history)");
    if(InpEnableLearning)
@@ -577,6 +599,9 @@ void OnTick()
    // --- MODULE: KELLY POSITION SIZER (DD LIMITS) ---
    if(InpUseKelly && !kellySizer.IsTradingAllowed()) return;
 
+   // --- MODULE: SESSION GOVERNOR ---
+   if(InpUseSessionGovernor && !sessionGov.IsSessionTradingAllowed()) return;
+
    // --- MODULE: MARKET REGIME ---
    g_currentRegime = regime.Detect(g_ATR, g_ATR_MA, g_EMA, g_EMA_Prev);
    if(g_currentRegime == REGIME_CHAOS) return;
@@ -673,6 +698,12 @@ void OnTick()
 
          // Calculate adaptive risk
          baseRisk = adaptiveRisk.CalculateAdaptiveRisk(currentKZ, g_currentRegime, factors, quality);
+      }
+
+      // Apply Session Governor risk multiplier
+      if(InpUseSessionGovernor)
+      {
+         baseRisk *= sessionGov.GetSessionRiskMultiplier();
       }
 
       // GOVERNOR REQUEST
@@ -787,6 +818,13 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
          tradeJournal.LogEntry(ctx);
       }
 
+      // Register with Session Governor
+      if(InpUseSessionGovernor)
+      {
+         int direction = (type == ORDER_TYPE_BUY) ? 1 : -1;
+         sessionGov.RegisterTrade(ticket, direction, lots, slDist);
+      }
+
       // Log with TP information
       string tpInfo = (tp > 0) ?
          " TP:" + DoubleToString(tp, (int)symbolInfo.Digits()) +
@@ -874,6 +912,13 @@ void ManagePositions()
              if(profitMoney < 0 && MathAbs(profitMoney) > account.Balance()*0.02) rOutcome = -2.0;
 
              killSwitch.OnTradeClosed(rOutcome);
+
+             // Update Session Governor
+             if(InpUseSessionGovernor)
+             {
+                sessionGov.OnTradeClosed(ticket, profitR, profitMoney);
+                sessionGov.AddMFEMAE(mfe, mae);
+             }
          }
 
          g_lastCloseTime = TimeCurrent();
@@ -1121,6 +1166,9 @@ void UpdateModules()
    if(InpUseNewsFilter) newsFilter.Update();
    if(InpUseKillzoneFilter) killzoneOptimizer.Update();
    if(InpUseKelly) kellySizer.Update();
+
+   // Update Session Governor (after killzone update)
+   if(InpUseSessionGovernor) sessionGov.Update();
 }
 
 //+------------------------------------------------------------------+
@@ -1410,6 +1458,7 @@ void UpdateDashboard()
    if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) tradingStatus = "NEWS BLOCKED";
    if(InpUseKillzoneFilter && !killzoneOptimizer.IsTradingAllowed()) tradingStatus = "KILLZONE OFF";
    if(InpUseKelly && !kellySizer.IsTradingAllowed()) tradingStatus = "DD LIMIT";
+   if(InpUseSessionGovernor && !sessionGov.IsSessionTradingAllowed()) tradingStatus = "SESSION BLOCKED";
 
    string txt = "===========================================\n";
    txt += "  SYMBOL ENGINE v2.0: " + _Symbol + "\n";
@@ -1484,6 +1533,14 @@ void UpdateDashboard()
       txt += "-------------------------------------------\n";
       txt += kellySizer.ToString() + "\n";
       txt += "Daily DD: " + DoubleToString(kellySizer.GetDailyDD(), 2) + "/" + DoubleToString(InpDailyMaxDD, 1) + "%\n";
+   }
+
+   // Session Governor stats
+   if(InpUseSessionGovernor)
+   {
+      txt += "-------------------------------------------\n";
+      txt += "SESSION GOVERNOR\n";
+      txt += sessionGov.ToString();
    }
 
    // Learning System stats
