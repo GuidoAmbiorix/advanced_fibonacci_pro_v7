@@ -112,7 +112,13 @@ def render_gv_inspector(filter_prefix: str = ""):
     Args:
         filter_prefix: Filter variables by prefix (e.g., "PG_")
     """
-    import MetaTrader5 as mt5
+    from src.mt5_direct import get_connector
+    connector = get_connector()
+    mt5 = connector.get_mt5_instance()
+    
+    if not mt5:
+        st.warning("⚠️ MT5 not connected")
+        return
     
     try:
         # Get all global variables
@@ -156,7 +162,9 @@ def render_quick_actions_sidebar():
     Returns:
         Dict with action results
     """
-    import MetaTrader5 as mt5
+    from src.mt5_direct import get_connector
+    connector = get_connector()
+    mt5 = connector.get_mt5_instance()
     
     st.sidebar.markdown("---")
     st.sidebar.header("⚡ Quick Actions")
@@ -167,6 +175,10 @@ def render_quick_actions_sidebar():
         'resume_trading': False,
         'force_sync': False
     }
+    
+    if not mt5:
+        st.sidebar.warning("Connection required for actions")
+        return actions
     
     # Emergency Stop
     if st.sidebar.button("🔴 EMERGENCY STOP ALL", key="emergency_stop", type="primary"):
