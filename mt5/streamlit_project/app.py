@@ -1,4 +1,3 @@
-```
 """
 MT5 Trading Dashboard - Streamlit Application
 Direct connection to MT5 via Wine (mt5linux)
