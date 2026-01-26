@@ -47,20 +47,26 @@ class MT5Connector:
         """Attempt to connect to mt5linux server."""
         try:
             from mt5linux import MetaTrader5
-            # Try connecting on standard ports with retry
-            ports = [18812, 8001]
+            # Try connecting on port 8001 (the one that works based on logs)
+            # Port 18812 from our script doesn't seem to be listening
+            ports = [8001, 18812]
             
             for port in ports:
                 try:
                     logger.info(f"Attempting mt5linux connection on localhost:{port}...")
                     self._mt5_instance = MetaTrader5(host='localhost', port=port)
                     
-                    # Verify connection by calling a simple method
-                    if self._mt5_instance and self._mt5_instance.terminal_info():
+                    # Don't verify with terminal_info() - it blocks for 10+ seconds
+                    # Just trust the connection if no exception was raised
+                    if self._mt5_instance is not None:
                         logger.info(f"✅ Connected to mt5linux server on port {port}")
                         return True
-                except (ConnectionRefusedError, EOFError, Exception) as e:
+                except ConnectionRefusedError:
+                    logger.debug(f"Connection refused on port {port}")
+                    continue
+                except Exception as e:
                     logger.debug(f"Connection to port {port} failed: {e}")
+                    continue
             
             logger.warning("Could not connect to any mt5linux server")
             return False
