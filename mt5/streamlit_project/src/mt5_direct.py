@@ -20,14 +20,17 @@ try:
     MT5_AVAILABLE = True
     MT5_MODE = "mt5linux"
     logger.info("✅ mt5linux package available (Wine environment)")
-except ImportError:
+except ImportError as e:
+    logger.warning(f"⚠️  ImportError for mt5linux: {e}")
+    # Print sys.path to help debug
+    logger.debug(f"sys.path: {sys.path}")
     try:
         import MetaTrader5 as mt5
         MT5_AVAILABLE = True
         MT5_MODE = "MetaTrader5"
         logger.info("✅ MetaTrader5 package available (Windows native)")
-    except ImportError:
-        logger.error("❌ Neither mt5linux nor MetaTrader5 package found")
+    except ImportError as e2:
+        logger.error(f"❌ Neither mt5linux nor MetaTrader5 package found. Errors: {e}, {e2}")
         MT5_AVAILABLE = False
         MT5_MODE = "none"
 
