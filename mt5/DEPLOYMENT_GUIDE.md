@@ -55,27 +55,27 @@ cd /path/to/deployment/
 ### Step 3: Stop Existing Containers (if any)
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### Step 4: Build and Start Everything
 
 ```bash
 # Build all images
-docker-compose build
+docker compose build
 
 # Start all services
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Step 5: Check Status
 
 ```bash
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Check if all containers are running
-docker-compose ps
+docker compose ps
 
 # Should show:
 # trading_mt5          Up
@@ -138,33 +138,33 @@ After deployment:
 
 ```bash
 # All logs
-docker-compose logs -f
+docker compose logs -f
 
 # Specific container
-docker-compose logs -f mt5_api
-docker-compose logs -f dashboard
+docker compose logs -f mt5_api
+docker compose logs -f dashboard
 ```
 
 ### Restart Services
 
 ```bash
 # Restart single service
-docker-compose restart mt5_api
+docker compose restart mt5_api
 
 # Restart all
-docker-compose restart
+docker compose restart
 ```
 
 ### Rebuild After Changes
 
 ```bash
 # Rebuild specific service
-docker-compose build mt5_api
-docker-compose up -d mt5_api
+docker compose build mt5_api
+docker compose up -d mt5_api
 
 # Rebuild all
-docker-compose build
-docker-compose up -d
+docker compose build
+docker compose up -d
 ```
 
 ### Check MT5 API Connection
@@ -179,22 +179,22 @@ curl http://mt5_api:8001/health
 
 ```bash
 # Start
-docker-compose up -d
+docker compose up -d
 
 # Stop
-docker-compose down
+docker compose down
 
 # Restart
-docker-compose restart
+docker compose restart
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Rebuild and restart
-docker-compose up -d --build
+docker compose up -d --build
 
 # Remove everything (including volumes)
-docker-compose down -v
+docker compose down -v
 ```
 
 ## ✅ Success Indicators
@@ -212,7 +212,7 @@ Dashboard should show:
 git pull
 
 # Rebuild and restart
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ## 🚨 Common Issues
@@ -220,24 +220,24 @@ docker-compose up -d --build
 **Issue**: Dashboard can't connect to API
 ```bash
 # Check network
-docker-compose exec dashboard ping mt5_api
+docker compose exec dashboard ping mt5_api
 
 # Check API logs
-docker-compose logs mt5_api
+docker compose logs mt5_api
 ```
 
 **Issue**: MT5 not initializing
 ```bash
 # Check MT5 container
-docker-compose logs mt5
+docker compose logs mt5
 
 # Verify Wine is working
-docker-compose exec mt5 wine --version
+docker compose exec mt5 wine --version
 ```
 
 ## 📊 Production Checklist
 
-- [ ] All containers running (`docker-compose ps`)
+- [ ] All containers running (`docker compose ps`)
 - [ ] API health check passing (`curl localhost:8001/health`)
 - [ ] Dashboard accessible via CloudFlare
 - [ ] MT5 GlobalVariables visible in dashboard
