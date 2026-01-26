@@ -13,81 +13,60 @@ echo "Waiting for Wine/MT5 to initialize..."
 sleep 15
 
 # ============================================
-# Phase 1: Fix Wine Python pip
+# Phase 1 & 2: Manual Wheel Injection
+# (Bypasses Wine pip/installer issues)
 # ============================================
 echo "========================================="
-echo "Setting up Wine Python environment..."
+echo "Injecting Windows Python packages..."
 echo "========================================="
 
-WINE_PYTHON="C:\Program Files (x86)\Python39-32\python.exe"
-WINE_PIP="C:\Program Files (x86)\Python39-32\Scripts\pip.exe"
+SITE_PACKAGES="/config/.wine/drive_c/Program Files (x86)/Python39-32/Lib/site-packages"
+WHEEL_DIR="/tmp/win_wheels"
 
-# Method 1: Try ensurepip first (fastest if available)
-echo "Trying ensurepip..."
-if wine "$WINE_PYTHON" -m ensurepip --upgrade 2>/dev/null; then
-    echo "✅ pip installed via ensurepip"
-else
-    echo "⚠️  ensurepip not available, using get-pip.py..."
-    
-    # Method 2: Download and run get-pip.py
-    # Remove old corrupted file
-    rm -f /tmp/get-pip.py
-    
-    # Download with correct URL
-    echo "Downloading get-pip.py from bootstrap.pypa.io..."
-    wget --no-check-certificate -q https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py 2>/dev/null || \
-        curl -k -s https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
-    
-    # Verify download (should be ~2MB)
-    if [ -f /tmp/get-pip.py ] && [ $(stat -c%s /tmp/get-pip.py) -gt 100000 ]; then
-        echo "✅ get-pip.py downloaded ($(stat -c%s /tmp/get-pip.py) bytes)"
-        
-        # Run get-pip.py using Z: drive mapping (critical for Wine compatibility)
-        echo "Running get-pip.py via Z:\\tmp\\get-pip.py..."
-        wine "$WINE_PYTHON" "Z:\\tmp\\get-pip.py" --no-warn-script-location > /tmp/pip_install.log 2>&1
-        
-        if [ $? -eq 0 ]; then
-             echo "✅ pip installed via get-pip.py"
-        else
-             echo "⚠️  get-pip.py failed. Log output:"
-             cat /tmp/pip_install.log
-             
-             # Ultra-fallback: try without arguments or different flags
-             echo "Trying fallback execution..."
-             wine "$WINE_PYTHON" "Z:\\tmp\\get-pip.py" > /tmp/pip_install_fallback.log 2>&1
-        fi
-    else
-        echo "❌ Failed to download get-pip.py"
-    fi
+# Verify Wine Python directory exists
+if [ ! -d "$SITE_PACKAGES" ]; then
+    echo "⚠️  Wine Python site-packages not found at $SITE_PACKAGES"
+    echo "    Attempting to find it..."
+    SITE_PACKAGES=$(find /config/.wine -name "site-packages" -type d | grep "Python39" | head -1)
+    echo "    Found: $SITE_PACKAGES"
 fi
 
-# Verify final pip installation
-if wine "$WINE_PIP" --version >/dev/null 2>&1; then
-    echo "✅ Wine Python pip is working"
-    wine "$WINE_PIP" --version 2>/dev/null | head -1
-else
-    echo "❌ Wine Python pip not available - will skip package installation"
-fi
-
-# ============================================
-# Phase 2: Install Required Packages in Wine
-# ============================================
-
-# Only proceed if pip is available
-if wine "$WINE_PIP" --version >/dev/null 2>&1; then
-    echo "Installing required packages in Wine Python..."
+if [ -d "$SITE_PACKAGES" ]; then
+    echo "Downloading Windows wheels using Linux pip..."
+    mkdir -p "$WHEEL_DIR"
     
-    # Install packages with logging
-    wine "$WINE_PIP" install --no-warn-script-location rpyc MetaTrader5 python-dateutil > /tmp/pip_packages.log 2>&1
-    
+    # Download Windows 32-bit wheels for Python 3.9
+    # This downloads rpyc, MetaTrader5, and their dependencies (plumbum, numpy, etc.)
+    python3 -m pip download \
+        --dest "$WHEEL_DIR" \
+        --platform win32 \
+        --python-version 3.9 \
+        --implementation cp \
+        --abi cp39 \
+        --only-binary=:all: \
+        --quiet \
+        rpyc MetaTrader5 python-dateutil
+        
     if [ $? -eq 0 ]; then
-        echo "✅ Required packages installed (rpyc, MetaTrader5, dateutil)"
+        echo "✅ Wheels downloaded successfully"
+        
+        # Extract wheels directly to site-packages
+        # This simulates 'pip install' without running code in Wine
+        echo "Extracting wheels to $SITE_PACKAGES..."
+        for whl in "$WHEEL_DIR"/*.whl; do
+            filename=$(basename "$whl")
+            echo "   Installing $filename..."
+            python3 -m zipfile -e "$whl" "$SITE_PACKAGES"
+        done
+        echo "✅ Packages injected successfully"
     else
-        echo "⚠️  Package installation had issues. Log output:"
-        cat /tmp/pip_packages.log
+        echo "❌ Failed to download wheels"
     fi
+    
+    # Clean up
+    rm -rf "$WHEEL_DIR"
 else
-    echo "⚠️  Skipping Wine package installation (pip not available)"
+    echo "❌ Could not find Wine Python site-packages directory"
 fi
 
 # ============================================
