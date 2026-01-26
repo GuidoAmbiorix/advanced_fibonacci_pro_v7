@@ -3,7 +3,7 @@ Alert Manager - Intelligent alert system for trading dashboard.
 Monitors EA health, Governor thresholds, and generates notifications.
 """
 
-import MetaTrader5 as mt5
+from src.mt5_compat import mt5, MT5_AVAILABLE
 from typing import List, Dict
 from datetime import datetime, timedelta
 from ..logger import get_logger

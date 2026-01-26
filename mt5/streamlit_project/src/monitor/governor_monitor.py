@@ -3,7 +3,7 @@ Governor Monitor - Reads Portfolio Governor GlobalVariables in real-time.
 Tracks DD, PF, exposure, risk multipliers, and trading status.
 """
 
-import MetaTrader5 as mt5
+from src.mt5_compat import mt5, MT5_AVAILABLE
 from typing import Dict, Optional
 from datetime import datetime
 from ..logger import get_logger

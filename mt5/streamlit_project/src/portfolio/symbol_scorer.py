@@ -8,8 +8,7 @@ import numpy as np
 from typing import Dict, List, Optional
 from datetime import datetime
 from enum import Enum
-import MetaTrader5 as mt5
-
+from src.mt5_compat import mt5, MT5_AVAILABLE
 from .symbol_metadata import (
     SYMBOL_METADATA, 
     Session, 

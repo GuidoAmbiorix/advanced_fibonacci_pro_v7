@@ -3,7 +3,7 @@ Account Manager - Multi-account support for MT5 trading dashboard.
 Automatically detects current account and loads appropriate configuration.
 """
 
-import MetaTrader5 as mt5
+from src.mt5_compat import mt5, MT5_AVAILABLE
 import sqlite3
 import json
 from typing import Dict, List, Optional

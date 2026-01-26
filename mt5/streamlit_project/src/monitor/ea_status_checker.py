@@ -3,7 +3,7 @@ EA Status Checker - Detects which Symbol Engines are active/inactive.
 Uses GlobalVariable timestamps and magic numbers to determine EA status.
 """
 
-import MetaTrader5 as mt5
+from src.mt5_compat import mt5, MT5_AVAILABLE
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 from ..logger import get_logger

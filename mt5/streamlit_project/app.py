@@ -46,7 +46,7 @@ from components.alert_components import (
     render_quick_actions_sidebar
 )
 import pandas as pd
-import MetaTrader5 as mt5
+from src.mt5_compat import mt5, MT5_AVAILABLE
 from datetime import timedelta, datetime
 import time
 

@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Optional
 from datetime import datetime
-import MetaTrader5 as mt5
+from src.mt5_compat import mt5, MT5_AVAILABLE
 import streamlit as st
 
 from .symbol_metadata import get_all_symbols

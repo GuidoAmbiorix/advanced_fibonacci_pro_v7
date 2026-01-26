@@ -2,7 +2,7 @@
 System Health Checker - Monitors overall system health.
 """
 
-import MetaTrader5 as mt5
+from src.mt5_compat import mt5, MT5_AVAILABLE
 import os
 import shutil
 from typing import Dict

@@ -2,7 +2,7 @@
 MT5 Helper Functions - Compatibility layer for global variables API.
 """
 
-import MetaTrader5 as mt5
+from src.mt5_compat import mt5, MT5_AVAILABLE
 from typing import Optional, Dict
 import time
 from ..logger import get_logger

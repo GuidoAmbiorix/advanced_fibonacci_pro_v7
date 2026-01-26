@@ -7,9 +7,7 @@ import os
 from pathlib import Path
 from typing import List, Dict, Optional
 from datetime import datetime
-import MetaTrader5 as mt5
-
-
+from src.mt5_compat import mt5, MT5_AVAILABLE
 class EACommunicator:
     """
     Handles communication between Portfolio Governor and MT5 EAs.
