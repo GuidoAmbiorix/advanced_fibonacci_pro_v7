@@ -24,6 +24,10 @@ else
     echo "✅ Minimal packages installed"
 fi
 
+# Install mt5linux globally (critical for MT5 connection)
+echo "Installing mt5linux globally..."
+python3 -m pip install --break-system-packages mt5linux 2>/dev/null && echo "✅ mt5linux installed globally" || echo "⚠️  mt5linux installation had issues"
+
 # Set environment for Wine
 export DISPLAY=:0
 
