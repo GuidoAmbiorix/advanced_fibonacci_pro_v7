@@ -95,11 +95,21 @@ with st.sidebar:
         if account_info:
             st.divider()
             st.subheader("Account Info")
-            st.metric("Account", account_info.get("login"))
-            st.metric("Balance", f"${account_info.get('balance'):,.2f}")
+            
+            # Helper to safely get attribute or dict item
+            def safe_get(obj, key, default=None):
+                if isinstance(obj, dict):
+                    return obj.get(key, default)
+                return getattr(obj, key, default)
 
-            equity = account_info.get('equity')
-            balance = account_info.get('balance')
+            login = safe_get(account_info, "login")
+            balance = safe_get(account_info, "balance", 0.0)
+            equity = safe_get(account_info, "equity", 0.0)
+            server = safe_get(account_info, "server", "Unknown")
+            
+            st.metric("Account", login)
+            st.metric("Balance", f"${balance:,.2f}")
+
             floating_pl = equity - balance
 
             st.metric(
@@ -107,7 +117,7 @@ with st.sidebar:
                 f"${equity:,.2f}",
                 delta=f"${floating_pl:,.2f}"
             )
-            st.metric("Server", account_info.get("server"))
+            st.metric("Server", server)
 
             st.divider()
             st.subheader("⚙️ Settings")
