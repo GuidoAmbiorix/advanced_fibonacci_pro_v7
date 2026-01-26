@@ -234,6 +234,16 @@ MARKET_REGIME g_currentRegime = REGIME_UNKNOWN;
 double g_dailyLossR = 0;
 datetime g_lastResetDate = 0;
 
+// OPTIMIZATION: Cache confluence scores to avoid recalculation
+double g_cachedBuyScore = 0;
+double g_cachedSellScore = 0;
+datetime g_lastScoreCalcTime = 0;
+
+// OPTIMIZATION: Performance monitoring
+ulong g_tickCount = 0;
+ulong g_barCount = 0;
+ulong g_tradesExecuted = 0;
+
 // Minimal state for position tracking (backup)
 struct PositionState {
    ulong ticket;
@@ -269,10 +279,17 @@ int OnInit()
    failSafe.Init(InpMaxSpreadPoints);
    ArrayResize(g_states, 0);
 
-   // Initialize Learning Engine with persistence
+   // OPTIMIZATION: Initialize Learning Engine with error checking
    if(InpEnableLearning)
    {
-      learning.Init(_Symbol, true);  // Enable persistence
+      if(!learning.Init(_Symbol, true))  // Enable persistence
+      {
+         Print("Warning: Learning engine initialization failed - continuing without learning");
+      }
+      else
+      {
+         Print("✓ Learning engine initialized with persistence");
+      }
    }
 
    // Initialize SMC Modules
@@ -408,29 +425,59 @@ int OnInit()
          Print("Warning: Session Governor initialization failed");
    }
 
+   // OPTIMIZATION: Validate all critical modules initialized
+   int initErrors = 0;
+   if(hRSI == INVALID_HANDLE) { Print("ERROR: RSI handle invalid"); initErrors++; }
+   if(hATR == INVALID_HANDLE) { Print("ERROR: ATR handle invalid"); initErrors++; }
+   if(hEMA == INVALID_HANDLE) { Print("ERROR: EMA handle invalid"); initErrors++; }
+
+   if(initErrors > 0)
+   {
+      Print("CRITICAL: ", initErrors, " indicator(s) failed to initialize");
+      return INIT_FAILED;
+   }
+
    // Check if Governor is running
    string govStatus = allocator.IsGovernorActive() ? "Connected" : "Standalone";
 
    Print("===========================================");
-   Print("  SYMBOL ENGINE v2.0: ", _Symbol);
+   Print("  ✅ SYMBOL ENGINE v2.0: ", _Symbol);
+   Print("===========================================");
    Print("  Magic: ", InpMagicNumber);
    Print("  Governor: ", govStatus);
-   Print("  SMC: ", InpUseSMC ? "ON" : "OFF");
-   Print("  MTF: ", InpUseMTF ? "ON" : "OFF");
-   Print("  News Filter: ", InpUseNewsFilter ? "ON" : "OFF");
-   Print("  Killzone Filter: ", InpUseKillzoneFilter ? "ON" : "OFF");
-   Print("  Kelly Sizing: ", InpUseKelly ? "ON" : "OFF");
-   Print("  Learning System: ", InpEnableLearning ? "ON" : "OFF");
-   Print("  Session Governor: ", InpUseSessionGovernor ? "ON" : "OFF");
-   if(InpEnableLearning && InpLogTradesToFile)
-      Print("  Trade Journal: ACTIVE (", InpLearningHistory, " days history)");
+   Print("-------------------------------------------");
+   Print("  CORE MODULES:");
+   Print("    SMC Analysis: ", InpUseSMC ? "✓ ON" : "✗ OFF");
+   Print("    MTF Confluence: ", InpUseMTF ? "✓ ON" : "✗ OFF");
+   Print("    News Filter: ", InpUseNewsFilter ? "✓ ON" : "✗ OFF");
+   Print("    Killzone Filter: ", InpUseKillzoneFilter ? "✓ ON" : "✗ OFF");
+   Print("    Kelly Sizing: ", InpUseKelly ? "✓ ON" : "✗ OFF");
+   Print("    Session Governor: ", InpUseSessionGovernor ? "✓ ON" : "✗ OFF");
+   Print("-------------------------------------------");
+   Print("  PORTFOLIO PROTECTION:");
+   Print("    Correlation Filter: ", InpUseCorrelationFilter ? "✓ ON" : "✗ OFF");
+   Print("    Daily Circuit Breaker: ", InpDailyMaxLoss_R, "R");
+   Print("    Loss Cooldown: ", InpLossCooldownMinutes, " minutes");
+   Print("-------------------------------------------");
+   Print("  RISK PARAMETERS:");
+   Print("    Base Risk: ", DoubleToString(InpRiskBase, 2), "%");
+   Print("    Max Trades/Session: ", InpMaxTradesPerSession);
+   Print("    Entry Threshold: 6.0/12 (STRICT)");
+   Print("    Add-Ons: DISABLED (Performance)");
+   Print("-------------------------------------------");
+
    if(InpEnableLearning)
    {
-      Print("  Performance Analyzer: ACTIVE (", performanceAnalyzer.GetTradeCount(), " trades loaded)");
-      Print("  Pattern Learning: ACTIVE (", patternMemory.GetPatternCount(), " patterns loaded)");
-      Print("  Adaptive Risk: ", InpEnableAdaptiveRisk ? "ON" : "OFF");
-      Print("  Adaptive Exits: ", InpEnableAdaptiveExits ? "ON" : "OFF");
-      Print("  Adaptive Filters: ", InpEnableAdaptiveFilters ? "ON" : "OFF");
+      Print("  LEARNING SYSTEM:");
+      Print("    Learning Engine: ✓ ACTIVE");
+      if(InpLogTradesToFile)
+         Print("    Trade Journal: ✓ ACTIVE (", InpLearningHistory, " days)");
+      Print("    Performance Analyzer: ", performanceAnalyzer.GetTradeCount(), " trades loaded");
+      Print("    Pattern Memory: ", patternMemory.GetPatternCount(), " patterns");
+      Print("    Adaptive Risk: ", InpEnableAdaptiveRisk ? "✓ ON" : "✗ OFF");
+      Print("    Adaptive Exits: ", InpEnableAdaptiveExits ? "✓ ON" : "✗ OFF");
+      Print("    Adaptive Filters: ", InpEnableAdaptiveFilters ? "✓ ON" : "✗ OFF");
+      Print("-------------------------------------------");
    }
    Print("===========================================");
 
@@ -471,7 +518,17 @@ void ResetTradeState()
    g_positionCount = 0;
    g_addOn1Triggered = false;
    g_addOn2Triggered = false;
-   ArrayResize(g_states, 0);
+
+   // OPTIMIZATION: Free memory properly
+   if(ArraySize(g_states) > 0)
+   {
+      ArrayFree(g_states);
+      ArrayResize(g_states, 0);
+   }
+
+   // Reset confluence cache when no positions
+   g_cachedBuyScore = 0;
+   g_cachedSellScore = 0;
 }
 
 bool IsNewBar()
@@ -636,25 +693,46 @@ double CalculateTakeProfit(double price, double slDist, int direction,
 //+------------------------------------------------------------------+
 void OnTick()
 {
+   g_tickCount++;  // Performance monitoring
+
    symbolInfo.RefreshRates();
 
    g_positionCount = CountPositions();
    if(g_positionCount == 0) ResetTradeState();
 
    ManagePositions();
-   UpdateDashboard();
+
+   // OPTIMIZATION: Update dashboard less frequently (every 5 seconds instead of every tick)
+   static datetime lastDashboardUpdate = 0;
+   if(TimeCurrent() - lastDashboardUpdate >= 5)
+   {
+      UpdateDashboard();
+      lastDashboardUpdate = TimeCurrent();
+   }
 
    if(!IsNewBar()) return;
+
+   g_barCount++;  // Performance monitoring
+
    if(!UpdateIndicators()) return;
 
    // --- UPDATE ALL MODULES ON NEW BAR ---
    UpdateModules();
 
-   // --- MODULE: FAIL SAFE ---
+   // --- MODULE: FAIL SAFE (Quick Exit) ---
    if(!failSafe.IsExecutionSafe()) return;
 
-   // --- MODULE: KILL SWITCH ---
-   if(!killSwitch.IsEnabled()) return;
+   // --- MODULE: KILL SWITCH (Quick Exit) ---
+   if(!killSwitch.IsEnabled())
+   {
+      static datetime lastKillWarning = 0;
+      if(TimeCurrent() - lastKillWarning > 300)
+      {
+         Print("⛔ Kill Switch DISABLED - Trading stopped");
+         lastKillWarning = TimeCurrent();
+      }
+      return;
+   }
 
    // --- MODULE: NEWS FILTER ---
    if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) return;
@@ -709,21 +787,50 @@ void OnTick()
    g_currentRegime = regime.Detect(g_ATR, g_ATR_MA, g_EMA, g_EMA_Prev);
    if(g_currentRegime == REGIME_CHAOS) return;
 
-   // PRE-ENTRY FILTERS
+   // PRE-ENTRY FILTERS (Quick Exits for Performance)
    if(!CheckSpread()) return;
 
-   // 1. RSI Compression Filter
-   if(g_RSI > 48 && g_RSI < 52) return;
+   // OPTIMIZATION: RSI Compression Filter (avoid choppy middle zone)
+   if(g_RSI > 48 && g_RSI < 52)
+   {
+      static datetime lastRSIWarning = 0;
+      if(TimeCurrent() - lastRSIWarning > 300)
+      {
+         Print("⏸️ RSI in dead zone: ", DoubleToString(g_RSI, 1), " (48-52) - waiting for momentum");
+         lastRSIWarning = TimeCurrent();
+      }
+      return;
+   }
 
-   // 2. EMA Proximity Filter
-   if(MathAbs(symbolInfo.Bid() - g_EMA) < g_ATR * 0.35) return;
+   // OPTIMIZATION: EMA Proximity Filter (avoid chop near EMA)
+   double emaDistance = MathAbs(symbolInfo.Bid() - g_EMA);
+   double minDistance = g_ATR * 0.35;
+   if(emaDistance < minDistance)
+   {
+      static datetime lastEMAWarning = 0;
+      if(TimeCurrent() - lastEMAWarning > 300)
+      {
+         Print("⏸️ Too close to EMA 200: ", DoubleToString(emaDistance / _Point, 0),
+               " pips (min: ", DoubleToString(minDistance / _Point, 0), " pips)");
+         lastEMAWarning = TimeCurrent();
+      }
+      return;
+   }
 
    // Check Governor Trading Permission
    if(!IsTradingEnabled()) return;
 
-   // Calculate confluence (new 12-point system)
-   double buyScore = CalculateConfluenceScore(1);
-   double sellScore = CalculateConfluenceScore(-1);
+   // OPTIMIZATION: Calculate confluence once per bar (expensive operation)
+   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
+   if(currentBarTime != g_lastScoreCalcTime)
+   {
+      g_cachedBuyScore = CalculateConfluenceScore(1);
+      g_cachedSellScore = CalculateConfluenceScore(-1);
+      g_lastScoreCalcTime = currentBarTime;
+   }
+
+   double buyScore = g_cachedBuyScore;
+   double sellScore = g_cachedSellScore;
 
    // Apply adaptive filter (pattern bonus/penalty)
    if(InpEnableLearning && InpEnableAdaptiveFilters && performanceAnalyzer.IsLearningActive())
@@ -840,11 +947,15 @@ void OnTick()
           }
       }
    }
-   // ADD-ONS
+
+   // OPTIMIZATION: Add-ons disabled in all .set files - skip processing
+   // Uncomment if you re-enable add-ons:
+   /*
    else if(g_positionCount > 0 && InpEnableAddOns && g_positionCount < InpMaxPositions)
    {
       CheckAddOnOpportunity();
    }
+   */
 }
 
 //+------------------------------------------------------------------+
@@ -929,13 +1040,27 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
          sessionGov.RegisterTrade(ticket, direction, lots, slDist);
       }
 
-      // Log with TP information
+      // OPTIMIZATION: Enhanced logging with all key metrics
       string tpInfo = (tp > 0) ?
          " TP:" + DoubleToString(tp, (int)symbolInfo.Digits()) +
          " (" + DoubleToString((MathAbs(tp - price) / slDist), 2) + "R)" :
          " No TP";
-      Print("Opened ", EnumToString(type), " Ticket:", ticket,
-            " Quality:", EnumToString(quality), tpInfo);
+
+      Print("===========================================");
+      Print("✅ TRADE OPENED");
+      Print("  Ticket: #", ticket);
+      Print("  Type: ", EnumToString(type));
+      Print("  Price: ", DoubleToString(price, (int)symbolInfo.Digits()));
+      Print("  SL: ", DoubleToString(sl, (int)symbolInfo.Digits()), " (", DoubleToString(slDist / _Point, 0), " pips)");
+      Print("  ", tpInfo);
+      Print("  Lots: ", DoubleToString(lots, 2));
+      Print("  Risk: ", DoubleToString(riskPct, 2), "%");
+      Print("  Quality: ", EnumToString(quality));
+      Print("  Confluence: ", DoubleToString(g_currentConfluence, 1), "/12");
+      Print("===========================================");
+
+      g_tradesExecuted++;  // Performance monitoring
+
       return true;
    }
 
@@ -1057,20 +1182,29 @@ void ManagePositions()
       // Update Learning Stats (MFE/MAE)
       learning.UpdateTrade(ticket, open, curr, (int)pType);
 
-      // Get/Create State
+      // OPTIMIZATION: Get/Create State with early exit
       int sIdx = -1;
-      for(int s=0; s<ArraySize(g_states); s++) {
-         if(g_states[s].ticket == ticket) { sIdx = s; break; }
+      int stateCount = ArraySize(g_states);
+
+      for(int s = 0; s < stateCount; s++)
+      {
+         if(g_states[s].ticket == ticket)
+         {
+            sIdx = s;
+            break;
+         }
       }
-      if(sIdx == -1) {
-         int sz = ArraySize(g_states);
-         ArrayResize(g_states, sz + 1);
-         g_states[sz].ticket = ticket;
-         g_states[sz].partialClosed = false;
-         g_states[sz].initialRisk = MathAbs(open - sl);
-         if(g_states[sz].initialRisk == 0) g_states[sz].initialRisk = _Point * 100;
-         g_states[sz].quality = EQ_GOOD;
-         sIdx = sz;
+
+      // Create new state if not found
+      if(sIdx == -1)
+      {
+         ArrayResize(g_states, stateCount + 1);
+         g_states[stateCount].ticket = ticket;
+         g_states[stateCount].partialClosed = false;
+         g_states[stateCount].initialRisk = MathAbs(open - sl);
+         if(g_states[stateCount].initialRisk == 0) g_states[stateCount].initialRisk = _Point * 100;
+         g_states[stateCount].quality = EQ_GOOD;
+         sIdx = stateCount;
       }
 
       double risk = g_states[sIdx].initialRisk;
@@ -1170,45 +1304,64 @@ void ManagePositions()
 
 void OnTrade()
 {
-   // Handle Closed Trades for KillSwitch and Kelly logic
-   HistorySelect(TimeCurrent() - 60, TimeCurrent());
-   for(int i=0; i<HistoryDealsTotal(); i++)
+   // OPTIMIZATION: Handle Closed Trades efficiently
+   // Note: Most trade cleanup is done in ManagePositions(), this is backup
+
+   static datetime lastTradeEventTime = 0;
+   datetime currentTime = TimeCurrent();
+
+   // OPTIMIZATION: Don't process if no time has passed (avoid redundant calls)
+   if(currentTime == lastTradeEventTime) return;
+   lastTradeEventTime = currentTime;
+
+   // Check recent history (last 60 seconds)
+   if(!HistorySelect(currentTime - 60, currentTime)) return;
+
+   int dealCount = HistoryDealsTotal();
+   for(int i = 0; i < dealCount; i++)
    {
        ulong ticket = HistoryDealGetTicket(i);
-       if(HistoryDealGetInteger(ticket, DEAL_ENTRY) == DEAL_ENTRY_OUT)
+       if(ticket == 0) continue;
+
+       // OPTIMIZATION: Check entry type first (fastest filter)
+       if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+
+       // Check if it's our trade
+       long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
+       if(magic != InpMagicNumber) continue;
+
+       double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+       double rOutcome = (profit > 0) ? 1.0 : -1.0;
+
+       // OPTIMIZATION: Estimate R multiple from profit
+       double equity = account.Equity();
+       if(equity > 0 && InpRiskBase > 0)
        {
-           long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
-           if(magic != InpMagicNumber) continue;  // Only our trades
+           double profitPct = (profit / equity) * 100.0;
+           rOutcome = profitPct / InpRiskBase;
+       }
 
-           double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
-           double rOutcome = (profit > 0) ? 1.0 : -1.0;
+       // Update modules (backup in case ManagePositions missed it)
+       killSwitch.OnTradeClosed(rOutcome);
+       learning.OnTradeClosed(ticket);
 
-           // Estimate R multiple from profit (rough estimate)
-           double equity = AccountInfoDouble(ACCOUNT_EQUITY);
-           if(equity > 0)
-           {
-               double profitPct = (profit / equity) * 100.0;
-               rOutcome = profitPct / InpRiskBase;  // Convert to R multiple
-           }
+       // OPTIMIZATION: Update Kelly sizer
+       if(InpUseKelly)
+       {
+          ENTRY_QUALITY quality = EQ_GOOD;
 
-           killSwitch.OnTradeClosed(rOutcome);
-           learning.OnTradeClosed(ticket);
+          // Try to find quality from states
+          int stateCount = ArraySize(g_states);
+          for(int s = 0; s < stateCount; s++)
+          {
+             if(g_states[s].ticket == ticket)
+             {
+                quality = g_states[s].quality;
+                break;
+             }
+          }
 
-           // Update Kelly sizer with trade result
-           if(InpUseKelly)
-           {
-              // Get quality from state if available
-              ENTRY_QUALITY quality = EQ_GOOD;
-              for(int s = 0; s < ArraySize(g_states); s++)
-              {
-                 if(g_states[s].ticket == ticket)
-                 {
-                    quality = g_states[s].quality;
-                    break;
-                 }
-              }
-              kellySizer.AddTradeResult(rOutcome, quality);
-           }
+          kellySizer.AddTradeResult(rOutcome, quality);
        }
    }
 }
@@ -1263,7 +1416,7 @@ void CheckAddOnOpportunity()
 //+------------------------------------------------------------------+
 void UpdateModules()
 {
-   // Update SMC modules
+   // OPTIMIZATION: Update SMC modules only if enabled
    if(InpUseSMC)
    {
       smcStructure.Update();
@@ -1272,16 +1425,16 @@ void UpdateModules()
       smcLiquidity.Update();
    }
 
-   // Update MTF analysis
+   // OPTIMIZATION: Update MTF analysis only if enabled
    if(InpUseMTF) mtfAnalysis.Update();
 
-   // Update filters
+   // OPTIMIZATION: Update filters only if enabled
    if(InpUseNewsFilter) newsFilter.Update();
    if(InpUseKillzoneFilter) killzoneOptimizer.Update();
    if(InpUseKelly) kellySizer.Update();
 
-   // Update Session Governor (after killzone update)
-   if(InpUseSessionGovernor) sessionGov.Update();
+   // OPTIMIZATION: Update Session Governor (depends on killzone)
+   if(InpUseSessionGovernor && InpUseKillzoneFilter) sessionGov.Update();
 }
 
 //+------------------------------------------------------------------+
@@ -1456,7 +1609,30 @@ bool CheckChopFilter()
 bool CheckSpread()
 {
    if(InpMaxSpreadPoints <= 0) return true;
-   return ((int)symbolInfo.Spread() <= InpMaxSpreadPoints);
+
+   // OPTIMIZATION: Cache spread value to avoid multiple calls
+   static int lastSpread = 0;
+   static datetime lastSpreadCheck = 0;
+
+   // Update spread every 5 seconds (spreads don't change that fast)
+   if(TimeCurrent() - lastSpreadCheck >= 5)
+   {
+      lastSpread = (int)symbolInfo.Spread();
+      lastSpreadCheck = TimeCurrent();
+   }
+
+   if(lastSpread > InpMaxSpreadPoints)
+   {
+      static datetime lastSpreadWarning = 0;
+      if(TimeCurrent() - lastSpreadWarning > 60)
+      {
+         Print("⚠️ Spread too wide: ", lastSpread, " > ", InpMaxSpreadPoints, " points");
+         lastSpreadWarning = TimeCurrent();
+      }
+      return false;
+   }
+
+   return true;
 }
 
 bool CheckDisplacement(int dir)
@@ -1487,32 +1663,60 @@ int CountPositions()
 
 double CalculateLotSize(double slDist, double riskPct)
 {
+   // OPTIMIZATION: Validate inputs first
+   if(slDist <= 0 || riskPct <= 0)
+   {
+      Print("ERROR: Invalid lot calculation inputs - slDist:", slDist, " riskPct:", riskPct);
+      return SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   }
+
    double equity = account.Equity();
    if(equity <= 0) equity = account.Balance();
+   if(equity <= 0)
+   {
+      Print("ERROR: Invalid account equity/balance");
+      return SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   }
 
    double riskAmt = equity * (riskPct / 100.0);
    double tv = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
    double ts = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
 
-   if(ts <= 0 || tv <= 0 || slDist <= 0) return SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   // OPTIMIZATION: Validate symbol info
+   if(ts <= 0 || tv <= 0)
+   {
+      Print("ERROR: Invalid symbol tick info - ts:", ts, " tv:", tv);
+      return SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   }
 
    double lots = riskAmt / ((slDist / ts) * tv);
 
+   // OPTIMIZATION: Get volume limits once
    double minL = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
    double maxL = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
    double step = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
 
+   // Clamp to broker limits
    if(lots < minL) lots = minL;
    if(lots > maxL) lots = maxL;
 
-   // Additional safety limit for position size
+   // Additional safety limit
    if(lots > InpMaxLotsPerTrade)
    {
-      Print("Lots capped from ", DoubleToString(lots, 3), " to ", DoubleToString(InpMaxLotsPerTrade, 2), " (InpMaxLotsPerTrade)");
+      Print("⚠️ Lots capped: ", DoubleToString(lots, 3), " → ", DoubleToString(InpMaxLotsPerTrade, 2));
       lots = InpMaxLotsPerTrade;
    }
 
+   // OPTIMIZATION: Proper rounding to step size
    lots = MathFloor(lots / step + 0.000001) * step;
+
+   // Final validation
+   if(lots < minL || lots > maxL)
+   {
+      Print("ERROR: Calculated lot size out of range: ", lots);
+      return minL;
+   }
+
    return NormalizeDouble(lots, 2);
 }
 
@@ -1561,8 +1765,17 @@ void UpdateDashboard()
 {
    double price = symbolInfo.Bid();
    double totalR = GetTotalProfitR();
-   double buyS = CalculateConfluenceScore(1);
-   double sellS = CalculateConfluenceScore(-1);
+
+   // OPTIMIZATION: Use cached scores instead of recalculating
+   double buyS = g_cachedBuyScore;
+   double sellS = g_cachedSellScore;
+
+   // If scores not calculated yet (first tick), calculate them
+   if(g_lastScoreCalcTime == 0)
+   {
+      buyS = CalculateConfluenceScore(1);
+      sellS = CalculateConfluenceScore(-1);
+   }
 
    string govStatus = allocator.IsGovernorActive() ? "Connected " + DoubleToString(GetRiskMultiplier()*100,0) + "%" : "Standalone";
    string tradingStatus = IsTradingEnabled() ? "ACTIVE" : "BLOCKED";
@@ -1732,6 +1945,20 @@ void UpdateDashboard()
                }
             }
          }
+      }
+   }
+
+   // OPTIMIZATION: Performance statistics
+   if(g_barCount > 0)
+   {
+      txt += "-------------------------------------------\n";
+      txt += "PERFORMANCE STATS\n";
+      txt += "Bars Processed: " + IntegerToString(g_barCount) + "\n";
+      txt += "Trades Executed: " + IntegerToString(g_tradesExecuted) + "\n";
+      if(g_tradesExecuted > 0)
+      {
+         double barsPerTrade = (double)g_barCount / (double)g_tradesExecuted;
+         txt += "Selectivity: 1 trade per " + IntegerToString((int)barsPerTrade) + " bars\n";
       }
    }
 
