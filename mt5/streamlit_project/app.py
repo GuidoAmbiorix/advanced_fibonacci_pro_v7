@@ -5,7 +5,7 @@ Direct connection to MT5 via Wine (mt5linux)
 
 import streamlit as st
 from src.mt5_direct import get_connector
-from src.data_manager import DataManager
+from src.data_engine import DataEngine
 from src.analytics import PerformanceAnalytics
 from src.visualizations import create_equity_curve, create_symbol_distribution
 from src.config import config
