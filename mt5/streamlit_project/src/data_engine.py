@@ -1,4 +1,4 @@
-import MetaTrader5 as mt5
+from .mt5_compat import mt5, MT5_AVAILABLE
 import pandas as pd
 import logging
 from datetime import datetime, timedelta
