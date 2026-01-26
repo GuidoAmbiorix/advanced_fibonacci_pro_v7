@@ -156,6 +156,28 @@ class MT5Connector:
         # Simple check - could be improved with ping
         return self.connected
     
+    def get_account_info(self):
+        """Get account information from MT5."""
+        mt5_obj = self.get_mt5_instance()
+        if not mt5_obj:
+            return None
+        try:
+            return mt5_obj.account_info()
+        except Exception as e:
+            logger.warning(f"Could not get account info: {e}")
+            return None
+    
+    def get_terminal_info(self):
+        """Get terminal information from MT5."""
+        mt5_obj = self.get_mt5_instance()
+        if not mt5_obj:
+            return None
+        try:
+            return mt5_obj.terminal_info()
+        except Exception as e:
+            logger.warning(f"Could not get terminal info: {e}")
+            return None
+    
     def get_mt5_instance(self):
         """Get the MT5 instance for direct access."""
         if MT5_MODE == "mt5linux":
