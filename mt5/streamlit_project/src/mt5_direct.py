@@ -16,11 +16,17 @@ mt5 = None
 try:
     # Try mt5linux first (Wine/Linux)
     from mt5linux import MetaTrader5
-    # For mt5linux, we instantiate the class
-    mt5 = MetaTrader5()
+    # For mt5linux, we instantiate the class and connect to localhost:18812
+    mt5 = MetaTrader5(host='localhost', port=18812)
     MT5_AVAILABLE = True
     MT5_MODE = "mt5linux"
     logger.info("✅ Using mt5linux (Wine environment)")
+except ConnectionRefusedError:
+    logger.warning("⚠️  mt5linux server not running on port 18812")
+    logger.warning("    Server may still be starting up. Connection will retry on first use.")
+    mt5 = None
+    MT5_AVAILABLE = False
+    MT5_MODE = "none"
 except ImportError:
     try:
         # Fallback to MetaTrader5 (Windows)
@@ -31,6 +37,12 @@ except ImportError:
     except ImportError:
         logger.error("❌ Neither mt5linux nor MetaTrader5 available")
         MT5_AVAILABLE = False
+        MT5_MODE = "none"
+except Exception as e:
+    logger.error(f"❌ mt5linux connection failed: {e}")
+    mt5 = None
+    MT5_AVAILABLE = False
+    MT5_MODE = "none"
 
 
 class MT5Connector:
