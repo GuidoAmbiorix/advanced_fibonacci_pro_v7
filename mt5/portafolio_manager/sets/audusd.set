@@ -1,119 +1,122 @@
-; EURGBP - Euro Pound Cross - European Majors Differential
-; Low volatility, strong mean-reverting tendency
+; AUDUSD - Aussie Dollar - Commodity Currency
+; China-linked, risk-on indicator, commodity-driven (iron ore, coal)
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
-; Best Performance: European session (London Open), mean reversion during quiet hours
-; Risk Profile: Conservative - low volatility, stable macroeconomic relationship
-; Target: Win Rate 66-74%, Profit Factor 1.9+
-; Correlation: Low with USD pairs, pure European dynamic
-; Characteristics: Cleaner pullbacks, tight ranges, excellent for mean reversion
+; Best Performance: Asian session (China data) + NY session (USD data)
+; Risk Profile: Moderate - commodity volatility, China sensitivity
+; Target: Win Rate 64-74%, Profit Factor 2.1+
+; Correlation: Low to EURUSD (~0.3), inverse to USDCAD, risk-on indicator
+; Characteristics: China data sensitive, commodity cycles, clean trends during risk-on
 
 ; ====== IDENTITY ======
-InpMagicNumber=100012
+InpMagicNumber=100006
 
 ; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ; ====== KILLZONES ======
-; European session focused - less active during NY
+; AUD most active during Asian and NY sessions
 InpUseKillzoneFilter=true
 InpUseSymbolDefaults=true
 InpAutoDST=true
-InpEnableAsianKZ=false
+InpEnableAsianKZ=true
 InpEnableLondonOpenKZ=true
-InpEnableNYKZ=false
+InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=false
 
 ; ====== FIBONACCI ======
-; Tight zones for low volatility and precise entries
-InpSwingLookback=26
+; Standard zones for balanced volatility
+InpSwingLookback=21
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.15
+InpZoneTolerance=0.22
 
 ; ====== DISPLACEMENT ======
-; Lower displacement threshold for range-bound pair
+; Moderate displacement during commodity moves
 InpUseDisplacement=true
-InpDisplacementATR=1.0
+InpDisplacementATR=1.4
 InpDisplacementLookback=5
 
 ; ====== RSI ======
-; Tight bands for mean-reverting pair
+; Standard bands for commodity pair
 InpRSI_Period=14
-InpRSI_Oversold=43
-InpRSI_Overbought=57
+InpRSI_Oversold=38
+InpRSI_Overbought=62
 InpRSI_Momentum=true
 
 ; ====== TREND ======
-; Lower slope requirement - trends are gradual
+; Good trends during risk-on periods
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.08
+InpEMA_MinSlope=0.11
 
 ; ====== CHOP FILTER ======
-; Lower threshold - accept more ranging conditions
+; Moderate threshold for commodity volatility
 InpUseChopFilter=true
-InpChopThreshold=0.68
+InpChopThreshold=0.76
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; UPDATED: Stricter threshold for safety
+; Strict 6.0 threshold for quality
 InpMinConfluenceEntry=6
 InpEnableAddOns=false
-InpAddOn1_R=1.3
-InpAddOn2_R=2.3
+InpAddOn1_R=1.8
+InpAddOn2_R=3.0
 InpMaxPositions=1
 
 ; ====== RISK (Before Governor Scaling) ======
-; UPDATED: Conservative base (reduced from dangerous 0.58!)
+; Moderate base for commodity pair
 InpRiskBase=0.18
 InpRiskAddOn1=0.12
 InpRiskAddOn2=0.08
-InpMaxRisk=0.45
+InpMaxRisk=0.50
 InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
-; Conservative TP for mean-reverting nature
+; Adaptive TP for trending commodity nature
 InpTPMode=2
-InpFixedTP_R=2.5
-InpMinTP_R=1.3
-InpMaxTP_R=4.0
+InpFixedTP_R=3.3
+InpMinTP_R=1.8
+InpMaxTP_R=5.5
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
-; Tighter targets for ranging conditions
+; Moderate targets for commodity trends
 InpTrailingMode=1
-InpPartialTP_R=1.4
-InpPartialClosePercent=48.0
-InpBE_Threshold_R=1.0
-InpTrailStart_R=1.8
-InpTrailATR_Mult=0.95
+InpPartialTP_R=1.9
+InpPartialClosePercent=40.0
+InpBE_Threshold_R=1.4
+InpTrailStart_R=2.4
+InpTrailATR_Mult=1.2
 
 ; ====== SPREAD ======
-InpMaxSpreadPoints=14
+; Moderate spread tolerance for commodity pair
+InpMaxSpreadPoints=18
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
+; Good for AUD - respects institutional levels
 InpUseSMC=true
-InpSMC_SwingLookback=26
-InpSMC_MinImpulseATR=1.7
-InpSMC_MinFVG_ATR=0.42
+InpSMC_SwingLookback=21
+InpSMC_MinImpulseATR=2.1
+InpSMC_MinFVG_ATR=0.52
 
 ; ====== MULTI-TIMEFRAME ======
+; H4 bias for commodity cycles
 InpUseMTF=true
 InpHTF=16388
 InpMTF=16385
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
-; Filter European news events
+; Filter Australian and Chinese economic data
 InpUseNewsFilter=true
 InpNewsMinutesBefore=35
-InpNewsMinutesAfter=30
+InpNewsMinutesAfter=35
 
 ; ====== KELLY POSITION SIZING ======
-; UPDATED: Conservative Kelly
+; Conservative Quarter Kelly
 InpUseKelly=true
 InpKellyFraction=0.25
 InpDailyMaxDD=2.0
@@ -131,7 +134,7 @@ InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=false
 
 ; ====== SESSION GOVERNOR ======
-; UPDATED: Strict limits (reduced from dangerous 4 trades!)
+; Strict session limits (1 trade per session)
 InpUseSessionGovernor=true
 InpMaxTradesPerSession=1
 InpMaxProfitPerSession_R=4.0
@@ -141,7 +144,7 @@ InpTradeCooldownMinutes=30
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======
-; NEW: Correlation and circuit breaker protection
+; Correlation filter and circuit breaker
 InpUseCorrelationFilter=true
 InpDailyMaxLoss_R=3.0
 InpLossCooldownMinutes=45

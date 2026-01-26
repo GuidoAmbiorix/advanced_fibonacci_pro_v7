@@ -1,72 +1,72 @@
-; GBPUSD - The Cable - Volatile Major with Strong Trends
-; Enhanced with SMC for capturing institutional moves
+; USDJPY - Dollar Yen - Safe Haven Pair
+; Low volatility, strong trending during risk-off events
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
-; Best Performance: London session (explosive moves, deeper sweeps)
-; Risk Profile: Moderate - wider stops due to volatility
-; Target: Win Rate 62-72%, Profit Factor 2.0+
-; Correlation: +0.95 with EURUSD, -0.80 with USDJPY
-; Characteristics: More impulsive moves, larger daily range, prone to sharp sweeps
+; Best Performance: Tokyo session (Japanese market hours), NY session (USD data)
+; Risk Profile: Conservative - stable, clean trends, predictable
+; Target: Win Rate 68-76%, Profit Factor 2.3+
+; Correlation: Low correlation to EURUSD (~0.15), inverse to risk assets
+; Characteristics: Safe haven flows, BOJ policy sensitive, clean technical levels
 
 ; ====== IDENTITY ======
-InpMagicNumber=100003
+InpMagicNumber=100004
 
 ; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ; ====== KILLZONES ======
-; GBP is most active during London session
+; JPY most active during Tokyo and NY sessions
 InpUseKillzoneFilter=true
 InpUseSymbolDefaults=true
 InpAutoDST=true
-InpEnableAsianKZ=false
-InpEnableLondonOpenKZ=true
+InpEnableAsianKZ=true
+InpEnableLondonOpenKZ=false
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
-InpFocusPrimeOnly=true
+InpFocusPrimeOnly=false
 
 ; ====== FIBONACCI ======
-; Wider zones due to volatility and deeper sweeps
-InpSwingLookback=20
+; Tight zones - JPY respects technical levels well
+InpSwingLookback=24
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.30
+InpZoneTolerance=0.20
 
 ; ====== DISPLACEMENT ======
-; Strong displacement common in GBP
+; Moderate displacement for trending nature
 InpUseDisplacement=true
-InpDisplacementATR=1.5
+InpDisplacementATR=1.3
 InpDisplacementLookback=5
 
 ; ====== RSI ======
-; Wider RSI bands for volatile pair
+; Standard bands for balanced pair
 InpRSI_Period=14
-InpRSI_Oversold=35
-InpRSI_Overbought=65
+InpRSI_Oversold=42
+InpRSI_Overbought=58
 InpRSI_Momentum=true
 
 ; ====== TREND ======
-; Strong trends in GBP - higher slope requirement
+; Strong trends in JPY - moderate slope
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.15
+InpEMA_MinSlope=0.12
 
 ; ====== CHOP FILTER ======
-; Higher threshold for volatile pair
+; Moderate threshold - cleaner than EUR pairs
 InpUseChopFilter=true
-InpChopThreshold=0.80
+InpChopThreshold=0.78
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; UPDATED: Maintained strict threshold (6.0 is good for GBP)
+; Strict 6.0 threshold for quality
 InpMinConfluenceEntry=6
 InpEnableAddOns=false
-InpAddOn1_R=2.0
-InpAddOn2_R=3.5
+InpAddOn1_R=1.5
+InpAddOn2_R=2.5
 InpMaxPositions=1
 
 ; ====== RISK (Before Governor Scaling) ======
-; UPDATED: More conservative base (reduced from 0.40)
+; Conservative base for stable pair
 InpRiskBase=0.18
 InpRiskAddOn1=0.12
 InpRiskAddOn2=0.08
@@ -77,44 +77,46 @@ InpEnableMarginCheck=true
 ; ====== TAKE PROFIT ======
 ; Adaptive TP for trending nature
 InpTPMode=2
-InpFixedTP_R=3.5
-InpMinTP_R=2.0
-InpMaxTP_R=6.0
+InpFixedTP_R=3.2
+InpMinTP_R=1.8
+InpMaxTP_R=5.5
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
-; Wider targets for trending nature
+; Moderate targets for trending conditions
 InpTrailingMode=1
-InpPartialTP_R=2.0
-InpPartialClosePercent=40.0
-InpBE_Threshold_R=1.5
-InpTrailStart_R=2.5
-InpTrailATR_Mult=1.3
+InpPartialTP_R=1.8
+InpPartialClosePercent=42.0
+InpBE_Threshold_R=1.3
+InpTrailStart_R=2.3
+InpTrailATR_Mult=1.15
 
 ; ====== SPREAD ======
-; Allow wider spreads for GBP
-InpMaxSpreadPoints=20
+; Tight spread requirement for major pair
+InpMaxSpreadPoints=15
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
+; JPY respects institutional levels well
 InpUseSMC=true
-InpSMC_SwingLookback=20
-InpSMC_MinImpulseATR=2.5
-InpSMC_MinFVG_ATR=0.60
+InpSMC_SwingLookback=24
+InpSMC_MinImpulseATR=2.0
+InpSMC_MinFVG_ATR=0.48
 
 ; ====== MULTI-TIMEFRAME ======
+; H4 bias, H1 confirmation
 InpUseMTF=true
 InpHTF=16388
 InpMTF=16385
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
-; Critical for GBP due to volatility spikes
+; Critical for JPY (BOJ) and USD news
 InpUseNewsFilter=true
-InpNewsMinutesBefore=45
-InpNewsMinutesAfter=45
+InpNewsMinutesBefore=35
+InpNewsMinutesAfter=35
 
 ; ====== KELLY POSITION SIZING ======
-; UPDATED: Quarter Kelly for volatile GBP
+; Conservative Quarter Kelly
 InpUseKelly=true
 InpKellyFraction=0.25
 InpDailyMaxDD=2.0
@@ -132,17 +134,17 @@ InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=false
 
 ; ====== SESSION GOVERNOR ======
-; UPDATED: Only 1 trade per session for volatile GBP
+; Strict session limits (1 trade per session)
 InpUseSessionGovernor=true
 InpMaxTradesPerSession=1
-InpMaxProfitPerSession_R=3.5
+InpMaxProfitPerSession_R=4.0
 InpMaxLossPerSession_R=1.5
 InpMinSessionConfidence=0.5
 InpTradeCooldownMinutes=30
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======
-; NEW: Correlation filter and circuit breaker
+; Correlation filter and circuit breaker
 InpUseCorrelationFilter=true
 InpDailyMaxLoss_R=3.0
 InpLossCooldownMinutes=45

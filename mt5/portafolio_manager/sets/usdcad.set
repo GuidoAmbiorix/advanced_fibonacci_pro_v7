@@ -1,0 +1,150 @@
+; USDCAD - Loonie - Oil-Linked North American Pair
+; Heavily correlated with crude oil prices (inverse), North American focus
+; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
+; Best Performance: NY session (US + Canadian data), oil market hours
+; Risk Profile: Moderate - oil volatility, clean technicals
+; Target: Win Rate 66-76%, Profit Factor 2.2+
+; Correlation: Inverse to AUDUSD (both commodity but opposite USD direction), oil-linked
+; Characteristics: Oil price inverse correlation ~-0.80, clean trends, North America data driven
+
+; ====== IDENTITY ======
+InpMagicNumber=100008
+
+; ====== DIRECTION ======
+InpDirection=0
+InpBrokerUTCOffset=2
+
+; ====== KILLZONES ======
+; CAD most active during NY session (US + Canada overlap)
+InpUseKillzoneFilter=true
+InpUseSymbolDefaults=true
+InpAutoDST=true
+InpEnableAsianKZ=false
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=true
+InpEnableLondonCloseKZ=false
+InpFocusPrimeOnly=false
+
+; ====== FIBONACCI ======
+; Standard zones for balanced pair
+InpSwingLookback=22
+InpFibLevelLow=0.618
+InpFibLevelHigh=0.786
+InpZoneTolerance=0.21
+
+; ====== DISPLACEMENT ======
+; Moderate displacement during oil moves
+InpUseDisplacement=true
+InpDisplacementATR=1.3
+InpDisplacementLookback=5
+
+; ====== RSI ======
+; Standard bands for balanced pair
+InpRSI_Period=14
+InpRSI_Oversold=40
+InpRSI_Overbought=60
+InpRSI_Momentum=true
+
+; ====== TREND ======
+; Good trends linked to oil cycles
+InpEMA_Period=200
+InpUseTrendFilter=true
+InpEMA_MinSlope=0.11
+
+; ====== CHOP FILTER ======
+; Standard threshold for clean technicals
+InpUseChopFilter=true
+InpChopThreshold=0.77
+InpATR_MA_Period=20
+
+; ====== CONFLUENCE ======
+; Strict 6.0 threshold for quality
+InpMinConfluenceEntry=6
+InpEnableAddOns=false
+InpAddOn1_R=1.7
+InpAddOn2_R=2.8
+InpMaxPositions=1
+
+; ====== RISK (Before Governor Scaling) ======
+; Moderate base for stable North American pair
+InpRiskBase=0.18
+InpRiskAddOn1=0.12
+InpRiskAddOn2=0.08
+InpMaxRisk=0.50
+InpMaxLotsPerTrade=0.5
+InpEnableMarginCheck=true
+
+; ====== TAKE PROFIT ======
+; Adaptive TP for oil-driven trends
+InpTPMode=2
+InpFixedTP_R=3.1
+InpMinTP_R=1.7
+InpMaxTP_R=5.3
+InpTPUseLearnedMFE=true
+
+; ====== EXIT ======
+; Moderate targets for trending conditions
+InpTrailingMode=1
+InpPartialTP_R=1.8
+InpPartialClosePercent=42.0
+InpBE_Threshold_R=1.3
+InpTrailStart_R=2.3
+InpTrailATR_Mult=1.15
+
+; ====== SPREAD ======
+; Tight spread requirement for major pair
+InpMaxSpreadPoints=16
+
+; ====== SMC - SMART MONEY CONCEPTS ======
+; Good for USDCAD - respects technical levels
+InpUseSMC=true
+InpSMC_SwingLookback=22
+InpSMC_MinImpulseATR=2.0
+InpSMC_MinFVG_ATR=0.50
+
+; ====== MULTI-TIMEFRAME ======
+; H4 bias for oil cycle alignment
+InpUseMTF=true
+InpHTF=16388
+InpMTF=16385
+InpMTF_EMAPeriod=50
+
+; ====== NEWS FILTER ======
+; Filter US and Canadian economic data + oil inventory
+InpUseNewsFilter=true
+InpNewsMinutesBefore=35
+InpNewsMinutesAfter=35
+
+; ====== KELLY POSITION SIZING ======
+; Conservative Quarter Kelly
+InpUseKelly=true
+InpKellyFraction=0.25
+InpDailyMaxDD=2.0
+InpWeeklyMaxDD=4.0
+
+; ====== LEARNING & ADAPTATION ======
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+InpMinTradesForLearning=50
+
+; ====== ADAPTIVE BEHAVIOR (Advanced) ======
+InpEnableAdaptiveRisk=false
+InpEnableAdaptiveExits=false
+InpEnableAdaptiveFilters=false
+
+; ====== SESSION GOVERNOR ======
+; Strict session limits (1 trade per session)
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=1
+InpMaxProfitPerSession_R=4.0
+InpMaxLossPerSession_R=1.5
+InpMinSessionConfidence=0.5
+InpTradeCooldownMinutes=30
+InpEnableSessionBlacklist=true
+
+; ====== PORTFOLIO PROTECTION ======
+; Correlation filter and circuit breaker
+InpUseCorrelationFilter=true
+InpDailyMaxLoss_R=3.0
+InpLossCooldownMinutes=45
