@@ -5,13 +5,11 @@ services:
     container_name: trading_mt5
     ports:
       - "3000:3000"
-      - "8001:8001"
     environment:
       - CUSTOM_USER=trader
       - PASSWORD=trading
     volumes:
       - mt5_config:/config
-      # NOW add your local folder
       - type: bind
         source: ./portafolio_manager
         target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
@@ -25,6 +23,39 @@ services:
           memory: 8G
         reservations:
           memory: 2G
+    restart: unless-stopped
+
+  # MT5 REST API Bridge - Exposes MT5 data via HTTP
+  mt5_api:
+    build: ./mt5_api_bridge
+    container_name: mt5_api_bridge
+    ports:
+      - "8001:8001"
+    environment:
+      - DISPLAY=mt5:0
+    volumes:
+      - mt5_config:/mt5_config:ro
+    networks:
+      vpn_network:
+        ipv4_address: 10.13.13.21
+    depends_on:
+      - mt5
+    restart: unless-stopped
+
+  # Streamlit Dashboard
+  dashboard:
+    build: ./streamlit_project
+    container_name: trading_dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - MT5_API_URL=http://mt5_api:8001
+      - USE_REMOTE_API=true
+    networks:
+      vpn_network:
+        ipv4_address: 10.13.13.22
+    depends_on:
+      - mt5_api
     restart: unless-stopped
 
 volumes:
