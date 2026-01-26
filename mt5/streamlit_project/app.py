@@ -18,8 +18,8 @@ from components import (
     render_profit_distribution,
     render_symbol_performance,
     render_time_analysis,
-    render_correlation_heatmap,
-    render_governor_dashboard
+    # render_correlation_heatmap,  # Not in components yet
+    # render_governor_dashboard  # Not in components yet
 )
 from components.governor_components import (
     render_symbol_scores_table,
