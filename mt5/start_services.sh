@@ -15,7 +15,7 @@ sleep 15
 # Install Python packages (silently, avoid noise)
 echo "Installing Python packages..."
 python3 -m pip install --break-system-packages --quiet \
-    streamlit pandas plotly sqlalchemy 2>/dev/null || echo "Some packages already installed"
+    streamlit pandas plotly sqlalchemy python-dotenv 2>/dev/null || echo "Some packages already installed"
 
 echo "✅ Setup complete"
 
