@@ -5,20 +5,28 @@ No API bridge needed - connects directly to MT5 in Wine.
 
 import sys
 from src.logger import get_logger
-from src.mt5_compat import mt5, MT5_AVAILABLE, MT5_MODE
 
 logger = get_logger(__name__)
-mt5 = None
+
+# Import MT5 with proper handling for mt5linux vs MetaTrader5
 MT5_AVAILABLE = False
+MT5_MODE = "none"
+mt5 = None
 
 try:
-    import mt5linux as mt5
+    # Try mt5linux first (Wine/Linux)
+    from mt5linux import MetaTrader5
+    # For mt5linux, we instantiate the class
+    mt5 = MetaTrader5()
     MT5_AVAILABLE = True
+    MT5_MODE = "mt5linux"
     logger.info("✅ Using mt5linux (Wine environment)")
 except ImportError:
     try:
+        # Fallback to MetaTrader5 (Windows)
         import MetaTrader5 as mt5
         MT5_AVAILABLE = True
+        MT5_MODE = "MetaTrader5"
         logger.info("✅ Using MetaTrader5 (Windows native)")
     except ImportError:
         logger.error("❌ Neither mt5linux nor MetaTrader5 available")
@@ -26,12 +34,11 @@ except ImportError:
 
 
 class MT5Connector:
-    """Direct connector to MT5 terminal using mt5linux."""
+    """Direct connector to MT5 terminal."""
     
     def __init__(self):
         """Initialize connector."""
         self.connected = False
-        self._mt5_instance = None
         
     def connect(self) -> bool:
         """
@@ -40,59 +47,40 @@ class MT5Connector:
         Returns:
             True if connected successfully
         """
-        if not MT5_AVAILABLE:
+        if not MT5_AVAILABLE or mt5 is None:
             logger.error("MT5 library not available")
             return False
         
         try:
-            # For mt5linux, we use MetaTrader() class instead of initialize()
-            if MT5_MODE == "mt5linux":
-                self._mt5_instance = mt5.MetaTrader()
-                
-                # Check if connection is successful
-                if self._mt5_instance is None:
-                    logger.error("Failed to create MT5 instance")
-                    return False
-                
-                self.connected = True
-                logger.info("✅ Connected to MT5 via mt5linux")
-                
-                # Try to get terminal info
-                try:
-                    terminal_info = self._mt5_instance.terminal_info()
-                    if terminal_info:
-                        logger.info(f"Terminal: {terminal_info.company if hasattr(terminal_info, 'company') else 'MT5'}")
-                except Exception as e:
-                    logger.warning(f"Could not get terminal info: {e}")
-                
-                # Try to get account info
-                try:
-                    account_info = self._mt5_instance.account_info()
-                    if account_info:
-                        logger.info(f"Account: {account_info.login if hasattr(account_info, 'login') else 'N/A'}")
-                except Exception as e:
-                    logger.warning(f"Could not get account info: {e}")
-                
-                return True
-            else:
-                # Using MetaTrader5 (Windows)
-                if not mt5.initialize():
-                    error = mt5.last_error()
-                    logger.error(f"MT5 initialization failed: {error}")
-                    return False
-                
-                self.connected = True
-                logger.info("✅ Connected to MT5 (Windows)")
-                
+            # Both mt5linux and MetaTrader5 use the same initialize() method
+            if not mt5.initialize():
+                error = mt5.last_error() if hasattr(mt5, 'last_error') else "Unknown error"
+                logger.error(f"MT5 initialization failed: {error}")
+                return False
+            
+            self.connected = True
+            logger.info(f"✅ Connected to MT5 via {MT5_MODE}")
+            
+            # Try to get terminal info
+            try:
                 terminal_info = mt5.terminal_info()
                 if terminal_info:
-                    logger.info(f"Connected to: {terminal_info.company}")
-                
+                    company = getattr(terminal_info, 'company', 'MT5')
+                    logger.info(f"Terminal: {company}")
+            except Exception as e:
+                logger.warning(f"Could not get terminal info: {e}")
+            
+            # Try to get account info
+            try:
                 account_info = mt5.account_info()
                 if account_info:
-                    logger.info(f"Account: {account_info.login} | Balance: {account_info.balance}")
-                
-                return True
+                    login = getattr(account_info, 'login', 'N/A')
+                    balance = getattr(account_info, 'balance', 0)
+                    logger.info(f"Account: {login} | Balance: {balance}")
+            except Exception as e:
+                logger.warning(f"Could not get account info: {e}")
+            
+            return True
             
         except Exception as e:
             logger.error(f"Connection error: {e}")
@@ -106,10 +94,7 @@ class MT5Connector:
             return
             
         try:
-            if MT5_MODE == "mt5linux" and self._mt5_instance:
-                # mt5linux cleanup (if needed)
-                self._mt5_instance = None
-            elif MT5_AVAILABLE:
+            if MT5_AVAILABLE and mt5:
                 mt5.shutdown()
             
             self.connected = False
@@ -123,7 +108,7 @@ class MT5Connector:
     
     def get_mt5_instance(self):
         """Get the MT5 instance for direct access."""
-        return self._mt5_instance if MT5_MODE == "mt5linux" else mt5
+        return mt5
 
 
 # Global instance
