@@ -24,6 +24,20 @@ from components.governor_components import (
     render_active_group_summary,
     render_group_comparison_table
 )
+from components.monitor_components import (
+    render_ea_status_grid,
+    render_governor_metrics_card,
+    render_group_risk_bars,
+    render_ea_summary_stats,
+    render_active_symbol_chips,
+    render_inactive_symbol_chips
+)
+from components.alert_components import (
+    render_alert_panel,
+    render_health_dashboard,
+    render_gv_inspector,
+    render_quick_actions_sidebar
+)
 import pandas as pd
 import MetaTrader5 as mt5
 from datetime import timedelta, datetime
@@ -121,6 +135,26 @@ with st.sidebar:
             st.divider()
             if st.button("🔄 Manual Refresh"):
                 st.rerun()
+            
+            # Multi-Account Info
+            st.divider()
+            st.subheader("🔑 Account")
+            
+            from src.multi_account import AccountManager
+            account_mgr = AccountManager()
+            current_account = account_mgr.get_current_account()
+            
+            if current_account:
+                st.caption(f"Login: {current_account['login']}")
+                st.caption(f"Server: {current_account['server']}")
+                
+                # List known accounts
+                known_accounts = account_mgr.list_known_accounts()
+                if len(known_accounts) > 1:
+                    st.caption(f"Known accounts: {len(known_accounts)}")
+            
+            # Quick Actions
+            render_quick_actions_sidebar()
 
     else:
         st.error("❌ MT5 Disconnected")
@@ -149,13 +183,16 @@ with st.spinner("📥 Fetching Trade History..."):
 analytics = PerformanceAnalytics(trades_df) if not trades_df.empty else None
 
 # Tabs
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab_ea, tab2, tab3, tab4, tab5, tab6, tab_gv, tab_health, tab7 = st.tabs([
     "📊 Live Dashboard",
+    "🤖 EA Status Monitor",
     "🎯 Portfolio Governor",
     "📈 Performance Analytics",
     "🔎 Trade Inspector",
     "💹 Symbol & Time Analysis",
     "🧩 Pattern Intelligence",
+    "🔍 GlobalVariables",
+    "🏥 System Health",
     "⚙️ Advanced Stats"
 ])
 
@@ -271,6 +308,89 @@ with tab1:
         )
     else:
         st.info(f"No closed trades found in the last {days_to_fetch} days.")
+
+# ==================== TAB EA: EA STATUS MONITOR ====================
+with tab_ea:
+    st.markdown("#### 🤖 EA Status Monitor")
+    st.markdown("*Real-time monitoring of Symbol Engine EAs and Portfolio Governor*")
+    
+    # Import monitoring modules
+    from src.monitor import GovernorMonitor, EAStatusChecker
+    
+    # Initialize monitors
+    governor_monitor = GovernorMonitor()
+    ea_status_checker = EAStatusChecker()
+    
+    # Auto-detect symbols from system
+    detected_symbols = ea_status_checker.auto_detect_symbols()
+    if detected_symbols:
+        ea_status_checker.symbols = detected_symbols
+    
+    # Two column layout
+    col_left, col_right = st.columns([1, 1])
+    
+    with col_left:
+        st.markdown("### 📊 Portfolio Governor Status")
+        
+        # Get Governor metrics
+        governor_metrics = governor_monitor.get_governor_metrics()
+        
+        # Render Governor metrics card
+        render_governor_metrics_card(governor_metrics)
+        
+        st.divider()
+        
+        # Group risks
+        if governor_metrics.get('active'):
+            group_risks = governor_monitor.get_group_risks()
+            render_group_risk_bars(group_risks, max_risk=1.0)
+    
+    with col_right:
+        st.markdown("### 🤖 Symbol Engine Status")
+        
+        # Get EA statuses
+        ea_statuses = ea_status_checker.get_all_ea_statuses()
+        
+        # Summary stats
+        summary = ea_status_checker.get_summary_stats()
+        render_ea_summary_stats(summary)
+        
+        st.divider()
+        
+        # Active/Inactive chips
+        active_symbols = ea_status_checker.get_active_symbols()
+        inactive_symbols = ea_status_checker.get_inactive_symbols()
+        
+        if active_symbols:
+            render_active_symbol_chips(active_symbols)
+            st.write("")  # Spacing
+        
+        if inactive_symbols:
+            render_inactive_symbol_chips(inactive_symbols)
+    
+    st.divider()
+    
+    # Full EA status grid
+    st.markdown("### 📋 Detailed EA Status")
+    render_ea_status_grid(ea_statuses)
+    
+    # Auto-refresh controls
+    st.divider()
+    col1, col2, col3 = st.columns([1, 1, 2])
+    
+    with col1:
+        if st.button("🔄 Refresh Now", key="ea_refresh"):
+            st.rerun()
+    
+    with col2:
+        auto_refresh_ea = st.checkbox("Auto-refresh", value=False, key="auto_refresh_ea")
+    
+    with col3:
+        if auto_refresh_ea:
+            refresh_seconds = st.slider("Refresh interval (s)", 5, 60, 10, key="ea_refresh_interval")
+            st.caption(f"Auto-refreshing every {refresh_seconds} seconds")
+            time.sleep(refresh_seconds)
+            st.rerun()
 
 # ==================== TAB 2: PORTFOLIO GOVERNOR ====================
 with tab2:
@@ -689,6 +809,70 @@ with tab7:
             )
     else:
         st.info("No trade data available for advanced statistics")
+
+# ==================== TAB GV: GLOBALVARIABLES INSPECTOR ====================
+with tab_gv:
+    st.markdown("#### 🔍 GlobalVariables Inspector")
+    
+    # Filter options
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        filter_gov = st.checkbox("Governor (PG_)", value=True)
+    with col2:
+        filter_mult = st.checkbox("Multipliers", value=True)
+    with col3:
+        show_all = st.checkbox("Show All", value=False)
+    
+    # Display GlobalVariables
+    if show_all:
+        render_gv_inspector("")
+    elif filter_gov or filter_mult:
+        prefixes = []
+        if filter_gov:
+            prefixes.append("PG_")
+        if filter_mult:
+            prefixes.append("GovernorMultiplier_")
+        
+        # Show for first prefix (can be enhanced)
+        render_gv_inspector(prefixes[0] if prefixes else "")
+
+# ==================== TAB HEALTH: SYSTEM HEALTH ====================
+with tab_health:
+    st.markdown("#### 🏥 System Health Dashboard")
+    
+    from src.monitor import HealthChecker, AlertManager, GovernorMonitor, EAStatusChecker
+    
+    # Initialize
+    health_checker = HealthChecker()
+    
+    if 'alert_manager' not in st.session_state:
+        st.session_state.alert_manager = AlertManager()
+    alert_mgr = st.session_state.alert_manager
+    
+    # Run diagnostics
+    health_results = health_checker.run_full_diagnostic()
+    
+    # Check alerts
+    gov_monitor = GovernorMonitor()
+    ea_checker = EAStatusChecker()
+    gov_metrics = gov_monitor.get_governor_metrics()
+    ea_statuses = ea_checker.get_all_ea_statuses()
+    
+    alert_mgr.check_governor_thresholds(gov_metrics)
+    alert_mgr.check_ea_health(ea_statuses)
+    
+    # Display
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        render_health_dashboard(health_results)
+    
+    with col2:
+        recent_alerts = alert_mgr.get_recent_alerts(60)
+        if render_alert_panel(recent_alerts, 10):
+            alert_mgr.clear_alerts()
+            st.rerun()
 
 # Auto-refresh logic
 if 'auto_refresh' in locals() and auto_refresh:
