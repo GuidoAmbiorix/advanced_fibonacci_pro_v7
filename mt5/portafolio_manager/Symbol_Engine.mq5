@@ -169,6 +169,11 @@ input double            InpMinSessionConfidence = 0.4;    // Min Session Confide
 input int               InpTradeCooldownMinutes = 15;     // Cooldown Between Trades (minutes)
 input bool              InpEnableSessionBlacklist = true; // Enable Session Blacklist
 
+input group "======= PORTFOLIO PROTECTION ======="
+input bool              InpUseCorrelationFilter = true;   // Enable Correlation Protection
+input double            InpDailyMaxLoss_R = 4.0;          // Daily Max Loss (R) - Circuit Breaker
+input int               InpLossCooldownMinutes = 30;      // Cooldown After Loss (minutes)
+
 //+------------------------------------------------------------------+
 //| GLOBALS                                                           |
 //+------------------------------------------------------------------+
@@ -224,6 +229,10 @@ ulong g_lastTickTime = 0;
 int g_bias = 0;
 datetime g_lastLossTime = 0;
 MARKET_REGIME g_currentRegime = REGIME_UNKNOWN;
+
+// Portfolio Protection Tracking
+double g_dailyLossR = 0;
+datetime g_lastResetDate = 0;
 
 // Minimal state for position tracking (backup)
 struct PositionState {
@@ -495,6 +504,63 @@ double GetSymbolEdgeFactor()
 }
 
 //+------------------------------------------------------------------+
+//| Reset daily loss tracking on new trading day                     |
+//+------------------------------------------------------------------+
+void ResetDailyLossIfNewDay()
+{
+   MqlDateTime dt;
+   TimeToStruct(TimeCurrent(), dt);
+   datetime currentDate = StringToTime(StringFormat("%04d.%02d.%02d", dt.year, dt.mon, dt.day));
+
+   if(currentDate != g_lastResetDate)
+   {
+      if(g_lastResetDate > 0 && g_dailyLossR < 0)
+      {
+         Print("📊 Daily Reset: Previous day loss was ", DoubleToString(g_dailyLossR, 2), "R");
+      }
+      g_dailyLossR = 0;
+      g_lastResetDate = currentDate;
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Check if symbol can trade (correlation protection)               |
+//+------------------------------------------------------------------+
+bool CanTradeSymbol(string symbol)
+{
+   if(!InpUseCorrelationFilter) return true;
+
+   ENUM_CORR_GROUP myGroup = GetCorrelationGroup(symbol);
+
+   // Check all open positions for correlated pairs
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      if(!position.SelectByIndex(i)) continue;
+
+      long posMagic = position.Magic();
+
+      // Only check positions from same EA family (100000-100099 magic range)
+      if(posMagic >= 100000 && posMagic < 100100)
+      {
+         string posSymbol = position.Symbol();
+         if(posSymbol == symbol) continue;  // Same symbol is OK
+
+         ENUM_CORR_GROUP posGroup = GetCorrelationGroup(posSymbol);
+
+         // Block if same correlation group (USD, GBP, JPY, METALS, INDICES)
+         if(myGroup == posGroup && myGroup != GROUP_OTHER)
+         {
+            Print("🚫 CORRELATION: Cannot trade ", symbol, " (", EnumToString(myGroup),
+                  ") - Already trading ", posSymbol, " (", EnumToString(posGroup), ")");
+            return false;
+         }
+      }
+   }
+
+   return true;
+}
+
+//+------------------------------------------------------------------+
 //| Calculate Take Profit Level                                      |
 //+------------------------------------------------------------------+
 double CalculateTakeProfit(double price, double slDist, int direction,
@@ -601,6 +667,43 @@ void OnTick()
 
    // --- MODULE: SESSION GOVERNOR ---
    if(InpUseSessionGovernor && !sessionGov.IsSessionTradingAllowed()) return;
+
+   // --- PORTFOLIO PROTECTION: DAILY LOSS CIRCUIT BREAKER ---
+   ResetDailyLossIfNewDay();
+   if(InpDailyMaxLoss_R > 0 && g_dailyLossR <= -InpDailyMaxLoss_R)
+   {
+      static datetime lastWarning = 0;
+      if(TimeCurrent() - lastWarning > 300)  // Print warning every 5 minutes
+      {
+         Print("⛔ DAILY LOSS LIMIT REACHED: ", DoubleToString(g_dailyLossR, 2), "R / ",
+               DoubleToString(-InpDailyMaxLoss_R, 1), "R - Trading STOPPED for today");
+         lastWarning = TimeCurrent();
+      }
+      return;
+   }
+
+   // --- PORTFOLIO PROTECTION: CORRELATION FILTER ---
+   if(InpUseCorrelationFilter && !CanTradeSymbol(_Symbol))
+   {
+      static datetime lastCorrWarning = 0;
+      if(TimeCurrent() - lastCorrWarning > 300)
+      {
+         Print("⚠️ CORRELATION BLOCK: Cannot trade ", _Symbol, " - Correlated pair already active");
+         lastCorrWarning = TimeCurrent();
+      }
+      return;
+   }
+
+   // --- PORTFOLIO PROTECTION: LOSS COOLDOWN ---
+   if(InpLossCooldownMinutes > 0 && g_lastLossTime > 0)
+   {
+      int secondsSinceLoss = (int)(TimeCurrent() - g_lastLossTime);
+      if(secondsSinceLoss < InpLossCooldownMinutes * 60)
+      {
+         // Still in cooldown - don't trade
+         return;
+      }
+   }
 
    // --- MODULE: MARKET REGIME ---
    g_currentRegime = regime.Detect(g_ATR, g_ATR_MA, g_EMA, g_EMA_Prev);
@@ -719,8 +822,9 @@ void OnTick()
 
       if(approvedRisk > 0.05)
       {
-          // Use new thresholds: minimum 5 points for entry (was InpMinConfluenceEntry)
-          double minEntry = CONFLUENCE_GOOD;  // 5.0
+          // STRICTER ENTRY THRESHOLD: Use CONFLUENCE_STRONG (6.0) instead of GOOD (5.0)
+          // This raises minimum from 42% to 50% confluence score for better quality
+          double minEntry = CONFLUENCE_STRONG;  // 6.0 (raised from 5.0 for safety)
 
           if(buyScore >= minEntry && (InpDirection == 0 || InpDirection == 1))
           {
@@ -918,6 +1022,15 @@ void ManagePositions()
              {
                 sessionGov.OnTradeClosed(ticket, profitR, profitMoney);
                 sessionGov.AddMFEMAE(mfe, mae);
+             }
+
+             // Track Daily Loss for Circuit Breaker
+             g_dailyLossR += profitR;
+             if(profitMoney < 0)
+             {
+                g_lastLossTime = TimeCurrent();  // Track last loss time for cooldown
+                Print("📉 Loss recorded: ", DoubleToString(profitR, 2), "R | Daily total: ",
+                      DoubleToString(g_dailyLossR, 2), "R");
              }
          }
 

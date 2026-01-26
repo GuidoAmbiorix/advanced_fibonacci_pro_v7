@@ -57,19 +57,19 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; Standard threshold for liquid pair
-InpMinConfluenceEntry=5
-InpEnableAddOns=true
+; UPDATED: Stricter threshold (code now enforces 6.0 minimum)
+InpMinConfluenceEntry=6
+InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
-InpMaxPositions=3
+InpMaxPositions=1
 
 ; ====== RISK (Before Governor Scaling) ======
-; Moderate base for consistent growth
-InpRiskBase=0.55
-InpRiskAddOn1=0.30
-InpRiskAddOn2=0.20
-InpMaxRisk=0.75
+; UPDATED: Conservative base for safety (reduced from 0.55)
+InpRiskBase=0.20
+InpRiskAddOn1=0.15
+InpRiskAddOn2=0.10
+InpMaxRisk=0.50
 InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
@@ -115,11 +115,11 @@ InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
 
 ; ====== KELLY POSITION SIZING ======
-; Half-Kelly for consistent scaling
+; UPDATED: Conservative Kelly for safety
 InpUseKelly=true
-InpKellyFraction=0.5
-InpDailyMaxDD=3.0
-InpWeeklyMaxDD=6.0
+InpKellyFraction=0.25
+InpDailyMaxDD=2.0
+InpWeeklyMaxDD=4.0
 
 ; ====== LEARNING & ADAPTATION ======
 InpEnableLearning=true
@@ -133,11 +133,17 @@ InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=false
 
 ; ====== SESSION GOVERNOR ======
-; Session-level control: max trades, P&L limits, confidence tracking
+; UPDATED: Strict session limits (reduced from 3 trades)
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=3
-InpMaxProfitPerSession_R=5.0
-InpMaxLossPerSession_R=2.0
-InpMinSessionConfidence=0.4
-InpTradeCooldownMinutes=15
+InpMaxTradesPerSession=1
+InpMaxProfitPerSession_R=4.0
+InpMaxLossPerSession_R=1.5
+InpMinSessionConfidence=0.5
+InpTradeCooldownMinutes=30
 InpEnableSessionBlacklist=true
+
+; ====== PORTFOLIO PROTECTION ======
+; NEW: Daily circuit breaker and correlation protection
+InpUseCorrelationFilter=true
+InpDailyMaxLoss_R=3.0
+InpLossCooldownMinutes=45

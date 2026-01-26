@@ -1,0 +1,202 @@
+; ROUDO MICRO v3.01 - ULTRA CONSERVADOR para cuentas $100-$500
+; Diseñado específicamente para EVITAR STOP OUT
+; Símbolo: XAUUSD (Gold)
+; Cuenta: $500 (o menos)
+; Creado: 2026-01-24 (Investigación de mejores prácticas 2026)
+
+; ═══════════════════════════════════════════════════════════════════
+; LOTES Y MARTINGALE (MICRO - MUY CONSERVADOR)
+; ═══════════════════════════════════════════════════════════════════
+Lots=0.01
+||<-
+; ⭐ CRÍTICO: Lote inicial mínimo - NUNCA aumentar sin testear
+UseAutoLotSize=true
+||<-
+; ⭐ Auto-calcular lote según equity (RECOMENDADO)
+RiskPercentPerTrade=2.00
+||1.0-3.0
+; Riesgo 2% por trade (conservador)
+UseFibonacciProgression=false
+||<-
+; ⭐ DESACTIVADO - Usa progresión MICRO ultra conservadora
+LotMultiplier=1.20
+||1.1-1.3
+; Multiplicador 1.2x (MUY suave vs 1.5x)
+MaxLots=0.05
+||<-
+; ⭐ CRÍTICO: Máximo 0.05 lotes (vs 3.0) - PROTECCIÓN STOP OUT
+TakeProfit=80.0
+||60.0-120.0
+; TP aumentado para mejor Risk/Reward
+
+; ═══════════════════════════════════════════════════════════════════
+; KILLZONES ICT
+; ═══════════════════════════════════════════════════════════════════
+UseKillzones=true
+||<-
+TradeAsianKillzone=false
+||<-
+TradeLondonOpen=true
+||<-
+TradeLondonClose=false
+||<-
+TradeNYOpen=false
+||<-
+TradeLondonNYOverlap=true
+||<-
+ServerTimeOffset=0
+||0-10
+
+; ═══════════════════════════════════════════════════════════════════
+; TRAILING STOP (Conservador)
+; ═══════════════════════════════════════════════════════════════════
+UseTrailingStop=true
+||<-
+TrailingType=1
+||0-3
+TrailingActivation=30.0
+||20.0-50.0
+; Activar trailing solo después de +30 pips
+TrailingDistance=20.0
+||15.0-30.0
+TrailingStep=15.0
+||10.0-20.0
+ATR_TrailingMultiplier=2.00
+||1.5-3.0
+
+; ═══════════════════════════════════════════════════════════════════
+; BREAKEVEN (Conservador)
+; ═══════════════════════════════════════════════════════════════════
+UseBreakeven=true
+||<-
+BreakevenActivation=20.0
+||15.0-30.0
+; Activar breakeven en +20 pips
+BreakevenOffset=8.0
+||5.0-10.0
+; Offset de protección 8 pips
+
+; ═══════════════════════════════════════════════════════════════════
+; PARTIAL TAKE PROFIT (Tomar ganancias ANTES)
+; ═══════════════════════════════════════════════════════════════════
+UsePartialTP=true
+||<-
+TP1_Level=40.0
+||30.0-60.0
+; TP1 en +40 pips
+TP1_Percent=40.0
+||30.0-50.0
+; Cerrar 40% del volumen (MÁS que versión GOD)
+TP2_Level=70.0
+||50.0-90.0
+; TP2 en +70 pips
+TP2_Percent=40.0
+||30.0-50.0
+; Cerrar otro 40%
+TP3_Level=100.0
+||80.0-120.0
+; TP3 en +100 pips
+TP3_Percent=20.0
+||10.0-30.0
+; Cerrar restante 20%
+
+; ═══════════════════════════════════════════════════════════════════
+; GESTIÓN DE RIESGO - ⭐ CRÍTICO PARA MICRO ACCOUNTS
+; ═══════════════════════════════════════════════════════════════════
+MetaGananciaDiaria=20.0
+||10.0-40.0
+; Meta diaria REALISTA: $20 (4% de $500)
+MaxDailyDrawdown=8.0
+||5.0-10.0
+; ⭐ Max DD 8% = $40 de pérdida máxima
+MaxDrawdownPerTrade=4.0
+||3.0-6.0
+; Max DD por trade 4%
+StopOnDrawdownHit=true
+||<-
+; ⭐ CRÍTICO: Auto-stop si alcanza DD
+MaxOperacionesGrid=4
+||3-6
+; ⭐ CRÍTICO: Solo 4 órdenes máximo (vs 8) - ANTI STOP OUT
+Min_Margin_Level=1000.0
+||800.0-1500.0
+; ⭐ CRÍTICO: Margen mínimo 1000% (vs 800%)
+Min_FreeMargin_Percent=50.0
+||40.0-60.0
+; ⭐ NUEVO: Mínimo 50% de free margin disponible
+
+; ═══════════════════════════════════════════════════════════════════
+; INDICADORES (Más espaciado)
+; ═══════════════════════════════════════════════════════════════════
+ATR_Period=14
+||10-20
+ATR_Multiplier=3.00
+||2.0-4.0
+; ATR multiplicador 3.0 (MÁS espaciado que GOD 2.5)
+Max_Spread=25
+||15-35
+; Spread máximo 25 pips (más estricto)
+UseAdaptiveStep=true
+||<-
+
+; ═══════════════════════════════════════════════════════════════════
+; DASHBOARD
+; ═══════════════════════════════════════════════════════════════════
+Enable_Dashboard=true
+||<-
+Enable_KillzoneInfo=true
+||<-
+Enable_SessionStats=true
+||<-
+DashboardCorner=0
+||0-3
+DashboardXOffset=10
+||0-100
+DashboardYOffset=10
+||0-100
+
+; ═══════════════════════════════════════════════════════════════════
+; IDENTIFICACIÓN
+; ═══════════════════════════════════════════════════════════════════
+MagicNumber_Hilo=11112
+||10000-99999
+; Diferente magic number para diferenciar de GOD
+
+; ═══════════════════════════════════════════════════════════════════
+; NOTAS IMPORTANTES - POR FAVOR LEER
+; ═══════════════════════════════════════════════════════════════════
+;
+; 1. PROGRESIÓN MICRO (Ultra conservadora):
+;    Nivel 0: 0.01 lote (inicial)
+;    Nivel 1: 0.012 lote (solo +20% vs +50% Fibonacci)
+;    Nivel 2: 0.014 lote (+40%)
+;    Nivel 3: 0.017 lote (+70%)
+;    Nivel 4: 0.02 lote (MÁXIMO - solo 2x vs 5x Fibonacci)
+;
+; 2. PROTECCIÓN ANTI STOP-OUT:
+;    - Máximo 4 órdenes (vs 8 en GOD)
+;    - Free margin mínimo 50%
+;    - Margin level mínimo 1000%
+;    - Max drawdown 8% ($40)
+;
+; 3. CÁLCULO DE MARGEN APROXIMADO (broker 1:100):
+;    0.01 lote oro ≈ $26 margen
+;    Grid completo (4 niveles) ≈ $110 margen
+;    Deja $390 free margin (78%) ✓
+;
+; 4. EXPECTATIVAS REALISTAS:
+;    Meta diaria: $20 (4%)
+;    Meta mensual: $400 (80% retorno)
+;    Drawdown esperado: 5-8%
+;
+; 5. TESTEO OBLIGATORIO:
+;    - SIEMPRE probar en DEMO primero
+;    - Mínimo 2 semanas de testing
+;    - Verificar que no hay stop out en backtest
+;
+; 6. REFERENCIAS (Investigación 2026):
+;    - https://www.tradingview.com/chart/XAUUSD/3UWyWXWD-Learn-Best-Lot-Size-for-Gold-Trading-XAUUSD/
+;    - https://medium.com/@pivlex25/martingale-and-anti-martingale-eas-strategies-and-risk-management-205d96819cea
+;    - https://4xpip.com/hidden-risks-of-martingale-expert-advisors-and-how-they-impact-drawdown
+;
+; ═══════════════════════════════════════════════════════════════════

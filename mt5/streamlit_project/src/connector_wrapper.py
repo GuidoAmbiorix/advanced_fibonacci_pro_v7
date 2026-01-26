@@ -8,7 +8,7 @@ from .logger import get_logger
 logger = get_logger(__name__)
 
 # Determine which connector to use
-USE_HTTP_API = os.getenv("USE_MT5_HTTP_API", "true").lower() == "true"
+USE_HTTP_API = os.getenv("USE_MT5_HTTP_API", "false").lower() == "true"
 
 if USE_HTTP_API:
     logger.info("Using MT5 HTTP API Connector")

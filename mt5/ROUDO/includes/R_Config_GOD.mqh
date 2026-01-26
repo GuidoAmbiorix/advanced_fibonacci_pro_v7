@@ -8,6 +8,28 @@
 #property version   "3.00"
 
 //+------------------------------------------------------------------+
+//| Enumeraciones GOD MODE (DEBEN IR PRIMERO)                        |
+//+------------------------------------------------------------------+
+
+// Tipos de trailing stop
+enum ENUM_TRAILING_TYPE {
+   TRAILING_NONE,      // Sin trailing
+   TRAILING_ATR,       // Basado en ATR (recomendado)
+   TRAILING_STEP,      // Por pasos fijos
+   TRAILING_PERCENT    // Porcentaje de profit
+};
+
+// Killzones ICT
+enum ENUM_KILLZONE {
+   KILLZONE_NONE,              // Fuera de killzone
+   KILLZONE_ASIAN,             // Asian Session (19:00-21:00 EDT)
+   KILLZONE_LONDON_OPEN,       // London Open (02:00-05:00 EDT)
+   KILLZONE_LONDON_CLOSE,      // London Close (10:00-12:00 EDT)
+   KILLZONE_NY_OPEN,           // NY Open (07:00-10:00 EDT)
+   KILLZONE_OVERLAP_LONDON_NY  // Overlap London-NY ⭐ MEJOR
+};
+
+//+------------------------------------------------------------------+
 //| Parámetros GOD MODE - Sistema Martingale Profesional             |
 //+------------------------------------------------------------------+
 
@@ -62,6 +84,7 @@ input double   MaxDrawdownPerTrade    = 5.0;    // Máximo drawdown por trade (%
 input bool     StopOnDrawdownHit      = true;   // Detener EA si se alcanza DD
 input int      MaxOperacionesGrid     = 8;      // Máximo de órdenes en grid (reducido)
 input double   Min_Margin_Level       = 800.0;  // Nivel de margen mínimo (aumentado)
+input double   Min_FreeMargin_Percent = 30.0;   // Mínimo free margin % (GOD mode)
 
 //=== INDICADORES ===
 input group "═══ INDICADORES ═══"
@@ -72,9 +95,9 @@ input bool     UseAdaptiveStep        = true;   // Usar espaciado adaptativo ATR
 
 //=== DASHBOARD ===
 input group "═══ DASHBOARD ═══"
-input bool     ShowDashboard          = true;   // Mostrar dashboard visual
-input bool     ShowKillzoneInfo       = true;   // Mostrar info de killzones
-input bool     ShowSessionStats       = true;   // Mostrar estadísticas de sesión
+input bool     Enable_Dashboard       = true;   // Mostrar dashboard visual
+input bool     Enable_KillzoneInfo    = true;   // Mostrar info de killzones
+input bool     Enable_SessionStats    = true;   // Mostrar estadísticas de sesión
 input int      DashboardCorner        = 0;      // Esquina (0=superior izq, 1=sup der, 2=inf izq, 3=inf der)
 input int      DashboardXOffset       = 10;     // Offset X en píxeles
 input int      DashboardYOffset       = 10;     // Offset Y en píxeles
@@ -82,28 +105,6 @@ input int      DashboardYOffset       = 10;     // Offset Y en píxeles
 //=== IDENTIFICACIÓN ===
 input group "═══ IDENTIFICACIÓN ═══"
 input int      MagicNumber_Hilo       = 11111;  // Número mágico del EA
-
-//+------------------------------------------------------------------+
-//| Enumeraciones GOD MODE                                           |
-//+------------------------------------------------------------------+
-
-// Tipos de trailing stop
-enum ENUM_TRAILING_TYPE {
-   TRAILING_NONE,      // Sin trailing
-   TRAILING_ATR,       // Basado en ATR (recomendado)
-   TRAILING_STEP,      // Por pasos fijos
-   TRAILING_PERCENT    // Porcentaje de profit
-};
-
-// Killzones ICT
-enum ENUM_KILLZONE {
-   KILLZONE_NONE,              // Fuera de killzone
-   KILLZONE_ASIAN,             // Asian Session (19:00-21:00 EDT)
-   KILLZONE_LONDON_OPEN,       // London Open (02:00-05:00 EDT)
-   KILLZONE_LONDON_CLOSE,      // London Close (10:00-12:00 EDT)
-   KILLZONE_NY_OPEN,           // NY Open (07:00-10:00 EDT)
-   KILLZONE_OVERLAP_LONDON_NY  // Overlap London-NY ⭐ MEJOR
-};
 
 //+------------------------------------------------------------------+
 //| Variables Globales de Clases MT5                                 |

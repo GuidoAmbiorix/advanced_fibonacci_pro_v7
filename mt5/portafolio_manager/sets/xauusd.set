@@ -58,19 +58,19 @@ InpChopThreshold=0.85
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; Higher threshold for volatile asset
+; UPDATED: Maintained strict 6.0 threshold (good for gold)
 InpMinConfluenceEntry=6
-InpEnableAddOns=true
+InpEnableAddOns=false
 InpAddOn1_R=2.5
 InpAddOn2_R=4.0
-InpMaxPositions=3
+InpMaxPositions=1
 
 ; ====== RISK (Before Governor Scaling) ======
-; Lower base risk due to volatility
-InpRiskBase=0.35
-InpRiskAddOn1=0.20
-InpRiskAddOn2=0.12
-InpMaxRisk=0.75
+; UPDATED: Very conservative for volatile gold (reduced from 0.35)
+InpRiskBase=0.15
+InpRiskAddOn1=0.10
+InpRiskAddOn2=0.07
+InpMaxRisk=0.45
 InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
@@ -115,11 +115,11 @@ InpNewsMinutesBefore=60
 InpNewsMinutesAfter=60
 
 ; ====== KELLY POSITION SIZING ======
-; Conservative Kelly for high volatility
+; UPDATED: Very conservative Quarter Kelly for gold
 InpUseKelly=true
-InpKellyFraction=0.35
-InpDailyMaxDD=2.0
-InpWeeklyMaxDD=4.0
+InpKellyFraction=0.20
+InpDailyMaxDD=1.5
+InpWeeklyMaxDD=3.0
 
 ; ====== LEARNING & ADAPTATION ======
 InpEnableLearning=true
@@ -133,12 +133,17 @@ InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=false
 
 ; ====== SESSION GOVERNOR ======
-; Session-level control: max trades, P&L limits, confidence tracking
-; XAUUSD: Conservative limits due to extreme volatility
+; UPDATED: Only 1 trade per session for volatile gold
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=2
-InpMaxProfitPerSession_R=6.0
-InpMaxLossPerSession_R=1.8
-InpMinSessionConfidence=0.48
-InpTradeCooldownMinutes=25
+InpMaxTradesPerSession=1
+InpMaxProfitPerSession_R=5.0
+InpMaxLossPerSession_R=1.5
+InpMinSessionConfidence=0.55
+InpTradeCooldownMinutes=40
 InpEnableSessionBlacklist=true
+
+; ====== PORTFOLIO PROTECTION ======
+; NEW: Circuit breaker for gold (separate correlation group)
+InpUseCorrelationFilter=true
+InpDailyMaxLoss_R=2.5
+InpLossCooldownMinutes=60

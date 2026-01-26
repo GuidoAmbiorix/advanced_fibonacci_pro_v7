@@ -58,19 +58,19 @@ InpChopThreshold=0.80
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; Higher entry threshold for volatility
+; UPDATED: Maintained strict threshold (6.0 is good for GBP)
 InpMinConfluenceEntry=6
-InpEnableAddOns=true
+InpEnableAddOns=false
 InpAddOn1_R=2.0
 InpAddOn2_R=3.5
-InpMaxPositions=3
+InpMaxPositions=1
 
 ; ====== RISK (Before Governor Scaling) ======
-; Lower base risk due to volatility and wider stops
-InpRiskBase=0.40
-InpRiskAddOn1=0.25
-InpRiskAddOn2=0.15
-InpMaxRisk=0.75
+; UPDATED: More conservative base (reduced from 0.40)
+InpRiskBase=0.18
+InpRiskAddOn1=0.12
+InpRiskAddOn2=0.08
+InpMaxRisk=0.50
 InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
@@ -114,10 +114,11 @@ InpNewsMinutesBefore=45
 InpNewsMinutesAfter=45
 
 ; ====== KELLY POSITION SIZING ======
+; UPDATED: Quarter Kelly for volatile GBP
 InpUseKelly=true
-InpKellyFraction=0.4
-InpDailyMaxDD=2.5
-InpWeeklyMaxDD=5.0
+InpKellyFraction=0.25
+InpDailyMaxDD=2.0
+InpWeeklyMaxDD=4.0
 
 ; ====== LEARNING & ADAPTATION ======
 InpEnableLearning=true
@@ -131,12 +132,17 @@ InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=false
 
 ; ====== SESSION GOVERNOR ======
-; Session-level control: max trades, P&L limits, confidence tracking
-; GBP: Lower max trades due to volatility
+; UPDATED: Only 1 trade per session for volatile GBP
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=2
-InpMaxProfitPerSession_R=4.0
+InpMaxTradesPerSession=1
+InpMaxProfitPerSession_R=3.5
 InpMaxLossPerSession_R=1.5
-InpMinSessionConfidence=0.45
-InpTradeCooldownMinutes=20
+InpMinSessionConfidence=0.5
+InpTradeCooldownMinutes=30
 InpEnableSessionBlacklist=true
+
+; ====== PORTFOLIO PROTECTION ======
+; NEW: Correlation filter and circuit breaker
+InpUseCorrelationFilter=true
+InpDailyMaxLoss_R=3.0
+InpLossCooldownMinutes=45

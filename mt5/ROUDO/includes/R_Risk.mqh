@@ -70,6 +70,25 @@ public:
       return true;
    }
 
+   //--- 🆕 Verificar free margin suficiente
+   bool HasSufficientFreeMargin()
+   {
+      double free_margin = AccountInfoDouble(ACCOUNT_MARGIN_FREE);
+      double margin = AccountInfoDouble(ACCOUNT_MARGIN);
+
+      if(margin <= 0) return true; // Sin posiciones aún
+
+      double free_margin_percent = (free_margin / (free_margin + margin)) * 100.0;
+
+      if(free_margin_percent < Min_FreeMargin_Percent) {
+         Print("⚠️ Free Margin muy bajo: ", DoubleToString(free_margin_percent, 1),
+               "% (Min: ", Min_FreeMargin_Percent, "%)");
+         return false;
+      }
+
+      return true;
+   }
+
    //--- Verificación antes de agregar orden martingala
    bool CanAddMartingaleOrder()
    {
@@ -79,7 +98,13 @@ public:
          return false;
       }
 
-      // 2. Verificar límite de órdenes
+      // 2. 🆕 Verificar free margin (crítico para micro accounts)
+      if(!HasSufficientFreeMargin()) {
+         Print("No se puede agregar orden: Free Margin insuficiente");
+         return false;
+      }
+
+      // 3. Verificar límite de órdenes
       if(!CanAddMoreOrders()) {
          Print("No se puede agregar orden: Límite de ", MaxOperacionesGrid, " alcanzado");
          return false;
@@ -93,8 +118,12 @@ public:
    {
       double volume_step = g_symbol_manager.GetVolumeStep();
 
-      // Aplicar exponente
+      // Aplicar exponente (compatible con GOD y MICRO)
+      #ifdef R_CONFIG_MICRO
+      double new_lot = NormalizeDouble(last_volume * LotMultiplier, 2);
+      #else
       double new_lot = NormalizeDouble(last_volume * LotExponent, 2);
+      #endif
 
       // Ajustar al step del símbolo
       new_lot = MathFloor(new_lot / volume_step) * volume_step;

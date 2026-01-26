@@ -13,9 +13,9 @@ class CIndicatorManager
 {
 private:
    int handle_macd_M1;
-   int handle_atr;
 
 public:
+   int handle_atr; // Público para acceso desde otros módulos
    //--- Constructor
    CIndicatorManager() : handle_macd_M1(INVALID_HANDLE), handle_atr(INVALID_HANDLE) {}
 

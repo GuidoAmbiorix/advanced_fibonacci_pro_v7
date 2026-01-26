@@ -58,19 +58,19 @@ InpChopThreshold=0.68
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; Standard threshold
-InpMinConfluenceEntry=5
-InpEnableAddOns=true
+; UPDATED: Stricter threshold for safety
+InpMinConfluenceEntry=6
+InpEnableAddOns=false
 InpAddOn1_R=1.3
 InpAddOn2_R=2.3
-InpMaxPositions=3
+InpMaxPositions=1
 
 ; ====== RISK (Before Governor Scaling) ======
-; Higher base risk due to low volatility
-InpRiskBase=0.58
-InpRiskAddOn1=0.33
-InpRiskAddOn2=0.23
-InpMaxRisk=0.75
+; UPDATED: Conservative base (reduced from dangerous 0.58!)
+InpRiskBase=0.18
+InpRiskAddOn1=0.12
+InpRiskAddOn2=0.08
+InpMaxRisk=0.45
 InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
@@ -113,10 +113,11 @@ InpNewsMinutesBefore=35
 InpNewsMinutesAfter=30
 
 ; ====== KELLY POSITION SIZING ======
+; UPDATED: Conservative Kelly
 InpUseKelly=true
-InpKellyFraction=0.52
-InpDailyMaxDD=3.2
-InpWeeklyMaxDD=6.3
+InpKellyFraction=0.25
+InpDailyMaxDD=2.0
+InpWeeklyMaxDD=4.0
 
 ; ====== LEARNING & ADAPTATION ======
 InpEnableLearning=true
@@ -130,12 +131,17 @@ InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=false
 
 ; ====== SESSION GOVERNOR ======
-; Session-level control: max trades, P&L limits, confidence tracking
-; EURGBP: Higher trades due to stable mean-reversion
+; UPDATED: Strict limits (reduced from dangerous 4 trades!)
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=4
-InpMaxProfitPerSession_R=5.5
-InpMaxLossPerSession_R=2.2
-InpMinSessionConfidence=0.38
-InpTradeCooldownMinutes=12
+InpMaxTradesPerSession=1
+InpMaxProfitPerSession_R=4.0
+InpMaxLossPerSession_R=1.5
+InpMinSessionConfidence=0.5
+InpTradeCooldownMinutes=30
 InpEnableSessionBlacklist=true
+
+; ====== PORTFOLIO PROTECTION ======
+; NEW: Correlation and circuit breaker protection
+InpUseCorrelationFilter=true
+InpDailyMaxLoss_R=3.0
+InpLossCooldownMinutes=45
