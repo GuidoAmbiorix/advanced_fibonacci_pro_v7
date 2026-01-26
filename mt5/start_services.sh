@@ -36,6 +36,7 @@ if [ -d "$SITE_PACKAGES" ]; then
     mkdir -p "$WHEEL_DIR"
     
     # Download Windows 32-bit wheels for Python 3.9
+    # CRITICAL: Force numpy<2 because MetaTrader5 package is not compatible with numpy 2.x yet
     # This downloads rpyc, MetaTrader5, and their dependencies (plumbum, numpy, etc.)
     python3 -m pip download \
         --dest "$WHEEL_DIR" \
@@ -45,7 +46,7 @@ if [ -d "$SITE_PACKAGES" ]; then
         --abi cp39 \
         --only-binary=:all: \
         --quiet \
-        rpyc MetaTrader5 python-dateutil
+        rpyc MetaTrader5 python-dateutil "numpy<2"
         
     if [ $? -eq 0 ]; then
         echo "✅ Wheels downloaded successfully"
