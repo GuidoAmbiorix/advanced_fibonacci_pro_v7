@@ -12,12 +12,17 @@ echo "==================================="
 echo "Waiting for Wine/MT5 to initialize..."
 sleep 15
 
-# Install Python packages (silently, avoid noise)
-echo "Installing Python packages..."
-python3 -m pip install --break-system-packages --quiet \
-    streamlit pandas plotly sqlalchemy python-dotenv 2>/dev/null || echo "Some packages already installed"
-
-echo "✅ Setup complete"
+# Install Python packages from requirements.txt
+echo "Installing Python packages from requirements.txt..."
+if [ -f /app/streamlit_project/requirements.txt ]; then
+    python3 -m pip install --break-system-packages --quiet -r /app/streamlit_project/requirements.txt 2>/dev/null || \
+    python3 -m pip install --break-system-packages -r /app/streamlit_project/requirements.txt
+    echo "✅ Packages installed"
+else
+    echo "⚠️  requirements.txt not found, installing minimal packages..."
+    python3 -m pip install --break-system-packages --quiet streamlit pandas plotly sqlalchemy python-dotenv
+    echo "✅ Minimal packages installed"
+fi
 
 # Set environment for Wine
 export DISPLAY=:0
