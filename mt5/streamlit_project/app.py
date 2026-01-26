@@ -7,7 +7,7 @@ import streamlit as st
 from src.mt5_direct import get_connector
 from src.data_engine import DataEngine
 from src.analytics import PerformanceAnalytics
-from src.visualizations import create_equity_curve, create_symbol_distribution
+# from src.visualizations import create_equity_curve, create_symbol_distribution # Module doesn't exist yet
 from src.config import config
 from src.logger import initialize_logging, get_logger, shutdown_logging
 from components import (
@@ -18,7 +18,8 @@ from components import (
     render_profit_distribution,
     render_symbol_performance,
     render_time_analysis,
-    render_monthly_performance
+    render_correlation_heatmap,
+    render_governor_dashboard
 )
 from components.governor_components import (
     render_symbol_scores_table,
