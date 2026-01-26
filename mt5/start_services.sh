@@ -31,7 +31,8 @@ python3 -m pip install --break-system-packages --quiet \
     streamlit==1.31.0 \
     pandas==2.1.4 \
     plotly==5.18.0 \
-    sqlalchemy==2.0.25
+    sqlalchemy==2.0.25 \
+    mt5linux
 
 echo "✅ Packages installed"
 

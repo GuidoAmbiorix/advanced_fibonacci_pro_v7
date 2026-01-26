@@ -1,12 +1,20 @@
 """
 MT5 REST API Bridge - FastAPI server to expose MT5 Terminal data via HTTP.
-Runs inside Docker container with access to MT5 via Wine.
+Runs inside Docker container with access to MT5 via Wine using mt5linux.
 """
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import MetaTrader5 as mt5
+
+# Use mt5linux for Wine/Linux compatibility
+try:
+    import mt5linux as mt5
+    print("✅ Using mt5linux for Wine compatibility")
+except ImportError:
+    import MetaTrader5 as mt5
+    print("✅ Using MetaTrader5 (Windows native)")
+
 from typing import Dict, List, Optional
 import uvicorn
 from datetime import datetime
