@@ -24,9 +24,10 @@ else
     echo "✅ Minimal packages installed"
 fi
 
-# Install mt5linux globally (critical for MT5 connection)
-echo "Installing mt5linux globally..."
-python3 -m pip install --break-system-packages mt5linux 2>/dev/null && echo "✅ mt5linux installed globally" || echo "⚠️  mt5linux installation had issues"
+# Configure PYTHONPATH to include abc user's packages (where mt5linux is installed)
+echo "Configuring Python path for mt5linux access..."
+export PYTHONPATH="/config/.local/lib/python3.11/site-packages:$PYTHONPATH"
+echo "✅ PYTHONPATH configured"
 
 # Set environment for Wine
 export DISPLAY=:0
