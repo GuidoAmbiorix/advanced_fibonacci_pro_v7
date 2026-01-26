@@ -38,19 +38,23 @@ else
     wget --no-check-certificate -q https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py 2>/dev/null || \
         curl -k -s https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
     
-    # Verify download (should be ~2MB, not 153 bytes!)
+    # Verify download (should be ~2MB)
     if [ -f /tmp/get-pip.py ] && [ $(stat -c%s /tmp/get-pip.py) -gt 100000 ]; then
         echo "✅ get-pip.py downloaded ($(stat -c%s /tmp/get-pip.py) bytes)"
         
-        # Run get-pip.py with extensive logging
-        echo "Running get-pip.py..."
-        wine "$WINE_PYTHON" /tmp/get-pip.py --no-warn-script-location > /tmp/pip_install.log 2>&1
+        # Run get-pip.py using Z: drive mapping (critical for Wine compatibility)
+        echo "Running get-pip.py via Z:\\tmp\\get-pip.py..."
+        wine "$WINE_PYTHON" "Z:\\tmp\\get-pip.py" --no-warn-script-location > /tmp/pip_install.log 2>&1
         
         if [ $? -eq 0 ]; then
              echo "✅ pip installed via get-pip.py"
         else
-             echo "⚠️  get-pip.py installation had issues. Log output:"
+             echo "⚠️  get-pip.py failed. Log output:"
              cat /tmp/pip_install.log
+             
+             # Ultra-fallback: try without arguments or different flags
+             echo "Trying fallback execution..."
+             wine "$WINE_PYTHON" "Z:\\tmp\\get-pip.py" > /tmp/pip_install_fallback.log 2>&1
         fi
     else
         echo "❌ Failed to download get-pip.py"
