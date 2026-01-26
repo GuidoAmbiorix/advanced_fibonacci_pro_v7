@@ -42,10 +42,16 @@ else
     if [ -f /tmp/get-pip.py ] && [ $(stat -c%s /tmp/get-pip.py) -gt 100000 ]; then
         echo "✅ get-pip.py downloaded ($(stat -c%s /tmp/get-pip.py) bytes)"
         
-        # Run get-pip.py
-        wine "$WINE_PYTHON" /tmp/get-pip.py --no-warn-script-location 2>/dev/null && \
-            echo "✅ pip installed via get-pip.py" || \
-            echo "⚠️  get-pip.py installation had issues"
+        # Run get-pip.py with extensive logging
+        echo "Running get-pip.py..."
+        wine "$WINE_PYTHON" /tmp/get-pip.py --no-warn-script-location > /tmp/pip_install.log 2>&1
+        
+        if [ $? -eq 0 ]; then
+             echo "✅ pip installed via get-pip.py"
+        else
+             echo "⚠️  get-pip.py installation had issues. Log output:"
+             cat /tmp/pip_install.log
+        fi
     else
         echo "❌ Failed to download get-pip.py"
     fi
@@ -67,17 +73,15 @@ fi
 if wine "$WINE_PIP" --version >/dev/null 2>&1; then
     echo "Installing required packages in Wine Python..."
     
-    # Install rpyc
-    wine "$WINE_PIP" install --quiet --no-warn-script-location rpyc 2>/dev/null && \
-        echo "✅ rpyc installed" || echo "⚠️  rpyc installation had issues"
+    # Install packages with logging
+    wine "$WINE_PIP" install --no-warn-script-location rpyc MetaTrader5 python-dateutil > /tmp/pip_packages.log 2>&1
     
-    # Install MetaTrader5
-    wine "$WINE_PIP" install --quiet --no-warn-script-location --upgrade MetaTrader5 2>/dev/null && \
-        echo "✅ MetaTrader5 installed" || echo "⚠️  MetaTrader5 installation had issues"
-    
-    # Install python-dateutil
-    wine "$WINE_PIP" install --quiet --no-warn-script-location python-dateutil 2>/dev/null && \
-        echo "✅ python-dateutil installed" || echo "⚠️  python-dateutil installation had issues"
+    if [ $? -eq 0 ]; then
+        echo "✅ Required packages installed (rpyc, MetaTrader5, dateutil)"
+    else
+        echo "⚠️  Package installation had issues. Log output:"
+        cat /tmp/pip_packages.log
+    fi
 else
     echo "⚠️  Skipping Wine package installation (pip not available)"
 fi
