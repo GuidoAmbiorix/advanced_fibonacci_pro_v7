@@ -1,18 +1,25 @@
 #!/bin/bash
-# Simplified startup: Only Dashboard + MT5, no API needed
+# Simplified startup: Dashboard + MT5 + VNC
 
 echo "==================================="
 echo "Starting MT5 Trading System..."
 echo "==================================="
 
-# Start MT5 VNC service (s6-overlay) in background
-# We capture its PID to wait for it later
+# Start MT5 VNC service in background
+echo "Starting VNC service..."
 /init &
-INIT_PID=$!
+VNC_PID=$!
 
-# Wait for Wine/MT5 to initialize
-echo "Waiting for Wine/MT5 to initialize..."
+# Wait for VNC/Wine/MT5 to initialize
+echo "Waiting for VNC/Wine/MT5 to initialize..."
 sleep 15
+
+# Check if VNC is still running
+if ! ps -p $VNC_PID > /dev/null 2>&1; then
+    echo "❌ VNC service failed to start!"
+    exit 1
+fi
+echo "✅ VNC service started (PID: $VNC_PID)"
 
 # ============================================
 # Phase 1 & 2: Manual Wheel Injection
@@ -92,8 +99,9 @@ echo "Configuring Python path for mt5linux access..."
 export PYTHONPATH="/config/.local/lib/python3.11/site-packages:$PYTHONPATH"
 echo "✅ PYTHONPATH configured"
 
-# Set environment for Wine
-export DISPLAY=:0
+# Set environment for Wine (VNC server runs on :1)
+export DISPLAY=:1
+echo "Using DISPLAY=$DISPLAY"
 
 # ============================================
 # Phase 4: Start mt5linux RPyC Server
@@ -147,19 +155,15 @@ echo "==================================="
 echo "✅ System Ready!"
 echo "   - Dashboard: http://localhost:8501"
 echo "   - VNC: http://localhost:3000"
+echo "   - mt5linux RPyC: localhost:18812"
 echo "==================================="
 
 # Show listening ports
-echo "Ports:"
-ss -tuln 2>/dev/null | grep -E ':(3000|8501)' || echo "Checking..."
+echo "Checking listening ports..."
+ss -tuln 2>/dev/null | grep -E ':(3000|8501|18812)' || netstat -tuln 2>/dev/null | grep -E ':(3000|8501|18812)' || echo "Could not check ports"
 
 echo ""
-echo "Tailing dashboard logs..."
+echo "All services running. Monitoring logs..."
 
-# Trap signals for graceful shutdown
-trap "kill $INIT_PID $MT5LINUX_PID $DASH_PID; exit" SIGINT SIGTERM
-
-# Monitor processes
-# We tail the log for visibility, but allow the script to wait indefinitely
-tail -f /tmp/dashboard.log &
-wait $INIT_PID
+# Keep container alive and show logs from both services
+tail -f /tmp/dashboard.log /tmp/mt5linux_server.log
