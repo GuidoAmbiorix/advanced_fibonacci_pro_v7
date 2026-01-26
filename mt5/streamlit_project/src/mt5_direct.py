@@ -4,11 +4,10 @@ No API bridge needed - connects directly to MT5 in Wine.
 """
 
 import sys
-from ..logger import get_logger
+from src.logger import get_logger
+from src.mt5_compat import mt5, MT5_AVAILABLE
 
 logger = get_logger(__name__)
-
-# Try to import mt5linux (for Wine/Linux)
 mt5 = None
 MT5_AVAILABLE = False
 
