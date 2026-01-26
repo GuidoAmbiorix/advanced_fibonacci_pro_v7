@@ -1,115 +1,60 @@
 #!/bin/bash
-# Startup script to run MT5, API, and Dashboard inside Wine container
+# Simplified startup: Only Dashboard + MT5, no API needed
 
 echo "==================================="
 echo "Starting MT5 Trading System..."
 echo "==================================="
 
-# Start the original MT5 VNC service in background
+# Start MT5 VNC service in background
 /init &
 
-# Wait for MT5 to be ready
+# Wait for Wine/MT5 to initialize
 echo "Waiting for Wine/MT5 to initialize..."
 sleep 15
 
-# Install system packages (only if needed)
-echo "Installing system packages..."
-apt-get update -qq 2>/dev/null
-apt-get install -y python3-pip python3-dev build-essential -qq 2>/dev/null || echo "Packages may already be installed"
-
-# Upgrade pip
-echo "Upgrading pip..."
-python3 -m pip install --upgrade pip --break-system-packages --quiet 2>/dev/null
-
-# Install Python packages (WITHOUT mt5linux - it's already installed)
-echo "Installing Python packages (this may take a minute)..."
+# Install Python packages (silently, avoid noise)
+echo "Installing Python packages..."
 python3 -m pip install --break-system-packages --quiet \
-    fastapi==0.109.0 \
-    uvicorn[standard]==0.27.0 \
-    pydantic==2.5.0 \
-    python-dotenv==1.0.0 \
-    streamlit==1.31.0 \
-    pandas==2.1.4 \
-    plotly==5.18.0 \
-    sqlalchemy==2.0.25 2>/dev/null
+    streamlit pandas plotly sqlalchemy 2>/dev/null || echo "Some packages already installed"
 
-# Check if installation succeeded
-if python3 -c "import fastapi" 2>/dev/null; then
-    echo "✅ Packages installed successfully"
-else
-    echo "⚠️  Package installation had issues, retrying individual packages..."
-    python3 -m pip install --break-system-packages fastapi uvicorn pydantic streamlit pandas plotly 2>&1 | grep -v "WARNING"
-fi
+echo "✅ Setup complete"
 
-# Set DISPLAY for Wine apps
+# Set environment for Wine
 export DISPLAY=:0
 
-# Start FastAPI Bridge in background
-echo "Starting MT5 API Bridge on port 8001..."
-cd /app/mt5_api_bridge
-nohup python3 main.py > /tmp/api.log 2>&1 &
-API_PID=$!
-
-# Wait a bit for API to start
-sleep 5
-
-# Check if API started
-if ps -p $API_PID > /dev/null 2>&1; then
-    echo "✅ API started (PID: $API_PID)"
-else
-    echo "❌ API failed to start. Check /tmp/api.log"
-    echo "--- API Log ---"
-    tail -20 /tmp/api.log
-fi
-
-# Start Streamlit Dashboard in background
+# Start Streamlit Dashboard
 echo "Starting Streamlit Dashboard on port 8501..."
 cd /app/streamlit_project
 
-# Set environment variables
-export MT5_API_URL="http://localhost:8001"
-export USE_REMOTE_API="false"
-
-nohup python3 -m streamlit run app.py \
+# Launch Streamlit
+python3 -m streamlit run app.py \
     --server.port=8501 \
     --server.address=0.0.0.0 \
     --server.headless=true \
     > /tmp/dashboard.log 2>&1 &
-DASH_PID=$!
 
-# Wait a bit
+DASH_PID=$!
 sleep 5
 
-# Check if Dashboard started
+# Check if started
 if ps -p $DASH_PID > /dev/null 2>&1; then
     echo "✅ Dashboard started (PID: $DASH_PID)"
 else
-    echo "❌ Dashboard failed to start. Check /tmp/dashboard.log"
-    echo "--- Dashboard Log ---"
-    tail -20 /tmp/dashboard.log
+    echo "❌ Dashboard failed. Check logs:"
+    tail -30 /tmp/dashboard.log
+    exit 1
 fi
 
 echo "==================================="
-echo "✅ Startup complete!"
-echo "   - VNC: http://localhost:3000"
-echo "   - API: http://localhost:8001"
+echo "✅ System Ready!"
 echo "   - Dashboard: http://localhost:8501"
-echo "==================================="
-echo ""
-echo "Checking service status..."
-
-# Wait for ports to bind
-sleep 3
-
-# Check which ports are listening (use ss if netstat not available)
-echo ""
-echo "Listening ports:"
-ss -tuln 2>/dev/null | grep -E ':(3000|8001|8501)' || echo "Port check tool not available"
-
-echo ""
-echo "==================================="
-echo "Tailing logs (Ctrl+C to stop)..."
+echo "   - VNC: http://localhost:3000"
 echo "==================================="
 
-# Keep container running and show logs
-tail -f /tmp/api.log /tmp/dashboard.log
+# Show listening ports
+echo "Ports:"
+ss -tuln 2>/dev/null | grep -E ':(3000|8501)' || echo "Checking..."
+
+echo ""
+echo "Tailing dashboard logs..."
+tail -f /tmp/dashboard.log

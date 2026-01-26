@@ -1,7 +1,14 @@
+```
+"""
+MT5 Trading Dashboard - Streamlit Application
+Direct connection to MT5 via Wine (mt5linux)
+"""
+
 import streamlit as st
-from src.connector_wrapper import MT5Connector
-from src import DataEngine, PerformanceAnalytics, PatternGeneric
-from src.portfolio import PortfolioGovernor, GovernorMode
+from src.mt5_direct import get_connector
+from src.data_manager import DataManager
+from src.analytics import PerformanceAnalytics
+from src.visualizations import create_equity_curve, create_symbol_distribution
 from src.config import config
 from src.logger import initialize_logging, get_logger, shutdown_logging
 from components import (
@@ -75,7 +82,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Initialize Connector
-connector = MT5Connector()
+connector = get_connector()
 
 # Sidebar Configuration
 with st.sidebar:
