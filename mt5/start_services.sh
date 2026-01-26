@@ -19,46 +19,68 @@ echo "========================================="
 echo "Setting up Wine Python environment..."
 echo "========================================="
 
-# Download get-pip.py if not exists
-if [ ! -f /tmp/get-pip.py ]; then
-    echo "Downloading get-pip.py..."
-    wget -q https://bootstrap.pypa.io/pip/3.9/get-pip.py -O /tmp/get-pip.py
-    if [ $? -eq 0 ]; then
-        echo "✅ get-pip.py downloaded"
+WINE_PYTHON="C:\Program Files (x86)\Python39-32\python.exe"
+WINE_PIP="C:\Program Files (x86)\Python39-32\Scripts\pip.exe"
+
+# Method 1: Try ensurepip first (fastest if available)
+echo "Trying ensurepip..."
+if wine "$WINE_PYTHON" -m ensurepip --upgrade 2>/dev/null; then
+    echo "✅ pip installed via ensurepip"
+else
+    echo "⚠️  ensurepip not available, using get-pip.py..."
+    
+    # Method 2: Download and run get-pip.py
+    # Remove old corrupted file
+    rm -f /tmp/get-pip.py
+    
+    # Download with correct URL
+    echo "Downloading get-pip.py from bootstrap.pypa.io..."
+    wget --no-check-certificate -q https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py 2>/dev/null || \
+        curl -k -s https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
+    
+    # Verify download (should be ~2MB, not 153 bytes!)
+    if [ -f /tmp/get-pip.py ] && [ $(stat -c%s /tmp/get-pip.py) -gt 100000 ]; then
+        echo "✅ get-pip.py downloaded ($(stat -c%s /tmp/get-pip.py) bytes)"
+        
+        # Run get-pip.py
+        wine "$WINE_PYTHON" /tmp/get-pip.py --no-warn-script-location 2>/dev/null && \
+            echo "✅ pip installed via get-pip.py" || \
+            echo "⚠️  get-pip.py installation had issues"
     else
-        echo "⚠️  Failed to download get-pip.py, trying alternative..."
-        curl -s https://bootstrap.pypa.io/pip/3.9/get-pip.py -o /tmp/get-pip.py
+        echo "❌ Failed to download get-pip.py"
     fi
 fi
 
-# Install pip in Wine Python
-echo "Installing pip in Wine Python..."
-wine "C:\Program Files (x86)\Python39-32\python.exe" /tmp/get-pip.py --quiet 2>/dev/null || \
-    wine "C:\Program Files (x86)\Python39-32\python.exe" -m ensurepip --upgrade 2>/dev/null
-
-# Verify pip installation
-if wine "C:\Program Files (x86)\Python39-32\Scripts\pip.exe" --version >/dev/null 2>&1; then
-    echo "✅ Wine Python pip installed"
+# Verify final pip installation
+if wine "$WINE_PIP" --version >/dev/null 2>&1; then
+    echo "✅ Wine Python pip is working"
+    wine "$WINE_PIP" --version 2>/dev/null | head -1
 else
-    echo "⚠️  Wine Python pip installation had issues"
+    echo "❌ Wine Python pip not available - will skip package installation"
 fi
 
 # ============================================
 # Phase 2: Install Required Packages in Wine
 # ============================================
-echo "Installing required packages in Wine Python..."
 
-# Install rpyc
-wine "C:\Program Files (x86)\Python39-32\Scripts\pip.exe" install --quiet rpyc 2>/dev/null && \
-    echo "✅ rpyc installed" || echo "⚠️  rpyc installation had issues"
-
-# Install MetaTrader5
-wine "C:\Program Files (x86)\Python39-32\Scripts\pip.exe" install --quiet --upgrade MetaTrader5 2>/dev/null && \
-    echo "✅ MetaTrader5 installed" || echo "⚠️  MetaTrader5 installation had issues"
-
-# Install python-dateutil
-wine "C:\Program Files (x86)\Python39-32\Scripts\pip.exe" install --quiet python-dateutil 2>/dev/null && \
-    echo "✅ python-dateutil installed" || echo "⚠️  python-dateutil installation had issues"
+# Only proceed if pip is available
+if wine "$WINE_PIP" --version >/dev/null 2>&1; then
+    echo "Installing required packages in Wine Python..."
+    
+    # Install rpyc
+    wine "$WINE_PIP" install --quiet --no-warn-script-location rpyc 2>/dev/null && \
+        echo "✅ rpyc installed" || echo "⚠️  rpyc installation had issues"
+    
+    # Install MetaTrader5
+    wine "$WINE_PIP" install --quiet --no-warn-script-location --upgrade MetaTrader5 2>/dev/null && \
+        echo "✅ MetaTrader5 installed" || echo "⚠️  MetaTrader5 installation had issues"
+    
+    # Install python-dateutil
+    wine "$WINE_PIP" install --quiet --no-warn-script-location python-dateutil 2>/dev/null && \
+        echo "✅ python-dateutil installed" || echo "⚠️  python-dateutil installation had issues"
+else
+    echo "⚠️  Skipping Wine package installation (pip not available)"
+fi
 
 # ============================================
 # Phase 3: Install Linux Python Packages
