@@ -1,5 +1,5 @@
-; AUDUSD - Aussie Dollar - Commodity Currency
-; China-linked, risk-on indicator, commodity-driven (iron ore, coal)
+; AUDUSD - M5 Range Scalper
+; Commodity-linked pair - Optimized for Portfolio Governor System
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
 ; Best Performance: Asian session (China data) + NY session (USD data)
 ; Risk Profile: Moderate - commodity volatility, China sensitivity
@@ -26,8 +26,8 @@ InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=false
 
 ; ====== FIBONACCI ======
-; Standard zones for balanced volatility
-InpSwingLookback=21
+; Tighter lookback for M5 precision
+InpSwingLookback=12
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.22
@@ -39,8 +39,8 @@ InpDisplacementATR=1.4
 InpDisplacementLookback=5
 
 ; ====== RSI ======
-; Standard bands for commodity pair
-InpRSI_Period=14
+; Fast RSI for M5 Momentum
+InpRSI_Period=9
 InpRSI_Oversold=38
 InpRSI_Overbought=62
 InpRSI_Momentum=true
@@ -58,8 +58,8 @@ InpChopThreshold=0.76
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; Strict 6.0 threshold for quality
-InpMinConfluenceEntry=6
+; OPTIMIZED: Standard Score 4.0 for M5 Scalping
+InpMinConfluenceEntry=4
 InpEnableAddOns=false
 InpAddOn1_R=1.8
 InpAddOn2_R=3.0
@@ -75,30 +75,30 @@ InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
-; Adaptive TP for trending commodity nature
+; M5 Range Scalping TP
 InpTPMode=2
-InpFixedTP_R=3.3
-InpMinTP_R=1.8
-InpMaxTP_R=5.5
+InpFixedTP_R=1.8
+InpMinTP_R=1.1
+InpMaxTP_R=3.0
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 ; Moderate targets for commodity trends
 InpTrailingMode=1
-InpPartialTP_R=1.9
+InpPartialTP_R=1.1
 InpPartialClosePercent=40.0
-InpBE_Threshold_R=1.4
-InpTrailStart_R=2.4
+InpBE_Threshold_R=1.2
+InpTrailStart_R=1.5
 InpTrailATR_Mult=1.2
 
 ; ====== SPREAD ======
-; Moderate spread tolerance for commodity pair
-InpMaxSpreadPoints=18
+; Relaxed spread for M5 execution
+InpMaxSpreadPoints=20
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 ; Good for AUD - respects institutional levels
-InpUseSMC=true
-InpSMC_SwingLookback=21
+; M5 Structure Settings
+InpSMC_SwingLookback=12
 InpSMC_MinImpulseATR=2.1
 InpSMC_MinFVG_ATR=0.52
 
@@ -129,18 +129,19 @@ InpLearningHistory=180
 InpMinTradesForLearning=50
 
 ; ====== ADAPTIVE BEHAVIOR (Advanced) ======
-InpEnableAdaptiveRisk=false
-InpEnableAdaptiveExits=false
-InpEnableAdaptiveFilters=false
+; ====== ADAPTIVE BEHAVIOR (Advanced) ======
+InpEnableAdaptiveRisk=true
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
 
 ; ====== SESSION GOVERNOR ======
-; Strict session limits (1 trade per session)
+; UPDATED: Active M5 Scalping (3 trades per session)
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=1
-InpMaxProfitPerSession_R=4.0
+InpMaxTradesPerSession=3
+InpMaxProfitPerSession_R=5.0
 InpMaxLossPerSession_R=1.5
 InpMinSessionConfidence=0.5
-InpTradeCooldownMinutes=30
+InpTradeCooldownMinutes=15
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======

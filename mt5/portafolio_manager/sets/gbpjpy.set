@@ -1,5 +1,5 @@
-; GBPJPY - The Beast - Most Volatile Major Cross
-; High volatility, explosive moves, strong trending with deep sweeps
+; GBPJPY - M5 Volatility Scalper
+; High frequency volatility capture for Portfolio Governor System
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
 ; Best Performance: London session (GBP) + Tokyo overlap (explosive volatility)
 ; Risk Profile: Aggressive - wider stops required, 200+ pip daily range
@@ -26,8 +26,8 @@ InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=true
 
 ; ====== FIBONACCI ======
-; Wider zones due to extreme volatility and deep sweeps
-InpSwingLookback=18
+; Tighter lookback for M5 volatility capture
+InpSwingLookback=12
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.35
@@ -58,8 +58,8 @@ InpChopThreshold=0.88
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; Strict 6.0 threshold due to volatility risk
-InpMinConfluenceEntry=6
+; OPTIMIZED: Standard Score 4.0 for M5 Scalping
+InpMinConfluenceEntry=4
 InpEnableAddOns=false
 InpAddOn1_R=2.5
 InpAddOn2_R=4.0
@@ -75,30 +75,31 @@ InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
-; Wide adaptive TP for explosive trending
+; M5 Volatile Scalping TP (Runs further than EURUSD)
 InpTPMode=2
-InpFixedTP_R=4.0
-InpMinTP_R=2.5
-InpMaxTP_R=7.0
+InpFixedTP_R=2.5
+InpMinTP_R=1.5
+InpMaxTP_R=5.0
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
-; Wide targets for trending explosive nature
+; Wider targets for trending explosive nature
 InpTrailingMode=1
-InpPartialTP_R=2.3
+InpPartialTP_R=1.5
 InpPartialClosePercent=38.0
-InpBE_Threshold_R=1.6
-InpTrailStart_R=2.8
+InpBE_Threshold_R=1.5
+InpTrailStart_R=2.0
 InpTrailATR_Mult=1.4
 
 ; ====== SPREAD ======
-; Allow wider spreads for volatile cross
-InpMaxSpreadPoints=25
+; Relaxed spread for volatile cross execution
+InpMaxSpreadPoints=28
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 ; Critical for GBPJPY - massive liquidity sweeps
+; M5 Structure Settings
 InpUseSMC=true
-InpSMC_SwingLookback=18
+InpSMC_SwingLookback=12
 InpSMC_MinImpulseATR=2.8
 InpSMC_MinFVG_ATR=0.65
 
@@ -129,18 +130,19 @@ InpLearningHistory=180
 InpMinTradesForLearning=50
 
 ; ====== ADAPTIVE BEHAVIOR (Advanced) ======
-InpEnableAdaptiveRisk=false
-InpEnableAdaptiveExits=false
-InpEnableAdaptiveFilters=false
+; ====== ADAPTIVE BEHAVIOR (Advanced) ======
+InpEnableAdaptiveRisk=true
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
 
 ; ====== SESSION GOVERNOR ======
-; VERY strict limits - GBPJPY can wipe account quickly
+; UPDATED: Active M5 Scalping (3 trades per session)
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=1
-InpMaxProfitPerSession_R=5.0
-InpMaxLossPerSession_R=1.5
-InpMinSessionConfidence=0.55
-InpTradeCooldownMinutes=40
+InpMaxTradesPerSession=3
+InpMaxProfitPerSession_R=7.0
+InpMaxLossPerSession_R=2.0
+InpMinSessionConfidence=0.5
+InpTradeCooldownMinutes=15
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======

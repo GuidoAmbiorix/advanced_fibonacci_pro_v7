@@ -1,5 +1,5 @@
-; USDJPY - Dollar Yen - Safe Haven Pair
-; Low volatility, strong trending during risk-off events
+; USDJPY - M5 Trend Scalper
+; Low volatility, strong trending for Portfolio Governor System
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
 ; Best Performance: Tokyo session (Japanese market hours), NY session (USD data)
 ; Risk Profile: Conservative - stable, clean trends, predictable
@@ -26,8 +26,8 @@ InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=false
 
 ; ====== FIBONACCI ======
-; Tight zones - JPY respects technical levels well
-InpSwingLookback=24
+; Tighter lookback for M5 precision
+InpSwingLookback=12
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.20
@@ -39,8 +39,8 @@ InpDisplacementATR=1.3
 InpDisplacementLookback=5
 
 ; ====== RSI ======
-; Standard bands for balanced pair
-InpRSI_Period=14
+; Fast RSI for M5 Momentum
+InpRSI_Period=9
 InpRSI_Oversold=42
 InpRSI_Overbought=58
 InpRSI_Momentum=true
@@ -58,8 +58,8 @@ InpChopThreshold=0.78
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; Strict 6.0 threshold for quality
-InpMinConfluenceEntry=6
+; OPTIMIZED: Standard Score 4.0 for M5 Scalping
+InpMinConfluenceEntry=4
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.5
@@ -75,30 +75,31 @@ InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
-; Adaptive TP for trending nature
+; M5 Trend Scalping TP
 InpTPMode=2
-InpFixedTP_R=3.2
-InpMinTP_R=1.8
-InpMaxTP_R=5.5
+InpFixedTP_R=2.2
+InpMinTP_R=1.3
+InpMaxTP_R=3.5
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 ; Moderate targets for trending conditions
 InpTrailingMode=1
-InpPartialTP_R=1.8
+InpPartialTP_R=1.3
 InpPartialClosePercent=42.0
 InpBE_Threshold_R=1.3
-InpTrailStart_R=2.3
+InpTrailStart_R=1.8
 InpTrailATR_Mult=1.15
 
 ; ====== SPREAD ======
-; Tight spread requirement for major pair
-InpMaxSpreadPoints=15
+; Relaxed spread for M5 execution
+InpMaxSpreadPoints=18
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 ; JPY respects institutional levels well
 InpUseSMC=true
-InpSMC_SwingLookback=24
+; M5 Structure Settings
+InpSMC_SwingLookback=12
 InpSMC_MinImpulseATR=2.0
 InpSMC_MinFVG_ATR=0.48
 
@@ -129,18 +130,19 @@ InpLearningHistory=180
 InpMinTradesForLearning=50
 
 ; ====== ADAPTIVE BEHAVIOR (Advanced) ======
-InpEnableAdaptiveRisk=false
-InpEnableAdaptiveExits=false
-InpEnableAdaptiveFilters=false
+; ====== ADAPTIVE BEHAVIOR (Advanced) ======
+InpEnableAdaptiveRisk=true
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
 
 ; ====== SESSION GOVERNOR ======
-; Strict session limits (1 trade per session)
+; UPDATED: Active M5 Scalping (3 trades per session)
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=1
-InpMaxProfitPerSession_R=4.0
+InpMaxTradesPerSession=3
+InpMaxProfitPerSession_R=5.5
 InpMaxLossPerSession_R=1.5
 InpMinSessionConfidence=0.5
-InpTradeCooldownMinutes=30
+InpTradeCooldownMinutes=15
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======

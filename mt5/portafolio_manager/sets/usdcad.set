@@ -1,5 +1,5 @@
-; USDCAD - Loonie - Oil-Linked North American Pair
-; Heavily correlated with crude oil prices (inverse), North American focus
+; USDCAD - M5 Structure Scalper
+; Oil-Linked North American Pair - Optimized for Portfolio Governor System
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
 ; Best Performance: NY session (US + Canadian data), oil market hours
 ; Risk Profile: Moderate - oil volatility, clean technicals
@@ -26,8 +26,8 @@ InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=false
 
 ; ====== FIBONACCI ======
-; Standard zones for balanced pair
-InpSwingLookback=22
+; Tighter lookback for M5 structure
+InpSwingLookback=12
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.21
@@ -39,8 +39,8 @@ InpDisplacementATR=1.3
 InpDisplacementLookback=5
 
 ; ====== RSI ======
-; Standard bands for balanced pair
-InpRSI_Period=14
+; Fast RSI for M5 Momentum
+InpRSI_Period=9
 InpRSI_Oversold=40
 InpRSI_Overbought=60
 InpRSI_Momentum=true
@@ -58,8 +58,8 @@ InpChopThreshold=0.77
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; Strict 6.0 threshold for quality
-InpMinConfluenceEntry=6
+; OPTIMIZED: Standard Score 4.0 for M5 Scalping
+InpMinConfluenceEntry=4
 InpEnableAddOns=false
 InpAddOn1_R=1.7
 InpAddOn2_R=2.8
@@ -75,30 +75,30 @@ InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
-; Adaptive TP for oil-driven trends
+; M5 Structure Scalping TP
 InpTPMode=2
-InpFixedTP_R=3.1
-InpMinTP_R=1.7
-InpMaxTP_R=5.3
+InpFixedTP_R=1.8
+InpMinTP_R=1.1
+InpMaxTP_R=3.0
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 ; Moderate targets for trending conditions
 InpTrailingMode=1
-InpPartialTP_R=1.8
+InpPartialTP_R=1.1
 InpPartialClosePercent=42.0
-InpBE_Threshold_R=1.3
-InpTrailStart_R=2.3
+InpBE_Threshold_R=1.2
+InpTrailStart_R=1.5
 InpTrailATR_Mult=1.15
 
 ; ====== SPREAD ======
-; Tight spread requirement for major pair
-InpMaxSpreadPoints=16
+; Relaxed spread for M5 execution
+InpMaxSpreadPoints=20
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 ; Good for USDCAD - respects technical levels
-InpUseSMC=true
-InpSMC_SwingLookback=22
+; M5 Structure Settings
+InpSMC_SwingLookback=12
 InpSMC_MinImpulseATR=2.0
 InpSMC_MinFVG_ATR=0.50
 
@@ -129,18 +129,19 @@ InpLearningHistory=180
 InpMinTradesForLearning=50
 
 ; ====== ADAPTIVE BEHAVIOR (Advanced) ======
-InpEnableAdaptiveRisk=false
-InpEnableAdaptiveExits=false
-InpEnableAdaptiveFilters=false
+; ====== ADAPTIVE BEHAVIOR (Advanced) ======
+InpEnableAdaptiveRisk=true
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
 
 ; ====== SESSION GOVERNOR ======
-; Strict session limits (1 trade per session)
+; UPDATED: Active M5 Scalping (3 trades per session)
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=1
-InpMaxProfitPerSession_R=4.0
+InpMaxTradesPerSession=3
+InpMaxProfitPerSession_R=5.0
 InpMaxLossPerSession_R=1.5
 InpMinSessionConfidence=0.5
-InpTradeCooldownMinutes=30
+InpTradeCooldownMinutes=15
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======

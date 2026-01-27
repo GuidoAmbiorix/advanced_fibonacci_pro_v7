@@ -1,5 +1,5 @@
-; EURUSD - Most Liquid Major Pair - Institutional Grade Setup
-; Enhanced with SMC (Smart Money Concepts) for Institutional-Level Trading
+; EURUSD - M5 Scalping - High Frequency Mode
+; Optimized for Portfolio Governor System (Governor handles aggregate risk)
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
 ; Best Performance: London-NY overlap (cleanest technicals, highest liquidity)
 ; Risk Profile: Conservative with precise entries
@@ -26,10 +26,11 @@ InpFocusPrimeOnly=false
 
 ; ====== FIBONACCI ======
 ; Tight zones for precise EUR entries
-InpSwingLookback=22
+; Tight zones for M5 precision
+InpSwingLookback=12
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.18
+InpZoneTolerance=0.20
 
 ; ====== DISPLACEMENT ======
 ; Moderate filter for EUR - cleaner moves than volatile pairs
@@ -39,8 +40,9 @@ InpDisplacementLookback=5
 
 ; ====== RSI ======
 ; Standard bands for balanced, liquid pair
-InpRSI_Period=14
-InpRSI_Oversold=40
+; Fast RSI for M5 Momentum
+InpRSI_Period=9
+InpRSI_Oversold=35
 InpRSI_Overbought=60
 InpRSI_Momentum=true
 
@@ -57,8 +59,8 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; UPDATED: Stricter threshold (code now enforces 6.0 minimum)
-InpMinConfluenceEntry=6
+; OPTIMIZED: Standard Score 4.0 for M5 Scalping (Trend+Ind or Structure+Mom)
+InpMinConfluenceEntry=4
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
@@ -74,30 +76,32 @@ InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
-; Adaptive TP for clean EUR structure
+; Adaptive TP for clean EUR structure (M5 Scalping)
 InpTPMode=2
-InpFixedTP_R=3.0
-InpMinTP_R=1.5
-InpMaxTP_R=5.0
+InpFixedTP_R=2.0
+InpMinTP_R=1.2
+InpMaxTP_R=3.0
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 ; Balanced targets for ranging/trending conditions
 InpTrailingMode=1
-InpPartialTP_R=1.6
+InpPartialTP_R=1.2
 InpPartialClosePercent=45.0
 InpBE_Threshold_R=1.2
-InpTrailStart_R=2.2
-InpTrailATR_Mult=1.1
+InpTrailStart_R=1.6
+InpTrailATR_Mult=1.0
 
 ; ====== SPREAD ======
-; Tight spread requirement - EUR should have best spreads
-InpMaxSpreadPoints=12
+; ====== SPREAD ======
+; Relaxed for M5 execution reliability
+InpMaxSpreadPoints=15
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 ; Full SMC suite - EUR respects institutional levels
+; M5 Structure Settings
 InpUseSMC=true
-InpSMC_SwingLookback=22
+InpSMC_SwingLookback=12
 InpSMC_MinImpulseATR=2.2
 InpSMC_MinFVG_ATR=0.50
 
@@ -128,18 +132,19 @@ InpLearningHistory=180
 InpMinTradesForLearning=50
 
 ; ====== ADAPTIVE BEHAVIOR (Advanced) ======
-InpEnableAdaptiveRisk=false
-InpEnableAdaptiveExits=false
-InpEnableAdaptiveFilters=false
+; ====== ADAPTIVE BEHAVIOR (Advanced) ======
+InpEnableAdaptiveRisk=true
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
 
 ; ====== SESSION GOVERNOR ======
-; UPDATED: Strict session limits (reduced from 3 trades)
+; UPDATED: Active M5 Scalping (3 trades per session)
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=1
-InpMaxProfitPerSession_R=4.0
+InpMaxTradesPerSession=3
+InpMaxProfitPerSession_R=6.0
 InpMaxLossPerSession_R=1.5
 InpMinSessionConfidence=0.5
-InpTradeCooldownMinutes=30
+InpTradeCooldownMinutes=10
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======

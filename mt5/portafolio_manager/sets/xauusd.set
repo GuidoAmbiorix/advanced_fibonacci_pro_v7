@@ -1,5 +1,5 @@
-; XAUUSD - Gold - Ultimate Safe Haven Asset
-; High volatility, strong trending with liquidity sweeps
+; XAUUSD - M5 Momentum Scalper
+; High frequency momentum capture for Portfolio Governor System
 ; Best Timeframe: H1-H4 (Day Trading), M15-M30 (Aggressive Scalping)
 ; Best Performance: NY session (8 AM New York + COMEX open), London steady activity
 ; Risk Profile: Aggressive - wide swings but trending, prone to liquidity sweeps
@@ -26,8 +26,8 @@ InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=true
 
 ; ====== FIBONACCI ======
-; Wider zones due to high volatility and liquidity sweeps
-InpSwingLookback=18
+; Tighter lookback for M5 momentum
+InpSwingLookback=12
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.35
@@ -39,8 +39,8 @@ InpDisplacementATR=1.8
 InpDisplacementLookback=4
 
 ; ====== RSI ======
-; Wide RSI bands for extreme moves
-InpRSI_Period=14
+; Fast RSI for M5 Momentum
+InpRSI_Period=9
 InpRSI_Oversold=32
 InpRSI_Overbought=68
 InpRSI_Momentum=true
@@ -58,8 +58,8 @@ InpChopThreshold=0.85
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; UPDATED: Maintained strict 6.0 threshold (good for gold)
-InpMinConfluenceEntry=6
+; OPTIMIZED: Standard Score 4.0 for M5 Scalping
+InpMinConfluenceEntry=4
 InpEnableAddOns=false
 InpAddOn1_R=2.5
 InpAddOn2_R=4.0
@@ -75,30 +75,31 @@ InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
-; Wider TP for gold's trending nature
+; M5 Momentum Scalping TP (Runs further than FX)
 InpTPMode=2
-InpFixedTP_R=4.0
-InpMinTP_R=2.5
-InpMaxTP_R=7.0
+InpFixedTP_R=2.5
+InpMinTP_R=1.5
+InpMaxTP_R=5.0
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 ; Wider targets for gold's trending nature
 InpTrailingMode=1
-InpPartialTP_R=2.5
+InpPartialTP_R=1.5
 InpPartialClosePercent=35.0
-InpBE_Threshold_R=1.8
-InpTrailStart_R=3.0
+InpBE_Threshold_R=1.5
+InpTrailStart_R=2.0
 InpTrailATR_Mult=1.5
 
 ; ====== SPREAD ======
-; Allow wider spreads for gold
-InpMaxSpreadPoints=30
+; Relaxed spread for Gold M5 execution
+InpMaxSpreadPoints=35
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 ; Critical for gold - institutional liquidity sweeps are common
+; M5 Structure Settings
 InpUseSMC=true
-InpSMC_SwingLookback=18
+InpSMC_SwingLookback=12
 InpSMC_MinImpulseATR=3.0
 InpSMC_MinFVG_ATR=0.70
 
@@ -128,18 +129,19 @@ InpLearningHistory=180
 InpMinTradesForLearning=50
 
 ; ====== ADAPTIVE BEHAVIOR (Advanced) ======
-InpEnableAdaptiveRisk=false
-InpEnableAdaptiveExits=false
-InpEnableAdaptiveFilters=false
+; ====== ADAPTIVE BEHAVIOR (Advanced) ======
+InpEnableAdaptiveRisk=true
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
 
 ; ====== SESSION GOVERNOR ======
-; UPDATED: Only 1 trade per session for volatile gold
+; UPDATED: Active M5 Scalping (2 trades per session for Gold)
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=1
-InpMaxProfitPerSession_R=5.0
-InpMaxLossPerSession_R=1.5
-InpMinSessionConfidence=0.55
-InpTradeCooldownMinutes=40
+InpMaxTradesPerSession=2
+InpMaxProfitPerSession_R=6.0
+InpMaxLossPerSession_R=2.0
+InpMinSessionConfidence=0.5
+InpTradeCooldownMinutes=15
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======
