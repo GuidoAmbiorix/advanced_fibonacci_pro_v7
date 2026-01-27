@@ -51,6 +51,29 @@
 #define GV_CORR_USD_JPY          "PG_CorrUSDJPY"           // USD/JPY correlation
 #define GV_CORR_GOLD_USD         "PG_CorrGoldUSD"          // Gold/USD correlation
 
+// Advanced Risk Metrics (God-Level Upgrades)
+#define GV_PORTFOLIO_VAR         "PG_PortfolioVaR"         // Value at Risk (95% conf)
+#define GV_EXPECTED_MAX_DD       "PG_ExpectedMaxDD"        // Monte Carlo Expected Max DD
+#define GV_TAIL_RISK_MULT        "PG_TailRiskMult"         // Tail Risk Hedging Multiplier
+#define GV_MAX_PORTFOLIO_RISK    "PG_MaxPortfolioRisk"     // Dynamic Max Portfolio Risk
+#define GV_MAX_SYMBOL_RISK       "PG_MaxSymbolRisk"        // Dynamic Max Symbol Risk
+#define GV_MAX_GROUP_RISK        "PG_MaxGroupRisk"         // Dynamic Max Group Risk
+
+// Prefix for Per-Symbol Multipliers (Usage: GV_HEAT_MULT_PREFIX + "EURUSD")
+#define GV_HEAT_MULT_PREFIX      "PG_HeatMult_"            // Heat Map reduction (0-1)
+#define GV_LIQ_MULT_PREFIX       "PG_LiqMult_"             // Liquidity reduction (0-1)
+
+//+------------------------------------------------------------------+
+//| MARKET REGIMES                                                    |
+//+------------------------------------------------------------------+
+enum MARKET_REGIME
+{
+   REGIME_TREND = 0,    // Strong trending market
+   REGIME_RANGE = 1,    // Sideways/Choppy market
+   REGIME_VOLATILE = 2, // High volatility/News/Chaos
+   REGIME_BREAKOUT = 3  // Breakout conditions
+};
+
 //+------------------------------------------------------------------+
 //| CORRELATION GROUPS                                                |
 //+------------------------------------------------------------------+
