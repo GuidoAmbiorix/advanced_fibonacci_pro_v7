@@ -332,7 +332,7 @@ void OnDeinit(const int reason)
    // Mark governor as inactive
    GlobalVariableSet(GV_GOVERNOR_ACTIVE, 0);
    
-   if(CheckPointer(g_strategy) == POINTER_DYNAMIC) delete g_strategy;
+   // if(CheckPointer(g_strategy) == POINTER_DYNAMIC) delete g_strategy;
    
    Comment("");
    Print("🧠 Portfolio Governor DEACTIVATED");
@@ -413,20 +413,23 @@ void OnTick()
 //+------------------------------------------------------------------+
 //| Scan Signals (Deprecated - Logic moves to Engine.OnTick)          |
 //+------------------------------------------------------------------+
+/*
+//+------------------------------------------------------------------+
+//| Scan Signals (Deprecated - Logic moves to Engine.OnTick)          |
+//+------------------------------------------------------------------+
 void ScanSignals()
 {
-         if(CanOpenTrade(sym, requestedRisk, approvedRisk))
-         {
-            // 3. Execute
-            ExecuteTrade(sym, signal, approvedRisk);
-         }
-         else
-         {
-            Print("🚫 Signal BLOCKED by Governor: ", sym);
-         }
-      }
-   }
+//   if(CanOpenTrade(sym, requestedRisk, approvedRisk))
+//   {
+//      // 3. Execute
+//      ExecuteTrade(sym, signal, approvedRisk);
+//   }
+//   else
+//   {
+//      Print("🚫 Signal BLOCKED by Governor: ", sym);
+//   }
 }
+*/
 
 //+------------------------------------------------------------------+
 //| Check if we already have a position in this symbol                |
@@ -444,84 +447,15 @@ bool IsSymbolAlreadyTraded(string symbol)
 //+------------------------------------------------------------------+
 //| Execute Trade (Central Execution)                                 |
 //+------------------------------------------------------------------+
+/*
+//+------------------------------------------------------------------+
+//| Execute Trade (Central Execution)                                 |
+//+------------------------------------------------------------------+
 void ExecuteTrade(string symbol, int signalDir, double riskPercent)
 {
-   double price = (signalDir == 1) ? SymbolInfoDouble(symbol, SYMBOL_ASK) : SymbolInfoDouble(symbol, SYMBOL_BID);
-   double sl = g_strategy.GetStopLoss(symbol, signalDir, price);
-   double tp = g_strategy.GetTakeProfit(symbol, signalDir, price);
-   
-   // Calculate Lot Size based on Risk
-   double equity = account.Equity();
-   double riskMoney = equity * (riskPercent / 100.0);
-   double riskPoints = MathAbs(price - sl) / SymbolInfoDouble(symbol, SYMBOL_POINT);
-   double tickValue = SymbolInfoDouble(symbol, SYMBOL_TRADE_TICK_VALUE);
-   
-   if(riskPoints <= 0) riskPoints = 100; // Fallback to avoid div zero
-   
-   double lotSize = 0.01; // Default
-   
-   // Hardened Lot Calculation (Production Ready)
-   // Money Risk = (Lots * ContractSize * (Price - SL)) -> Indirectly via TickValue
-   // Standard Formula: Lot = Money / (StopLossPoints * TickValue)
-   
-   if(sl == 0) sl = (signalDir == 1) ? price - 100*_Point : price + 100*_Point; // Safety fallback
-   
-   riskMoney = equity * (riskPercent / 100.0); // Recalculate riskMoney as it was overwritten
-   riskPoints = MathAbs(price - sl) / _Point; // Points (integers usually)
-   
-   // Adjust for 0 check
-   if(riskPoints < 1) riskPoints = 100;
-   
-   // The Robust Formula for Forex/Metals/Indices
-   // TickValue is usually "Value of 1 lot for 1 point move" (or 1 pip move depending on broker)
-   // Let's use the standard MQL5 class method or raw math
-   double tv = SymbolInfoDouble(symbol, SYMBOL_TRADE_TICK_VALUE); // Value of 1 lot for 1 point
-   
-   if(tv > 0 && riskPoints > 0)
-   {
-      lotSize = riskMoney / (riskPoints * tv);
-   }
-   else 
-   {
-       // Fallback for exotic failure
-       lotSize = 0.01;
-       Print("⚠️ Critical Math Fail for ", symbol, " TickVal: ", tv, " RiskPoints: ", riskPoints);
-   }
-   
-   // Normalize Lots
-   double step = SymbolInfoDouble(symbol, SYMBOL_VOLUME_STEP);
-   lotSize = MathFloor(lotSize / step) * step;
-   double minLot = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MIN);
-   double maxLot = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MAX);
-   if(lotSize < minLot) lotSize = minLot;
-   if(lotSize > maxLot) lotSize = maxLot;
-   
-   bool res = false;
-   // 4. Spread Filter
-   double spread = SymbolInfoInteger(symbol, SYMBOL_SPREAD);
-   if(spread > InpMaxSpread)
-   {
-      Print("❌ Spread Too High: ", symbol, " | ", spread, " > ", InpMaxSpread);
-      return;
-   }
-
-   // 5. Final Execution
-   ENUM_ORDER_TYPE type = (signalDir == 1) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
-   
-   if(g_trade.PositionOpen(symbol, type, lotSize, price, sl, tp, InpTradeComment + ": " + g_strategy.GetName()))
-   {
-      res = true;
-   }
-   else
-   {
-      res = false;
-   }
-      
-   if(res)
-      Print("✅ Trade Executed: ", symbol, " | Lots: ", lotSize, " | Risk: ", riskPercent, "%");
-   else
-      Print("❌ Trade Failed: ", symbol, " | Error: ", g_trade.ResultRetcodeDescription());
+   // Deprecated: Execution is now handled by SymbolEngineWrapper
 }
+*/
 
 //+------------------------------------------------------------------+
 //| Check for period reset (new day/week/month)                       |
@@ -970,7 +904,7 @@ bool IsSymbolTradableNow(string sym)
 {
    if(!SymbolInfoInteger(sym, SYMBOL_TRADE_MODE) == SYMBOL_TRADE_MODE_FULL) return false;
    
-   double spread = SymbolInfoInteger(sym, SYMBOL_SPREAD);
+   double spread = (double)SymbolInfoInteger(sym, SYMBOL_SPREAD);
    // Hard limit? Let's say 50 points (5 pips) for majors, maybe dynamic later
    if(spread > 50 && StringFind(sym, "JPY") < 0) return false; 
    
@@ -980,13 +914,49 @@ bool IsSymbolTradableNow(string sym)
 }
 
 //+------------------------------------------------------------------+
+//| Helper: Get ATR Value (MQL5-safe)                                 |
+//+------------------------------------------------------------------+
+double GetATR(string symbol, ENUM_TIMEFRAMES tf, int period, int shift)
+{
+   int handle = iATR(symbol, tf, period);
+   if(handle == INVALID_HANDLE) return 0;
+   
+   double buf[1];
+   if(CopyBuffer(handle, 0, shift, 1, buf) < 1)
+   {
+      IndicatorRelease(handle);
+      return 0;
+   }
+   IndicatorRelease(handle);
+   return buf[0];
+}
+
+//+------------------------------------------------------------------+
+//| Helper: Get MA Value (MQL5-safe)                                  |
+//+------------------------------------------------------------------+
+double GetMA(string symbol, ENUM_TIMEFRAMES tf, int period, int shift)
+{
+   int handle = iMA(symbol, tf, period, 0, MODE_SMA, PRICE_CLOSE);
+   if(handle == INVALID_HANDLE) return 0;
+   
+   double buf[1];
+   if(CopyBuffer(handle, 0, shift, 1, buf) < 1)
+   {
+      IndicatorRelease(handle);
+      return 0;
+   }
+   IndicatorRelease(handle);
+   return buf[0];
+}
+
+//+------------------------------------------------------------------+
 //| Calculate Opportunity Score                                       |
 //+------------------------------------------------------------------+
 double CalculateOpportunityScore(string sym)
 {
    // 1. Volatility Score (Normalized ATR)
    // We want pairs that are moving, but not exploding
-   double atr = iATR(sym, PERIOD_D1, 14, 0);
+   double atr = GetATR(sym, PERIOD_D1, 14, 0);
    double close = iClose(sym, PERIOD_D1, 0);
    if(close == 0) return 0;
    
@@ -1008,8 +978,8 @@ double CalculateOpportunityScore(string sym)
    MARKET_REGIME globalRegime = (MARKET_REGIME)GlobalVariableGet(GV_MARKET_REGIME);
    double regimeScore = 50;
    
-   double ma50 = iMA(sym, PERIOD_D1, 50, 0, MODE_SMA, PRICE_CLOSE, 0);
-   double ma200 = iMA(sym, PERIOD_D1, 200, 0, MODE_SMA, PRICE_CLOSE, 0);
+   double ma50 = GetMA(sym, PERIOD_D1, 50, 0);
+   double ma200 = GetMA(sym, PERIOD_D1, 200, 0);
    bool trending = (MathAbs(ma50 - ma200) > atr * 2);
    
    if(globalRegime == REGIME_TREND && trending) regimeScore = 100;
@@ -1176,9 +1146,9 @@ MARKET_REGIME GetDominantPortfolioRegime()
    {
       string sym = g_activeSymbols[i];
       double close = iClose(sym, PERIOD_D1, 0);
-      double ma200 = iMA(sym, PERIOD_D1, 200, 0, MODE_SMA, PRICE_CLOSE, 0);
-      double atr = iATR(sym, PERIOD_D1, 14, 0);
-      double atrAvg = iATR(sym, PERIOD_D1, 14, 10); // simplified avg
+      double ma200 = GetMA(sym, PERIOD_D1, 200, 0);
+      double atr = GetATR(sym, PERIOD_D1, 14, 0);
+      double atrAvg = GetATR(sym, PERIOD_D1, 14, 10); // simplified avg
       
       if(close == 0 || ma200 == 0) continue;
       
@@ -1286,7 +1256,7 @@ void UpdateRiskHeatMap()
       double score = (risk / InpMaxSymbolRisk) * 50.0;
       
       // 2. Volatility Heat (ATR proximity)
-      double atr = iATR(sym, PERIOD_D1, 14, 0);
+      double atr = GetATR(sym, PERIOD_D1, 14, 0);
       double range = iHigh(sym, PERIOD_D1, 0) - iLow(sym, PERIOD_D1, 0);
       if(atr > 0 && range > atr * 1.5) score += 30; // High daily range
       
@@ -1368,27 +1338,17 @@ void CheckTailRiskHedge()
    GlobalVariableSet(GV_TAIL_RISK_MULT, mult);
 }
 
-   GlobalVariableSet(GV_TAIL_RISK_MULT, mult);
-}
+
 
 //+------------------------------------------------------------------+
 //| Manage Open Trades (Trailing, BE, Partials)                       |
 //+------------------------------------------------------------------+
+/*
 void ManageOpenTrades()
 {
-   for(int i = PositionsTotal() - 1; i >= 0; i--)
-   {
-      if(position.SelectByIndex(i))
-      {
-         // Only manage OUR trades
-         long magic = position.Magic();
-         if(magic >= InpMagicBase && magic <= InpMagicBase + InpMagicRange)
-         {
-             g_manager.ManagePosition(position.Ticket(), InpMagicBase);
-         }
-      }
-   }
+   // Legacy: Managed by SymbolEngine
 }
+*/
 
 //+------------------------------------------------------------------+
 //| Check Trading Hours                                               |

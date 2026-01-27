@@ -68,10 +68,12 @@
 //+------------------------------------------------------------------+
 enum MARKET_REGIME
 {
+   REGIME_UNKNOWN = -1,
    REGIME_TREND = 0,    // Strong trending market
    REGIME_RANGE = 1,    // Sideways/Choppy market
    REGIME_VOLATILE = 2, // High volatility/News/Chaos
-   REGIME_BREAKOUT = 3  // Breakout conditions
+   REGIME_BREAKOUT = 3,  // Breakout conditions
+   REGIME_CHAOS = 4      // Extreme volatility/Crash
 };
 
 //+------------------------------------------------------------------+
@@ -273,6 +275,7 @@ int GetKillzoneQuality()
 //+------------------------------------------------------------------+
 enum ENUM_ENTRY_TIER
 {
+   TIER_WEAK = -1,      // Weak/Marginal Entry
    TIER_NO_TRADE = 0,   // Score < 5: Skip
    TIER_GOOD = 1,       // Score 5-5.9: 60% position
    TIER_STRONG = 2,     // Score 6-7.9: 80% position

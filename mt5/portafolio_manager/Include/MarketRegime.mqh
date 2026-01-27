@@ -10,14 +10,7 @@
 #property link      "https://github.com/GuidoAmbiorix"
 #property strict
 
-enum MARKET_REGIME
-{
-   REGIME_UNKNOWN  = -1,
-   REGIME_TREND    = 0,
-   REGIME_RANGE    = 1,
-   REGIME_VOLATILE = 2,
-   REGIME_CHAOS    = 3
-};
+#include "PortfolioGlobals.mqh"
 
 //+------------------------------------------------------------------+
 //| MARKET REGIME MODULE                                              |

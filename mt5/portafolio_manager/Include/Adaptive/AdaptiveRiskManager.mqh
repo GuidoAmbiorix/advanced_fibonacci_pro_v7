@@ -82,7 +82,7 @@ public:
    //| Calculate Adaptive Risk for Entry                                |
    //+------------------------------------------------------------------+
    double CalculateAdaptiveRisk(ENUM_KILLZONE killzone, MARKET_REGIME mktRegime,
-                                 ConfluenceFactors &factors, ENTRY_QUALITY quality)
+                                 ConfluenceFactors &factors, ENUM_ENTRY_TIER quality)
    {
       // Start with base risk
       double risk = m_baseRisk;
@@ -284,7 +284,7 @@ private:
    //+------------------------------------------------------------------+
    //| Get Entry Quality Multiplier                                     |
    //+------------------------------------------------------------------+
-   double GetQualityMultiplier(ENTRY_QUALITY quality)
+   double GetQualityMultiplier(ENUM_ENTRY_TIER quality)
    {
       ContextStats stats = m_performanceAnalyzer.GetStatsByQuality(quality);
 
@@ -293,10 +293,10 @@ private:
          // Use default scaling if not enough data
          switch(quality)
          {
-            case EQ_ELITE:  return 1.2;
-            case EQ_STRONG: return 1.1;
-            case EQ_GOOD:   return 1.0;
-            case EQ_WEAK:   return 0.7;
+            case TIER_ELITE:  return 1.2;
+            case TIER_STRONG: return 1.1;
+            case TIER_GOOD:   return 1.0;
+            case TIER_WEAK:   return 0.7;
             default:        return 1.0;
          }
       }

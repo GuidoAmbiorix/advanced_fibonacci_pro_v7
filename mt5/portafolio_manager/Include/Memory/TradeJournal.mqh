@@ -30,7 +30,7 @@ struct TradeContext
    MARKET_REGIME  regime;
 
    // Entry Analysis
-   ENTRY_QUALITY  quality;
+   ENUM_ENTRY_TIER quality;
    double         confluenceScore;
 
    // Trade Details
@@ -48,7 +48,7 @@ struct TradeContext
    // Initialize with defaults
    TradeContext() : ticket(0), entryTime(0), symbol(""),
                     killzone(KILLZONE_NONE), dayOfWeek(0), regime(REGIME_UNKNOWN),
-                    quality(EQ_GOOD), confluenceScore(0), direction(0),
+                    quality(TIER_GOOD), confluenceScore(0), direction(0),
                     entryPrice(0), sl(0), tp(0), lots(0), riskPercent(0),
                     winRateAtEntry(0), rollingRAtEntry(0) {}
 };
@@ -444,7 +444,7 @@ private:
       record.entry.ticket = (ulong)StringToInteger(ticketStr);
       record.entry.dayOfWeek = (int)StringToInteger(dowStr);
       record.entry.regime = (MARKET_REGIME)StringToInteger(regimeStr);
-      record.entry.quality = (ENTRY_QUALITY)StringToInteger(qualityStr);
+      record.entry.quality = (ENUM_ENTRY_TIER)StringToInteger(qualityStr);
       record.entry.confluenceScore = StringToDouble(confStr);
       record.entry.direction = (int)StringToInteger(dirStr);
       record.entry.entryPrice = StringToDouble(entryPriceStr);

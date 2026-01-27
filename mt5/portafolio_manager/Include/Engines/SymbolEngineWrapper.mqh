@@ -180,7 +180,7 @@ struct SymbolEngineParams
 //+------------------------------------------------------------------+
 class CSymbolEngineWrapper
 {
-private:
+public:
    string         m_symbol;
    SymbolEngineParams m_params;
    
@@ -251,7 +251,7 @@ private:
       ulong ticket;
       bool  partialClosed;
       double initialRisk;
-      ENTRY_QUALITY quality;
+      ENUM_ENTRY_TIER quality;
    };
    PositionState m_states[];
 
@@ -613,16 +613,16 @@ private:
        // Governor Check
        GovernorRequest req;
        req.symbol = m_symbol;
-       req.requestedRisk = m_params.RiskBase;
-       req.strategyWinRate = 0.5; // Default or from Learning
-       req.strategyR = 1.0;
+       req.baseRisk = m_params.RiskBase;
+       req.winRate = 0.5; // Default or from Learning
+       req.rollingR = 1.0;
        req.regime = (int)m_currentRegime;
        
        double approvedRisk = m_allocator.RequestRisk(req);
        
        if(approvedRisk > 0.0)
        {
-          ExecuteTrade(direction == 1 ? ORDER_TYPE_BUY : ORDER_TYPE_SELL, approvedRisk, "Eng_Entry", EQ_STRONG);
+          ExecuteTrade(direction == 1 ? ORDER_TYPE_BUY : ORDER_TYPE_SELL, approvedRisk, "Eng_Entry", TIER_STRONG);
        }
    }
    
@@ -642,7 +642,7 @@ private:
        return score;
    }
    
-   void ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUALITY quality)
+   void ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENUM_ENTRY_TIER quality)
    {
        double price = (type == ORDER_TYPE_BUY) ? m_symbolInfo.Ask() : m_symbolInfo.Bid();
        double slDist = m_g_ATR * 1.5;

@@ -146,7 +146,7 @@ public:
    //+------------------------------------------------------------------+
    //| Get statistics by entry quality                                  |
    //+------------------------------------------------------------------+
-   ContextStats GetStatsByQuality(ENTRY_QUALITY quality)
+   ContextStats GetStatsByQuality(ENUM_ENTRY_TIER quality)
    {
       ContextStats stats;
 
