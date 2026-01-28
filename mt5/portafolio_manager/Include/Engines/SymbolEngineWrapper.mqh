@@ -168,7 +168,15 @@ struct SymbolEngineParams
    bool     UseCorrelationFilter;
    double   DailyMaxLoss_R;
    int      LossCooldownMinutes;
-   
+   int      MaxConsecutiveLosses;       // Circuit breaker after N consecutive losses
+   bool     UseReversalFilter;          // Enable EMA50/100 reversal filter
+   int      ReversalCooldownMinutes;    // Same-direction cooldown (min time between same-direction trades)
+
+   // EMA REVERSAL FILTER
+   int      EMA50_Period;               // EMA50 for reversal detection
+   int      EMA100_Period;              // EMA100 for reversal detection
+   double   EMA_SeparationATR;          // Min EMA separation for valid trend (ATR multiple)
+
    // EXECUTION
    ENUM_ORDER_TYPE_FILLING FillingType;
    int      Deviation;
@@ -223,9 +231,11 @@ public:
    
    // Indicator Handles & Buffers
    int m_hRSI, m_hATR, m_hEMA;
+   int m_hEMA50, m_hEMA100;   // Reversal filter EMAs
    double m_g_RSI, m_g_RSI_Prev, m_g_ATR, m_g_EMA, m_g_EMA_Prev, m_g_ATR_MA;
+   double m_g_EMA50, m_g_EMA100;   // Reversal filter EMA values
    double m_rsiBuffer[];
-   
+
    // State Variables
    datetime m_lastBarTime;
    int      m_entryDirection;
@@ -240,12 +250,21 @@ public:
    MARKET_REGIME m_currentRegime;
    double   m_dailyLossR;
    datetime m_lastResetDate;
-   
+
+   // Overtrading Protection State
+   datetime m_lastBuyTime;     // Last BUY trade entry time
+   datetime m_lastSellTime;    // Last SELL trade entry time
+   int      m_consecutiveLosses;   // Consecutive loss counter for circuit breaker
+
    // Optimization Cache
    double   m_cachedBuyScore;
    double   m_cachedSellScore;
    datetime m_lastScoreCalcTime;
-   
+
+   // Performance Monitoring
+   int      m_barCount;
+   int      m_tradesExecuted;
+
    // State Struct
    struct PositionState {
       ulong ticket;
@@ -367,7 +386,20 @@ public:
       p.MaxTradesPerSession = 2;
       p.MaxProfitPerSession_R = 5.0;
       p.MaxLossPerSession_R = 2.0;
-      
+
+      // PORTFOLIO PROTECTION
+      p.UseCorrelationFilter = true;
+      p.DailyMaxLoss_R = 4.0;
+      p.LossCooldownMinutes = 30;
+      p.MaxConsecutiveLosses = 5;
+      p.UseReversalFilter = true;
+      p.ReversalCooldownMinutes = 15;
+
+      // EMA REVERSAL FILTER
+      p.EMA50_Period = 50;
+      p.EMA100_Period = 100;
+      p.EMA_SeparationATR = 0.5;
+
       // EXECUTION
       p.FillingType = ORDER_FILLING_FOK;
       p.Deviation = 10;
@@ -382,8 +414,15 @@ public:
       m_hRSI = INVALID_HANDLE;
       m_hATR = INVALID_HANDLE;
       m_hEMA = INVALID_HANDLE;
+      m_hEMA50 = INVALID_HANDLE;
+      m_hEMA100 = INVALID_HANDLE;
       m_lastBarTime = 0;
+      m_lastBuyTime = 0;
+      m_lastSellTime = 0;
+      m_consecutiveLosses = 0;
       m_currentRegime = REGIME_UNKNOWN;
+      m_barCount = 0;
+      m_tradesExecuted = 0;
    }
    
    ~CSymbolEngineWrapper()
@@ -406,15 +445,28 @@ public:
       m_trade.SetDeviationInPoints(m_params.Deviation);
       m_trade.SetTypeFilling(m_params.FillingType);
       
-      // Initialize Indicators
+      // Initialize Core Indicators
       m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
       m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
       m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
-      
+
       if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
       {
-         Print("Engine Init Failed: Indicators");
+         Print("Engine Init Failed: Core Indicators (", m_symbol, ")");
          return false;
+      }
+
+      // Initialize Reversal Filter Indicators
+      if(m_params.UseReversalFilter)
+      {
+         m_hEMA50 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA50_Period, 0, MODE_EMA, PRICE_CLOSE);
+         m_hEMA100 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA100_Period, 0, MODE_EMA, PRICE_CLOSE);
+
+         if(m_hEMA50 == INVALID_HANDLE || m_hEMA100 == INVALID_HANDLE)
+         {
+            Print("Engine Init Failed: Reversal Filter Indicators (", m_symbol, ")");
+            return false;
+         }
       }
       
       m_failSafe.Init(m_params.MaxSpreadPoints);
@@ -484,9 +536,10 @@ public:
       if(m_hRSI != INVALID_HANDLE) IndicatorRelease(m_hRSI);
       if(m_hATR != INVALID_HANDLE) IndicatorRelease(m_hATR);
       if(m_hEMA != INVALID_HANDLE) IndicatorRelease(m_hEMA);
-      
-      // Clean up other modules if they have Deinit...
-      // (Assuming they handle their own cleanup or are stack instances which is fine)
+      if(m_hEMA50 != INVALID_HANDLE) IndicatorRelease(m_hEMA50);
+      if(m_hEMA100 != INVALID_HANDLE) IndicatorRelease(m_hEMA100);
+
+      // Module cleanup handled by destructors
    }
    
    //+------------------------------------------------------------------+
@@ -524,6 +577,52 @@ public:
       ScanForEntry();
    }
 
+   //+------------------------------------------------------------------+
+   //| OnTrade Handler (Backup for Closed Trade Processing)             |
+   //+------------------------------------------------------------------+
+   void OnTrade()
+   {
+       static datetime lastTradeEventTime = 0;
+       datetime currentTime = TimeCurrent();
+
+       // Don't process if no time has passed
+       if(currentTime == lastTradeEventTime) return;
+       lastTradeEventTime = currentTime;
+
+       // Check recent history (last 60 seconds)
+       if(!HistorySelect(currentTime - 60, currentTime)) return;
+
+       int dealCount = HistoryDealsTotal();
+       for(int i = 0; i < dealCount; i++)
+       {
+           ulong ticket = HistoryDealGetTicket(i);
+           if(ticket == 0) continue;
+
+           // Check entry type
+           if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+
+           // Check if it's our trade
+           long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
+           if(magic != m_params.MagicNumber) continue;
+
+           double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+           double rOutcome = (profit > 0) ? 1.0 : -1.0;
+
+           // Estimate R multiple from profit
+           double equity = m_account.Equity();
+           if(equity > 0 && m_params.RiskBase > 0)
+           {
+               double profitPct = (profit / equity) * 100.0;
+               rOutcome = profitPct / m_params.RiskBase;
+           }
+
+           // Update modules (backup in case ManagePositions missed it)
+           m_killSwitch.OnTradeClosed(rOutcome);
+           if(m_params.EnableLearning)
+               m_learning.OnTradeClosed(ticket);
+       }
+   }
+
 private:
    //+------------------------------------------------------------------+
    //| Helper Functions (Private)                                        |
@@ -541,27 +640,40 @@ private:
    
    bool UpdateIndicators()
    {
-      double rsi[], atr[], ema[], emaPrev[];
+      double rsi[], atr[], ema[];
       ArraySetAsSeries(rsi, true);
       ArraySetAsSeries(atr, true);
       ArraySetAsSeries(ema, true);
-      ArraySetAsSeries(emaPrev, true);
-      
+
       if(CopyBuffer(m_hRSI, 0, 0, 2, rsi) < 2) return false;
-      if(CopyBuffer(m_hATR, 0, 0, 14, atr) < 14) return false; // Need history for MA check
+      if(CopyBuffer(m_hATR, 0, 0, 14, atr) < 14) return false;
       if(CopyBuffer(m_hEMA, 0, 0, 2, ema) < 2) return false;
-      
+
       m_g_RSI = rsi[0];
       m_g_RSI_Prev = rsi[1];
       m_g_ATR = atr[0];
       m_g_EMA = ema[0];
       m_g_EMA_Prev = ema[1];
-      
+
+      // Update EMA50/100 for reversal filter
+      if(m_params.UseReversalFilter)
+      {
+         double ema50[], ema100[];
+         ArraySetAsSeries(ema50, true);
+         ArraySetAsSeries(ema100, true);
+
+         if(CopyBuffer(m_hEMA50, 0, 0, 1, ema50) < 1) return false;
+         if(CopyBuffer(m_hEMA100, 0, 0, 1, ema100) < 1) return false;
+
+         m_g_EMA50 = ema50[0];
+         m_g_EMA100 = ema100[0];
+      }
+
       // Calculate ATR MA
       double sum = 0;
       for(int i=0; i<14; i++) sum += atr[i];
       m_g_ATR_MA = sum / 14.0;
-      
+
       return true;
    }
    
@@ -586,6 +698,37 @@ private:
       return (SymbolInfoInteger(m_symbol, SYMBOL_SPREAD) <= m_params.MaxSpreadPoints);
    }
 
+   //+------------------------------------------------------------------+
+   //| Convert ENUM_ENTRY_TIER to ENTRY_QUALITY for Learning Module     |
+   //+------------------------------------------------------------------+
+   ENTRY_QUALITY ConvertTierToQuality(ENUM_ENTRY_TIER tier)
+   {
+       switch(tier)
+       {
+           case TIER_WEAK:   return EQ_WEAK;
+           case TIER_GOOD:   return EQ_GOOD;
+           case TIER_STRONG: return EQ_STRONG;
+           case TIER_ELITE:  return EQ_ELITE;
+           default:          return EQ_WEAK;  // Safe default
+       }
+   }
+
+   bool CheckDisplacement(int dir)
+   {
+      if(!m_params.UseDisplacement) return true;
+      for(int i = 2; i <= m_params.DisplacementLookback + 1; i++)
+      {
+         double o = iOpen(m_symbol, PERIOD_CURRENT, i);
+         double c = iClose(m_symbol, PERIOD_CURRENT, i);
+         if(MathAbs(c - o) >= m_g_ATR * m_params.DisplacementATR)
+         {
+            if(dir == 1 && c > o) return true;
+            if(dir == -1 && c < o) return true;
+         }
+      }
+      return false;
+   }
+
    void UpdateModules()
    {
       if(m_params.UseSMC)
@@ -598,75 +741,622 @@ private:
    
    void ScanForEntry()
    {
-       // Re-implementation of the Entry Logic
-       // Calculate Buy/Sell Scores using Confluence Logic (simplified here for brevity, assuming standard logic)
-       
-       // Calculate Scores
+       // Calculate Buy/Sell Scores
        double buyScore = CalculateConfluenceScore(1);
        double sellScore = CalculateConfluenceScore(-1);
-       
+
        double bestScore = MathMax(buyScore, sellScore);
        int    direction = (buyScore > sellScore) ? 1 : -1;
-       
-       if(bestScore < 6.0) return; // Strict threshold
-       
+
+       // Minimum threshold check
+       if(bestScore < m_params.MinConfluenceEntry) return;
+
+       // OVERTRADING PROTECTION: Reversal Filter
+       if(!CheckReversalFilter(direction)) return;
+
+       // OVERTRADING PROTECTION: Same-Direction Cooldown
+       if(!CheckDirectionCooldown(direction)) return;
+
+       // OVERTRADING PROTECTION: Consecutive Losses Circuit Breaker
+       if(m_consecutiveLosses >= m_params.MaxConsecutiveLosses)
+       {
+           Print("🛑 CIRCUIT BREAKER: ", m_symbol, " | ", m_consecutiveLosses, " consecutive losses");
+           return;
+       }
+
+       // Determine quality tier
+       ENUM_ENTRY_TIER quality = TIER_GOOD;
+       if(bestScore >= 8.0) quality = TIER_ELITE;
+       else if(bestScore >= 6.0) quality = TIER_STRONG;
+       else if(bestScore >= 5.0) quality = TIER_GOOD;
+       else return;  // Below minimum
+
        // Governor Check
        GovernorRequest req;
        req.symbol = m_symbol;
        req.baseRisk = m_params.RiskBase;
-       req.winRate = 0.5; // Default or from Learning
+       req.winRate = 0.5; // Default or get from learning
        req.rollingR = 1.0;
        req.regime = (int)m_currentRegime;
-       
+
        double approvedRisk = m_allocator.RequestRisk(req);
-       
+
        if(approvedRisk > 0.0)
        {
-          ExecuteTrade(direction == 1 ? ORDER_TYPE_BUY : ORDER_TYPE_SELL, approvedRisk, "Eng_Entry", TIER_STRONG);
+           m_currentConfluence = bestScore;
+           ExecuteTrade(direction == 1 ? ORDER_TYPE_BUY : ORDER_TYPE_SELL, approvedRisk, "Eng_Entry", quality);
        }
    }
    
+   //+------------------------------------------------------------------+
+   //| Calculate Confluence Score (0-12 Point System)                   |
+   //+------------------------------------------------------------------+
    double CalculateConfluenceScore(int direction)
    {
-       // Basic Placeholder for the complex logic
        double score = 0;
-       if(direction == 1 && m_g_RSI < 70 && m_g_EMA < m_symbolInfo.Bid()) score += 3.0;
-       if(direction == -1 && m_g_RSI > 30 && m_g_EMA > m_symbolInfo.Bid()) score += 3.0;
-       
-       // SMC Additions
+       double currentPrice = m_symbolInfo.Bid();
+
+       // ============ ORIGINAL FACTORS (0-6) ============
+
+       // 1. Trend (EMA 200 + slope) - 1.0 point
+       double emaSlope = m_g_EMA - m_g_EMA_Prev;
+       bool slopeStrong = MathAbs(emaSlope) >= (m_g_ATR * m_params.EMA_MinSlope);
+
+       if(direction == 1 && currentPrice > m_g_EMA && emaSlope > 0 && slopeStrong) score += 1.0;
+       if(direction == -1 && currentPrice < m_g_EMA && emaSlope < 0 && slopeStrong) score += 1.0;
+
+       // 2. Structure - 1.0 point
+       int highestBar = iHighest(m_symbol, PERIOD_CURRENT, MODE_HIGH, m_params.SwingLookback, 1);
+       int lowestBar = iLowest(m_symbol, PERIOD_CURRENT, MODE_LOW, m_params.SwingLookback, 1);
+       if(direction == 1 && lowestBar < highestBar) score += 1.0;
+       if(direction == -1 && highestBar < lowestBar) score += 1.0;
+
+       // 3. Fib Zone - 1.0 point
+       if(highestBar >= 0 && lowestBar >= 0)
+       {
+           double swingHigh = iHigh(m_symbol, PERIOD_CURRENT, highestBar);
+           double swingLow = iLow(m_symbol, PERIOD_CURRENT, lowestBar);
+           double range = swingHigh - swingLow;
+           double tolerance = m_g_ATR * m_params.ZoneTolerance;
+
+           if(range >= m_g_ATR * 1.5)
+           {
+               if(direction == 1)
+               {
+                   double f618 = swingHigh - (range * m_params.FibLevelLow);
+                   double f786 = swingHigh - (range * m_params.FibLevelHigh);
+                   if(currentPrice <= f618 + tolerance && currentPrice >= f786 - tolerance) score += 1.0;
+               }
+               else
+               {
+                   double f618 = swingLow + (range * m_params.FibLevelLow);
+                   double f786 = swingLow + (range * m_params.FibLevelHigh);
+                   if(currentPrice >= f618 - tolerance && currentPrice <= f786 + tolerance) score += 1.0;
+               }
+           }
+       }
+
+       // 4. RSI level - 1.0 point
+       if(direction == 1 && m_g_RSI <= m_params.RSI_Oversold) score += 1.0;
+       if(direction == -1 && m_g_RSI >= m_params.RSI_Overbought) score += 1.0;
+
+       // 5. RSI momentum - 0.5 point
+       if(m_params.RSI_Momentum)
+       {
+           if(direction == 1 && m_g_RSI > m_g_RSI_Prev) score += 0.5;
+           if(direction == -1 && m_g_RSI < m_g_RSI_Prev) score += 0.5;
+       }
+
+       // 6. Displacement - 1.0 point
+       if(CheckDisplacement(direction)) score += 1.0;
+
+       // ============ SMC FACTORS (0-6 additional) ============
+
        if(m_params.UseSMC)
        {
-           // Add logic here
-           score += 2.0; 
+           // 7. HTF Trend Alignment (MTF) - up to 2.0 points
+           if(m_params.UseMTF)
+               score += m_mtfAnalysis.GetConfluenceScore(direction);
+
+           // 8. Structure Break (BOS aligned) - up to 1.0 point
+           score += m_smcStructure.GetConfluenceScore(direction);
+
+           // 9. Order Block Entry - up to 1.5 points
+           score += m_smcOrderBlocks.GetConfluenceScore(direction);
+
+           // 10. Fair Value Gap - up to 1.0 point
+           score += m_smcFVG.GetConfluenceScore(direction);
+
+           // 11. Liquidity Sweep - up to 1.5 points
+           score += m_smcLiquidity.GetConfluenceScore(direction);
        }
-       return score;
+
+       // 12. Killzone Timing Bonus - up to 0.5 points
+       if(m_params.UseKillzoneFilter)
+           score += m_killzoneOptimizer.GetConfluenceScore();
+
+       return score;  // Max possible: ~12 points
    }
-   
+
+   //+------------------------------------------------------------------+
+   //| Enhanced Reversal Filter (Multi-Factor Momentum Confirmation)    |
+   //+------------------------------------------------------------------+
+   bool CheckReversalFilter(int direction)
+   {
+       if(!m_params.UseReversalFilter) return true;
+
+       double currentPrice = m_symbolInfo.Bid();
+
+       // Factor 1: EMA Alignment
+       bool emaAligned = false;
+       if(direction == 1 && m_g_EMA50 > m_g_EMA100) emaAligned = true;
+       if(direction == -1 && m_g_EMA50 < m_g_EMA100) emaAligned = true;
+
+       // Factor 2: Price vs EMA50
+       bool priceCorrect = false;
+       if(direction == 1 && currentPrice > m_g_EMA50) priceCorrect = true;
+       if(direction == -1 && currentPrice < m_g_EMA50) priceCorrect = true;
+
+       // Factor 3: EMA Separation (trend strength)
+       double separation = MathAbs(m_g_EMA50 - m_g_EMA100);
+       bool strongTrend = (separation >= m_g_ATR * m_params.EMA_SeparationATR);
+
+       // Factor 4: RSI Confirmation
+       bool rsiOK = false;
+       if(direction == 1 && m_g_RSI < 70) rsiOK = true;
+       if(direction == -1 && m_g_RSI > 30) rsiOK = true;
+
+       // Must pass at least 3 of 4 factors
+       int score = (emaAligned ? 1 : 0) + (priceCorrect ? 1 : 0) + (strongTrend ? 1 : 0) + (rsiOK ? 1 : 0);
+
+       if(score < 3)
+       {
+           Print("🚫 REVERSAL FILTER: ", m_symbol, " ", (direction == 1 ? "BUY" : "SELL"),
+                 " | Score: ", score, "/4 | EMAs: ", DoubleToString(m_g_EMA50, 5), "/", DoubleToString(m_g_EMA100, 5));
+           return false;
+       }
+
+       return true;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Same-Direction Cooldown Check                                     |
+   //+------------------------------------------------------------------+
+   bool CheckDirectionCooldown(int direction)
+   {
+       if(m_params.ReversalCooldownMinutes <= 0) return true;
+
+       datetime now = TimeCurrent();
+       datetime lastTime = (direction == 1) ? m_lastBuyTime : m_lastSellTime;
+
+       if(lastTime > 0)
+       {
+           int minutesSince = (int)((now - lastTime) / 60);
+           if(minutesSince < m_params.ReversalCooldownMinutes)
+           {
+               int remaining = m_params.ReversalCooldownMinutes - minutesSince;
+               Print("⏸️ COOLDOWN: ", m_symbol, " ", (direction == 1 ? "BUY" : "SELL"),
+                     " | ", remaining, " min remaining");
+               return false;
+           }
+       }
+
+       return true;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Calculate Lot Size Based on Risk                                 |
+   //+------------------------------------------------------------------+
+   double CalculateLotSize(double slDist, double riskPct)
+   {
+       if(slDist <= 0 || riskPct <= 0)
+       {
+           Print("ERROR: Invalid lot calculation inputs - slDist:", slDist, " riskPct:", riskPct);
+           return SymbolInfoDouble(m_symbol, SYMBOL_VOLUME_MIN);
+       }
+
+       double equity = m_account.Equity();
+       if(equity <= 0) equity = m_account.Balance();
+       if(equity <= 0)
+       {
+           Print("ERROR: Invalid account equity/balance");
+           return SymbolInfoDouble(m_symbol, SYMBOL_VOLUME_MIN);
+       }
+
+       double riskAmt = equity * (riskPct / 100.0);
+       double tv = SymbolInfoDouble(m_symbol, SYMBOL_TRADE_TICK_VALUE);
+       double ts = SymbolInfoDouble(m_symbol, SYMBOL_TRADE_TICK_SIZE);
+
+       if(ts <= 0 || tv <= 0)
+       {
+           Print("ERROR: Invalid symbol tick info - ts:", ts, " tv:", tv);
+           return SymbolInfoDouble(m_symbol, SYMBOL_VOLUME_MIN);
+       }
+
+       double lots = riskAmt / ((slDist / ts) * tv);
+
+       // Get volume limits
+       double minL = SymbolInfoDouble(m_symbol, SYMBOL_VOLUME_MIN);
+       double maxL = SymbolInfoDouble(m_symbol, SYMBOL_VOLUME_MAX);
+       double step = SymbolInfoDouble(m_symbol, SYMBOL_VOLUME_STEP);
+
+       // Clamp to broker limits
+       if(lots < minL) lots = minL;
+       if(lots > maxL) lots = maxL;
+
+       // Additional safety limit
+       if(lots > m_params.MaxLotsPerTrade)
+       {
+           Print("⚠️ Lots capped: ", DoubleToString(lots, 3), " → ", DoubleToString(m_params.MaxLotsPerTrade, 2));
+           lots = m_params.MaxLotsPerTrade;
+       }
+
+       // Round to step size
+       lots = MathFloor(lots / step + 0.000001) * step;
+
+       // Final validation
+       if(lots < minL || lots > maxL)
+       {
+           Print("ERROR: Calculated lot size out of range: ", lots);
+           return minL;
+       }
+
+       return NormalizeDouble(lots, 2);
+   }
+
+   //+------------------------------------------------------------------+
+   //| Calculate Take Profit Level                                      |
+   //+------------------------------------------------------------------+
+   double CalculateTakeProfit(double price, double slDist, int direction, ENUM_ENTRY_TIER quality)
+   {
+       if(m_params.TPMode == 0) return 0;  // No TP
+
+       double tpR = 0;
+
+       // MODE 1: Fixed TP
+       if(m_params.TPMode == 1)
+       {
+           tpR = m_params.FixedTP_R;
+       }
+       // MODE 2 & 3: Adaptive TP
+       else if(m_params.TPMode == 2 || m_params.TPMode == 3)
+       {
+           // Use learned MFE if enabled and available
+           if(m_params.TPUseLearnedMFE && m_params.EnableLearning)
+           {
+               double avgMFE = m_learning.GetAvgMFE();
+               if(avgMFE > 0 && m_g_ATR > 0)
+               {
+                   tpR = (avgMFE / m_g_ATR) * 0.75;  // 75% of learned MFE
+               }
+               else
+               {
+                   tpR = m_params.FixedTP_R;
+               }
+           }
+           else
+           {
+               tpR = m_params.FixedTP_R;
+           }
+
+           // Quality adjustments
+           if(quality == TIER_ELITE) tpR *= 1.2;
+           else if(quality == TIER_STRONG) tpR *= 1.1;
+           else if(quality == TIER_WEAK) tpR *= 0.8;
+
+           // Regime adjustments
+           if(m_currentRegime == REGIME_TREND) tpR *= 1.3;
+           else if(m_currentRegime == REGIME_RANGE) tpR *= 0.85;
+           else if(m_currentRegime == REGIME_VOLATILE) tpR *= 1.1;
+       }
+
+       // Clamp to min/max
+       if(tpR < m_params.MinTP_R) tpR = m_params.MinTP_R;
+       if(tpR > m_params.MaxTP_R) tpR = m_params.MaxTP_R;
+
+       // Calculate TP price
+       double tpDist = slDist * tpR;
+       double tp = (direction == 1) ? price + tpDist : price - tpDist;
+
+       // Ensure TP meets broker requirements
+       double stopsLevel = SymbolInfoInteger(m_symbol, SYMBOL_TRADE_STOPS_LEVEL) * m_symbolInfo.Point();
+       if(direction == 1 && (tp - price) < stopsLevel)
+           tp = price + stopsLevel + 10 * m_symbolInfo.Point();
+       else if(direction == -1 && (price - tp) < stopsLevel)
+           tp = price - stopsLevel - 10 * m_symbolInfo.Point();
+
+       return NormalizeDouble(tp, (int)m_symbolInfo.Digits());
+   }
+
+   //+------------------------------------------------------------------+
+   //| Check Margin Requirement                                         |
+   //+------------------------------------------------------------------+
+   bool CheckMarginRequirement(ENUM_ORDER_TYPE type, double lots)
+   {
+       if(!m_params.EnableMarginCheck) return true;
+
+       double freeMargin = m_account.FreeMargin();
+       double requiredMargin = 0;
+
+       double price = (type == ORDER_TYPE_BUY) ? m_symbolInfo.Ask() : m_symbolInfo.Bid();
+
+       if(!OrderCalcMargin(type, m_symbol, lots, price, requiredMargin))
+       {
+           Print("ERROR: Cannot calculate margin requirement for ", m_symbol, " ", DoubleToString(lots, 2), " lots");
+           return false;
+       }
+
+       // Require at least 150% of needed margin for safety buffer
+       double safetyMargin = requiredMargin * 1.5;
+
+       if(freeMargin < safetyMargin)
+       {
+           Print("MARGIN CHECK FAILED for ", m_symbol, ":");
+           Print("  Required: ", DoubleToString(requiredMargin, 2),
+                 " | Free: ", DoubleToString(freeMargin, 2),
+                 " | Safety needed: ", DoubleToString(safetyMargin, 2));
+           return false;
+       }
+
+       return true;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Execute Trade with Full State Tracking                           |
+   //+------------------------------------------------------------------+
    void ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENUM_ENTRY_TIER quality)
    {
        double price = (type == ORDER_TYPE_BUY) ? m_symbolInfo.Ask() : m_symbolInfo.Bid();
-       double slDist = m_g_ATR * 1.5;
+
+       // Adaptive SL based on quality
+       double slDist = m_g_ATR * 1.2;  // Default
+       if(quality == TIER_ELITE) slDist = m_g_ATR * 2.2;
+       else if(quality == TIER_STRONG) slDist = m_g_ATR * 1.8;
+
+       double stopsLevel = SymbolInfoInteger(m_symbol, SYMBOL_TRADE_STOPS_LEVEL) * m_symbolInfo.Point();
+       if(slDist < stopsLevel + 10 * m_symbolInfo.Point())
+           slDist = stopsLevel + 10 * m_symbolInfo.Point();
+
        double sl = (type == ORDER_TYPE_BUY) ? price - slDist : price + slDist;
-       double tp = (type == ORDER_TYPE_BUY) ? price + (slDist * 2.0) : price - (slDist * 2.0);
-       
-       // Lot Calculation logic...
-       double lot = 0.01; // Placeholder
-       
-       m_trade.PositionOpen(m_symbol, type, lot, price, sl, tp, label);
+       sl = NormalizeDouble(sl, (int)m_symbolInfo.Digits());
+
+       double lots = CalculateLotSize(slDist, riskPct);
+
+       string comment = m_params.TradeComment + "|" + label + "|Q" + IntegerToString((int)quality);
+
+       // Calculate TP
+       int dir = (type == ORDER_TYPE_BUY) ? 1 : -1;
+       double tp = CalculateTakeProfit(price, slDist, dir, quality);
+
+       // Validate margin
+       if(!CheckMarginRequirement(type, lots))
+       {
+           Print("TRADE REJECTED: Insufficient margin for ", DoubleToString(lots, 2), " lots");
+           m_failSafe.ReportFailure();
+           return;
+       }
+
+       // Open position with TP
+       if(m_trade.PositionOpen(m_symbol, type, lots, price, sl, tp, comment))
+       {
+           ulong ticket = m_trade.ResultOrder();
+           if(ticket == 0 && PositionSelect(m_symbol)) ticket = PositionGetInteger(POSITION_TICKET);
+
+           // Register with learning module
+           if(m_params.EnableLearning)
+           {
+               m_learning.RegisterTrade(ticket, slDist, ConvertTierToQuality(quality));
+           }
+
+           // Store in local state
+           int sz = ArraySize(m_states);
+           ArrayResize(m_states, sz + 1);
+           m_states[sz].ticket = ticket;
+           m_states[sz].partialClosed = false;
+           m_states[sz].initialRisk = slDist;
+           m_states[sz].quality = quality;
+
+           // Update cooldown tracking (CRITICAL FOR OVERTRADING PROTECTION)
+           if(type == ORDER_TYPE_BUY)
+               m_lastBuyTime = TimeCurrent();
+           else
+               m_lastSellTime = TimeCurrent();
+
+           // Log trade
+           Print("===========================================");
+           Print("✅ TRADE OPENED: ", m_symbol);
+           Print("  Ticket: #", ticket);
+           Print("  Type: ", EnumToString(type));
+           Print("  Price: ", DoubleToString(price, (int)m_symbolInfo.Digits()));
+           Print("  SL: ", DoubleToString(sl, (int)m_symbolInfo.Digits()), " (", DoubleToString(slDist / m_symbolInfo.Point(), 0), " pips)");
+           if(tp > 0)
+               Print("  TP: ", DoubleToString(tp, (int)m_symbolInfo.Digits()), " (", DoubleToString(MathAbs(tp - price) / slDist, 2), "R)");
+           Print("  Lots: ", DoubleToString(lots, 2));
+           Print("  Risk: ", DoubleToString(riskPct, 2), "%");
+           Print("  Quality: ", EnumToString(quality));
+           Print("  Confluence: ", DoubleToString(m_currentConfluence, 1), "/12");
+           Print("===========================================");
+
+           m_tradesExecuted++;
+       }
+       else
+       {
+           Print("TRADE FAILED: ", m_trade.ResultRetcode(), " - ", m_trade.ResultRetcodeDescription());
+           m_failSafe.ReportFailure();
+       }
    }
    
+   //+------------------------------------------------------------------+
+   //| Manage Positions (Cleanup Closed + Trail Open)                   |
+   //+------------------------------------------------------------------+
    void ManagePositions()
    {
-       // Trailing Logic Loop
-       for(int i=PositionsTotal()-1; i>=0; i--)
+       // ============ SECTION A: CLOSED POSITION CLEANUP ============
+       for(int i = ArraySize(m_states) - 1; i >= 0; i--)
        {
-          if(m_position.SelectByIndex(i))
-          {
-             if(m_position.Symbol() == m_symbol && m_position.Magic() == m_params.MagicNumber)
-             {
-                 // Apply Adaptive Exit Logic or Basic Trailing
-             }
-          }
+           ulong ticket = m_states[i].ticket;
+           if(!PositionSelectByTicket(ticket))
+           {
+               // Position closed - process results
+               double profitMoney = 0;
+
+               if(HistorySelectByPosition(ticket))
+               {
+                   int deals = HistoryDealsTotal();
+                   for(int d = 0; d < deals; d++)
+                       profitMoney += HistoryDealGetDouble(HistoryDealGetTicket(d), DEAL_PROFIT);
+
+                   // Calculate profit in R
+                   double risk = m_states[i].initialRisk;
+                   double profitR = (risk > 0) ? profitMoney / (m_account.Equity() * (risk / 100.0)) : 0;
+
+                   // Update learning modules
+                   if(m_params.EnableLearning)
+                   {
+                       m_learning.OnTradeClosed(ticket);
+                   }
+
+                   // Update KillSwitch
+                   double rOutcome = (profitMoney > 0) ? 1.0 : -1.0;
+                   m_killSwitch.OnTradeClosed(rOutcome);
+
+                   // CRITICAL: Track consecutive losses for circuit breaker
+                   if(profitMoney < 0)
+                   {
+                       m_consecutiveLosses++;
+                       m_lastLossTime = TimeCurrent();
+                       Print("📉 LOSS: ", m_symbol, " | ", DoubleToString(profitR, 2), "R | Streak: ", m_consecutiveLosses);
+                   }
+                   else
+                   {
+                       if(m_consecutiveLosses > 0)
+                           Print("✅ WIN breaks losing streak of ", m_consecutiveLosses);
+                       m_consecutiveLosses = 0;  // Reset on win
+                   }
+
+                   // Track daily loss
+                   m_dailyLossR += profitR;
+               }
+
+               // Remove from states array
+               for(int j = i; j < ArraySize(m_states) - 1; j++)
+                   m_states[j] = m_states[j + 1];
+               ArrayResize(m_states, ArraySize(m_states) - 1);
+           }
+       }
+
+       // ============ SECTION B: OPEN POSITION MANAGEMENT ============
+       for(int i = PositionsTotal() - 1; i >= 0; i--)
+       {
+           if(!m_position.SelectByIndex(i)) continue;
+           if(m_position.Symbol() != m_symbol || m_position.Magic() != m_params.MagicNumber) continue;
+
+           ulong ticket = m_position.Ticket();
+           double open = m_position.PriceOpen();
+           double curr = m_position.PriceCurrent();
+           double sl = m_position.StopLoss();
+           double tp = m_position.TakeProfit();
+           double vol = m_position.Volume();
+           long pType = m_position.PositionType();
+
+           // Update learning stats (MFE/MAE tracking)
+           if(m_params.EnableLearning)
+           {
+               m_learning.UpdateTrade(ticket, open, curr, (int)pType);
+           }
+
+           // Get/Create State
+           int sIdx = -1;
+           for(int s = 0; s < ArraySize(m_states); s++)
+           {
+               if(m_states[s].ticket == ticket)
+               {
+                   sIdx = s;
+                   break;
+               }
+           }
+
+           // Create state if not found
+           if(sIdx == -1)
+           {
+               int sz = ArraySize(m_states);
+               ArrayResize(m_states, sz + 1);
+               m_states[sz].ticket = ticket;
+               m_states[sz].partialClosed = false;
+               m_states[sz].initialRisk = MathAbs(open - sl);
+               m_states[sz].quality = TIER_GOOD;
+               sIdx = sz;
+           }
+
+           double risk = m_states[sIdx].initialRisk;
+           if(risk <= 0) risk = m_symbolInfo.Point() * 100;
+
+           double rawProfit = (pType == POSITION_TYPE_BUY) ? (curr - open) : (open - curr);
+           double profitR = rawProfit / risk;
+
+           ENUM_ENTRY_TIER quality = m_states[sIdx].quality;
+
+           // Skip trailing if mode is off
+           if(m_params.TrailingMode == 0) continue;
+
+           // Get trailing parameters
+           double partTP = m_params.PartialTP_R;
+           double trailStart = m_params.TrailStart_R;
+           double beTrigger = m_params.BE_Threshold_R;
+           double partialPercent = m_params.PartialClosePercent;
+
+           // Quality adjustments
+           if(quality == TIER_WEAK) { partTP *= 0.8; trailStart *= 0.7; }
+           if(quality == TIER_ELITE) { partTP *= 1.5; trailStart *= 1.5; }
+
+           // Regime adjustments
+           if(m_currentRegime == REGIME_TREND) { partTP *= 1.2; trailStart *= 1.2; }
+           else if(m_currentRegime == REGIME_RANGE) { partTP *= 0.8; trailStart *= 0.8; }
+
+           // 1. Partial TP
+           if(!m_states[sIdx].partialClosed && profitR >= partTP)
+           {
+               double closeVol = NormalizeDouble(vol * (partialPercent / 100.0), 2);
+               double minV = SymbolInfoDouble(m_symbol, SYMBOL_VOLUME_MIN);
+               if(closeVol >= minV && (vol - closeVol) >= minV)
+               {
+                   if(m_trade.PositionClosePartial(ticket, closeVol))
+                   {
+                       m_states[sIdx].partialClosed = true;
+                       if(m_params.EnableLearning)
+                           m_learning.SetPartialClosed(ticket, true);
+                       Print("💰 PARTIAL TP: ", m_symbol, " | ", closeVol, " lots @ ", DoubleToString(profitR, 2), "R");
+                   }
+               }
+           }
+
+           // 2. Break-Even
+           if(profitR >= beTrigger && MathAbs(sl - open) > m_symbolInfo.Point())
+           {
+               bool better = (pType == POSITION_TYPE_BUY) ? sl < open : (sl > open || sl == 0);
+               if(better)
+               {
+                   if(m_trade.PositionModify(ticket, open, tp))
+                       Print("🔒 BREAK-EVEN: ", m_symbol, " @ ", DoubleToString(profitR, 2), "R");
+               }
+           }
+
+           // 3. Trailing Stop
+           if(profitR >= trailStart)
+           {
+               double mult = m_params.TrailATR_Mult;
+               if(quality == TIER_WEAK) mult *= 0.7;
+               if(quality == TIER_ELITE) mult *= 1.5;
+
+               double td = m_g_ATR * mult;
+               double newSL = (pType == POSITION_TYPE_BUY) ? curr - td : curr + td;
+
+               if((pType == POSITION_TYPE_BUY && newSL > sl && newSL < curr) ||
+                  (pType == POSITION_TYPE_SELL && (newSL < sl || sl == 0) && newSL > curr))
+               {
+                   m_trade.PositionModify(ticket, newSL, tp);
+               }
+           }
        }
    }
 };
