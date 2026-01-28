@@ -1,0 +1,44 @@
+; USDCHF - M5 Range/Trend
+; Optimized for Portfolio Governor System
+; Inverse to EURUSD, Safe Haven
+; Magic: 100010
+
+; ====== IDENTITY ======
+InpMagicNumber=100010
+
+; ====== DIRECTION ======
+InpDirection=0
+InpBrokerUTCOffset=2
+
+; ====== RISK ======
+InpRiskBase=0.50
+InpRiskAddOn1=0.15
+InpRiskAddOn2=0.10
+InpMaxRisk=1.0
+
+; ====== PROTECTION ======
+InpMaxConsecutiveLosses=2
+InpUseReversalFilter=true
+InpDailyMaxLoss_R=3.0
+InpLossCooldownMinutes=45
+
+; ====== STRATEGY ======
+InpSwingLookback=12
+InpFibLevelLow=0.618
+InpFibLevelHigh=0.786
+InpUseDisplacement=true
+InpDisplacementATR=1.2
+InpUseTrendFilter=true
+InpEMA_Period=200
+InpMinConfluenceEntry=4
+
+; ====== SMC ======
+InpUseSMC=true
+InpSMC_MinImpulseATR=2.2
+InpSMC_MinFVG_ATR=0.5
+
+; ====== FILTERS ======
+InpUseKillzoneFilter=true
+InpEnableAsianKZ=false
+InpEnableLondonOpenKZ=true
+InpEnableNYKZ=true

@@ -173,6 +173,8 @@ input group "======= PORTFOLIO PROTECTION ======="
 input bool              InpUseCorrelationFilter = true;   // Enable Correlation Protection
 input double            InpDailyMaxLoss_R = 4.0;          // Daily Max Loss (R) - Circuit Breaker
 input int               InpLossCooldownMinutes = 30;      // Cooldown After Loss (minutes)
+input int               InpMaxConsecutiveLosses = 2;      // Max Consecutive Losses Rule
+input bool              InpUseReversalFilter = true;      // Enable Reversal Trend Filter
 
 //+------------------------------------------------------------------+
 //| GLOBALS                                                           |
@@ -232,6 +234,7 @@ MARKET_REGIME g_currentRegime = REGIME_UNKNOWN;
 
 // Portfolio Protection Tracking
 double g_dailyLossR = 0;
+int    g_consecutiveLosses = 0;
 datetime g_lastResetDate = 0;
 
 // OPTIMIZATION: Cache confluence scores to avoid recalculation
@@ -576,6 +579,7 @@ void ResetDailyLossIfNewDay()
          Print("📊 Daily Reset: Previous day loss was ", DoubleToString(g_dailyLossR, 2), "R");
       }
       g_dailyLossR = 0;
+      g_consecutiveLosses = 0;
       g_lastResetDate = currentDate;
    }
 }
@@ -781,6 +785,18 @@ void OnTick()
          // Still in cooldown - don't trade
          return;
       }
+   }
+
+   // --- PORTFOLIO PROTECTION: CONSECUTIVE LOSS LIMIT ---
+   if(InpMaxConsecutiveLosses > 0 && g_consecutiveLosses >= InpMaxConsecutiveLosses)
+   {
+      static datetime lastStreakWarning = 0;
+      if(TimeCurrent() - lastStreakWarning > 300)
+      {
+         Print("⛔ MAX LOSS STREAK: ", g_consecutiveLosses, " consecutive losses - Trading STOPPED for today (or until manual reset)");
+         lastStreakWarning = TimeCurrent();
+      }
+      return;
    }
 
    // --- MODULE: MARKET REGIME ---
@@ -1154,8 +1170,14 @@ void ManagePositions()
              if(profitMoney < 0)
              {
                 g_lastLossTime = TimeCurrent();  // Track last loss time for cooldown
+                g_consecutiveLosses++;           // REVENGE TRADING PROTECTION
                 Print("📉 Loss recorded: ", DoubleToString(profitR, 2), "R | Daily total: ",
-                      DoubleToString(g_dailyLossR, 2), "R");
+                      DoubleToString(g_dailyLossR, 2), "R | Streak: ", g_consecutiveLosses);
+             }
+             else
+             {
+                if(g_consecutiveLosses > 0) Print("✅ Win breaks losing streak of ", g_consecutiveLosses);
+                g_consecutiveLosses = 0;         // Reset on win
              }
          }
 
@@ -1472,6 +1494,32 @@ double CalculateConfluenceScore(int direction)
    // 1. Trend (EMA 200 + slope) - 1.0 point
    double emaSlope = g_EMA - g_EMA_Prev;
    bool slopeStrong = MathAbs(emaSlope) >= (g_ATR * InpEMA_MinSlope);
+
+   // OPTIMIZATION: Reversal Filter (Block Sells if Short-term trend is UP)
+   if(InpUseReversalFilter)
+   {
+       // Calculate faster EMAs for reversal detection
+       double ema50 = iMA(_Symbol, PERIOD_CURRENT, 50, 0, MODE_EMA, PRICE_CLOSE);
+       double ema100 = iMA(_Symbol, PERIOD_CURRENT, 100, 0, MODE_EMA, PRICE_CLOSE);
+       
+       bool isBullishReversal = (currentPrice > ema50 && ema50 > ema100);
+       bool isBearishReversal = (currentPrice < ema50 && ema50 < ema100);
+
+       // Block SELL if we are in a Bullish Reversal (even if below EMA 200)
+       if(direction == -1 && isBullishReversal) 
+       {
+           // Print("Reversal Filter: SELL Blocked (Price > EMA50 > EMA100)");
+           return 0; 
+       }
+
+       // Block BUY if we are in a Bearish Reversal (even if above EMA 200)
+       if(direction == 1 && isBearishReversal)
+       {
+           // Print("Reversal Filter: BUY Blocked (Price < EMA50 < EMA100)");
+           return 0; 
+       }
+   }
+
    if(direction == 1 && currentPrice > g_EMA && emaSlope > 0 && slopeStrong) score += 1.0;
    if(direction == -1 && currentPrice < g_EMA && emaSlope < 0 && slopeStrong) score += 1.0;
 

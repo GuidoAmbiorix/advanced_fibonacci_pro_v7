@@ -150,3 +150,9 @@ InpEnableSessionBlacklist=true
 InpUseCorrelationFilter=true
 InpDailyMaxLoss_R=2.5
 InpLossCooldownMinutes=60
+InpMaxConsecutiveLosses=2
+InpUseReversalFilter=true
+
+; ====== RISK (Before Governor Scaling) ======
+; InpRiskBase updated to 0.50 (Aggressive)
+InpRiskBase=0.50

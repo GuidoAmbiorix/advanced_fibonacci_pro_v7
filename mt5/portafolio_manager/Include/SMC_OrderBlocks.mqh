@@ -231,6 +231,34 @@ public:
    }
 
    //+------------------------------------------------------------------+
+   //| Invalidate Block (Smart Invalidation after Loss)                  |
+   //+------------------------------------------------------------------+
+   void InvalidateBlock(int barIndex)
+   {
+      // Search in bullish blocks
+      for(int i = 0; i < ArraySize(m_bullishOBs); i++)
+      {
+         if(m_bullishOBs[i].barIndex == barIndex)
+         {
+            m_bullishOBs[i].mitigated = true; // Mark as "used up" so we don't trade it again
+            Print("Smart Invalidation: Bullish OB at bar ", barIndex, " removed due to loss.");
+            return;
+         }
+      }
+
+      // Search in bearish blocks
+      for(int i = 0; i < ArraySize(m_bearishOBs); i++)
+      {
+         if(m_bearishOBs[i].barIndex == barIndex)
+         {
+            m_bearishOBs[i].mitigated = true; // Mark as "used up" so we don't trade it again
+            Print("Smart Invalidation: Bearish OB at bar ", barIndex, " removed due to loss.");
+            return;
+         }
+      }
+   }
+
+   //+------------------------------------------------------------------+
    //| Add to Bullish OB Array                                           |
    //+------------------------------------------------------------------+
    void AddToBullishOBArray(OrderBlock &ob)
