@@ -175,6 +175,7 @@ input double            InpDailyMaxLoss_R = 4.0;          // Daily Max Loss (R) 
 input int               InpLossCooldownMinutes = 30;      // Cooldown After Loss (minutes)
 input int               InpMaxConsecutiveLosses = 2;      // Max Consecutive Losses Rule
 input bool              InpUseReversalFilter = true;      // Enable Reversal Trend Filter
+input int               InpReversalCooldownMinutes = 15;  // Min Time Between Same-Direction Trades
 
 //+------------------------------------------------------------------+
 //| GLOBALS                                                           |
@@ -216,7 +217,9 @@ CAdaptiveExitManager   adaptiveExit;
 CAdaptiveFilterManager adaptiveFilter;
 
 int hRSI, hATR, hEMA;
+int hEMA50, hEMA100;   // Reversal filter EMAs
 double g_RSI, g_RSI_Prev, g_ATR, g_EMA, g_EMA_Prev, g_ATR_MA;
+double g_EMA50, g_EMA50_Prev, g_EMA100, g_EMA100_Prev;
 
 datetime lastBarTime = 0;
 
@@ -236,6 +239,8 @@ MARKET_REGIME g_currentRegime = REGIME_UNKNOWN;
 double g_dailyLossR = 0;
 int    g_consecutiveLosses = 0;
 datetime g_lastResetDate = 0;
+datetime g_lastBuyTime = 0;    // Last BUY trade entry time
+datetime g_lastSellTime = 0;   // Last SELL trade entry time
 
 // OPTIMIZATION: Cache confluence scores to avoid recalculation
 double g_cachedBuyScore = 0;
@@ -278,6 +283,19 @@ int OnInit()
 
    if(hRSI == INVALID_HANDLE || hATR == INVALID_HANDLE || hEMA == INVALID_HANDLE)
       return INIT_FAILED;
+
+   // Initialize reversal filter EMAs
+   if(InpUseReversalFilter)
+   {
+      hEMA50 = iMA(_Symbol, PERIOD_CURRENT, 50, 0, MODE_EMA, PRICE_CLOSE);
+      hEMA100 = iMA(_Symbol, PERIOD_CURRENT, 100, 0, MODE_EMA, PRICE_CLOSE);
+
+      if(hEMA50 == INVALID_HANDLE || hEMA100 == INVALID_HANDLE)
+      {
+         Print("ERROR: Reversal filter EMA handles invalid");
+         return INIT_FAILED;
+      }
+   }
 
    failSafe.Init(InpMaxSpreadPoints);
    ArrayResize(g_states, 0);
@@ -461,6 +479,8 @@ int OnInit()
    Print("    Correlation Filter: ", InpUseCorrelationFilter ? "✓ ON" : "✗ OFF");
    Print("    Daily Circuit Breaker: ", InpDailyMaxLoss_R, "R");
    Print("    Loss Cooldown: ", InpLossCooldownMinutes, " minutes");
+   Print("    Reversal Filter: ", InpUseReversalFilter ? "✓ ON (EMA50/100 momentum)" : "✗ OFF");
+   Print("    Same-Direction Cooldown: ", InpReversalCooldownMinutes, " minutes");
    Print("-------------------------------------------");
    Print("  RISK PARAMETERS:");
    Print("    Base Risk: ", DoubleToString(InpRiskBase, 2), "%");
@@ -492,6 +512,8 @@ void OnDeinit(const int reason)
    if(hRSI != INVALID_HANDLE) IndicatorRelease(hRSI);
    if(hATR != INVALID_HANDLE) IndicatorRelease(hATR);
    if(hEMA != INVALID_HANDLE) IndicatorRelease(hEMA);
+   if(hEMA50 != INVALID_HANDLE) IndicatorRelease(hEMA50);
+   if(hEMA100 != INVALID_HANDLE) IndicatorRelease(hEMA100);
 
    // Cleanup SMC modules
    if(InpUseSMC)
@@ -951,12 +973,52 @@ void OnTick()
 
           if(buyScore >= minEntry && (InpDirection == 0 || InpDirection == 1))
           {
+             // --- PORTFOLIO PROTECTION: SAME-DIRECTION COOLDOWN ---
+             if(InpReversalCooldownMinutes > 0 && g_lastBuyTime > 0)
+             {
+                int secondsSince = (int)(TimeCurrent() - g_lastBuyTime);
+                int requiredCooldown = InpReversalCooldownMinutes * 60;
+
+                if(secondsSince < requiredCooldown)
+                {
+                   static datetime lastCooldownWarning = 0;
+                   if(TimeCurrent() - lastCooldownWarning > 60)
+                   {
+                      int remainingSec = requiredCooldown - secondsSince;
+                      Print("⏸️ SAME-DIRECTION COOLDOWN: BUY blocked - ",
+                            IntegerToString(remainingSec / 60), "m ", IntegerToString(remainingSec % 60), "s remaining");
+                      lastCooldownWarning = TimeCurrent();
+                   }
+                   return;  // Skip this trade
+                }
+             }
+
              g_currentConfluence = buyScore;
              g_entryDirection = 1;
              ExecuteTrade(ORDER_TYPE_BUY, approvedRisk, "Entry", quality);
           }
           else if(sellScore >= minEntry && (InpDirection == 0 || InpDirection == 2))
           {
+             // --- PORTFOLIO PROTECTION: SAME-DIRECTION COOLDOWN ---
+             if(InpReversalCooldownMinutes > 0 && g_lastSellTime > 0)
+             {
+                int secondsSince = (int)(TimeCurrent() - g_lastSellTime);
+                int requiredCooldown = InpReversalCooldownMinutes * 60;
+
+                if(secondsSince < requiredCooldown)
+                {
+                   static datetime lastCooldownWarning = 0;
+                   if(TimeCurrent() - lastCooldownWarning > 60)
+                   {
+                      int remainingSec = requiredCooldown - secondsSince;
+                      Print("⏸️ SAME-DIRECTION COOLDOWN: SELL blocked - ",
+                            IntegerToString(remainingSec / 60), "m ", IntegerToString(remainingSec % 60), "s remaining");
+                      lastCooldownWarning = TimeCurrent();
+                   }
+                   return;  // Skip this trade
+                }
+             }
+
              g_currentConfluence = sellScore;
              g_entryDirection = -1;
              ExecuteTrade(ORDER_TYPE_SELL, approvedRisk, "Entry", quality);
@@ -1074,6 +1136,12 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       Print("  Quality: ", EnumToString(quality));
       Print("  Confluence: ", DoubleToString(g_currentConfluence, 1), "/12");
       Print("===========================================");
+
+      // Track last trade time per direction (for cooldown)
+      if(type == ORDER_TYPE_BUY)
+         g_lastBuyTime = TimeCurrent();
+      else
+         g_lastSellTime = TimeCurrent();
 
       g_tradesExecuted++;  // Performance monitoring
 
@@ -1495,28 +1563,42 @@ double CalculateConfluenceScore(int direction)
    double emaSlope = g_EMA - g_EMA_Prev;
    bool slopeStrong = MathAbs(emaSlope) >= (g_ATR * InpEMA_MinSlope);
 
-   // OPTIMIZATION: Reversal Filter (Block Sells if Short-term trend is UP)
+   // ENHANCED REVERSAL FILTER: Multi-factor momentum confirmation
    if(InpUseReversalFilter)
    {
-       // Calculate faster EMAs for reversal detection
-       double ema50 = iMA(_Symbol, PERIOD_CURRENT, 50, 0, MODE_EMA, PRICE_CLOSE);
-       double ema100 = iMA(_Symbol, PERIOD_CURRENT, 100, 0, MODE_EMA, PRICE_CLOSE);
-       
-       bool isBullishReversal = (currentPrice > ema50 && ema50 > ema100);
-       bool isBearishReversal = (currentPrice < ema50 && ema50 < ema100);
+       // Use buffered EMAs (no memory leak)
+       bool emaAlignment = (direction == 1) ? (currentPrice < g_EMA50 && g_EMA50 < g_EMA100)
+                                            : (currentPrice > g_EMA50 && g_EMA50 > g_EMA100);
 
-       // Block SELL if we are in a Bullish Reversal (even if below EMA 200)
-       if(direction == -1 && isBullishReversal) 
-       {
-           // Print("Reversal Filter: SELL Blocked (Price > EMA50 > EMA100)");
-           return 0; 
-       }
+       // Calculate EMA momentum
+       double ema50Momentum = (g_EMA50 - g_EMA50_Prev) / _Point;
+       double ema100Momentum = (g_EMA100 - g_EMA100_Prev) / _Point;
 
-       // Block BUY if we are in a Bearish Reversal (even if above EMA 200)
-       if(direction == 1 && isBearishReversal)
+       // RSI divergence check
+       bool rsiDivergence = (direction == 1 && g_RSI > 55) || (direction == -1 && g_RSI < 45);
+
+       // Reversal strength: EMA separation
+       double emaSeparation = MathAbs(g_EMA50 - g_EMA100);
+       double minSeparation = g_ATR * 0.5;  // Significant separation required
+
+       // Strong reversal = opposing EMA alignment + momentum + RSI divergence
+       bool isStrongReversal = emaAlignment &&
+                              (emaSeparation > minSeparation) &&
+                              ((direction == 1 && ema50Momentum < 0) || (direction == -1 && ema50Momentum > 0)) &&
+                              rsiDivergence;
+
+       if(isStrongReversal)
        {
-           // Print("Reversal Filter: BUY Blocked (Price < EMA50 < EMA100)");
-           return 0; 
+           // PENALTY instead of blocking completely
+           score -= 2.0;  // Reduce confluence instead of returning 0
+
+           static datetime lastReversalWarning = 0;
+           if(TimeCurrent() - lastReversalWarning > 300)
+           {
+               string dirStr = (direction == 1) ? "BUY" : "SELL";
+               Print("⚠️ REVERSAL FILTER: ", dirStr, " penalized -2.0 points (opposing momentum detected)");
+               lastReversalWarning = TimeCurrent();
+           }
        }
    }
 
@@ -1636,6 +1718,19 @@ bool UpdateIndicators()
    g_ATR = bufATR[0];
    g_EMA_Prev = bufEMA[0];
    g_EMA = bufEMA[1];
+
+   // Update reversal filter EMAs
+   if(InpUseReversalFilter)
+   {
+      double bufEMA50[2], bufEMA100[2];
+      if(CopyBuffer(hEMA50, 0, 1, 2, bufEMA50) != 2) return false;
+      if(CopyBuffer(hEMA100, 0, 1, 2, bufEMA100) != 2) return false;
+
+      g_EMA50_Prev = bufEMA50[0];
+      g_EMA50 = bufEMA50[1];
+      g_EMA100_Prev = bufEMA100[0];
+      g_EMA100 = bufEMA100[1];
+   }
 
    if(InpUseChopFilter)
    {
@@ -1915,6 +2010,43 @@ void UpdateDashboard()
       txt += "-------------------------------------------\n";
       txt += "SESSION GOVERNOR\n";
       txt += sessionGov.ToString();
+   }
+
+   // Directional Cooldowns
+   if(InpReversalCooldownMinutes > 0)
+   {
+      txt += "-------------------------------------------\n";
+      txt += "DIRECTIONAL COOLDOWNS\n";
+
+      if(g_lastBuyTime > 0)
+      {
+         int buySecondsSince = (int)(TimeCurrent() - g_lastBuyTime);
+         int buyMinutesSince = buySecondsSince / 60;
+         txt += "Last BUY: " + IntegerToString(buyMinutesSince) + "m ago";
+         if(buyMinutesSince < InpReversalCooldownMinutes)
+            txt += " [COOLING]";
+         txt += "\n";
+      }
+      else
+      {
+         txt += "Last BUY: Never\n";
+      }
+
+      if(g_lastSellTime > 0)
+      {
+         int sellSecondsSince = (int)(TimeCurrent() - g_lastSellTime);
+         int sellMinutesSince = sellSecondsSince / 60;
+         txt += "Last SELL: " + IntegerToString(sellMinutesSince) + "m ago";
+         if(sellMinutesSince < InpReversalCooldownMinutes)
+            txt += " [COOLING]";
+         txt += "\n";
+      }
+      else
+      {
+         txt += "Last SELL: Never\n";
+      }
+
+      txt += "Cooldown Period: " + IntegerToString(InpReversalCooldownMinutes) + " minutes\n";
    }
 
    // Learning System stats
