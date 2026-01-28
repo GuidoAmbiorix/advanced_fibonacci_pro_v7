@@ -1914,10 +1914,20 @@ void UpdateDashboard()
    double sellS = g_cachedSellScore;
 
    // If scores not calculated yet (first tick), calculate them
+   // BUT ONLY if we're in an active trading window
    if(g_lastScoreCalcTime == 0)
    {
-      buyS = CalculateConfluenceScore(1);
-      sellS = CalculateConfluenceScore(-1);
+      // Don't calculate confluence during non-trading hours (prevents false signals in dashboard)
+      if(InpUseKillzoneFilter && !killzoneOptimizer.IsTradingAllowed())
+      {
+         buyS = 0;
+         sellS = 0;
+      }
+      else
+      {
+         buyS = CalculateConfluenceScore(1);
+         sellS = CalculateConfluenceScore(-1);
+      }
    }
 
    string govStatus = allocator.IsGovernorActive() ? "Connected " + DoubleToString(GetRiskMultiplier()*100,0) + "%" : "Standalone";
