@@ -52,7 +52,9 @@ input double InpMaxDrawdownPercent = 10.0;
 input double InpMaxDailyLoss = 5.0;
 
 // --- STATE ---
+// --- STATE ---
 string g_activeSymbols[];
+CSymbolEngineWrapper *g_engines[];      // The Engine Room
 MARKET_REGIME g_currentRegime = REGIME_RANGE;
 
 //+------------------------------------------------------------------+
@@ -84,6 +86,13 @@ void OnDeinit(const int reason)
 {
    EventKillTimer();
    g_dashboard.Destroy();
+   
+   // Clean up Engines
+   for(int i=0; i<ArraySize(g_engines); i++)
+   {
+      if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC) delete g_engines[i];
+   }
+   ArrayResize(g_engines, 0);
 }
 
 //+------------------------------------------------------------------+
@@ -95,6 +104,7 @@ void OnTick()
    
    if(!g_killSwitch.CheckSafety())
    {
+      string killReason = "SAFETY_TRIGGER"; // Simplify for now
       g_dashboard.Update("💀 KILLED", EnumToString(g_currentRegime), account.Equity(), 0, 0, "EMERGENCY", "DISCONNECTED", 999);
       return;
    }
@@ -107,15 +117,26 @@ void OnTimer()
 {
    if(!g_killSwitch.IsEnabled()) return;
    
-   // 1. Update Universe
+   // 1. Update Universe & Engines
    UpdateUniverse();
    
    // 2. Regime Detection with Confidence
-   RegimePrediction pred = g_mlRegime.DetectRegime(g_activeSymbols[0]); // Sample representative
+   string leader = (ArraySize(g_activeSymbols) > 0) ? g_activeSymbols[0] : "EURUSD";
+   RegimePrediction pred = g_mlRegime.DetectRegime(leader); 
    if(pred.confidence > 0.6) 
       g_currentRegime = pred.regime;
       
-   // 3. Risk Parity Optimization
+   // 3. EXECUTION LOOP (The Heartbeat)
+   int totalEngines = ArraySize(g_engines);
+   for(int i=0; i<totalEngines; i++)
+   {
+      if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
+      {
+         g_engines[i].OnTick(); // Triggers Scan -> Signal -> Trade
+      }
+   }
+   
+   // 4. Risk Parity Optimization
    g_optimizer.BalanceRiskContributions(g_activeSymbols);
    
    // 4. Recovery Scaling
@@ -157,14 +178,93 @@ void OnTimer()
 //+------------------------------------------------------------------+
 //| Helpers                                                           |
 //+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| Helpers                                                           |
+//+------------------------------------------------------------------+
+// Helper to append to array
+void AddToArray(string &arr[], string value)
+{
+   int size = ArraySize(arr);
+   ArrayResize(arr, size+1);
+   arr[size] = value;
+}
+
 void UpdateUniverse()
 {
-   // Logic to scan symbols...
-   // Placeholder update g_activeSymbols
+   // 1. Initial Universe Setup (Run once or if empty)
    if(ArraySize(g_activeSymbols) == 0)
    {
-      ArrayResize(g_activeSymbols, 1);
-      g_activeSymbols[0] = "EURUSD"; 
+      string candidates[] = {"EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "BTCUSD", "US30", "DE30"};
+      string verified[];
+      
+      // Always add current symbol first (it's guaranteed to exist)
+      AddToArray(verified, _Symbol);
+      
+      // Try to add candidates
+      for(int i=0; i<ArraySize(candidates); i++)
+      {
+         string sym = candidates[i];
+         if(sym == _Symbol) continue; // Already added
+         
+         // Check if exists (Standard)
+         if(SymbolSelect(sym, true)) 
+         {
+            AddToArray(verified, sym);
+            continue;
+         }
+         
+         // Try Suffixes if standard failed (Simple auto-discovery)
+         // Common suffixes: .m, .pro, +, c, .a
+         string suffixes[] = {".m", ".pro", "+", "c", ".a", "_opt"};
+         for(int s=0; s<ArraySize(suffixes); s++)
+         {
+            string trySym = sym + suffixes[s];
+            if(SymbolSelect(trySym, true))
+            {
+               AddToArray(verified, trySym);
+               break; 
+            }
+         }
+      }
+      
+      // Apply Verified List
+      ArrayResize(g_activeSymbols, ArraySize(verified));
+      for(int i=0; i<ArraySize(verified); i++) g_activeSymbols[i] = verified[i];
+   }
+   
+   // 2. Sync Engines
+   if(ArraySize(g_engines) != ArraySize(g_activeSymbols))
+   {
+      ArrayResize(g_engines, ArraySize(g_activeSymbols));
+   }
+   
+   for(int i=0; i<ArraySize(g_activeSymbols); i++)
+   {
+      if(CheckPointer(g_engines[i]) == POINTER_INVALID)
+      {
+         string sym = g_activeSymbols[i];
+         
+         // Double Check Selection
+         if(!SymbolSelect(sym, true)) continue;
+         
+         g_engines[i] = new CSymbolEngineWrapper();
+         
+         // Configure Params
+         SymbolEngineParams params = CSymbolEngineWrapper::GetDefaults();
+         params.MagicNumber = 1000 + i; 
+         params.TradeComment = "GodMode_" + sym;
+         
+         if(g_engines[i].Init(sym, params))
+         {
+            Print("🚀 Engine Ignited: ", sym);
+         }
+         else
+         {
+            Print("❌ Engine Failed: ", sym);
+            delete g_engines[i];
+            g_engines[i] = NULL;
+         }
+      }
    }
 }
 //+------------------------------------------------------------------+
