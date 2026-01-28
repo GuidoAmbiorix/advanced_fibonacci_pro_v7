@@ -129,7 +129,7 @@ void OnTimer()
    // Update Main Metrics
    g_dashboard.Update(g_killSwitch.GetStatus(), EnumToString(g_currentRegime), 
                       account.Equity(), 0, 0, 
-                      "RecoveryMult: " + DoubleToString(g_recovery.GetMultiplier(), 2),
+                      "REC FACTOR: " + DoubleToString(g_recovery.GetMultiplier(), 2) + "x",
                       connStatusStr, ping);
                       
    // Update Active Trades List
