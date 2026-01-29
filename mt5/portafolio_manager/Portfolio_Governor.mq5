@@ -57,6 +57,12 @@ input group "=== POSITION LIMITS (ICT SNIPER MODE - M15) ==="
 input int    InpMaxGlobalPositions = 1;  // Max positions across ALL pairs (1=Sniper, 2-3=Balanced)
 input string InpPositionNote = "1 = Best for M15 | 2-3 = Experienced only | M15 = ICT sweet spot"; // Info
 
+// --- ADAPTIVE CONFLUENCE RANKING ---
+input group "=== ADAPTIVE CONFLUENCE (Percentile Ranking) ==="
+input int    InpTopSymbolsToTrade = 1;   // Trade only top N ranked symbols per cycle (1=Best only, 2=Top 2)
+input double InpMinScoreFloor = 3.0;     // Safety floor - ignore signals below this (prevents garbage)
+input string InpRankingNote = "Percentile system: trades highest-ranked setups only - NO hardcoded thresholds"; // Info
+
 // --- STATE ---
 string g_activeSymbols[];
 CSymbolEngineWrapper *g_engines[];      // The Engine Room
@@ -286,13 +292,85 @@ void OnTimer()
       return;  // Don't scan for new entries
    }
 
-   // 3. EXECUTION LOOP (The Heartbeat)
+   // 2.6 ADAPTIVE CONFLUENCE RANKING (Percentile System)
+   // Collect all scores, rank them, allow only top N to trade
    int totalEngines = ArraySize(g_engines);
+
+   // Step 1: Collect all scores
+   struct SymbolRank {
+      int engineIndex;
+      double score;
+   };
+   SymbolRank rankings[];
+   ArrayResize(rankings, totalEngines);
+
    for(int i=0; i<totalEngines; i++)
    {
       if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
       {
-         g_engines[i].OnTick(); // Triggers Scan -> Signal -> Trade
+         rankings[i].engineIndex = i;
+         rankings[i].score = g_engines[i].GetBestConfluenceScore();
+      }
+   }
+
+   // Step 2: Sort by score (descending - highest first)
+   for(int i=0; i<totalEngines-1; i++)
+   {
+      for(int j=i+1; j<totalEngines; j++)
+      {
+         if(rankings[j].score > rankings[i].score)
+         {
+            // Swap
+            SymbolRank temp = rankings[i];
+            rankings[i] = rankings[j];
+            rankings[j] = temp;
+         }
+      }
+   }
+
+   // Step 3: Set trading permissions - only top N can trade
+   for(int i=0; i<totalEngines; i++)
+   {
+      if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
+      {
+         // Find this engine's rank
+         int rank = -1;
+         for(int r=0; r<totalEngines; r++)
+         {
+            if(rankings[r].engineIndex == i)
+            {
+               rank = r;
+               break;
+            }
+         }
+
+         // Allow trading if:
+         // 1. Ranked in top N positions
+         // 2. Score meets minimum safety floor
+         bool isTopRanked = (rank >= 0 && rank < InpTopSymbolsToTrade);
+         bool meetsMinimum = (g_engines[i].GetBestConfluenceScore() >= InpMinScoreFloor);
+         bool allowed = isTopRanked && meetsMinimum;
+
+         g_engines[i].SetTradingPermission(allowed);
+
+         // Debug: Log ranking decisions
+         static datetime lastRankLog = 0;
+         if(allowed && TimeCurrent() - lastRankLog > 300) // Every 5 min
+         {
+            Print("🎯 RANK #", rank+1, ": ", g_engines[i].m_symbol,
+                  " | Score: ", DoubleToString(g_engines[i].GetBestConfluenceScore(), 2),
+                  " | STATUS: ALLOWED TO TRADE");
+            lastRankLog = TimeCurrent();
+         }
+      }
+   }
+
+   // 3. EXECUTION LOOP (The Heartbeat)
+   for(int i=0; i<totalEngines; i++)
+   {
+      if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
+      {
+         g_engines[i].OnTick(); // Triggers Scan -> Signal -> Trade (if allowed by ranking)
       }
    }
 
@@ -350,7 +428,7 @@ void OnTimer()
    ArrayResize(symbolRows, MathMin(validEngines, 8)); // Max 8 symbols
    int rowIndex = 0;
 
-   // Collect all symbol data
+   // Collect all symbol data WITH RANK AND PERMISSION
    for(int i=0; i<engineCount && rowIndex < 8; i++)
    {
       if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
@@ -359,6 +437,8 @@ void OnTimer()
          symbolRows[rowIndex].buyScore = g_engines[i].GetBuyConfluence();
          symbolRows[rowIndex].sellScore = g_engines[i].GetSellConfluence();
          symbolRows[rowIndex].status = g_engines[i].GetStatus();
+         symbolRows[rowIndex].rank = i + 1;  // Temp rank, will fix after sorting
+         symbolRows[rowIndex].allowedToTrade = g_engines[i].IsAllowedToTrade();
          rowIndex++;
       }
    }
@@ -379,6 +459,12 @@ void OnTimer()
             symbolRows[j+1] = temp;
          }
       }
+   }
+
+   // Assign final ranks after sorting (1=best, 2=second, etc.)
+   for(int i=0; i<ArraySize(symbolRows); i++)
+   {
+      symbolRows[i].rank = i + 1;
    }
 
    g_dashboard.UpdateSymbolTable(symbolRows);

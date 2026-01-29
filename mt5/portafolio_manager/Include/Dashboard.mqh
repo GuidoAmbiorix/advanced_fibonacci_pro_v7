@@ -113,6 +113,17 @@ private:
    int m_flashState;
 
 public:
+   // Struct for symbol table rows
+   struct SymbolConfluenceRow
+   {
+      string symbol;
+      double buyScore;
+      double sellScore;
+      string status;
+      int    rank;          // Percentile rank (1=best, 2=second, etc.)
+      bool   allowedToTrade; // Permission flag from ranking system
+   };
+
    CDashboard() : m_x(15), m_y(15), m_w(900), m_h(550)
    {
       m_initTime = TimeCurrent();
@@ -134,7 +145,7 @@ public:
 
       // === HEADER SECTION ===
       CreatePanel(m_bgHeader, "BG_Header", m_x, m_y, m_w, 55, CLR_HEADER, CLR_ACCENT);
-      CreateLabel(m_lblTitle, "L_Title", m_x+20, m_y+12, "🧠 PORTFOLIO GOVERNOR", 15, CLR_GOLD, true);
+      CreateLabel(m_lblTitle, "L_Title", m_x+20, m_y+12, "*** PORTFOLIO GOVERNOR", 15, CLR_GOLD, true);
       CreateLabel(m_lblVersion, "L_Ver", m_x+350, m_y+18, "GOD MODE v2.1", 9, CLR_TEXT_DIM);
       CreateLabel(m_lblTime, "L_Time", m_x+750, m_y+18, TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS), 9, CLR_CYAN);
 
@@ -147,7 +158,7 @@ public:
 
       // 1. STATUS PANEL (Top Left)
       CreatePanel(m_bgStatus, "BG_Status", m_x+10, py, 280, 130, CLR_PANEL, CLR_BORDER);
-      CreateLabel(m_lblStatusTitle, "L_StatT", m_x+20, py+8, "🛡️ SYSTEM STATUS", 11, CLR_ACCENT, true);
+      CreateLabel(m_lblStatusTitle, "L_StatT", m_x+20, py+8, "* SYSTEM STATUS", 11, CLR_ACCENT, true);
       CreateLabel(m_lblKillStatus, "L_Kill", m_x+25, py+38, "● ACTIVE", 11, CLR_GREEN, true);
       CreateLabel(m_lblConnection, "L_Conn", m_x+25, py+65, "Uplink: Checking...", 9, CLR_TEXT_DIM);
       CreateLabel(m_lblLatency, "L_Lat", m_x+25, py+85, "Latency: --- ms", 9, CLR_TEXT_DIM);
@@ -155,7 +166,7 @@ public:
 
       // 2. PERFORMANCE PANEL (Top Right of Left Column)
       CreatePanel(m_bgPerformance, "BG_Perf", m_x+300, py, 280, 130, CLR_PANEL, CLR_BORDER);
-      CreateLabel(m_lblPerfTitle, "L_PerfT", m_x+310, py+8, "📈 PERFORMANCE", 11, CLR_ACCENT, true);
+      CreateLabel(m_lblPerfTitle, "L_PerfT", m_x+310, py+8, "+ PERFORMANCE", 11, CLR_ACCENT, true);
       CreateLabel(m_lblTodayPnL, "L_PnL", m_x+315, py+38, "Today: $0.00", 11, CLR_TEXT_MAIN, true);
       CreateLabel(m_lblWinRate, "L_WR", m_x+315, py+65, "Win Rate: --%", 9, CLR_TEXT_DIM);
       CreateLabel(m_lblProfitFactor, "L_PF", m_x+315, py+85, "Profit Factor: --", 9, CLR_TEXT_DIM);
@@ -164,7 +175,7 @@ public:
       // 3. RISK PANEL (Middle Left - Expanded)
       py += 140;
       CreatePanel(m_bgRisk, "BG_Risk", m_x+10, py, 570, 160, CLR_PANEL, CLR_BORDER);
-      CreateLabel(m_lblRiskTitle, "L_RiskT", m_x+20, py+8, "💰 RISK MANAGEMENT", 11, CLR_ACCENT, true);
+      CreateLabel(m_lblRiskTitle, "L_RiskT", m_x+20, py+8, "$ RISK MANAGEMENT", 11, CLR_ACCENT, true);
 
       // Equity with progress bar
       CreateLabel(m_lblEquity, "L_Eq", m_x+25, py+38, "EQUITY: $0.00", 12, CLR_TEXT_MAIN, true);
@@ -185,14 +196,14 @@ public:
       // 4. INTEL PANEL (Bottom Left)
       py += 170;
       CreatePanel(m_bgIntel, "BG_Intel", m_x+10, py, 280, 110, CLR_PANEL, CLR_BORDER);
-      CreateLabel(m_lblIntelTitle, "L_IntT", m_x+20, py+8, "🧠 MARKET INTEL", 11, CLR_ACCENT, true);
+      CreateLabel(m_lblIntelTitle, "L_IntT", m_x+20, py+8, "*** MARKET INTEL", 11, CLR_ACCENT, true);
       CreateLabel(m_lblRegime, "L_Reg", m_x+25, py+38, "REGIME: SCANNING", 10, CLR_TEXT_MAIN, true);
       CreateLabel(m_lblConfidence, "L_Conf", m_x+25, py+65, "Confidence: --%", 9, CLR_TEXT_DIM);
       CreateLabel(m_lblUniverse, "L_Uni", m_x+25, py+85, "Universe: 0 Symbols", 9, CLR_TEXT_DIM);
 
       // 5. LIVE STATS PANEL (Bottom Right of Left Column)
       CreatePanel(m_bgStats, "BG_Stats", m_x+300, py, 280, 110, CLR_PANEL, CLR_BORDER);
-      CreateLabel(m_lblStatsTitle, "L_StatT2", m_x+310, py+8, "📊 TODAY'S STATS", 11, CLR_ACCENT, true);
+      CreateLabel(m_lblStatsTitle, "L_StatT2", m_x+310, py+8, "# TODAY'S STATS", 11, CLR_ACCENT, true);
       CreateLabel(m_lblWins, "L_Wins", m_x+315, py+38, "✓ Wins: 0", 9, CLR_GREEN);
       CreateLabel(m_lblLosses, "L_Loss", m_x+420, py+38, "✗ Losses: 0", 9, CLR_RED);
       CreateLabel(m_lblAvgWin, "L_AvgW", m_x+315, py+60, "Avg Win: $0.00", 9, CLR_TEXT_DIM);
@@ -204,7 +215,7 @@ public:
 
       // 1. SYMBOL CONFLUENCE TABLE (Top Right)
       CreatePanel(m_bgSymbols, "BG_Syms", rightX, py, 295, 265, CLR_PANEL, CLR_BORDER);
-      CreateLabel(m_lblSymbolsTitle, "L_SymT", rightX+15, py+8, "📊 SYMBOL CONFLUENCE", 11, CLR_ACCENT, true);
+      CreateLabel(m_lblSymbolsTitle, "L_SymT", rightX+15, py+8, "# SYMBOL CONFLUENCE", 11, CLR_ACCENT, true);
 
       // Table Headers
       CreateLabel(m_lblSymbolHeaders, "L_SymHead", rightX+15, py+35,
@@ -220,7 +231,7 @@ public:
       // 2. ACTIVE TRADES PANEL (Bottom Right)
       py += 275;
       CreatePanel(m_bgTrades, "BG_Trades", rightX, py, 295, 265, CLR_PANEL, CLR_BORDER);
-      CreateLabel(m_lblTradesTitle, "L_TrdT", rightX+15, py+8, "⚡ ACTIVE POSITIONS", 11, CLR_GOLD, true);
+      CreateLabel(m_lblTradesTitle, "L_TrdT", rightX+15, py+8, "> ACTIVE POSITIONS", 11, CLR_GOLD, true);
 
       int rowY = py + 40;
       for(int i=0; i<12; i++)
@@ -382,14 +393,6 @@ public:
    //+------------------------------------------------------------------+
    //| UPDATE SYMBOL CONFLUENCE TABLE                                    |
    //+------------------------------------------------------------------+
-   struct SymbolConfluenceRow
-   {
-      string symbol;
-      double buyScore;
-      double sellScore;
-      string status;
-   };
-
    void UpdateSymbolTable(SymbolConfluenceRow &rows[])
    {
       int count = ArraySize(rows);
@@ -397,6 +400,10 @@ public:
       {
          if(i < count)
          {
+            // Show rank badge
+            string rankBadge = "#" + IntegerToString(rows[i].rank) + " ";
+            if(rows[i].rank < 10) rankBadge += " "; // Pad single digits
+
             string sym = rows[i].symbol;
             // Truncate symbol to 6 chars max for alignment
             if(StringLen(sym) > 6) sym = StringSubstr(sym, 0, 6);
@@ -406,28 +413,35 @@ public:
             string sellStr = DoubleToString(rows[i].sellScore, 1);
 
             // Pad for alignment
-            while(StringLen(sym) < 11) sym += " ";
-            while(StringLen(buyStr) < 5) buyStr = " " + buyStr;
-            while(StringLen(sellStr) < 5) sellStr = " " + sellStr;
+            while(StringLen(sym) < 8) sym += " ";
+            while(StringLen(buyStr) < 4) buyStr = " " + buyStr;
+            while(StringLen(sellStr) < 4) sellStr = " " + sellStr;
 
             string status = rows[i].status;
-            if(StringLen(status) > 12) status = StringSubstr(status, 0, 12);
+            if(StringLen(status) > 10) status = StringSubstr(status, 0, 10);
 
-            string line = sym + buyStr + sellStr + "  " + status;
+            string line = rankBadge + sym + buyStr + sellStr + "  " + status;
             m_lblSymbols[i].Description(line);
 
-            // Color based on highest score
-            double maxScore = MathMax(rows[i].buyScore, rows[i].sellScore);
+            // Color based on PERMISSION (adaptive ranking)
             color rowColor = CLR_TEXT_DIM;
 
-            if(maxScore >= 9.0)
-               rowColor = CLR_GOLD;        // ELITE
-            else if(maxScore >= 7.0)
-               rowColor = CLR_GREEN;       // STRONG
-            else if(maxScore >= 6.0)
-               rowColor = CLR_CYAN;        // GOOD
-            else if(maxScore >= 4.0)
-               rowColor = CLR_ORANGE;      // MONITORING
+            if(rows[i].allowedToTrade)
+            {
+               // ALLOWED TO TRADE - bright colors by score
+               double maxScore = MathMax(rows[i].buyScore, rows[i].sellScore);
+               if(maxScore >= 9.0)
+                  rowColor = CLR_GOLD;        // ELITE
+               else if(maxScore >= 7.0)
+                  rowColor = CLR_GREEN;       // STRONG
+               else
+                  rowColor = CLR_CYAN;        // GOOD (allowed)
+            }
+            else
+            {
+               // BLOCKED by ranking - dim gray
+               rowColor = CLR_TEXT_DIM;
+            }
 
             m_lblSymbols[i].Color(rowColor);
          }

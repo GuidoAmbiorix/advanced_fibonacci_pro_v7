@@ -265,6 +265,10 @@ public:
    int      m_barCount;
    int      m_tradesExecuted;
 
+   // ADAPTIVE CONFLUENCE RANKING (Percentile System)
+   bool     m_allowedToTradeThisCycle;  // Set by Portfolio Governor based on rank
+   double   m_currentBestScore;         // Current best confluence score (buy or sell)
+
    // State Struct
    struct PositionState {
       ulong ticket;
@@ -424,6 +428,8 @@ public:
       m_currentRegime = REGIME_UNKNOWN;
       m_barCount = 0;
       m_tradesExecuted = 0;
+      m_allowedToTradeThisCycle = true;   // Default: allowed
+      m_currentBestScore = 0.0;
    }
    
    ~CSymbolEngineWrapper()
@@ -580,6 +586,27 @@ public:
    }
 
    int GetPositionCount() { return m_positionCount; }
+
+   //+------------------------------------------------------------------+
+   //| ADAPTIVE CONFLUENCE RANKING - Percentile System                  |
+   //+------------------------------------------------------------------+
+   // Get best confluence score (used by Governor for ranking)
+   double GetBestConfluenceScore()
+   {
+      return MathMax(m_cachedBuyScore, m_cachedSellScore);
+   }
+
+   // Set trading permission (called by Governor after ranking)
+   void SetTradingPermission(bool allowed)
+   {
+      m_allowedToTradeThisCycle = allowed;
+   }
+
+   // Check if allowed to trade this cycle
+   bool IsAllowedToTrade()
+   {
+      return m_allowedToTradeThisCycle;
+   }
 
    //+------------------------------------------------------------------+
    //| Main Processing Loop (Call from OnTick)                          |
@@ -795,9 +822,17 @@ private:
        m_lastScoreCalcTime = TimeCurrent();
 
        double bestScore = MathMax(buyScore, sellScore);
+       m_currentBestScore = bestScore;  // Store for ranking
        int    direction = (buyScore > sellScore) ? 1 : -1;
 
-       // Minimum threshold check
+       // ADAPTIVE CONFLUENCE RANKING: Check permission from Governor
+       if(!m_allowedToTradeThisCycle)
+       {
+           // Not ranked high enough this cycle - skip silently
+           return;
+       }
+
+       // Minimum threshold check (safety floor - prevents garbage trades)
        if(bestScore < m_params.MinConfluenceEntry) return;
 
        // OVERTRADING PROTECTION: Reversal Filter
