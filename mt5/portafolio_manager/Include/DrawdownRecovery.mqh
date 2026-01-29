@@ -64,7 +64,7 @@ public:
       }
       
       // Store in Global Variable for all strategies to see
-      GlobalVariableSet("GV_RECOVERY_MULTI", m_recoveryFactor);
+      GlobalVariableSet(GV_RISK_MULTIPLIER, m_recoveryFactor);
    }
    
    double GetMultiplier() { return m_recoveryFactor; }
