@@ -136,6 +136,11 @@ input bool              InpUseNewsFilter = true;          // Enable News Filter
 input int               InpNewsMinutesBefore = 30;        // Minutes Before News
 input int               InpNewsMinutesAfter = 30;         // Minutes After News
 
+input group "======= VOLATILITY SPIKE PROTECTION ======="
+input bool              InpEnableVolatilityFilter = true; // Enable Flash Crash Detection
+input double            InpVolatilityThreshold = 3.0;     // Volatility Spike Threshold (ATR multiplier)
+input int               InpVolatilitySpikeCooldown = 15;  // Cooldown After Spike (minutes)
+
 input group "======= KILLZONE SELECTION (if not using Symbol Defaults) ======="
 input bool              InpEnableAsianKZ = false;         // Enable Asian Killzone
 input bool              InpEnableLondonOpenKZ = true;     // Enable London Open Killzone
@@ -340,6 +345,11 @@ int OnInit()
    if(InpUseNewsFilter)
    {
       newsFilter.Init(_Symbol, InpNewsMinutesBefore, InpNewsMinutesAfter, true);
+
+      // Configure Volatility Spike Detection
+      newsFilter.EnableVolatilityFilter(InpEnableVolatilityFilter);
+      newsFilter.SetVolatilityThreshold(InpVolatilityThreshold);
+      newsFilter.SetVolatilityCooldown(InpVolatilitySpikeCooldown);
    }
 
    // Initialize Killzone Optimizer
@@ -471,6 +481,8 @@ int OnInit()
    Print("    SMC Analysis: ", InpUseSMC ? "✓ ON" : "✗ OFF");
    Print("    MTF Confluence: ", InpUseMTF ? "✓ ON" : "✗ OFF");
    Print("    News Filter: ", InpUseNewsFilter ? "✓ ON" : "✗ OFF");
+   if(InpUseNewsFilter && InpEnableVolatilityFilter)
+      Print("      ⚡ Flash Crash Protection: ✓ ON (Threshold: ", InpVolatilityThreshold, "x)");
    Print("    Killzone Filter: ", InpUseKillzoneFilter ? "✓ ON" : "✗ OFF");
    Print("    Kelly Sizing: ", InpUseKelly ? "✓ ON" : "✗ OFF");
    Print("    Session Governor: ", InpUseSessionGovernor ? "✓ ON" : "✗ OFF");
