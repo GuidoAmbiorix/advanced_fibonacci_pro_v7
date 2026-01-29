@@ -59,8 +59,8 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; OPTIMIZED: Standard Score 4.0 for M5 Scalping (Trend+Ind or Structure+Mom)
-InpMinConfluenceEntry=4
+; OPTIMIZED: Score 5.0 for M5 Quality Scalping (Multi-factor confirmation required)
+InpMinConfluenceEntry=5
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
@@ -156,5 +156,5 @@ InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true
 
 ; ====== RISK (Before Governor Scaling) ======
-; InpRiskBase updated to 0.50 as requested
-InpRiskBase=0.50
+; PORTFOLIO-ADJUSTED: 0.25% for balanced multi-pair trading
+InpRiskBase=0.25

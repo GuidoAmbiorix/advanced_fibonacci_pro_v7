@@ -58,8 +58,8 @@ InpChopThreshold=0.88
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; OPTIMIZED: Standard Score 4.0 for M5 Scalping
-InpMinConfluenceEntry=4
+; CRITICAL: Score 6.0 for M5 Premium Only (200+ pip volatility requires selectivity)
+InpMinConfluenceEntry=6
 InpEnableAddOns=false
 InpAddOn1_R=2.5
 InpAddOn2_R=4.0
@@ -154,5 +154,5 @@ InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true
 
 ; ====== RISK (Before Governor Scaling) ======
-; InpRiskBase updated to 0.50 (Aggressive)
-InpRiskBase=0.50
+; PORTFOLIO-ADJUSTED: 0.15% for extreme volatility pair (wider stops required)
+InpRiskBase=0.15

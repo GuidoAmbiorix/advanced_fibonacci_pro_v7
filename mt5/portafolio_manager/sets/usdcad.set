@@ -58,8 +58,8 @@ InpChopThreshold=0.77
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; OPTIMIZED: Standard Score 4.0 for M5 Scalping
-InpMinConfluenceEntry=4
+; OPTIMIZED: Score 5.0 for M5 Structure Scalping (Oil-linked multi-factor)
+InpMinConfluenceEntry=5
 InpEnableAddOns=false
 InpAddOn1_R=1.7
 InpAddOn2_R=2.8
@@ -153,5 +153,5 @@ InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true
 
 ; ====== RISK (Before Governor Scaling) ======
-; InpRiskBase updated to 0.50
-InpRiskBase=0.50
+; PORTFOLIO-ADJUSTED: 0.25% for clean North American pair (NY session focused)
+InpRiskBase=0.25

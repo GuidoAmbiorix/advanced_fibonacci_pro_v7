@@ -11,7 +11,8 @@ InpDirection=0
 InpBrokerUTCOffset=2
 
 ; ====== RISK ======
-InpRiskBase=0.50
+; PORTFOLIO-ADJUSTED: 0.15% (Inverse EURUSD -0.95, avoid duplicate exposure)
+InpRiskBase=0.15
 InpRiskAddOn1=0.15
 InpRiskAddOn2=0.10
 InpMaxRisk=1.0
@@ -30,7 +31,7 @@ InpUseDisplacement=true
 InpDisplacementATR=1.2
 InpUseTrendFilter=true
 InpEMA_Period=200
-InpMinConfluenceEntry=4
+InpMinConfluenceEntry=6
 
 ; ====== SMC ======
 InpUseSMC=true

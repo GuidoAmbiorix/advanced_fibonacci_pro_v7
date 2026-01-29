@@ -58,8 +58,8 @@ InpChopThreshold=0.85
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; OPTIMIZED: Standard Score 4.0 for M5 Scalping
-InpMinConfluenceEntry=4
+; CRITICAL: Score 6.0 for M5 Premium Only (Institutional volatility requires selectivity)
+InpMinConfluenceEntry=6
 InpEnableAddOns=false
 InpAddOn1_R=2.5
 InpAddOn2_R=4.0
@@ -151,3 +151,7 @@ InpDailyMaxLoss_R=2.5
 InpLossCooldownMinutes=60
 InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true
+
+; ====== RISK (Before Governor Scaling) ======
+; PORTFOLIO-ADJUSTED: 0.15% for explosive gold volatility (institutional moves)
+InpRiskBase=0.15

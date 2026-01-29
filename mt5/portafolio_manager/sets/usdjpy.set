@@ -58,8 +58,8 @@ InpChopThreshold=0.78
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; OPTIMIZED: Standard Score 4.0 for M5 Scalping
-InpMinConfluenceEntry=4
+; OPTIMIZED: Score 6.0 for M5 Premium Setups (BoJ volatility protection)
+InpMinConfluenceEntry=6
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.5
@@ -154,5 +154,5 @@ InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true
 
 ; ====== RISK (Before Governor Scaling) ======
-; InpRiskBase updated to 0.50
-InpRiskBase=0.50
+; PORTFOLIO-ADJUSTED: 0.20% for safe haven pair with BoJ event risk
+InpRiskBase=0.20
