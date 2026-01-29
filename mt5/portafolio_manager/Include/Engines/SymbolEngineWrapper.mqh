@@ -320,8 +320,8 @@ public:
       p.ChopThreshold = 60.0; // Filter if ATR is extremely high vs Avg? Or low? Logic depends on implementation.
       p.ATR_MA_Period = 14;
 
-      // CONFLUENCE (M5 SCALPING OPTIMIZED)
-      p.MinConfluenceEntry = 3; // SCALPING: Lower threshold for M5 (was 5, now 3)
+      // CONFLUENCE (M15 OPTIMIZED)
+      p.MinConfluenceEntry = 4; // M15: Higher quality threshold (cleaner setups)
       p.MaxPositions = 1;
       
       // RISK
@@ -330,11 +330,11 @@ public:
       p.MaxLotsPerTrade = 50.0;
       p.EnableMarginCheck = true;
 
-      // TAKE PROFIT (M5 SCALPING OPTIMIZED)
+      // TAKE PROFIT (M15 SWING-SCALPING OPTIMIZED)
       p.TPMode = 3; // Hybrid
-      p.FixedTP_R = 1.8;         // SCALPING: Quick 1.8R targets (was 3.0)
-      p.MinTP_R = 0.8;           // SCALPING: Allow smaller wins (was 1.0)
-      p.MaxTP_R = 2.5;           // SCALPING: Cap at 2.5R for quick exits
+      p.FixedTP_R = 2.5;         // M15: Larger targets, cleaner moves (was 1.8)
+      p.MinTP_R = 1.0;           // M15: Minimum 1R for quality (was 0.8)
+      p.MaxTP_R = 4.0;           // M15: Allow runners to 4R (was 2.5)
       p.TPUseLearnedMFE = true;
 
       // EXIT (Trade Management)
@@ -351,8 +351,8 @@ public:
       // SMC
       p.UseSMC = true;
       p.SMC_SwingLookback = 20;
-      p.SMC_MinImpulseATR = 1.5;  // SCALPING: More lenient OB detection (was 2.0)
-      p.SMC_MinFVG_ATR = 0.3;     // SCALPING: Detect smaller FVGs (was 0.5)
+      p.SMC_MinImpulseATR = 2.0;  // M15: Standard institutional impulse (cleaner OBs)
+      p.SMC_MinFVG_ATR = 0.5;     // M15: Only significant gaps (less noise)
 
       // MTF
       p.UseMTF = true;

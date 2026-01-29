@@ -34,99 +34,77 @@ void GetOptimalKillzonesForSymbol(string symbol,
    StringReplace(sym, "_OPT", "");
 
    // ===================================================================
-   // ASIAN SESSION PAIRS (Tokyo: 8:00-10:00 PM NY / 1:00-3:00 AM GMT)
+   // FOCUSED 6-PAIR SYSTEM - LONDON + NY KILLZONES ONLY
+   // OPTIMIZED FOR M15 TIMEFRAME (ICT Sweet Spot)
    // ===================================================================
-   // Primary: JPY, AUD, NZD pairs
-   // Source: https://scribehow.com/page/Best_Forex_Pairs_to_Trade_During_Each_Session_2026__n1ksVWMZSHy03_UEvR4wUw
+   // NO ASIAN SESSION - Quality > Quantity
+   // London: 02:00-05:00 EST (07:00-10:00 GMT) = 12 M15 bars
+   // NY: 07:00-10:00 EST (12:00-15:00 GMT) = 12 M15 bars
 
-   if(StringFind(sym, "JPY") >= 0)
+   // === PAIR 1: EURUSD - King of Forex ===
+   if(StringFind(sym, "EURUSD") >= 0)
    {
-      // All JPY pairs: Asian + NY (USD/JPY is liquid globally)
-      enableAsian = true;
-      enableNY = true;
-
-      // EUR/JPY, GBP/JPY also active in London
-      if(StringFind(sym, "EUR") >= 0 || StringFind(sym, "GBP") >= 0)
-         enableLondonOpen = true;
-   }
-   else if(StringFind(sym, "AUD") >= 0 || StringFind(sym, "NZD") >= 0)
-   {
-      // AUD/NZD pairs: Asian + NY overlap
-      enableAsian = true;
-      enableNY = true;
-   }
-   // ===================================================================
-   // LONDON SESSION PAIRS (London: 2:00-5:00 AM NY / 8:00-11:00 GMT)
-   // ===================================================================
-   // Primary: EUR, GBP, CHF
-   // Source: https://tradersunion.com/interesting-articles/best-forex-currency-pairs/london-session-forex-pairs/
-
-   else if(StringFind(sym, "EUR") >= 0 || StringFind(sym, "GBP") >= 0 ||
-           StringFind(sym, "CHF") >= 0)
-   {
-      // European pairs: London + NY (overlap is golden)
-      enableLondonOpen = true;
-      enableNY = true;
+      enableLondonOpen = true;  // EUR strength in London
+      enableNY = true;          // Continuation + overlap
+      enableAsian = false;      // NO Asian trading
+      enableLondonClose = false; // NO London close
    }
 
-   // ===================================================================
-   // NEW YORK SESSION PAIRS (NY: 7:00-10:00 AM / 12:00-15:00 GMT)
-   // ===================================================================
-   // Primary: USD, CAD pairs
-   // Source: https://medium.com/coinmonks/the-complete-new-york-session-forex-trading-strategy-2026-guide-927ad6144be4
-
-   else if(StringFind(sym, "USD") >= 0 && StringFind(sym, "CAD") >= 0)
+   // === PAIR 2: GBPUSD - Cable ===
+   else if(StringFind(sym, "GBPUSD") >= 0)
    {
-      // USD/CAD: NY session (North American pair)
-      enableNY = true;
-   }
-   else if(StringFind(sym, "USD") >= 0)
-   {
-      // Other USD pairs: NY primary, London secondary
-      enableNY = true;
-      enableLondonOpen = true;
+      enableLondonOpen = true;  // GBP volatility in London
+      enableNY = true;          // USD strength in NY
+      enableAsian = false;
+      enableLondonClose = false;
    }
 
-   // ===================================================================
-   // METALS (Gold/Silver)
-   // ===================================================================
-   // Best: London-NY overlap (13:00-16:00 GMT)
-   // Source: https://acy.com/en/market-news/education/best-time-trade-gold-xauusd-sessions-news-091755/
-
-   else if(StringFind(sym, "XAU") >= 0 || StringFind(sym, "GOLD") >= 0 ||
-           StringFind(sym, "XAG") >= 0 || StringFind(sym, "SILVER") >= 0)
+   // === PAIR 3: XAUUSD - Gold ===
+   else if(StringFind(sym, "XAU") >= 0 || StringFind(sym, "GOLD") >= 0)
    {
-      // Metals: London + NY (peak volatility in overlap)
-      enableLondonOpen = true;
-      enableNY = true;
+      enableLondonOpen = true;  // London open spike
+      enableNY = true;          // NY peak liquidity
+      enableAsian = false;
+      enableLondonClose = false;
    }
 
-   // ===================================================================
-   // INDICES (US30, NAS100, SPX500, etc.)
-   // ===================================================================
-   // Best: NY session (8:30-11:00 AM NY / 13:30-16:00 GMT)
-   // Source: https://tradingrage.com/learn/ict-killzone-explained
+   // === PAIR 4: USDCHF - Swissy ===
+   else if(StringFind(sym, "USDCHF") >= 0)
+   {
+      enableLondonOpen = true;  // Swiss banking hours
+      enableNY = true;          // USD strength
+      enableAsian = false;
+      enableLondonClose = false;
+   }
 
-   else if(StringFind(sym, "US30") >= 0 || StringFind(sym, "US500") >= 0 ||
-           StringFind(sym, "US100") >= 0 || StringFind(sym, "NAS") >= 0 ||
-           StringFind(sym, "SPX") >= 0 || StringFind(sym, "DJ30") >= 0 ||
-           StringFind(sym, "USTEC") >= 0)
+   // === PAIR 5: USDCAD - Loonie ===
+   else if(StringFind(sym, "USDCAD") >= 0)
    {
-      // US Indices: NY session only
-      enableNY = true;
+      enableLondonOpen = true;  // Oil correlation starts
+      enableNY = true;          // Peak oil trading (strongest)
+      enableAsian = false;
+      enableLondonClose = false;
    }
-   else if(StringFind(sym, "DAX") >= 0 || StringFind(sym, "DE30") >= 0 ||
-           StringFind(sym, "DE40") >= 0 || StringFind(sym, "UK100") >= 0 ||
-           StringFind(sym, "FTSE") >= 0)
+
+   // === PAIR 6: GBPJPY - Volatile Cross ===
+   else if(StringFind(sym, "GBPJPY") >= 0)
    {
-      // European Indices: London session
-      enableLondonOpen = true;
+      enableLondonOpen = true;  // GBP volatility
+      enableNY = true;          // Continuation moves
+      enableAsian = false;      // NO Asian (focus on quality)
+      enableLondonClose = false;
    }
-   else if(StringFind(sym, "JP225") >= 0 || StringFind(sym, "NIKKEI") >= 0)
+
+   // === ALL OTHER PAIRS - DISABLED ===
+   else
    {
-      // Japanese Index: Asian session
-      enableAsian = true;
+      // Not in the focused 6 = don't trade
+      enableAsian = false;
+      enableLondonOpen = false;
+      enableNY = false;
+      enableLondonClose = false;
    }
+
 
    // ===================================================================
    // DEFAULT FALLBACK
@@ -290,32 +268,23 @@ void GetSymbolsForCurrentSession(string &symbols[], int brokerUTCOffset = 2)
    {
       case SESSION_ASIAN:
       {
-         // Asian Session (01:00-03:00 GMT) - JPY, AUD, NZD pairs
-         string asianList[] = {
-            "USDJPY",    // Primary JPY
-            "EURJPY",    // EUR/JPY cross
-            "GBPJPY",    // GBP/JPY cross
-            "AUDJPY",    // AUD/JPY cross
-            "AUDUSD",    // Aussie
-            "NZDUSD",    // Kiwi
-            "AUDNZD"     // Regional
-         };
+         // ASIAN SESSION - DISABLED (Focus on London+NY only)
+         string asianList[] = {};  // Empty - no trading
          ArrayCopy(symbols, asianList);
          break;
       }
 
       case SESSION_LONDON:
       {
-         // London Session (07:00-10:00 GMT) - EUR, GBP, CHF pairs
+         // LONDON KILLZONE (02:00-05:00 EST / 07:00-10:00 GMT)
+         // FOCUSED 6 PAIRS - ICT Optimized Selection
          string londonList[] = {
-            "EURUSD",    // King of forex
-            "GBPUSD",    // Cable
-            "EURGBP",    // Pure European
-            "EURJPY",    // Also active in London
-            "GBPJPY",    // Also active in London
-            "EURCHF",    // SNB influenced
-            "GBPAUD",    // GBP cross
-            "XAUUSD"     // Gold starts moving
+            "EURUSD",    // 1. King - EUR strength
+            "GBPUSD",    // 2. Cable - GBP volatility
+            "XAUUSD",    // 3. Gold - London open beast
+            "USDCHF",    // 4. Swissy - EUR inverse
+            "USDCAD",    // 5. Loonie - commodity correlation
+            "GBPJPY"     // 6. Cross - high volatility scalping
          };
          ArrayCopy(symbols, londonList);
          break;
@@ -323,18 +292,15 @@ void GetSymbolsForCurrentSession(string &symbols[], int brokerUTCOffset = 2)
 
       case SESSION_NY:
       {
-         // NY Session (12:00-15:00 GMT) - USD, CAD pairs + Indices
+         // NY KILLZONE (07:00-10:00 EST / 12:00-15:00 GMT)
+         // SAME 6 PAIRS - London+NY overlap = GOLDEN ZONE
          string nyList[] = {
-            "EURUSD",    // Still active
-            "GBPUSD",    // Still active
-            "USDJPY",    // NY overlap
-            "USDCAD",    // Loonie
-            "USDCHF",    // Swissy
-            "XAUUSD",    // Gold peak
-            "XAGUSD",    // Silver
-            "US30",      // Dow
-            "US100",     // NASDAQ
-            "US500"      // S&P
+            "EURUSD",    // 1. King - still liquid
+            "GBPUSD",    // 2. Cable - NY continuation
+            "XAUUSD",    // 3. Gold - NY peak liquidity
+            "USDCHF",    // 4. Swissy - USD strength
+            "USDCAD",    // 5. Loonie - oil correlation (strongest in NY)
+            "GBPJPY"     // 6. Cross - continuation moves
          };
          ArrayCopy(symbols, nyList);
          break;
@@ -342,23 +308,16 @@ void GetSymbolsForCurrentSession(string &symbols[], int brokerUTCOffset = 2)
 
       case SESSION_LONDON_CLOSE:
       {
-         // London Close (15:00-17:00 GMT) - Reduced activity
-         string closeList[] = {
-            "EURUSD",
-            "GBPUSD",
-            "XAUUSD"
-         };
+         // LONDON CLOSE - DISABLED (Focus on killzones only)
+         string closeList[] = {};  // Empty - no trading
          ArrayCopy(symbols, closeList);
          break;
       }
 
       case SESSION_DEAD_ZONE:
       {
-         // Dead zone - only most liquid pairs
-         string deadList[] = {
-            "EURUSD",    // Always liquid
-            "USDJPY"     // Asian prep
-         };
+         // DEAD ZONE - DISABLED (No 24/7 trading)
+         string deadList[] = {};  // Empty - rest during low liquidity
          ArrayCopy(symbols, deadList);
          break;
       }

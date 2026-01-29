@@ -52,6 +52,11 @@ CDrawdownRecovery    g_recovery;
 input double InpMaxDrawdownPercent = 10.0;
 input double InpMaxDailyLoss = 5.0;
 
+// --- POSITION MANAGEMENT ---
+input group "=== POSITION LIMITS (ICT SNIPER MODE - M15) ==="
+input int    InpMaxGlobalPositions = 1;  // Max positions across ALL pairs (1=Sniper, 2-3=Balanced)
+input string InpPositionNote = "1 = Best for M15 | 2-3 = Experienced only | M15 = ICT sweet spot"; // Info
+
 // --- STATE ---
 string g_activeSymbols[];
 CSymbolEngineWrapper *g_engines[];      // The Engine Room
@@ -233,6 +238,15 @@ void OnTimer()
    RegimePrediction pred = g_mlRegime.DetectRegime(leader);
    if(pred.confidence > 0.6)
       g_currentRegime = pred.regime;
+
+   // 2.5 GLOBAL POSITION LIMIT CHECK (ICT Sniper Mode)
+   int globalPositions = PositionsTotal();
+   if(globalPositions >= InpMaxGlobalPositions)
+   {
+      // Already at max positions - skip execution loop
+      // This enforces "one perfect trade" ICT methodology
+      return;  // Don't scan for new entries
+   }
 
    // 3. EXECUTION LOOP (The Heartbeat)
    int totalEngines = ArraySize(g_engines);
