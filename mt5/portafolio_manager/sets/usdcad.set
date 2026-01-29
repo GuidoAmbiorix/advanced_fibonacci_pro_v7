@@ -1,11 +1,11 @@
-; USDCAD - M5 Structure Scalper
-; Oil-Linked North American Pair - Optimized for Portfolio Governor System
+; USDCAD - M5 Structure Scalper - London-NY Session
+; Optimized for 4-Pair Portfolio (EURUSD, GBPUSD, USDCAD, XAUUSD)
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
 ; Best Performance: NY session (US + Canadian data), oil market hours
 ; Risk Profile: Moderate - oil volatility, clean technicals
-; Target: Win Rate 66-76%, Profit Factor 2.2+
-; Correlation: Inverse to AUDUSD (both commodity but opposite USD direction), oil-linked
-; Characteristics: Oil price inverse correlation ~-0.80, clean trends, North America data driven
+; Target: Win Rate 68-76%, Profit Factor 2.2+
+; Correlation: Low to EUR/GBP, inverse to oil, diversifies portfolio
+; Characteristics: Oil price inverse correlation ~-0.80, clean trends, NA data driven
 
 ; ====== IDENTITY ======
 InpMagicNumber=100008
@@ -153,5 +153,5 @@ InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true
 
 ; ====== RISK (Before Governor Scaling) ======
-; PORTFOLIO-ADJUSTED: 0.25% for clean North American pair (NY session focused)
-InpRiskBase=0.25
+; PORTFOLIO-ADJUSTED: 0.30% for 4-pair London-NY portfolio (clean NA pair)
+InpRiskBase=0.30

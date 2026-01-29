@@ -1,116 +1,117 @@
-; AUDUSD - M5 Range Scalper
-; Commodity-linked pair - Optimized for Portfolio Governor System
+; GBPUSD - M5 Scalping - London-NY Session
+; Optimized for Portfolio Governor System (Governor handles aggregate risk)
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
-; Best Performance: Asian session (China data) + NY session (USD data)
-; Risk Profile: Moderate - commodity volatility, China sensitivity
-; Target: Win Rate 64-74%, Profit Factor 2.1+
-; Correlation: Low to EURUSD (~0.3), inverse to USDCAD, risk-on indicator
-; Characteristics: China data sensitive, commodity cycles, clean trends during risk-on
+; Best Performance: London-NY overlap (highest volatility, deep liquidity)
+; Risk Profile: Moderate - More volatile than EUR, clean technicals
+; Target: Win Rate 66-76%, Profit Factor 2.3+
+; Correlation: +0.70 with EURUSD (both USD pairs, but GBP more volatile)
 
 ; ====== IDENTITY ======
-InpMagicNumber=100006
+InpMagicNumber=100003
 
 ; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ; ====== KILLZONES ======
-; AUD most active during Asian and NY sessions
+; GBP performs excellently in London and NY sessions
 InpUseKillzoneFilter=true
 InpUseSymbolDefaults=true
 InpAutoDST=true
-InpEnableAsianKZ=true
+InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=false
 
 ; ====== FIBONACCI ======
-; Tighter lookback for M5 precision
+; Tight zones for M5 precision (slightly wider tolerance for GBP volatility)
 InpSwingLookback=12
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.22
+InpZoneTolerance=0.25
 
 ; ====== DISPLACEMENT ======
-; Moderate displacement during commodity moves
+; Higher displacement for GBP - more aggressive moves than EUR
 InpUseDisplacement=true
 InpDisplacementATR=1.4
 InpDisplacementLookback=5
 
 ; ====== RSI ======
+; Wider RSI bands for GBP volatility
 ; Fast RSI for M5 Momentum
 InpRSI_Period=9
-InpRSI_Oversold=38
-InpRSI_Overbought=62
+InpRSI_Oversold=33
+InpRSI_Overbought=67
 InpRSI_Momentum=true
 
 ; ====== TREND ======
-; Good trends during risk-on periods
+; Moderate-strong slope - GBP trends powerfully
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.11
+InpEMA_MinSlope=0.13
 
 ; ====== CHOP FILTER ======
-; Moderate threshold for commodity volatility
+; Higher threshold for GBP volatility
 InpUseChopFilter=true
-InpChopThreshold=0.76
+InpChopThreshold=0.80
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; OPTIMIZED: Score 5.0 for M5 Commodity Scalping (Multi-factor confirmation)
+; OPTIMIZED: Score 5.0 for M5 Quality Scalping (Multi-factor confirmation)
 InpMinConfluenceEntry=5
 InpEnableAddOns=false
-InpAddOn1_R=1.8
-InpAddOn2_R=3.0
+InpAddOn1_R=1.5
+InpAddOn2_R=2.8
 InpMaxPositions=1
 
 ; ====== RISK (Before Governor Scaling) ======
-; Moderate base for commodity pair
-InpRiskBase=0.18
-InpRiskAddOn1=0.12
-InpRiskAddOn2=0.08
-InpMaxRisk=0.50
+; PORTFOLIO-ADJUSTED: 0.30% for 4-pair London-NY portfolio
+InpRiskBase=0.30
+InpRiskAddOn1=0.15
+InpRiskAddOn2=0.10
+InpMaxRisk=0.60
 InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
-; M5 Range Scalping TP
+; Adaptive TP for GBP structure (M5 Scalping, runs further than EUR)
 InpTPMode=2
-InpFixedTP_R=1.8
-InpMinTP_R=1.1
-InpMaxTP_R=3.0
+InpFixedTP_R=2.2
+InpMinTP_R=1.3
+InpMaxTP_R=3.5
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
-; Moderate targets for commodity trends
+; Balanced targets for GBP ranging/trending conditions
 InpTrailingMode=1
-InpPartialTP_R=1.1
-InpPartialClosePercent=40.0
-InpBE_Threshold_R=1.2
-InpTrailStart_R=1.5
-InpTrailATR_Mult=1.2
+InpPartialTP_R=1.3
+InpPartialClosePercent=42.0
+InpBE_Threshold_R=1.3
+InpTrailStart_R=1.7
+InpTrailATR_Mult=1.1
 
 ; ====== SPREAD ======
-; Relaxed spread for M5 execution
-InpMaxSpreadPoints=20
+; Relaxed for M5 execution (GBP slightly wider than EUR)
+InpMaxSpreadPoints=18
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
-; Good for AUD - respects institutional levels
+; Full SMC suite - GBP respects institutional levels well
 ; M5 Structure Settings
+InpUseSMC=true
 InpSMC_SwingLookback=12
-InpSMC_MinImpulseATR=2.1
-InpSMC_MinFVG_ATR=0.52
+InpSMC_MinImpulseATR=2.4
+InpSMC_MinFVG_ATR=0.55
 
 ; ====== MULTI-TIMEFRAME ======
-; H4 bias for commodity cycles
+; H4 bias, H1 confirmation - Clean HTF structure on GBP
 InpUseMTF=true
 InpHTF=16388
 InpMTF=16385
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
-; Filter Australian and Chinese economic data
+; Filter GBP and USD high-impact news (GBP sensitive to data)
 InpUseNewsFilter=true
 InpNewsMinutesBefore=35
 InpNewsMinutesAfter=35
@@ -129,7 +130,6 @@ InpLearningHistory=180
 InpMinTradesForLearning=50
 
 ; ====== ADAPTIVE BEHAVIOR (Advanced) ======
-; ====== ADAPTIVE BEHAVIOR (Advanced) ======
 InpEnableAdaptiveRisk=true
 InpEnableAdaptiveExits=true
 InpEnableAdaptiveFilters=true
@@ -138,22 +138,16 @@ InpEnableAdaptiveFilters=true
 ; UPDATED: Active M5 Scalping (3 trades per session)
 InpUseSessionGovernor=true
 InpMaxTradesPerSession=3
-InpMaxProfitPerSession_R=5.0
+InpMaxProfitPerSession_R=6.0
 InpMaxLossPerSession_R=1.5
 InpMinSessionConfidence=0.5
-InpTradeCooldownMinutes=15
+InpTradeCooldownMinutes=12
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======
-; Correlation filter and circuit breaker
+; Daily circuit breaker and correlation protection
 InpUseCorrelationFilter=true
 InpDailyMaxLoss_R=3.0
 InpLossCooldownMinutes=45
 InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true
-
-; ====== RISK (Before Governor Scaling) ======
-; PORTFOLIO-ADJUSTED: 0.20% for commodity-linked pair with China risk
-InpRiskBase=0.20
-InpRiskAddOn1=0.15
-InpRiskAddOn2=0.10

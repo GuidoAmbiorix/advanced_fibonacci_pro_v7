@@ -1,10 +1,10 @@
-; XAUUSD - M5 Momentum Scalper
-; High frequency momentum capture for Portfolio Governor System
-; Best Timeframe: H1-H4 (Day Trading), M15-M30 (Aggressive Scalping)
+; XAUUSD - M5 Momentum Scalper - London-NY Session
+; Optimized for 4-Pair Portfolio (EURUSD, GBPUSD, USDCAD, XAUUSD)
+; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
 ; Best Performance: NY session (8 AM New York + COMEX open), London steady activity
-; Risk Profile: Aggressive - wide swings but trending, prone to liquidity sweeps
-; Target: Win Rate 58-68%, Profit Factor 2.5+
-; Correlation: -0.70 with USD, +0.60 with AUD
+; Risk Profile: Moderate - controlled by C=6 selectivity, high R-multiple potential
+; Target: Win Rate 65-75%, Profit Factor 2.5+
+; Correlation: Low to EUR/GBP/CAD, safe haven diversification
 ; Characteristics: Explosive moves around US news, clean Fair Value Gaps, institutional favorite
 
 ; ====== IDENTITY ======
@@ -153,5 +153,5 @@ InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true
 
 ; ====== RISK (Before Governor Scaling) ======
-; PORTFOLIO-ADJUSTED: 0.15% for explosive gold volatility (institutional moves)
-InpRiskBase=0.15
+; PORTFOLIO-ADJUSTED: 0.25% for 4-pair portfolio (gold volatility controlled by C=6)
+InpRiskBase=0.25

@@ -1,10 +1,10 @@
-; EURUSD - M5 Scalping - High Frequency Mode
-; Optimized for Portfolio Governor System (Governor handles aggregate risk)
+; EURUSD - M5 Scalping - London-NY Session
+; Optimized for 4-Pair Portfolio (EURUSD, GBPUSD, USDCAD, XAUUSD)
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
 ; Best Performance: London-NY overlap (cleanest technicals, highest liquidity)
 ; Risk Profile: Conservative with precise entries
-; Target: Win Rate 68-78%, Profit Factor 2.2+
-; Correlation: +0.95 with GBPUSD, -0.95 with USDCHF
+; Target: Win Rate 70-78%, Profit Factor 2.2+
+; Correlation: +0.70 with GBPUSD (manageable), Low with CAD/Gold
 
 ; ====== IDENTITY ======
 InpMagicNumber=100002
@@ -156,5 +156,5 @@ InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true
 
 ; ====== RISK (Before Governor Scaling) ======
-; PORTFOLIO-ADJUSTED: 0.25% for balanced multi-pair trading
-InpRiskBase=0.25
+; PORTFOLIO-ADJUSTED: 0.30% for 4-pair London-NY portfolio
+InpRiskBase=0.30
