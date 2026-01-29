@@ -541,7 +541,45 @@ public:
 
       // Module cleanup handled by destructors
    }
-   
+
+   //+------------------------------------------------------------------+
+   //| Getters for Dashboard Integration                                |
+   //+------------------------------------------------------------------+
+   double GetBuyConfluence()  { return m_cachedBuyScore; }
+   double GetSellConfluence() { return m_cachedSellScore; }
+
+   string GetStatus()
+   {
+      // Check killzone
+      if(m_params.UseKillzoneFilter && !m_killzoneOptimizer.IsTradingAllowed())
+         return "OFF-HOURS";
+
+      // Check if in cooldown
+      datetime now = TimeCurrent();
+      int buyCooldown = (int)((now - m_lastBuyTime) / 60);
+      int sellCooldown = (int)((now - m_lastSellTime) / 60);
+
+      if(buyCooldown < m_params.ReversalCooldownMinutes && sellCooldown < m_params.ReversalCooldownMinutes)
+         return "COOLING";
+
+      // Check if has active position
+      if(m_positionCount > 0)
+         return "IN TRADE";
+
+      // Check confluence quality
+      double maxScore = MathMax(m_cachedBuyScore, m_cachedSellScore);
+      if(maxScore >= 9.0)
+         return "ELITE SETUP";
+      else if(maxScore >= 7.0)
+         return "STRONG";
+      else if(maxScore >= 6.0)
+         return "MONITORING";
+      else
+         return "SCANNING";
+   }
+
+   int GetPositionCount() { return m_positionCount; }
+
    //+------------------------------------------------------------------+
    //| Main Processing Loop (Call from OnTick)                          |
    //+------------------------------------------------------------------+
@@ -744,6 +782,11 @@ private:
        // Calculate Buy/Sell Scores
        double buyScore = CalculateConfluenceScore(1);
        double sellScore = CalculateConfluenceScore(-1);
+
+       // Cache for dashboard display
+       m_cachedBuyScore = buyScore;
+       m_cachedSellScore = sellScore;
+       m_lastScoreCalcTime = TimeCurrent();
 
        double bestScore = MathMax(buyScore, sellScore);
        int    direction = (buyScore > sellScore) ? 1 : -1;
