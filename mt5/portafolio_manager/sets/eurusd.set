@@ -59,8 +59,8 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; OPTIMIZED: Score 5.0 for M5 Quality Scalping (Multi-factor confirmation required)
-InpMinConfluenceEntry=5
+; OPTIMIZED: Score 6.0 for M5 Premium Setups Only (Structure+Momentum+SMC/MTF required)
+InpMinConfluenceEntry=6
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
