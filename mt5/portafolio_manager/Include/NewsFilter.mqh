@@ -57,10 +57,24 @@ private:
    datetime        m_windowEnd;
    string          m_currentEventName;
 
+   // FLASH CRASH / VOLATILITY SPIKE DETECTION
+   bool            m_enableVolatilityFilter;
+   double          m_volatilityThreshold;      // ATR multiplier for spike detection
+   bool            m_inVolatilitySpike;
+   datetime        m_spikeStartTime;
+   int             m_spikeCooldownMinutes;
+   int             m_hATR_M1;                   // 1-minute ATR for spike detection
+   int             m_hATR_H1;                   // 1-hour ATR for baseline
+   datetime        m_lastVolatilityCheck;
+
 public:
    CNewsFilter() : m_minutesBefore(30), m_minutesAfter(30),
                    m_filterEnabled(true), m_checkIntervalMinutes(15),
-                   m_inNewsWindow(false) {}
+                   m_inNewsWindow(false),
+                   m_enableVolatilityFilter(true), m_volatilityThreshold(3.0),
+                   m_inVolatilitySpike(false), m_spikeCooldownMinutes(15),
+                   m_hATR_M1(INVALID_HANDLE), m_hATR_H1(INVALID_HANDLE),
+                   m_lastVolatilityCheck(0) {}
 
    //+------------------------------------------------------------------+
    //| Initialize                                                        |
@@ -80,7 +94,30 @@ public:
       m_lastCalendarCheck = 0;
       UpdateCalendar();
 
+      // Initialize volatility spike detection
+      if(m_enableVolatilityFilter)
+      {
+         m_hATR_M1 = iATR(m_symbol, PERIOD_M1, 14);
+         m_hATR_H1 = iATR(m_symbol, PERIOD_H1, 14);
+
+         if(m_hATR_M1 == INVALID_HANDLE || m_hATR_H1 == INVALID_HANDLE)
+         {
+            Print("⚠️ NEWS FILTER: Failed to create volatility indicators for ", m_symbol, " - Spike detection disabled");
+            m_enableVolatilityFilter = false;
+         }
+         else
+         {
+            Print("✅ NEWS FILTER: Volatility spike detection enabled for ", m_symbol, " (Threshold: ", m_volatilityThreshold, "x)");
+         }
+      }
+
       return true;
+   }
+
+   ~CNewsFilter()
+   {
+      if(m_hATR_M1 != INVALID_HANDLE) IndicatorRelease(m_hATR_M1);
+      if(m_hATR_H1 != INVALID_HANDLE) IndicatorRelease(m_hATR_H1);
    }
 
    //+------------------------------------------------------------------+
@@ -138,8 +175,8 @@ public:
    {
       if(!m_filterEnabled) return;
 
-      // Check if we need to refresh calendar
-      if(TimeCurrent() - m_lastCalendarCheck >= m_checkIntervalMinutes * 60)
+      // Check if we need to refresh calendar (every 5 min instead of 15)
+      if(TimeCurrent() - m_lastCalendarCheck >= 300) // 5 minutes
       {
          UpdateCalendar();
          m_lastCalendarCheck = TimeCurrent();
@@ -147,6 +184,13 @@ public:
 
       // Check if currently in news window
       CheckNewsWindow();
+
+      // Check for volatility spikes (every 10 seconds)
+      if(m_enableVolatilityFilter && TimeCurrent() - m_lastVolatilityCheck >= 10)
+      {
+         CheckVolatilitySpike();
+         m_lastVolatilityCheck = TimeCurrent();
+      }
    }
 
    //+------------------------------------------------------------------+
@@ -235,12 +279,87 @@ public:
    }
 
    //+------------------------------------------------------------------+
-   //| Check if trading is allowed (no news window)                      |
+   //| Check for sudden volatility spikes (Flash Crash Detection)        |
+   //+------------------------------------------------------------------+
+   void CheckVolatilitySpike()
+   {
+      if(m_hATR_M1 == INVALID_HANDLE || m_hATR_H1 == INVALID_HANDLE)
+      {
+         m_inVolatilitySpike = false;
+         return;
+      }
+
+      // Get current M1 ATR (short-term volatility)
+      double atrM1Buffer[1];
+      if(CopyBuffer(m_hATR_M1, 0, 0, 1, atrM1Buffer) != 1)
+      {
+         m_inVolatilitySpike = false;
+         return;
+      }
+
+      // Get H1 ATR (baseline/normal volatility)
+      double atrH1Buffer[1];
+      if(CopyBuffer(m_hATR_H1, 0, 0, 1, atrH1Buffer) != 1)
+      {
+         m_inVolatilitySpike = false;
+         return;
+      }
+
+      double currentVolatility = atrM1Buffer[0];
+      double normalVolatility = atrH1Buffer[0];
+
+      // Prevent division by zero
+      if(normalVolatility <= 0)
+      {
+         m_inVolatilitySpike = false;
+         return;
+      }
+
+      // Calculate volatility ratio
+      double volatilityRatio = currentVolatility / normalVolatility;
+
+      // SPIKE DETECTED: M1 ATR is X times higher than H1 ATR
+      if(volatilityRatio >= m_volatilityThreshold)
+      {
+         if(!m_inVolatilitySpike)
+         {
+            m_inVolatilitySpike = true;
+            m_spikeStartTime = TimeCurrent();
+
+            Print("🚨 VOLATILITY SPIKE DETECTED: ", m_symbol,
+                  " | M1 ATR: ", DoubleToString(currentVolatility, 5),
+                  " | H1 ATR: ", DoubleToString(normalVolatility, 5),
+                  " | Ratio: ", DoubleToString(volatilityRatio, 2), "x",
+                  " | Trading BLOCKED for ", m_spikeCooldownMinutes, " minutes");
+         }
+      }
+      // SPIKE ENDED: Check cooldown period
+      else if(m_inVolatilitySpike)
+      {
+         int minutesSinceSpike = (int)((TimeCurrent() - m_spikeStartTime) / 60);
+
+         if(minutesSinceSpike >= m_spikeCooldownMinutes)
+         {
+            m_inVolatilitySpike = false;
+            Print("✅ VOLATILITY NORMALIZED: ", m_symbol, " | Trading resumed");
+         }
+      }
+   }
+
+   //+------------------------------------------------------------------+
+   //| Check if trading is allowed (no news window or volatility spike)  |
    //+------------------------------------------------------------------+
    bool IsTradingAllowed()
    {
       if(!m_filterEnabled) return true;
-      return !m_inNewsWindow;
+
+      // Block if in scheduled news window
+      if(m_inNewsWindow) return false;
+
+      // Block if in volatility spike
+      if(m_enableVolatilityFilter && m_inVolatilitySpike) return false;
+
+      return true;
    }
 
    //+------------------------------------------------------------------+
@@ -294,7 +413,7 @@ public:
    }
 
    //+------------------------------------------------------------------+
-   //| Get risk multiplier based on news proximity                       |
+   //| Get risk multiplier based on news proximity and volatility        |
    //+------------------------------------------------------------------+
    double GetNewsRiskMultiplier()
    {
@@ -302,6 +421,9 @@ public:
 
       // If in news window, should not trade (return 0)
       if(m_inNewsWindow) return 0.0;
+
+      // If in volatility spike, should not trade (return 0)
+      if(m_enableVolatilityFilter && m_inVolatilitySpike) return 0.0;
 
       // Reduce risk as news approaches
       int minutesToNews = GetMinutesToNextNews();
@@ -353,9 +475,19 @@ public:
    {
       if(!m_filterEnabled) return "NEWS: OFF";
 
+      // Priority 1: Volatility spike (most critical)
+      if(m_enableVolatilityFilter && m_inVolatilitySpike)
+      {
+         int minutesSinceSpike = (int)((TimeCurrent() - m_spikeStartTime) / 60);
+         int remaining = m_spikeCooldownMinutes - minutesSinceSpike;
+         return "🚨 VOLATILITY SPIKE! BLOCKED (" + IntegerToString(remaining) + "m cooldown)";
+      }
+
+      // Priority 2: Scheduled news
       if(m_inNewsWindow)
          return "NEWS: BLOCKED (" + m_currentEventName + ")";
 
+      // Priority 3: Upcoming news
       int minToNews = GetMinutesToNextNews();
       if(minToNews < 999999)
          return "NEWS: OK (Next: " + IntegerToString(minToNews) + "m)";
@@ -367,6 +499,39 @@ public:
    //| Get upcoming events count                                         |
    //+------------------------------------------------------------------+
    int GetUpcomingEventsCount() { return ArraySize(m_upcomingEvents); }
+
+   //+------------------------------------------------------------------+
+   //| Volatility Spike Getters/Setters                                  |
+   //+------------------------------------------------------------------+
+   bool IsInVolatilitySpike() { return m_inVolatilitySpike; }
+
+   void SetVolatilityThreshold(double threshold)
+   {
+      if(threshold > 0)
+      {
+         m_volatilityThreshold = threshold;
+         Print("📊 NEWS FILTER (", m_symbol, "): Volatility threshold set to ", threshold, "x");
+      }
+   }
+
+   double GetVolatilityThreshold() { return m_volatilityThreshold; }
+
+   void SetVolatilityCooldown(int minutes)
+   {
+      if(minutes > 0)
+      {
+         m_spikeCooldownMinutes = minutes;
+         Print("⏱️ NEWS FILTER (", m_symbol, "): Spike cooldown set to ", minutes, " minutes");
+      }
+   }
+
+   void EnableVolatilityFilter(bool enable)
+   {
+      m_enableVolatilityFilter = enable;
+      Print(enable ? "✅ Volatility spike detection enabled for " + m_symbol : "❌ Volatility spike detection disabled for " + m_symbol);
+   }
+
+   bool IsVolatilityFilterEnabled() { return m_enableVolatilityFilter; }
 };
 
 #endif

@@ -18,6 +18,7 @@
 #include "Include\PortfolioMath.mqh"
 #include "Include\Engines\SymbolEngineWrapper.mqh"
 #include "Include\SymbolDatabase.mqh"
+#include "Include\KillzoneDatabase.mqh"
 
 // --- GOD MODE MODULES ---
 #include "Include\KillSwitch.mqh"
@@ -55,6 +56,7 @@ input double InpMaxDailyLoss = 5.0;
 string g_activeSymbols[];
 CSymbolEngineWrapper *g_engines[];      // The Engine Room
 MARKET_REGIME g_currentRegime = REGIME_RANGE;
+ENUM_CURRENT_SESSION g_lastSession = SESSION_DEAD_ZONE; // Track session changes
 
 // --- PERFORMANCE TRACKING ---
 datetime g_initTime = 0;                // EA start time (for uptime)
@@ -367,28 +369,55 @@ void AddToArray(string &arr[], string value)
 
 void UpdateUniverse()
 {
-   // 1. Initial Universe Setup (Run once or if empty)
-   if(ArraySize(g_activeSymbols) == 0)
+   // Check if session changed
+   ENUM_CURRENT_SESSION currentSession = GetCurrentSession(2, true);
+   bool sessionChanged = (currentSession != g_lastSession);
+
+   // 1. Initial Universe Setup OR Session Change
+   if(ArraySize(g_activeSymbols) == 0 || sessionChanged)
    {
-      string candidates[] = {"EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "BTCUSD", "US30", "DE30"};
+      // Clean up old engines if session changed
+      if(sessionChanged && ArraySize(g_engines) > 0)
+      {
+         Print("🔄 SESSION CHANGE: ", GetSessionName(g_lastSession), " → ", GetSessionName(currentSession));
+         Print("🧹 Cleaning up ", ArraySize(g_engines), " engines from previous session...");
+
+         for(int i=0; i<ArraySize(g_engines); i++)
+         {
+            if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
+               delete g_engines[i];
+         }
+         ArrayResize(g_engines, 0);
+         ArrayResize(g_activeSymbols, 0);
+      }
+
+      g_lastSession = currentSession;
+
+      // Use DYNAMIC Session-Based Selection (loads only active killzone symbols)
+      // This prevents initialization timeout and maximizes efficiency
+      string candidates[];
+      GetSymbolsForCurrentSession(candidates, 2); // Only symbols for current session
+
+      string sessionName = GetSessionName(currentSession);
+
       string verified[];
-      
-      // Always add current symbol first (it's guaranteed to exist)
-      AddToArray(verified, _Symbol);
-      
+
+      Print("🌍 GOVERNOR: Current Session: ", sessionName);
+      Print("🌍 GOVERNOR: Loading ", ArraySize(candidates), " symbols for active killzone...");
+
       // Try to add candidates
       for(int i=0; i<ArraySize(candidates); i++)
       {
          string sym = candidates[i];
          if(sym == _Symbol) continue; // Already added
-         
+
          // Check if exists (Standard)
-         if(SymbolSelect(sym, true)) 
+         if(SymbolSelect(sym, true))
          {
             AddToArray(verified, sym);
             continue;
          }
-         
+
          // Try Suffixes if standard failed (Simple auto-discovery)
          // Common suffixes: .m, .pro, +, c, .a
          string suffixes[] = {".m", ".pro", "+", "c", ".a", "_opt"};
@@ -398,14 +427,25 @@ void UpdateUniverse()
             if(SymbolSelect(trySym, true))
             {
                AddToArray(verified, trySym);
-               break; 
+               break;
             }
          }
       }
-      
+
       // Apply Verified List
       ArrayResize(g_activeSymbols, ArraySize(verified));
       for(int i=0; i<ArraySize(verified); i++) g_activeSymbols[i] = verified[i];
+
+      Print("✅ GOVERNOR: ", ArraySize(g_activeSymbols), " symbols loaded for ", GetSessionName(currentSession));
+
+      // List all loaded symbols
+      string symbolList = "";
+      for(int i=0; i<ArraySize(g_activeSymbols); i++)
+      {
+         symbolList += g_activeSymbols[i];
+         if(i < ArraySize(g_activeSymbols) - 1) symbolList += ", ";
+      }
+      Print("📊 Active Universe: ", symbolList);
    }
    
    // 2. Sync Engines
@@ -424,15 +464,38 @@ void UpdateUniverse()
          if(!SymbolSelect(sym, true)) continue;
          
          g_engines[i] = new CSymbolEngineWrapper();
-         
+
          // Configure Params
          SymbolEngineParams params = CSymbolEngineWrapper::GetDefaults();
-         params.MagicNumber = 1000 + i; 
+         params.MagicNumber = 1000 + i;
          params.TradeComment = "GodMode_" + sym;
-         
+
+         // AUTO-ASSIGN OPTIMAL KILLZONES based on symbol
+         bool kzAsian, kzLondon, kzNY, kzLondonClose;
+         GetOptimalKillzonesForSymbol(sym, kzAsian, kzLondon, kzNY, kzLondonClose);
+
+         params.UseKillzoneFilter = true;
+         params.UseSymbolDefaults = false; // Using custom assignment
+         params.EnableAsianKZ = kzAsian;
+         params.EnableLondonOpenKZ = kzLondon;
+         params.EnableNYKZ = kzNY;
+         params.EnableLondonCloseKZ = kzLondonClose;
+
+         // Volatility Spike Protection
+         params.UseNewsFilter = true;
+         params.NewsMinutesBefore = 30;
+         params.NewsMinutesAfter = 30;
+
          if(g_engines[i].Init(sym, params))
          {
-            Print("🚀 Engine Ignited: ", sym);
+            // Build killzone status string
+            string kzStatus = "";
+            if(kzAsian) kzStatus += "ASIAN ";
+            if(kzLondon) kzStatus += "LONDON ";
+            if(kzNY) kzStatus += "NY ";
+            if(kzLondonClose) kzStatus += "CLOSE ";
+
+            Print("🚀 Engine Ignited: ", sym, " | Killzones: ", kzStatus);
          }
          else
          {
