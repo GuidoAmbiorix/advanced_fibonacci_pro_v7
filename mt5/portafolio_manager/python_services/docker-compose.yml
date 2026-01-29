@@ -1,0 +1,143 @@
+version: '3.8'
+
+services:
+  # Redis Cache for real-time data sharing
+  redis:
+    image: redis:7-alpine
+    container_name: v3_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+  # PostgreSQL for historical data storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: v3_postgres
+    environment:
+      POSTGRES_USER: v3_trader
+      POSTGRES_PASSWORD: v3_secure_pass_2026
+      POSTGRES_DB: trading_v3
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  # FastAPI REST API Gateway
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: v3_api
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=v3_trader
+      - POSTGRES_PASSWORD=v3_secure_pass_2026
+      - POSTGRES_DB=trading_v3
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./api:/app
+      - ./common:/app/common
+    restart: unless-stopped
+
+  # FinBERT Sentiment Analysis Service
+  finbert:
+    build:
+      context: .
+      dockerfile: finbert/Dockerfile
+    container_name: v3_finbert
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MODEL_NAME=ProsusAI/finbert
+      - BATCH_SIZE=8
+    depends_on:
+      - redis
+    volumes:
+      - ./finbert:/app
+      - ./common:/app/common
+      - model_cache:/root/.cache/huggingface
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # HMM Regime Detection Service
+  hmm:
+    build:
+      context: .
+      dockerfile: hmm/Dockerfile
+    container_name: v3_hmm
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./hmm:/app
+      - ./common:/app/common
+    restart: unless-stopped
+
+  # Deep RL Portfolio Optimizer Service
+  drl:
+    build:
+      context: .
+      dockerfile: drl/Dockerfile
+    container_name: v3_drl
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./drl:/app
+      - ./common:/app/common
+      - model_cache:/root/.cache
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+
+  # Order Flow Analysis Service
+  orderflow:
+    build:
+      context: .
+      dockerfile: orderflow/Dockerfile
+    container_name: v3_orderflow
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    volumes:
+      - ./orderflow:/app
+      - ./common:/app/common
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  postgres_data:
+  model_cache:
+
+networks:
+  default:
+    name: v3_network
