@@ -87,9 +87,18 @@ int OnInit()
    g_smartExec.Init(&g_liquidityGuard, 10);
    g_dashboard.Init();
 
-   // Recovery Init
-   if(GlobalVariableCheck(GV_PEAK_EQUITY) == false)
+   // Recovery Init - FORCE RESET in Backtesting to prevent stale data
+   if(MQLInfoInteger(MQL_TESTER))
+   {
+      // Backtest: Always reset peak equity to starting balance
       GlobalVariableSet(GV_PEAK_EQUITY, account.Equity());
+      Print("📊 BACKTEST MODE: Reset Peak Equity to $", DoubleToString(account.Equity(), 2));
+   }
+   else if(GlobalVariableCheck(GV_PEAK_EQUITY) == false)
+   {
+      // Live: Only set if doesn't exist
+      GlobalVariableSet(GV_PEAK_EQUITY, account.Equity());
+   }
 
    g_recovery.Update(); // Set initial scaler
 
@@ -99,18 +108,33 @@ int OnInit()
    g_lastDayCheck = TimeCurrent();
 
    // Load historical stats from global variables (persist across restarts)
-   if(GlobalVariableCheck("GOV_TotalWins"))
-      g_totalWins = (int)GlobalVariableGet("GOV_TotalWins");
-   if(GlobalVariableCheck("GOV_TotalLosses"))
-      g_totalLosses = (int)GlobalVariableGet("GOV_TotalLosses");
-   if(GlobalVariableCheck("GOV_TotalWinAmount"))
-      g_totalWinAmount = GlobalVariableGet("GOV_TotalWinAmount");
-   if(GlobalVariableCheck("GOV_TotalLossAmount"))
-      g_totalLossAmount = GlobalVariableGet("GOV_TotalLossAmount");
-   if(GlobalVariableCheck("GOV_TotalProfitGross"))
-      g_totalProfitGross = GlobalVariableGet("GOV_TotalProfitGross");
-   if(GlobalVariableCheck("GOV_TotalLossGross"))
-      g_totalLossGross = GlobalVariableGet("GOV_TotalLossGross");
+   if(MQLInfoInteger(MQL_TESTER))
+   {
+      // Backtest: Reset all stats to zero
+      g_totalWins = 0;
+      g_totalLosses = 0;
+      g_totalWinAmount = 0;
+      g_totalLossAmount = 0;
+      g_totalProfitGross = 0;
+      g_totalLossGross = 0;
+      Print("📊 BACKTEST MODE: Reset all performance stats");
+   }
+   else
+   {
+      // Live: Load from global variables if they exist
+      if(GlobalVariableCheck("GOV_TotalWins"))
+         g_totalWins = (int)GlobalVariableGet("GOV_TotalWins");
+      if(GlobalVariableCheck("GOV_TotalLosses"))
+         g_totalLosses = (int)GlobalVariableGet("GOV_TotalLosses");
+      if(GlobalVariableCheck("GOV_TotalWinAmount"))
+         g_totalWinAmount = GlobalVariableGet("GOV_TotalWinAmount");
+      if(GlobalVariableCheck("GOV_TotalLossAmount"))
+         g_totalLossAmount = GlobalVariableGet("GOV_TotalLossAmount");
+      if(GlobalVariableCheck("GOV_TotalProfitGross"))
+         g_totalProfitGross = GlobalVariableGet("GOV_TotalProfitGross");
+      if(GlobalVariableCheck("GOV_TotalLossGross"))
+         g_totalLossGross = GlobalVariableGet("GOV_TotalLossGross");
+   }
 
    GlobalVariableSet(GV_GOVERNOR_ACTIVE, 1);
    EventSetTimer(1);
@@ -123,13 +147,17 @@ void OnDeinit(const int reason)
    EventKillTimer();
    g_dashboard.Destroy();
 
-   // Save performance stats to global variables (persist across restarts)
-   GlobalVariableSet("GOV_TotalWins", g_totalWins);
-   GlobalVariableSet("GOV_TotalLosses", g_totalLosses);
-   GlobalVariableSet("GOV_TotalWinAmount", g_totalWinAmount);
-   GlobalVariableSet("GOV_TotalLossAmount", g_totalLossAmount);
-   GlobalVariableSet("GOV_TotalProfitGross", g_totalProfitGross);
-   GlobalVariableSet("GOV_TotalLossGross", g_totalLossGross);
+   // Save performance stats to global variables (ONLY in live mode, not backtesting)
+   if(!MQLInfoInteger(MQL_TESTER))
+   {
+      GlobalVariableSet("GOV_TotalWins", g_totalWins);
+      GlobalVariableSet("GOV_TotalLosses", g_totalLosses);
+      GlobalVariableSet("GOV_TotalWinAmount", g_totalWinAmount);
+      GlobalVariableSet("GOV_TotalLossAmount", g_totalLossAmount);
+      GlobalVariableSet("GOV_TotalProfitGross", g_totalProfitGross);
+      GlobalVariableSet("GOV_TotalLossGross", g_totalLossGross);
+      Print("💾 Stats saved to global variables");
+   }
 
    // Clean up Engines
    for(int i=0; i<ArraySize(g_engines); i++)
@@ -191,18 +219,28 @@ void OnTrade()
             g_totalWins++;
             g_totalWinAmount += netProfit;
             g_totalProfitGross += netProfit;
-            GlobalVariableSet("GOV_TotalWins", g_totalWins);
-            GlobalVariableSet("GOV_TotalWinAmount", g_totalWinAmount);
-            GlobalVariableSet("GOV_TotalProfitGross", g_totalProfitGross);
+
+            // Only save to globals in live mode
+            if(!MQLInfoInteger(MQL_TESTER))
+            {
+               GlobalVariableSet("GOV_TotalWins", g_totalWins);
+               GlobalVariableSet("GOV_TotalWinAmount", g_totalWinAmount);
+               GlobalVariableSet("GOV_TotalProfitGross", g_totalProfitGross);
+            }
          }
          else if(netProfit < 0)
          {
             g_totalLosses++;
             g_totalLossAmount += MathAbs(netProfit);
             g_totalLossGross += MathAbs(netProfit);
-            GlobalVariableSet("GOV_TotalLosses", g_totalLosses);
-            GlobalVariableSet("GOV_TotalLossAmount", g_totalLossAmount);
-            GlobalVariableSet("GOV_TotalLossGross", g_totalLossGross);
+
+            // Only save to globals in live mode
+            if(!MQLInfoInteger(MQL_TESTER))
+            {
+               GlobalVariableSet("GOV_TotalLosses", g_totalLosses);
+               GlobalVariableSet("GOV_TotalLossAmount", g_totalLossAmount);
+               GlobalVariableSet("GOV_TotalLossGross", g_totalLossGross);
+            }
          }
 
          break; // Only process most recent unprocessed deal
