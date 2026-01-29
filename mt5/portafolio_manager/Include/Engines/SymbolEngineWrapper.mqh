@@ -291,7 +291,7 @@ public:
       p.UseKillzoneFilter = true;
       p.UseSymbolDefaults = true;
       p.AutoDST = true;
-      p.FocusPrimeOnly = true;
+      p.FocusPrimeOnly = false;  // CHANGED: Trade all enabled killzones, not just prime overlap
 
       // FIBONACCI
       p.SwingLookback = 20;
@@ -320,8 +320,8 @@ public:
       p.ChopThreshold = 60.0; // Filter if ATR is extremely high vs Avg? Or low? Logic depends on implementation.
       p.ATR_MA_Period = 14;
 
-      // CONFLUENCE
-      p.MinConfluenceEntry = 6; // Strict
+      // CONFLUENCE (M5 SCALPING OPTIMIZED)
+      p.MinConfluenceEntry = 3; // SCALPING: Lower threshold for M5 (was 5, now 3)
       p.MaxPositions = 1;
       
       // RISK
@@ -330,10 +330,11 @@ public:
       p.MaxLotsPerTrade = 50.0;
       p.EnableMarginCheck = true;
 
-      // TAKE PROFIT
+      // TAKE PROFIT (M5 SCALPING OPTIMIZED)
       p.TPMode = 3; // Hybrid
-      p.FixedTP_R = 3.0;
-      p.MinTP_R = 1.0;
+      p.FixedTP_R = 1.8;         // SCALPING: Quick 1.8R targets (was 3.0)
+      p.MinTP_R = 0.8;           // SCALPING: Allow smaller wins (was 1.0)
+      p.MaxTP_R = 2.5;           // SCALPING: Cap at 2.5R for quick exits
       p.TPUseLearnedMFE = true;
 
       // EXIT (Trade Management)
@@ -350,8 +351,8 @@ public:
       // SMC
       p.UseSMC = true;
       p.SMC_SwingLookback = 20;
-      p.SMC_MinImpulseATR = 2.0;
-      p.SMC_MinFVG_ATR = 0.5;
+      p.SMC_MinImpulseATR = 1.5;  // SCALPING: More lenient OB detection (was 2.0)
+      p.SMC_MinFVG_ATR = 0.3;     // SCALPING: Detect smaller FVGs (was 0.5)
 
       // MTF
       p.UseMTF = true;
@@ -586,31 +587,36 @@ public:
    void OnTick()
    {
       m_symbolInfo.RefreshRates();
-      
+
       // Update Position Count
       m_positionCount = CountPositions();
       if(m_positionCount == 0) ResetTradeState();
-      
+
       ManagePositions();
-      
+
       if(!IsNewBar()) return;
-      
+
       if(!UpdateIndicators()) return;
-      
+
       // Update Modules
       UpdateModules();
-      
+
+      // CRITICAL: Update Killzone Optimizer to determine current active killzone
+      if(m_params.UseKillzoneFilter)
+         m_killzoneOptimizer.Update();
+
       // Safety Checks
       if(!m_failSafe.IsExecutionSafe()) return;
       if(m_params.UseNewsFilter && !m_newsFilter.IsTradingAllowed()) return;
-      
+      if(m_params.UseKillzoneFilter && !m_killzoneOptimizer.IsTradingAllowed()) return;
+
       // Regime
       m_currentRegime = m_regime.Detect(m_g_ATR, m_g_ATR_MA, m_g_EMA, m_g_EMA_Prev);
       if(m_currentRegime == REGIME_CHAOS) return;
-      
+
       // Filters
       if(!CheckSpread()) return;
-      
+
       // Signal Scan
       ScanForEntry();
    }
@@ -807,12 +813,18 @@ private:
            return;
        }
 
-       // Determine quality tier
+       // Determine quality tier (dynamic based on MinConfluenceEntry)
        ENUM_ENTRY_TIER quality = TIER_GOOD;
-       if(bestScore >= 8.0) quality = TIER_ELITE;
-       else if(bestScore >= 6.0) quality = TIER_STRONG;
-       else if(bestScore >= 5.0) quality = TIER_GOOD;
-       else return;  // Below minimum
+
+       // For scalping (MinConf=3): ELITE≥7, STRONG≥5, GOOD≥3
+       // For swing (MinConf=6): ELITE≥9, STRONG≥7, GOOD≥6
+       double eliteThreshold = m_params.MinConfluenceEntry + 4.0;
+       double strongThreshold = m_params.MinConfluenceEntry + 2.0;
+
+       if(bestScore >= eliteThreshold) quality = TIER_ELITE;
+       else if(bestScore >= strongThreshold) quality = TIER_STRONG;
+       else if(bestScore >= m_params.MinConfluenceEntry) quality = TIER_GOOD;
+       else return;  // Below minimum - NOW USES PARAMETER!
 
        // Governor Check
        GovernorRequest req;
@@ -1054,7 +1066,7 @@ private:
    {
        if(m_params.TPMode == 0) return 0;  // No TP
 
-       double tpR = 0;
+       double tpR = m_params.FixedTP_R;  // Default fallback to prevent zero TP
 
        // MODE 1: Fixed TP
        if(m_params.TPMode == 1)
@@ -1093,22 +1105,42 @@ private:
            else if(m_currentRegime == REGIME_VOLATILE) tpR *= 1.1;
        }
 
-       // Clamp to min/max
+       // CRITICAL: Ensure minimum TP ratio
        if(tpR < m_params.MinTP_R) tpR = m_params.MinTP_R;
        if(tpR > m_params.MaxTP_R) tpR = m_params.MaxTP_R;
 
+       // SAFETY: Absolute minimum to prevent zero TP
+       if(tpR < 1.0) tpR = 1.0;
+
        // Calculate TP price
        double tpDist = slDist * tpR;
+
+       // CRITICAL FIX: Ensure TP distance is meaningful (minimum 0.5 ATR)
+       double minTpDist = m_g_ATR * 0.5;
+       if(tpDist < minTpDist) tpDist = minTpDist;
+
        double tp = (direction == 1) ? price + tpDist : price - tpDist;
 
        // Ensure TP meets broker requirements
        double stopsLevel = SymbolInfoInteger(m_symbol, SYMBOL_TRADE_STOPS_LEVEL) * m_symbolInfo.Point();
-       if(direction == 1 && (tp - price) < stopsLevel)
-           tp = price + stopsLevel + 10 * m_symbolInfo.Point();
-       else if(direction == -1 && (price - tp) < stopsLevel)
-           tp = price - stopsLevel - 10 * m_symbolInfo.Point();
+       double minDist = MathMax(stopsLevel, 20.0 * m_symbolInfo.Point());  // Min 20 points
 
-       return NormalizeDouble(tp, (int)m_symbolInfo.Digits());
+       if(direction == 1 && (tp - price) < minDist)
+           tp = price + minDist;
+       else if(direction == -1 && (price - tp) < minDist)
+           tp = price - minDist;
+
+       double finalTp = NormalizeDouble(tp, (int)m_symbolInfo.Digits());
+
+       // FINAL VALIDATION: Ensure TP is different from entry
+       if(MathAbs(finalTp - price) < m_symbolInfo.Point() * 10)
+       {
+           Print("⚠️ TP TOO CLOSE TO ENTRY! Setting to 2R | Price: ", price, " | BadTP: ", finalTp);
+           finalTp = (direction == 1) ? price + (slDist * 2.0) : price - (slDist * 2.0);
+           finalTp = NormalizeDouble(finalTp, (int)m_symbolInfo.Digits());
+       }
+
+       return finalTp;
    }
 
    //+------------------------------------------------------------------+
