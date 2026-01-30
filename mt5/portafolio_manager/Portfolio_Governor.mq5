@@ -27,9 +27,9 @@
 #include "Include\MLRegimeDetector.mqh"
 #include "Include\PortfolioOptimizer.mqh"
 #include "Include\Dashboard.mqh"
-#include "Include\NewsFilter.mqh"
-#include "Include\KellyPositionSizer.mqh"
 #include "Include\DrawdownRecovery.mqh"
+
+// Note: NewsFilter and Kelly are handled at engine level (SymbolEngineWrapper), not portfolio level
 
 // --- GLOBAL OBJECTS ---
 CGovernorAllocator   allocator;
@@ -44,8 +44,6 @@ CSmartExecution      g_smartExec;
 CMLRegimeDetector    g_mlRegime;
 CPortfolioOptimizer  g_optimizer;
 CDashboard          g_dashboard;
-CNewsFilter          g_newsFilter;
-CKellyPositionSizer  g_kelly;
 CDrawdownRecovery    g_recovery;
 
 // --- INPUTS (Simplified for View) ---
@@ -407,7 +405,8 @@ void OnTimer()
    // Update Intel Panel (NEW)
    double regimeConfidence = pred.confidence; // Already 0-1 range
    int universeSize = ArraySize(g_activeSymbols);
-   g_dashboard.UpdateIntel(regimeConfidence, universeSize, "Risk Parity");
+   string regimeName = EnumToString(g_currentRegime); // Show actual regime
+   g_dashboard.UpdateIntel(regimeConfidence, universeSize, regimeName);
 
    // Update Footer (NEW)
    string footerMsg = "Uptime: " + IntegerToString(uptimeMinutes) + "m | Portfolio Governor v2.1 | GOD MODE";
@@ -433,7 +432,7 @@ void OnTimer()
    {
       if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
       {
-         symbolRows[rowIndex].symbol = g_activeSymbols[i];
+         symbolRows[rowIndex].symbol = g_engines[i].m_symbol;  // Safer: get from engine directly
          symbolRows[rowIndex].buyScore = g_engines[i].GetBuyConfluence();
          symbolRows[rowIndex].sellScore = g_engines[i].GetSellConfluence();
          symbolRows[rowIndex].status = g_engines[i].GetStatus();
@@ -558,6 +557,7 @@ void UpdateUniverse()
 
          // Try Suffixes if standard failed (Simple auto-discovery)
          // Common suffixes: .m, .pro, +, c, .a
+         bool found = false;
          string suffixes[] = {".m", ".pro", "+", "c", ".a", "_opt"};
          for(int s=0; s<ArraySize(suffixes); s++)
          {
@@ -565,8 +565,15 @@ void UpdateUniverse()
             if(SymbolSelect(trySym, true))
             {
                AddToArray(verified, trySym);
+               found = true;
                break;
             }
+         }
+
+         // Warn if symbol not found
+         if(!found)
+         {
+            Print("⚠️ SYMBOL NOT FOUND: ", sym, " - Check Market Watch or broker symbol list");
          }
       }
 

@@ -30,8 +30,12 @@ public:
    void Update()
    {
       double currentEquity = AccountInfoDouble(ACCOUNT_EQUITY);
-      double peakEquity = GlobalVariableGet(GV_PEAK_EQUITY);
-      
+
+      // Safe global variable access
+      double peakEquity = 0;
+      if(GlobalVariableCheck(GV_PEAK_EQUITY))
+         peakEquity = GlobalVariableGet(GV_PEAK_EQUITY);
+
       if(peakEquity == 0) peakEquity = currentEquity;
       
       // Update Peak High Water Mark
