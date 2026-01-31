@@ -164,8 +164,11 @@ public:
    //+------------------------------------------------------------------+
    bool CheckSafety()
    {
+      // CRITICAL: Check new day FIRST (before hard lock check) so it can auto-reset daily kills
+      CheckNewDay();
+
       if(m_hardLock) return false;
-      
+
       // 1. Connection Monitor
       string connMsg;
       if(!m_connMonitor.IsStable(connMsg))
@@ -173,7 +176,7 @@ public:
          TriggerKill(KILL_CONNECTION_LOST, "Connection Unstable: " + connMsg);
          return false;
       }
-      
+
       // 2. Check Margin
       double marginLevel = m_account.MarginLevel();
       if(marginLevel > 0 && marginLevel < m_minMarginLevel)
@@ -181,9 +184,6 @@ public:
          TriggerKill(KILL_MARGIN_CALL, "Critical Margin Level: " + DoubleToString(marginLevel, 2) + "%");
          return false;
       }
-      
-      // 3. New Day Reset
-      CheckNewDay();
       
       // 4. Check Daily Drawdown
       double currentEquity = m_account.Equity();
@@ -316,12 +316,25 @@ private:
       TimeToStruct(TimeCurrent(), dt);
       MqlDateTime last;
       TimeToStruct(m_lastDayCheck, last);
-      
+
       if(dt.day != last.day)
       {
          m_dailyStartEquity = m_account.Equity();
          m_lastDayCheck = TimeCurrent();
          m_consecutiveLosses = 0;
+         m_disabledUntil = 0;  // Reset cooldown timer for new day
+
+         // Reset daily kill reasons (but NOT account-level kills like drawdown or margin)
+         if(m_hardLock && (m_killReason == KILL_DAILY_LOSS || m_killReason == KILL_CONSECUTIVE_LOSS))
+         {
+            m_hardLock = false;
+            m_killReason = KILL_NONE;
+            GlobalVariableSet(GV_GOVERNOR_ACTIVE, 1);
+            GlobalVariableSet(GV_TRADING_ENABLED, 1);
+            Print("🔄 KILL SWITCH AUTO-RESET: Daily kill reason cleared on new day");
+         }
+
+         Print("📅 New Day: KillSwitch reset | Equity: ", DoubleToString(m_dailyStartEquity, 2));
       }
    }
    

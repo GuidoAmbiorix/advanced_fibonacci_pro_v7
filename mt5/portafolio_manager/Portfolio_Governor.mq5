@@ -58,7 +58,7 @@ input string InpPositionNote = "1 = Best for M15 | 2-3 = Experienced only | M15 
 // --- ADAPTIVE CONFLUENCE RANKING ---
 input group "=== ADAPTIVE CONFLUENCE (Percentile Ranking) ==="
 input int    InpTopSymbolsToTrade = 1;   // Trade only top N ranked symbols per cycle (1=Best only, 2=Top 2)
-input double InpMinScoreFloor = 3.0;     // Safety floor - ignore signals below this (prevents garbage)
+input double InpMinScoreFloor = 4.0;     // Safety floor - ignore signals below this (prevents garbage)
 input string InpRankingNote = "Percentile system: trades highest-ranked setups only - NO hardcoded thresholds"; // Info
 
 // --- STATE ---

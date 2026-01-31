@@ -262,8 +262,20 @@ private:
 
       if(version != 1)
       {
-         Print("Learning WARNING: Unsupported file version");
+         Print("Learning WARNING: Unsupported or corrupted file version: ", version);
+         Print("Learning: Deleting corrupted file and resetting data...");
          FileClose(fileHandle);
+
+         // Delete corrupted file
+         if(FileDelete(m_dataFile, FILE_COMMON))
+         {
+            Print("Learning: Corrupted file deleted successfully");
+         }
+
+         // Reset to defaults
+         m_avgMFE = 0;
+         m_avgMAE = 0;
+
          return false;
       }
 
@@ -275,8 +287,20 @@ private:
       string savedSymbol = FileReadString(fileHandle);
       if(savedSymbol != m_symbol)
       {
-         Print("Learning WARNING: Symbol mismatch (saved:", savedSymbol, " current:", m_symbol, ")");
+         Print("Learning WARNING: Symbol mismatch or corrupted file (saved:", savedSymbol, " current:", m_symbol, ")");
+         Print("Learning: Deleting corrupted file and resetting data...");
          FileClose(fileHandle);
+
+         // Delete corrupted file
+         if(FileDelete(m_dataFile, FILE_COMMON))
+         {
+            Print("Learning: Corrupted file deleted successfully");
+         }
+
+         // Reset to defaults
+         m_avgMFE = 0;
+         m_avgMAE = 0;
+
          return false;
       }
 

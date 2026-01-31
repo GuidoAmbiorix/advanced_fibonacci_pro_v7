@@ -350,7 +350,7 @@ public:
       p.TrailATR_Mult = 1.5;
 
       // SPREAD
-      p.MaxSpreadPoints = 30;
+      p.MaxSpreadPoints = 50;
 
       // SMC
       p.UseSMC = true;
@@ -623,6 +623,9 @@ public:
 
       if(!IsNewBar()) return;
 
+      // Check for new day and reset daily counters
+      CheckNewDay();
+
       if(!UpdateIndicators()) return;
 
       // Update Modules
@@ -708,7 +711,25 @@ private:
       }
       return false;
    }
-   
+
+   void CheckNewDay()
+   {
+      MqlDateTime dt;
+      TimeToStruct(TimeCurrent(), dt);
+      MqlDateTime last;
+      TimeToStruct(m_lastResetDate, last);
+
+      if(dt.day != last.day)
+      {
+         m_dailyLossR = 0;  // Reset daily loss tracking
+         m_lastResetDate = TimeCurrent();
+         m_consecutiveLosses = 0;  // Reset consecutive losses
+         m_lastLossTime = 0;  // Reset loss timer
+
+         Print("📅 New Day: ", m_symbol, " | Daily loss reset");
+      }
+   }
+
    bool UpdateIndicators()
    {
       double rsi[], atr[], ema[];

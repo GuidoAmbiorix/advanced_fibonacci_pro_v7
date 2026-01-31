@@ -488,8 +488,21 @@ private:
 
       if(version != 1)
       {
-         Print("PatternMemory WARNING: Unsupported file version");
+         Print("PatternMemory WARNING: Unsupported or corrupted file version: ", version);
+         Print("PatternMemory: Deleting corrupted file and resetting data...");
          FileClose(fileHandle);
+
+         // Delete corrupted file
+         string filename = "PatternMemory_" + m_symbol + ".dat";
+         if(FileDelete(filename, FILE_COMMON))
+         {
+            Print("PatternMemory: Corrupted file deleted successfully");
+         }
+
+         // Reset
+         m_patternCount = 0;
+         ArrayResize(m_patterns, 0);
+
          return false;
       }
 
@@ -497,8 +510,21 @@ private:
       string savedSymbol = FileReadString(fileHandle);
       if(savedSymbol != m_symbol)
       {
-         Print("PatternMemory WARNING: Symbol mismatch");
+         Print("PatternMemory WARNING: Symbol mismatch or corrupted file (saved:", savedSymbol, " current:", m_symbol, ")");
+         Print("PatternMemory: Deleting corrupted file and resetting data...");
          FileClose(fileHandle);
+
+         // Delete corrupted file
+         string filename = "PatternMemory_" + m_symbol + ".dat";
+         if(FileDelete(filename, FILE_COMMON))
+         {
+            Print("PatternMemory: Corrupted file deleted successfully");
+         }
+
+         // Reset
+         m_patternCount = 0;
+         ArrayResize(m_patterns, 0);
+
          return false;
       }
 
