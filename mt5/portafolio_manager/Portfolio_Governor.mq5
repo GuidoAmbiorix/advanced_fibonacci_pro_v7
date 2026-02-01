@@ -61,6 +61,10 @@ input int    InpTopSymbolsToTrade = 1;   // Trade only top N ranked symbols per 
 input double InpMinScoreFloor = 10.0;     // GOD LEVEL: Min 10/30 (33%) - ELITE≥18, STRONG≥14, GOOD≥10
 input string InpRankingNote = "GOD LEVEL 30-point confluence: Elite ≥18 | Strong ≥14 | Good ≥10"; // Info
 
+// --- PERFORMANCE ---
+input group "=== PERFORMANCE (VPS Optimization) ==="
+input bool   InpEnableDashboard = false;  // Enable visual dashboard (disable for VPS/Wine performance)
+
 // --- STATE ---
 string g_activeSymbols[];
 CSymbolEngineWrapper *g_engines[];      // The Engine Room
@@ -89,7 +93,9 @@ int OnInit()
    g_killSwitch.Init(InpMaxDrawdownPercent, InpMaxDailyLoss, 100, 5);
    g_liquidityGuard.Init(50, 0.3);
    g_smartExec.Init(&g_liquidityGuard, 10);
-   g_dashboard.Init();
+   // Initialize dashboard only if enabled
+   if(InpEnableDashboard)
+      g_dashboard.Init();
 
    // Recovery Init - FORCE RESET in Backtesting to prevent stale data
    if(MQLInfoInteger(MQL_TESTER))
@@ -183,7 +189,8 @@ void OnTick()
    if(!g_killSwitch.CheckSafety())
    {
       string killReason = "SAFETY_TRIGGER"; // Simplify for now
-      g_dashboard.Update("💀 KILLED", EnumToString(g_currentRegime), account.Equity(), 0, 0, "EMERGENCY", "DISCONNECTED", 999);
+      if(InpEnableDashboard)
+         g_dashboard.Update("💀 KILLED", EnumToString(g_currentRegime), account.Equity(), 0, 0, "EMERGENCY", "DISCONNECTED", 999);
       return;
    }
 }
@@ -396,13 +403,15 @@ void OnTimer()
    double avgLoss = (g_totalLosses > 0) ? (g_totalLossAmount / g_totalLosses) : 0.0;
    int uptimeMinutes = (int)((TimeCurrent() - g_initTime) / 60);
 
-   // 7. Dashboard Updates
-   int ping = (int)(TerminalInfoInteger(TERMINAL_PING_LAST) / 1000);
-   string connReason;
-   string connStatusStr = g_killSwitch.IsConnStable(connReason) ? "Stable" : "Unstable";
+   // 7. Dashboard Updates (skip if disabled for performance)
+   if(InpEnableDashboard)
+   {
+      int ping = (int)(TerminalInfoInteger(TERMINAL_PING_LAST) / 1000);
+      string connReason;
+      string connStatusStr = g_killSwitch.IsConnStable(connReason) ? "Stable" : "Unstable";
 
-   // Update Main Status Panel
-   g_dashboard.Update(g_killSwitch.GetStatus(), EnumToString(g_currentRegime),
+      // Update Main Status Panel
+      g_dashboard.Update(g_killSwitch.GetStatus(), EnumToString(g_currentRegime),
                       account.Equity(), 0, 0,
                       "REC FACTOR: " + DoubleToString(g_recovery.GetMultiplier(), 2) + "x",
                       connStatusStr, ping);
@@ -496,7 +505,8 @@ void OnTimer()
          activeTrades[i] = sym + " " + type + " | " + pnlStr;
       }
    }
-   g_dashboard.UpdateTradesList(activeTrades);
+      g_dashboard.UpdateTradesList(activeTrades);
+   } // End if(InpEnableDashboard)
 }
 
 //+------------------------------------------------------------------+
