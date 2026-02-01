@@ -1,4 +1,4 @@
-//+------------------------------------------------------------------+
+﻿//+------------------------------------------------------------------+
 //|                                         SymbolEngineWrapper.mqh   |
 //|          Encapsulated Symbol Engine for Governor Integration      |
 //|                                                                  |
@@ -23,12 +23,18 @@
 #include "../SMC_OrderBlocks.mqh"
 #include "../SMC_FairValueGap.mqh"
 #include "../SMC_LiquiditySweep.mqh"
+// GOD LEVEL SMC Modules
+#include "../SMC_MarketStructure.mqh"
+#include "../SMC_Inducement.mqh"
+#include "../SMC_PremiumDiscount.mqh"
 
 // Multi-Timeframe and Filters
 #include "../MTF_Confluence.mqh"
 #include "../NewsFilter.mqh"
 #include "../KillzoneOptimizer.mqh"
 #include "../KellyPositionSizer.mqh"
+// GOD LEVEL Fibonacci
+#include "../Fibonacci_Advanced.mqh"
 
 // Learning & Memory Modules
 #include "../Memory/TradeJournal.mqh"
@@ -206,17 +212,25 @@ public:
    CGovernorAllocator m_allocator;
    CSessionGovernor  m_sessionGov;
    
-   // SMC Modules
+   // SMC Modules (Original)
    CSMCStructureBreak  m_smcStructure;
    CSMCOrderBlocks     m_smcOrderBlocks;
    CSMCFairValueGap    m_smcFVG;
    CSMCLiquiditySweep  m_smcLiquidity;
+   
+   // GOD LEVEL SMC Modules
+   CSMCMarketStructure m_smcMSS;           // Market Structure Shift detector
+   CSMCInducement      m_smcInducement;    // Liquidity grab detector
+   CSMCPremiumDiscount m_smcPriceZone;     // Premium/Discount zones
    
    // Filter Modules
    CMTFConfluence      m_mtfAnalysis;
    CNewsFilter         m_newsFilter;
    CKillzoneOptimizer  m_killzoneOptimizer;
    CKellyPositionSizer m_kellySizer;
+   
+   // GOD LEVEL Fibonacci
+   CFibonacciAdvanced  m_fibAdvanced;      // Multi-swing clusters + OTE
    
    // Learning Modules
    CTradeJournal       m_tradeJournal;
@@ -492,7 +506,15 @@ public:
          m_smcOrderBlocks.Init(m_symbol, PERIOD_CURRENT, 50, 5, m_params.SMC_MinImpulseATR);
          m_smcFVG.Init(m_symbol, PERIOD_CURRENT, 50, 10, m_params.SMC_MinFVG_ATR);
          m_smcLiquidity.Init(m_symbol, PERIOD_CURRENT, m_params.SMC_SwingLookback);
+         
+         // GOD LEVEL SMC Modules
+         m_smcMSS.Init(m_symbol, PERIOD_CURRENT, m_params.SMC_SwingLookback);
+         m_smcInducement.Init(m_symbol, PERIOD_CURRENT, 10);
+         m_smcPriceZone.Init(m_symbol, PERIOD_CURRENT, 50);
       }
+      
+      // Initialize GOD LEVEL Fibonacci
+      m_fibAdvanced.Init(m_symbol, PERIOD_CURRENT, 100, 5);
       
        // Initialize MTF
       if(m_params.UseMTF)
@@ -591,6 +613,151 @@ public:
    //| ADAPTIVE CONFLUENCE RANKING - Percentile System                  |
    //+------------------------------------------------------------------+
    // Get best confluence score (used by Governor for ranking)
+   //+------------------------------------------------------------------+
+   //| Get Confluence Breakdown for Dashboard                           |
+   //+------------------------------------------------------------------+
+   void GetConfluenceBreakdown(int direction, double &coreScore, double &smcScore, 
+                                double &fibScore, double &mtfScore, double &timingScore)
+   {
+      coreScore = 0;
+      smcScore = 0;
+      fibScore = 0;
+      mtfScore = 0;
+      timingScore = 0;
+      
+      double currentPrice = m_symbolInfo.Bid();
+      
+      // CORE TECHNICAL (0-7)
+      double emaSlope = m_g_EMA - m_g_EMA_Prev;
+      bool slopeStrong = MathAbs(emaSlope) >= (m_g_ATR * m_params.EMA_MinSlope);
+      
+      if(direction == 1 && currentPrice > m_g_EMA && emaSlope > 0 && slopeStrong) coreScore += 1.0;
+      if(direction == -1 && currentPrice < m_g_EMA && emaSlope < 0 && slopeStrong) coreScore += 1.0;
+      
+      int highestBar = iHighest(m_symbol, PERIOD_CURRENT, MODE_HIGH, m_params.SwingLookback, 1);
+      int lowestBar = iLowest(m_symbol, PERIOD_CURRENT, MODE_LOW, m_params.SwingLookback, 1);
+      if(direction == 1 && lowestBar < highestBar) coreScore += 1.0;
+      if(direction == -1 && highestBar < lowestBar) coreScore += 1.0;
+      
+      if(direction == 1 && m_g_RSI <= m_params.RSI_Oversold) coreScore += 1.0;
+      if(direction == -1 && m_g_RSI >= m_params.RSI_Overbought) coreScore += 1.0;
+      
+      if(m_params.RSI_Momentum)
+      {
+         if(direction == 1 && m_g_RSI > m_g_RSI_Prev) coreScore += 0.5;
+         if(direction == -1 && m_g_RSI < m_g_RSI_Prev) coreScore += 0.5;
+      }
+      
+      if(CheckDisplacement(direction)) coreScore += 1.0;
+      
+      double atrRatio = m_g_ATR / m_g_ATR_MA;
+      if(atrRatio >= 0.8 && atrRatio <= 1.3) coreScore += 1.5;
+      else if(atrRatio >= 0.6 && atrRatio <= 1.5) coreScore += 0.75;
+      
+      if(m_params.UseChopFilter && atrRatio > 0.5) coreScore += 1.0;
+      
+      // SMC (0-12)
+      if(m_params.UseSMC)
+      {
+         smcScore += m_smcOrderBlocks.GetConfluenceScore(direction);
+         smcScore += m_smcFVG.GetConfluenceScore(direction);
+         smcScore += m_smcLiquidity.GetConfluenceScore(direction);
+         smcScore += m_smcMSS.GetConfluenceScore(direction);
+         smcScore += m_smcInducement.GetConfluenceScore(direction);
+         smcScore += m_smcPriceZone.GetConfluenceScore(direction);
+         smcScore += m_smcStructure.GetConfluenceScore(direction);
+      }
+      
+      // FIBONACCI (0-3)
+      fibScore = m_fibAdvanced.GetConfluenceScore(direction);
+      
+      // MULTI-TIMEFRAME (0-3)
+      if(m_params.UseMTF)
+         mtfScore = m_mtfAnalysis.GetConfluenceScore(direction);
+      
+      // TIMING (0-5)
+      if(m_params.UseKillzoneFilter)
+         timingScore += m_killzoneOptimizer.GetConfluenceScore();
+      
+      double regimeBonus = 0;
+      if(m_currentRegime == REGIME_TREND)
+      {
+         if((direction == 1 && emaSlope > 0) || (direction == -1 && emaSlope < 0))
+            regimeBonus = 2.0;
+      }
+      else if(m_currentRegime == REGIME_RANGE)
+      {
+         if((direction == 1 && m_g_RSI <= m_params.RSI_Oversold) ||
+            (direction == -1 && m_g_RSI >= m_params.RSI_Overbought))
+            regimeBonus = 1.5;
+      }
+      timingScore += regimeBonus;
+      
+      if(m_params.UseNewsFilter && m_newsFilter.IsTradingAllowed())
+         timingScore += 1.0;
+   }
+   
+   //+------------------------------------------------------------------+
+   //| Get SMC Status for Dashboard                                      |
+   //+------------------------------------------------------------------+
+   void GetSMCIntel(string &mssStatus, string &obStatus, string &fvgStatus,
+                     string &inducementStatus, string &zoneStatus)
+   {
+      // MSS/ChoCh Status
+      MSSEvent lastMSS;
+      if(m_smcMSS.GetLastMSS(lastMSS))
+      {
+         if(lastMSS.confirmed)
+         {
+            if(lastMSS.type == MSS_BULLISH) mssStatus = "CONFIRMED BULLISH";
+            else if(lastMSS.type == MSS_BEARISH) mssStatus = "CONFIRMED BEARISH";
+            else if(lastMSS.type == MSS_CHOCH_BULLISH) mssStatus = "ChoCh BULLISH";
+            else if(lastMSS.type == MSS_CHOCH_BEARISH) mssStatus = "ChoCh BEARISH";
+         }
+         else
+            mssStatus = "DETECTED (Unconfirmed)";
+      }
+      else
+         mssStatus = "None";
+      
+      // Order Block Status
+      double obTop, obBottom;
+      if(m_smcOrderBlocks.IsInOrderBlock(1, obTop, obBottom))
+         obStatus = "BULLISH OB ACTIVE";
+      else if(m_smcOrderBlocks.IsInOrderBlock(-1, obTop, obBottom))
+         obStatus = "BEARISH OB ACTIVE";
+      else
+         obStatus = "None";
+      
+      // FVG Status
+      double fvgTop, fvgBottom;
+      if(m_smcFVG.IsInFVG(1, fvgTop, fvgBottom))
+         fvgStatus = "BULLISH FVG OPEN";
+      else if(m_smcFVG.IsInFVG(-1, fvgTop, fvgBottom))
+         fvgStatus = "BEARISH FVG OPEN";
+      else
+         fvgStatus = "None";
+      
+      // Inducement Status (simplified)
+      if(m_smcInducement.GetConfluenceScore(1) > 0.5)
+         inducementStatus = "BULLISH HUNT";
+      else if(m_smcInducement.GetConfluenceScore(-1) > 0.5)
+         inducementStatus = "BEARISH GRAB";
+      else
+         inducementStatus = "None";
+      
+      // Premium/Discount Zone
+      double zoneScore1 = m_smcPriceZone.GetConfluenceScore(1);
+      double zoneScore2 = m_smcPriceZone.GetConfluenceScore(-1);
+      
+      if(zoneScore1 > 0.5)
+         zoneStatus = "DISCOUNT (Buy Zone)";
+      else if(zoneScore2 > 0.5)
+         zoneStatus = "PREMIUM (Sell Zone)";
+      else
+         zoneStatus = "EQUILIBRIUM";
+   }
+
    double GetBestConfluenceScore()
    {
       return MathMax(m_cachedBuyScore, m_cachedSellScore);
@@ -609,6 +776,36 @@ public:
    }
 
    //+------------------------------------------------------------------+
+   //| Pre-calculate scores for ranking (called before OnTick)          |
+   //+------------------------------------------------------------------+
+   void UpdateScoresForRanking()
+   {
+      // NOTE: Do NOT call IsNewBar() here - it consumes the flag!
+      // The Governor calls this once per tick, so we don't need bar filtering here.
+
+      // Check if we have a valid new bar without consuming the flag
+      datetime currentBarTime = iTime(m_symbol, PERIOD_CURRENT, 0);
+      if(currentBarTime == m_lastBarTime) return; // Same bar, skip
+
+      // DO NOT update m_lastBarTime here - let OnTick do it!
+
+      // Must have valid indicators
+      if(!UpdateIndicators()) return;
+
+      // Update modules
+      UpdateModules();
+
+      // Calculate and cache scores (without permission check)
+      double buyScore = CalculateConfluenceScore(1);
+      double sellScore = CalculateConfluenceScore(-1);
+
+      m_cachedBuyScore = buyScore;
+      m_cachedSellScore = sellScore;
+      m_currentBestScore = MathMax(buyScore, sellScore);
+      m_lastScoreCalcTime = TimeCurrent();
+   }
+
+   //+------------------------------------------------------------------+
    //| Main Processing Loop (Call from OnTick)                          |
    //+------------------------------------------------------------------+
    void OnTick()
@@ -621,7 +818,13 @@ public:
 
       ManagePositions();
 
-      if(!IsNewBar()) return;
+      if(!IsNewBar())
+      {
+         // Print("⏸️ Waiting for new bar"); // Commented out - too spammy
+         return;
+      }
+
+      Print("🔔 NEW BAR | ", m_symbol, " | OnTick called");
 
       // Check for new day and reset daily counters
       CheckNewDay();
@@ -636,16 +839,38 @@ public:
          m_killzoneOptimizer.Update();
 
       // Safety Checks
-      if(!m_failSafe.IsExecutionSafe()) return;
-      if(m_params.UseNewsFilter && !m_newsFilter.IsTradingAllowed()) return;
-      if(m_params.UseKillzoneFilter && !m_killzoneOptimizer.IsTradingAllowed()) return;
+      if(!m_failSafe.IsExecutionSafe())
+      {
+         Print("⛔ BLOCKED: FailSafe.IsExecutionSafe() = false");
+         return;
+      }
+      if(m_params.UseNewsFilter && !m_newsFilter.IsTradingAllowed())
+      {
+         Print("⛔ BLOCKED: News filter active");
+         return;
+      }
+      if(m_params.UseKillzoneFilter && !m_killzoneOptimizer.IsTradingAllowed())
+      {
+         Print("⛔ BLOCKED: Outside killzone");
+         return;
+      }
 
       // Regime
       m_currentRegime = m_regime.Detect(m_g_ATR, m_g_ATR_MA, m_g_EMA, m_g_EMA_Prev);
-      if(m_currentRegime == REGIME_CHAOS) return;
+      if(m_currentRegime == REGIME_CHAOS)
+      {
+         Print("⛔ BLOCKED: Regime = CHAOS");
+         return;
+      }
 
       // Filters
-      if(!CheckSpread()) return;
+      if(!CheckSpread())
+      {
+         Print("⛔ BLOCKED: Spread too wide");
+         return;
+      }
+
+      Print("🚦 ALL CHECKS PASSED - Calling ScanForEntry");
 
       // Signal Scan
       ScanForEntry();
@@ -726,7 +951,7 @@ private:
          m_consecutiveLosses = 0;  // Reset consecutive losses
          m_lastLossTime = 0;  // Reset loss timer
 
-         Print("📅 New Day: ", m_symbol, " | Daily loss reset");
+         Print("ðŸ“… New Day: ", m_symbol, " | Daily loss reset");
       }
    }
 
@@ -808,31 +1033,59 @@ private:
    bool CheckDisplacement(int dir)
    {
       if(!m_params.UseDisplacement) return true;
-      for(int i = 2; i <= m_params.DisplacementLookback + 1; i++)
+
+      // Scan last 5 bars for aligned displacement (DIRECTION-VALIDATED)
+      for(int i = 1; i <= 5; i++)  // Start from bar 1 (more recent)
       {
          double o = iOpen(m_symbol, PERIOD_CURRENT, i);
          double c = iClose(m_symbol, PERIOD_CURRENT, i);
-         if(MathAbs(c - o) >= m_g_ATR * m_params.DisplacementATR)
+         double candleSize = MathAbs(c - o);
+
+         // Raise threshold to 1.0 ATR for M15 (was 0.5 ATR - too loose)
+         if(candleSize >= m_g_ATR * 1.0)
          {
-            if(dir == 1 && c > o) return true;
-            if(dir == -1 && c < o) return true;
+            // CRITICAL: Check direction alignment
+            bool isBullish = (c > o);
+            bool isAligned = (dir == 1 && isBullish) || (dir == -1 && !isBullish);
+
+            if(isAligned)
+            {
+               return true;  // Found aligned displacement
+            }
          }
       }
-      return false;
+
+      return false; // No aligned displacement found
    }
 
    void UpdateModules()
    {
       if(m_params.UseSMC)
       {
-         // SMC updates can be heavy, do them on new bar
-         // (Calling Init/Update inside modules usually handled implicitly or via dedicated update methods)
-         // Our simplified modules generally re-calc on demand or via getter, assuming logic is stateless or self-updating.
+         // Update all SMC modules on new bar
+         m_smcStructure.Update();
+         m_smcOrderBlocks.Update();
+         m_smcFVG.Update();
+         m_smcLiquidity.Update();
+         
+         // GOD LEVEL SMC Updates
+         m_smcMSS.Update();
+         m_smcInducement.Update();
+         m_smcPriceZone.Update();
       }
+      
+      // GOD LEVEL Fib Updates
+      m_fibAdvanced.Update();
+      
+      // MTF Updates
+      if(m_params.UseMTF)
+         m_mtfAnalysis.Update();
    }
    
    void ScanForEntry()
    {
+       Print("📊 SCANFORENTRY CALLED | Symbol: ", m_symbol);
+
        // Calculate Buy/Sell Scores
        double buyScore = CalculateConfluenceScore(1);
        double sellScore = CalculateConfluenceScore(-1);
@@ -846,12 +1099,18 @@ private:
        m_currentBestScore = bestScore;  // Store for ranking
        int    direction = (buyScore > sellScore) ? 1 : -1;
 
+       Print("🎲 SCORES | Buy: ", DoubleToString(buyScore, 2), " | Sell: ", DoubleToString(sellScore, 2),
+             " | Best: ", DoubleToString(bestScore, 2), " | Direction: ", (direction == 1 ? "BUY" : "SELL"),
+             " | AllowedToTrade: ", (m_allowedToTradeThisCycle ? "YES" : "NO"));
+
        // ADAPTIVE CONFLUENCE RANKING: Check permission from Governor
        if(!m_allowedToTradeThisCycle)
        {
-           // Not ranked high enough this cycle - skip silently
+           Print("❌ BLOCKED: Not in top-ranked symbols this cycle (AllowedToTrade flag = false)");
            return;
        }
+
+       Print("✅ ALLOWED TO TRADE - Continuing to filters...");
 
        // Minimum threshold check (safety floor - prevents garbage trades)
        if(bestScore < m_params.MinConfluenceEntry) return;
@@ -865,22 +1124,48 @@ private:
        // OVERTRADING PROTECTION: Consecutive Losses Circuit Breaker
        if(m_consecutiveLosses >= m_params.MaxConsecutiveLosses)
        {
-           Print("🛑 CIRCUIT BREAKER: ", m_symbol, " | ", m_consecutiveLosses, " consecutive losses");
+           Print("ðŸ›‘ CIRCUIT BREAKER: ", m_symbol, " | ", m_consecutiveLosses, " consecutive losses");
            return;
        }
 
-       // Determine quality tier (dynamic based on MinConfluenceEntry)
+       // Determine quality tier (GOD LEVEL 30-point scale)
        ENUM_ENTRY_TIER quality = TIER_GOOD;
+       
+       // GOD LEVEL Thresholds:
+       // ELITE:  â‰¥18 points (60%+) - God-tier institutional setups
+       // STRONG: â‰¥14 points (47%) - High-probability professional setups  
+       // GOOD:   â‰¥10 points (33%) - Acceptable entry with confluence
+       // WEAK:   < floor       - Do not trade
+       
+       if(bestScore >= 18.0) quality = TIER_ELITE;
+       else if(bestScore >= 14.0) quality = TIER_STRONG;
+       else if(bestScore >= 10.0) quality = TIER_GOOD;
+       else quality = TIER_WEAK;  // Scores below 10.0 use WEAK tier (wider stops, conservative TP)
 
-       // For scalping (MinConf=3): ELITE≥7, STRONG≥5, GOOD≥3
-       // For swing (MinConf=6): ELITE≥9, STRONG≥7, GOOD≥6
-       double eliteThreshold = m_params.MinConfluenceEntry + 4.0;
-       double strongThreshold = m_params.MinConfluenceEntry + 2.0;
+       // MANDATORY INSTITUTIONAL FOOTPRINT (prevents pure technical trades)
+       // Require at least ONE SMC factor for non-elite setups (lowered to 0.5 for real-world detection rates)
+       bool hasInstitutionalFootprint =
+           (m_smcOrderBlocks.GetConfluenceScore(direction) >= 0.5) ||
+           (m_smcMSS.GetConfluenceScore(direction) >= 0.5) ||
+           (m_smcLiquidity.GetConfluenceScore(direction) >= 0.5) ||
+           (m_smcInducement.GetConfluenceScore(direction) >= 0.5);
 
-       if(bestScore >= eliteThreshold) quality = TIER_ELITE;
-       else if(bestScore >= strongThreshold) quality = TIER_STRONG;
-       else if(bestScore >= m_params.MinConfluenceEntry) quality = TIER_GOOD;
-       else return;  // Below minimum - NOW USES PARAMETER!
+       // DEBUG: Log SMC scores
+       Print("🔍 SMC CHECK | Score: ", DoubleToString(bestScore, 1),
+             " | OB:", DoubleToString(m_smcOrderBlocks.GetConfluenceScore(direction), 1),
+             " | MSS:", DoubleToString(m_smcMSS.GetConfluenceScore(direction), 1),
+             " | Liq:", DoubleToString(m_smcLiquidity.GetConfluenceScore(direction), 1),
+             " | Ind:", DoubleToString(m_smcInducement.GetConfluenceScore(direction), 1),
+             " | HasFootprint: ", (hasInstitutionalFootprint ? "YES" : "NO"));
+
+       // Reject pure technical setups below 16.0 score
+       if(!hasInstitutionalFootprint && bestScore < 16.0)
+       {
+           Print("❌ REJECTED: No institutional footprint");
+           return; // Reject pure technical setups
+       }
+
+       Print("✅ PASSED SMC CHECK - Sending to Governor");
 
        // Governor Check
        GovernorRequest req;
@@ -892,101 +1177,182 @@ private:
 
        double approvedRisk = m_allocator.RequestRisk(req);
 
+       Print("🏛️ GOVERNOR RESPONSE | ApprovedRisk: ", DoubleToString(approvedRisk, 2), "%");
+
        if(approvedRisk > 0.0)
        {
+           Print("✅ EXECUTING TRADE | Direction: ", (direction == 1 ? "BUY" : "SELL"),
+                 " | Quality: ", EnumToString(quality), " | Risk: ", DoubleToString(approvedRisk, 2), "%");
            m_currentConfluence = bestScore;
            ExecuteTrade(direction == 1 ? ORDER_TYPE_BUY : ORDER_TYPE_SELL, approvedRisk, "Eng_Entry", quality);
+       }
+       else
+       {
+           Print("❌ GOVERNOR BLOCKED | Risk = 0.0 (Check position limits, exposure, or allocator rules)");
        }
    }
    
    //+------------------------------------------------------------------+
-   //| Calculate Confluence Score (0-12 Point System)                   |
+   //| GOD LEVEL Confluence Score (0-30 Point System)                   |
+   //| Max: 30 | ELITE: â‰¥18 | STRONG: â‰¥14 | GOOD: â‰¥10                   |
    //+------------------------------------------------------------------+
    double CalculateConfluenceScore(int direction)
    {
        double score = 0;
        double currentPrice = m_symbolInfo.Bid();
 
-       // ============ ORIGINAL FACTORS (0-6) ============
-
+       // ============ CORE TECHNICAL (0-7) ============
+       
        // 1. Trend (EMA 200 + slope) - 1.0 point
        double emaSlope = m_g_EMA - m_g_EMA_Prev;
        bool slopeStrong = MathAbs(emaSlope) >= (m_g_ATR * m_params.EMA_MinSlope);
-
+       
        if(direction == 1 && currentPrice > m_g_EMA && emaSlope > 0 && slopeStrong) score += 1.0;
        if(direction == -1 && currentPrice < m_g_EMA && emaSlope < 0 && slopeStrong) score += 1.0;
-
-       // 2. Structure - 1.0 point
+       
+       // 2. Market structure (Higher Highs/Lows) - up to 1.0 point (QUALITY-WEIGHTED)
        int highestBar = iHighest(m_symbol, PERIOD_CURRENT, MODE_HIGH, m_params.SwingLookback, 1);
        int lowestBar = iLowest(m_symbol, PERIOD_CURRENT, MODE_LOW, m_params.SwingLookback, 1);
-       if(direction == 1 && lowestBar < highestBar) score += 1.0;
-       if(direction == -1 && highestBar < lowestBar) score += 1.0;
 
-       // 3. Fib Zone - 1.0 point
        if(highestBar >= 0 && lowestBar >= 0)
        {
            double swingHigh = iHigh(m_symbol, PERIOD_CURRENT, highestBar);
            double swingLow = iLow(m_symbol, PERIOD_CURRENT, lowestBar);
-           double range = swingHigh - swingLow;
-           double tolerance = m_g_ATR * m_params.ZoneTolerance;
+           double structureRange = swingHigh - swingLow;
+           double structureStrength = structureRange / m_g_ATR;
 
-           if(range >= m_g_ATR * 1.5)
+           // Ignore weak/choppy structure (below 2.0 ATR range)
+           if(structureStrength >= 2.0)
            {
-               if(direction == 1)
-               {
-                   double f618 = swingHigh - (range * m_params.FibLevelLow);
-                   double f786 = swingHigh - (range * m_params.FibLevelHigh);
-                   if(currentPrice <= f618 + tolerance && currentPrice >= f786 - tolerance) score += 1.0;
-               }
-               else
-               {
-                   double f618 = swingLow + (range * m_params.FibLevelLow);
-                   double f786 = swingLow + (range * m_params.FibLevelHigh);
-                   if(currentPrice >= f618 - tolerance && currentPrice <= f786 + tolerance) score += 1.0;
-               }
+               // Graduated scoring: 0.5 at 2 ATR, 1.0 at 4+ ATR
+               double structureScore = MathMin(1.0, (structureStrength - 2.0) / 2.0 + 0.5);
+
+               if(direction == 1 && lowestBar < highestBar) score += structureScore;
+               if(direction == -1 && highestBar < lowestBar) score += structureScore;
            }
        }
-
-       // 4. RSI level - 1.0 point
-       if(direction == 1 && m_g_RSI <= m_params.RSI_Oversold) score += 1.0;
-       if(direction == -1 && m_g_RSI >= m_params.RSI_Overbought) score += 1.0;
-
-       // 5. RSI momentum - 0.5 point
+       
+       // 3. RSI extremes - 1.0 point (REGIME-AWARE)
+       if(m_currentRegime == REGIME_TREND)
+       {
+           // In trending market: reward pullback RSI (NOT extremes)
+           // Uptrend: RSI 40-60 (healthy pullback to moving average)
+           // Downtrend: RSI 40-60 (bounce to moving average)
+           if(direction == 1 && m_g_RSI >= 40 && m_g_RSI <= 60) score += 1.0;
+           else if(direction == -1 && m_g_RSI >= 40 && m_g_RSI <= 60) score += 1.0;
+       }
+       else // REGIME_RANGE or REGIME_VOLATILE
+       {
+           // In ranging market: use mean reversion (extremes)
+           if(direction == 1 && m_g_RSI <= m_params.RSI_Oversold) score += 1.0;
+           if(direction == -1 && m_g_RSI >= m_params.RSI_Overbought) score += 1.0;
+       }
+       
+       // 4. RSI momentum - 0.5 point
        if(m_params.RSI_Momentum)
        {
            if(direction == 1 && m_g_RSI > m_g_RSI_Prev) score += 0.5;
            if(direction == -1 && m_g_RSI < m_g_RSI_Prev) score += 0.5;
        }
-
-       // 6. Displacement - 1.0 point
+       
+       // 5. Displacement (price velocity) - 1.0 point
        if(CheckDisplacement(direction)) score += 1.0;
-
-       // ============ SMC FACTORS (0-6 additional) ============
-
-       if(m_params.UseSMC)
+       
+       // 6. Volatility filter (ATR normalized) - 1.5 points
+       double atrRatio = m_g_ATR / m_g_ATR_MA;
+       if(atrRatio >= 0.8 && atrRatio <= 1.3) score += 1.5;  // Optimal volatility
+       else if(atrRatio >= 0.6 && atrRatio <= 1.5) score += 0.75;  // Acceptable
+       
+       // 7. Chop filter - 1.0 point
+       if(m_params.UseChopFilter)
        {
-           // 7. HTF Trend Alignment (MTF) - up to 2.0 points
-           if(m_params.UseMTF)
-               score += m_mtfAnalysis.GetConfluenceScore(direction);
-
-           // 8. Structure Break (BOS aligned) - up to 1.0 point
-           score += m_smcStructure.GetConfluenceScore(direction);
-
-           // 9. Order Block Entry - up to 1.5 points
-           score += m_smcOrderBlocks.GetConfluenceScore(direction);
-
-           // 10. Fair Value Gap - up to 1.0 point
-           score += m_smcFVG.GetConfluenceScore(direction);
-
-           // 11. Liquidity Sweep - up to 1.5 points
-           score += m_smcLiquidity.GetConfluenceScore(direction);
+           if(atrRatio > 0.5) score += 1.0;  // Not choppy
        }
 
-       // 12. Killzone Timing Bonus - up to 0.5 points
+       // ============ SMART MONEY CONCEPTS (0-12) ============
+       
+       if(m_params.UseSMC)
+       {
+           // 8. Enhanced Order Blocks - up to 2.5 points (upgraded from 1.5)
+           score += m_smcOrderBlocks.GetConfluenceScore(direction);
+           
+           // 9. Enhanced Fair Value Gaps - up to 1.5 points (upgraded from 1.0)
+           score += m_smcFVG.GetConfluenceScore(direction);
+           
+           // 10. Liquidity Sweep - up to 1.5 points
+           score += m_smcLiquidity.GetConfluenceScore(direction);
+           
+           // 11. Market Structure Shift (MSS/ChoCh) - up to 2.0 points [NEW]
+           score += m_smcMSS.GetConfluenceScore(direction);
+           
+           // 12. Inducement (Liquidity Grabs) - up to 1.5 points [NEW]
+           score += m_smcInducement.GetConfluenceScore(direction);
+           
+           // 13. Premium/Discount Zone - up to 1.0 points [NEW]
+           score += m_smcPriceZone.GetConfluenceScore(direction);
+           
+           // 14. Structure Break (BOS) - up to 1.0 point [EXISTING]
+           score += m_smcStructure.GetConfluenceScore(direction);
+           
+           // 15. Session Liquidity - up to 0.5 points (placeholder for future)
+           // score += m_smcSessionLiq.GetConfluenceScore(direction);
+       }
+
+       // ============ FIBONACCI CONFLUENCE (0-3) ============
+       
+       // 16. Advanced Fibonacci (Clusters + OTE) - up to 3.0 points [NEW]
+       score += m_fibAdvanced.GetConfluenceScore(direction);
+
+       // ============ MULTI-TIMEFRAME (0-3) ============
+       
+       if(m_params.UseMTF)
+       {
+           // 17. HTF Trend Alignment - up to 2.0 points
+           score += m_mtfAnalysis.GetConfluenceScore(direction);
+           
+           // 18. MTF Structure Confirmation - up to 1.0 point (implicit in MTF analysis)
+           // Included in above score
+       }
+
+       // ============ TIMING & CONTEXT (0-5) ============
+       
+       // 19. Killzone Timing - up to 1.0 points
        if(m_params.UseKillzoneFilter)
            score += m_killzoneOptimizer.GetConfluenceScore();
+       
+       // 20.Regime Multiplier - up to 2.0 points (context modifier)
+       double regimeBonus = 0;
+       if(m_currentRegime == REGIME_TREND)
+       {
+           // In trending market, boost trend-following factors
+           if((direction == 1 && emaSlope > 0) || (direction == -1 && emaSlope < 0))
+               regimeBonus = 2.0;
+       }
+       else if(m_currentRegime == REGIME_RANGE)
+       {
+           // In ranging market, boost mean-reversion
+           if((direction == 1 && m_g_RSI <= m_params.RSI_Oversold) ||
+              (direction == -1 && m_g_RSI >= m_params.RSI_Overbought))
+               regimeBonus = 1.5;
+       }
+       score += regimeBonus;
+       
+       // 21. Volume Profile - up to 1.0 point (placeholder)
+       // Future enhancement
+       
+       // 22. News Buffer Zone - up to 1.0 point
+       if(m_params.UseNewsFilter && m_newsFilter.IsTradingAllowed())
+           score += 1.0;  // Clear of news
 
-       return score;  // Max possible: ~12 points
+       // ============ CONTEXT MULTIPLIERS ============
+       // Apply regime-based weighting
+       if(m_currentRegime == REGIME_VOLATILE)
+       {
+           score *= 0.8;  // Reduce in volatile conditions (need higher confirmation)
+       }
+
+       // Final score (capped at 30)
+       return MathMin(score, 30.0);
    }
 
    //+------------------------------------------------------------------+
@@ -1022,7 +1388,7 @@ private:
 
        if(score < 3)
        {
-           Print("🚫 REVERSAL FILTER: ", m_symbol, " ", (direction == 1 ? "BUY" : "SELL"),
+           Print("ðŸš« REVERSAL FILTER: ", m_symbol, " ", (direction == 1 ? "BUY" : "SELL"),
                  " | Score: ", score, "/4 | EMAs: ", DoubleToString(m_g_EMA50, 5), "/", DoubleToString(m_g_EMA100, 5));
            return false;
        }
@@ -1046,7 +1412,7 @@ private:
            if(minutesSince < m_params.ReversalCooldownMinutes)
            {
                int remaining = m_params.ReversalCooldownMinutes - minutesSince;
-               Print("⏸️ COOLDOWN: ", m_symbol, " ", (direction == 1 ? "BUY" : "SELL"),
+               Print("â¸ï¸ COOLDOWN: ", m_symbol, " ", (direction == 1 ? "BUY" : "SELL"),
                      " | ", remaining, " min remaining");
                return false;
            }
@@ -1098,7 +1464,7 @@ private:
        // Additional safety limit
        if(lots > m_params.MaxLotsPerTrade)
        {
-           Print("⚠️ Lots capped: ", DoubleToString(lots, 3), " → ", DoubleToString(m_params.MaxLotsPerTrade, 2));
+           Print("âš ï¸ Lots capped: ", DoubleToString(lots, 3), " â†’ ", DoubleToString(m_params.MaxLotsPerTrade, 2));
            lots = m_params.MaxLotsPerTrade;
        }
 
@@ -1150,15 +1516,22 @@ private:
                tpR = m_params.FixedTP_R;
            }
 
-           // Quality adjustments
-           if(quality == TIER_ELITE) tpR *= 1.2;
-           else if(quality == TIER_STRONG) tpR *= 1.1;
-           else if(quality == TIER_WEAK) tpR *= 0.8;
+           // Quality adjustments (NON-COMPOUNDING)
+           double qualityMult = 1.0;
+           if(quality == TIER_ELITE) qualityMult = 1.2;
+           else if(quality == TIER_STRONG) qualityMult = 1.1;
+           else if(quality == TIER_WEAK) qualityMult = 0.8;
 
-           // Regime adjustments
-           if(m_currentRegime == REGIME_TREND) tpR *= 1.3;
-           else if(m_currentRegime == REGIME_RANGE) tpR *= 0.85;
-           else if(m_currentRegime == REGIME_VOLATILE) tpR *= 1.1;
+           // Regime adjustments (NON-COMPOUNDING)
+           double regimeMult = 1.0;
+           if(m_currentRegime == REGIME_TREND) regimeMult = 1.3;
+           else if(m_currentRegime == REGIME_RANGE) regimeMult = 0.85;
+           else if(m_currentRegime == REGIME_VOLATILE) regimeMult = 1.1;
+
+           // Use MAX of multipliers (don't compound)
+           // Prevents unrealistic targets like Elite+Trend = 1.56x
+           double appliedMult = MathMax(qualityMult, regimeMult);
+           tpR = m_params.FixedTP_R * appliedMult;
        }
 
        // CRITICAL: Ensure minimum TP ratio
@@ -1191,7 +1564,7 @@ private:
        // FINAL VALIDATION: Ensure TP is different from entry
        if(MathAbs(finalTp - price) < m_symbolInfo.Point() * 10)
        {
-           Print("⚠️ TP TOO CLOSE TO ENTRY! Setting to 2R | Price: ", price, " | BadTP: ", finalTp);
+           Print("âš ï¸ TP TOO CLOSE TO ENTRY! Setting to 2R | Price: ", price, " | BadTP: ", finalTp);
            finalTp = (direction == 1) ? price + (slDist * 2.0) : price - (slDist * 2.0);
            finalTp = NormalizeDouble(finalTp, (int)m_symbolInfo.Digits());
        }
@@ -1239,10 +1612,14 @@ private:
    {
        double price = (type == ORDER_TYPE_BUY) ? m_symbolInfo.Ask() : m_symbolInfo.Bid();
 
-       // Adaptive SL based on quality
-       double slDist = m_g_ATR * 1.2;  // Default
-       if(quality == TIER_ELITE) slDist = m_g_ATR * 2.2;
-       else if(quality == TIER_STRONG) slDist = m_g_ATR * 1.8;
+       // Adaptive SL based on quality (INSTITUTIONAL LOGIC)
+       // Elite = tighter stop (precision entry) = better R:R
+       // Weak = wider stop (uncertainty) = worse R:R
+       double slDist = m_g_ATR * 1.5;  // Default for GOOD quality
+
+       if(quality == TIER_ELITE) slDist = m_g_ATR * 1.0;       // ✅ TIGHT (high precision)
+       else if(quality == TIER_STRONG) slDist = m_g_ATR * 1.3; // ✅ MODERATE
+       else slDist = m_g_ATR * 1.8;  // ✅ WIDE (uncertainty buffer)
 
        double stopsLevel = SymbolInfoInteger(m_symbol, SYMBOL_TRADE_STOPS_LEVEL) * m_symbolInfo.Point();
        if(slDist < stopsLevel + 10 * m_symbolInfo.Point())
@@ -1295,7 +1672,7 @@ private:
 
            // Log trade
            Print("===========================================");
-           Print("✅ TRADE OPENED: ", m_symbol);
+           Print("âœ… TRADE OPENED: ", m_symbol);
            Print("  Ticket: #", ticket);
            Print("  Type: ", EnumToString(type));
            Print("  Price: ", DoubleToString(price, (int)m_symbolInfo.Digits()));
@@ -1356,12 +1733,12 @@ private:
                    {
                        m_consecutiveLosses++;
                        m_lastLossTime = TimeCurrent();
-                       Print("📉 LOSS: ", m_symbol, " | ", DoubleToString(profitR, 2), "R | Streak: ", m_consecutiveLosses);
+                       Print("ðŸ“‰ LOSS: ", m_symbol, " | ", DoubleToString(profitR, 2), "R | Streak: ", m_consecutiveLosses);
                    }
                    else
                    {
                        if(m_consecutiveLosses > 0)
-                           Print("✅ WIN breaks losing streak of ", m_consecutiveLosses);
+                           Print("âœ… WIN breaks losing streak of ", m_consecutiveLosses);
                        m_consecutiveLosses = 0;  // Reset on win
                    }
 
@@ -1456,7 +1833,7 @@ private:
                        m_states[sIdx].partialClosed = true;
                        if(m_params.EnableLearning)
                            m_learning.SetPartialClosed(ticket, true);
-                       Print("💰 PARTIAL TP: ", m_symbol, " | ", closeVol, " lots @ ", DoubleToString(profitR, 2), "R");
+                       Print("ðŸ’° PARTIAL TP: ", m_symbol, " | ", closeVol, " lots @ ", DoubleToString(profitR, 2), "R");
                    }
                }
            }
@@ -1468,16 +1845,19 @@ private:
                if(better)
                {
                    if(m_trade.PositionModify(ticket, open, tp))
-                       Print("🔒 BREAK-EVEN: ", m_symbol, " @ ", DoubleToString(profitR, 2), "R");
+                       Print("ðŸ”’ BREAK-EVEN: ", m_symbol, " @ ", DoubleToString(profitR, 2), "R");
                }
            }
 
-           // 3. Trailing Stop
+           // 3. Trailing Stop (INSTITUTIONAL LOGIC)
+           // Elite = tight trail (lock profits fast)
+           // Weak = wide trail (give room to develop)
            if(profitR >= trailStart)
            {
-               double mult = m_params.TrailATR_Mult;
-               if(quality == TIER_WEAK) mult *= 0.7;
-               if(quality == TIER_ELITE) mult *= 1.5;
+               double mult = m_params.TrailATR_Mult;  // Default 1.5
+               if(quality == TIER_ELITE) mult *= 0.7;   // ✅ TIGHT trail (lock profits)
+               else if(quality == TIER_STRONG) mult *= 1.0; // ✅ STANDARD trail
+               else mult *= 1.3;  // ✅ WIDE trail (give room)
 
                double td = m_g_ATR * mult;
                double newSL = (pType == POSITION_TYPE_BUY) ? curr - td : curr + td;

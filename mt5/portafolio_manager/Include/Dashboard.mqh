@@ -95,6 +95,26 @@ private:
    CChartObjectLabel m_lblAvgWin;
    CChartObjectLabel m_lblAvgLoss;
 
+   // === CONFLUENCE BREAKDOWN PANEL ===
+   CChartObjectRectLabel m_bgConfluence;
+   CChartObjectLabel m_lblConfluenceTitle;
+   CChartObjectLabel m_lblConfCore;        // Core Technical (0-7)
+   CChartObjectLabel m_lblConfSMC;         // SMC (0-12)
+   CChartObjectLabel m_lblConfFib;         // Fibonacci (0-3)
+   CChartObjectLabel m_lblConfMTF;         // Multi-TF (0-3)
+   CChartObjectLabel m_lblConfTiming;      // Timing (0-5)
+   CChartObjectLabel m_lblConfTotal;       // Total /30
+   CChartObjectLabel m_lblConfQuality;     // Quality badge
+   
+   // === SMC INTEL PANEL ===
+   CChartObjectRectLabel m_bgSMCIntel;
+   CChartObjectLabel m_lblSMCTitle;
+   CChartObjectLabel m_lblSMC_MSS;         // Market Structure
+   CChartObjectLabel m_lblSMC_OB;          // Order Blocks
+   CChartObjectLabel m_lblSMC_FVG;         // Fair Value Gaps
+   CChartObjectLabel m_lblSMC_Inducement;  // Liquidity Grabs
+   CChartObjectLabel m_lblSMC_Zone;        // Premium/Discount
+   
    // === SYMBOL CONFLUENCE TABLE ===
    CChartObjectRectLabel m_bgSymbols;
    CChartObjectLabel m_lblSymbolsTitle;
@@ -124,7 +144,7 @@ public:
       bool   allowedToTrade; // Permission flag from ranking system
    };
 
-   CDashboard() : m_x(15), m_y(15), m_w(900), m_h(550)
+   CDashboard() : m_x(15), m_y(15), m_w(900), m_h(750)  // Increased height for new panels
    {
       m_initTime = TimeCurrent();
       m_flashState = 0;
@@ -227,10 +247,41 @@ public:
          CreateLabel(m_lblSymbols[i], "L_Sym"+IntegerToString(i), rightX+15, symY + (i*25),
                      "---         --    --     SCANNING", 9, CLR_TEXT_DIM);
       }
-
-      // 2. ACTIVE TRADES PANEL (Bottom Right)
+      
+      // 2. GOD LEVEL CONFLUENCE BREAKDOWN (Middle Right) - HORIZONTAL LAYOUT
       py += 275;
-      CreatePanel(m_bgTrades, "BG_Trades", rightX, py, 295, 265, CLR_PANEL, CLR_BORDER);
+      CreatePanel(m_bgConfluence, "BG_Conf", rightX, py, 600, 85, CLR_PANEL, CLR_BORDER);
+
+      // Row 1: Header with total score and quality tier
+      CreateLabel(m_lblConfluenceTitle, "L_ConfT", rightX+15, py+8, "⚡ CONFLUENCE:", 10, CLR_GOLD, true);
+      CreateLabel(m_lblConfTotal, "L_ConfTot", rightX+145, py+8, "0/30", 10, CLR_TEXT_MAIN, true);
+      CreateLabel(m_lblConfQuality, "L_ConfQual", rightX+195, py+8, "WEAK", 10, CLR_TEXT_DIM, true);
+
+      // Row 2: All categories horizontally (compact spacing)
+      int catY = py + 35;
+      CreateLabel(m_lblConfCore, "L_ConfCore", rightX+15, catY, "TECH 0/7", 9, CLR_TEXT_DIM);
+      CreateLabel(m_lblConfSMC, "L_ConfSMC", rightX+110, catY, "SMC 0/12", 9, CLR_TEXT_DIM);
+      CreateLabel(m_lblConfFib, "L_ConfFib", rightX+220, catY, "FIB 0/3", 9, CLR_TEXT_DIM);
+      CreateLabel(m_lblConfMTF, "L_ConfMTF", rightX+310, catY, "MTF 0/3", 9, CLR_TEXT_DIM);
+      CreateLabel(m_lblConfTiming, "L_ConfTim", rightX+400, catY, "TIME 0/5", 9, CLR_TEXT_DIM);
+
+      // Row 3: Visual indicators (bars will be added via text in UpdateConfluenceBreakdown)
+      // Note: Progress visualization will use text-based bars like "▓▓▓░░"
+
+      // 3. SMC INTEL PANEL (Below Confluence)
+      py += 95;  // Adjusted for new compact confluence panel (85px + 10px gap)
+      CreatePanel(m_bgSMCIntel, "BG_SMC", rightX, py, 600, 145, CLR_PANEL, CLR_BORDER);
+      CreateLabel(m_lblSMCTitle, "L_SMCT", rightX+15, py+8, "🎯 SMC INTEL", 10, CLR_CYAN, true);
+      
+      CreateLabel(m_lblSMC_MSS, "L_MSS", rightX+20, py+35, "MSS/ChoCh: ---", 9, CLR_TEXT_DIM);
+      CreateLabel(m_lblSMC_OB, "L_OB", rightX+20, py+55, "Order Block: ---", 9, CLR_TEXT_DIM);
+      CreateLabel(m_lblSMC_FVG, "L_FVG", rightX+20, py+75, "FVG: ---", 9, CLR_TEXT_DIM);
+      CreateLabel(m_lblSMC_Inducement, "L_Ind", rightX+20, py+95, "Inducement: ---", 9, CLR_TEXT_DIM);
+      CreateLabel(m_lblSMC_Zone, "L_Zone", rightX+20, py+115, "Zone: ---", 9, CLR_TEXT_DIM);
+
+      // 4. ACTIVE TRADES PANEL (Moved down)
+      py += 155;
+      CreatePanel(m_bgTrades, "BG_Trades", rightX, py, 295, 200, CLR_PANEL, CLR_BORDER);
       CreateLabel(m_lblTradesTitle, "L_TrdT", rightX+15, py+8, "> ACTIVE POSITIONS", 11, CLR_GOLD, true);
 
       int rowY = py + 40;
@@ -501,7 +552,109 @@ public:
       ObjectsDeleteAll(ChartID(), "Bar_");
    }
 
+   //+------------------------------------------------------------------+
+   //| Update Confluence Breakdown - GOD LEVEL 30-Point System          |
+   //+------------------------------------------------------------------+
+   void UpdateConfluenceBreakdown(double coreScore, double smcScore, double fibScore,
+                                   double mtfScore, double timingScore, double totalScore,
+                                   string quality)
+   {
+      // Update individual category scores (COMPACT HORIZONTAL FORMAT)
+      m_lblConfCore.Description("TECH " + GenerateBar(coreScore, 7) + " " + DoubleToString(coreScore, 1) + "/7");
+      m_lblConfCore.Color(coreScore >= 5.0 ? CLR_GREEN : (coreScore >= 3.0 ? CLR_ORANGE : CLR_TEXT_DIM));
+
+      m_lblConfSMC.Description("SMC " + GenerateBar(smcScore, 12) + " " + DoubleToString(smcScore, 1) + "/12");
+      m_lblConfSMC.Color(smcScore >= 8.0 ? CLR_GREEN : (smcScore >= 5.0 ? CLR_ORANGE : CLR_TEXT_DIM));
+
+      m_lblConfFib.Description("FIB " + GenerateBar(fibScore, 3) + " " + DoubleToString(fibScore, 1) + "/3");
+      m_lblConfFib.Color(fibScore >= 2.0 ? CLR_GREEN : (fibScore >= 1.0 ? CLR_ORANGE : CLR_TEXT_DIM));
+
+      m_lblConfMTF.Description("MTF " + GenerateBar(mtfScore, 3) + " " + DoubleToString(mtfScore, 1) + "/3");
+      m_lblConfMTF.Color(mtfScore >= 2.0 ? CLR_GREEN : (mtfScore >= 1.0 ? CLR_ORANGE : CLR_TEXT_DIM));
+
+      m_lblConfTiming.Description("TIME " + GenerateBar(timingScore, 5) + " " + DoubleToString(timingScore, 1) + "/5");
+      m_lblConfTiming.Color(timingScore >= 3.0 ? CLR_GREEN : (timingScore >= 1.5 ? CLR_ORANGE : CLR_TEXT_DIM));
+
+      // Update total score
+      m_lblConfTotal.Description(DoubleToString(totalScore, 1) + "/30");
+
+      // Color based on total score
+      color scoreColor;
+      if(totalScore >= 18.0) scoreColor = CLR_GOLD;        // ELITE
+      else if(totalScore >= 14.0) scoreColor = CLR_GREEN;  // STRONG
+      else if(totalScore >= 10.0) scoreColor = CLR_CYAN;   // GOOD
+      else scoreColor = CLR_TEXT_DIM;                      // WEAK
+
+      m_lblConfTotal.Color(scoreColor);
+
+      // Update quality badge with tier indicator
+      string qualityDisplay = quality;
+      if(quality == "ELITE") qualityDisplay = "ELITE ⭐⭐⭐";
+      else if(quality == "STRONG") qualityDisplay = "STRONG ⭐⭐";
+      else if(quality == "GOOD") qualityDisplay = "GOOD ⭐";
+
+      m_lblConfQuality.Description(qualityDisplay);
+
+      color qualityColor;
+      if(quality == "ELITE") qualityColor = CLR_GOLD;
+      else if(quality == "STRONG") qualityColor = CLR_GREEN;
+      else if(quality == "GOOD") qualityColor = CLR_CYAN;
+      else qualityColor = CLR_TEXT_DIM;
+
+      m_lblConfQuality.Color(qualityColor);
+   }
+
+   //+------------------------------------------------------------------+
+   //| Update SMC Intel Panel                                           |
+   //+------------------------------------------------------------------+
+   void UpdateSMCIntel(string mssStatus, string obStatus, string fvgStatus,
+                        string inducementStatus, string zoneStatus)
+   {
+      // MSS/ChoCh
+      m_lblSMC_MSS.Description("MSS/ChoCh: " + mssStatus);
+      color mssColor = (StringFind(mssStatus, "CONFIRMED") >= 0) ? CLR_GREEN :
+                       (StringFind(mssStatus, "DETECTED") >= 0) ? CLR_ORANGE : CLR_TEXT_DIM;
+      m_lblSMC_MSS.Color(mssColor);
+      
+      // Order Blocks
+      m_lblSMC_OB.Description("Order Block: " + obStatus);
+      color obColor = (StringFind(obStatus, "ACTIVE") >= 0) ? CLR_GREEN :
+                      (StringFind(obStatus, "FRESH") >= 0) ? CLR_CYAN : CLR_TEXT_DIM;
+      m_lblSMC_OB.Color(obColor);
+      
+      // FVG
+      m_lblSMC_FVG.Description("FVG: " + fvgStatus);
+      color fvgColor = (StringFind(fvgStatus, "OPEN") >= 0) ? CLR_GREEN :
+                       (StringFind(fvgStatus, "PARTIAL") >= 0) ? CLR_ORANGE : CLR_TEXT_DIM;
+      m_lblSMC_FVG.Color(fvgColor);
+      
+      // Inducement
+      m_lblSMC_Inducement.Description("Inducement: " + inducementStatus);
+      color indColor = (StringFind(inducementStatus, "GRAB") >= 0) ? CLR_PURPLE :
+                       (StringFind(inducementStatus, "HUNT") >= 0) ? CLR_ORANGE : CLR_TEXT_DIM;
+      m_lblSMC_Inducement.Color(indColor);
+      
+      // Premium/Discount Zone
+      m_lblSMC_Zone.Description("Zone: " + zoneStatus);
+      color zoneColor = (StringFind(zoneStatus, "DISCOUNT") >= 0) ? CLR_GREEN :
+                        (StringFind(zoneStatus, "PREMIUM") >= 0) ? CLR_RED :
+                        (StringFind(zoneStatus, "EQUILIBRIUM") >= 0) ? CLR_ORANGE : CLR_TEXT_DIM;
+      m_lblSMC_Zone.Color(zoneColor);
+   }
+
 private:
+   //+------------------------------------------------------------------+
+   //| Helper: Generate Visual Progress Bar                             |
+   //+------------------------------------------------------------------+
+   string GenerateBar(double score, double maxScore)
+   {
+      int filled = (int)MathRound((score / maxScore) * 5);  // 5 blocks max
+      string bar = "";
+      for(int i=0; i<5; i++)
+         bar += (i < filled) ? "▓" : "░";
+      return bar;
+   }
+
    //+------------------------------------------------------------------+
    //| Helper: Create Panel                                             |
    //+------------------------------------------------------------------+

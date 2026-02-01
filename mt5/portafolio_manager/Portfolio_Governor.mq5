@@ -58,8 +58,8 @@ input string InpPositionNote = "1 = Best for M15 | 2-3 = Experienced only | M15 
 // --- ADAPTIVE CONFLUENCE RANKING ---
 input group "=== ADAPTIVE CONFLUENCE (Percentile Ranking) ==="
 input int    InpTopSymbolsToTrade = 1;   // Trade only top N ranked symbols per cycle (1=Best only, 2=Top 2)
-input double InpMinScoreFloor = 4.0;     // Safety floor - ignore signals below this (prevents garbage)
-input string InpRankingNote = "Percentile system: trades highest-ranked setups only - NO hardcoded thresholds"; // Info
+input double InpMinScoreFloor = 10.0;     // GOD LEVEL: Min 10/30 (33%) - ELITE≥18, STRONG≥14, GOOD≥10
+input string InpRankingNote = "GOD LEVEL 30-point confluence: Elite ≥18 | Strong ≥14 | Good ≥10"; // Info
 
 // --- STATE ---
 string g_activeSymbols[];
@@ -293,6 +293,15 @@ void OnTimer()
    // 2.6 ADAPTIVE CONFLUENCE RANKING (Percentile System)
    // Collect all scores, rank them, allow only top N to trade
    int totalEngines = ArraySize(g_engines);
+
+   // Step 0: Pre-calculate scores for ranking (CRITICAL - must happen before ranking)
+   for(int i=0; i<totalEngines; i++)
+   {
+      if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
+      {
+         g_engines[i].UpdateScoresForRanking();
+      }
+   }
 
    // Step 1: Collect all scores
    struct SymbolRank {
