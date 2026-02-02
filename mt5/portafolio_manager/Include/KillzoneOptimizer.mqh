@@ -127,16 +127,16 @@ public:
       bool isDST = m_autoDST ? IsDST(TimeCurrent()) : false;
 
       // Get adjusted times based on DST
-      int asianStart = GetAdjustedKillzoneTime(KZ_ASIAN_START_EST, isDST);
-      int asianEnd = GetAdjustedKillzoneTime(KZ_ASIAN_END_EST, isDST);
-      int londonStart = GetAdjustedKillzoneTime(KZ_LONDON_START_EST, isDST);
-      int londonEnd = GetAdjustedKillzoneTime(KZ_LONDON_END_EST, isDST);
-      int nyStart = GetAdjustedKillzoneTime(KZ_NY_START_EST, isDST);
-      int nyEnd = GetAdjustedKillzoneTime(KZ_NY_END_EST, isDST);
-      int londonCloseStart = GetAdjustedKillzoneTime(KZ_LONDON_CLOSE_START_EST, isDST);
-      int londonCloseEnd = GetAdjustedKillzoneTime(KZ_LONDON_CLOSE_END_EST, isDST);
-      int nyIndicesStart = GetAdjustedKillzoneTime(KZ_NY_INDICES_START_EST, isDST);
-      int nyIndicesEnd = GetAdjustedKillzoneTime(KZ_NY_INDICES_END_EST, isDST);
+      int asianStart = GetAdjustedKillzoneTime(KZ_ASIAN_START_SRV, isDST);
+      int asianEnd = GetAdjustedKillzoneTime(KZ_ASIAN_END_SRV, isDST);
+      int londonStart = GetAdjustedKillzoneTime(KZ_LONDON_START_SRV, isDST);
+      int londonEnd = GetAdjustedKillzoneTime(KZ_LONDON_END_SRV, isDST);
+      int nyStart = GetAdjustedKillzoneTime(KZ_NY_START_SRV, isDST);
+      int nyEnd = GetAdjustedKillzoneTime(KZ_NY_END_SRV, isDST);
+      int londonCloseStart = GetAdjustedKillzoneTime(KZ_LONDON_CLOSE_START_SRV, isDST);
+      int londonCloseEnd = GetAdjustedKillzoneTime(KZ_LONDON_CLOSE_END_SRV, isDST);
+      int nyIndicesStart = GetAdjustedKillzoneTime(KZ_NY_INDICES_START_SRV, isDST);
+      int nyIndicesEnd = GetAdjustedKillzoneTime(KZ_NY_INDICES_END_SRV, isDST);
 
       // Check for overlaps first (highest priority)
       bool inLondon = IsInTimeRange(utcHour, utcMinute, londonStart, 0, londonEnd, 0);
@@ -231,8 +231,8 @@ public:
       bool isDST = m_autoDST ? IsDST(TimeCurrent()) : false;
 
       // Get adjusted overlap times
-      int overlapStart = GetAdjustedKillzoneTime(KZ_LONDON_NY_OVERLAP_START_EST, isDST);
-      int overlapEnd = GetAdjustedKillzoneTime(KZ_LONDON_NY_OVERLAP_END_EST, isDST);
+      int overlapStart = GetAdjustedKillzoneTime(KZ_LONDON_NY_OVERLAP_START_SRV, isDST);
+      int overlapEnd = GetAdjustedKillzoneTime(KZ_LONDON_NY_OVERLAP_END_SRV, isDST);
 
       // Check if in prime overlap
       bool inPrimeOverlap = (utcHour >= overlapStart && utcHour < overlapEnd);
@@ -309,8 +309,8 @@ public:
       bool isDST = m_autoDST ? IsDST(TimeCurrent()) : false;
 
       // First 30 minutes of major killzone - slightly reduced (wait for direction)
-      int londonStart = GetAdjustedKillzoneTime(KZ_LONDON_START_EST, isDST);
-      int nyStart = GetAdjustedKillzoneTime(KZ_NY_START_EST, isDST);
+      int londonStart = GetAdjustedKillzoneTime(KZ_LONDON_START_SRV, isDST);
+      int nyStart = GetAdjustedKillzoneTime(KZ_NY_START_SRV, isDST);
 
       if(utcHour == londonStart || utcHour == nyStart)
       {
@@ -319,8 +319,8 @@ public:
       }
 
       // Peak overlap hours - boost
-      int overlapStart = GetAdjustedKillzoneTime(KZ_LONDON_NY_OVERLAP_START_EST, isDST);
-      int overlapEnd = GetAdjustedKillzoneTime(KZ_LONDON_NY_OVERLAP_END_EST, isDST);
+      int overlapStart = GetAdjustedKillzoneTime(KZ_LONDON_NY_OVERLAP_START_SRV, isDST);
+      int overlapEnd = GetAdjustedKillzoneTime(KZ_LONDON_NY_OVERLAP_END_SRV, isDST);
 
       if(utcHour >= overlapStart && utcHour < overlapEnd)
       {
@@ -397,9 +397,9 @@ public:
       bool isDST = m_autoDST ? IsDST(TimeCurrent()) : false;
 
       // Get adjusted killzone start times
-      int londonStart = GetAdjustedKillzoneTime(KZ_LONDON_START_EST, isDST) * 60;
-      int nyStart = GetAdjustedKillzoneTime(KZ_NY_START_EST, isDST) * 60;
-      int asianStart = GetAdjustedKillzoneTime(KZ_ASIAN_START_EST, isDST) * 60;
+      int londonStart = GetAdjustedKillzoneTime(KZ_LONDON_START_SRV, isDST) * 60;
+      int nyStart = GetAdjustedKillzoneTime(KZ_NY_START_SRV, isDST) * 60;
+      int asianStart = GetAdjustedKillzoneTime(KZ_ASIAN_START_SRV, isDST) * 60;
 
       // Find next killzone start
       int killzoneStarts[] = {asianStart, londonStart, nyStart};

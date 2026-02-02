@@ -35,95 +35,119 @@ enum ENUM_KILLZONE_QUALITY
 };
 
 //+------------------------------------------------------------------+
-//| KILLZONE TIME CONSTANTS (EST BASELINE)                           |
-//| Note: These are adjusted -1 hour during EDT (March-November)     |
+//| KILLZONE TIME CONSTANTS (GMT+2 BASELINE - FundingPips Server)   |
+//| Note: These are adjusted +1 hour during DST (March-November)     |
+//| Server: FundingPips (fundingpips2-sim) - GMT+2 Winter / GMT+3 DST|
 //+------------------------------------------------------------------+
 
 // Asian Killzone (Tokyo/Hong Kong/Singapore)
-const int KZ_ASIAN_START_EST = 0;      // 00:00 UTC (EST) / 23:00 UTC (EDT)
-const int KZ_ASIAN_END_EST = 3;        // 03:00 UTC (EST) / 02:00 UTC (EDT)
+// Real time: 01:00-05:00 UTC → 03:00-07:00 GMT+2 / 04:00-08:00 GMT+3
+const int KZ_ASIAN_START_SRV = 3;      // 03:00 GMT+2 / 04:00 GMT+3
+const int KZ_ASIAN_END_SRV = 7;        // 07:00 GMT+2 / 08:00 GMT+3
 
 // London Open Killzone (Frankfurt/London open)
-const int KZ_LONDON_START_EST = 7;     // 07:00 UTC (EST) / 06:00 UTC (EDT)
-const int KZ_LONDON_END_EST = 10;      // 10:00 UTC (EST) / 09:00 UTC (EDT)
+// Real time: 07:00-10:00 UTC → 09:00-12:00 GMT+2 / 10:00-13:00 GMT+3
+const int KZ_LONDON_START_SRV = 9;     // 09:00 GMT+2 / 10:00 GMT+3
+const int KZ_LONDON_END_SRV = 12;      // 12:00 GMT+2 / 13:00 GMT+3
 
-// New York Killzone - Forex (NY open)
-const int KZ_NY_START_EST = 12;        // 12:00 UTC (EST) / 11:00 UTC (EDT)
-const int KZ_NY_END_EST = 15;          // 15:00 UTC (EST) / 14:00 UTC (EDT)
+// New York Killzone - Forex (US macro data + futures activity)
+// Real time: 13:30-16:00 UTC → 15:30-18:00 GMT+2 / 16:30-19:00 GMT+3
+const int KZ_NY_START_SRV = 15;        // 15:00 GMT+2 / 16:00 GMT+3 - hour component
+const int KZ_NY_START_MINUTE = 30;     // 30 minutes past the hour (15:30)
+const int KZ_NY_END_SRV = 18;          // 18:00 GMT+2 / 19:00 GMT+3
 
 // London Close Killzone (London close/Fix)
-const int KZ_LONDON_CLOSE_START_EST = 16;  // 16:00 UTC (EST) / 15:00 UTC (EDT)
-const int KZ_LONDON_CLOSE_END_EST = 19;    // 19:00 UTC (EST) / 18:00 UTC (EDT)
+// Real time: 15:00-17:00 UTC → 17:00-19:00 GMT+2 / 18:00-20:00 GMT+3
+const int KZ_LONDON_CLOSE_START_SRV = 17;  // 17:00 GMT+2 / 18:00 GMT+3
+const int KZ_LONDON_CLOSE_END_SRV = 19;    // 19:00 GMT+2 / 20:00 GMT+3
 
 // New York Killzone - Indices (US Market open at 9:30 AM EST)
-const int KZ_NY_INDICES_START_EST = 13;    // 13:00 UTC (EST) - hour component
-const int KZ_NY_INDICES_START_MINUTE = 30; // 30 minutes past the hour
-const int KZ_NY_INDICES_END_EST = 16;      // 16:00 UTC (EST) / 15:00 UTC (EDT)
+// Real time: 13:30-16:00 UTC → 15:30-18:00 GMT+2 / 16:30-19:00 GMT+3
+const int KZ_NY_INDICES_START_SRV = 15;    // 15:00 GMT+2 - hour component
+const int KZ_NY_INDICES_START_MINUTE = 30; // 30 minutes past the hour (15:30)
+const int KZ_NY_INDICES_END_SRV = 18;      // 18:00 GMT+2 / 19:00 GMT+3
 
-// DST Offset
-const int DST_OFFSET = 1;              // Subtract 1 hour during EDT
+// DST Offset (for GMT+2/GMT+3 servers)
+const int DST_OFFSET = 1;              // Add +1 hour during DST (GMT+2→GMT+3)
 
 //+------------------------------------------------------------------+
 //| KILLZONE OVERLAP DETECTION                                        |
 //+------------------------------------------------------------------+
-// Prime overlaps for highest quality trades
-const int KZ_LONDON_NY_OVERLAP_START_EST = 12;  // 12:00 UTC (London+NY)
-const int KZ_LONDON_NY_OVERLAP_END_EST = 16;    // 16:00 UTC
-const int KZ_ASIAN_LONDON_OVERLAP_START_EST = 7; // 07:00 UTC (Asian+London)
-const int KZ_ASIAN_LONDON_OVERLAP_END_EST = 9;   // 09:00 UTC
+// Prime overlaps for highest quality trades (GMT+2 server times)
+const int KZ_LONDON_NY_OVERLAP_START_SRV = 15;  // 15:30 GMT+2 (London+NY overlap)
+const int KZ_LONDON_NY_OVERLAP_END_SRV = 18;    // 18:00 GMT+2
+const int KZ_ASIAN_LONDON_OVERLAP_START_SRV = 9; // 09:00 GMT+2 (Asian+London)
+const int KZ_ASIAN_LONDON_OVERLAP_END_SRV = 11;  // 11:00 GMT+2
 
 //+------------------------------------------------------------------+
 //| DST DETECTION HELPER                                              |
-//| US DST: 2nd Sunday in March to 1st Sunday in November            |
+//| European DST: Last Sunday in March (01:00) to Last Sunday in Oct |
 //+------------------------------------------------------------------+
-int GetNthDayOfWeekInMonth(int year, int month, int dayOfWeek, int nth)
+
+//+------------------------------------------------------------------+
+//| Get last Sunday of a given month                                 |
+//+------------------------------------------------------------------+
+int GetLastSundayOfMonth(int year, int month)
 {
-   // Find the nth occurrence of dayOfWeek in the given month
-   // dayOfWeek: 0=Sunday, 1=Monday, etc.
-   datetime firstDay = StringToTime(IntegerToString(year) + "." +
-                                     IntegerToString(month) + ".01 00:00");
-   MqlDateTime dt;
-   TimeToStruct(firstDay, dt);
-
-   int firstWeekday = dt.day_of_week;
-   int daysToAdd = (dayOfWeek - firstWeekday + 7) % 7;
-   int targetDay = 1 + daysToAdd + (nth - 1) * 7;
-
-   return targetDay;
+   // Start from the last day of the month and work backwards
+   int daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+   
+   // Adjust February for leap year
+   if(month == 2 && ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)))
+      daysInMonth[1] = 29;
+   
+   int lastDay = daysInMonth[month - 1];
+   
+   // Find last Sunday by checking backwards from last day
+   for(int day = lastDay; day >= 1; day--)
+   {
+      datetime testDate = StringToTime(IntegerToString(year) + "." +
+                                       IntegerToString(month) + "." +
+                                       IntegerToString(day) + " 00:00");
+      MqlDateTime dt;
+      TimeToStruct(testDate, dt);
+      
+      if(dt.day_of_week == 0)  // Sunday
+         return day;
+   }
+   
+   return lastDay;  // Fallback (should never happen)
 }
 
 //+------------------------------------------------------------------+
-//| Check if currently in DST (Daylight Saving Time)                 |
+//| Check if currently in DST (European rules)                       |
+//| DST Start: Last Sunday of March at 01:00 UTC                     |
+//| DST End:   Last Sunday of October at 01:00 UTC                   |
 //+------------------------------------------------------------------+
 bool IsDST(datetime time)
 {
    MqlDateTime dt;
    TimeToStruct(time, dt);
 
-   // No DST in January, February, December
-   if(dt.mon < 3 || dt.mon > 11) return false;
+   // No DST in January, February, November, December
+   if(dt.mon < 3 || dt.mon > 10) return false;
 
-   // DST active in April through October
-   if(dt.mon > 3 && dt.mon < 11) return true;
+   // DST definitely active in April through September
+   if(dt.mon > 3 && dt.mon < 10) return true;
 
-   // March: DST starts 2nd Sunday at 2:00 AM
+   // March: DST starts last Sunday at 01:00 UTC
    if(dt.mon == 3)
    {
-      int secondSunday = GetNthDayOfWeekInMonth(dt.year, 3, 0, 2);
-      if(dt.day > secondSunday) return true;
-      if(dt.day < secondSunday) return false;
-      // On the 2nd Sunday, DST starts at 2:00 AM
-      return (dt.hour >= 2);
+      int lastSunday = GetLastSundayOfMonth(dt.year, 3);
+      if(dt.day > lastSunday) return true;
+      if(dt.day < lastSunday) return false;
+      // On the last Sunday, DST starts at 01:00 UTC
+      return (dt.hour >= 1);
    }
 
-   // November: DST ends 1st Sunday at 2:00 AM
-   if(dt.mon == 11)
+   // October: DST ends last Sunday at 01:00 UTC
+   if(dt.mon == 10)
    {
-      int firstSunday = GetNthDayOfWeekInMonth(dt.year, 11, 0, 1);
-      if(dt.day > firstSunday) return false;
-      if(dt.day < firstSunday) return true;
-      // On the 1st Sunday, DST ends at 2:00 AM
-      return (dt.hour < 2);
+      int lastSunday = GetLastSundayOfMonth(dt.year, 10);
+      if(dt.day > lastSunday) return false;
+      if(dt.day < lastSunday) return true;
+      // On the last Sunday, DST ends at 01:00 UTC
+      return (dt.hour < 1);
    }
 
    return false;
@@ -132,11 +156,11 @@ bool IsDST(datetime time)
 //+------------------------------------------------------------------+
 //| Get DST-adjusted killzone time                                    |
 //+------------------------------------------------------------------+
-int GetAdjustedKillzoneTime(int estTime, bool isDST)
+int GetAdjustedKillzoneTime(int gmt2Time, bool isDST)
 {
    if(isDST)
-      return (estTime - DST_OFFSET + 24) % 24;  // Shift 1 hour earlier during EDT
-   return estTime;
+      return (gmt2Time + DST_OFFSET) % 24;  // Add 1 hour during DST (GMT+2→GMT+3)
+   return gmt2Time;
 }
 
 //+------------------------------------------------------------------+
