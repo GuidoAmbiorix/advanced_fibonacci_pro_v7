@@ -53,6 +53,7 @@ input double InpMaxDailyLoss = 5.0;
 // --- POSITION MANAGEMENT ---
 input group "=== POSITION LIMITS (ICT SNIPER MODE - M15) ==="
 input int    InpMaxGlobalPositions = 1;  // Max positions across ALL pairs (1=Sniper, 2-3=Balanced)
+input bool   InpCountOnlyGovernorPositions = true;  // Count only Governor trades (ignore manual/other EAs)
 input string InpPositionNote = "1 = Best for M15 | 2-3 = Experienced only | M15 = ICT sweet spot"; // Info
 
 // --- ADAPTIVE CONFLUENCE RANKING ---
@@ -82,6 +83,7 @@ double   g_totalLossAmount = 0;         // Sum of all losing trades (absolute)
 double   g_totalProfitGross = 0;        // Gross profit
 double   g_totalLossGross = 0;          // Gross loss (absolute)
 datetime g_lastHeartbeat = 0;           // Last heartbeat log (10min periodic)
+datetime g_lastDealProcessTime = 0;     // Last processed deal time (persistent tracking)
 
 //+------------------------------------------------------------------+
 //| INIT                                                              |
@@ -130,22 +132,24 @@ int OnInit()
       g_totalLossGross = 0;
       Print("📊 BACKTEST MODE: Reset all performance stats");
    }
-   else
-   {
-      // Live: Load from global variables if they exist
-      if(GlobalVariableCheck("GOV_TotalWins"))
-         g_totalWins = (int)GlobalVariableGet("GOV_TotalWins");
-      if(GlobalVariableCheck("GOV_TotalLosses"))
-         g_totalLosses = (int)GlobalVariableGet("GOV_TotalLosses");
-      if(GlobalVariableCheck("GOV_TotalWinAmount"))
-         g_totalWinAmount = GlobalVariableGet("GOV_TotalWinAmount");
-      if(GlobalVariableCheck("GOV_TotalLossAmount"))
-         g_totalLossAmount = GlobalVariableGet("GOV_TotalLossAmount");
-      if(GlobalVariableCheck("GOV_TotalProfitGross"))
-         g_totalProfitGross = GlobalVariableGet("GOV_TotalProfitGross");
-      if(GlobalVariableCheck("GOV_TotalLossGross"))
-         g_totalLossGross = GlobalVariableGet("GOV_TotalLossGross");
-   }
+    else
+    {
+       // Live: Load from global variables if they exist
+       if(GlobalVariableCheck("GOV_TotalWins"))
+          g_totalWins = (int)GlobalVariableGet("GOV_TotalWins");
+       if(GlobalVariableCheck("GOV_TotalLosses"))
+          g_totalLosses = (int)GlobalVariableGet("GOV_TotalLosses");
+       if(GlobalVariableCheck("GOV_TotalWinAmount"))
+          g_totalWinAmount = GlobalVariableGet("GOV_TotalWinAmount");
+       if(GlobalVariableCheck("GOV_TotalLossAmount"))
+          g_totalLossAmount = GlobalVariableGet("GOV_TotalLossAmount");
+       if(GlobalVariableCheck("GOV_TotalProfitGross"))
+          g_totalProfitGross = GlobalVariableGet("GOV_TotalProfitGross");
+       if(GlobalVariableCheck("GOV_TotalLossGross"))
+          g_totalLossGross = GlobalVariableGet("GOV_TotalLossGross");
+       if(GlobalVariableCheck("GOV_LastDealTime"))
+          g_lastDealProcessTime = (datetime)GlobalVariableGet("GOV_LastDealTime");
+    }
 
    GlobalVariableSet(GV_GOVERNOR_ACTIVE, 1);
    EventSetTimer(1);
@@ -198,64 +202,75 @@ void OnTick()
 
 //+------------------------------------------------------------------+
 //| TRADE EVENT HANDLER (Performance Tracking)                        |
+//| FIX: Persistent deal tracking to prevent double counting          |
 //+------------------------------------------------------------------+
 void OnTrade()
 {
-   // Track closed positions for statistics
-   if(HistorySelect(0, TimeCurrent()))
+   // Select only NEW deals since last checkpoint (incremental selection)
+   if(!HistorySelect(g_lastDealProcessTime, TimeCurrent()))
+      return;
+   
+   int totalDeals = HistoryDealsTotal();
+   if(totalDeals == 0) return;
+   
+   datetime latestDealTime = g_lastDealProcessTime;
+   
+   // Process ALL new deals (not just last 10)
+   for(int i = 0; i < totalDeals; i++)
    {
-      int totalDeals = HistoryDealsTotal();
-
-      for(int i = totalDeals - 1; i >= MathMax(0, totalDeals - 10); i--)
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket == 0) continue;
+      
+      // Only count OUT deals (position closures)
+      if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT)
+         continue;
+      
+      // MAGIC FILTER: Only count our Governor trades (magic 1000-1999)
+      long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
+      if(magic < 1000 || magic >= 2000)
+         continue;
+      
+      // Calculate net profit
+      double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+      double commission = HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+      double swap = HistoryDealGetDouble(ticket, DEAL_SWAP);
+      double netProfit = profit + commission + swap;
+      
+      // Track latest deal time for checkpoint
+      datetime dealTime = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
+      if(dealTime > latestDealTime)
+         latestDealTime = dealTime;
+      
+      // Update statistics
+      if(netProfit > 0)
       {
-         ulong ticket = HistoryDealGetTicket(i);
-         if(ticket == 0) continue;
-
-         // Only count OUT deals (position closures)
-         if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT)
-            continue;
-
-         double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
-         double commission = HistoryDealGetDouble(ticket, DEAL_COMMISSION);
-         double swap = HistoryDealGetDouble(ticket, DEAL_SWAP);
-         double netProfit = profit + commission + swap;
-
-         // Check if this deal was already counted (simple cache)
-         static ulong lastProcessedTicket = 0;
-         if(ticket == lastProcessedTicket) break;
-         lastProcessedTicket = ticket;
-
-         // Update statistics
-         if(netProfit > 0)
-         {
-            g_totalWins++;
-            g_totalWinAmount += netProfit;
-            g_totalProfitGross += netProfit;
-
-            // Only save to globals in live mode
-            if(!MQLInfoInteger(MQL_TESTER))
-            {
-               GlobalVariableSet("GOV_TotalWins", g_totalWins);
-               GlobalVariableSet("GOV_TotalWinAmount", g_totalWinAmount);
-               GlobalVariableSet("GOV_TotalProfitGross", g_totalProfitGross);
-            }
-         }
-         else if(netProfit < 0)
-         {
-            g_totalLosses++;
-            g_totalLossAmount += MathAbs(netProfit);
-            g_totalLossGross += MathAbs(netProfit);
-
-            // Only save to globals in live mode
-            if(!MQLInfoInteger(MQL_TESTER))
-            {
-               GlobalVariableSet("GOV_TotalLosses", g_totalLosses);
-               GlobalVariableSet("GOV_TotalLossAmount", g_totalLossAmount);
-               GlobalVariableSet("GOV_TotalLossGross", g_totalLossGross);
-            }
-         }
-
-         break; // Only process most recent unprocessed deal
+         g_totalWins++;
+         g_totalWinAmount += netProfit;
+         g_totalProfitGross += netProfit;
+      }
+      else if(netProfit < 0)
+      {
+         g_totalLosses++;
+         g_totalLossAmount += MathAbs(netProfit);
+         g_totalLossGross += MathAbs(netProfit);
+      }
+   }
+   
+   // Update checkpoint if any new deals were processed
+   if(latestDealTime > g_lastDealProcessTime)
+   {
+      g_lastDealProcessTime = latestDealTime;
+      
+      // Save checkpoint and totals to Global Variables (live mode only)
+      if(!MQLInfoInteger(MQL_TESTER))
+      {
+         GlobalVariableSet("GOV_LastDealTime", (double)g_lastDealProcessTime);
+         GlobalVariableSet("GOV_TotalWins", g_totalWins);
+         GlobalVariableSet("GOV_TotalLosses", g_totalLosses);
+         GlobalVariableSet("GOV_TotalWinAmount", g_totalWinAmount);
+         GlobalVariableSet("GOV_TotalLossAmount", g_totalLossAmount);
+         GlobalVariableSet("GOV_TotalProfitGross", g_totalProfitGross);
+         GlobalVariableSet("GOV_TotalLossGross", g_totalLossGross);
       }
    }
 }
@@ -528,6 +543,32 @@ void AddToArray(string &arr[], string value)
    int size = ArraySize(arr);
    ArrayResize(arr, size+1);
    arr[size] = value;
+}
+
+//+------------------------------------------------------------------+
+//| Get Global Position Count (with optional magic filtering)        |
+//| FIX: Prevents manual trades/other EAs from blocking Governor     |
+//+------------------------------------------------------------------+
+int GetGlobalPositionCount()
+{
+   if(!InpCountOnlyGovernorPositions)
+      return PositionsTotal();  // Original behavior: count all positions
+   
+   // Count only Governor trades (magic 1000-1999)
+   int count = 0;
+   for(int i = 0; i < PositionsTotal(); i++)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket == 0) continue;
+      
+      long magic = PositionGetInteger(POSITION_MAGIC);
+      
+      // Our Governor magic range
+      if(magic >= 1000 && magic < 2000)
+         count++;
+   }
+   
+   return count;
 }
 
 //+------------------------------------------------------------------+
@@ -857,6 +898,8 @@ void UpdateUniverse()
 
          // Configure Params
          SymbolEngineParams params = CSymbolEngineWrapper::GetDefaults();
+         // 🔥 APPLY SYMBOL-SPECIFIC RISK MAP
+ConfigureRiskForSymbol(sym, params);
          params.MagicNumber = 1000 + i;
          params.TradeComment = "GodMode_" + sym;
 
