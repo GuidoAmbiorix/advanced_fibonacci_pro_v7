@@ -523,12 +523,222 @@ void OnTimer()
 //+------------------------------------------------------------------+
 //| Helpers                                                           |
 //+------------------------------------------------------------------+
-// Helper to append to array
 void AddToArray(string &arr[], string value)
 {
    int size = ArraySize(arr);
    ArrayResize(arr, size+1);
    arr[size] = value;
+}
+
+//+------------------------------------------------------------------+
+//| Configure Symbol-Specific Risk Parameters                        |
+//| Uses tuned parameters from .set files instead of defaults        |
+//+------------------------------------------------------------------+
+void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
+{
+   string sym = symbol;
+   StringToUpper(sym);
+   
+   // Remove broker suffixes for matching
+   StringReplace(sym, ".PRO", "");
+   StringReplace(sym, ".M", "");
+   StringReplace(sym, "+", "");
+   StringReplace(sym, ".A", "");
+   StringReplace(sym, "_OPT", "");
+   
+   // ===== EURUSD - King of Forex =====
+   if(StringFind(sym, "EURUSD") >= 0)
+   {
+      // RISK (Conservative - from eurusd.set)
+      params.RiskBase = 0.20;
+      params.RiskAddOn1 = 0.15;
+      params.RiskAddOn2 = 0.10;
+      params.MaxRisk = 0.50;
+      params.MaxLotsPerTrade = 0.5;
+      
+      // KELLY
+      params.KellyFraction = 0.25;
+      params.DailyMaxDD = 2.0;
+      params.WeeklyMaxDD = 4.0;
+      
+      // TP/SL (Tight for EUR precision)
+      params.FixedTP_R = 2.0;
+      params.MinTP_R = 1.2;
+      params.MaxTP_R = 3.0;
+      params.PartialTP_R = 1.2;
+      params.TrailStart_R = 1.6;
+      
+      // SESSION LIMITS
+      params.MaxTradesPerSession = 3;
+      params.MaxProfitPerSession_R = 6.0;
+      params.MaxLossPerSession_R = 1.5;
+      params.DailyMaxLoss_R = 3.0;
+      params.TradeCooldownMinutes = 10;
+      params.LossCooldownMinutes = 45;
+   }
+   
+   // ===== XAUUSD - Gold =====
+   else if(StringFind(sym, "XAU") >= 0 || StringFind(sym, "GOLD") >= 0)
+   {
+      // RISK (Very Conservative - volatile)
+      params.RiskBase = 0.15;
+      params.RiskAddOn1 = 0.10;
+      params.RiskAddOn2 = 0.07;
+      params.MaxRisk = 0.45;
+      params.MaxLotsPerTrade = 0.5;
+      
+      // KELLY (Quarter Kelly for gold)
+      params.KellyFraction = 0.20;
+      params.DailyMaxDD = 1.5;
+      params.WeeklyMaxDD = 3.0;
+      
+      // TP/SL (Wider - gold trends)
+      params.FixedTP_R = 2.5;
+      params.MinTP_R = 1.5;
+      params.MaxTP_R = 5.0;
+      params.PartialTP_R = 1.5;
+      params.PartialClosePercent = 35.0;
+      params.TrailStart_R = 2.0;
+      params.TrailATR_Mult = 1.5;
+      
+      // SESSION LIMITS (Stricter for gold)
+      params.MaxTradesPerSession = 2;
+      params.MaxProfitPerSession_R = 6.0;
+      params.MaxLossPerSession_R = 2.0;
+      params.DailyMaxLoss_R = 2.5;
+      params.TradeCooldownMinutes = 15;
+      params.LossCooldownMinutes = 60;
+      
+      // NEWS (Gold very sensitive)
+      params.NewsMinutesBefore = 60;
+      params.NewsMinutesAfter = 60;
+   }
+   
+   // ===== GBPJPY - Volatile Cross =====
+   else if(StringFind(sym, "GBPJPY") >= 0)
+   {
+      // RISK (Moderate)
+      params.RiskBase = 0.18;
+      params.RiskAddOn1 = 0.12;
+      params.RiskAddOn2 = 0.08;
+      params.MaxRisk = 0.45;
+      params.MaxLotsPerTrade = 0.5;
+      
+      // KELLY
+      params.KellyFraction = 0.22;
+      params.DailyMaxDD = 1.8;
+      params.WeeklyMaxDD = 3.5;
+      
+      // TP/SL (Wider for volatility)
+      params.FixedTP_R = 2.2;
+      params.MinTP_R = 1.3;
+      params.MaxTP_R = 4.0;
+      params.PartialTP_R = 1.3;
+      params.TrailStart_R = 1.8;
+      
+      // SESSION LIMITS
+      params.MaxTradesPerSession = 2;
+      params.MaxProfitPerSession_R = 5.0;
+      params.MaxLossPerSession_R = 1.8;
+      params.DailyMaxLoss_R = 2.8;
+      params.TradeCooldownMinutes = 12;
+      params.LossCooldownMinutes = 50;
+   }
+   
+   // ===== USDCAD - Loonie =====
+   else if(StringFind(sym, "USDCAD") >= 0)
+   {
+      // RISK (Conservative)
+      params.RiskBase = 0.18;
+      params.RiskAddOn1 = 0.13;
+      params.RiskAddOn2 = 0.09;
+      params.MaxRisk = 0.48;
+      params.MaxLotsPerTrade = 0.5;
+      
+      // KELLY
+      params.KellyFraction = 0.23;
+      params.DailyMaxDD = 1.9;
+      params.WeeklyMaxDD = 3.8;
+      
+      // TP/SL (Standard)
+      params.FixedTP_R = 2.1;
+      params.MinTP_R = 1.2;
+      params.MaxTP_R = 3.5;
+      params.PartialTP_R = 1.2;
+      params.TrailStart_R = 1.7;
+      
+      // SESSION LIMITS
+      params.MaxTradesPerSession = 3;
+      params.MaxProfitPerSession_R = 5.5;
+      params.MaxLossPerSession_R = 1.6;
+      params.DailyMaxLoss_R = 2.9;
+      params.TradeCooldownMinutes = 11;
+      params.LossCooldownMinutes = 48;
+   }
+   
+   // ===== USDCHF - Swissy =====
+   else if(StringFind(sym, "USDCHF") >= 0)
+   {
+      // RISK (Conservative - stable pair)
+      params.RiskBase = 0.19;
+      params.RiskAddOn1 = 0.14;
+      params.RiskAddOn2 = 0.10;
+      params.MaxRisk = 0.49;
+      params.MaxLotsPerTrade = 0.5;
+      
+      // KELLY
+      params.KellyFraction = 0.24;
+      params.DailyMaxDD = 1.95;
+      params.WeeklyMaxDD = 3.9;
+      
+      // TP/SL (Tight - stable moves)
+      params.FixedTP_R = 2.0;
+      params.MinTP_R = 1.2;
+      params.MaxTP_R = 3.2;
+      params.PartialTP_R = 1.2;
+      params.TrailStart_R = 1.6;
+      
+      // SESSION LIMITS
+      params.MaxTradesPerSession = 3;
+      params.MaxProfitPerSession_R = 5.8;
+      params.MaxLossPerSession_R = 1.5;
+      params.DailyMaxLoss_R = 2.7;
+      params.TradeCooldownMinutes = 10;
+      params.LossCooldownMinutes = 45;
+   }
+   
+   // ===== AUDUSD - Aussie =====
+   else if(StringFind(sym, "AUDUSD") >= 0)
+   {
+      // RISK (Moderate)
+      params.RiskBase = 0.19;
+      params.RiskAddOn1 = 0.14;
+      params.RiskAddOn2 = 0.10;
+      params.MaxRisk = 0.48;
+      params.MaxLotsPerTrade = 0.5;
+      
+      // KELLY
+      params.KellyFraction = 0.24;
+      params.DailyMaxDD = 1.9;
+      params.WeeklyMaxDD = 3.8;
+      
+      // TP/SL (Standard)
+      params.FixedTP_R = 2.1;
+      params.MinTP_R = 1.2;
+      params.MaxTP_R = 3.3;
+      params.PartialTP_R = 1.2;
+      params.TrailStart_R = 1.6;
+      
+      // SESSION LIMITS
+      params.MaxTradesPerSession = 3;
+      params.MaxProfitPerSession_R = 5.6;
+      params.MaxLossPerSession_R = 1.6;
+      params.DailyMaxLoss_R = 2.8;
+      params.TradeCooldownMinutes = 10;
+      params.LossCooldownMinutes = 46;
+   }
+   
+   // If symbol not matched, defaults remain (already set by GetDefaults())
 }
 
 void UpdateUniverse()
