@@ -10,6 +10,7 @@
 #property link      "https://github.com/GuidoAmbiorix"
 #property strict
 
+#include "../PortfolioGlobals.mqh"
 #include "../Learning/PatternRecognizer.mqh"
 #include "../Learning/PerformanceAnalyzer.mqh"
 #include "../Memory/PatternMemory.mqh"
@@ -340,6 +341,165 @@ public:
       m_baseMinConfluence = minConfluence;
       m_strictMinConfluence = minConfluence + 1.0;
       m_relaxedMinConfluence = minConfluence - 1.0;
+   }
+
+   //+------------------------------------------------------------------+
+   //| PHASE 3.3 ENHANCEMENTS: ADAPTIVE INDICATORS                     |
+   //+------------------------------------------------------------------+
+
+   //+------------------------------------------------------------------+
+   //| Calculate Dominant Cycle using Autocorrelation                  |
+   //+------------------------------------------------------------------+
+   int CalculateDominantCycle(string symbol, ENUM_TIMEFRAMES timeframe, int maxPeriod = 50)
+   {
+      double prices[];
+      ArraySetAsSeries(prices, true);
+
+      int copied = CopyClose(symbol, timeframe, 0, maxPeriod * 2, prices);
+      if(copied < maxPeriod * 2) return 14; // Default fallback
+
+      double maxCorrelation = -1;
+      int dominantPeriod = 14;
+
+      // Test periods from 8 to maxPeriod
+      for(int period = 8; period <= maxPeriod; period++)
+      {
+         double correlation = CalculateAutocorrelation(prices, period);
+
+         if(correlation > maxCorrelation)
+         {
+            maxCorrelation = correlation;
+            dominantPeriod = period;
+         }
+      }
+
+      return dominantPeriod;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Calculate Autocorrelation for given lag                         |
+   //+------------------------------------------------------------------+
+   double CalculateAutocorrelation(double &data[], int lag)
+   {
+      int n = ArraySize(data) - lag;
+      if(n <= 0) return 0;
+
+      // Calculate mean
+      double mean = 0;
+      for(int i = 0; i < n; i++)
+         mean += data[i];
+      mean /= n;
+
+      // Calculate autocorrelation
+      double numerator = 0;
+      double denominator = 0;
+
+      for(int i = 0; i < n; i++)
+      {
+         numerator += (data[i] - mean) * (data[i + lag] - mean);
+         denominator += (data[i] - mean) * (data[i] - mean);
+      }
+
+      if(denominator == 0) return 0;
+
+      return numerator / denominator;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Get Adaptive RSI Period (0.5x cycle length)                     |
+   //+------------------------------------------------------------------+
+   int GetAdaptiveRSIPeriod(string symbol, ENUM_TIMEFRAMES timeframe)
+   {
+      int cycle = CalculateDominantCycle(symbol, timeframe, 50);
+
+      // RSI period = 0.5 * cycle length
+      int adaptiveRSI = (int)(cycle * 0.5);
+
+      // Clamp to reasonable range
+      if(adaptiveRSI < 7) adaptiveRSI = 7;
+      if(adaptiveRSI > 28) adaptiveRSI = 28;
+
+      return adaptiveRSI;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Get Adaptive EMA Period based on Volatility Regime              |
+   //+------------------------------------------------------------------+
+   int GetAdaptiveEMAPeriod(string symbol, ENUM_TIMEFRAMES timeframe, MARKET_REGIME regime)
+   {
+      int basePeriod = 200; // Standard long-term EMA
+
+      // Calculate current volatility
+      double atr[];
+      ArraySetAsSeries(atr, true);
+
+      int hATR = iATR(symbol, timeframe, 14);
+      if(hATR == INVALID_HANDLE) return basePeriod;
+
+      if(CopyBuffer(hATR, 0, 0, 20, atr) < 20)
+      {
+         IndicatorRelease(hATR);
+         return basePeriod;
+      }
+
+      IndicatorRelease(hATR);
+
+      // Calculate average ATR
+      double avgATR = 0;
+      for(int i = 0; i < 20; i++)
+         avgATR += atr[i];
+      avgATR /= 20;
+
+      // Adjust EMA period based on regime
+      int adaptiveEMA = basePeriod;
+
+      if(regime == MR_TRENDING_HIGH_VOL || regime == MR_TRENDING_LOW_VOL)
+      {
+         // Faster EMA in trending markets
+         adaptiveEMA = (int)(basePeriod * 0.75); // 150
+      }
+      else if(regime == MR_RANGING_HIGH_VOL)
+      {
+         // Slower EMA in choppy high vol
+         adaptiveEMA = (int)(basePeriod * 1.25); // 250
+      }
+      else if(regime == MR_RANGING_LOW_VOL)
+      {
+         // Standard in ranging low vol
+         adaptiveEMA = basePeriod; // 200
+      }
+
+      // Clamp to reasonable range
+      if(adaptiveEMA < 100) adaptiveEMA = 100;
+      if(adaptiveEMA > 300) adaptiveEMA = 300;
+
+      return adaptiveEMA;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Get Adaptive Indicator Periods                                  |
+   //+------------------------------------------------------------------+
+   void GetAdaptivePeriods(string symbol, ENUM_TIMEFRAMES timeframe, MARKET_REGIME regime,
+                          int &rsiPeriod, int &emaPeriod)
+   {
+      rsiPeriod = GetAdaptiveRSIPeriod(symbol, timeframe);
+      emaPeriod = GetAdaptiveEMAPeriod(symbol, timeframe, regime);
+   }
+
+   //+------------------------------------------------------------------+
+   //| Get Cycle Info for Dashboard                                    |
+   //+------------------------------------------------------------------+
+   string GetCycleInfo(string symbol, ENUM_TIMEFRAMES timeframe)
+   {
+      string info = "=== ADAPTIVE INDICATORS ===\n";
+
+      int cycle = CalculateDominantCycle(symbol, timeframe, 50);
+      int adaptiveRSI = GetAdaptiveRSIPeriod(symbol, timeframe);
+
+      info += StringFormat("Dominant Cycle: %d bars\n", cycle);
+      info += StringFormat("Adaptive RSI: %d (vs 14 static)\n", adaptiveRSI);
+
+      return info;
    }
 };
 

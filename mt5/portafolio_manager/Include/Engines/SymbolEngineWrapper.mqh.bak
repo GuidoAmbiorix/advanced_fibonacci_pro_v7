@@ -259,7 +259,7 @@ public:
    CVolumeAnalysis        m_volumeAnalysis;       // Volume Profile, POC, VWAP
    CCurrencyStrength      m_currencyStrength;     // 8-currency strength meter
    CCorrelationMatrix     m_correlationMatrix;    // Portfolio correlation
-   CBreakerBlocks         m_breakerBlocks;        // Failed OB detection
+   CSMCBreakerBlocks      m_breakerBlocks;        // Failed OB detection
    CICTMacroWindows       m_macroWindows;         // ICT timing windows
    CICTPowerOf3           m_powerOf3;             // Accumulation/Distribution
 
@@ -1119,8 +1119,16 @@ private:
       if(m_params.UseMTF)
          m_mtfAnalysis.Update();
 
-      // NOTE: H1 Enhancement modules (Volume, Currency, Breaker, Macro, Power of 3, Divergence, Wyckoff)
-      // calculate on-demand in GetConfluenceScore() - no Update() needed
+      // H1 Enhancement Module Updates (Phase 2)
+      m_volumeAnalysis.Update();
+      m_currencyStrength.Update();
+      m_breakerBlocks.Update();
+      m_macroWindows.Update();
+      m_powerOf3.Update();
+
+      // Advanced Module Updates (Phase 3)
+      m_divergence.Update();
+      m_wyckoff.Update();
    }
    
    void ScanForEntry()
@@ -1169,17 +1177,17 @@ private:
            return;
        }
 
-       // Determine quality tier (H1 ENHANCED 22-point scale)
+       // Determine quality tier (GOD LEVEL 30-point scale)
        ENUM_ENTRY_TIER quality = TIER_GOOD;
        
-       // H1 ENHANCED Thresholds (22 point max):
-       // ELITE:  â‰¥14 points (64%+) - God-tier institutional H1 setups
-       // STRONG: â‰¥12 points (55%) - High-probability professional setups  
-       // GOOD:   â‰¥10 points (45%) - Acceptable entry with confluence
-       // WEAK:   < 10 points   - Do not trade (below minimum)
+       // GOD LEVEL Thresholds:
+       // ELITE:  â‰¥18 points (60%+) - God-tier institutional setups
+       // STRONG: â‰¥14 points (47%) - High-probability professional setups  
+       // GOOD:   â‰¥10 points (33%) - Acceptable entry with confluence
+       // WEAK:   < floor       - Do not trade
        
-       if(bestScore >= 14.0) quality = TIER_ELITE;
-       else if(bestScore >= 12.0) quality = TIER_STRONG;
+       if(bestScore >= 18.0) quality = TIER_ELITE;
+       else if(bestScore >= 14.0) quality = TIER_STRONG;
        else if(bestScore >= 10.0) quality = TIER_GOOD;
        else quality = TIER_WEAK;  // Scores below 10.0 use WEAK tier (wider stops, conservative TP)
 
@@ -1381,7 +1389,7 @@ private:
        // ============ WYCKOFF (0-1.5) ============
 
        // Wyckoff phase alignment
-       score += m_wyckoff.GetWyckoffScore(direction);
+       score += m_wyckoff.GetPhaseScore(direction);
 
        // ============ FIBONACCI (0-1.5) ============
 

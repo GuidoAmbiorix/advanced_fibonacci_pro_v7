@@ -73,7 +73,13 @@ enum MARKET_REGIME
    REGIME_RANGE = 1,    // Sideways/Choppy market
    REGIME_VOLATILE = 2, // High volatility/News/Chaos
    REGIME_BREAKOUT = 3,  // Breakout conditions
-   REGIME_CHAOS = 4      // Extreme volatility/Crash
+   REGIME_CHAOS = 4,      // Extreme volatility/Crash
+
+   // New H1 Enhancement Regimes (for k-Means clustering)
+   MR_TRENDING_HIGH_VOL = 10,  // Trending with high volatility
+   MR_TRENDING_LOW_VOL = 11,   // Trending with low volatility
+   MR_RANGING_HIGH_VOL = 12,   // Ranging with high volatility (choppy)
+   MR_RANGING_LOW_VOL = 13     // Ranging with low volatility
 };
 
 //+------------------------------------------------------------------+
