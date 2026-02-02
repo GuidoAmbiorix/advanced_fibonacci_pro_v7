@@ -218,14 +218,6 @@ ENUM_CURRENT_SESSION GetCurrentSession(int brokerUTCOffset = 2, bool autoDST = t
    if(hourGMT >= 24) hourGMT -= 24;
    if(hourGMT < 0) hourGMT += 24;
 
-   // Debug output
-   static datetime lastPrint = 0;
-   if(TimeCurrent() - lastPrint > 300) // Print every 5 minutes
-   {
-      Print("🕐 SESSION DEBUG: Broker Time: ", dt.hour, ":00 | GMT Hour: ", hourGMT, " | DST: ", (dstOffset == 1 ? "Yes" : "No"), " | Month: ", dt.mon);
-      lastPrint = TimeCurrent();
-   }
-
    // ICT Killzone Times (GMT):
    // Asian: 01:00-03:00 GMT (Tokyo open)
    // London: 07:00-10:00 GMT (London open) - winter / 08:00-11:00 summer
