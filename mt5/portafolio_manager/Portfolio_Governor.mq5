@@ -558,8 +558,12 @@ void UpdateUniverse()
 
       string verified[];
 
-      Print("🌍 GOVERNOR: Current Session: ", sessionName);
-      Print("🌍 GOVERNOR: Loading ", ArraySize(candidates), " symbols for active killzone...");
+      // Only log when session actually changed (not every tick)
+      if(sessionChanged)
+      {
+         Print("🌍 GOVERNOR: Current Session: ", sessionName);
+         Print("🌍 GOVERNOR: Loading ", ArraySize(candidates), " symbols for active killzone...");
+      }
 
       // Try to add candidates
       for(int i=0; i<ArraySize(candidates); i++)
@@ -600,16 +604,20 @@ void UpdateUniverse()
       ArrayResize(g_activeSymbols, ArraySize(verified));
       for(int i=0; i<ArraySize(verified); i++) g_activeSymbols[i] = verified[i];
 
-      Print("✅ GOVERNOR: ", ArraySize(g_activeSymbols), " symbols loaded for ", GetSessionName(currentSession));
-
-      // List all loaded symbols
-      string symbolList = "";
-      for(int i=0; i<ArraySize(g_activeSymbols); i++)
+      // Only log symbol list when session changed (not every tick)
+      if(sessionChanged)
       {
-         symbolList += g_activeSymbols[i];
-         if(i < ArraySize(g_activeSymbols) - 1) symbolList += ", ";
+         Print("✅ GOVERNOR: ", ArraySize(g_activeSymbols), " symbols loaded for ", GetSessionName(currentSession));
+
+         // List all loaded symbols
+         string symbolList = "";
+         for(int i=0; i<ArraySize(g_activeSymbols); i++)
+         {
+            symbolList += g_activeSymbols[i];
+            if(i < ArraySize(g_activeSymbols) - 1) symbolList += ", ";
+         }
+         Print("📊 Active Universe: ", symbolList);
       }
-      Print("📊 Active Universe: ", symbolList);
    }
    
    // 2. Sync Engines
