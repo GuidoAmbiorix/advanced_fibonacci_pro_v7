@@ -84,6 +84,7 @@ double   g_totalProfitGross = 0;        // Gross profit
 double   g_totalLossGross = 0;          // Gross loss (absolute)
 datetime g_lastHeartbeat = 0;           // Last heartbeat log (10min periodic)
 datetime g_lastDealProcessTime = 0;     // Last processed deal time (persistent tracking)
+datetime g_lastEngineInitTime = 0;      // Last engine init (stagger to prevent CPU spikes)
 
 //+------------------------------------------------------------------+
 //| INIT                                                              |
@@ -312,7 +313,7 @@ void OnTimer()
       g_currentRegime = pred.regime;
 
    // 2.5 GLOBAL POSITION LIMIT CHECK (ICT Sniper Mode)
-   int globalPositions = PositionsTotal();
+   int globalPositions = GetGlobalPositionCount();  // FIX: Use magic-filtered count
    if(globalPositions >= InpMaxGlobalPositions)
    {
       // Already at max positions - skip execution loop
@@ -889,6 +890,11 @@ void UpdateUniverse()
    {
       if(CheckPointer(g_engines[i]) == POINTER_INVALID)
       {
+         // FIX: Stagger engine initialization (max 1 per second)
+         // Prevents CPU spike on session change when 6+ engines init simultaneously
+         if(TimeCurrent() - g_lastEngineInitTime < 1)
+            break;  // Resume on next timer tick (1 second)
+         
          string sym = g_activeSymbols[i];
          
          // Double Check Selection
