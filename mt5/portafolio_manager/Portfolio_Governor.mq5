@@ -81,6 +81,7 @@ double   g_totalWinAmount = 0;          // Sum of all winning trades
 double   g_totalLossAmount = 0;         // Sum of all losing trades (absolute)
 double   g_totalProfitGross = 0;        // Gross profit
 double   g_totalLossGross = 0;          // Gross loss (absolute)
+datetime g_lastHeartbeat = 0;           // Last heartbeat log (10min periodic)
 
 //+------------------------------------------------------------------+
 //| INIT                                                              |
@@ -281,6 +282,13 @@ void OnTimer()
 
    // 1. Update Universe & Engines
    UpdateUniverse();
+
+   // 1.5. Heartbeat Log (every 10 minutes)
+   if(TimeCurrent() - g_lastHeartbeat >= 600) // 600 sec = 10 min
+   {
+      PrintHeartbeat();
+      g_lastHeartbeat = TimeCurrent();
+   }
 
    // 2. Regime Detection with Confidence
    string leader = (ArraySize(g_activeSymbols) > 0) ? g_activeSymbols[0] : "EURUSD";
@@ -677,5 +685,119 @@ void UpdateUniverse()
          }
       }
    }
+}
+
+//+------------------------------------------------------------------+
+//| Helper: Convert string array to comma-separated string           |
+//+------------------------------------------------------------------+
+string ArrayToString(const string &arr[])
+{
+   string result = "";
+   for(int i=0; i<ArraySize(arr); i++)
+   {
+      result += arr[i];
+      if(i < ArraySize(arr) - 1) result += ", ";
+   }
+   return result;
+}
+
+//+------------------------------------------------------------------+
+//| Helper: Get minutes until next killzone starts                   |
+//+------------------------------------------------------------------+
+int GetMinutesToNextKillzone(ENUM_CURRENT_SESSION current)
+{
+   if(current != SESSION_DEAD_ZONE)
+      return 0; // Already in killzone
+   
+   MqlDateTime dt;
+   TimeToStruct(TimeCurrent(), dt);
+   int currentMinutes = dt.hour * 60 + dt.min;
+   
+   // Killzones in server time (GMT+2)
+   int londonStart = 9 * 60;      // 09:00
+   int nyStart = 15 * 60 + 30;    // 15:30
+   
+   int nextKZ = 0;
+   
+   if(currentMinutes < londonStart)
+      nextKZ = londonStart;
+   else if(currentMinutes < nyStart)
+      nextKZ = nyStart;
+   else
+      nextKZ = londonStart + (24 * 60); // Tomorrow
+   
+   int diff = nextKZ - currentMinutes;
+   if(diff < 0) diff += (24 * 60);
+   
+   return diff;
+}
+
+//+------------------------------------------------------------------+
+//| Heartbeat: Periodic status log every 10 minutes                  |
+//+------------------------------------------------------------------+
+void PrintHeartbeat()
+{
+   // 1. Calculate uptime
+   int uptimeMin = (int)((TimeCurrent() - g_initTime) / 60);
+   int hours = uptimeMin / 60;
+   int mins = uptimeMin % 60;
+   
+   // 2. Balance and Equity
+   double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+   double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+   double floatingPL = equity - balance;
+   
+   // 3. Current session
+   ENUM_CURRENT_SESSION session = GetCurrentSession(2, true);
+   string sessionName = GetSessionName(session);
+   
+   // 4. Minutes to next killzone
+   int minsToNext = GetMinutesToNextKillzone(session);
+   
+   // 5. Open trades
+   int openTrades = PositionsTotal();
+   
+   // 6. Daily stats
+   double winRate = 0;
+   if(g_totalWins + g_totalLosses > 0)
+      winRate = (double)g_totalWins / (g_totalWins + g_totalLosses) * 100.0;
+   
+   double dailyPL = balance - g_dailyStartBalance;
+   double dailyPct = (g_dailyStartBalance > 0) ? (dailyPL / g_dailyStartBalance) * 100.0 : 0;
+   
+   // Print consolidated heartbeat
+   Print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+   Print("🧠 HEARTBEAT [", TimeToString(TimeCurrent(), TIME_MINUTES), 
+         "] | Uptime: ", hours, "h ", mins, "m | Balance: $", 
+         DoubleToString(balance, 2), " | Equity: $", DoubleToString(equity, 2));
+   
+   // Session info
+   if(session == SESSION_DEAD_ZONE && minsToNext > 0)
+      Print("🌍 Session: ", sessionName, " | Next: in ", minsToNext/60, "h ", minsToNext%60, "m");
+   else
+      Print("🌍 Session: ", sessionName, (session != SESSION_DEAD_ZONE ? " (Active)" : ""));
+   
+   // Active symbols
+   if(ArraySize(g_activeSymbols) > 0)
+      Print("📈 Active Universe: ", ArrayToString(g_activeSymbols), " (", ArraySize(g_activeSymbols), " symbols)");
+   else
+      Print("📈 Active Universe: None (waiting for killzone)");
+   
+   // Open trades
+   if(openTrades > 0)
+      Print("💰 Open Trades: ", openTrades, " | Floating: ", 
+            (floatingPL >= 0 ? "+" : ""), DoubleToString(floatingPL, 2), 
+            " (", (floatingPL >= 0 ? "+" : ""), DoubleToString((floatingPL/balance)*100, 2), "%)");
+   else
+      Print("💰 Open Trades: 0 | Ready for entries");
+   
+   // Daily stats (only if there were trades today)
+   if(g_totalWins + g_totalLosses > 0)
+      Print("📊 Today: Wins: ", g_totalWins, " | Losses: ", g_totalLosses, 
+            " | P/L: ", (dailyPL >= 0 ? "+" : ""), DoubleToString(dailyPL, 2),
+            " (", (dailyPct >= 0 ? "+" : ""), DoubleToString(dailyPct, 2), "%) | Win Rate: ", 
+            DoubleToString(winRate, 1), "%");
+   
+   Print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 }
 //+------------------------------------------------------------------+
