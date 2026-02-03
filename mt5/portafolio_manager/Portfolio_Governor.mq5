@@ -619,6 +619,37 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.LossCooldownMinutes = 45;
    }
    
+   // ===== GBPUSD - Cable (HIGH PRIORITY FIX) =====
+   else if(StringFind(sym, "GBPUSD") >= 0)
+   {
+      // RISK (Conservative - volatile pair)
+      params.RiskBase = 0.18;
+      params.RiskAddOn1 = 0.12;
+      params.RiskAddOn2 = 0.08;
+      params.MaxRisk = 0.45;
+      params.MaxLotsPerTrade = 0.5;
+      
+      // KELLY
+      params.KellyFraction = 0.22;
+      params.DailyMaxDD = 1.9;
+      params.WeeklyMaxDD = 3.8;
+      
+      // TP/SL (Wide for Cable's volatility)
+      params.FixedTP_R = 2.2;
+      params.MinTP_R = 1.3;
+      params.MaxTP_R = 4.0;
+      params.PartialTP_R = 1.3;
+      params.TrailStart_R = 1.8;
+      
+      // SESSION LIMITS (Conservative due to volatility)
+      params.MaxTradesPerSession = 2;
+      params.MaxProfitPerSession_R = 5.5;
+      params.MaxLossPerSession_R = 1.8;
+      params.DailyMaxLoss_R = 2.9;
+      params.TradeCooldownMinutes = 12;
+      params.LossCooldownMinutes = 50;
+   }
+   
    // ===== XAUUSD - Gold =====
    else if(StringFind(sym, "XAU") >= 0 || StringFind(sym, "GOLD") >= 0)
    {
