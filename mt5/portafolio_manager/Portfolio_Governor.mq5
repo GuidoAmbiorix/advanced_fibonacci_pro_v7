@@ -780,66 +780,176 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.LossCooldownMinutes = 46;
    }
    
+   // ===== USDJPY - Yen King =====
+   else if(StringFind(sym, "USDJPY") >= 0)
+   {
+      // RISK (Conservative - safe haven)
+      params.RiskBase = 0.17;
+      params.RiskAddOn1 = 0.12;
+      params.RiskAddOn2 = 0.08;
+      params.MaxRisk = 0.46;
+      params.MaxLotsPerTrade = 0.5;
+      
+      // KELLY
+      params.KellyFraction = 0.22;
+      params.DailyMaxDD = 1.8;
+      params.WeeklyMaxDD = 3.6;
+      
+      // TP/SL (Standard)
+      params.FixedTP_R = 2.0;
+      params.MinTP_R = 1.2;
+      params.MaxTP_R = 3.2;
+      params.PartialTP_R = 1.2;
+      params.TrailStart_R = 1.6;
+      
+      // SESSION LIMITS
+      params.MaxTradesPerSession = 3;
+      params.MaxProfitPerSession_R = 5.5;
+      params.MaxLossPerSession_R = 1.6;
+      params.DailyMaxLoss_R = 2.8;
+      params.TradeCooldownMinutes = 10;
+      params.LossCooldownMinutes = 45;
+   }
+   
+   // ===== EURJPY - EUR/JPY Cross =====
+   else if(StringFind(sym, "EURJPY") >= 0)
+   {
+      // RISK (Moderate - volatile cross)
+      params.RiskBase = 0.18;
+      params.RiskAddOn1 = 0.12;
+      params.RiskAddOn2 = 0.08;
+      params.MaxRisk = 0.45;
+      params.MaxLotsPerTrade = 0.5;
+      
+      // KELLY
+      params.KellyFraction = 0.22;
+      params.DailyMaxDD = 1.8;
+      params.WeeklyMaxDD = 3.5;
+      
+      // TP/SL (Wider for volatility)
+      params.FixedTP_R = 2.2;
+      params.MinTP_R = 1.3;
+      params.MaxTP_R = 4.0;
+      params.PartialTP_R = 1.3;
+      params.TrailStart_R = 1.8;
+      
+      // SESSION LIMITS
+      params.MaxTradesPerSession = 2;
+      params.MaxProfitPerSession_R = 5.0;
+      params.MaxLossPerSession_R = 1.8;
+      params.DailyMaxLoss_R = 2.8;
+      params.TradeCooldownMinutes = 12;
+      params.LossCooldownMinutes = 50;
+   }
+   
+   // ===== NZDUSD - Kiwi =====
+   else if(StringFind(sym, "NZDUSD") >= 0)
+   {
+      // RISK (Moderate)
+      params.RiskBase = 0.18;
+      params.RiskAddOn1 = 0.13;
+      params.RiskAddOn2 = 0.09;
+      params.MaxRisk = 0.47;
+      params.MaxLotsPerTrade = 0.5;
+      
+      // KELLY
+      params.KellyFraction = 0.23;
+      params.DailyMaxDD = 1.85;
+      params.WeeklyMaxDD = 3.7;
+      
+      // TP/SL (Standard)
+      params.FixedTP_R = 2.0;
+      params.MinTP_R = 1.2;
+      params.MaxTP_R = 3.3;
+      params.PartialTP_R = 1.2;
+      params.TrailStart_R = 1.6;
+      
+      // SESSION LIMITS
+      params.MaxTradesPerSession = 3;
+      params.MaxProfitPerSession_R = 5.4;
+      params.MaxLossPerSession_R = 1.6;
+      params.DailyMaxLoss_R = 2.8;
+      params.TradeCooldownMinutes = 10;
+      params.LossCooldownMinutes = 46;
+   }
+   
+   // ===== AUDJPY - AUD/JPY Cross =====
+   else if(StringFind(sym, "AUDJPY") >= 0)
+   {
+      // RISK (Moderate - commodity cross)
+      params.RiskBase = 0.18;
+      params.RiskAddOn1 = 0.12;
+      params.RiskAddOn2 = 0.08;
+      params.MaxRisk = 0.45;
+      params.MaxLotsPerTrade = 0.5;
+      
+      // KELLY
+      params.KellyFraction = 0.22;
+      params.DailyMaxDD = 1.8;
+      params.WeeklyMaxDD = 3.6;
+      
+      // TP/SL (Standard)
+      params.FixedTP_R = 2.1;
+      params.MinTP_R = 1.2;
+      params.MaxTP_R = 3.5;
+      params.PartialTP_R = 1.2;
+      params.TrailStart_R = 1.7;
+      
+      // SESSION LIMITS
+      params.MaxTradesPerSession = 3;
+      params.MaxProfitPerSession_R = 5.3;
+      params.MaxLossPerSession_R = 1.7;
+      params.DailyMaxLoss_R = 2.8;
+      params.TradeCooldownMinutes = 11;
+      params.LossCooldownMinutes = 47;
+   }
+   
    // If symbol not matched, defaults remain (already set by GetDefaults())
 }
 
 void UpdateUniverse()
 {
-   // Check if session changed
-   ENUM_CURRENT_SESSION currentSession = GetCurrentSession(2, true);
-   bool sessionChanged = (currentSession != g_lastSession);
-
-   // 1. Initial Universe Setup OR Session Change
-   if(ArraySize(g_activeSymbols) == 0 || sessionChanged)
+   // ==================================================================
+   // 24/7 MODE: PERSISTENT 10-PAIR UNIVERSE (NO KILLZONE ROTATION)
+   // Confluence system handles quality filtering, not killzones
+   // ==================================================================
+   
+   static bool initialized = false;
+   
+   // 1. Initialize universe ONCE at startup (persistent engines)
+   if(!initialized || ArraySize(g_activeSymbols) == 0)
    {
-      // Clean up old engines if session changed
-      if(sessionChanged && ArraySize(g_engines) > 0)
-      {
-         Print("🔄 SESSION CHANGE: ", GetSessionName(g_lastSession), " → ", GetSessionName(currentSession));
-         Print("🧹 Cleaning up ", ArraySize(g_engines), " engines from previous session...");
-
-         for(int i=0; i<ArraySize(g_engines); i++)
-         {
-            if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
-               delete g_engines[i];
-         }
-         ArrayResize(g_engines, 0);
-         ArrayResize(g_activeSymbols, 0);
-      }
-
-      g_lastSession = currentSession;
-
-      // Use DYNAMIC Session-Based Selection (loads only active killzone symbols)
-      // This prevents initialization timeout and maximizes efficiency
-      string candidates[];
-      GetSymbolsForCurrentSession(candidates, 2); // Only symbols for current session
-
-      string sessionName = GetSessionName(currentSession);
-
+      Print("🌍 GOVERNOR: Initializing 24/7 persistent universe...");
+      
+      // Define all 10 pairs for 24/7 coverage
+      string allPairs[] = {
+         "EURUSD",    // 1. King - London/NY
+         "GBPUSD",    // 2. Cable - London/NY
+         "XAUUSD",    // 3. Gold - London/NY
+         "USDJPY",    // 4. Yen - Asian/London/NY
+         "AUDUSD",    // 5. Aussie - Asian/London
+         "USDCAD",    // 6. Loonie - NY
+         "EURJPY",    // 7. Cross - Asian/London/NY
+         "GBPJPY",    // 8. Cross - London/NY (existing)
+         "NZDUSD",    // 9. Kiwi - Asian/London
+         "AUDJPY"     // 10. Pacific - Asian/London
+      };
+      
       string verified[];
-
-      // Only log when session actually changed (not every tick)
-      if(sessionChanged)
+      
+      // Verify each symbol exists in broker's market watch
+      for(int i=0; i<ArraySize(allPairs); i++)
       {
-         Print("🌍 GOVERNOR: Current Session: ", sessionName);
-         Print("🌍 GOVERNOR: Loading ", ArraySize(candidates), " symbols for active killzone...");
-      }
-
-      // Try to add candidates
-      for(int i=0; i<ArraySize(candidates); i++)
-      {
-         string sym = candidates[i];
-         if(sym == _Symbol) continue; // Already added
-
+         string sym = allPairs[i];
+         
          // Check if exists (Standard)
          if(SymbolSelect(sym, true))
          {
             AddToArray(verified, sym);
             continue;
          }
-
-         // Try Suffixes if standard failed (Simple auto-discovery)
-         // Common suffixes: .m, .pro, +, c, .a
+         
+         // Try common broker suffixes
          bool found = false;
          string suffixes[] = {".m", ".pro", "+", "c", ".a", "_opt"};
          for(int s=0; s<ArraySize(suffixes); s++)
@@ -852,32 +962,30 @@ void UpdateUniverse()
                break;
             }
          }
-
-         // Warn if symbol not found
+         
          if(!found)
          {
             Print("⚠️ SYMBOL NOT FOUND: ", sym, " - Check Market Watch or broker symbol list");
          }
       }
-
-      // Apply Verified List
+      
+      // Apply verified list
       ArrayResize(g_activeSymbols, ArraySize(verified));
-      for(int i=0; i<ArraySize(verified); i++) g_activeSymbols[i] = verified[i];
-
-      // Only log symbol list when session changed (not every tick)
-      if(sessionChanged)
+      for(int i=0; i<ArraySize(verified); i++) 
+         g_activeSymbols[i] = verified[i];
+      
+      Print("✅ GOVERNOR: ", ArraySize(g_activeSymbols), " symbols loaded (24/7 MODE)");
+      
+      // List all loaded symbols
+      string symbolList = "";
+      for(int i=0; i<ArraySize(g_activeSymbols); i++)
       {
-         Print("✅ GOVERNOR: ", ArraySize(g_activeSymbols), " symbols loaded for ", GetSessionName(currentSession));
-
-         // List all loaded symbols
-         string symbolList = "";
-         for(int i=0; i<ArraySize(g_activeSymbols); i++)
-         {
-            symbolList += g_activeSymbols[i];
-            if(i < ArraySize(g_activeSymbols) - 1) symbolList += ", ";
-         }
-         Print("📊 Active Universe: ", symbolList);
+         symbolList += g_activeSymbols[i];
+         if(i < ArraySize(g_activeSymbols) - 1) symbolList += ", ";
       }
+      Print("📊 Active Universe: ", symbolList);
+      
+      initialized = true;
    }
    
    // 2. Sync Engines
@@ -909,16 +1017,14 @@ ConfigureRiskForSymbol(sym, params);
          params.MagicNumber = 1000 + i;
          params.TradeComment = "GodMode_" + sym;
 
-         // AUTO-ASSIGN OPTIMAL KILLZONES based on symbol
-         bool kzAsian, kzLondon, kzNY, kzLondonClose;
-         GetOptimalKillzonesForSymbol(sym, kzAsian, kzLondon, kzNY, kzLondonClose);
-
-         params.UseKillzoneFilter = true;
-         params.UseSymbolDefaults = false; // Using custom assignment
-         params.EnableAsianKZ = kzAsian;
-         params.EnableLondonOpenKZ = kzLondon;
-         params.EnableNYKZ = kzNY;
-         params.EnableLondonCloseKZ = kzLondonClose;
+         // 24/7 MODE: DISABLE KILLZONE FILTER
+         // Confluence system (30-point scoring) handles quality control
+         params.UseKillzoneFilter = false;  // ← DISABLED for 24/7
+         params.UseSymbolDefaults = false;
+         params.EnableAsianKZ = false;      // Not used when filter disabled
+         params.EnableLondonOpenKZ = false;
+         params.EnableNYKZ = false;
+         params.EnableLondonCloseKZ = false;
 
          // Volatility Spike Protection
          params.UseNewsFilter = true;
@@ -927,14 +1033,7 @@ ConfigureRiskForSymbol(sym, params);
 
          if(g_engines[i].Init(sym, params))
          {
-            // Build killzone status string
-            string kzStatus = "";
-            if(kzAsian) kzStatus += "ASIAN ";
-            if(kzLondon) kzStatus += "LONDON ";
-            if(kzNY) kzStatus += "NY ";
-            if(kzLondonClose) kzStatus += "CLOSE ";
-
-            Print("🚀 Engine Ignited: ", sym, " | Killzones: ", kzStatus);
+            Print("🚀 Engine Ignited: ", sym, " | Mode: 24/7 (Killzones: DISABLED)");
          }
          else
          {
