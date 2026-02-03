@@ -1,4 +1,5 @@
 version: "3.8"
+
 services:
   mt5:
     image: gmag11/metatrader5_vnc:latest
@@ -9,30 +10,18 @@ services:
     environment:
       - CUSTOM_USER=trader
       - PASSWORD=trading
+
     volumes:
+      # 1️⃣ Persistent MT5 data
       - mt5_config:/config
-      # NOW add your local folder
+
+      # 2️⃣ Strategy source code (bind mount)
       - type: bind
         source: ./portafolio_manager
         target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
-        read_only: false
-    networks:
-      vpn_network:
-        ipv4_address: 10.13.13.20
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-        reservations:
-          memory: 1G
+        read_only: true   # 🔥 IMPORTANT
+
     restart: unless-stopped
 
 volumes:
   mt5_config:
-
-networks:
-  vpn_network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 10.13.13.0/24
