@@ -1,5 +1,4 @@
 version: "3.8"
-
 services:
   mt5:
     image: gmag11/metatrader5_vnc:latest
@@ -12,6 +11,11 @@ services:
       - PASSWORD=trading
     volumes:
       - mt5_config:/config
+      # NOW add your local folder
+      - type: bind
+        source: ./portafolio_manager
+        target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
+        read_only: false
     networks:
       vpn_network:
         ipv4_address: 10.50.0.20
