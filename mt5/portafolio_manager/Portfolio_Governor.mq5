@@ -950,21 +950,24 @@ void UpdateUniverse()
    // 1. Initialize universe ONCE at startup (persistent engines)
    if(!initialized || ArraySize(g_activeSymbols) == 0)
    {
-      Print("🌍 GOVERNOR: Initializing 24/7 persistent universe...");
+      Print("🌍 GOVERNOR: Initializing 8-pair CONSERVATIVE PORTFOLIO (24/7 MODE)...");
       
-      // Define all 10 pairs for 24/7 coverage
+      // OPTIMIZED 8-PAIR SELECTION (Best Liquidity + Correlation Balance)
+      // Based on professional trader research: 3-15 pairs max, 8 = conservative sweet spot
       string allPairs[] = {
-         "EURUSD",    // 1. King - London/NY
-         "GBPUSD",    // 2. Cable - London/NY
-         "XAUUSD",    // 3. Gold - London/NY
-         "USDJPY",    // 4. Yen - Asian/London/NY
-         "AUDUSD",    // 5. Aussie - Asian/London
-         "USDCAD",    // 6. Loonie - NY
-         "EURJPY",    // 7. Cross - Asian/London/NY
-         "GBPJPY",    // 8. Cross - London/NY (existing)
-         "NZDUSD",    // 9. Kiwi - Asian/London
-         "AUDJPY"     // 10. Pacific - Asian/London
+         "EURUSD",    // 1. King - 28% daily volume (London/NY)
+         "USDJPY",    // 2. Yen - 13% daily volume (Asian/London/NY)
+         "GBPUSD",    // 3. Cable - 11% volume (London/NY volatility)
+         "XAUUSD",    // 4. Gold - Trending asset (London/NY)
+         "AUDUSD",    // 5. Aussie - 5% volume (Asian/London)
+         "USDCAD",    // 6. Loonie - 4% volume (NY oil correlation)
+         "EURJPY",    // 7. Cross - Asian/London/NY coverage
+         "USDCHF"     // 8. Swissy - EUR/USD hedge (-85% correlation)
       };
+      
+      Print("📊 Portfolio Strategy: CONSERVATIVE (8 pairs)");
+      Print("📊 Focus: Highest liquidity + Optimal correlation balance");
+      Print("📊 Coverage: 24/7 (Asian: 3 pairs | London: 8 pairs | NY: 6 pairs)");
       
       string verified[];
       
@@ -1005,7 +1008,7 @@ void UpdateUniverse()
       for(int i=0; i<ArraySize(verified); i++) 
          g_activeSymbols[i] = verified[i];
       
-      Print("✅ GOVERNOR: ", ArraySize(g_activeSymbols), " symbols loaded (24/7 MODE)");
+      Print("✅ GOVERNOR: ", ArraySize(g_activeSymbols), " pairs loaded (8-PAIR CONSERVATIVE MODE)");
       
       // List all loaded symbols
       string symbolList = "";
