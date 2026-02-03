@@ -2,7 +2,7 @@ version: "3.8"
 services:
   mt5:
     image: gmag11/metatrader5_vnc:latest
-    container_name: trading_mt5
+    container_name: mt5-v2
     ports:
       - "3000:3000"
       - "8001:8001"
@@ -10,14 +10,14 @@ services:
       - CUSTOM_USER=trader
       - PASSWORD=trading
     volumes:
-      - mt5_config:/config
+      - mt5_config_v2:/config
       # NOW add your local folder
       - type: bind
         source: ./portafolio_manager
         target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
         read_only: false
     networks:
-      vpn_network:
+      mt5_network_v2:
         ipv4_address: 10.13.13.20
     deploy:
       resources:
@@ -28,10 +28,10 @@ services:
     restart: unless-stopped
 
 volumes:
-  mt5_config:
+  mt5_config_v2:
 
 networks:
-  vpn_network:
+  mt5_network_v2:
     driver: bridge
     ipam:
       config:

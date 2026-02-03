@@ -2,7 +2,7 @@ version: "3.8"
 services:
   mt5:
     image: gmag11/metatrader5_vnc:latest
-    container_name: trading_mt5
+    container_name: mt5-v2
     ports:
       - "3000:3000"
       - "8001:8001"
@@ -11,9 +11,9 @@ services:
       - PASSWORD=trading
     volumes:
       # Use ONLY managed volume on first run
-      - mt5_config:/config
+      - mt5_config_v2:/config
     networks:
-      vpn_network:
+      mt5_network_v2:
         ipv4_address: 10.13.13.20
     deploy:
       resources:
@@ -24,10 +24,10 @@ services:
     restart: unless-stopped
 
 volumes:
-  mt5_config:
+  mt5_config_v2:
 
-networks:
-  vpn_network:
+networks: 
+  mt5_network_v2:
     driver: bridge
     ipam:
       config:
