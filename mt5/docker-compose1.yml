@@ -18,7 +18,7 @@ services:
         read_only: false
     networks:
       vpn_network:
-        ipv4_address: 10.13.13.20
+        ipv4_address: 10.50.0.20
     deploy:
       resources:
         limits:
@@ -35,4 +35,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.13.13.0/24
+        - subnet: 10.50.0.0/24

@@ -10,18 +10,25 @@ services:
     environment:
       - CUSTOM_USER=trader
       - PASSWORD=trading
-
     volumes:
-      # 1️⃣ Persistent MT5 data
       - mt5_config:/config
-
-      # 2️⃣ Strategy source code (bind mount)
-      - type: bind
-        source: ./portafolio_manager
-        target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
-        read_only: true   # 🔥 IMPORTANT
-
+    networks:
+      vpn_network:
+        ipv4_address: 10.50.0.20
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
     restart: unless-stopped
 
 volumes:
   mt5_config:
+
+networks:
+  vpn_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.50.0.0/24
