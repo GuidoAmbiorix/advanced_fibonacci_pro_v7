@@ -1,6 +1,6 @@
 version: "3.8"
 services:
-  mt5_v2:
+  mt52:
     image: gmag11/metatrader5_vnc:latest
     container_name: mt5-v2
     ports:
