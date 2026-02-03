@@ -10,17 +10,21 @@ services:
       - CUSTOM_USER=trader
       - PASSWORD=trading
     volumes:
-      # Use ONLY managed volume on first run
       - mt5_config:/config
+      # NOW add your local folder
+      - type: bind
+        source: ./portafolio_manager
+        target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
+        read_only: false
     networks:
       vpn_network:
         ipv4_address: 10.13.13.20
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 4G
         reservations:
-          memory: 2G
+          memory: 1G
     restart: unless-stopped
 
 volumes:
