@@ -4,8 +4,8 @@ services:
     image: gmag11/metatrader5_vnc:latest
     container_name: mt5-v2
     ports:
-      - "3000:3000"
-      - "8001:8001"
+      - "3001:3000"
+      - "8002:8001"
     environment:
       - CUSTOM_USER=trader
       - PASSWORD=trading
