@@ -502,6 +502,32 @@ public:
          Print("Engine Init Failed: Core Indicators (", m_symbol, ")");
          return false;
       }
+      
+      // CRITICAL: Wait for MT5 to initialize indicator buffers
+      Print("⏳ Waiting for ", m_symbol, " indicators to initialize...");
+      int maxWait = 30; // Maximum 30 seconds
+      int waitCount = 0;
+      while(waitCount < maxWait)
+      {
+         int bars_rsi = BarsCalculated(m_hRSI);
+         int bars_atr = BarsCalculated(m_hATR);
+         int bars_ema = BarsCalculated(m_hEMA);
+         
+         if(bars_rsi > 0 && bars_atr > 0 && bars_ema > 0)
+         {
+            Print("✅ ", m_symbol, " indicators ready (RSI:", bars_rsi, " ATR:", bars_atr, " EMA:", bars_ema, ")");
+            break;
+         }
+         
+         Sleep(1000); // Wait 1 second
+         waitCount++;
+      }
+      
+      if(waitCount >= maxWait)
+      {
+         Print("❌ ", m_symbol, " indicator initialization timeout!");
+         return false;
+      }
 
       // Initialize Reversal Filter Indicators
       if(m_params.UseReversalFilter)
@@ -513,6 +539,23 @@ public:
          {
             Print("Engine Init Failed: Reversal Filter Indicators (", m_symbol, ")");
             return false;
+         }
+         
+         // Wait for reversal filter indicators
+         waitCount = 0;
+         while(waitCount < maxWait)
+         {
+            int bars_ema50 = BarsCalculated(m_hEMA50);
+            int bars_ema100 = BarsCalculated(m_hEMA100);
+            
+            if(bars_ema50 > 0 && bars_ema100 > 0)
+            {
+               Print("✅ ", m_symbol, " reversal indicators ready");
+               break;
+            }
+            
+            Sleep(1000);
+            waitCount++;
          }
       }
       
