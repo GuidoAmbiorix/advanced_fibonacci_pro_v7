@@ -325,6 +325,30 @@ void OnTimer()
    // Collect all scores, rank them, allow only top N to trade
    int totalEngines = ArraySize(g_engines);
 
+   // Health Monitor (Every 5 minutes)
+   static datetime lastHealthMonitor = 0;
+   if(TimeCurrent() - lastHealthMonitor > 300)
+   {
+       for(int i=0; i<totalEngines; i++)
+       {
+           if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
+           {
+               string health = g_engines[i].GetHealthStatus();
+               if(health != "HEALTHY")
+               {
+                   Print("⚠️ ENGINE HEALTH | ", g_engines[i].m_symbol, 
+                         " | Status: ", health, 
+                         " | Recovery attempts: ", g_engines[i].m_recoveryAttempts);
+                         
+                   // Debug detail if critical
+                   if(g_engines[i].m_recoveryAttempts >= 3)
+                       g_engines[i].DebugIndicatorStatus();
+               }
+           }
+       }
+       lastHealthMonitor = TimeCurrent();
+   }
+
    // Step 0: Pre-calculate scores for ranking (CRITICAL - must happen before ranking)
    for(int i=0; i<totalEngines; i++)
    {

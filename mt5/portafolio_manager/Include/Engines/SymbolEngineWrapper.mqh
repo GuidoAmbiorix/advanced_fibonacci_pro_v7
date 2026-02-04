@@ -476,7 +476,7 @@ public:
       m_allowedToTradeThisCycle = true;   // Default: allowed
       m_currentBestScore = 0.0;
       
-      // Recovery Init
+      // Recovery Init - MODIFICADO: Iniciar como false, se establecerá en true después de Init exitoso
       m_indicatorsHealthy = false;
       m_lastRecoveryTime = 0;
       m_recoveryAttempts = 0;
@@ -488,56 +488,56 @@ public:
    }
    
    //+------------------------------------------------------------------+
-   //| Initialization                                                    |
+   //| Initialization Modificada                                        |
    //+------------------------------------------------------------------+
    bool Init(string symbol, SymbolEngineParams &params)
    {
       m_symbol = symbol;
       m_params = params;
       
+      // FORZAR selección del símbolo primero
+      if(!SymbolSelect(m_symbol, true))
+      {
+         Print("❌ ERROR: Cannot select symbol ", m_symbol);
+         return false;
+      }
+      
       if(!m_symbolInfo.Name(m_symbol)) return false;
-      m_symbolInfo.RefreshRates();
+      
+      // Esperar activamente a que el símbolo tenga datos
+      Print("⏳ Waiting for symbol data: ", m_symbol);
+      int waitAttempts = 0;
+      while(waitAttempts < 20) // 20 intentos = 2 segundos
+      {
+         m_symbolInfo.RefreshRates();
+         if(m_symbolInfo.Bid() > 0 && m_symbolInfo.Ask() > 0)
+            break;
+         Sleep(100);
+         waitAttempts++;
+      }
+      
+      if(m_symbolInfo.Bid() <= 0 || m_symbolInfo.Ask() <= 0)
+      {
+         Print("❌ ERROR: No price data for ", m_symbol);
+         return false;
+      }
       
       m_trade.SetExpertMagicNumber(m_params.MagicNumber);
       m_trade.SetDeviationInPoints(m_params.Deviation);
       m_trade.SetTypeFilling(m_params.FillingType);
       
-      // CRITICAL: Preload symbol timeframe data before creating indicators
-      // This prevents indicator handles from becoming invalid (BarsCalculated = -1)
-      long chart_id = ChartOpen(m_symbol, PERIOD_CURRENT);
-      if(chart_id == 0)
+      // NUEVO: Crear indicadores con sistema robusto
+      if(!CreateIndicatorsWithRetry())
       {
-         Print("⚠️ Warning: Could not open chart for ", m_symbol, " - continuing anyway");
-      }
-      else
-      {
-         Print("📊 Preloading ", m_symbol, " timeframe data...");
-         Sleep(500); // Give MT5 time to load the chart data
-         ChartClose(chart_id); // Close the chart, we only needed it for data loading
-      }
-      
-      // Initialize Core Indicators
-      m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
-      m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
-      m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
-
-      if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
-      {
-         Print("Engine Init Failed: Core Indicators (", m_symbol, ")");
+         Print("❌ ERROR: Failed to create indicators for ", m_symbol);
          return false;
       }
-
-      // Initialize Reversal Filter Indicators
-      if(m_params.UseReversalFilter)
+      
+      // CRÍTICO: Verificar que los indicadores son válidos inmediatamente
+      if(!VerifyIndicators())
       {
-         m_hEMA50 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA50_Period, 0, MODE_EMA, PRICE_CLOSE);
-         m_hEMA100 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA100_Period, 0, MODE_EMA, PRICE_CLOSE);
-
-         if(m_hEMA50 == INVALID_HANDLE || m_hEMA100 == INVALID_HANDLE)
-         {
-            Print("Engine Init Failed: Reversal Filter Indicators (", m_symbol, ")");
-            return false;
-         }
+         Print("⚠️ WARNING: Indicators created but not immediately healthy");
+         // No fallamos aquí, el sistema de recuperación lo manejará
       }
       
       m_failSafe.Init(m_params.MaxSpreadPoints);
@@ -616,9 +616,11 @@ public:
           }
       }
       
-      // Allocator is always connected in this context (Governor controls it)
-      // If we are in Governor, we are "Connected".
+      // CRÍTICO: Marcar indicadores como saludables después de init exitoso
+      m_indicatorsHealthy = true;
+      m_recoveryAttempts = 0;
       
+      Print("✅ SUCCESS: Engine initialized for ", m_symbol);
       return true;
    }
    
@@ -667,6 +669,55 @@ public:
          return "MONITORING";
       else
          return "SCANNING";
+   }
+
+   //+------------------------------------------------------------------+
+   //| Getters para mostrar estado de salud                             |
+   //+------------------------------------------------------------------+
+   string GetHealthStatus()
+   {
+      if(!m_indicatorsHealthy) return "UNHEALTHY";
+      
+      // Verificar handles
+      string status = "HEALTHY";
+      if(m_hRSI == INVALID_HANDLE) status = "RSI_BAD";
+      if(m_hATR == INVALID_HANDLE) status = "ATR_BAD";
+      if(m_hEMA == INVALID_HANDLE) status = "EMA_BAD";
+      
+      // Verificar datos recientes
+      static datetime lastHealthCheck = 0;
+      if(TimeCurrent() - lastHealthCheck > 60)
+      {
+         if(!AreIndicatorsHealthy())
+         {
+            status = "DATA_STALE";
+         }
+         lastHealthCheck = TimeCurrent();
+      }
+      
+      return status;
+   }
+
+   void DebugIndicatorStatus()
+   {
+       Print("=== DEBUG INDICATOR STATUS ===");
+       Print("Symbol: ", m_symbol);
+       Print("RSI Handle: ", m_hRSI, " | Valid: ", (m_hRSI != INVALID_HANDLE ? "YES" : "NO"));
+       Print("ATR Handle: ", m_hATR, " | Valid: ", (m_hATR != INVALID_HANDLE ? "YES" : "NO"));
+       Print("EMA Handle: ", m_hEMA, " | Valid: ", (m_hEMA != INVALID_HANDLE ? "YES" : "NO"));
+       Print("Indicators Healthy: ", (m_indicatorsHealthy ? "YES" : "NO"));
+       Print("Recovery Attempts: ", m_recoveryAttempts);
+       Print("Last Recovery: ", TimeToString(m_lastRecoveryTime));
+       
+       // Intentar leer datos
+       ResetLastError();
+       double test[1];
+       if(CopyBuffer(m_hRSI, 0, 0, 1, test) > 0)
+           Print("RSI Data: OK (", test[0], ")");
+       else
+           Print("RSI Data: FAILED - Error: ", GetLastError());
+           
+       Print("==============================");
    }
 
    int GetPositionCount() { return m_positionCount; }
@@ -840,19 +891,35 @@ public:
    //+------------------------------------------------------------------+
    //| Pre-calculate scores for ranking (called before OnTick)          |
    //+------------------------------------------------------------------+
+   //+------------------------------------------------------------------+
+   //| Pre-calculate scores for ranking - MODIFICADO                    |
+   //+------------------------------------------------------------------+
    void UpdateScoresForRanking()
    {
-      // NOTE: Do NOT call IsNewBar() here - it consumes the flag!
-      // The Governor calls this once per tick, so we don't need bar filtering here.
-
-      // Check if we have a valid new bar without consuming the flag
+      // Verificar si tenemos una nueva barra sin consumir el flag
       datetime currentBarTime = iTime(m_symbol, PERIOD_CURRENT, 0);
-      if(currentBarTime == m_lastBarTime) return; // Same bar, skip
-
-      // DO NOT update m_lastBarTime here - let OnTick do it!
-
-      // Must have valid indicators
-      if(!UpdateIndicatorsEnhanced()) return;
+      if(currentBarTime == m_lastBarTime) return; // Misma barra, saltar
+      
+      // CRÍTICO: Verificar salud de indicadores ANTES de todo
+      if(!m_indicatorsHealthy)
+      {
+         // Intentar recuperación silenciosa para ranking
+         if(!RecoverIndicators())
+         {
+            Print("❌ Cannot calculate scores - indicators unhealthy");
+            m_cachedBuyScore = 0;
+            m_cachedSellScore = 0;
+            m_currentBestScore = 0;
+            return;
+         }
+      }
+      
+      // Debe tener indicadores válidos
+      if(!UpdateIndicatorsEnhanced()) 
+      {
+         Print("⚠️ Failed to update indicators for ranking");
+         return;
+      }
 
       // Update modules
       UpdateModules();
@@ -867,48 +934,41 @@ public:
       m_lastScoreCalcTime = TimeCurrent();
    }
 
-   //+------------------------------------------------------------------+
-   //| Main Processing Loop (Call from OnTick)                          |
+    //+------------------------------------------------------------------+
+   //| Main Processing Loop - MODIFICADO                                |
    //+------------------------------------------------------------------+
    void OnTick()
    {
       m_symbolInfo.RefreshRates();
-
-      // Update Position Count
+      
+      // Actualizar contador de posiciones
       m_positionCount = CountPositions();
       if(m_positionCount == 0) ResetTradeState();
-
+      
       ManagePositions();
-
+      
       if(!IsNewBar())
       {
-         // DEBUG: Log once per minute to show we're waiting for new bar
-         static datetime lastWaitLog = 0;
-         if(TimeCurrent() - lastWaitLog >= 60)
-         {
-            Print("⏱️ WAITING FOR NEW BAR | ", m_symbol, " | Last bar: ", TimeToString(m_lastBarTime));
-            lastWaitLog = TimeCurrent();
-         }
          return;
       }
-
+      
       Print("🔔 NEW BAR | ", m_symbol, " | OnTick called");
-
-      // Check indicator health before proceeding
+      
+      // PRIMERO: Verificar salud de indicadores antes de cualquier cosa
       if(!m_indicatorsHealthy)
       {
-         Print("⚠️ Indicators unhealthy, attempting recovery...");
+         Print("⚠️ Indicators unhealthy at start of OnTick, attempting recovery...");
          if(!RecoverIndicators())
          {
             Print("❌ Unable to recover indicators. Skipping tick.");
             return;
          }
       }
-
-      // Check for new day and reset daily counters
+      
+      // Verificar nuevo día y reiniciar contadores diarios
       CheckNewDay();
-
-      // USE ENHANCED UPDATE
+      
+      // USAR ACTUALIZACIÓN MEJORADA
       if(!UpdateIndicatorsEnhanced())
       {
          Print("❌ BLOCKED | ", m_symbol, " | UpdateIndicatorsEnhanced() failed");
@@ -1023,6 +1083,153 @@ private:
       return false;
    }
 
+   //+------------------------------------------------------------------+
+   //| NUEVO: Crear indicadores con reintentos robustos                 |
+   //+------------------------------------------------------------------+
+   bool CreateIndicatorsWithRetry()
+   {
+      Print("🔧 Creating indicators for ", m_symbol, "...");
+      
+      for(int attempt = 1; attempt <= 3; attempt++)
+      {
+         Print("   Attempt ", attempt, "/3");
+         
+         // Liberar handles existentes
+         if(m_hRSI != INVALID_HANDLE) { IndicatorRelease(m_hRSI); m_hRSI = INVALID_HANDLE; }
+         if(m_hATR != INVALID_HANDLE) { IndicatorRelease(m_hATR); m_hATR = INVALID_HANDLE; }
+         if(m_hEMA != INVALID_HANDLE) { IndicatorRelease(m_hEMA); m_hEMA = INVALID_HANDLE; }
+         if(m_hEMA50 != INVALID_HANDLE) { IndicatorRelease(m_hEMA50); m_hEMA50 = INVALID_HANDLE; }
+         if(m_hEMA100 != INVALID_HANDLE) { IndicatorRelease(m_hEMA100); m_hEMA100 = INVALID_HANDLE; }
+         
+         // Crear indicadores principales
+         m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
+         Sleep(200);
+         
+         m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
+         Sleep(200);
+         
+         m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
+         Sleep(200);
+         
+         // Crear indicadores de filtro de reversión si están habilitados
+         if(m_params.UseReversalFilter)
+         {
+            m_hEMA50 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA50_Period, 0, MODE_EMA, PRICE_CLOSE);
+            Sleep(200);
+            m_hEMA100 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA100_Period, 0, MODE_EMA, PRICE_CLOSE);
+            Sleep(200);
+         }
+         
+         // Verificar si se crearon correctamente
+         if(VerifyIndicatorHandles())
+         {
+            Print("   ✅ Indicators created successfully on attempt ", attempt);
+            
+            // Esperar a que se calculen algunos datos
+            Sleep(300);
+            
+            // Verificar que tengan datos
+            if(VerifyIndicatorData())
+            {
+               Print("   ✅ Indicators have valid data");
+               return true;
+            }
+            else
+            {
+               Print("   ⚠️ Indicators created but no data yet");
+            }
+         }
+         else
+         {
+            Print("   ❌ Failed to create indicators on attempt ", attempt);
+            if(attempt < 3)
+            {
+               Sleep(500); // Esperar más antes de reintentar
+            }
+         }
+      }
+      
+      return false;
+   }
+   
+   //+------------------------------------------------------------------+
+   //| NUEVO: Verificar manejadores de indicadores                      |
+   //+------------------------------------------------------------------+
+   bool VerifyIndicatorHandles()
+   {
+      if(m_hRSI == INVALID_HANDLE)
+      {
+         Print("   ❌ RSI handle invalid");
+         return false;
+      }
+      if(m_hATR == INVALID_HANDLE)
+      {
+         Print("   ❌ ATR handle invalid");
+         return false;
+      }
+      if(m_hEMA == INVALID_HANDLE)
+      {
+         Print("   ❌ EMA handle invalid");
+         return false;
+      }
+      
+      if(m_params.UseReversalFilter)
+      {
+         if(m_hEMA50 == INVALID_HANDLE)
+         {
+            Print("   ❌ EMA50 handle invalid");
+            return false;
+         }
+         if(m_hEMA100 == INVALID_HANDLE)
+         {
+            Print("   ❌ EMA100 handle invalid");
+            return false;
+         }
+      }
+      
+      return true;
+   }
+   
+   //+------------------------------------------------------------------+
+   //| NUEVO: Verificar datos de indicadores                            |
+   //+------------------------------------------------------------------+
+   bool VerifyIndicatorData()
+   {
+      ResetLastError();
+      
+      // Verificar RSI
+      double test[1];
+      if(CopyBuffer(m_hRSI, 0, 0, 1, test) <= 0)
+      {
+         Print("   ❌ RSI no data, error: ", GetLastError());
+         return false;
+      }
+      
+      // Verificar ATR
+      if(CopyBuffer(m_hATR, 0, 0, 1, test) <= 0)
+      {
+         Print("   ❌ ATR no data, error: ", GetLastError());
+         return false;
+      }
+      
+      // Verificar EMA
+      if(CopyBuffer(m_hEMA, 0, 0, 1, test) <= 0)
+      {
+         Print("   ❌ EMA no data, error: ", GetLastError());
+         return false;
+      }
+      
+      return true;
+   }
+   
+   //+------------------------------------------------------------------+
+   //| NUEVO: Verificar indicadores (usado en Init)                     |
+   //+------------------------------------------------------------------+
+   bool VerifyIndicators()
+   {
+      return (AreIndicatorsHealthy() && VerifyIndicatorData());
+   }
+
    void CheckNewDay()
    {
       MqlDateTime dt;
@@ -1062,13 +1269,44 @@ private:
    {
       // Quick check if handles are valid
       if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
+      {
+         Print("⚠️ Indicator handles invalid - RSI:", m_hRSI, " ATR:", m_hATR, " EMA:", m_hEMA);
          return false;
+      }
       
-      // Try to get some data
+      // Check if handles are still valid (not 4807 error)
+      ResetLastError();
       double test[1];
-      if(CopyBuffer(m_hRSI, 0, 0, 1, test) <= 0) return false;
-      if(CopyBuffer(m_hATR, 0, 0, 1, test) <= 0) return false;
-      if(CopyBuffer(m_hEMA, 0, 0, 1, test) <= 0) return false;
+      
+      if(CopyBuffer(m_hRSI, 0, 0, 1, test) <= 0)
+      {
+         int err = GetLastError();
+         if(err == 4807 || err == 0) // 4807 = invalid handle, 0 = no data
+         {
+            Print("⚠️ RSI handle invalidated, error: ", err);
+            return false;
+         }
+      }
+      
+      if(CopyBuffer(m_hATR, 0, 0, 1, test) <= 0)
+      {
+         int err = GetLastError();
+         if(err == 4807 || err == 0)
+         {
+            Print("⚠️ ATR handle invalidated, error: ", err);
+            return false;
+         }
+      }
+      
+      if(CopyBuffer(m_hEMA, 0, 0, 1, test) <= 0)
+      {
+         int err = GetLastError();
+         if(err == 4807 || err == 0)
+         {
+            Print("⚠️ EMA handle invalidated, error: ", err);
+            return false;
+         }
+      }
       
       return true;
    }
@@ -1077,12 +1315,12 @@ private:
    {
       datetime now = TimeCurrent();
       
-      // Prevent rapid re-recovery attempts
-      if(now - m_lastRecoveryTime < 60) // Wait at least 1 minute between recovery attempts
+      // Prevent rapid re-recovery attempts - MODIFICADO: cooldown más corto para M5
+      if(m_lastRecoveryTime > 0 && (now - m_lastRecoveryTime) < 30) // 30 segundos en lugar de 60
       {
-         Print("⏳ Recovery cooldown active. Last recovery: ", 
-               IntegerToString((int)(now - m_lastRecoveryTime)), " seconds ago");
-         return false;
+         int secondsSince = (int)(now - m_lastRecoveryTime);
+         Print("⏳ Recovery cooldown active. Last recovery: ", secondsSince, " seconds ago");
+         return m_indicatorsHealthy; // Retornar estado actual
       }
       
       m_lastRecoveryTime = now;
@@ -1094,14 +1332,17 @@ private:
       // Step 1: Reset all handles and buffers
       ResetIndicatorBuffers();
       
-      // Step 2: Force chart data reload
-      long chart_id = ChartOpen(m_symbol, PERIOD_CURRENT);
-      if(chart_id > 0)
+      // Step 2: Force chart data reload - MODIFICADO: solo si es necesario
+      if(m_recoveryAttempts <= 2) // Solo intentar recargar gráfico en primeros intentos
       {
-         Print("📊 Reloading chart data for ", m_symbol);
-         ChartRedraw(chart_id);
-         Sleep(200);
-         ChartClose(chart_id);
+         long chart_id = ChartOpen(m_symbol, PERIOD_CURRENT);
+         if(chart_id > 0)
+         {
+            Print("📊 Reloading chart data for ", m_symbol);
+            ChartRedraw(chart_id);
+            Sleep(100); // Menos tiempo
+            ChartClose(chart_id);
+         }
       }
       
       // Step 3: Release invalid handles
@@ -1113,20 +1354,20 @@ private:
       
       // Step 4: Recreate indicators with delays
       m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
-      Sleep(200);
+      Sleep(100);
       
       m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
-      Sleep(200);
+      Sleep(100);
       
       m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
-      Sleep(200);
+      Sleep(100);
       
       if(m_params.UseReversalFilter)
       {
          m_hEMA50 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA50_Period, 0, MODE_EMA, PRICE_CLOSE);
-         Sleep(200);
+         Sleep(100);
          m_hEMA100 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA100_Period, 0, MODE_EMA, PRICE_CLOSE);
-         Sleep(200);
+         Sleep(100);
       }
       
       // Step 5: Verify recovery
@@ -1142,12 +1383,14 @@ private:
       {
          Print("❌ INDICATOR RECOVERY FAILED for ", m_symbol);
          
-         // If we've tried too many times, escalate
-         if(m_recoveryAttempts >= 3)
+         // Si hemos intentado demasiadas veces, desactivar temporalmente
+         if(m_recoveryAttempts >= 5)
          {
-            Print("🚨 CRITICAL: Multiple recovery failures for ", m_symbol, 
-                  ". Please check symbol data feed.");
-            // Could trigger alert here
+            Print("🚨 CRITICAL: Multiple recovery failures (", m_recoveryAttempts, 
+                  ") for ", m_symbol, ". Entering safe mode.");
+            m_indicatorsHealthy = false;
+            // Podrías agregar un temporizador más largo aquí
+            m_lastRecoveryTime = now + 300; // No intentar por 5 minutos
          }
          
          return false;
@@ -1156,24 +1399,35 @@ private:
    
    bool UpdateIndicatorsEnhanced()
    {
-      // Try normal update first
+      // PRIMERO: Verificar salud de indicadores ANTES de intentar actualizar
+      if(!m_indicatorsHealthy)
+      {
+         Print("⚠️ Indicators marked unhealthy, attempting recovery before update...");
+         if(!RecoverIndicators())
+         {
+            Print("❌ Cannot update indicators - recovery failed");
+            return false;
+         }
+      }
+      
+      // Ahora intentar actualización normal
       if(UpdateIndicatorsStandard()) 
       {
          m_indicatorsHealthy = true;
          return true;
       }
       
-      // If normal update fails, check if it's a 4807 error
+      // Si la actualización normal falla, verificar el error
       int lastError = GetLastError();
       
-      // Check if indicators are fundamentally broken
+      // Verificar si los indicadores están fundamentalmente rotos
       if(lastError == 4807 || !AreIndicatorsHealthy())
       {
-         Print("⚠️ Indicators unhealthy (Error ", lastError, "). Attempting recovery...");
+         Print("⚠️ Indicators unhealthy after update (Error ", lastError, "). Attempting recovery...");
          
          if(RecoverIndicators())
          {
-            // Try again after recovery
+            // Intentar de nuevo después de la recuperación
             if(UpdateIndicatorsStandard())
             {
                Print("✅ Update successful after recovery");
@@ -1182,7 +1436,7 @@ private:
          }
       }
       
-      // If we get here, recovery failed or error wasn't 4807
+      // Si llegamos aquí, la recuperación falló o el error no fue 4807
       m_indicatorsHealthy = false;
       return false;
    }
