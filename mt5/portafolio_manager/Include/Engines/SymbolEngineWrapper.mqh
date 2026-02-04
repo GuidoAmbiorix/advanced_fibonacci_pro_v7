@@ -1011,9 +1011,26 @@ private:
       ArraySetAsSeries(atr, true);
       ArraySetAsSeries(ema, true);
 
-      if(CopyBuffer(m_hRSI, 0, 0, 2, rsi) < 2) return false;
-      if(CopyBuffer(m_hATR, 0, 0, 14, atr) < 14) return false;
-      if(CopyBuffer(m_hEMA, 0, 0, 2, ema) < 2) return false;
+      int copied = CopyBuffer(m_hRSI, 0, 0, 2, rsi);
+      if(copied < 2)
+      {
+         Print("⚠️ UpdateIndicators FAILED | ", m_symbol, " | RSI buffer: copied ", copied, "/2 bars");
+         return false;
+      }
+      
+      copied = CopyBuffer(m_hATR, 0, 0, 14, atr);
+      if(copied < 14)
+      {
+         Print("⚠️ UpdateIndicators FAILED | ", m_symbol, " | ATR buffer: copied ", copied, "/14 bars");
+         return false;
+      }
+      
+      copied = CopyBuffer(m_hEMA, 0, 0, 2, ema);
+      if(copied < 2)
+      {
+         Print("⚠️ UpdateIndicators FAILED | ", m_symbol, " | EMA buffer: copied ", copied, "/2 bars");
+         return false;
+      }
 
       m_g_RSI = rsi[0];
       m_g_RSI_Prev = rsi[1];
@@ -1028,8 +1045,16 @@ private:
          ArraySetAsSeries(ema50, true);
          ArraySetAsSeries(ema100, true);
 
-         if(CopyBuffer(m_hEMA50, 0, 0, 1, ema50) < 1) return false;
-         if(CopyBuffer(m_hEMA100, 0, 0, 1, ema100) < 1) return false;
+         if(CopyBuffer(m_hEMA50, 0, 0, 1, ema50) < 1)
+         {
+            Print("⚠️ UpdateIndicators FAILED | ", m_symbol, " | EMA50 buffer");
+            return false;
+         }
+         if(CopyBuffer(m_hEMA100, 0, 0, 1, ema100) < 1)
+         {
+            Print("⚠️ UpdateIndicators FAILED | ", m_symbol, " | EMA100 buffer");
+            return false;
+         }
 
          m_g_EMA50 = ema50[0];
          m_g_EMA100 = ema100[0];
