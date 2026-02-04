@@ -489,14 +489,6 @@ public:
       Deinit();
    }
    
-   void Deinit()
-   {
-      if(m_helperChartId > 0)
-      {
-         ChartClose(m_helperChartId);
-         m_helperChartId = 0;
-      }
-   }
    
    //+------------------------------------------------------------------+
    //| Initialization Modificada                                        |
@@ -637,6 +629,12 @@ public:
    
    void Deinit()
    {
+      if(m_helperChartId > 0)
+      {
+         ChartClose(m_helperChartId);
+         m_helperChartId = 0;
+      }
+
       if(m_hRSI != INVALID_HANDLE) IndicatorRelease(m_hRSI);
       if(m_hATR != INVALID_HANDLE) IndicatorRelease(m_hATR);
       if(m_hEMA != INVALID_HANDLE) IndicatorRelease(m_hEMA);
