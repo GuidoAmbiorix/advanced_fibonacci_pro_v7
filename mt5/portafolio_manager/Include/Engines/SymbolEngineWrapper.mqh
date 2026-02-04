@@ -1039,17 +1039,17 @@ private:
       
       if(bars_rsi < 2)
       {
-         Print("⏳ WAITING | ", m_symbol, " | RSI calculating... (", bars_rsi, " bars ready)");
+         Print("⏳ WAITING | ", m_symbol, " | RSI calculating... (", bars_rsi, " bars ready) Error: ", GetLastError());
          return false;
       }
       if(bars_atr < 14)
       {
-         Print("⏳ WAITING | ", m_symbol, " | ATR calculating... (", bars_atr, " bars ready)");
+         Print("⏳ WAITING | ", m_symbol, " | ATR calculating... (", bars_atr, " bars ready) Error: ", GetLastError());
          return false;
       }
       if(bars_ema < 2)
       {
-         Print("⏳ WAITING | ", m_symbol, " | EMA calculating... (", bars_ema, " bars ready)");
+         Print("⏳ WAITING | ", m_symbol, " | EMA calculating... (", bars_ema, " bars ready) Error: ", GetLastError());
          return false;
       }
       
