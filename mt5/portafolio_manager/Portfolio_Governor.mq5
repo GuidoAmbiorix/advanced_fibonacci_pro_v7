@@ -658,17 +658,17 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== EURUSD - King of Forex =====
    if(StringFind(sym, "EURUSD") >= 0)
    {
-      // RISK (Conservative - from eurusd.set)
-      params.RiskBase = 0.20;
-      params.RiskAddOn1 = 0.15;
-      params.RiskAddOn2 = 0.10;
-      params.MaxRisk = 0.50;
-      params.MaxLotsPerTrade = 0.5;
+      // RISK (Growth Profile)
+      params.RiskBase = 1.0;
+      params.RiskAddOn1 = 0.5;
+      params.RiskAddOn2 = 0.5;
+      params.MaxRisk = 2.0;
+      params.MaxLotsPerTrade = 2.0;
       
       // KELLY
-      params.KellyFraction = 0.25;
-      params.DailyMaxDD = 2.0;
-      params.WeeklyMaxDD = 4.0;
+      params.KellyFraction = 0.35;
+      params.DailyMaxDD = 4.0;
+      params.WeeklyMaxDD = 8.0;
       
       // TP/SL (Tight for EUR precision)
       params.FixedTP_R = 2.0;
@@ -678,28 +678,28 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.TrailStart_R = 1.6;
       
       // SESSION LIMITS
-      params.MaxTradesPerSession = 3;
-      params.MaxProfitPerSession_R = 6.0;
-      params.MaxLossPerSession_R = 1.5;
-      params.DailyMaxLoss_R = 3.0;
-      params.TradeCooldownMinutes = 10;
-      params.LossCooldownMinutes = 45;
+      params.MaxTradesPerSession = 5;
+      params.MaxProfitPerSession_R = 10.0;
+      params.MaxLossPerSession_R = 3.0;
+      params.DailyMaxLoss_R = 6.0;
+      params.TradeCooldownMinutes = 5;
+      params.LossCooldownMinutes = 30;
    }
    
    // ===== GBPUSD - Cable (HIGH PRIORITY FIX) =====
    else if(StringFind(sym, "GBPUSD") >= 0)
    {
-      // RISK (Conservative - volatile pair)
-      params.RiskBase = 0.18;
-      params.RiskAddOn1 = 0.12;
-      params.RiskAddOn2 = 0.08;
-      params.MaxRisk = 0.45;
-      params.MaxLotsPerTrade = 0.5;
+      // RISK (Growth - volatile pair)
+      params.RiskBase = 0.8;
+      params.RiskAddOn1 = 0.4;
+      params.RiskAddOn2 = 0.3;
+      params.MaxRisk = 1.5;
+      params.MaxLotsPerTrade = 1.5;
       
       // KELLY
-      params.KellyFraction = 0.22;
-      params.DailyMaxDD = 1.9;
-      params.WeeklyMaxDD = 3.8;
+      params.KellyFraction = 0.30;
+      params.DailyMaxDD = 3.5;
+      params.WeeklyMaxDD = 7.0;
       
       // TP/SL (Wide for Cable's volatility)
       params.FixedTP_R = 2.2;
@@ -708,13 +708,13 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.PartialTP_R = 1.3;
       params.TrailStart_R = 1.8;
       
-      // SESSION LIMITS (Conservative due to volatility)
-      params.MaxTradesPerSession = 2;
-      params.MaxProfitPerSession_R = 5.5;
-      params.MaxLossPerSession_R = 1.8;
-      params.DailyMaxLoss_R = 2.9;
-      params.TradeCooldownMinutes = 12;
-      params.LossCooldownMinutes = 50;
+      // SESSION LIMITS (Growth)
+      params.MaxTradesPerSession = 4;
+      params.MaxProfitPerSession_R = 8.0;
+      params.MaxLossPerSession_R = 3.0;
+      params.DailyMaxLoss_R = 5.0;
+      params.TradeCooldownMinutes = 8;
+      params.LossCooldownMinutes = 30;
    }
    
    // ===== XAUUSD - Gold =====
@@ -788,17 +788,17 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== USDCAD - Loonie =====
    else if(StringFind(sym, "USDCAD") >= 0)
    {
-      // RISK (Conservative)
-      params.RiskBase = 0.18;
-      params.RiskAddOn1 = 0.13;
-      params.RiskAddOn2 = 0.09;
-      params.MaxRisk = 0.48;
-      params.MaxLotsPerTrade = 0.5;
+      // RISK (Growth)
+      params.RiskBase = 0.8;
+      params.RiskAddOn1 = 0.4;
+      params.RiskAddOn2 = 0.3;
+      params.MaxRisk = 1.5;
+      params.MaxLotsPerTrade = 1.5;
       
       // KELLY
-      params.KellyFraction = 0.23;
-      params.DailyMaxDD = 1.9;
-      params.WeeklyMaxDD = 3.8;
+      params.KellyFraction = 0.32;
+      params.DailyMaxDD = 3.8;
+      params.WeeklyMaxDD = 7.5;
       
       // TP/SL (Standard)
       params.FixedTP_R = 2.1;
@@ -808,28 +808,28 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.TrailStart_R = 1.7;
       
       // SESSION LIMITS
-      params.MaxTradesPerSession = 3;
-      params.MaxProfitPerSession_R = 5.5;
-      params.MaxLossPerSession_R = 1.6;
-      params.DailyMaxLoss_R = 2.9;
-      params.TradeCooldownMinutes = 11;
-      params.LossCooldownMinutes = 48;
+      params.MaxTradesPerSession = 4;
+      params.MaxProfitPerSession_R = 8.0;
+      params.MaxLossPerSession_R = 3.0;
+      params.DailyMaxLoss_R = 5.5;
+      params.TradeCooldownMinutes = 8;
+      params.LossCooldownMinutes = 30;
    }
    
    // ===== USDCHF - Swissy =====
    else if(StringFind(sym, "USDCHF") >= 0)
    {
-      // RISK (Conservative - stable pair)
-      params.RiskBase = 0.19;
-      params.RiskAddOn1 = 0.14;
-      params.RiskAddOn2 = 0.10;
-      params.MaxRisk = 0.49;
-      params.MaxLotsPerTrade = 0.5;
+      // RISK (Growth - stable pair)
+      params.RiskBase = 0.8;
+      params.RiskAddOn1 = 0.4;
+      params.RiskAddOn2 = 0.3;
+      params.MaxRisk = 1.5;
+      params.MaxLotsPerTrade = 1.5;
       
       // KELLY
-      params.KellyFraction = 0.24;
-      params.DailyMaxDD = 1.95;
-      params.WeeklyMaxDD = 3.9;
+      params.KellyFraction = 0.32;
+      params.DailyMaxDD = 3.8;
+      params.WeeklyMaxDD = 7.5;
       
       // TP/SL (Tight - stable moves)
       params.FixedTP_R = 2.0;
@@ -839,28 +839,28 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.TrailStart_R = 1.6;
       
       // SESSION LIMITS
-      params.MaxTradesPerSession = 3;
-      params.MaxProfitPerSession_R = 5.8;
-      params.MaxLossPerSession_R = 1.5;
-      params.DailyMaxLoss_R = 2.7;
-      params.TradeCooldownMinutes = 10;
-      params.LossCooldownMinutes = 45;
+      params.MaxTradesPerSession = 4;
+      params.MaxProfitPerSession_R = 8.0;
+      params.MaxLossPerSession_R = 3.0;
+      params.DailyMaxLoss_R = 5.5;
+      params.TradeCooldownMinutes = 8;
+      params.LossCooldownMinutes = 30;
    }
    
    // ===== AUDUSD - Aussie =====
    else if(StringFind(sym, "AUDUSD") >= 0)
    {
-      // RISK (Moderate)
-      params.RiskBase = 0.19;
-      params.RiskAddOn1 = 0.14;
-      params.RiskAddOn2 = 0.10;
-      params.MaxRisk = 0.48;
-      params.MaxLotsPerTrade = 0.5;
+      // RISK (Growth)
+      params.RiskBase = 0.8;
+      params.RiskAddOn1 = 0.4;
+      params.RiskAddOn2 = 0.3;
+      params.MaxRisk = 1.5;
+      params.MaxLotsPerTrade = 1.5;
       
       // KELLY
-      params.KellyFraction = 0.24;
-      params.DailyMaxDD = 1.9;
-      params.WeeklyMaxDD = 3.8;
+      params.KellyFraction = 0.32;
+      params.DailyMaxDD = 3.8;
+      params.WeeklyMaxDD = 7.5;
       
       // TP/SL (Standard)
       params.FixedTP_R = 2.1;
@@ -870,12 +870,12 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.TrailStart_R = 1.6;
       
       // SESSION LIMITS
-      params.MaxTradesPerSession = 3;
-      params.MaxProfitPerSession_R = 5.6;
-      params.MaxLossPerSession_R = 1.6;
-      params.DailyMaxLoss_R = 2.8;
-      params.TradeCooldownMinutes = 10;
-      params.LossCooldownMinutes = 46;
+      params.MaxTradesPerSession = 4;
+      params.MaxProfitPerSession_R = 8.0;
+      params.MaxLossPerSession_R = 3.0;
+      params.DailyMaxLoss_R = 5.5;
+      params.TradeCooldownMinutes = 8;
+      params.LossCooldownMinutes = 30;
    }
    
    // ===== USDJPY - Yen King =====
