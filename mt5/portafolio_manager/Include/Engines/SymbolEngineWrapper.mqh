@@ -492,6 +492,20 @@ public:
       m_trade.SetDeviationInPoints(m_params.Deviation);
       m_trade.SetTypeFilling(m_params.FillingType);
       
+      // CRITICAL: Preload symbol timeframe data before creating indicators
+      // This prevents indicator handles from becoming invalid (BarsCalculated = -1)
+      long chart_id = ChartOpen(m_symbol, PERIOD_CURRENT);
+      if(chart_id == 0)
+      {
+         Print("⚠️ Warning: Could not open chart for ", m_symbol, " - continuing anyway");
+      }
+      else
+      {
+         Print("📊 Preloading ", m_symbol, " timeframe data...");
+         Sleep(500); // Give MT5 time to load the chart data
+         ChartClose(chart_id); // Close the chart, we only needed it for data loading
+      }
+      
       // Initialize Core Indicators
       m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
       m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
@@ -500,32 +514,6 @@ public:
       if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
       {
          Print("Engine Init Failed: Core Indicators (", m_symbol, ")");
-         return false;
-      }
-      
-      // CRITICAL: Wait for MT5 to initialize indicator buffers
-      Print("⏳ Waiting for ", m_symbol, " indicators to initialize...");
-      int maxWait = 30; // Maximum 30 seconds
-      int waitCount = 0;
-      while(waitCount < maxWait)
-      {
-         int bars_rsi = BarsCalculated(m_hRSI);
-         int bars_atr = BarsCalculated(m_hATR);
-         int bars_ema = BarsCalculated(m_hEMA);
-         
-         if(bars_rsi > 0 && bars_atr > 0 && bars_ema > 0)
-         {
-            Print("✅ ", m_symbol, " indicators ready (RSI:", bars_rsi, " ATR:", bars_atr, " EMA:", bars_ema, ")");
-            break;
-         }
-         
-         Sleep(1000); // Wait 1 second
-         waitCount++;
-      }
-      
-      if(waitCount >= maxWait)
-      {
-         Print("❌ ", m_symbol, " indicator initialization timeout!");
          return false;
       }
 
@@ -539,23 +527,6 @@ public:
          {
             Print("Engine Init Failed: Reversal Filter Indicators (", m_symbol, ")");
             return false;
-         }
-         
-         // Wait for reversal filter indicators
-         waitCount = 0;
-         while(waitCount < maxWait)
-         {
-            int bars_ema50 = BarsCalculated(m_hEMA50);
-            int bars_ema100 = BarsCalculated(m_hEMA100);
-            
-            if(bars_ema50 > 0 && bars_ema100 > 0)
-            {
-               Print("✅ ", m_symbol, " reversal indicators ready");
-               break;
-            }
-            
-            Sleep(1000);
-            waitCount++;
          }
       }
       
