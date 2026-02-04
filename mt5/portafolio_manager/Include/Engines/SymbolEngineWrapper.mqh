@@ -312,6 +312,11 @@ public:
    int      m_barCount;
    int      m_tradesExecuted;
 
+   // INTRA-BAR PERSISTENCE (Controlled Aggression)
+   datetime m_signalStartTime;       // Timestamp when confluence first met threshold
+   int      m_lastSignalDirection;   // Direction of the persistent signal
+   int      m_persistenceSeconds;    // Required duration (default 10s)
+
    // ADAPTIVE CONFLUENCE RANKING (Percentile System)
    bool     m_allowedToTradeThisCycle;  // Set by Portfolio Governor based on rank
    double   m_currentBestScore;         // Current best confluence score (buy or sell)
@@ -480,11 +485,15 @@ public:
       m_allowedToTradeThisCycle = true;   // Default: allowed
       m_currentBestScore = 0.0;
       
-      // Recovery Init - MODIFICADO: Iniciar como false, se establecerá en true después de Init exitoso
-      m_indicatorsHealthy = false;
+      m_indicatorHealthy = false;
       m_lastRecoveryTime = 0;
       m_recoveryAttempts = 0;
       m_helperChartId = 0;
+
+      // Intra-Bar Init
+      m_signalStartTime = 0;
+      m_lastSignalDirection = 0;
+      m_persistenceSeconds = 10; // 10s stability filter
    }
    
    ~CSymbolEngineWrapper()
@@ -908,9 +917,7 @@ public:
    //+------------------------------------------------------------------+
    void UpdateScoresForRanking()
    {
-      // Verificar si tenemos una nueva barra sin consumir el flag
-      datetime currentBarTime = iTime(m_symbol, PERIOD_CURRENT, 0);
-      if(currentBarTime == m_lastBarTime) return; // Misma barra, saltar
+      // Continuous intra-bar scoring enabled
       
       // CRÍTICO: Verificar salud de indicadores ANTES de todo
       if(!m_indicatorsHealthy)
@@ -959,10 +966,12 @@ public:
       
       ManagePositions();
       
-      if(!IsNewBar())
-      {
-         return;
-      }
+      // REMOVED: if(!IsNewBar()) { return; }
+      // Intra-bar processing enabled
+      
+      static datetime lastScanTime = 0;
+      if(TimeCurrent() == lastScanTime) return; // Prevent multiple scans per tick
+      lastScanTime = TimeCurrent();
       
       Print("🔔 NEW BAR | ", m_symbol, " | OnTick called");
       
@@ -1641,8 +1650,8 @@ private:
    {
       if(!m_params.UseDisplacement) return true;
 
-      // Scan last 5 bars for aligned displacement (DIRECTION-VALIDATED)
-      for(int i = 1; i <= 5; i++)  // Start from bar 1 (more recent)
+       // Scan last 5 bars for aligned displacement (including current intra-bar 0)
+       for(int i = 0; i <= 5; i++)  
       {
          double o = iOpen(m_symbol, PERIOD_CURRENT, i);
          double c = iClose(m_symbol, PERIOD_CURRENT, i);
@@ -1709,21 +1718,25 @@ private:
        m_currentBestScore = bestScore;  // Store for ranking
        int    direction = (buyScore > sellScore) ? 1 : -1;
 
-       Print("🎲 SCORES | Buy: ", DoubleToString(buyScore, 2), " | Sell: ", DoubleToString(sellScore, 2),
-             " | Best: ", DoubleToString(bestScore, 2), " | Direction: ", (direction == 1 ? "BUY" : "SELL"),
-             " | AllowedToTrade: ", (m_allowedToTradeThisCycle ? "YES" : "NO"));
+       // Determine quality tier
+       ENUM_ENTRY_TIER quality = (bestScore >= 14.0) ? TIER_ELITE : (bestScore >= 12.0 ? TIER_STRONG : TIER_GOOD);
 
-       // ADAPTIVE CONFLUENCE RANKING: Check permission from Governor
-       if(!m_allowedToTradeThisCycle)
+       // INTRA-BAR PERSISTENCE (Stability Filter)
+       if(direction != m_lastSignalDirection || bestScore < m_params.MinConfluenceEntry)
        {
-           Print("❌ BLOCKED: Not in top-ranked symbols this cycle (AllowedToTrade flag = false)");
+           m_signalStartTime = TimeCurrent(); // Reset timer if direction changes or score drops
+           m_lastSignalDirection = direction;
+           return; // Wait for next tick to start counting
+       }
+
+       int secondsHeld = (int)(TimeCurrent() - m_signalStartTime);
+       if(secondsHeld < m_persistenceSeconds)
+       {
+           Print("⏳ STABILIZING | Signal held for ", secondsHeld, "s / ", m_persistenceSeconds, "s");
            return;
        }
 
-       Print("✅ ALLOWED TO TRADE - Continuing to filters...");
-
-       // Minimum threshold check (safety floor - prevents garbage trades)
-       if(bestScore < m_params.MinConfluenceEntry) return;
+       Print("✅ STABILIZED SIGNAL (", secondsHeld, "s) - Continuing to filters...");
 
        // OVERTRADING PROTECTION: Reversal Filter
        if(!CheckReversalFilter(direction)) return;
@@ -2324,20 +2337,28 @@ private:
            else
                m_lastSellTime = TimeCurrent();
 
-           // Log trade
-           Print("===========================================");
-           Print("âœ… TRADE OPENED: ", m_symbol);
-           Print("  Ticket: #", ticket);
-           Print("  Type: ", EnumToString(type));
-           Print("  Price: ", DoubleToString(price, (int)m_symbolInfo.Digits()));
-           Print("  SL: ", DoubleToString(sl, (int)m_symbolInfo.Digits()), " (", DoubleToString(slDist / m_symbolInfo.Point(), 0), " pips)");
-           if(tp > 0)
-               Print("  TP: ", DoubleToString(tp, (int)m_symbolInfo.Digits()), " (", DoubleToString(MathAbs(tp - price) / slDist, 2), "R)");
-           Print("  Lots: ", DoubleToString(lots, 2));
-           Print("  Risk: ", DoubleToString(riskPct, 2), "%");
-           Print("  Quality: ", EnumToString(quality));
-           Print("  Confluence: ", DoubleToString(m_currentConfluence, 1), "/12");
-           Print("===========================================");
+            // CALCULATE BAR PROGRESS
+            datetime barOpen = iTime(m_symbol, PERIOD_CURRENT, 0);
+            int barElapsed = (int)(TimeCurrent() - barOpen);
+            int barTotal = PeriodSeconds(PERIOD_CURRENT);
+            double barProgress = (barTotal > 0) ? (double)barElapsed / barTotal * 100.0 : 0;
+            int secondsHeld = (int)(TimeCurrent() - m_signalStartTime);
+
+            // Log trade
+            Print("===========================================");
+            Print("✅ TRADE OPENED [Intra-Bar @ ", DoubleToString(barProgress, 1), "%] | ", m_symbol);
+            Print("  Ticket: #", ticket);
+            Print("  Type: ", EnumToString(type));
+            Print("  Price: ", DoubleToString(price, (int)m_symbolInfo.Digits()));
+            Print("  SL: ", DoubleToString(sl, (int)m_symbolInfo.Digits()), " (", DoubleToString(slDist / m_symbolInfo.Point(), 0), " pips)");
+            if(tp > 0)
+                Print("  TP: ", DoubleToString(tp, (int)m_symbolInfo.Digits()), " (", DoubleToString(MathAbs(tp - price) / slDist, 2), "R)");
+            Print("  Lots: ", DoubleToString(lots, 2));
+            Print("  Risk: ", DoubleToString(riskPct, 2), "%");
+            Print("  Quality: ", EnumToString(quality));
+            Print("  Confluence: ", DoubleToString(m_currentConfluence, 1), "/30");
+            Print("  Persistence: ", secondsHeld, "s");
+            Print("===========================================");
 
            m_tradesExecuted++;
        }
