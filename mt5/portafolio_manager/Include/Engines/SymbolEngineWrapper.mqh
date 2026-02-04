@@ -1736,13 +1736,6 @@ private:
        // INTRA-BAR PERSISTENCE (Stability Filter)
        if(direction != m_lastSignalDirection || bestScore < m_params.MinConfluenceEntry)
        {
-           // Log reset only if we had a meaningful signal previously (to avoid spam on noise)
-           if(m_signalStartTime > 0 && (TimeCurrent() - m_signalStartTime) > 5)
-           {
-               Print("📉 SIGNAL RESET: ", m_symbol, " | Score dropped (", DoubleToString(bestScore,1), 
-                     ") or Dir change. Held: ", (int)(TimeCurrent() - m_signalStartTime), "s");
-           }
-
            m_signalStartTime = TimeCurrent(); // Reset timer if direction changes or score drops
            m_lastSignalDirection = direction;
            return; // Wait for next tick to start counting
