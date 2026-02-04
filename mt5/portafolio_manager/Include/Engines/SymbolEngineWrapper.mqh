@@ -383,9 +383,9 @@ public:
 
       // TAKE PROFIT (M15 SWING-SCALPING OPTIMIZED)
       p.TPMode = 3; // Hybrid
-      p.FixedTP_R = 3.5;         // H1: Larger targets for H1 trends (was 2.5 for M15)
-      p.MinTP_R = 2.0;           // H1: Minimum 2R for H1 quality (was 1.0 for M15)
-      p.MaxTP_R = 5.0;           // H1: Allow H1 runners to 5R (was 4.0 for M15)
+      p.FixedTP_R = 2.5;         // M15: Optimized for standard intraday swings
+      p.MinTP_R = 1.0;           // M15: Allow scaling out from 1R
+      p.MaxTP_R = 4.0;           // M15: Standard intraday trend extension
       p.TPUseLearnedMFE = true;
 
       // EXIT (Trade Management)
@@ -401,16 +401,16 @@ public:
 
       // SMC
       p.UseSMC = true;
-      // H1 OPTIMIZED SMC PARAMETERS (longer lookbacks for H1)
-      p.SMC_SwingLookback = 45;       // H1: Longer swings (was 20 for M15)
-      p.SMC_MinImpulseATR = 2.5;      // H1: Stronger impulses (was 2.0 for M15)
-      p.SMC_MinFVG_ATR = 0.8;         // H1: Significant gaps only (was 0.5 for M15)
+      // M15 OPTIMIZED SMC PARAMETERS
+      p.SMC_SwingLookback = 20;       // M15: Standard lookback
+      p.SMC_MinImpulseATR = 2.0;      // M15: Standard impulse
+      p.SMC_MinFVG_ATR = 0.5;         // M15: Standard gaps
 
       // MTF
       p.UseMTF = true;
-      // H1 OPTIMIZED MTF HIERARCHY: D1 → H4 → H1 (was H4 → H1 → M15)
-      p.HTF = PERIOD_D1;         // Highest: Daily for macro trend
-      p.MTF = PERIOD_H4;         // Middle: H4 for structure
+      // M15 OPTIMIZED MTF HIERARCHY: H4 → H1 → M15
+      p.HTF = PERIOD_H4;         // Highest: H4 for macro trend
+      p.MTF = PERIOD_H1;         // Middle: H1 for structure
       p.MTF_EMAPeriod = 200;
 
       // NEWS
