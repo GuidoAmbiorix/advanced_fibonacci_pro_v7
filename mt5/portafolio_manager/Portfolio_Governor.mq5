@@ -203,6 +203,60 @@ void OnDeinit(const int reason)
 }
 
 //+------------------------------------------------------------------+
+//| Trade Transaction Handler - Log trades to database               |
+//+------------------------------------------------------------------+
+void OnTradeTransaction(const MqlTradeTransaction& trans,
+                        const MqlTradeRequest& request,
+                        const MqlTradeResult& result)
+{
+   // Only process deal events
+   if(trans.type != TRADE_TRANSACTION_DEAL_ADD)
+      return;
+
+   ulong dealTicket = trans.deal;
+   if(dealTicket == 0) return;
+
+   // Get deal info
+   if(!HistoryDealSelect(dealTicket))
+      return;
+
+   long dealEntry = HistoryDealGetInteger(dealTicket, DEAL_ENTRY);
+   ulong positionId = HistoryDealGetInteger(dealTicket, DEAL_POSITION_ID);
+   string symbol = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
+   long dealType = HistoryDealGetInteger(dealTicket, DEAL_TYPE);
+   double volume = HistoryDealGetDouble(dealTicket, DEAL_VOLUME);
+   double price = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
+   double profit = HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
+   double commission = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
+   double swap = HistoryDealGetDouble(dealTicket, DEAL_SWAP);
+
+   // Entry deal - log trade opening
+   if(dealEntry == DEAL_ENTRY_IN)
+   {
+      int tradeType = (dealType == DEAL_TYPE_BUY) ? 0 : 1; // 0=BUY, 1=SELL
+
+      // Log to database
+      g_db.LogTradeEntry(positionId, symbol, tradeType, volume, price, 0, 0, 0,
+                         "Governor", EnumToString(g_currentRegime), "REALTIME");
+
+      Print("📝 DB: Logged trade ENTRY - Ticket: ", positionId, " | ", symbol,
+            " | ", (tradeType == 0 ? "BUY" : "SELL"), " | Lots: ", volume);
+   }
+   // Exit deal - log trade closing
+   else if(dealEntry == DEAL_ENTRY_OUT)
+   {
+      // Calculate net profit
+      double netProfit = profit + commission + swap;
+
+      // Log to database
+      g_db.LogTradeExit(positionId, price, netProfit, commission, swap, "CLOSED", 0, 0);
+
+      Print("📝 DB: Logged trade EXIT - Ticket: ", positionId, " | ", symbol,
+            " | Profit: $", DoubleToString(netProfit, 2));
+   }
+}
+
+//+------------------------------------------------------------------+
 //| TICK (Safety)                                                     |
 //+------------------------------------------------------------------+
 void OnTick()
@@ -321,6 +375,18 @@ void OnTimer()
    {
       PrintHeartbeat();
       g_lastHeartbeat = TimeCurrent();
+   }
+
+   // 1.6. Update Account State in Database (every 5 seconds for dashboard)
+   static datetime lastStateUpdate = 0;
+   if(TimeCurrent() - lastStateUpdate >= 5) // Every 5 seconds
+   {
+      g_db.SetState("balance", account.Balance());
+      g_db.SetState("equity", account.Equity());
+      g_db.SetState("margin_used", account.Margin());
+      g_db.SetState("margin_free", account.FreeMargin());
+      g_db.SetState("last_update", (double)TimeCurrent());
+      lastStateUpdate = TimeCurrent();
    }
 
    // 2. Regime Detection with Confidence

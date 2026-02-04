@@ -39,7 +39,7 @@ public:
       // DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON
       // Using FILE_COMMON to share between terminals if needed, or remove for local
       m_dbHandle = DatabaseOpen(m_dbPath, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
-      
+
       if(m_dbHandle == INVALID_HANDLE)
       {
          Print("❌ DB ERROR: Failed to open database '", m_dbPath, "'. Error: ", GetLastError());
@@ -55,6 +55,9 @@ public:
          Close();
          return false;
       }
+
+      // Import historical trades if database is empty
+      ImportHistoricalTrades();
 
       return true;
    }
@@ -202,19 +205,147 @@ public:
    double GetStateNum(string key, double defaultVal=0.0)
    {
        if(!m_isOpen) return defaultVal;
-       
+
        string query = StringFormat("SELECT value_num FROM GovernorState WHERE key='%s';", key);
        int request = DatabasePrepare(m_dbHandle, query);
-       
+
        if(request == INVALID_HANDLE) return defaultVal;
-       
+
        double result = defaultVal;
        if(DatabaseRead(request))
        {
-           DatabaseColumnDouble(request, 0, result); 
+           DatabaseColumnDouble(request, 0, result);
        }
        DatabaseFinalize(request);
        return result;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Import Historical Trades from Account History                    |
+   //+------------------------------------------------------------------+
+   bool ImportHistoricalTrades()
+   {
+      if(!m_isOpen) return false;
+
+      // Check if we already have trades in the database
+      string checkQuery = "SELECT COUNT(*) as count FROM Trades;";
+      int request = DatabasePrepare(m_dbHandle, checkQuery);
+
+      if(request == INVALID_HANDLE)
+      {
+         Print("❌ DB ERROR: Cannot check trade count");
+         return false;
+      }
+
+      long existingTradesLong = 0;
+      if(DatabaseRead(request))
+      {
+         DatabaseColumnLong(request, 0, existingTradesLong);
+      }
+      DatabaseFinalize(request);
+
+      int existingTrades = (int)existingTradesLong;
+
+      // If we already have trades, skip import
+      if(existingTrades > 0)
+      {
+         Print("💾 DB: ", existingTrades, " trades already in database, skipping import");
+         return true;
+      }
+
+      // Import all historical deals
+      Print("💾 DB: Database is empty, importing historical trades...");
+
+      datetime startDate = 0; // Import all history
+      datetime endDate = TimeCurrent();
+
+      HistorySelect(startDate, endDate);
+
+      int totalDeals = HistoryDealsTotal();
+      int importedTrades = 0;
+
+      Print("💾 DB: Found ", totalDeals, " deals in history");
+
+      // Process deals and group by position ticket
+      for(int i = 0; i < totalDeals; i++)
+      {
+         ulong dealTicket = HistoryDealGetTicket(i);
+         if(dealTicket == 0) continue;
+
+         // Only process DEAL_ENTRY_OUT (closed trades)
+         long dealEntry = HistoryDealGetInteger(dealTicket, DEAL_ENTRY);
+         if(dealEntry != DEAL_ENTRY_OUT) continue;
+
+         // Get deal details
+         ulong positionId = HistoryDealGetInteger(dealTicket, DEAL_POSITION_ID);
+         string symbol = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
+         long dealType = HistoryDealGetInteger(dealTicket, DEAL_TYPE);
+         double volume = HistoryDealGetDouble(dealTicket, DEAL_VOLUME);
+         double dealPrice = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
+         double profit = HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
+         double commission = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
+         double swap = HistoryDealGetDouble(dealTicket, DEAL_SWAP);
+         datetime dealTime = (datetime)HistoryDealGetInteger(dealTicket, DEAL_TIME);
+
+         // Try to find the corresponding entry deal for this position
+         double entryPrice = 0;
+         datetime entryTime = 0;
+         int tradeType = (dealType == DEAL_TYPE_BUY) ? 1 : 0; // Reverse: exit BUY means it was a SELL
+
+         // Search for entry deal
+         for(int j = 0; j < totalDeals; j++)
+         {
+            ulong entryDealTicket = HistoryDealGetTicket(j);
+            if(entryDealTicket == 0) continue;
+
+            ulong entryPosId = HistoryDealGetInteger(entryDealTicket, DEAL_POSITION_ID);
+            long entryDealEntry = HistoryDealGetInteger(entryDealTicket, DEAL_ENTRY);
+
+            if(entryPosId == positionId && entryDealEntry == DEAL_ENTRY_IN)
+            {
+               entryPrice = HistoryDealGetDouble(entryDealTicket, DEAL_PRICE);
+               entryTime = (datetime)HistoryDealGetInteger(entryDealTicket, DEAL_TIME);
+               long entryDealType = HistoryDealGetInteger(entryDealTicket, DEAL_TYPE);
+               tradeType = (entryDealType == DEAL_TYPE_BUY) ? 0 : 1; // 0=BUY, 1=SELL
+               break;
+            }
+         }
+
+         // If we found entry, insert the complete trade
+         if(entryPrice > 0)
+         {
+            string insertQuery = StringFormat(
+               "INSERT OR IGNORE INTO Trades "
+               "(ticket, symbol, entry_time, type, lots, entry_price, sl, tp, "
+               "close_time, close_price, profit, commission, swap, "
+               "strategy, confluence_score, regime, killzone, exit_reason) "
+               "VALUES (%I64u, '%s', %I64d, %d, %.2f, %.5f, 0, 0, "
+               "%I64d, %.5f, %.2f, %.2f, %.2f, "
+               "'HISTORICAL', 0, 'UNKNOWN', 'UNKNOWN', 'HISTORICAL_IMPORT');",
+               positionId,
+               symbol,
+               (long)entryTime,
+               tradeType,
+               volume,
+               entryPrice,
+               (long)dealTime,
+               dealPrice,
+               profit,
+               commission,
+               swap
+            );
+
+            if(Execute(insertQuery))
+            {
+               importedTrades++;
+            }
+         }
+      }
+
+      Print("💾 DB: Successfully imported ", importedTrades, " historical trades");
+      SetState("history_imported", 1.0, "true");
+
+      return true;
    }
 
 private:

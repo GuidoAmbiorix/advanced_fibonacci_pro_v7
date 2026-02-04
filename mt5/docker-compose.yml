@@ -1,8 +1,33 @@
-version: "3.8"
 services:
-  mt52:
+  # Service for FIRST RUN ONLY - Initializes Wine directory structure
+  mt5-init:
+    image: gmag11/metatrader5_vnc:latest
+    container_name: mt5-init
+    profiles: ["init"]  # Only runs with --profile init
+    ports:
+      - "3001:3000"
+      - "8002:8001"
+    environment:
+      - CUSTOM_USER=trader
+      - PASSWORD=trading
+    volumes:
+      # Only the managed volume - no bind mount
+      - mt5_config_v2:/config
+    networks:
+      mt5_network_v2:
+        ipv4_address: 10.13.13.20
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 2G
+
+  # Service for NORMAL OPERATION - With bind mount
+  mt5:
     image: gmag11/metatrader5_vnc:latest
     container_name: mt5-v2
+    profiles: ["app"]  # Only runs with --profile app (or default)
     ports:
       - "3001:3000"
       - "8002:8001"
@@ -11,7 +36,7 @@ services:
       - PASSWORD=trading
     volumes:
       - mt5_config_v2:/config
-      # NOW add your local folder
+      # Bind mount your local code
       - type: bind
         source: ./portafolio_manager
         target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
@@ -26,6 +51,28 @@ services:
         reservations:
           memory: 2G
     restart: unless-stopped
+
+  # Dashboard service - Streamlit monitoring
+  dashboard:
+    build: ./dashboard
+    container_name: portfolio-dashboard
+    profiles: ["dashboard"]  # Only runs with --profile dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      # Read-only access to MT5 database
+      - mt5_config_v2:/mt5_data:ro
+    environment:
+      - DB_PATH=/mt5_data/.wine/drive_c/users/abc/AppData/Roaming/MetaQuotes/Terminal/Common/Files/PortfolioGovernor.sqlite
+    networks:
+      - mt5_network_v2
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
 
 volumes:
   mt5_config_v2:

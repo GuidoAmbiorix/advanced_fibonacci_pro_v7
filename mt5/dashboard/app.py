@@ -1,0 +1,175 @@
+"""
+MT5 Portfolio Manager - Streamlit Monitoring Dashboard
+Main application file
+"""
+
+import streamlit as st
+from streamlit_autorefresh import st_autorefresh
+from datetime import datetime
+import sys
+import os
+
+# Add utils to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+
+from utils.db_reader import DatabaseReader
+from components import account_overview, positions, trade_history, symbol_metrics, risk_metrics, performance_analytics
+
+# Page configuration
+st.set_page_config(
+    layout="wide",
+    page_title="MT5 Portfolio Monitor",
+    page_icon="📊",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS for better styling
+st.markdown("""
+<style>
+    .main > div {
+        padding-top: 2rem;
+    }
+    .stMetric {
+        background-color: #f0f2f6;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    h1 {
+        color: #1f77b4;
+    }
+    h2 {
+        color: #2E86AB;
+        margin-top: 1rem;
+    }
+    .stAlert {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Initialize session state for auto-refresh
+if 'last_refresh' not in st.session_state:
+    st.session_state.last_refresh = datetime.now()
+
+# Sidebar
+with st.sidebar:
+    st.title("📊 MT5 Portfolio Monitor")
+    st.write("Real-time trading dashboard")
+
+    st.divider()
+
+    # Refresh controls
+    st.subheader("Refresh Settings")
+
+    auto_refresh = st.checkbox("Auto-refresh", value=True, help="Automatically refresh data every 5 seconds")
+
+    if st.button("🔄 Refresh Now", use_container_width=True):
+        st.session_state.last_refresh = datetime.now()
+        st.rerun()
+
+    st.caption(f"Last updated: {st.session_state.last_refresh.strftime('%Y-%m-%d %H:%M:%S')}")
+
+    st.divider()
+
+    # Date range selector
+    st.subheader("Time Range")
+    date_range = st.selectbox(
+        "Select period",
+        ["1D", "7D", "30D", "90D", "All"],
+        index=1,
+        help="Time range for trade history"
+    )
+
+    st.divider()
+
+    # Database info
+    st.subheader("Database Info")
+    db_path = os.environ.get('DB_PATH', 'Using default path')
+    st.caption(f"Path: {db_path}")
+
+    st.divider()
+
+    # Info
+    st.markdown("""
+    ### Features
+    - 📊 Real-time account overview
+    - 📈 Open positions monitoring
+    - 📜 Trade history & analysis
+    - 🎯 Symbol performance metrics
+    - ⚠️ Risk & exposure tracking
+
+    ### About
+    MT5 Portfolio Governor monitoring dashboard built with Streamlit.
+    Reads data from MT5 SQLite database.
+    """)
+
+# Auto-refresh logic
+if auto_refresh:
+    # Refresh every 5 seconds (5000 milliseconds)
+    count = st_autorefresh(interval=5000, key="datarefresh")
+    st.session_state.last_refresh = datetime.now()
+
+# Main content
+st.title("MT5 Portfolio Manager Dashboard")
+
+# Initialize database reader
+try:
+    db = DatabaseReader()
+
+    # Check if we can connect
+    account_summary = db.get_account_summary()
+
+    if account_summary.get('balance', 0) == 0 and account_summary.get('equity', 0) == 0:
+        st.warning("⚠️ Dashboard is running but no data found in database. Make sure MT5 is running and writing to the database.")
+
+except Exception as e:
+    st.error(f"❌ Could not connect to database: {e}")
+    st.info("""
+    ### Troubleshooting
+    1. Make sure MT5 container is running
+    2. Check that database path is correctly mounted
+    3. Verify MT5 is writing to PortfolioGovernor.sqlite
+    4. Check DB_PATH environment variable
+    """)
+    st.stop()
+
+# Row 1: Account Overview
+try:
+    account_overview.render(db)
+except Exception as e:
+    st.error(f"Error rendering account overview: {e}")
+
+# Row 2: Open Positions
+try:
+    positions.render(db)
+except Exception as e:
+    st.error(f"Error rendering positions: {e}")
+
+# Row 3: Symbol Metrics
+try:
+    symbol_metrics.render(db)
+except Exception as e:
+    st.error(f"Error rendering symbol metrics: {e}")
+
+# Row 4: Performance Analytics
+try:
+    performance_analytics.render(db)
+except Exception as e:
+    st.error(f"Error rendering performance analytics: {e}")
+
+# Row 5: Risk Metrics
+try:
+    risk_metrics.render(db)
+except Exception as e:
+    st.error(f"Error rendering risk metrics: {e}")
+
+# Row 6: Trade History
+try:
+    trade_history.render(db, date_range)
+except Exception as e:
+    st.error(f"Error rendering trade history: {e}")
+
+# Footer
+st.divider()
+st.caption("MT5 Portfolio Manager Dashboard | Built with Streamlit | Data from PortfolioGovernor.sqlite")
