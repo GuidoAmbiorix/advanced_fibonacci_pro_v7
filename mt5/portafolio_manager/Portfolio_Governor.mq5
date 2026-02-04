@@ -881,17 +881,17 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== USDJPY - Yen King =====
    else if(StringFind(sym, "USDJPY") >= 0)
    {
-      // RISK (Conservative - safe haven)
-      params.RiskBase = 0.17;
-      params.RiskAddOn1 = 0.12;
-      params.RiskAddOn2 = 0.08;
-      params.MaxRisk = 0.46;
-      params.MaxLotsPerTrade = 0.5;
+      // RISK (Growth - safe haven)
+      params.RiskBase = 0.5; // Slightly lower than majors due to Yen spikes
+      params.RiskAddOn1 = 0.3;
+      params.RiskAddOn2 = 0.2;
+      params.MaxRisk = 1.2;
+      params.MaxLotsPerTrade = 1.2;
       
       // KELLY
-      params.KellyFraction = 0.22;
-      params.DailyMaxDD = 1.8;
-      params.WeeklyMaxDD = 3.6;
+      params.KellyFraction = 0.30;
+      params.DailyMaxDD = 3.5;
+      params.WeeklyMaxDD = 7.0;
       
       // TP/SL (Standard)
       params.FixedTP_R = 2.0;
@@ -901,28 +901,28 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.TrailStart_R = 1.6;
       
       // SESSION LIMITS
-      params.MaxTradesPerSession = 3;
-      params.MaxProfitPerSession_R = 5.5;
-      params.MaxLossPerSession_R = 1.6;
-      params.DailyMaxLoss_R = 2.8;
-      params.TradeCooldownMinutes = 10;
-      params.LossCooldownMinutes = 45;
+      params.MaxTradesPerSession = 4;
+      params.MaxProfitPerSession_R = 8.0;
+      params.MaxLossPerSession_R = 3.0;
+      params.DailyMaxLoss_R = 5.0;
+      params.TradeCooldownMinutes = 8;
+      params.LossCooldownMinutes = 30;
    }
    
    // ===== EURJPY - EUR/JPY Cross =====
    else if(StringFind(sym, "EURJPY") >= 0)
    {
-      // RISK (Moderate - volatile cross)
-      params.RiskBase = 0.18;
-      params.RiskAddOn1 = 0.12;
-      params.RiskAddOn2 = 0.08;
-      params.MaxRisk = 0.45;
-      params.MaxLotsPerTrade = 0.5;
+      // RISK (Growth - volatile cross)
+      params.RiskBase = 0.5;
+      params.RiskAddOn1 = 0.3;
+      params.RiskAddOn2 = 0.2;
+      params.MaxRisk = 1.2;
+      params.MaxLotsPerTrade = 1.2;
       
       // KELLY
-      params.KellyFraction = 0.22;
-      params.DailyMaxDD = 1.8;
-      params.WeeklyMaxDD = 3.5;
+      params.KellyFraction = 0.30;
+      params.DailyMaxDD = 3.5;
+      params.WeeklyMaxDD = 7.0;
       
       // TP/SL (Wider for volatility)
       params.FixedTP_R = 2.2;
@@ -932,28 +932,28 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.TrailStart_R = 1.8;
       
       // SESSION LIMITS
-      params.MaxTradesPerSession = 2;
-      params.MaxProfitPerSession_R = 5.0;
-      params.MaxLossPerSession_R = 1.8;
-      params.DailyMaxLoss_R = 2.8;
-      params.TradeCooldownMinutes = 12;
-      params.LossCooldownMinutes = 50;
+      params.MaxTradesPerSession = 4;
+      params.MaxProfitPerSession_R = 8.0;
+      params.MaxLossPerSession_R = 3.0;
+      params.DailyMaxLoss_R = 5.0;
+      params.TradeCooldownMinutes = 8;
+      params.LossCooldownMinutes = 30;
    }
    
    // ===== NZDUSD - Kiwi =====
    else if(StringFind(sym, "NZDUSD") >= 0)
    {
-      // RISK (Moderate)
-      params.RiskBase = 0.18;
-      params.RiskAddOn1 = 0.13;
-      params.RiskAddOn2 = 0.09;
-      params.MaxRisk = 0.47;
-      params.MaxLotsPerTrade = 0.5;
+      // RISK (Growth)
+      params.RiskBase = 0.8;
+      params.RiskAddOn1 = 0.4;
+      params.RiskAddOn2 = 0.3;
+      params.MaxRisk = 1.5;
+      params.MaxLotsPerTrade = 1.5;
       
       // KELLY
-      params.KellyFraction = 0.23;
-      params.DailyMaxDD = 1.85;
-      params.WeeklyMaxDD = 3.7;
+      params.KellyFraction = 0.32;
+      params.DailyMaxDD = 3.8;
+      params.WeeklyMaxDD = 7.5;
       
       // TP/SL (Standard)
       params.FixedTP_R = 2.0;
@@ -963,28 +963,28 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.TrailStart_R = 1.6;
       
       // SESSION LIMITS
-      params.MaxTradesPerSession = 3;
-      params.MaxProfitPerSession_R = 5.4;
-      params.MaxLossPerSession_R = 1.6;
-      params.DailyMaxLoss_R = 2.8;
-      params.TradeCooldownMinutes = 10;
-      params.LossCooldownMinutes = 46;
+      params.MaxTradesPerSession = 4;
+      params.MaxProfitPerSession_R = 8.0;
+      params.MaxLossPerSession_R = 3.0;
+      params.DailyMaxLoss_R = 5.5;
+      params.TradeCooldownMinutes = 8;
+      params.LossCooldownMinutes = 30;
    }
    
    // ===== AUDJPY - AUD/JPY Cross =====
    else if(StringFind(sym, "AUDJPY") >= 0)
    {
-      // RISK (Moderate - commodity cross)
-      params.RiskBase = 0.18;
-      params.RiskAddOn1 = 0.12;
-      params.RiskAddOn2 = 0.08;
-      params.MaxRisk = 0.45;
-      params.MaxLotsPerTrade = 0.5;
+      // RISK (Growth - commodity cross)
+      params.RiskBase = 0.5;
+      params.RiskAddOn1 = 0.3;
+      params.RiskAddOn2 = 0.2;
+      params.MaxRisk = 1.2;
+      params.MaxLotsPerTrade = 1.2;
       
       // KELLY
-      params.KellyFraction = 0.22;
-      params.DailyMaxDD = 1.8;
-      params.WeeklyMaxDD = 3.6;
+      params.KellyFraction = 0.30;
+      params.DailyMaxDD = 3.5;
+      params.WeeklyMaxDD = 7.0;
       
       // TP/SL (Standard)
       params.FixedTP_R = 2.1;
@@ -994,12 +994,12 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.TrailStart_R = 1.7;
       
       // SESSION LIMITS
-      params.MaxTradesPerSession = 3;
-      params.MaxProfitPerSession_R = 5.3;
-      params.MaxLossPerSession_R = 1.7;
-      params.DailyMaxLoss_R = 2.8;
-      params.TradeCooldownMinutes = 11;
-      params.LossCooldownMinutes = 47;
+      params.MaxTradesPerSession = 4;
+      params.MaxProfitPerSession_R = 8.0;
+      params.MaxLossPerSession_R = 3.0;
+      params.DailyMaxLoss_R = 5.0;
+      params.TradeCooldownMinutes = 8;
+      params.LossCooldownMinutes = 30;
    }
    
    // If symbol not matched, defaults remain (already set by GetDefaults())
@@ -1017,7 +1017,7 @@ void UpdateUniverse()
    // 1. Initialize universe ONCE at startup (persistent engines)
    if(!initialized || ArraySize(g_activeSymbols) == 0)
    {
-      Print("🌍 GOVERNOR: Initializing 8-pair CONSERVATIVE PORTFOLIO (24/7 MODE)...");
+      Print("🌍 GOVERNOR: Initializing 8-pair GROWTH PORTFOLIO (24/7 MODE)...");
       
       // OPTIMIZED 8-PAIR SELECTION (Best Liquidity + Correlation Balance)
       // Based on professional trader research: 3-15 pairs max, 8 = conservative sweet spot
@@ -1032,8 +1032,8 @@ void UpdateUniverse()
          "USDCHF"     // 8. Swissy - EUR/USD hedge (-85% correlation)
       };
       
-      Print("📊 Portfolio Strategy: CONSERVATIVE (8 pairs)");
-      Print("📊 Focus: Highest liquidity + Optimal correlation balance");
+      Print("📊 Portfolio Strategy: GROWTH (8 pairs)");
+      Print("📊 Focus: Highest liquidity + Optimal correlation balance + Growth Risk");
       Print("📊 Coverage: 24/7 (Asian: 3 pairs | London: 8 pairs | NY: 6 pairs)");
       
       string verified[];
@@ -1075,7 +1075,7 @@ void UpdateUniverse()
       for(int i=0; i<ArraySize(verified); i++) 
          g_activeSymbols[i] = verified[i];
       
-      Print("✅ GOVERNOR: ", ArraySize(g_activeSymbols), " pairs loaded (8-PAIR CONSERVATIVE MODE)");
+      Print("✅ GOVERNOR: ", ArraySize(g_activeSymbols), " pairs loaded (8-PAIR GROWTH MODE)");
       
       // List all loaded symbols
       string symbolList = "";
