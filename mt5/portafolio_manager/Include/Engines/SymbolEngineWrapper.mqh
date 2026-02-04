@@ -280,6 +280,7 @@ public:
    int m_recoveryAttempts;
 
    // State Variables
+   long     m_helperChartId; // Helper Chart ID for data persistence
    datetime m_lastBarTime;
    int      m_entryDirection;
    double   m_currentConfluence;
@@ -480,11 +481,21 @@ public:
       m_indicatorsHealthy = false;
       m_lastRecoveryTime = 0;
       m_recoveryAttempts = 0;
+      m_helperChartId = 0;
    }
    
    ~CSymbolEngineWrapper()
    {
       Deinit();
+   }
+   
+   void Deinit()
+   {
+      if(m_helperChartId > 0)
+      {
+         ChartClose(m_helperChartId);
+         m_helperChartId = 0;
+      }
    }
    
    //+------------------------------------------------------------------+
@@ -1332,16 +1343,58 @@ private:
       // Step 1: Reset all handles and buffers
       ResetIndicatorBuffers();
       
-      // Step 2: Force chart data reload - MODIFICADO: solo si es necesario
-      if(m_recoveryAttempts <= 2) // Solo intentar recargar gráfico en primeros intentos
+      // Step 2: Force chart data reload
+      // METHOD 1: Soft Reload (Background) - Try this first to avoid UI flashing
+      bool softReloadSuccess = false;
+      if(m_recoveryAttempts <= 1)
       {
-         long chart_id = ChartOpen(m_symbol, PERIOD_CURRENT);
-         if(chart_id > 0)
+         ResetLastError();
+         MqlRates rates[];
+         // Asking for recent data forces the terminal to sync
+         if(CopyRates(m_symbol, PERIOD_CURRENT, 0, 10, rates) > 0)
          {
-            Print("📊 Reloading chart data for ", m_symbol);
-            ChartRedraw(chart_id);
-            Sleep(100); // Menos tiempo
-            ChartClose(chart_id);
+            Print("📊 Soft data synchronization successful for ", m_symbol);
+            softReloadSuccess = true;
+         }
+         else
+         {
+            Print("⚠️ Soft synchronization failed for ", m_symbol, " (Error ", GetLastError(), ")");
+         }
+      }
+      
+      // METHOD 2: Hard Reload (Persistence Mode)
+      if(!softReloadSuccess || m_recoveryAttempts > 1)
+      {
+         long currentChartId = ChartID(); // Save current Governor chart ID
+         
+         // Reuse existing helper chart if available
+         if(m_helperChartId > 0 && ChartSymbol(m_helperChartId) == m_symbol)
+         {
+             Print("📊 Refining persistent helper chart for ", m_symbol);
+             ChartRedraw(m_helperChartId);
+         }
+         else
+         {
+             // Open new helper chart if not exists
+             m_helperChartId = ChartOpen(m_symbol, PERIOD_CURRENT);
+             
+             if(m_helperChartId > 0)
+             {
+                Print("📊 Opened persistent helper chart for ", m_symbol, " (ID: ", m_helperChartId, ")");
+                
+                // Set chart cleanly to background (remove grid, etc if needed - optional)
+                ChartSetInteger(m_helperChartId, CHART_SHOW, false); // Try to hide contents
+             }
+         }
+         
+         if(m_helperChartId > 0)
+         {
+            // TRICK: Immediately bring Governor back to top to minimize "flash"
+            if(currentChartId > 0) 
+               ChartSetInteger(currentChartId, CHART_BRING_TO_TOP, true);
+            
+            Sleep(150); // Small delay to allow data pump
+            // DO NOT CLOSE - Keep open for data stream
          }
       }
       
