@@ -693,12 +693,13 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.DailyMaxDD = 4.0;
       params.WeeklyMaxDD = 8.0;
       
-      // TP/SL (Tight for EUR precision)
-      params.FixedTP_R = 2.0;
-      params.MinTP_R = 1.2;
-      params.MaxTP_R = 3.0;
+      // TP/SL (M5 Scalping) - Tightened for precision
+      params.FixedTP_R = 1.5;
+      params.MinTP_R = 1.0;
+      params.MaxTP_R = 2.5;
       params.PartialTP_R = 1.2;
-      params.TrailStart_R = 1.6;
+      params.TrailStart_R = 1.2;
+
       
       // SESSION LIMITS
       params.MaxTradesPerSession = 5;
@@ -724,12 +725,13 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.DailyMaxDD = 3.5;
       params.WeeklyMaxDD = 7.0;
       
-      // TP/SL (Wide for Cable's volatility)
-      params.FixedTP_R = 2.2;
-      params.MinTP_R = 1.3;
-      params.MaxTP_R = 4.0;
-      params.PartialTP_R = 1.3;
-      params.TrailStart_R = 1.8;
+      // TP/SL (M5 Scalping) - Wide stops but quick targets
+      params.FixedTP_R = 1.8;
+      params.MinTP_R = 1.0;
+      params.MaxTP_R = 3.0;
+      params.PartialTP_R = 1.2;
+      params.TrailStart_R = 1.4;
+
       
       // SESSION LIMITS (Growth)
       params.MaxTradesPerSession = 4;
@@ -755,26 +757,28 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.DailyMaxDD = 1.5;
       params.WeeklyMaxDD = 3.0;
       
-      // TP/SL (Wider - gold trends)
-      params.FixedTP_R = 2.5;
-      params.MinTP_R = 1.5;
-      params.MaxTP_R = 5.0;
+      // TP/SL (M5 Scalping) - Tightened for Gold volatility
+      params.FixedTP_R = 2.0;
+      params.MinTP_R = 1.2;
+      params.MaxTP_R = 4.0;
       params.PartialTP_R = 1.5;
       params.PartialClosePercent = 35.0;
-      params.TrailStart_R = 2.0;
-      params.TrailATR_Mult = 1.5;
+      params.TrailStart_R = 1.5; // Start trailing sooner
+      params.TrailATR_Mult = 1.2; // tighter trail
+
       
       // SESSION LIMITS (Stricter for gold)
-      params.MaxTradesPerSession = 2;
-      params.MaxProfitPerSession_R = 6.0;
-      params.MaxLossPerSession_R = 2.0;
-      params.DailyMaxLoss_R = 2.5;
-      params.TradeCooldownMinutes = 15;
-      params.LossCooldownMinutes = 60;
+      params.MaxTradesPerSession = 4;
+      params.MaxProfitPerSession_R = 10.0;
+      params.MaxLossPerSession_R = 3.0;
+      params.DailyMaxLoss_R = 4.0;
+      params.TradeCooldownMinutes = 8;
+      params.LossCooldownMinutes = 40;
       
       // NEWS (Gold very sensitive)
-      params.NewsMinutesBefore = 60;
-      params.NewsMinutesAfter = 60;
+      params.NewsMinutesBefore = 30;
+      params.NewsMinutesAfter = 30;
+
    }
    
    // ===== GBPJPY - Volatile Cross =====
@@ -792,20 +796,22 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.DailyMaxDD = 1.8;
       params.WeeklyMaxDD = 3.5;
       
-      // TP/SL (Wider for volatility)
-      params.FixedTP_R = 2.2;
-      params.MinTP_R = 1.3;
-      params.MaxTP_R = 4.0;
-      params.PartialTP_R = 1.3;
-      params.TrailStart_R = 1.8;
+      // TP/SL (M5 Scalping)
+      params.FixedTP_R = 1.8;
+      params.MinTP_R = 1.0;
+      params.MaxTP_R = 3.2;
+      params.PartialTP_R = 1.2;
+      params.TrailStart_R = 1.4;
+
       
       // SESSION LIMITS
-      params.MaxTradesPerSession = 2;
-      params.MaxProfitPerSession_R = 5.0;
-      params.MaxLossPerSession_R = 1.8;
-      params.DailyMaxLoss_R = 2.8;
-      params.TradeCooldownMinutes = 12;
-      params.LossCooldownMinutes = 50;
+      params.MaxTradesPerSession = 4;
+      params.MaxProfitPerSession_R = 10.0;
+      params.MaxLossPerSession_R = 3.0;
+      params.DailyMaxLoss_R = 4.0;
+      params.TradeCooldownMinutes = 8;
+      params.LossCooldownMinutes = 35;
+
    }
    
    // ===== USDCAD - Loonie =====
@@ -854,12 +860,13 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.DailyMaxDD = 3.8;
       params.WeeklyMaxDD = 7.5;
       
-      // TP/SL (Tight - stable moves)
-      params.FixedTP_R = 2.0;
-      params.MinTP_R = 1.2;
-      params.MaxTP_R = 3.2;
-      params.PartialTP_R = 1.2;
-      params.TrailStart_R = 1.6;
+      // TP/SL (M5 Scalping)
+      params.FixedTP_R = 1.6;
+      params.MinTP_R = 1.0;
+      params.MaxTP_R = 2.8;
+      params.PartialTP_R = 1.1;
+      params.TrailStart_R = 1.3;
+
       
       // SESSION LIMITS
       params.MaxTradesPerSession = 4;
@@ -885,12 +892,13 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.DailyMaxDD = 3.8;
       params.WeeklyMaxDD = 7.5;
       
-      // TP/SL (Standard)
-      params.FixedTP_R = 2.1;
-      params.MinTP_R = 1.2;
-      params.MaxTP_R = 3.3;
+      // TP/SL (M5 Scalping)
+      params.FixedTP_R = 1.7;
+      params.MinTP_R = 1.0;
+      params.MaxTP_R = 3.0;
       params.PartialTP_R = 1.2;
-      params.TrailStart_R = 1.6;
+      params.TrailStart_R = 1.3;
+
       
       // SESSION LIMITS
       params.MaxTradesPerSession = 4;
@@ -916,12 +924,13 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.DailyMaxDD = 3.5;
       params.WeeklyMaxDD = 7.0;
       
-      // TP/SL (Standard)
-      params.FixedTP_R = 2.0;
-      params.MinTP_R = 1.2;
-      params.MaxTP_R = 3.2;
-      params.PartialTP_R = 1.2;
-      params.TrailStart_R = 1.6;
+      // TP/SL (M5 Scalping)
+      params.FixedTP_R = 1.6;
+      params.MinTP_R = 1.0;
+      params.MaxTP_R = 2.8;
+      params.PartialTP_R = 1.1;
+      params.TrailStart_R = 1.3;
+
       
       // SESSION LIMITS
       params.MaxTradesPerSession = 4;
@@ -947,12 +956,13 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.DailyMaxDD = 3.5;
       params.WeeklyMaxDD = 7.0;
       
-      // TP/SL (Wider for volatility)
-      params.FixedTP_R = 2.2;
-      params.MinTP_R = 1.3;
-      params.MaxTP_R = 4.0;
-      params.PartialTP_R = 1.3;
-      params.TrailStart_R = 1.8;
+      // TP/SL (M5 Scalping)
+      params.FixedTP_R = 1.7;
+      params.MinTP_R = 1.0;
+      params.MaxTP_R = 3.0;
+      params.PartialTP_R = 1.2;
+      params.TrailStart_R = 1.4;
+
       
       // SESSION LIMITS
       params.MaxTradesPerSession = 4;
@@ -978,12 +988,13 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.DailyMaxDD = 3.8;
       params.WeeklyMaxDD = 7.5;
       
-      // TP/SL (Standard)
-      params.FixedTP_R = 2.0;
-      params.MinTP_R = 1.2;
-      params.MaxTP_R = 3.3;
-      params.PartialTP_R = 1.2;
-      params.TrailStart_R = 1.6;
+      // TP/SL (M5 Scalping)
+      params.FixedTP_R = 1.6;
+      params.MinTP_R = 1.0;
+      params.MaxTP_R = 2.8;
+      params.PartialTP_R = 1.1;
+      params.TrailStart_R = 1.3;
+
       
       // SESSION LIMITS
       params.MaxTradesPerSession = 4;
@@ -1009,12 +1020,13 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
       params.DailyMaxDD = 3.5;
       params.WeeklyMaxDD = 7.0;
       
-      // TP/SL (Standard)
-      params.FixedTP_R = 2.1;
-      params.MinTP_R = 1.2;
-      params.MaxTP_R = 3.5;
+      // TP/SL (M5 Scalping)
+      params.FixedTP_R = 1.7;
+      params.MinTP_R = 1.0;
+      params.MaxTP_R = 3.0;
       params.PartialTP_R = 1.2;
-      params.TrailStart_R = 1.7;
+      params.TrailStart_R = 1.4;
+
       
       // SESSION LIMITS
       params.MaxTradesPerSession = 4;
