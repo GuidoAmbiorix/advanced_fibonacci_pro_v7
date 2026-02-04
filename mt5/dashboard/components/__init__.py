@@ -6,6 +6,9 @@ from . import trade_history
 from . import symbol_metrics
 from . import risk_metrics
 from . import performance_analytics
+from . import signal_monitor
+from . import system_health
+from . import pl_calendar
 
 __all__ = [
     'account_overview',
@@ -13,5 +16,8 @@ __all__ = [
     'trade_history',
     'symbol_metrics',
     'risk_metrics',
-    'performance_analytics'
+    'performance_analytics',
+    'signal_monitor',
+    'system_health',
+    'pl_calendar'
 ]

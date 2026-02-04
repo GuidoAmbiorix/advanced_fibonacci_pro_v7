@@ -13,7 +13,9 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 from utils.db_reader import DatabaseReader
-from components import account_overview, positions, trade_history, symbol_metrics, risk_metrics, performance_analytics
+from components import (account_overview, positions, trade_history, symbol_metrics,
+                        risk_metrics, performance_analytics, signal_monitor,
+                        system_health, pl_calendar)
 
 # Page configuration
 st.set_page_config(
@@ -134,37 +136,55 @@ except Exception as e:
     """)
     st.stop()
 
+# Row 0: System Health Monitor
+try:
+    system_health.render(db)
+except Exception as e:
+    st.error(f"Error rendering system health: {e}")
+
 # Row 1: Account Overview
 try:
     account_overview.render(db)
 except Exception as e:
     st.error(f"Error rendering account overview: {e}")
 
-# Row 2: Open Positions
+# Row 2: Live Signal Monitor
+try:
+    signal_monitor.render(db, hours=2)
+except Exception as e:
+    st.error(f"Error rendering signal monitor: {e}")
+
+# Row 3: Open Positions
 try:
     positions.render(db)
 except Exception as e:
     st.error(f"Error rendering positions: {e}")
 
-# Row 3: Symbol Metrics
+# Row 4: P/L Calendar
+try:
+    pl_calendar.render(db)
+except Exception as e:
+    st.error(f"Error rendering P/L calendar: {e}")
+
+# Row 5: Symbol Metrics
 try:
     symbol_metrics.render(db)
 except Exception as e:
     st.error(f"Error rendering symbol metrics: {e}")
 
-# Row 4: Performance Analytics
+# Row 6: Performance Analytics
 try:
     performance_analytics.render(db)
 except Exception as e:
     st.error(f"Error rendering performance analytics: {e}")
 
-# Row 5: Risk Metrics
+# Row 7: Risk Metrics
 try:
     risk_metrics.render(db)
 except Exception as e:
     st.error(f"Error rendering risk metrics: {e}")
 
-# Row 6: Trade History
+# Row 8: Trade History
 try:
     trade_history.render(db, date_range)
 except Exception as e:
