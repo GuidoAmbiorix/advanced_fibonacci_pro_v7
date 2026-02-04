@@ -422,6 +422,20 @@ void OnTimer()
    }
 
    // 3. EXECUTION LOOP (The Heartbeat)
+   // DEBUG: Count initialized engines
+   int validEngines = 0;
+   for(int i=0; i<totalEngines; i++)
+   {
+      if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
+         validEngines++;
+   }
+   static datetime lastEngineLog = 0;
+   if(TimeCurrent() - lastEngineLog >= 60)  // Log once per minute
+   {
+      Print("🔧 ENGINE STATUS: ", validEngines, "/", totalEngines, " initialized");
+      lastEngineLog = TimeCurrent();
+   }
+   
    for(int i=0; i<totalEngines; i++)
    {
       if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
