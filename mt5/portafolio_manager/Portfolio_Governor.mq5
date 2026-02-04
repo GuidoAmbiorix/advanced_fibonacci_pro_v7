@@ -662,12 +662,12 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== EURUSD - King of Forex =====
    if(StringFind(sym, "EURUSD") >= 0)
    {
-      // RISK (Growth Profile)
-      params.RiskBase = 1.0;
-      params.RiskAddOn1 = 0.5;
-      params.RiskAddOn2 = 0.5;
-      params.MaxRisk = 2.0;
-      params.MaxLotsPerTrade = 2.0;
+      // RISK (Conservative Profile)
+      params.RiskBase = 0.4;
+      params.RiskAddOn1 = 0.2;
+      params.RiskAddOn2 = 0.1;
+      params.MaxRisk = 0.8;
+      params.MaxLotsPerTrade = 1.0;
       
       // KELLY
       params.KellyFraction = 0.35;
@@ -693,12 +693,12 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== GBPUSD - Cable (HIGH PRIORITY FIX) =====
    else if(StringFind(sym, "GBPUSD") >= 0)
    {
-      // RISK (Growth - volatile pair)
-      params.RiskBase = 0.8;
-      params.RiskAddOn1 = 0.4;
-      params.RiskAddOn2 = 0.3;
-      params.MaxRisk = 1.5;
-      params.MaxLotsPerTrade = 1.5;
+      // RISK (Conservative - volatile pair)
+      params.RiskBase = 0.3;
+      params.RiskAddOn1 = 0.15;
+      params.RiskAddOn2 = 0.1;
+      params.MaxRisk = 0.6;
+      params.MaxLotsPerTrade = 0.8;
       
       // KELLY
       params.KellyFraction = 0.30;
@@ -725,11 +725,11 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    else if(StringFind(sym, "XAU") >= 0 || StringFind(sym, "GOLD") >= 0)
    {
       // RISK (Very Conservative - volatile)
-      params.RiskBase = 0.15;
-      params.RiskAddOn1 = 0.10;
-      params.RiskAddOn2 = 0.07;
-      params.MaxRisk = 0.45;
-      params.MaxLotsPerTrade = 0.5;
+      params.RiskBase = 0.07;
+      params.RiskAddOn1 = 0.04;
+      params.RiskAddOn2 = 0.02;
+      params.MaxRisk = 0.15;
+      params.MaxLotsPerTrade = 0.2;
       
       // KELLY (Quarter Kelly for gold)
       params.KellyFraction = 0.20;
@@ -761,12 +761,12 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== GBPJPY - Volatile Cross =====
    else if(StringFind(sym, "GBPJPY") >= 0)
    {
-      // RISK (Moderate)
-      params.RiskBase = 0.18;
-      params.RiskAddOn1 = 0.12;
-      params.RiskAddOn2 = 0.08;
-      params.MaxRisk = 0.45;
-      params.MaxLotsPerTrade = 0.5;
+      // RISK (Conservative)
+      params.RiskBase = 0.08;
+      params.RiskAddOn1 = 0.05;
+      params.RiskAddOn2 = 0.03;
+      params.MaxRisk = 0.2;
+      params.MaxLotsPerTrade = 0.2;
       
       // KELLY
       params.KellyFraction = 0.22;
@@ -792,12 +792,12 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== USDCAD - Loonie =====
    else if(StringFind(sym, "USDCAD") >= 0)
    {
-      // RISK (Growth)
-      params.RiskBase = 0.8;
-      params.RiskAddOn1 = 0.4;
-      params.RiskAddOn2 = 0.3;
-      params.MaxRisk = 1.5;
-      params.MaxLotsPerTrade = 1.5;
+      // RISK (Conservative)
+      params.RiskBase = 0.35;
+      params.RiskAddOn1 = 0.15;
+      params.RiskAddOn2 = 0.1;
+      params.MaxRisk = 0.7;
+      params.MaxLotsPerTrade = 1.0;
       
       // KELLY
       params.KellyFraction = 0.32;
@@ -823,12 +823,12 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== USDCHF - Swissy =====
    else if(StringFind(sym, "USDCHF") >= 0)
    {
-      // RISK (Growth - stable pair)
-      params.RiskBase = 0.8;
-      params.RiskAddOn1 = 0.4;
-      params.RiskAddOn2 = 0.3;
-      params.MaxRisk = 1.5;
-      params.MaxLotsPerTrade = 1.5;
+      // RISK (Conservative - stable pair)
+      params.RiskBase = 0.35;
+      params.RiskAddOn1 = 0.15;
+      params.RiskAddOn2 = 0.1;
+      params.MaxRisk = 0.7;
+      params.MaxLotsPerTrade = 1.0;
       
       // KELLY
       params.KellyFraction = 0.32;
@@ -854,12 +854,12 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== AUDUSD - Aussie =====
    else if(StringFind(sym, "AUDUSD") >= 0)
    {
-      // RISK (Growth)
-      params.RiskBase = 0.8;
-      params.RiskAddOn1 = 0.4;
-      params.RiskAddOn2 = 0.3;
-      params.MaxRisk = 1.5;
-      params.MaxLotsPerTrade = 1.5;
+      // RISK (Conservative)
+      params.RiskBase = 0.35;
+      params.RiskAddOn1 = 0.15;
+      params.RiskAddOn2 = 0.1;
+      params.MaxRisk = 0.7;
+      params.MaxLotsPerTrade = 1.0;
       
       // KELLY
       params.KellyFraction = 0.32;
@@ -885,12 +885,12 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== USDJPY - Yen King =====
    else if(StringFind(sym, "USDJPY") >= 0)
    {
-      // RISK (Growth - safe haven)
-      params.RiskBase = 0.5; // Slightly lower than majors due to Yen spikes
-      params.RiskAddOn1 = 0.3;
-      params.RiskAddOn2 = 0.2;
-      params.MaxRisk = 1.2;
-      params.MaxLotsPerTrade = 1.2;
+      // RISK (Conservative - safe haven)
+      params.RiskBase = 0.25;
+      params.RiskAddOn1 = 0.15;
+      params.RiskAddOn2 = 0.1;
+      params.MaxRisk = 0.5;
+      params.MaxLotsPerTrade = 0.8;
       
       // KELLY
       params.KellyFraction = 0.30;
@@ -916,12 +916,12 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== EURJPY - EUR/JPY Cross =====
    else if(StringFind(sym, "EURJPY") >= 0)
    {
-      // RISK (Growth - volatile cross)
-      params.RiskBase = 0.5;
-      params.RiskAddOn1 = 0.3;
-      params.RiskAddOn2 = 0.2;
-      params.MaxRisk = 1.2;
-      params.MaxLotsPerTrade = 1.2;
+      // RISK (Conservative - volatile cross)
+      params.RiskBase = 0.25;
+      params.RiskAddOn1 = 0.15;
+      params.RiskAddOn2 = 0.1;
+      params.MaxRisk = 0.5;
+      params.MaxLotsPerTrade = 0.8;
       
       // KELLY
       params.KellyFraction = 0.30;
@@ -947,12 +947,12 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== NZDUSD - Kiwi =====
    else if(StringFind(sym, "NZDUSD") >= 0)
    {
-      // RISK (Growth)
-      params.RiskBase = 0.8;
-      params.RiskAddOn1 = 0.4;
-      params.RiskAddOn2 = 0.3;
-      params.MaxRisk = 1.5;
-      params.MaxLotsPerTrade = 1.5;
+      // RISK (Conservative)
+      params.RiskBase = 0.35;
+      params.RiskAddOn1 = 0.15;
+      params.RiskAddOn2 = 0.1;
+      params.MaxRisk = 0.7;
+      params.MaxLotsPerTrade = 1.0;
       
       // KELLY
       params.KellyFraction = 0.32;
@@ -978,12 +978,12 @@ void ConfigureRiskForSymbol(string symbol, SymbolEngineParams &params)
    // ===== AUDJPY - AUD/JPY Cross =====
    else if(StringFind(sym, "AUDJPY") >= 0)
    {
-      // RISK (Growth - commodity cross)
-      params.RiskBase = 0.5;
-      params.RiskAddOn1 = 0.3;
-      params.RiskAddOn2 = 0.2;
-      params.MaxRisk = 1.2;
-      params.MaxLotsPerTrade = 1.2;
+      // RISK (Conservative - commodity cross)
+      params.RiskBase = 0.25;
+      params.RiskAddOn1 = 0.15;
+      params.RiskAddOn2 = 0.1;
+      params.MaxRisk = 0.5;
+      params.MaxLotsPerTrade = 0.8;
       
       // KELLY
       params.KellyFraction = 0.30;
