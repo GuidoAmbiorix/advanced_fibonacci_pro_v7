@@ -1006,6 +1006,27 @@ private:
 
    bool UpdateIndicators()
    {
+      // CRITICAL: Check if indicators are fully calculated before reading
+      int bars_rsi = BarsCalculated(m_hRSI);
+      int bars_atr = BarsCalculated(m_hATR);
+      int bars_ema = BarsCalculated(m_hEMA);
+      
+      if(bars_rsi < 2)
+      {
+         Print("⏳ WAITING | ", m_symbol, " | RSI calculating... (", bars_rsi, " bars ready)");
+         return false;
+      }
+      if(bars_atr < 14)
+      {
+         Print("⏳ WAITING | ", m_symbol, " | ATR calculating... (", bars_atr, " bars ready)");
+         return false;
+      }
+      if(bars_ema < 2)
+      {
+         Print("⏳ WAITING | ", m_symbol, " | EMA calculating... (", bars_ema, " bars ready)");
+         return false;
+      }
+      
       double rsi[], atr[], ema[];
       ArraySetAsSeries(rsi, true);
       ArraySetAsSeries(atr, true);
@@ -1041,6 +1062,15 @@ private:
       // Update EMA50/100 for reversal filter
       if(m_params.UseReversalFilter)
       {
+         int bars_ema50 = BarsCalculated(m_hEMA50);
+         int bars_ema100 = BarsCalculated(m_hEMA100);
+         
+         if(bars_ema50 < 1 || bars_ema100 < 1)
+         {
+            Print("⏳ WAITING | ", m_symbol, " | EMA50/100 calculating...");
+            return false;
+         }
+         
          double ema50[], ema100[];
          ArraySetAsSeries(ema50, true);
          ArraySetAsSeries(ema100, true);
