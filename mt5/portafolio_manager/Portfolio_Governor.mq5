@@ -66,6 +66,10 @@ input string InpRankingNote = "GOD LEVEL 30-point confluence: Elite ≥18 | Stro
 input group "=== PERFORMANCE (VPS Optimization) ==="
 input bool   InpEnableDashboard = false;  // Enable visual dashboard (disable for VPS/Wine performance)
 
+// --- NOTIFICATIONS ---
+input group "=== NOTIFICATIONS ==="
+input bool   InpEnablePushNotifications = true; // Send mobile push notifications on trade entry
+
 // --- STATE ---
 string g_activeSymbols[];
 CSymbolEngineWrapper *g_engines[];      // The Engine Room
@@ -1117,6 +1121,9 @@ void UpdateUniverse()
 ConfigureRiskForSymbol(sym, params);
          params.MagicNumber = 1000 + i;
          params.TradeComment = "GodMode_" + sym;
+         
+         // NOTIFICATIONS
+         params.EnablePushNotifications = InpEnablePushNotifications;
 
          // 24/7 MODE: DISABLE KILLZONE FILTER
          // Confluence system (30-point scoring) handles quality control

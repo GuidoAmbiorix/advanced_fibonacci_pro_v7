@@ -95,6 +95,9 @@ struct SymbolEngineParams
    int      RSI_Oversold;
    int      RSI_Overbought;
    bool     RSI_Momentum;
+   
+   // NOTIFICATIONS
+   bool     EnablePushNotifications;
 
    // TREND
    int      EMA_Period;
@@ -2297,6 +2300,23 @@ private:
            m_states[sz].partialClosed = false;
            m_states[sz].initialRisk = slDist;
            m_states[sz].quality = quality;
+           
+           // SEND MOBILE NOTIFICATION
+           if(m_params.EnablePushNotifications)
+           {
+              string notifyMsg = "🚀 NEW TRADE | " + m_symbol + " " + (type==ORDER_TYPE_BUY ? "BUY" : "SELL") + 
+                                 "\nLot: " + DoubleToString(lots, 2) + 
+                                 "\nPrice: " + DoubleToString(price, (int)m_symbolInfo.Digits()) +
+                                 "\nSL: " + DoubleToString(sl, (int)m_symbolInfo.Digits()) +
+                                 "\nTP: " + DoubleToString(tp, (int)m_symbolInfo.Digits()) +
+                                 "\nQuality: " + EnumToString(quality) +
+                                 "\nScore: " + DoubleToString(m_currentConfluence, 1);
+              
+              if(!SendNotification(notifyMsg))
+              {
+                 Print("⚠️ Failed to send push notification. Error: ", GetLastError());
+              }
+           }
 
            // Update cooldown tracking (CRITICAL FOR OVERTRADING PROTECTION)
            if(type == ORDER_TYPE_BUY)
