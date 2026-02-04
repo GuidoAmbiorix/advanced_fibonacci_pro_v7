@@ -873,7 +873,12 @@ public:
       // Check for new day and reset daily counters
       CheckNewDay();
 
-      if(!UpdateIndicators()) return;
+      if(!UpdateIndicators())
+      {
+         Print("❌ BLOCKED | ", m_symbol, " | UpdateIndicators() failed");
+         return;
+      }
+      Print("✅ PASSED | ", m_symbol, " | Indicators updated");
 
       // Update Modules
       UpdateModules();
