@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from utils.db_reader import DatabaseReader
 from components import (account_overview, positions, trade_history, symbol_metrics,
                         risk_metrics, performance_analytics, signal_monitor,
-                        system_health, pl_calendar)
+                        system_health, pl_calendar, time_analysis)
 
 # Page configuration
 st.set_page_config(
@@ -25,30 +25,64 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
-st.markdown("""
-<style>
-    .main > div {
-        padding-top: 2rem;
-    }
-    .stMetric {
-        background-color: #f0f2f6;
-        padding: 10px;
-        border-radius: 5px;
-    }
-    h1 {
-        color: #1f77b4;
-    }
-    h2 {
-        color: #2E86AB;
-        margin-top: 1rem;
-    }
-    .stAlert {
-        margin-top: 0.5rem;
-        margin-bottom: 0.5rem;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Theme management
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'light'
+
+# Custom CSS for better styling with theme support
+if st.session_state.theme == 'dark':
+    st.markdown("""
+    <style>
+        .main > div {
+            padding-top: 2rem;
+            background-color: #0e1117;
+            color: #fafafa;
+        }
+        .stMetric {
+            background-color: #262730;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        h1 {
+            color: #4da6ff;
+        }
+        h2 {
+            color: #5dade2;
+            margin-top: 1rem;
+        }
+        .stAlert {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        [data-testid="stSidebar"] {
+            background-color: #262730;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <style>
+        .main > div {
+            padding-top: 2rem;
+        }
+        .stMetric {
+            background-color: #f0f2f6;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        h1 {
+            color: #1f77b4;
+        }
+        h2 {
+            color: #2E86AB;
+            margin-top: 1rem;
+        }
+        .stAlert {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
 # Initialize session state for auto-refresh
 if 'last_refresh' not in st.session_state:
@@ -58,6 +92,25 @@ if 'last_refresh' not in st.session_state:
 with st.sidebar:
     st.title("📊 MT5 Portfolio Monitor")
     st.write("Real-time trading dashboard")
+
+    st.divider()
+
+    # Theme toggle
+    st.subheader("⚙️ Settings")
+
+    theme_options = {"Light": "light", "Dark": "dark"}
+    current_theme_label = "Dark" if st.session_state.theme == "dark" else "Light"
+
+    selected_theme = st.selectbox(
+        "Theme",
+        options=list(theme_options.keys()),
+        index=list(theme_options.values()).index(st.session_state.theme),
+        key="theme_selector"
+    )
+
+    if theme_options[selected_theme] != st.session_state.theme:
+        st.session_state.theme = theme_options[selected_theme]
+        st.rerun()
 
     st.divider()
 
@@ -178,13 +231,19 @@ try:
 except Exception as e:
     st.error(f"Error rendering performance analytics: {e}")
 
-# Row 7: Risk Metrics
+# Row 7: Time Analysis
+try:
+    time_analysis.render(db)
+except Exception as e:
+    st.error(f"Error rendering time analysis: {e}")
+
+# Row 8: Risk Metrics
 try:
     risk_metrics.render(db)
 except Exception as e:
     st.error(f"Error rendering risk metrics: {e}")
 
-# Row 8: Trade History
+# Row 9: Trade History
 try:
     trade_history.render(db, date_range)
 except Exception as e:

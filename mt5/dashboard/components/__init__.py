@@ -9,6 +9,7 @@ from . import performance_analytics
 from . import signal_monitor
 from . import system_health
 from . import pl_calendar
+from . import time_analysis
 
 __all__ = [
     'account_overview',
@@ -19,5 +20,6 @@ __all__ = [
     'performance_analytics',
     'signal_monitor',
     'system_health',
-    'pl_calendar'
+    'pl_calendar',
+    'time_analysis'
 ]
