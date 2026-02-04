@@ -39,9 +39,24 @@ Remove heavy computation and "fake" ML logic from MQL5 to strip it down to a pur
 ### B. Data & Logging
 
 1.  **TimescaleDB / PostgreSQL**: Replace text-file logs with a proper time-series database for trade history and tick data.
-2.  **ML Pipeline**: A process to retrain the Regime Detector models weekly based on new data.
+2.  **ML Pipeline**: Automated MLOps pipeline (Airflow/Prefect) to retrain models weekly.
 
-### C. Dashboard (Control Plane)
+### C. Advanced AI Expansion (The "Cortex")
+
+1.  **Predictive Transformers (Time-Series)**
+    - _Implementation_: PyTorch / HuggingFace.
+    - _Role_: Replace lagging indicators (MA/RSI) with **Attention-based models** (Temporal Fusion Transformers) to predict short-term price direction intervals.
+2.  **Reinforcement Learning (Portfolio Allocator)**
+    - _Implementation_: Stable Baselines3 (PPO/Soft Actor-Critic).
+    - _Role_: Dynamically adjust risk per pair. A **Multi-Armed Bandit** agent learns which pairs are currently "behaving" and allocates more capital to them in real-time.
+3.  **LLM Macro Analyst**
+    - _Implementation_: Local LLM (Llama-3) or OpenAI API.
+    - _Role_: Ingests raw text from economic calendars and news feeds. instead of simple "High Impact" filtering, it outputs a **Sentiment Score (-1.0 to 1.0)** to bias the Alpha Engine.
+4.  **Unsupervised Anomaly Detection**
+    - _Implementation_: Isolation Forests / Autoencoders.
+    - _Role_: Detects "black swan" or manipulation behavior that rule-based filters miss, triggering an automatic "Kill Switch" to protect capital.
+
+### D. Dashboard (Control Plane)
 
 1.  **Streamlit / React App**: Real-time view of the "Brain's" thinking, not just the "Muscle's" trades.
     - Visualizing Regime probabilities.
@@ -52,11 +67,11 @@ Remove heavy computation and "fake" ML logic from MQL5 to strip it down to a pur
 
 ## 4. Modifications (Refactoring)
 
-### 1. `Symbol_Engine` -> `Execution_Agent`
+### 1. `Symbol_Engine` -> `Neural_Execution_Agent`
 
-- **Current**: Decides _if_ and _when_ to trade based on 20 parameters.
-- **V3**: Receives a specific command: `{"action": "BUY", "ticket": 123, "sl": 1.0950, "tp": 1.1000}`.
-- **Job**: Execute the order, manage the trail, handle retires, reports fill status. ensuring execution quality.
+- **Current**: Hardcoded logic (if RSI > 70).
+- **V3**: **Hybrid Neuro-Symbolic**. The Python "Brain" sends a probability map. The Agent executes only if the probability > 85%.
+- **Reinforcement Learning**: The agent learns optimal _execution_ splitting (e.g. TWAP vs Sniper) to minimize slippage, rewarding itself for filling close to mid-price.
 
 ### 2. `Portfolio_Governor` -> `Bridge_Client`
 
