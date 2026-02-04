@@ -75,7 +75,11 @@ public:
       m_timeframe = timeframe;
 
       // Adjust max hold time based on timeframe
-      if(m_timeframe == PERIOD_H1)
+      if(m_timeframe == PERIOD_M5)
+         m_maxHoldBarsH1 = 72; // 72 * 5min = 6 hours (Scalp max hold)
+      else if(m_timeframe == PERIOD_M15)
+         m_maxHoldBarsH1 = 64; // 16 hours
+      else if(m_timeframe == PERIOD_H1)
          m_maxHoldBarsH1 = 72;
       else if(m_timeframe == PERIOD_H4)
          m_maxHoldBarsH1 = 18;  // 72 hours / 4
@@ -280,7 +284,14 @@ public:
 
       // Check D1 and H4 for structure break
       ENUM_TIMEFRAMES htf = PERIOD_D1;
-      if(m_timeframe == PERIOD_D1)
+      
+      if(m_timeframe == PERIOD_M5)
+         htf = PERIOD_H1;  // M5 looks at H1 structure
+      else if(m_timeframe == PERIOD_M15)
+         htf = PERIOD_H4;
+      else if(m_timeframe == PERIOD_H1)
+         htf = PERIOD_D1;
+      else if(m_timeframe == PERIOD_D1)
          htf = PERIOD_W1; // Use weekly for D1 positions
 
       MqlRates htfRates[];
