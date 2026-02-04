@@ -274,6 +274,11 @@ public:
    double m_g_EMA50, m_g_EMA100;   // Reversal filter EMA values
    double m_rsiBuffer[];
 
+   // Recovery State
+   bool m_indicatorsHealthy;
+   datetime m_lastRecoveryTime;
+   int m_recoveryAttempts;
+
    // State Variables
    datetime m_lastBarTime;
    int      m_entryDirection;
@@ -470,6 +475,11 @@ public:
       m_tradesExecuted = 0;
       m_allowedToTradeThisCycle = true;   // Default: allowed
       m_currentBestScore = 0.0;
+      
+      // Recovery Init
+      m_indicatorsHealthy = false;
+      m_lastRecoveryTime = 0;
+      m_recoveryAttempts = 0;
    }
    
    ~CSymbolEngineWrapper()
@@ -842,7 +852,7 @@ public:
       // DO NOT update m_lastBarTime here - let OnTick do it!
 
       // Must have valid indicators
-      if(!UpdateIndicators()) return;
+      if(!UpdateIndicatorsEnhanced()) return;
 
       // Update modules
       UpdateModules();
@@ -884,12 +894,25 @@ public:
 
       Print("🔔 NEW BAR | ", m_symbol, " | OnTick called");
 
+      // Check indicator health before proceeding
+      if(!m_indicatorsHealthy)
+      {
+         Print("⚠️ Indicators unhealthy, attempting recovery...");
+         if(!RecoverIndicators())
+         {
+            Print("❌ Unable to recover indicators. Skipping tick.");
+            return;
+         }
+      }
+
       // Check for new day and reset daily counters
       CheckNewDay();
 
-      if(!UpdateIndicators())
+      // USE ENHANCED UPDATE
+      if(!UpdateIndicatorsEnhanced())
       {
-         Print("❌ BLOCKED | ", m_symbol, " | UpdateIndicators() failed");
+         Print("❌ BLOCKED | ", m_symbol, " | UpdateIndicatorsEnhanced() failed");
+         m_indicatorsHealthy = false;
          return;
       }
       Print("✅ PASSED | ", m_symbol, " | Indicators updated");
@@ -1018,49 +1041,169 @@ private:
       }
    }
 
-   bool UpdateIndicators()
+   //+------------------------------------------------------------------+
+   //| Enhanced Indicator Recovery System                               |
+   //+------------------------------------------------------------------+
+   
+   void ResetIndicatorBuffers()
+   {
+      ArrayFree(m_rsiBuffer);
+      m_g_RSI = 0;
+      m_g_RSI_Prev = 0;
+      m_g_ATR = 0;
+      m_g_EMA = 0;
+      m_g_EMA_Prev = 0;
+      m_g_ATR_MA = 0;
+      m_g_EMA50 = 0;
+      m_g_EMA100 = 0;
+   }
+   
+   bool AreIndicatorsHealthy()
+   {
+      // Quick check if handles are valid
+      if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
+         return false;
+      
+      // Try to get some data
+      double test[1];
+      if(CopyBuffer(m_hRSI, 0, 0, 1, test) <= 0) return false;
+      if(CopyBuffer(m_hATR, 0, 0, 1, test) <= 0) return false;
+      if(CopyBuffer(m_hEMA, 0, 0, 1, test) <= 0) return false;
+      
+      return true;
+   }
+   
+   bool RecoverIndicators()
+   {
+      datetime now = TimeCurrent();
+      
+      // Prevent rapid re-recovery attempts
+      if(now - m_lastRecoveryTime < 60) // Wait at least 1 minute between recovery attempts
+      {
+         Print("⏳ Recovery cooldown active. Last recovery: ", 
+               IntegerToString((int)(now - m_lastRecoveryTime)), " seconds ago");
+         return false;
+      }
+      
+      m_lastRecoveryTime = now;
+      m_recoveryAttempts++;
+      
+      Print("🔄 ATTEMPTING INDICATOR RECOVERY #", m_recoveryAttempts, 
+            " for ", m_symbol, " at ", TimeToString(now));
+      
+      // Step 1: Reset all handles and buffers
+      ResetIndicatorBuffers();
+      
+      // Step 2: Force chart data reload
+      long chart_id = ChartOpen(m_symbol, PERIOD_CURRENT);
+      if(chart_id > 0)
+      {
+         Print("📊 Reloading chart data for ", m_symbol);
+         ChartRedraw(chart_id);
+         Sleep(200);
+         ChartClose(chart_id);
+      }
+      
+      // Step 3: Release invalid handles
+      if(m_hRSI != INVALID_HANDLE) IndicatorRelease(m_hRSI);
+      if(m_hATR != INVALID_HANDLE) IndicatorRelease(m_hATR);
+      if(m_hEMA != INVALID_HANDLE) IndicatorRelease(m_hEMA);
+      if(m_hEMA50 != INVALID_HANDLE) IndicatorRelease(m_hEMA50);
+      if(m_hEMA100 != INVALID_HANDLE) IndicatorRelease(m_hEMA100);
+      
+      // Step 4: Recreate indicators with delays
+      m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
+      Sleep(200);
+      
+      m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
+      Sleep(200);
+      
+      m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
+      Sleep(200);
+      
+      if(m_params.UseReversalFilter)
+      {
+         m_hEMA50 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA50_Period, 0, MODE_EMA, PRICE_CLOSE);
+         Sleep(200);
+         m_hEMA100 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA100_Period, 0, MODE_EMA, PRICE_CLOSE);
+         Sleep(200);
+      }
+      
+      // Step 5: Verify recovery
+      m_indicatorsHealthy = AreIndicatorsHealthy();
+      
+      if(m_indicatorsHealthy)
+      {
+         Print("✅ INDICATOR RECOVERY SUCCESSFUL for ", m_symbol);
+         m_recoveryAttempts = 0;
+         return true;
+      }
+      else
+      {
+         Print("❌ INDICATOR RECOVERY FAILED for ", m_symbol);
+         
+         // If we've tried too many times, escalate
+         if(m_recoveryAttempts >= 3)
+         {
+            Print("🚨 CRITICAL: Multiple recovery failures for ", m_symbol, 
+                  ". Please check symbol data feed.");
+            // Could trigger alert here
+         }
+         
+         return false;
+      }
+   }
+   
+   bool UpdateIndicatorsEnhanced()
+   {
+      // Try normal update first
+      if(UpdateIndicatorsStandard()) 
+      {
+         m_indicatorsHealthy = true;
+         return true;
+      }
+      
+      // If normal update fails, check if it's a 4807 error
+      int lastError = GetLastError();
+      
+      // Check if indicators are fundamentally broken
+      if(lastError == 4807 || !AreIndicatorsHealthy())
+      {
+         Print("⚠️ Indicators unhealthy (Error ", lastError, "). Attempting recovery...");
+         
+         if(RecoverIndicators())
+         {
+            // Try again after recovery
+            if(UpdateIndicatorsStandard())
+            {
+               Print("✅ Update successful after recovery");
+               return true;
+            }
+         }
+      }
+      
+      // If we get here, recovery failed or error wasn't 4807
+      m_indicatorsHealthy = false;
+      return false;
+   }
+
+   bool UpdateIndicatorsStandard()
    {
       // CRITICAL: Check if indicators are fully calculated before reading
-      // Retry loop to handle transient -1 states AND recover from invalid handles (4807)
-      int maxRetries = 20; // 2 seconds (100ms * 20)
+      // Retry loop to handle transient states 
+      int maxRetries = 20; 
       int bars_rsi = -1, bars_atr = -1, bars_ema = -1;
       
       for(int i=0; i<maxRetries; i++)
       {
          bars_rsi = BarsCalculated(m_hRSI);
-         if(bars_rsi == -1 && GetLastError() == 4807)
-         {
-             Print("⚠️ RECOVERING: Invalid RSI handle (4807) - Reinitializing...");
-             IndicatorRelease(m_hRSI);
-             m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
-             Sleep(200); // Give it extra time to init
-             continue;
-         }
-
          bars_atr = BarsCalculated(m_hATR);
-         if(bars_atr == -1 && GetLastError() == 4807)
-         {
-             Print("⚠️ RECOVERING: Invalid ATR handle (4807) - Reinitializing...");
-             IndicatorRelease(m_hATR);
-             m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
-             Sleep(200); 
-             continue;
-         }
-
          bars_ema = BarsCalculated(m_hEMA);
-         if(bars_ema == -1 && GetLastError() == 4807)
-         {
-             Print("⚠️ RECOVERING: Invalid EMA handle (4807) - Reinitializing...");
-             IndicatorRelease(m_hEMA);
-             m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
-             Sleep(200);
-             continue;
-         }
          
          if(bars_rsi >= 2 && bars_atr >= 14 && bars_ema >= 2)
             break; // All good
             
-         Sleep(100); // Wait 100ms for calculation
+         Sleep(100); 
       }
       
       if(bars_rsi < 2)
