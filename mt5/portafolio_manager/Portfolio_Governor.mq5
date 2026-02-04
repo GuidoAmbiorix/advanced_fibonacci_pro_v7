@@ -391,6 +391,11 @@ void OnTimer()
    }
 
    // Step 3: Set trading permissions - only top N can trade
+   static datetime lastRankLog = 0;
+   bool shouldLog = (TimeCurrent() - lastRankLog >= 10);
+   
+   if(shouldLog) lastRankLog = TimeCurrent();
+
    for(int i=0; i<totalEngines; i++)
    {
       if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
@@ -415,34 +420,40 @@ void OnTimer()
 
          g_engines[i].SetTradingPermission(allowed);
 
-         // VERBOSE DEBUG: Log ALL ranking decisions (removed 5-min throttle)
-         if(allowed)
+         // VERBOSE DEBUG: Log ALL ranking decisions (Throttled)
+         if(shouldLog)
          {
-            Print("✅ RANK #", rank+1, ": ", g_engines[i].m_symbol,
-                  " | Score: ", DoubleToString(g_engines[i].GetBestConfluenceScore(), 2),
-                  " | STATUS: ALLOWED TO TRADE");
-         }
-         else if(rank >= 0 && rank < 8)  // Log top 8 (even if blocked)
-         {
-            Print("⏸️ RANK #", rank+1, ": ", g_engines[i].m_symbol,
-                  " | Score: ", DoubleToString(g_engines[i].GetBestConfluenceScore(), 2),
-                  " | BLOCKED (isTop=", (isTopRanked ? "YES" : "NO"),
-                  ", meetsMin=", (meetsMinimum ? "YES" : "NO"), ")");
+             if(allowed)
+             {
+                Print("✅ RANK #", rank+1, ": ", g_engines[i].m_symbol,
+                      " | Score: ", DoubleToString(g_engines[i].GetBestConfluenceScore(), 2),
+                      " | STATUS: ALLOWED TO TRADE");
+             }
+             else if(rank >= 0 && rank < 8)  // Log top 8 (even if blocked)
+             {
+                Print("⏸️ RANK #", rank+1, ": ", g_engines[i].m_symbol,
+                      " | Score: ", DoubleToString(g_engines[i].GetBestConfluenceScore(), 2),
+                      " | BLOCKED (isTop=", (isTopRanked ? "YES" : "NO"),
+                      ", meetsMin=", (meetsMinimum ? "YES" : "NO"), ")");
+             }
          }
       }
    }
 
    // 2.9 DEBUG: Confirm top-ranked engines before execution
-   Print("📊 PRE-EXECUTION RANKING CONFIRMATION:");
-   for(int i=0; i<MathMin(3, totalEngines); i++)  // Show top 3
+   if(shouldLog)
    {
-      int idx = rankings[i].engineIndex;
-      if(CheckPointer(g_engines[idx]) == POINTER_DYNAMIC)
-      {
-         Print("  #", i+1, ": ", g_engines[idx].m_symbol,
-               " | Score: ", DoubleToString(rankings[i].score, 2),
-               " | AllowedFlag: ", (g_engines[idx].IsAllowedToTrade() ? "TRUE" : "FALSE"));
-      }
+       Print("📊 PRE-EXECUTION RANKING CONFIRMATION:");
+       for(int i=0; i<MathMin(3, totalEngines); i++)  // Show top 3
+       {
+          int idx = rankings[i].engineIndex;
+          if(CheckPointer(g_engines[idx]) == POINTER_DYNAMIC)
+          {
+             Print("  #", i+1, ": ", g_engines[idx].m_symbol,
+                   " | Score: ", DoubleToString(rankings[i].score, 2),
+                   " | AllowedFlag: ", (g_engines[idx].IsAllowedToTrade() ? "TRUE" : "FALSE"));
+          }
+       }
    }
 
    // 3. EXECUTION LOOP (The Heartbeat)
