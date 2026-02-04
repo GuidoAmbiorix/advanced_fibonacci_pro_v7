@@ -1021,15 +1021,41 @@ private:
    bool UpdateIndicators()
    {
       // CRITICAL: Check if indicators are fully calculated before reading
-      // Retry loop to handle transient -1 states (especially on new bars)
+      // Retry loop to handle transient -1 states AND recover from invalid handles (4807)
       int maxRetries = 20; // 2 seconds (100ms * 20)
       int bars_rsi = -1, bars_atr = -1, bars_ema = -1;
       
       for(int i=0; i<maxRetries; i++)
       {
          bars_rsi = BarsCalculated(m_hRSI);
+         if(bars_rsi == -1 && GetLastError() == 4807)
+         {
+             Print("⚠️ RECOVERING: Invalid RSI handle (4807) - Reinitializing...");
+             IndicatorRelease(m_hRSI);
+             m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
+             Sleep(200); // Give it extra time to init
+             continue;
+         }
+
          bars_atr = BarsCalculated(m_hATR);
+         if(bars_atr == -1 && GetLastError() == 4807)
+         {
+             Print("⚠️ RECOVERING: Invalid ATR handle (4807) - Reinitializing...");
+             IndicatorRelease(m_hATR);
+             m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
+             Sleep(200); 
+             continue;
+         }
+
          bars_ema = BarsCalculated(m_hEMA);
+         if(bars_ema == -1 && GetLastError() == 4807)
+         {
+             Print("⚠️ RECOVERING: Invalid EMA handle (4807) - Reinitializing...");
+             IndicatorRelease(m_hEMA);
+             m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
+             Sleep(200);
+             continue;
+         }
          
          if(bars_rsi >= 2 && bars_atr >= 14 && bars_ema >= 2)
             break; // All good
