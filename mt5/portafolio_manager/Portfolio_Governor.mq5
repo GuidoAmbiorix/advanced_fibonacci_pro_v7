@@ -1150,7 +1150,7 @@ void UpdateUniverse()
          SymbolEngineParams params = CSymbolEngineWrapper::GetDefaults();
          
          // CRITICAL: Enforce Governor's Input Floor
-         params.MinConfluenceEntry = InpMinScoreFloor;
+         params.MinConfluenceEntry = (int)InpMinScoreFloor;
          // 🔥 APPLY SYMBOL-SPECIFIC RISK MAP
 ConfigureRiskForSymbol(sym, params);
          params.MagicNumber = 1000 + i;
