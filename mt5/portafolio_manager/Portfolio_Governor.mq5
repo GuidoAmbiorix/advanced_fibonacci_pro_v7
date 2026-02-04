@@ -391,15 +391,33 @@ void OnTimer()
 
          g_engines[i].SetTradingPermission(allowed);
 
-         // Debug: Log ranking decisions
-         static datetime lastRankLog = 0;
-         if(allowed && TimeCurrent() - lastRankLog > 300) // Every 5 min
+         // VERBOSE DEBUG: Log ALL ranking decisions (removed 5-min throttle)
+         if(allowed)
          {
-            Print("🎯 RANK #", rank+1, ": ", g_engines[i].m_symbol,
+            Print("✅ RANK #", rank+1, ": ", g_engines[i].m_symbol,
                   " | Score: ", DoubleToString(g_engines[i].GetBestConfluenceScore(), 2),
                   " | STATUS: ALLOWED TO TRADE");
-            lastRankLog = TimeCurrent();
          }
+         else if(rank >= 0 && rank < 8)  // Log top 8 (even if blocked)
+         {
+            Print("⏸️ RANK #", rank+1, ": ", g_engines[i].m_symbol,
+                  " | Score: ", DoubleToString(g_engines[i].GetBestConfluenceScore(), 2),
+                  " | BLOCKED (isTop=", (isTopRanked ? "YES" : "NO"),
+                  ", meetsMin=", (meetsMinimum ? "YES" : "NO"), ")");
+         }
+      }
+   }
+
+   // 2.9 DEBUG: Confirm top-ranked engines before execution
+   Print("📊 PRE-EXECUTION RANKING CONFIRMATION:");
+   for(int i=0; i<MathMin(3, totalEngines); i++)  // Show top 3
+   {
+      int idx = rankings[i].engineIndex;
+      if(CheckPointer(g_engines[idx]) == POINTER_DYNAMIC)
+      {
+         Print("  #", i+1, ": ", g_engines[idx].m_symbol,
+               " | Score: ", DoubleToString(rankings[i].score, 2),
+               " | AllowedFlag: ", (g_engines[idx].IsAllowedToTrade() ? "TRUE" : "FALSE"));
       }
    }
 
