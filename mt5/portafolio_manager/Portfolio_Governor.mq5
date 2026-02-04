@@ -334,9 +334,15 @@ void OnTimer()
    if(globalPositions >= InpMaxGlobalPositions)
    {
       // Already at max positions - skip execution loop
-      // This enforces "one perfect trade" ICT methodology
+      static datetime lastPausedLog = 0;
+      if(TimeCurrent() - lastPausedLog >= 10) // Log frequently to reassure user
+      {
+          Print("⏸️ GOVERNOR PAUSED: Max Positions Reached (", globalPositions, "/", InpMaxGlobalPositions, ") - Waiting for exit");
+          lastPausedLog = TimeCurrent();
+      }
       return;  // Don't scan for new entries
    }
+
 
    // 2.6 ADAPTIVE CONFLUENCE RANKING (Percentile System)
    // Collect all scores, rank them, allow only top N to trade
