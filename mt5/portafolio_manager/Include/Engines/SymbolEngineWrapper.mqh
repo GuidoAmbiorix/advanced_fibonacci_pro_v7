@@ -858,7 +858,13 @@ public:
 
       if(!IsNewBar())
       {
-         // Print("⏸️ Waiting for new bar"); // Commented out - too spammy
+         // DEBUG: Log once per minute to show we're waiting for new bar
+         static datetime lastWaitLog = 0;
+         if(TimeCurrent() - lastWaitLog >= 60)
+         {
+            Print("⏱️ WAITING FOR NEW BAR | ", m_symbol, " | Last bar: ", TimeToString(m_lastBarTime));
+            lastWaitLog = TimeCurrent();
+         }
          return;
       }
 
