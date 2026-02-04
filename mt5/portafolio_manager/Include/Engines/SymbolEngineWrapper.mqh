@@ -353,35 +353,35 @@ public:
       p.AutoDST = true;
       p.FocusPrimeOnly = false;  // CHANGED: Trade all enabled killzones, not just prime overlap
 
-      // FIBONACCI
-      p.SwingLookback = 20;
+      // FIBONACCI (M5 Optimized)
+      p.SwingLookback = 12;      // Faster pivot detection for M5
       p.FibLevelLow = 0.618;
       p.FibLevelHigh = 0.786;
-      p.ZoneTolerance = 0.15; // 15% of ATR
+      p.ZoneTolerance = 0.15;
 
-      // DISPLACEMENT
+      // DISPLACEMENT (M5 Optimized)
       p.UseDisplacement = true;
-      p.DisplacementATR = 0.5;
+      p.DisplacementATR = 0.8;   // Lowered from 1.2 for M5 volatility
       p.DisplacementLookback = 3;
 
-      // RSI
+      // RSI (M5 Fast)
       p.RSI_Period = 14;
       p.RSI_Oversold = 30;
       p.RSI_Overbought = 70;
       p.RSI_Momentum = true;
 
-      // TREND
-      p.EMA_Period = 200;
+      // TREND (Faster EMAs for M5)
+      p.EMA_Period = 100;        // Was 200 (too lagging for M5)
       p.UseTrendFilter = true;
       p.EMA_MinSlope = 0.1;
 
       // CHOP FILTER
       p.UseChopFilter = true;
-      p.ChopThreshold = 60.0; // Filter if ATR is extremely high vs Avg? Or low? Logic depends on implementation.
+      p.ChopThreshold = 60.0;
       p.ATR_MA_Period = 14;
 
-      // CONFLUENCE (M15 OPTIMIZED)
-      p.MinConfluenceEntry = 4; // M15: Higher quality threshold (cleaner setups)
+      // CONFLUENCE (M5 High Frequency)
+      p.MinConfluenceEntry = 7; // Raised default baseline for quality
       p.MaxPositions = 1;
       
       // RISK
@@ -390,42 +390,41 @@ public:
       p.MaxLotsPerTrade = 50.0;
       p.EnableMarginCheck = true;
 
-      // TAKE PROFIT (M5 SWING-SCALPING OPTIMIZED)
+      // TAKE PROFIT (M5 Scalping)
       p.TPMode = 3; // Hybrid
-      p.FixedTP_R = 2.0;         // M5: Tighter targets for faster timeframe
-      p.MinTP_R = 0.8;           // M5: Minimum 0.8R for scalp quality
-      p.MaxTP_R = 3.0;           // M5: Allow runners to 3R
+      p.FixedTP_R = 2.0;
+      p.MinTP_R = 1.2;           // M5: Minimum 1.2R (Raised from 0.8)
+      p.MaxTP_R = 4.0;           // Allow runners
       p.TPUseLearnedMFE = true;
 
-      // EXIT (Trade Management)
+      // EXIT (Active Management)
       p.TrailingMode = 2; // Adaptive
       p.PartialTP_R = 1.5;
       p.PartialClosePercent = 50.0;
-      p.BE_Threshold_R = 1.2;
-      p.TrailStart_R = 2.0;
+      p.BE_Threshold_R = 1.0;    // Break-even sooner on M5
+      p.TrailStart_R = 1.5;
       p.TrailATR_Mult = 1.5;
 
       // SPREAD
       p.MaxSpreadPoints = 50;
 
-      // SMC
+      // SMC (M5 Tuned)
       p.UseSMC = true;
-      // M5 OPTIMIZED SMC PARAMETERS
-      p.SMC_SwingLookback = 15;       // M5: Tighter lookback
-      p.SMC_MinImpulseATR = 1.5;      // M5: Lower impulse threshold
-      p.SMC_MinFVG_ATR = 0.3;         // M5: Smaller gaps are significant on M5
+      p.SMC_SwingLookback = 10;       // Faster structure mapping
+      p.SMC_MinImpulseATR = 1.2;      // Detected smaller M5 impulses
+      p.SMC_MinFVG_ATR = 0.25;        // Capture micro-gaps
 
-      // MTF
+      // MTF (M5 Structure)
       p.UseMTF = true;
-      // M5 OPTIMIZED MTF HIERARCHY: H1 → M15 → M5
-      p.HTF = PERIOD_H1;         // Highest: H1 for macro trend
-      p.MTF = PERIOD_M15;        // Middle: M15 for structure
-      p.MTF_EMAPeriod = 200;
-
-      // NEWS
+      // M5 Hierarchy: H1 (Macro) -> M15 (Structure) -> M5 (Entry)
+      p.HTF = PERIOD_H1;         
+      p.MTF = PERIOD_M15;        
+      p.MTF_EMAPeriod = 100;
+      
+      // NEWS (Tighter window for scalping)
       p.UseNewsFilter = true;
-      p.NewsMinutesBefore = 60;
-      p.NewsMinutesAfter = 60;
+      p.NewsMinutesBefore = 30;  // Reduced from 60
+      p.NewsMinutesAfter = 30;
 
       // KELLY
       p.UseKelly = true;
@@ -2295,14 +2294,14 @@ private:
    {
        double price = (type == ORDER_TYPE_BUY) ? m_symbolInfo.Ask() : m_symbolInfo.Bid();
 
-       // H1 OPTIMIZED STOP LOSS (Wider for H1 volatility)
+       // M5 SCALPING STOP LOSS (Precision Entries)
        // Elite = tighter stop (precision entry) = better R:R
        // Weak = wider stop (uncertainty) = worse R:R
-       double slDist = m_g_ATR * 2.5;  // Default for GOOD quality (H1 optimized)
+       double slDist = m_g_ATR * 1.5;  // Default for GOOD quality
 
-       if(quality == TIER_ELITE) slDist = m_g_ATR * 2.0;       // ✅ TIGHT for H1 (was 1.0 for M15)
-       else if(quality == TIER_STRONG) slDist = m_g_ATR * 2.2; // ✅ MODERATE for H1 (was 1.3 for M15)
-       else slDist = m_g_ATR * 2.5;  // ✅ WIDE for H1 (was 1.8 for M15)
+       if(quality == TIER_ELITE) slDist = m_g_ATR * 1.0;       // 🎯 SURGICAL (1.0 ATR)
+       else if(quality == TIER_STRONG) slDist = m_g_ATR * 1.3; // 🎯 TIGHT (1.3 ATR)
+       else slDist = m_g_ATR * 1.8;  // 🛡️ SAFE (1.8 ATR)
 
        double stopsLevel = SymbolInfoInteger(m_symbol, SYMBOL_TRADE_STOPS_LEVEL) * m_symbolInfo.Point();
        if(slDist < stopsLevel + 10 * m_symbolInfo.Point())
