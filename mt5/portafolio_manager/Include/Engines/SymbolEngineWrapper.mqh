@@ -1021,9 +1021,21 @@ private:
    bool UpdateIndicators()
    {
       // CRITICAL: Check if indicators are fully calculated before reading
-      int bars_rsi = BarsCalculated(m_hRSI);
-      int bars_atr = BarsCalculated(m_hATR);
-      int bars_ema = BarsCalculated(m_hEMA);
+      // Retry loop to handle transient -1 states (especially on new bars)
+      int maxRetries = 20; // 2 seconds (100ms * 20)
+      int bars_rsi = -1, bars_atr = -1, bars_ema = -1;
+      
+      for(int i=0; i<maxRetries; i++)
+      {
+         bars_rsi = BarsCalculated(m_hRSI);
+         bars_atr = BarsCalculated(m_hATR);
+         bars_ema = BarsCalculated(m_hEMA);
+         
+         if(bars_rsi >= 2 && bars_atr >= 14 && bars_ema >= 2)
+            break; // All good
+            
+         Sleep(100); // Wait 100ms for calculation
+      }
       
       if(bars_rsi < 2)
       {
