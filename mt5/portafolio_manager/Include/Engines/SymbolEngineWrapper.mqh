@@ -17,6 +17,8 @@
 #include "../Learning_MFE_MAE.mqh"
 #include "../GovernorAllocator.mqh"
 #include "../SessionGovernor.mqh"
+#include "../Lib/DatabaseManager.mqh"
+
 
 // Smart Money Concepts Modules
 #include "../SMC_StructureBreak.mqh"
@@ -212,6 +214,8 @@ class CSymbolEngineWrapper
 public:
    string         m_symbol;
    SymbolEngineParams m_params;
+   CDatabaseManager *m_db; // Pointer to global DB manager
+
    
    // Trade Objects
    CTrade         m_trade;
@@ -468,8 +472,9 @@ public:
    }
 
 public:
-   CSymbolEngineWrapper()
+   CSymbolEngineWrapper() : m_db(NULL)
    {
+
       m_hRSI = INVALID_HANDLE;
       m_hATR = INVALID_HANDLE;
       m_hEMA = INVALID_HANDLE;
@@ -505,10 +510,12 @@ public:
    //+------------------------------------------------------------------+
    //| Initialization Modificada                                        |
    //+------------------------------------------------------------------+
-   bool Init(string symbol, SymbolEngineParams &params)
+   bool Init(string symbol, SymbolEngineParams &params, CDatabaseManager *db = NULL)
    {
       m_symbol = symbol;
       m_params = params;
+      m_db = db;
+
       
       // FORZAR selección del símbolo primero
       if(!SymbolSelect(m_symbol, true))
@@ -562,7 +569,11 @@ public:
       if(m_params.EnableLearning)
       {
          m_learning.Init(m_symbol, true);
+         // Pass DB to TradeJournal (accessed via learning or directly if refactored, 
+         // assuming m_tradeJournal is member of this class - Yes, line 251)
+         m_tradeJournal.Init(m_symbol, m_params.LearningHistory, m_db); 
       }
+
       
       // Initialize SMC
       if(m_params.UseSMC)
@@ -1737,6 +1748,26 @@ private:
        }
 
        Print("✅ STABILIZED SIGNAL (", secondsHeld, "s) - Continuing to filters...");
+
+       // DB LOGGING: Log all stabilized signals (even if rejected later)
+       if(CheckPointer(m_db) != POINTER_INVALID)
+       {
+           double smcScore = 0;
+           double fibScore = m_fibAdvanced.GetConfluenceScore(direction);
+           if(m_params.UseSMC) 
+               smcScore = m_smcOrderBlocks.GetConfluenceScore(direction) + m_smcFVG.GetConfluenceScore(direction) + 
+                          m_smcLiquidity.GetConfluenceScore(direction) + m_smcMSS.GetConfluenceScore(direction);
+           
+           // Determine rejection reason (preview)
+           string rejection = "None";
+           if(!CheckReversalFilter(direction)) rejection = "ReversalFilter";
+           else if(!CheckDirectionCooldown(direction)) rejection = "DirectionCooldown";
+           else if(m_consecutiveLosses >= m_params.MaxConsecutiveLosses) rejection = "CircuitBreaker";
+           
+           // Note: We don't know "GovernorBlocked" yet, but we log this pre-check snapshot
+           m_db.LogSignal(m_symbol, direction, bestScore, 0, (rejection == "None"), rejection, smcScore, fibScore);
+       }
+
 
        // OVERTRADING PROTECTION: Reversal Filter
        if(!CheckReversalFilter(direction)) return;

@@ -28,6 +28,8 @@
 #include "Include\PortfolioOptimizer.mqh"
 #include "Include\Dashboard.mqh"
 #include "Include\DrawdownRecovery.mqh"
+#include "Include\Lib\DatabaseManager.mqh"
+
 
 // Note: NewsFilter and Kelly are handled at engine level (SymbolEngineWrapper), not portfolio level
 
@@ -45,6 +47,8 @@ CMLRegimeDetector    g_mlRegime;
 CPortfolioOptimizer  g_optimizer;
 CDashboard          g_dashboard;
 CDrawdownRecovery    g_recovery;
+CDatabaseManager     g_db;
+
 
 // --- INPUTS (Simplified for View) ---
 input double InpMaxDrawdownPercent = 10.0;
@@ -104,6 +108,13 @@ int OnInit()
    // Initialize dashboard only if enabled
    if(InpEnableDashboard)
       g_dashboard.Init();
+
+   // Initialize Database
+   if(!g_db.Init())
+   {
+      Print("⚠️ WARNING: Database initialization failed. Falling back to CSV/GlobalVars.");
+   }
+
 
    // Recovery Init - FORCE RESET in Backtesting to prevent stale data
    if(MQLInfoInteger(MQL_TESTER))
@@ -166,6 +177,8 @@ void OnDeinit(const int reason)
 {
    EventKillTimer();
    g_dashboard.Destroy();
+   g_db.Close();
+
 
    // Save performance stats to global variables (ONLY in live mode, not backtesting)
    if(!MQLInfoInteger(MQL_TESTER))
@@ -1139,7 +1152,8 @@ ConfigureRiskForSymbol(sym, params);
          params.NewsMinutesBefore = 30;
          params.NewsMinutesAfter = 30;
 
-         if(g_engines[i].Init(sym, params))
+         if(g_engines[i].Init(sym, params, &g_db))
+
          {
             Print("🚀 Engine Ignited: ", sym, " | Mode: 24/7 (Killzones: DISABLED)");
          }

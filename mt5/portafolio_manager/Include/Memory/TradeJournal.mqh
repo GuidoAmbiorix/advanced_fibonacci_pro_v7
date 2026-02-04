@@ -13,6 +13,8 @@
 #include "../Learning_MFE_MAE.mqh"  // For ENTRY_QUALITY enum
 #include "../KillzoneConfig.mqh"     // For ENUM_KILLZONE
 #include "../MarketRegime.mqh"       // For MARKET_REGIME enum
+#include "../Lib/DatabaseManager.mqh"
+
 
 //+------------------------------------------------------------------+
 //| TRADE CONTEXT STRUCTURE (Entry Information)                      |
@@ -95,7 +97,9 @@ class CTradeJournal
 private:
    string         m_symbol;
    string         m_csvPath;
+   CDatabaseManager *m_db;       // CheckPointer before use
    TradeRecord    m_cache[];            // In-memory cache
+
    int            m_cacheSize;
    int            m_maxCacheSize;       // Flush to disk after this many records
    datetime       m_lastFlush;
@@ -103,18 +107,21 @@ private:
    int            m_retentionDays;      // Days to keep history
 
 public:
-   CTradeJournal() : m_cacheSize(0), m_maxCacheSize(100),
+   CTradeJournal() : m_cacheSize(0), m_maxCacheSize(100), m_db(NULL),
                      m_lastFlush(0), m_totalTrades(0), m_retentionDays(180) {}
+
 
    ~CTradeJournal() { Flush(); }        // Ensure data is saved on destruction
 
    //+------------------------------------------------------------------+
    //| Initialize Trade Journal                                          |
    //+------------------------------------------------------------------+
-   bool Init(string symbol, int retentionDays = 180)
+   bool Init(string symbol, int retentionDays = 180, CDatabaseManager *db = NULL)
    {
       m_symbol = symbol;
       m_retentionDays = retentionDays;
+      m_db = db;
+
 
       // Create file path
       m_csvPath = "SymbolEngine_Trades_" + m_symbol + ".csv";
@@ -157,8 +164,18 @@ public:
             DoubleToString(ctx.confluenceScore, 1), " | Killzone: ",
             KillzoneToString(ctx.killzone));
 
+      // DB LOGGING
+      if(CheckPointer(m_db) != POINTER_INVALID)
+      {
+         string strategy = "Governor_SMC"; // Default strategy tag
+         m_db.LogTradeEntry(ctx.ticket, ctx.symbol, ctx.direction == 1 ? 0 : 1, ctx.lots,
+                            ctx.entryPrice, ctx.sl, ctx.tp, ctx.confluenceScore,
+                            strategy, EnumToString(ctx.regime), KillzoneToString(ctx.killzone));
+      }
+
       // Auto-flush if cache is large
       if(m_cacheSize >= m_maxCacheSize)
+
          Flush();
    }
 
@@ -177,6 +194,14 @@ public:
 
          Print("TradeJournal: Logged exit #", ticket, " | R: ",
                DoubleToString(exitCtx.profitR, 2), " | Exit: ", exitCtx.exitType);
+
+         // DB LOGGING
+         if(CheckPointer(m_db) != POINTER_INVALID)
+         {
+             m_db.LogTradeExit(ticket, exitCtx.exitPrice, exitCtx.profitMoney,
+                               0.0, 0.0, // Commission/Swap not passed in ctx yet, assuming filtered later or 0
+                               exitCtx.exitType, exitCtx.mfe, exitCtx.mae);
+         }
 
          // Flush completed trade immediately
          FlushTrade(idx);
