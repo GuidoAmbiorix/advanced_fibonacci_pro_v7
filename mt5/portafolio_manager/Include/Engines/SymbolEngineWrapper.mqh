@@ -485,7 +485,7 @@ public:
       m_allowedToTradeThisCycle = true;   // Default: allowed
       m_currentBestScore = 0.0;
       
-      m_indicatorHealthy = false;
+      m_indicatorsHealthy = false;
       m_lastRecoveryTime = 0;
       m_recoveryAttempts = 0;
       m_helperChartId = 0;
@@ -1751,8 +1751,8 @@ private:
            return;
        }
 
-       // Determine quality tier (H1 ENHANCED 22-point scale)
-       ENUM_ENTRY_TIER quality = TIER_GOOD;
+       // Updated quality tier (H1 ENHANCED 22-point scale)
+       quality = TIER_GOOD;
        
        // H1 ENHANCED Thresholds (22 point max):
        // ELITE:  â‰¥14 points (64%+) - God-tier institutional H1 setups
