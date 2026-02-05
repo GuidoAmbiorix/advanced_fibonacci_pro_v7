@@ -1172,12 +1172,12 @@ void UpdateUniverse()
       // Based on professional trader research: 3-15 pairs max, 8 = conservative sweet spot
       string allPairs[] = {
          "EURUSD",    // 1. King - 28% daily volume (London/NY)
-         "USDJPY",    // 2. Yen - 13% daily volume (Asian/London/NY)
-         "GBPUSD",    // 3. Cable - 11% volume (London/NY volatility)
-         "XAUUSD",    // 4. Gold - Trending asset (London/NY)
-         "AUDUSD",    // 5. Aussie - 5% volume (Asian/London)
-         "USDCAD",    // 6. Loonie - 4% volume (NY oil correlation)
-         "EURJPY"     // 7. Cross - Asian/London/NY coverage
+         // "USDJPY",    // 2. Yen - 13% daily volume (Asian/London/NY)
+         // "GBPUSD",    // 3. Cable - 11% volume (London/NY volatility)
+         "XAUUSD"     // 4. Gold - Trending asset (London/NY)
+         // "AUDUSD",    // 5. Aussie - 5% volume (Asian/London)
+         // "USDCAD",    // 6. Loonie - 4% volume (NY oil correlation)
+         // "EURJPY"     // 7. Cross - Asian/London/NY coverage
          // "USDCHF"     // 8. Swissy - EUR/USD hedge (-85% correlation) (DISABLED: Errors)
       };
       
