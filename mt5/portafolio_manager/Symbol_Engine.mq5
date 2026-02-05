@@ -237,7 +237,7 @@ CAdaptiveRiskManager   adaptiveRisk;
 CAdaptiveExitManager   adaptiveExit;
 CAdaptiveFilterManager adaptiveFilter;
 
-int hRSI, hATR, hEMA;
+int hATR, hEMA;
 int hEMA50, hEMA100;   // Reversal filter EMAs
 double g_RSI, g_RSI_Prev, g_ATR, g_EMA, g_EMA_Prev, g_ATR_MA;
 double g_EMA50, g_EMA50_Prev, g_EMA100, g_EMA100_Prev;

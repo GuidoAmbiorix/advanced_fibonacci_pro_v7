@@ -18,25 +18,25 @@ public:
    //+------------------------------------------------------------------+
    //| Get Divergence Score (0-1.5 pts)                                 |
    //+------------------------------------------------------------------+
-   double GetDivergenceScore(int direction, int hRSI)
+   double GetDivergenceScore(int direction, int rsiHandle)
    {
       double score = 0;
       
       if(direction == 1) // BULLISH
       {
          // Regular Bullish: Price Lower Low, RSI Higher Low
-         if(CheckRegularBullish(hRSI)) score += 1.0;
+         if(CheckRegularBullish(rsiHandle)) score += 1.0;
          
          // Hidden Bullish: Price Higher Low, RSI Lower Low
-         if(CheckHiddenBullish(hRSI)) score += 0.5;
+         if(CheckHiddenBullish(rsiHandle)) score += 0.5;
       }
       else // BEARISH
       {
          // Regular Bearish: Price Higher High, RSI Lower High
-         if(CheckRegularBearish(hRSI)) score += 1.0;
+         if(CheckRegularBearish(rsiHandle)) score += 1.0;
          
          // Hidden Bearish: Price Lower High, RSI Higher High
-         if(CheckHiddenBearish(hRSI)) score += 0.5;
+         if(CheckHiddenBearish(rsiHandle)) score += 0.5;
       }
       
       return MathMin(score, 1.5);
@@ -51,33 +51,33 @@ private:
       return 50.0; // Default fallback
    }
 
-   bool CheckRegularBullish(int hRSI)
+   bool CheckRegularBullish(int rsiHandle)
    {
       // Detect lowest low in last 20 bars
       int llBar = iLowest(NULL, 0, MODE_LOW, 20, 1);
       if(llBar < 3) return false; 
       
       double lowOld = iLow(NULL, 0, llBar);
-      double rsiOld = GetRSI(hRSI, llBar);
+      double rsiOld = GetRSI(rsiHandle, llBar);
       
       double lowCurr = iLow(NULL, 0, 0);
-      double rsiCurr = GetRSI(hRSI, 0);
+      double rsiCurr = GetRSI(rsiHandle, 0);
       
       // Regular Bullish: Price makes Lower Low, RSI makes Higher Low
       if(lowCurr < lowOld && rsiCurr > rsiOld) return true;
       return false;
    }
    
-   bool CheckRegularBearish(int hRSI)
+   bool CheckRegularBearish(int rsiHandle)
    {
       int hhBar = iHighest(NULL, 0, MODE_HIGH, 20, 1);
       if(hhBar < 3) return false;
       
       double highOld = iHigh(NULL, 0, hhBar);
-      double rsiOld = GetRSI(hRSI, hhBar);
+      double rsiOld = GetRSI(rsiHandle, hhBar);
       
       double highCurr = iHigh(NULL, 0, 0);
-      double rsiCurr = GetRSI(hRSI, 0);
+      double rsiCurr = GetRSI(rsiHandle, 0);
       
       // Regular Bearish: Price makes Higher High, RSI makes Lower High
       if(highCurr > highOld && rsiCurr < rsiOld) return true;
@@ -85,8 +85,8 @@ private:
    }
    
    // Placeholder for Hidden Divergence (Complexity reduction)
-   bool CheckHiddenBullish(int hRSI) { return false; }
-   bool CheckHiddenBearish(int hRSI) { return false; }
+   bool CheckHiddenBullish(int rsiHandle) { return false; }
+   bool CheckHiddenBearish(int rsiHandle) { return false; }
 };
 
 #endif
