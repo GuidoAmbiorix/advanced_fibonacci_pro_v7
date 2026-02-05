@@ -240,20 +240,20 @@ int GetKillzoneQuality()
 //+------------------------------------------------------------------+
 //| CONFLUENCE SCORE THRESHOLDS                                       |
 //+------------------------------------------------------------------+
-#define CONFLUENCE_ELITE    8.0   // Elite entry: 8+/12 points
-#define CONFLUENCE_STRONG   6.0   // Strong entry: 6-7.9/12 points
-#define CONFLUENCE_GOOD     5.0   // Good entry: 5-5.9/12 points
-#define CONFLUENCE_WEAK     0.0   // Weak entry: <5/12 points - NO TRADE
+#define CONFLUENCE_ELITE    14.0   // Elite entry: 14+/30 points (M15 Enhancement)
+#define CONFLUENCE_STRONG   12.0   // Strong entry: 12-13.9/30 points
+#define CONFLUENCE_GOOD     10.0   // Good entry: 10-11.9/30 points
+#define CONFLUENCE_WEAK     0.0    // Weak entry: <10/30 points - NO TRADE
 
 //+------------------------------------------------------------------+
 //| ENTRY TIER ENUM (for new confluence system)                       |
 //+------------------------------------------------------------------+
 enum ENUM_ENTRY_TIER
 {
-   TIER_NO_TRADE = 0,   // Score < 5: Skip
-   TIER_GOOD = 1,       // Score 5-5.9: 60% position
-   TIER_STRONG = 2,     // Score 6-7.9: 80% position
-   TIER_ELITE = 3       // Score 8+: 100% position
+   TIER_NO_TRADE = 0,   // Score < 10: Skip
+   TIER_GOOD = 1,       // Score 10-11.9: 60% position
+   TIER_STRONG = 2,     // Score 12-13.9: 80% position
+   TIER_ELITE = 3       // Score 14+: 100% position
 };
 
 //+------------------------------------------------------------------+

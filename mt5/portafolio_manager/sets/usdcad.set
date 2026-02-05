@@ -58,8 +58,8 @@ InpChopThreshold=0.77
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; OPTIMIZED: Score 6.0 for M5 Premium Setups Only (Structure+Momentum+SMC/MTF required)
-InpMinConfluenceEntry=6
+; CRITICAL: Score 10.0 for M15 Enhanced (Good), 12.0 (Strong), 14.0 (Elite)
+InpMinConfluenceEntry=10
 InpEnableAddOns=false
 InpAddOn1_R=1.7
 InpAddOn2_R=2.8
@@ -137,9 +137,9 @@ InpEnableAdaptiveFilters=true
 ; ====== SESSION GOVERNOR ======
 ; UPDATED: Active M5 Scalping (3 trades per session)
 InpUseSessionGovernor=false
-InpMaxTradesPerSession=3
-InpMaxProfitPerSession_R=5.0
-InpMaxLossPerSession_R=1.5
+InpMaxTradesPerSession=10
+InpMaxProfitPerSession_R=6.0
+InpMaxLossPerSession_R=2.05
 InpMinSessionConfidence=0.5
 InpTradeCooldownMinutes=30
 InpEnableSessionBlacklist=true

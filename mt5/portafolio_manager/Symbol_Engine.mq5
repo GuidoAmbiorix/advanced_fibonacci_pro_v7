@@ -44,6 +44,11 @@
 #include "Include\Adaptive\AdaptiveExitManager.mqh"
 #include "Include\Adaptive\AdaptiveFilterManager.mqh"
 
+// ADVANCED CONFLUENCE MODULES (M15 ENHANCED)
+#include "Include\Advanced\VolumeAnalysis.mqh"
+#include "Include\Advanced\Divergence.mqh"
+#include "Include\Advanced\Inst_Concepts.mqh"
+
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
 //+------------------------------------------------------------------+
@@ -197,6 +202,14 @@ CKillSwitch       killSwitch;
 CLearningEngine   learning;
 CGovernorAllocator allocator;
 CSessionGovernor  sessionGov;
+
+// ADVANCED MODULE OBJECTS
+CVolumeAnalysis   volumeAnalysis;
+CDivergence       divergence;
+CBreakerBlocks    breakerBlocks;
+CMacroWindows     macroWindows;
+CPowerOf3         powerOf3;
+CWyckoff          wyckoff;
 
 // SMC MODULE OBJECTS
 CSMCStructureBreak  smcStructure;
@@ -979,9 +992,10 @@ void OnTick()
 
       if(approvedRisk > 0.05)
       {
-          // STRICTER ENTRY THRESHOLD: Use CONFLUENCE_STRONG (6.0) instead of GOOD (5.0)
-          // This raises minimum from 42% to 50% confluence score for better quality
-          double minEntry = CONFLUENCE_STRONG;  // 6.0 (raised from 5.0 for safety)
+          // STRICTER ENTRY THRESHOLD: M15 ENHANCED SYSTEM
+          // ELITE >= 14.0, STRONG >= 12.0, GOOD >= 10.0
+          // Minimum entry is GOOD (10.0), but with institutional footprint check for scores < 16.0
+          double minEntry = 10.0;  // GOOD Tier
 
           if(buyScore >= minEntry && (InpDirection == 0 || InpDirection == 1))
           {
@@ -1561,138 +1575,6 @@ void BuildConfluenceFactors(ConfluenceFactors &factors, int direction, double sc
    factors.confluenceScore = score;
 }
 
-//+------------------------------------------------------------------+
-//| NEW Confluence Score (0-12) - Enhanced with SMC                   |
-//+------------------------------------------------------------------+
-double CalculateConfluenceScore(int direction)
-{
-   double score = 0;
-   double currentPrice = symbolInfo.Bid();
-
-   // ============ ORIGINAL FACTORS (0-6) ============
-
-   // 1. Trend (EMA 200 + slope) - 1.0 point
-   double emaSlope = g_EMA - g_EMA_Prev;
-   bool slopeStrong = MathAbs(emaSlope) >= (g_ATR * InpEMA_MinSlope);
-
-   // ENHANCED REVERSAL FILTER: Multi-factor momentum confirmation
-   if(InpUseReversalFilter)
-   {
-       // Use buffered EMAs (no memory leak)
-       bool emaAlignment = (direction == 1) ? (currentPrice < g_EMA50 && g_EMA50 < g_EMA100)
-                                            : (currentPrice > g_EMA50 && g_EMA50 > g_EMA100);
-
-       // Calculate EMA momentum
-       double ema50Momentum = (g_EMA50 - g_EMA50_Prev) / _Point;
-       double ema100Momentum = (g_EMA100 - g_EMA100_Prev) / _Point;
-
-       // RSI divergence check
-       bool rsiDivergence = (direction == 1 && g_RSI > 55) || (direction == -1 && g_RSI < 45);
-
-       // Reversal strength: EMA separation
-       double emaSeparation = MathAbs(g_EMA50 - g_EMA100);
-       double minSeparation = g_ATR * 0.5;  // Significant separation required
-
-       // Strong reversal = opposing EMA alignment + momentum + RSI divergence
-       bool isStrongReversal = emaAlignment &&
-                              (emaSeparation > minSeparation) &&
-                              ((direction == 1 && ema50Momentum < 0) || (direction == -1 && ema50Momentum > 0)) &&
-                              rsiDivergence;
-
-       if(isStrongReversal)
-       {
-           // PENALTY instead of blocking completely
-           score -= 2.0;  // Reduce confluence instead of returning 0
-
-           static datetime lastReversalWarning = 0;
-           if(TimeCurrent() - lastReversalWarning > 300)
-           {
-               string dirStr = (direction == 1) ? "BUY" : "SELL";
-               Print("⚠️ REVERSAL FILTER: ", dirStr, " penalized -2.0 points (opposing momentum detected)");
-               lastReversalWarning = TimeCurrent();
-           }
-       }
-   }
-
-   if(direction == 1 && currentPrice > g_EMA && emaSlope > 0 && slopeStrong) score += 1.0;
-   if(direction == -1 && currentPrice < g_EMA && emaSlope < 0 && slopeStrong) score += 1.0;
-
-   // 2. Structure - 1.0 point
-   int highestBar = iHighest(_Symbol, PERIOD_CURRENT, MODE_HIGH, InpSwingLookback, 1);
-   int lowestBar = iLowest(_Symbol, PERIOD_CURRENT, MODE_LOW, InpSwingLookback, 1);
-   if(direction == 1 && lowestBar < highestBar) score += 1.0;
-   if(direction == -1 && highestBar < lowestBar) score += 1.0;
-
-   // 3. Fib Zone - 1.0 point
-   if(highestBar >= 0 && lowestBar >= 0)
-   {
-      double swingHigh = iHigh(_Symbol, PERIOD_CURRENT, highestBar);
-      double swingLow = iLow(_Symbol, PERIOD_CURRENT, lowestBar);
-      double range = swingHigh - swingLow;
-      double tolerance = g_ATR * InpZoneTolerance;
-
-      if(range >= g_ATR * 1.5)
-      {
-         if(direction == 1)
-         {
-            double f618 = swingHigh - (range * InpFibLevelLow);
-            double f786 = swingHigh - (range * InpFibLevelHigh);
-            if(currentPrice <= f618 + tolerance && currentPrice >= f786 - tolerance) score += 1.0;
-         }
-         else
-         {
-            double f618 = swingLow + (range * InpFibLevelLow);
-            double f786 = swingLow + (range * InpFibLevelHigh);
-            if(currentPrice >= f618 - tolerance && currentPrice <= f786 + tolerance) score += 1.0;
-         }
-      }
-   }
-
-   // 4. RSI level - 1.0 point
-   if(direction == 1 && g_RSI <= InpRSI_Oversold) score += 1.0;
-   if(direction == -1 && g_RSI >= InpRSI_Overbought) score += 1.0;
-
-   // 5. RSI momentum - 0.5 point
-   if(InpRSI_Momentum)
-   {
-      if(direction == 1 && g_RSI > g_RSI_Prev) score += 0.5;
-      if(direction == -1 && g_RSI < g_RSI_Prev) score += 0.5;
-   }
-
-   // 6. Displacement - 1.0 point
-   if(CheckDisplacement(direction)) score += 1.0;
-
-   // ============ NEW SMC FACTORS (0-6 additional) ============
-
-   if(InpUseSMC)
-   {
-      // 7. HTF Trend Alignment (MTF) - up to 2.0 points
-      if(InpUseMTF)
-         score += mtfAnalysis.GetConfluenceScore(direction);
-
-      // 8. Structure Break (BOS aligned) - up to 1.0 point
-      score += smcStructure.GetConfluenceScore(direction);
-
-      // 9. Order Block Entry - up to 1.5 points
-      score += smcOrderBlocks.GetConfluenceScore(direction);
-
-      // 10. Fair Value Gap - up to 1.0 point
-      score += smcFVG.GetConfluenceScore(direction);
-
-      // 11. Liquidity Sweep - up to 1.5 points
-      score += smcLiquidity.GetConfluenceScore(direction);
-   }
-
-   // 12. Killzone Timing Bonus - up to 0.5 points
-   if(InpUseKillzoneFilter)
-      score += killzoneOptimizer.GetConfluenceScore();
-
-   return score;  // Max possible: ~12 points
-}
-
-//+------------------------------------------------------------------+
-//| Get Total Profit in R                                             |
-//+------------------------------------------------------------------+
 double GetTotalProfitR()
 {
    double total = 0;

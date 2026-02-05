@@ -26,7 +26,7 @@ InpEnableLondonCloseKZ=false
 InpFocusPrimeOnly=true
 
 ; ====== FIBONACCI ======
-; Tighter lookback for M5 momentum
+; Tighter lookback for M15 momentum
 InpSwingLookback=12
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
@@ -58,8 +58,8 @@ InpChopThreshold=0.85
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; CRITICAL: Score 6.0 for M5 Premium Only (Institutional volatility requires selectivity)
-InpMinConfluenceEntry=6
+; CRITICAL: Score 10.0 for M15 Enhanced (Good), 12.0 (Strong), 14.0 (Elite)
+InpMinConfluenceEntry=10
 InpEnableAddOns=false
 InpAddOn1_R=2.5
 InpAddOn2_R=4.0
@@ -97,7 +97,7 @@ InpMaxSpreadPoints=50
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 ; Critical for gold - institutional liquidity sweeps are common
-; M5 Structure Settings
+; M15 Structure Settings
 InpUseSMC=true
 InpSMC_SwingLookback=12
 InpSMC_MinImpulseATR=3.0
