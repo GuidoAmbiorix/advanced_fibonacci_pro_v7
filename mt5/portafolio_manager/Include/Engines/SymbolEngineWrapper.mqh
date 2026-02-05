@@ -1092,25 +1092,18 @@ public:
    {
       // Continuous intra-bar scoring enabled
       
-      // CRÍTICO: Verificar salud de indicadores ANTES de todo
-      if(!m_indicatorsHealthy)
-      {
-         // Intentar recuperación silenciosa para ranking
-         if(!RecoverIndicators())
-         {
-            Print("❌ Cannot calculate scores - indicators unhealthy");
-            m_cachedBuyScore = 0;
-            m_cachedSellScore = 0;
-            m_currentBestScore = 0;
-            return;
-         }
-      }
-      
-      // Debe tener indicadores válidos
-      if(!UpdateIndicatorsEnhanced()) 
+      // UNIFIED: Use same simple update logic as OnTick
+      if(!SimpleIndicatorUpdate()) 
       {
          Print("⚠️ Failed to update indicators for ranking");
-         return;
+         // Attempt recreation if simple update fails
+         if(!CreateIndicatorsWithRetry())
+         {
+             m_cachedBuyScore = 0;
+             m_cachedSellScore = 0;
+             m_currentBestScore = 0;
+             return;
+         }
       }
 
       // Update modules
