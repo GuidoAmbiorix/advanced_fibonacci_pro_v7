@@ -1147,16 +1147,11 @@ public:
       // Verificar nuevo día y reiniciar contadores diarios
       CheckNewDay();
       
-      // USAR ACTUALIZACIÓN SIMPLIFICADA
+      // USAR ACTUALIZACIÓN SIMPLIFICADA (Non-blocking, waits for data)
       if(!UpdateIndicators())
       {
-         Print("⚠️ Simple update failed, attempting recreation...");
-         if(!CreateIndicatorsWithRetry())
-         {
-            Print("❌ CRITICAL: Cannot recover indicators for ", m_symbol);
-            m_indicatorsHealthy = false;
-            return;
-         }
+         // Silence transient errors, only allow next bar to try again
+         return; 
       }
       Print("✅ PASSED | ", m_symbol, " | Indicators updated");
 
@@ -2651,7 +2646,7 @@ private:
       // 1. Validate Handles (Creation check only)
       if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
       {
-         Print("⚠️ Invalid handles detected, attempting creation...");
+         Print("⚠️ Invalid handles detected for ", m_symbol, ", attempting creation...");
          return CreateIndicatorsWithRetry();
       }
 
@@ -2664,7 +2659,7 @@ private:
       ArrayResize(ema, 2);
 
       int attempts = 0;
-      while(attempts < 10)
+      while(attempts < 5) // Reduced from 10 to 5 to be faster
       {
          ResetLastError();
          int c_rsi = CopyBuffer(m_hRSI, 0, 0, 1, rsi);
@@ -2681,12 +2676,21 @@ private:
             return true;
          }
          
-         // Transient error, wait a bit
-         Sleep(100); 
-         attempts++;
+         int err = GetLastError();
+         // Silence transient errors (4806 = Data requested but not found, 4807 = Data not synchronized)
+         if(err == 4806 || err == 4807)
+         {
+            // Just wait a bit and retry internally
+            Sleep(200); 
+            attempts++;
+            continue;
+         }
+         
+         // For other errors, log once and break
+         Print("⚠️ Update failed for ", m_symbol, " (Error: ", err, ")");
+         break;
       }
       
-      Print("❌ Simple update failed after 1 second. Waiting for next tick.");
       m_indicatorsHealthy = false; // Mark as unhealthy, but DON'T destroy handles
       return false;
    }
