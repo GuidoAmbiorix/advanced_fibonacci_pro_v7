@@ -136,7 +136,7 @@ InpEnableAdaptiveFilters=true
 
 ; ====== SESSION GOVERNOR ======
 ; UPDATED: Active M5 Scalping (2 trades per session for Gold)
-InpUseSessionGovernor=true
+InpUseSessionGovernor=false
 InpMaxTradesPerSession=2
 InpMaxProfitPerSession_R=6.0
 InpMaxLossPerSession_R=2.0
