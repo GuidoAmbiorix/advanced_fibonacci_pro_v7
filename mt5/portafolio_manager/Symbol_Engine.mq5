@@ -484,6 +484,18 @@ int OnInit()
    }
    Print("===========================================");
 
+   // Initialize indicators on startup
+   Print("  Initializing indicators...");
+   if(!UpdateIndicators())
+   {
+      Print("  WARNING: Initial indicator update failed - will retry on first bar");
+   }
+   else
+   {
+      Print("  ✓ Indicators initialized: RSI=", DoubleToString(g_RSI, 2), " ATR=", DoubleToString(g_ATR, 5), " EMA=", DoubleToString(g_EMA, 5));
+   }
+   Print("===========================================");
+
    return INIT_SUCCEEDED;
 }
 
