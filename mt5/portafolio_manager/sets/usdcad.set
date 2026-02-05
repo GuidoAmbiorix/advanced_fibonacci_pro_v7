@@ -16,7 +16,7 @@ InpBrokerUTCOffset=2
 
 ; ====== KILLZONES ======
 ; CAD most active during NY session (US + Canada overlap)
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpUseSymbolDefaults=true
 InpAutoDST=true
 InpEnableAsianKZ=false

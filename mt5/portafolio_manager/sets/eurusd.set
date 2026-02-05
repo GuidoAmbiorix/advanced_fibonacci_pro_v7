@@ -15,7 +15,7 @@ InpBrokerUTCOffset=2
 
 ; ====== KILLZONES ======
 ; EUR performs excellently in both London and NY killzones
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpUseSymbolDefaults=true
 InpAutoDST=true
 InpEnableAsianKZ=false

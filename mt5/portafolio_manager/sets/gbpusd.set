@@ -15,7 +15,7 @@ InpBrokerUTCOffset=2
 
 ; ====== KILLZONES ======
 ; GBP performs excellently in London and NY sessions
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpUseSymbolDefaults=true
 InpAutoDST=true
 InpEnableAsianKZ=false

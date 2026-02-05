@@ -16,7 +16,7 @@ InpBrokerUTCOffset=2
 
 ; ====== KILLZONES ======
 ; Gold most active during London and NY (NY preferred for institutional activity)
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpUseSymbolDefaults=true
 InpAutoDST=true
 InpEnableAsianKZ=false
