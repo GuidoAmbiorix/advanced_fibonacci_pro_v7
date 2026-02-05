@@ -843,7 +843,7 @@ public:
       static datetime lastHealthCheck = 0;
       if(TimeCurrent() - lastHealthCheck > 60)
       {
-         if(!AreIndicatorsHealthy())
+         if(!m_indicatorsHealthy)
          {
             status = "DATA_STALE";
          }
@@ -1680,59 +1680,7 @@ private:
       }
    }
 
-   //+------------------------------------------------------------------+
-   //| SIMPLE UPDATE: Robust, Linear, Non-Blocking                      |
-   //| Replaces complex dual-recovery systems                           |
-   //+------------------------------------------------------------------+
-   //+------------------------------------------------------------------+
-   //| UPDATE INDICATORS: Robust, Linear, Non-Blocking                  |
-   //| "Dumb-Simple" approach: Try to copy, if fail, just wait.         |
-   //| No destruction, no complex recovery loops.                       |
-   //+------------------------------------------------------------------+
-   bool UpdateIndicators()
-   {
-      // 1. Validate Handles (Creation check only)
-      if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
-      {
-         Print("⚠️ Invalid handles detected, attempting creation...");
-         return CreateIndicatorsWithRetry();
-      }
 
-      // 2. Simple Blocking Copy with Timeout (Max 1 second)
-      double rsi[], atr[], ema[];
-      
-      // Resize to minimum needed
-      ArrayResize(rsi, 2);
-      ArrayResize(atr, 14); // Standard ATR
-      ArrayResize(ema, 2);
-
-      int attempts = 0;
-      while(attempts < 10)
-      {
-         ResetLastError();
-         int c_rsi = CopyBuffer(m_hRSI, 0, 0, 1, rsi);
-         int c_atr = CopyBuffer(m_hATR, 0, 0, 1, atr);
-         int c_ema = CopyBuffer(m_hEMA, 0, 0, 1, ema);
-         
-         if(c_rsi > 0 && c_atr > 0 && c_ema > 0)
-         {
-            // Success! Update globals
-            m_g_RSI = rsi[0];
-            m_g_ATR = atr[0];
-            m_g_EMA = ema[0];
-            m_indicatorsHealthy = true; // Mark as healthy
-            return true;
-         }
-         
-         // Transient error, wait a bit
-         Sleep(100); 
-         attempts++;
-      }
-      
-      Print("❌ Simple update failed after 1 second. Waiting for next tick.");
-      m_indicatorsHealthy = false; // Mark as unhealthy, but DON'T destroy handles
-      return false;
-   }
 
 
    
