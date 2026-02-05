@@ -1148,10 +1148,23 @@ public:
       // USAR ACTUALIZACIÓN SIMPLIFICADA (Non-blocking, waits for data)
       if(!UpdateIndicators())
       {
-         // Silence transient errors, only allow next bar to try again
+         // Silence transient errors, but log occasionally if it persists
+         static datetime lastFailLog = 0;
+         if(TimeCurrent() - lastFailLog >= 10)
+         {
+            Print("❌ TICK SKIPPED: ", m_symbol, " indicators not ready.");
+            lastFailLog = TimeCurrent();
+         }
          return; 
       }
-      Print("✅ PASSED | ", m_symbol, " | Indicators updated");
+      
+      // LOG SUCCESS OCCASIONALLY
+      static datetime lastPassLog = 0;
+      if(TimeCurrent() - lastPassLog >= 60)
+      {
+         Print("✅ ON-TICK PASSED: ", m_symbol, " indicators healthy");
+         lastPassLog = TimeCurrent();
+      }
 
       // Update Modules
       UpdateModules();
@@ -1798,14 +1811,19 @@ private:
        }
 
 
-       int secondsHeld = (int)(TimeCurrent() - m_signalStartTime);
-       if(secondsHeld < m_persistenceSeconds)
-       {
-           Print("⏳ STABILIZING | Signal held for ", secondsHeld, "s / ", m_persistenceSeconds, "s");
-           return;
-       }
+        int secondsHeld = (int)(TimeCurrent() - m_signalStartTime);
+        if(secondsHeld < m_persistenceSeconds)
+        {
+            static datetime lastStabLog = 0;
+            if(TimeCurrent() - lastStabLog >= 5)
+            {
+               Print("⏳ STABILIZING: ", m_symbol, " | held ", secondsHeld, "s/", m_persistenceSeconds, "s | Dir: ", (direction==1?"BUY":"SELL"), " | Score: ", DoubleToString(bestScore, 1));
+               lastStabLog = TimeCurrent();
+            }
+            return;
+        }
 
-       Print("✅ STABILIZED SIGNAL (", secondsHeld, "s) - Continuing to filters...");
+        Print("✅ STABILIZED SIGNAL (", secondsHeld, "s) | ", m_symbol, " | Score: ", DoubleToString(bestScore, 1));
 
        // DB LOGGING: Log all stabilized signals (even if rejected later)
        if(CheckPointer(m_db) != POINTER_INVALID)
@@ -2648,16 +2666,17 @@ private:
          return CreateIndicatorsWithRetry();
       }
 
-      // 2. Simple Blocking Copy with Timeout (Max 1 second)
+      // 2. Simple Blocking Copy with Timeout
       double rsi[], atr[], ema[];
       
       // Resize to minimum needed
-      ArrayResize(rsi, 2);
-      ArrayResize(atr, 14); // Standard ATR
-      ArrayResize(ema, 2);
+      ArrayResize(rsi, 1);
+      ArrayResize(atr, 1);
+      ArrayResize(ema, 1);
 
       int attempts = 0;
-      while(attempts < 5) // Reduced from 10 to 5 to be faster
+      int maxAttempts = 10;
+      while(attempts < maxAttempts)
       {
          ResetLastError();
          int c_rsi = CopyBuffer(m_hRSI, 0, 0, 1, rsi);
@@ -2667,6 +2686,9 @@ private:
          if(c_rsi > 0 && c_atr > 0 && c_ema > 0)
          {
             // Success! Update globals
+            m_g_RSI_Prev = m_g_RSI;
+            m_g_EMA_Prev = m_g_EMA;
+            
             m_g_RSI = rsi[0];
             m_g_ATR = atr[0];
             m_g_EMA = ema[0];
@@ -2675,21 +2697,27 @@ private:
          }
          
          int err = GetLastError();
-         // Silence transient errors (4806 = Data requested but not found, 4807 = Data not synchronized)
          if(err == 4806 || err == 4807)
          {
-            // Just wait a bit and retry internally
-            Sleep(200); 
+            Sleep(100); 
             attempts++;
             continue;
          }
          
-         // For other errors, log once and break
+         // For other errors, log and break
          Print("⚠️ Update failed for ", m_symbol, " (Error: ", err, ")");
          break;
       }
       
-      m_indicatorsHealthy = false; // Mark as unhealthy, but DON'T destroy handles
+      // LOG FAILURE (Throttled)
+      static datetime lastFailLog = 0;
+      if(TimeCurrent() - lastFailLog >= 30)
+      {
+         Print("❌ INDICATOR DATA FAILED for ", m_symbol, " after ", attempts, " attempts.");
+         lastFailLog = TimeCurrent();
+      }
+
+      m_indicatorsHealthy = false; 
       return false;
    }
 };
