@@ -279,7 +279,7 @@ public:
    //+------------------------------------------------------------------+
    bool LogTradeEntry(ulong ticket, string symbol, int type, double lots, 
                       double price, double sl, double tp, double score,
-                      string strategy, string regime, string killzone)
+                      string strategy, string marketRegime, string killzone)
    {
       if(!m_isOpen) return false;
 
@@ -297,7 +297,7 @@ public:
          tp,
          score,
          strategy,
-         regime,
+         marketRegime,
          killzone
       );
 

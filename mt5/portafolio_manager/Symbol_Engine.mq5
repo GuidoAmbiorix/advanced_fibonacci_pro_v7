@@ -234,7 +234,7 @@ CKellyPositionSizer kellySizer;
 
 // LEARNING & MEMORY OBJECTS
 // dbManager already declared above
-CPatternMemory      patternMemory;
+// patternMemory declarated above
 CPerformanceAnalyzer performanceAnalyzer;
 CPatternRecognizer  patternRecognizer;
 
@@ -2138,26 +2138,23 @@ void UpdateDashboard()
    if(InpEnableLearning && InpLogTradesToFile)
    {
       txt += "-------------------------------------------\n";
-      txt += "LEARNING SYSTEM\n";
-      txt += "Trades Logged: " + IntegerToString(tradeJournal.GetTotalTrades()) + "\n";
-      txt += "Open Trades: " + IntegerToString(tradeJournal.GetOpenTrades()) + "\n";
-
-      int totalTrades = tradeJournal.GetTotalTrades();
-      bool learningActive = (totalTrades >= InpMinTradesForLearning);
-      txt += "Status: " + (learningActive ? "ACTIVE" : "Collecting Data") + "\n";
-
-      if(!learningActive && totalTrades > 0)
-         txt += "Progress: " + IntegerToString(totalTrades) + "/" + IntegerToString(InpMinTradesForLearning) + " trades\n";
-
-      // Show performance analytics if learning is active
-      if(learningActive)
+      txt += "LEARNING SYSTEM (SQLite)\n";
+      // We don't have GetTotalTrades available directly easily without query, 
+      // but PerformanceAnalyzer has it
+      performanceAnalyzer.RefreshData();
+      ContextStats overall = performanceAnalyzer.GetOverallStats();
+      
+      int totalTrades = overall.tradeCount;
+      // bool learningActive = (totalTrades >= InpMinTradesForLearning);
+      // Simplify status for DB version
+      txt += "Trades in DB: " + IntegerToString(totalTrades) + "\n";
+      
+      if(totalTrades > 0)
       {
-         performanceAnalyzer.RefreshData();
-         ContextStats overall = performanceAnalyzer.GetOverallStats();
-
-         if(overall.tradeCount > 0)
-         {
-            txt += "Win Rate: " + DoubleToString(overall.winRate * 100, 1) + "% | ";
+          txt += "Win Rate: " + DoubleToString(overall.winRate * 100, 1) + "% | ";
+          txt += "PF: " + DoubleToString(overall.profitFactor, 2) + "\n";
+      }
+   }
             txt += "Avg R: " + DoubleToString(overall.avgR, 2) + "\n";
             txt += "Expectancy: " + DoubleToString(overall.expectancy, 3) + "R | ";
             txt += "PF: " + DoubleToString(overall.profitFactor, 2) + "\n";
