@@ -542,10 +542,6 @@ void ResetTradeState()
       ArrayFree(g_states);
       ArrayResize(g_states, 0);
    }
-
-   // Reset confluence cache when no positions
-   g_cachedBuyScore = 0;
-   g_cachedSellScore = 0;
 }
 
 bool IsNewBar()
