@@ -204,6 +204,13 @@ struct SymbolEngineParams
    ENUM_ORDER_TYPE_FILLING FillingType;
    int      Deviation;
    string   TradeComment;
+
+   // INDICATOR RECOVERY SETTINGS
+   bool     AllowTradingWithoutATR;      // Allow trading if ATR fails permanently
+   int      MaxConsecutiveFailures;      // Max failures before permanent disable
+   int      MinRecoveryInterval;         // Min seconds between recoveries
+   int      MaxRecoveryInterval;         // Max backoff time (seconds)
+   int      InitialBackoffSeconds;       // Initial backoff (5 seconds default)
 };
 
 //+------------------------------------------------------------------+
@@ -281,7 +288,31 @@ public:
    double m_g_EMA50, m_g_EMA100;   // Reversal filter EMA values
    double m_rsiBuffer[];
 
-   // Recovery State
+   // Per-Indicator Health Tracking
+   struct IndicatorHealthState
+   {
+      datetime lastRecoveryAttempt;
+      int consecutiveFailures;
+      int totalRecoveryAttempts;
+      bool isPermanentlyFailed;
+      datetime permanentFailureTime;
+      int currentBackoffSeconds;
+   };
+
+   IndicatorHealthState m_rsiHealth;
+   IndicatorHealthState m_atrHealth;
+   IndicatorHealthState m_emaHealth;
+   IndicatorHealthState m_ema50Health;
+   IndicatorHealthState m_ema100Health;
+
+   // Configuration
+   int m_maxConsecutiveFailures;
+   int m_minRecoveryInterval;
+   int m_maxRecoveryInterval;
+   int m_initialBackoff;
+   bool m_allowTradingWithoutATR;
+
+   // Recovery State (Legacy - kept for compatibility)
    bool m_indicatorsHealthy;
    datetime m_lastRecoveryTime;
    int m_recoveryAttempts;
@@ -467,7 +498,14 @@ public:
       p.FillingType = ORDER_FILLING_FOK;
       p.Deviation = 10;
       p.TradeComment = "Engine_Pro";
-      
+
+      // INDICATOR RECOVERY SETTINGS
+      p.AllowTradingWithoutATR = false;
+      p.MaxConsecutiveFailures = 20;
+      p.MinRecoveryInterval = 30;
+      p.MaxRecoveryInterval = 300;
+      p.InitialBackoffSeconds = 5;
+
       return p;
    }
 
@@ -500,11 +538,67 @@ public:
       m_signalStartTime = 0;
       m_lastSignalDirection = 0;
       m_persistenceSeconds = 10; // 10s stability filter
+
+      // Initialize indicator health tracking
+      InitializeIndicatorHealth();
    }
-   
+
    ~CSymbolEngineWrapper()
    {
       Deinit();
+   }
+
+   //+------------------------------------------------------------------+
+   //| Initialize Indicator Health Tracking System                      |
+   //+------------------------------------------------------------------+
+   void InitializeIndicatorHealth()
+   {
+      // Initialize RSI health state
+      m_rsiHealth.lastRecoveryAttempt = 0;
+      m_rsiHealth.consecutiveFailures = 0;
+      m_rsiHealth.totalRecoveryAttempts = 0;
+      m_rsiHealth.isPermanentlyFailed = false;
+      m_rsiHealth.permanentFailureTime = 0;
+      m_rsiHealth.currentBackoffSeconds = 5;
+
+      // Initialize ATR health state
+      m_atrHealth.lastRecoveryAttempt = 0;
+      m_atrHealth.consecutiveFailures = 0;
+      m_atrHealth.totalRecoveryAttempts = 0;
+      m_atrHealth.isPermanentlyFailed = false;
+      m_atrHealth.permanentFailureTime = 0;
+      m_atrHealth.currentBackoffSeconds = 5;
+
+      // Initialize EMA health state
+      m_emaHealth.lastRecoveryAttempt = 0;
+      m_emaHealth.consecutiveFailures = 0;
+      m_emaHealth.totalRecoveryAttempts = 0;
+      m_emaHealth.isPermanentlyFailed = false;
+      m_emaHealth.permanentFailureTime = 0;
+      m_emaHealth.currentBackoffSeconds = 5;
+
+      // Initialize EMA50 health state
+      m_ema50Health.lastRecoveryAttempt = 0;
+      m_ema50Health.consecutiveFailures = 0;
+      m_ema50Health.totalRecoveryAttempts = 0;
+      m_ema50Health.isPermanentlyFailed = false;
+      m_ema50Health.permanentFailureTime = 0;
+      m_ema50Health.currentBackoffSeconds = 5;
+
+      // Initialize EMA100 health state
+      m_ema100Health.lastRecoveryAttempt = 0;
+      m_ema100Health.consecutiveFailures = 0;
+      m_ema100Health.totalRecoveryAttempts = 0;
+      m_ema100Health.isPermanentlyFailed = false;
+      m_ema100Health.permanentFailureTime = 0;
+      m_ema100Health.currentBackoffSeconds = 5;
+
+      // Configuration defaults (will be overridden by params in Init)
+      m_maxConsecutiveFailures = 20;
+      m_minRecoveryInterval = 30;
+      m_maxRecoveryInterval = 300;
+      m_initialBackoff = 5;
+      m_allowTradingWithoutATR = false;
    }
    
    
@@ -517,7 +611,13 @@ public:
       m_params = params;
       m_db = db;
 
-      
+      // Load indicator recovery configuration
+      m_allowTradingWithoutATR = m_params.AllowTradingWithoutATR;
+      m_maxConsecutiveFailures = m_params.MaxConsecutiveFailures;
+      m_minRecoveryInterval = m_params.MinRecoveryInterval;
+      m_maxRecoveryInterval = m_params.MaxRecoveryInterval;
+      m_initialBackoff = m_params.InitialBackoffSeconds;
+
       // FORZAR selección del símbolo primero
       if(!SymbolSelect(m_symbol, true))
       {
@@ -709,14 +809,27 @@ public:
    //+------------------------------------------------------------------+
    string GetHealthStatus()
    {
+      // Check for permanent failures first
+      if(m_rsiHealth.isPermanentlyFailed) return "RSI_PERMANENT_FAIL";
+      if(m_emaHealth.isPermanentlyFailed) return "EMA_PERMANENT_FAIL";
+      if(m_atrHealth.isPermanentlyFailed && !m_allowTradingWithoutATR) return "ATR_PERMANENT_FAIL";
+
       if(!m_indicatorsHealthy) return "UNHEALTHY";
-      
+
+      // Check for high failure counts (warning state)
+      if(m_rsiHealth.consecutiveFailures >= m_maxConsecutiveFailures / 2)
+         return "RSI_WARNING";
+      if(m_atrHealth.consecutiveFailures >= m_maxConsecutiveFailures / 2)
+         return "ATR_WARNING";
+      if(m_emaHealth.consecutiveFailures >= m_maxConsecutiveFailures / 2)
+         return "EMA_WARNING";
+
       // Verificar handles
       string status = "HEALTHY";
       if(m_hRSI == INVALID_HANDLE) status = "RSI_BAD";
-      if(m_hATR == INVALID_HANDLE) status = "ATR_BAD";
+      if(m_hATR == INVALID_HANDLE && !m_atrHealth.isPermanentlyFailed) status = "ATR_BAD";
       if(m_hEMA == INVALID_HANDLE) status = "EMA_BAD";
-      
+
       // Verificar datos recientes
       static datetime lastHealthCheck = 0;
       if(TimeCurrent() - lastHealthCheck > 60)
@@ -727,30 +840,69 @@ public:
          }
          lastHealthCheck = TimeCurrent();
       }
-      
+
       return status;
    }
 
    void DebugIndicatorStatus()
    {
-       Print("=== DEBUG INDICATOR STATUS ===");
-       Print("Symbol: ", m_symbol);
-       Print("RSI Handle: ", m_hRSI, " | Valid: ", (m_hRSI != INVALID_HANDLE ? "YES" : "NO"));
-       Print("ATR Handle: ", m_hATR, " | Valid: ", (m_hATR != INVALID_HANDLE ? "YES" : "NO"));
-       Print("EMA Handle: ", m_hEMA, " | Valid: ", (m_hEMA != INVALID_HANDLE ? "YES" : "NO"));
-       Print("Indicators Healthy: ", (m_indicatorsHealthy ? "YES" : "NO"));
-       Print("Recovery Attempts: ", m_recoveryAttempts);
-       Print("Last Recovery: ", TimeToString(m_lastRecoveryTime));
-       
-       // Intentar leer datos
-       ResetLastError();
-       double test[1];
-       if(CopyBuffer(m_hRSI, 0, 0, 1, test) > 0)
-           Print("RSI Data: OK (", test[0], ")");
-       else
-           Print("RSI Data: FAILED - Error: ", GetLastError());
-           
-       Print("==============================");
+       Print("╔══════════════════════════════════════════════════════════════");
+       Print("║ INDICATOR HEALTH DIAGNOSTIC: ", m_symbol);
+       Print("╠══════════════════════════════════════════════════════════════");
+       Print("║ Global Status:");
+       Print("║   Indicators Healthy: ", (m_indicatorsHealthy ? "YES" : "NO"));
+       Print("║   Legacy Recovery Attempts: ", m_recoveryAttempts);
+       Print("║   Last Global Recovery: ", TimeToString(m_lastRecoveryTime));
+       Print("║   Consecutive Data Failures: ", m_consecutiveDataFailures);
+       Print("╠══════════════════════════════════════════════════════════════");
+
+       PrintIndicatorHealthStatus("RSI", m_hRSI, m_rsiHealth);
+       PrintIndicatorHealthStatus("ATR", m_hATR, m_atrHealth);
+       PrintIndicatorHealthStatus("EMA", m_hEMA, m_emaHealth);
+
+       if(m_params.UseReversalFilter)
+       {
+          PrintIndicatorHealthStatus("EMA50", m_hEMA50, m_ema50Health);
+          PrintIndicatorHealthStatus("EMA100", m_hEMA100, m_ema100Health);
+       }
+
+       Print("╠══════════════════════════════════════════════════════════════");
+       Print("║ Configuration:");
+       Print("║   Allow Trading Without ATR: ", (m_allowTradingWithoutATR ? "YES" : "NO"));
+       Print("║   Max Consecutive Failures: ", m_maxConsecutiveFailures);
+       Print("║   Min Recovery Interval: ", m_minRecoveryInterval, "s");
+       Print("║   Max Recovery Backoff: ", m_maxRecoveryInterval, "s");
+       Print("╚══════════════════════════════════════════════════════════════");
+   }
+
+   void PrintIndicatorHealthStatus(string name, int handle, IndicatorHealthState &health)
+   {
+       int barsCalc = BarsCalculated(handle);
+
+       Print("║ ");
+       Print("║ ", name, ":");
+       Print("║   Handle: ", (handle == INVALID_HANDLE ? "INVALID" : IntegerToString(handle)));
+       Print("║   Bars Calculated: ", barsCalc);
+       Print("║   Consecutive Failures: ", health.consecutiveFailures);
+       Print("║   Total Recovery Attempts: ", health.totalRecoveryAttempts);
+       Print("║   Current Backoff: ", health.currentBackoffSeconds, " seconds");
+       Print("║   Permanently Failed: ", (health.isPermanentlyFailed ? "YES ⚠️" : "NO"));
+
+       if(health.isPermanentlyFailed)
+       {
+          Print("║   Failure Time: ", TimeToString(health.permanentFailureTime));
+       }
+
+       // Test data read
+       if(handle != INVALID_HANDLE && !health.isPermanentlyFailed)
+       {
+          ResetLastError();
+          double test[1];
+          if(CopyBuffer(handle, 0, 0, 1, test) > 0)
+             Print("║   Data Test: ✅ OK (Value: ", DoubleToString(test[0], 4), ")");
+          else
+             Print("║   Data Test: ❌ FAILED (Error: ", GetLastError(), ")");
+       }
    }
 
    int GetPositionCount() { return m_positionCount; }
@@ -975,17 +1127,17 @@ public:
       // Actualizar contador de posiciones
       m_positionCount = CountPositions();
       if(m_positionCount == 0) ResetTradeState();
-      
+
+      // Manage positions every tick for stop/TP updates
       ManagePositions();
-      
-      // REMOVED: if(!IsNewBar()) { return; }
-      // Intra-bar processing enabled
-      
-      static datetime lastScanTime = 0;
-      if(TimeCurrent() == lastScanTime) return; // Prevent multiple scans per tick
-      lastScanTime = TimeCurrent();
-      
-      Print("🔔 NEW BAR | ", m_symbol, " | OnTick called");
+
+      // RESTORED: Bar-based processing to reduce indicator checks from ~300/bar to 1/bar
+      if(!IsNewBar())
+      {
+         return;  // Skip indicator updates until new bar
+      }
+
+      Print("🔔 NEW BAR | ", m_symbol, " | Time: ", TimeToString(TimeCurrent(), TIME_SECONDS));
       
       // PRIMERO: Verificar salud de indicadores antes de cualquier cosa
       if(!m_indicatorsHealthy)
@@ -1574,108 +1726,325 @@ private:
    }
 
    //+------------------------------------------------------------------+
-   //| SOLUCIÓN QUIRÚRGICA: Recrear SOLO los indicadores corruptos     |
-   //| Sin tocar los que funcionan correctamente                        |
+   //| Helper Functions for Enhanced Recovery System                    |
+   //+------------------------------------------------------------------+
+
+   // Check if we can attempt global recovery (cooldown check)
+   bool CanAttemptRecovery()
+   {
+      datetime now = TimeCurrent();
+      if(m_lastRecoveryTime > 0 && (now - m_lastRecoveryTime) < m_minRecoveryInterval)
+      {
+         int secondsSince = (int)(now - m_lastRecoveryTime);
+         Print("⏳ Global recovery cooldown active. Last recovery: ", secondsSince, "s ago (min: ", m_minRecoveryInterval, "s)");
+         return false;
+      }
+      return true;
+   }
+
+   // Check if we can recover a specific indicator (per-indicator cooldown + backoff)
+   bool CanRecoverIndicator(IndicatorHealthState &health, string name)
+   {
+      // Check if permanently failed
+      if(health.isPermanentlyFailed)
+      {
+         Print("❌ ", name, " is permanently failed. Skipping recovery.");
+         return false;
+      }
+
+      // Check per-indicator cooldown with exponential backoff
+      datetime now = TimeCurrent();
+      if(health.lastRecoveryAttempt > 0)
+      {
+         int secondsSince = (int)(now - health.lastRecoveryAttempt);
+         if(secondsSince < health.currentBackoffSeconds)
+         {
+            Print("⏳ ", name, " recovery cooldown active. Last attempt: ", secondsSince, "s ago (backoff: ", health.currentBackoffSeconds, "s)");
+            return false;
+         }
+      }
+
+      return true;
+   }
+
+   // Wait for indicator to calculate with polling and timeout
+   bool WaitForIndicatorCalculation(int handle, string name, int timeoutSec)
+   {
+      Print("⏳ Waiting for ", name, " to calculate (timeout: ", timeoutSec, "s)...");
+
+      for(int i = 0; i < timeoutSec; i++)
+      {
+         int calc = BarsCalculated(handle);
+         if(calc > 0)
+         {
+            Print("✅ ", name, " calculated successfully (", calc, " bars) after ", i, "s");
+            return true;
+         }
+
+         // Log progress every 10 seconds
+         if(i > 0 && i % 10 == 0)
+            Print("⏳ Still waiting for ", name, "... (", i, "s elapsed)");
+
+         Sleep(1000);
+      }
+
+      Print("❌ ", name, " calculation timeout after ", timeoutSec, "s");
+      return false;
+   }
+
+   // Record recovery failure and update backoff exponentially
+   void RecordRecoveryFailure(IndicatorHealthState &health, string name)
+   {
+      health.consecutiveFailures++;
+      health.totalRecoveryAttempts++;
+      health.lastRecoveryAttempt = TimeCurrent();
+
+      // Exponential backoff: double the wait time, up to max
+      health.currentBackoffSeconds = MathMin(health.currentBackoffSeconds * 2, m_maxRecoveryInterval);
+
+      Print("📊 ", name, " recovery failed | Consecutive failures: ", health.consecutiveFailures,
+            " | Total attempts: ", health.totalRecoveryAttempts,
+            " | Next backoff: ", health.currentBackoffSeconds, "s");
+
+      // Check if we should mark as permanently failed
+      if(health.consecutiveFailures >= m_maxConsecutiveFailures)
+      {
+         MarkIndicatorAsPermanentlyFailed(name, health);
+      }
+   }
+
+   // Reset indicator health on successful recovery
+   void ResetIndicatorHealth(IndicatorHealthState &health)
+   {
+      health.consecutiveFailures = 0;
+      health.currentBackoffSeconds = m_initialBackoff;  // Reset to initial backoff
+      health.lastRecoveryAttempt = TimeCurrent();
+      health.totalRecoveryAttempts++;
+   }
+
+   // Mark indicator as permanently failed
+   void MarkIndicatorAsPermanentlyFailed(string name, IndicatorHealthState &health)
+   {
+      health.isPermanentlyFailed = true;
+      health.permanentFailureTime = TimeCurrent();
+
+      Print("🚨 CRITICAL: ", name, " marked as PERMANENTLY FAILED for ", m_symbol);
+      Print("   Total recovery attempts: ", health.totalRecoveryAttempts);
+      Print("   Consecutive failures: ", health.consecutiveFailures);
+      Print("   Failure time: ", TimeToString(health.permanentFailureTime));
+
+      // Send push notification if enabled
+      if(m_params.EnablePushNotifications)
+      {
+         string msg = "⚠️ " + m_symbol + " | " + name + " PERMANENTLY FAILED after " +
+                      IntegerToString(health.totalRecoveryAttempts) + " attempts";
+         SendNotification(msg);
+      }
+
+      // Special handling for ATR
+      if(name == "ATR" && !m_allowTradingWithoutATR)
+      {
+         Print("🚨 ATR failed and trading without ATR is disabled. Symbol will not trade.");
+      }
+   }
+
+   //+------------------------------------------------------------------+
+   //| ENHANCED RECOVERY: Per-Indicator with Circuit Breaker            |
+   //| Uses exponential backoff and permanent failure detection         |
    //+------------------------------------------------------------------+
    bool RecoverBrokenIndicators()
    {
-      Print("🔧 SURGICAL RECOVERY: Checking which indicators need recreation for ", m_symbol);
+      Print("🔧 ENHANCED RECOVERY: Starting per-indicator recovery for ", m_symbol);
 
-      bool anyRecovered = false;
+      // Check global cooldown
+      if(!CanAttemptRecovery())
+      {
+         return false;
+      }
 
-      // Check RSI
+      m_lastRecoveryTime = TimeCurrent();
+
+      bool allCriticalRecovered = true;  // Track if ALL critical indicators recover
+
+      // === RECOVER RSI ===
       int bars_rsi = BarsCalculated(m_hRSI);
       if(bars_rsi == -1)
       {
-         Print("   🔄 Recreating broken RSI handle...");
-         if(m_hRSI != INVALID_HANDLE) IndicatorRelease(m_hRSI);
-         m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
-         Sleep(300);
-
-         if(BarsCalculated(m_hRSI) > 0)
+         if(CanRecoverIndicator(m_rsiHealth, "RSI"))
          {
-            Print("   ✅ RSI recovered");
-            anyRecovered = true;
+            Print("   🔄 Recreating broken RSI handle...");
+            if(m_hRSI != INVALID_HANDLE) IndicatorRelease(m_hRSI);
+            m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
+
+            // Wait with exponential backoff
+            Sleep(m_rsiHealth.currentBackoffSeconds * 1000);
+
+            if(WaitForIndicatorCalculation(m_hRSI, "RSI", 30))
+            {
+               Print("   ✅ RSI recovered");
+               ResetIndicatorHealth(m_rsiHealth);
+            }
+            else
+            {
+               Print("   ❌ RSI recovery failed");
+               RecordRecoveryFailure(m_rsiHealth, "RSI");
+               allCriticalRecovered = false;
+            }
          }
          else
-            Print("   ❌ RSI recovery failed");
+         {
+            allCriticalRecovered = false;
+         }
       }
 
-      // Check ATR
+      // === RECOVER ATR ===
       int bars_atr = BarsCalculated(m_hATR);
       if(bars_atr == -1)
       {
-         Print("   🔄 Recreating broken ATR handle...");
-         if(m_hATR != INVALID_HANDLE) IndicatorRelease(m_hATR);
-         m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14); // Standard ATR period
-         Sleep(300);
-
-         // Esperar a que se calcule con timeout
-         int timeout = 0;
-         while(timeout < 10) // 10 segundos max
+         if(CanRecoverIndicator(m_atrHealth, "ATR"))
          {
-            int calc = BarsCalculated(m_hATR);
-            if(calc > 0)
-            {
-               Print("   ✅ ATR recovered (", calc, " bars calculated)");
-               anyRecovered = true;
-               break;
-            }
-            Sleep(1000);
-            timeout++;
-         }
+            Print("   🔄 Recreating broken ATR handle...");
+            if(m_hATR != INVALID_HANDLE) IndicatorRelease(m_hATR);
+            m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
 
-         if(timeout >= 10)
-            Print("   ❌ ATR recovery timeout");
+            // Wait with exponential backoff
+            Sleep(m_atrHealth.currentBackoffSeconds * 1000);
+
+            // ATR gets longer timeout (60s) as it's most problematic
+            if(WaitForIndicatorCalculation(m_hATR, "ATR", 60))
+            {
+               Print("   ✅ ATR recovered");
+               ResetIndicatorHealth(m_atrHealth);
+            }
+            else
+            {
+               Print("   ❌ ATR recovery failed");
+               RecordRecoveryFailure(m_atrHealth, "ATR");
+
+               // ATR failure only critical if trading without it is disabled
+               if(!m_allowTradingWithoutATR)
+                  allCriticalRecovered = false;
+            }
+         }
+         else
+         {
+            if(!m_allowTradingWithoutATR)
+               allCriticalRecovered = false;
+         }
       }
 
-      // Check EMA
+      // === RECOVER EMA ===
       int bars_ema = BarsCalculated(m_hEMA);
       if(bars_ema == -1)
       {
-         Print("   🔄 Recreating broken EMA handle...");
-         if(m_hEMA != INVALID_HANDLE) IndicatorRelease(m_hEMA);
-         m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
-         Sleep(300);
-
-         if(BarsCalculated(m_hEMA) > 0)
+         if(CanRecoverIndicator(m_emaHealth, "EMA"))
          {
-            Print("   ✅ EMA recovered");
-            anyRecovered = true;
+            Print("   🔄 Recreating broken EMA handle...");
+            if(m_hEMA != INVALID_HANDLE) IndicatorRelease(m_hEMA);
+            m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
+
+            // Wait with exponential backoff
+            Sleep(m_emaHealth.currentBackoffSeconds * 1000);
+
+            if(WaitForIndicatorCalculation(m_hEMA, "EMA", 30))
+            {
+               Print("   ✅ EMA recovered");
+               ResetIndicatorHealth(m_emaHealth);
+            }
+            else
+            {
+               Print("   ❌ EMA recovery failed");
+               RecordRecoveryFailure(m_emaHealth, "EMA");
+               allCriticalRecovered = false;
+            }
          }
          else
-            Print("   ❌ EMA recovery failed");
+         {
+            allCriticalRecovered = false;
+         }
       }
 
-      // Check EMA50/100 if reversal filter enabled
+      // === RECOVER EMA50/100 (if reversal filter enabled) ===
       if(m_params.UseReversalFilter)
       {
          int bars_ema50 = BarsCalculated(m_hEMA50);
          if(bars_ema50 == -1)
          {
-            Print("   🔄 Recreating broken EMA50 handle...");
-            if(m_hEMA50 != INVALID_HANDLE) IndicatorRelease(m_hEMA50);
-            m_hEMA50 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA50_Period, 0, MODE_EMA, PRICE_CLOSE);
-            Sleep(300);
-            anyRecovered = true;
+            if(CanRecoverIndicator(m_ema50Health, "EMA50"))
+            {
+               Print("   🔄 Recreating broken EMA50 handle...");
+               if(m_hEMA50 != INVALID_HANDLE) IndicatorRelease(m_hEMA50);
+               m_hEMA50 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA50_Period, 0, MODE_EMA, PRICE_CLOSE);
+
+               Sleep(m_ema50Health.currentBackoffSeconds * 1000);
+
+               if(WaitForIndicatorCalculation(m_hEMA50, "EMA50", 30))
+               {
+                  Print("   ✅ EMA50 recovered");
+                  ResetIndicatorHealth(m_ema50Health);
+               }
+               else
+               {
+                  RecordRecoveryFailure(m_ema50Health, "EMA50");
+                  // EMA50 not critical for basic trading
+               }
+            }
          }
 
          int bars_ema100 = BarsCalculated(m_hEMA100);
          if(bars_ema100 == -1)
          {
-            Print("   🔄 Recreating broken EMA100 handle...");
-            if(m_hEMA100 != INVALID_HANDLE) IndicatorRelease(m_hEMA100);
-            m_hEMA100 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA100_Period, 0, MODE_EMA, PRICE_CLOSE);
-            Sleep(300);
-            anyRecovered = true;
+            if(CanRecoverIndicator(m_ema100Health, "EMA100"))
+            {
+               Print("   🔄 Recreating broken EMA100 handle...");
+               if(m_hEMA100 != INVALID_HANDLE) IndicatorRelease(m_hEMA100);
+               m_hEMA100 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA100_Period, 0, MODE_EMA, PRICE_CLOSE);
+
+               Sleep(m_ema100Health.currentBackoffSeconds * 1000);
+
+               if(WaitForIndicatorCalculation(m_hEMA100, "EMA100", 30))
+               {
+                  Print("   ✅ EMA100 recovered");
+                  ResetIndicatorHealth(m_ema100Health);
+               }
+               else
+               {
+                  RecordRecoveryFailure(m_ema100Health, "EMA100");
+                  // EMA100 not critical for basic trading
+               }
+            }
          }
       }
 
-      return anyRecovered;
+      // CRITICAL FIX: Return true only if ALL critical indicators recovered
+      if(allCriticalRecovered)
+      {
+         Print("✅ All critical indicators recovered for ", m_symbol);
+         return true;
+      }
+      else
+      {
+         Print("❌ Some critical indicators failed to recover for ", m_symbol);
+         return false;
+      }
    }
 
    bool UpdateIndicatorsEnhanced()
    {
+      // ENHANCED: Check for permanently failed critical indicators at start
+      if(m_rsiHealth.isPermanentlyFailed || m_emaHealth.isPermanentlyFailed)
+      {
+         Print("❌ Critical indicators permanently failed for ", m_symbol, " - Cannot trade");
+         return false;
+      }
+
+      // Check if ATR permanently failed AND trading without ATR is disabled
+      if(m_atrHealth.isPermanentlyFailed && !m_allowTradingWithoutATR)
+      {
+         Print("❌ ATR permanently failed and trading without ATR is disabled for ", m_symbol);
+         return false;
+      }
+
       // PRIMERO: Verificar salud de indicadores ANTES de intentar actualizar
       if(!m_indicatorsHealthy)
       {
@@ -1698,45 +2067,53 @@ private:
       // Si la actualización normal falla, verificar el error
       int lastError = GetLastError();
 
-      // FIX: Error 4807/4806 es NORMAL en multi-símbolo (datos temporalmente no disponibles)
-      // NO marcar unhealthy inmediatamente - solo esperar siguiente tick
+      // ENHANCED: Increased transient error tolerance from 10 to 15 failures
+      // Error 4807/4806 es NORMAL en multi-símbolo (datos temporalmente no disponibles)
       if(lastError == 4807 || lastError == 4806)
       {
          m_consecutiveDataFailures++;
 
-         // Tolerar hasta 10 fallos consecutivos antes de entrar en recovery mode
-         if(m_consecutiveDataFailures < 10)
+         // Tolerar hasta 15 fallos consecutivos antes de entrar en recovery mode
+         if(m_consecutiveDataFailures < 15)
          {
             // Solo log cada 5 fallos para no spam
             if(m_consecutiveDataFailures % 5 == 1)
-               Print("⏳ Data temporarily unavailable (4807/4806) - retry #", m_consecutiveDataFailures, "/10");
+               Print("⏳ Data temporarily unavailable (4807/4806) - retry #", m_consecutiveDataFailures, "/15");
             return false; // Retry next tick - NO marcar unhealthy
          }
 
-         // Después de 10 fallos, intentar recovery UNA vez
-         Print("⚠️ Persistent data unavailability (", m_consecutiveDataFailures, " failures). Attempting recovery...");
+         // Después de 15 fallos, usar full recovery en lugar de surgical
+         Print("⚠️ Persistent data unavailability (", m_consecutiveDataFailures, " failures). Attempting full recovery...");
 
          if(RecoverIndicators())
          {
             m_consecutiveDataFailures = 0;
+
+            // ENHANCED: Add 3-second sleep after full recovery
+            Print("⏳ Waiting 3 seconds after full recovery for indicators to stabilize...");
+            Sleep(3000);
+
             // Intentar de nuevo después de la recuperación
             if(UpdateIndicatorsStandard())
             {
-               Print("✅ Update successful after recovery");
+               Print("✅ Update successful after full recovery");
                return true;
             }
          }
       }
-      // Error distinto a 4807/4806 - verificar handles
+      // ENHANCED: Use full recovery instead of surgical for non-4807 errors
       else if(!AreIndicatorsHealthy())
       {
-         Print("⚠️ Indicator handles invalid (Error ", lastError, "). Attempting recovery...");
+         Print("⚠️ Indicator handles invalid (Error ", lastError, "). Attempting full recovery...");
 
          if(RecoverIndicators())
          {
+            // Add sleep after recovery
+            Sleep(3000);
+
             if(UpdateIndicatorsStandard())
             {
-               Print("✅ Update successful after recovery");
+               Print("✅ Update successful after full recovery");
                return true;
             }
          }
@@ -1749,42 +2126,113 @@ private:
 
    bool UpdateIndicatorsStandard()
    {
-      // SOLUCIÓN DE RAÍZ: Verificar handles válidos ANTES de BarsCalculated()
-      if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
+      // Check for permanently failed critical indicators at start
+      if(m_rsiHealth.isPermanentlyFailed || m_emaHealth.isPermanentlyFailed)
       {
-         Print("❌ Invalid indicator handles for ", m_symbol);
+         Print("❌ Critical indicators permanently failed for ", m_symbol);
          return false;
       }
 
-      // CRITICAL: Check if indicators are fully calculated before reading
-      // Retry loop to handle transient states
-      int maxRetries = 20;
+      // Skip ATR check if permanently failed AND trading without ATR is allowed
+      bool skipATR = (m_atrHealth.isPermanentlyFailed && m_allowTradingWithoutATR);
+
+      // SOLUCIÓN DE RAÍZ: Verificar handles válidos ANTES de BarsCalculated()
+      if(m_hRSI == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
+      {
+         Print("❌ Invalid critical indicator handles for ", m_symbol);
+         return false;
+      }
+
+      if(!skipATR && m_hATR == INVALID_HANDLE)
+      {
+         Print("❌ Invalid ATR handle for ", m_symbol);
+         return false;
+      }
+
+      // ENHANCED: Increased retry count from 20 to 50
+      int maxRetries = 50;
       int bars_rsi = -1, bars_atr = -1, bars_ema = -1;
 
       for(int i=0; i<maxRetries; i++)
       {
-         ResetLastError(); // Limpiar error anterior
+         ResetLastError();
 
          bars_rsi = BarsCalculated(m_hRSI);
-         bars_atr = BarsCalculated(m_hATR);
+         if(!skipATR) bars_atr = BarsCalculated(m_hATR);
+         else bars_atr = 14;  // Assume valid if skipping
          bars_ema = BarsCalculated(m_hEMA);
+
+         // Track per-indicator failures
+         if(bars_rsi == -1)
+         {
+            if(i == 0)
+               Print("⚠️ RSI BarsCalculated = -1 for ", m_symbol);
+            m_rsiHealth.consecutiveFailures++;
+         }
+
+         if(bars_atr == -1 && !skipATR)
+         {
+            if(i == 0)
+               Print("⚠️ ATR BarsCalculated = -1 for ", m_symbol);
+            m_atrHealth.consecutiveFailures++;
+         }
+
+         if(bars_ema == -1)
+         {
+            if(i == 0)
+               Print("⚠️ EMA BarsCalculated = -1 for ", m_symbol);
+            m_emaHealth.consecutiveFailures++;
+         }
 
          // SOLUCIÓN DE RAÍZ: BarsCalculated() devuelve -1 si hay error
          if(bars_rsi == -1 || bars_atr == -1 || bars_ema == -1)
          {
             int error = GetLastError();
-            if(i == 0) // Solo log en el primer intento
+            if(i == 0)
                Print("⚠️ BarsCalculated error for ", m_symbol, " - RSI: ", bars_rsi, " ATR: ", bars_atr, " EMA: ", bars_ema, " Error: ", error);
 
-            Sleep(100);
-            continue; // Retry
+            // Graduated sleep intervals: 500ms -> 1000ms based on retry count
+            if(i < 20)
+               Sleep(500);
+            else if(i < 40)
+               Sleep(1000);
+            else
+               Sleep(2000);
+
+            continue;
          }
 
          // Verificar suficientes barras calculadas
          if(bars_rsi >= 2 && bars_atr >= 14 && bars_ema >= 2)
-            break; // All good
+         {
+            // Reset failure counters on success
+            m_rsiHealth.consecutiveFailures = 0;
+            m_atrHealth.consecutiveFailures = 0;
+            m_emaHealth.consecutiveFailures = 0;
+            break;
+         }
 
-         Sleep(100);
+         // Graduated sleep
+         if(i < 20)
+            Sleep(500);
+         else if(i < 40)
+            Sleep(1000);
+         else
+            Sleep(2000);
+      }
+
+      // ENHANCED: Check if permanent failure threshold exceeded
+      if(m_rsiHealth.consecutiveFailures >= m_maxConsecutiveFailures)
+      {
+         MarkIndicatorAsPermanentlyFailed("RSI", m_rsiHealth);
+      }
+      if(m_atrHealth.consecutiveFailures >= m_maxConsecutiveFailures && !skipATR)
+      {
+         MarkIndicatorAsPermanentlyFailed("ATR", m_atrHealth);
+      }
+      if(m_emaHealth.consecutiveFailures >= m_maxConsecutiveFailures)
+      {
+         MarkIndicatorAsPermanentlyFailed("EMA", m_emaHealth);
       }
 
       // SOLUCIÓN DE RAÍZ: Si hay handles corruptos (-1), intentar recovery selectivo
@@ -1797,25 +2245,31 @@ private:
          {
             Print("✅ Broken indicators recovered, retrying update...");
 
+            // Wait 2 seconds after recovery for indicators to stabilize
+            Sleep(2000);
+
             // Reintentar verificación después de recovery
             bars_rsi = BarsCalculated(m_hRSI);
-            bars_atr = BarsCalculated(m_hATR);
+            if(!skipATR) bars_atr = BarsCalculated(m_hATR);
             bars_ema = BarsCalculated(m_hEMA);
 
             // Si siguen corruptos después de recovery, entonces sí es crítico
             if(bars_rsi == -1)
             {
                Print("❌ CRITICAL | ", m_symbol, " | RSI still broken after recovery");
+               m_rsiHealth.consecutiveFailures++;
                return false;
             }
-            if(bars_atr == -1)
+            if(bars_atr == -1 && !skipATR)
             {
                Print("❌ CRITICAL | ", m_symbol, " | ATR still broken after recovery");
+               m_atrHealth.consecutiveFailures++;
                return false;
             }
             if(bars_ema == -1)
             {
                Print("❌ CRITICAL | ", m_symbol, " | EMA still broken after recovery");
+               m_emaHealth.consecutiveFailures++;
                return false;
             }
 
@@ -1833,7 +2287,7 @@ private:
          Print("⏳ WAITING | ", m_symbol, " | RSI calculating... (", bars_rsi, " bars ready) Error: ", GetLastError());
          return false;
       }
-      if(bars_atr < 14)
+      if(bars_atr < 14 && !skipATR)
       {
          Print("⏳ WAITING | ", m_symbol, " | ATR calculating... (", bars_atr, " bars ready) Error: ", GetLastError());
          return false;
@@ -1853,26 +2307,38 @@ private:
       if(copied < 2)
       {
          Print("⚠️ UpdateIndicators FAILED | ", m_symbol, " | RSI buffer: copied ", copied, "/2 bars");
+         m_rsiHealth.consecutiveFailures++;
          return false;
       }
-      
-      copied = CopyBuffer(m_hATR, 0, 0, 14, atr);
-      if(copied < 14)
+
+      // Only copy ATR if not skipped
+      if(!skipATR)
       {
-         Print("⚠️ UpdateIndicators FAILED | ", m_symbol, " | ATR buffer: copied ", copied, "/14 bars");
-         return false;
+         copied = CopyBuffer(m_hATR, 0, 0, 14, atr);
+         if(copied < 14)
+         {
+            Print("⚠️ UpdateIndicators FAILED | ", m_symbol, " | ATR buffer: copied ", copied, "/14 bars");
+            m_atrHealth.consecutiveFailures++;
+            return false;
+         }
+         m_g_ATR = atr[0];
       }
-      
+      else
+      {
+         // Use default ATR value if permanently failed
+         m_g_ATR = m_symbolInfo.Point() * 100;  // Fallback ATR estimate
+      }
+
       copied = CopyBuffer(m_hEMA, 0, 0, 2, ema);
       if(copied < 2)
       {
          Print("⚠️ UpdateIndicators FAILED | ", m_symbol, " | EMA buffer: copied ", copied, "/2 bars");
+         m_emaHealth.consecutiveFailures++;
          return false;
       }
 
       m_g_RSI = rsi[0];
       m_g_RSI_Prev = rsi[1];
-      m_g_ATR = atr[0];
       m_g_EMA = ema[0];
       m_g_EMA_Prev = ema[1];
 
@@ -1907,10 +2373,17 @@ private:
          m_g_EMA100 = ema100[0];
       }
 
-      // Calculate ATR MA
-      double sum = 0;
-      for(int i=0; i<14; i++) sum += atr[i];
-      m_g_ATR_MA = sum / 14.0;
+      // Calculate ATR MA (skip if ATR permanently failed)
+      if(!skipATR)
+      {
+         double sum = 0;
+         for(int i=0; i<14; i++) sum += atr[i];
+         m_g_ATR_MA = sum / 14.0;
+      }
+      else
+      {
+         m_g_ATR_MA = m_g_ATR;  // Use fallback ATR
+      }
 
       return true;
    }

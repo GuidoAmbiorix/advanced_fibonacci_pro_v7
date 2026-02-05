@@ -74,6 +74,13 @@ input bool   InpEnableDashboard = false;  // Enable visual dashboard (disable fo
 input group "=== NOTIFICATIONS ==="
 input bool   InpEnablePushNotifications = true; // Send mobile push notifications on trade entry
 
+// --- INDICATOR RECOVERY SETTINGS ---
+input group "=== INDICATOR RECOVERY SETTINGS ==="
+input bool   InpAllowTradingWithoutATR = false;  // Allow trading if ATR fails permanently
+input int    InpMaxIndicatorFailures = 20;        // Max failures before permanent disable
+input int    InpMinRecoveryInterval = 30;         // Min seconds between recoveries
+input int    InpMaxRecoveryBackoff = 300;         // Max backoff time (seconds)
+
 // --- STATE ---
 string g_activeSymbols[];
 CSymbolEngineWrapper *g_engines[];      // The Engine Room
@@ -414,27 +421,53 @@ void OnTimer()
    // Collect all scores, rank them, allow only top N to trade
    int totalEngines = ArraySize(g_engines);
 
-   // Health Monitor (Every 5 minutes)
+   // Health Monitor (Every 5 minutes) - ENHANCED
    static datetime lastHealthMonitor = 0;
    if(TimeCurrent() - lastHealthMonitor > 300)
    {
+       int healthyCount = 0;
+       int warningCount = 0;
+       int failedCount = 0;
+
        for(int i=0; i<totalEngines; i++)
        {
            if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
            {
                string health = g_engines[i].GetHealthStatus();
-               if(health != "HEALTHY")
+
+               if(health == "HEALTHY")
                {
-                   Print("⚠️ ENGINE HEALTH | ", g_engines[i].m_symbol, 
-                         " | Status: ", health, 
+                   healthyCount++;
+               }
+               else if(StringFind(health, "PERMANENT_FAIL") >= 0)
+               {
+                   failedCount++;
+                   Print("🚨 ENGINE CRITICAL | ", g_engines[i].m_symbol,
+                         " | Status: ", health,
+                         " | PERMANENTLY FAILED");
+                   g_engines[i].DebugIndicatorStatus();
+               }
+               else if(StringFind(health, "WARNING") >= 0)
+               {
+                   warningCount++;
+                   Print("⚠️ ENGINE WARNING | ", g_engines[i].m_symbol,
+                         " | Status: ", health,
                          " | Recovery attempts: ", g_engines[i].m_recoveryAttempts);
-                         
-                   // Debug detail if critical
+               }
+               else
+               {
+                   Print("⚠️ ENGINE HEALTH | ", g_engines[i].m_symbol,
+                         " | Status: ", health,
+                         " | Recovery attempts: ", g_engines[i].m_recoveryAttempts);
+
+                   // Debug detail if ≥3 recovery attempts
                    if(g_engines[i].m_recoveryAttempts >= 3)
                        g_engines[i].DebugIndicatorStatus();
                }
            }
        }
+
+       Print("📊 HEALTH SUMMARY | Healthy: ", healthyCount, " | Warning: ", warningCount, " | Failed: ", failedCount, " / ", totalEngines);
        lastHealthMonitor = TimeCurrent();
    }
 
@@ -1229,16 +1262,23 @@ void UpdateUniverse()
 
          // Configure Params
          SymbolEngineParams params = CSymbolEngineWrapper::GetDefaults();
-         
+
          // CRITICAL: Enforce Governor's Input Floor
          params.MinConfluenceEntry = (int)InpMinScoreFloor;
          // 🔥 APPLY SYMBOL-SPECIFIC RISK MAP
 ConfigureRiskForSymbol(sym, params);
          params.MagicNumber = 1000 + i;
          params.TradeComment = "GodMode_" + sym;
-         
+
          // NOTIFICATIONS
          params.EnablePushNotifications = InpEnablePushNotifications;
+
+         // INDICATOR RECOVERY SETTINGS
+         params.AllowTradingWithoutATR = InpAllowTradingWithoutATR;
+         params.MaxConsecutiveFailures = InpMaxIndicatorFailures;
+         params.MinRecoveryInterval = InpMinRecoveryInterval;
+         params.MaxRecoveryInterval = InpMaxRecoveryBackoff;
+         params.InitialBackoffSeconds = 5;
 
          // 24/7 MODE: DISABLE KILLZONE FILTER
          // Confluence system (30-point scoring) handles quality control
