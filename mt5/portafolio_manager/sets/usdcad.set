@@ -1,4 +1,4 @@
-; USDCAD - M5 Structure Scalper - London-NY Session
+; USDCAD - M15 Structure - London-NY Session
 ; Optimized for 4-Pair Portfolio (EURUSD, GBPUSD, USDCAD, XAUUSD)
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
 ; Best Performance: NY session (US + Canadian data), oil market hours
@@ -93,7 +93,7 @@ InpTrailATR_Mult=1.15
 
 ; ====== SPREAD ======
 ; Relaxed spread for M5 execution
-InpMaxSpreadPoints=20
+InpMaxSpreadPoints=50
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 ; Good for USDCAD - respects technical levels
@@ -141,14 +141,14 @@ InpMaxTradesPerSession=3
 InpMaxProfitPerSession_R=5.0
 InpMaxLossPerSession_R=1.5
 InpMinSessionConfidence=0.5
-InpTradeCooldownMinutes=15
+InpTradeCooldownMinutes=30
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======
 ; Correlation filter and circuit breaker
 InpUseCorrelationFilter=true
 InpDailyMaxLoss_R=3.0
-InpLossCooldownMinutes=45
+InpLossCooldownMinutes=60
 InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true
 

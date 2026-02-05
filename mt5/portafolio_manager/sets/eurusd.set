@@ -1,4 +1,4 @@
-; EURUSD - M5 Scalping - London-NY Session
+; EURUSD - M15 Swing/Scalp - London-NY Session
 ; Optimized for 4-Pair Portfolio (EURUSD, GBPUSD, USDCAD, XAUUSD)
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
 ; Best Performance: London-NY overlap (cleanest technicals, highest liquidity)
@@ -95,7 +95,7 @@ InpTrailATR_Mult=1.0
 ; ====== SPREAD ======
 ; ====== SPREAD ======
 ; Relaxed for M5 execution reliability
-InpMaxSpreadPoints=15
+InpMaxSpreadPoints=50
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 ; Full SMC suite - EUR respects institutional levels
@@ -144,7 +144,7 @@ InpMaxTradesPerSession=3
 InpMaxProfitPerSession_R=6.0
 InpMaxLossPerSession_R=1.5
 InpMinSessionConfidence=0.5
-InpTradeCooldownMinutes=10
+InpTradeCooldownMinutes=30
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======

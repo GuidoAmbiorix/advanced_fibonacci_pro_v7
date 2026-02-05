@@ -1,4 +1,4 @@
-; XAUUSD - M5 Momentum Scalper - London-NY Session
+; XAUUSD - M15 Momentum - London-NY Session
 ; Optimized for 4-Pair Portfolio (EURUSD, GBPUSD, USDCAD, XAUUSD)
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
 ; Best Performance: NY session (8 AM New York + COMEX open), London steady activity
@@ -93,7 +93,7 @@ InpTrailATR_Mult=1.5
 
 ; ====== SPREAD ======
 ; Relaxed spread for Gold M5 execution
-InpMaxSpreadPoints=35
+InpMaxSpreadPoints=50
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 ; Critical for gold - institutional liquidity sweeps are common
@@ -141,7 +141,7 @@ InpMaxTradesPerSession=2
 InpMaxProfitPerSession_R=6.0
 InpMaxLossPerSession_R=2.0
 InpMinSessionConfidence=0.5
-InpTradeCooldownMinutes=15
+InpTradeCooldownMinutes=30
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======

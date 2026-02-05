@@ -1,4 +1,4 @@
-; GBPUSD - M5 Scalping - London-NY Session
+; GBPUSD - M15 Swing/Scalp - London-NY Session
 ; Optimized for Portfolio Governor System (Governor handles aggregate risk)
 ; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
 ; Best Performance: London-NY overlap (highest volatility, deep liquidity)
@@ -93,7 +93,7 @@ InpTrailATR_Mult=1.1
 
 ; ====== SPREAD ======
 ; Relaxed for M5 execution (GBP slightly wider than EUR)
-InpMaxSpreadPoints=18
+InpMaxSpreadPoints=50
 
 ; ====== SMC - SMART MONEY CONCEPTS ======
 ; Full SMC suite - GBP respects institutional levels well
@@ -141,13 +141,13 @@ InpMaxTradesPerSession=3
 InpMaxProfitPerSession_R=6.0
 InpMaxLossPerSession_R=1.5
 InpMinSessionConfidence=0.5
-InpTradeCooldownMinutes=12
+InpTradeCooldownMinutes=30
 InpEnableSessionBlacklist=true
 
 ; ====== PORTFOLIO PROTECTION ======
 ; Daily circuit breaker and correlation protection
 InpUseCorrelationFilter=true
 InpDailyMaxLoss_R=3.0
-InpLossCooldownMinutes=45
+InpLossCooldownMinutes=60
 InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true
