@@ -520,7 +520,7 @@ int OnInit()
    Print("  RISK PARAMETERS:");
    Print("    Base Risk: ", DoubleToString(InpRiskBase, 2), "%");
    Print("    Max Trades/Session: ", InpMaxTradesPerSession);
-   Print("    Entry Threshold: 6.0/12 (STRICT)");
+   Print("    Entry Threshold: 10.0/30 (GOOD - STRICT)");
    Print("    Add-Ons: DISABLED (Performance)");
    Print("-------------------------------------------");
 
@@ -1181,7 +1181,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       Print("  Lots: ", DoubleToString(lots, 2));
       Print("  Risk: ", DoubleToString(riskPct, 2), "%");
       Print("  Quality: ", EnumToString(quality));
-      Print("  Confluence: ", DoubleToString(g_currentConfluence, 1), "/12");
+      Print("  Confluence: ", DoubleToString(g_currentConfluence, 1), "/30");
       Print("===========================================");
 
       // Track last trade time per direction (for cooldown)
@@ -1198,7 +1198,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
           string notifyText = "🚀 TRADE OPENED: " + _Symbol + "\n" +
                               EnumToString(type) + " " + DoubleToString(lots, 2) + " Lots\n" +
                               "Price: " + DoubleToString(price, (int)symbolInfo.Digits()) + "\n" +
-                              "Score: " + DoubleToString(g_currentConfluence, 1) + "/12";
+                              "Score: " + DoubleToString(g_currentConfluence, 1) + "/30";
           SendNotification(notifyText);
        }
 
@@ -2063,9 +2063,9 @@ void UpdateDashboard()
       txt += mtfAnalysis.ToString() + "\n";
 
    txt += "-------------------------------------------\n";
-   txt += "BUY Score: " + DoubleToString(buyS, 1) + "/12\n";
-   txt += "SELL Score: " + DoubleToString(sellS, 1) + "/12\n";
-   txt += "Entry Min: 5.0/12 (Good) | 6.0 (Strong) | 8.0 (Elite)\n";
+   txt += "BUY Score: " + DoubleToString(buyS, 1) + "/30\n";
+   txt += "SELL Score: " + DoubleToString(sellS, 1) + "/30\n";
+   txt += "Entry Min: 10.0/30 (Good) | 12.0 (Strong) | 14.0 (Elite)\n";
    txt += "-------------------------------------------\n";
 
    // TP Mode Info
@@ -2257,7 +2257,7 @@ void LogHeartbeat()
    heartbeat += "   Status: " + (tradingAllowed ? "ACTIVE ✅" : "IDLE zzz") + " | Regime: " + IntegerToString((int)g_currentRegime) + "\n";
    
    // 2. Confluence Scores
-   heartbeat += "   Scores: BUY=" + DoubleToString(g_cachedBuyScore, 1) + " | SELL=" + DoubleToString(g_cachedSellScore, 1) + "\n";
+   heartbeat += "   Scores: BUY=" + DoubleToString(g_cachedBuyScore, 1) + "/30 | SELL=" + DoubleToString(g_cachedSellScore, 1) + "/30\n";
    
    // 3. Open Positions
    heartbeat += "   Positions: " + IntegerToString(g_positionCount);
