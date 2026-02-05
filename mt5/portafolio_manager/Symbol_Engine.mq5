@@ -257,6 +257,7 @@ bool g_addOn1Triggered = false;
 bool g_addOn2Triggered = false;
 datetime g_lastCloseTime = 0;
 ulong g_lastTickTime = 0;
+datetime g_lastHeartbeat = 0;
 
 int g_bias = 0;
 datetime g_lastLossTime = 0;
@@ -601,6 +602,8 @@ bool IsNewBar()
    return false;
 }
 
+// ... (rest of OnTick logic)
+
 //+------------------------------------------------------------------+
 //| INSTITUTIONAL STRATEGY HELPERS                                    |
 //+------------------------------------------------------------------+
@@ -753,6 +756,13 @@ double CalculateTakeProfit(double price, double slDist, int direction,
 //+------------------------------------------------------------------+
 void OnTick()
 {
+   // Heartbeat Logger (Every 60 Seconds)
+   if(TimeCurrent() - g_lastHeartbeat >= 60)
+   {
+      LogHeartbeat();
+      g_lastHeartbeat = TimeCurrent();
+   }
+
    g_tickCount++;  // Performance monitoring
 
    symbolInfo.RefreshRates();
@@ -2222,3 +2232,38 @@ void UpdateDashboard()
    Comment(txt);
 }
 //+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| Log Heartbeat                                                     |
+//+------------------------------------------------------------------+
+void LogHeartbeat()
+{
+   string heartbeat = "💓 HB: " + _Symbol + " | " + TimeToString(TimeCurrent(), TIME_SECONDS) + "\n";
+   
+   // 1. Logic Active Status
+   bool tradingAllowed = true;
+   if(InpUseKillzoneFilter && !killzoneOptimizer.IsTradingAllowed()) tradingAllowed = false;
+   if(InpUseSessionGovernor)
+   {
+      double confidence = 0;
+      if(!sessionGov.CanTrade(confidence)) tradingAllowed = false;
+   }
+   
+   heartbeat += "   Status: " + (tradingAllowed ? "ACTIVE ✅" : "IDLE zzz") + " | Regime: " + IntegerToString((int)g_currentRegime) + "\n";
+   
+   // 2. Confluence Scores
+   heartbeat += "   Scores: BUY=" + DoubleToString(g_cachedBuyScore, 1) + " | SELL=" + DoubleToString(g_cachedSellScore, 1) + "\n";
+   
+   // 3. Open Positions
+   heartbeat += "   Positions: " + IntegerToString(g_positionCount);
+   if(g_positionCount > 0)
+   {
+      heartbeat += " (";
+      for(int i=0; i<ArraySize(g_states); i++)
+      {
+         heartbeat += "#" + IntegerToString(g_states[i].ticket) + " ";
+      }
+      heartbeat += ")";
+   }
+   
+   Print(heartbeat);
+}
