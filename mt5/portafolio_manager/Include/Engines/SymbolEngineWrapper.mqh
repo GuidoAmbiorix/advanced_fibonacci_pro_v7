@@ -1336,7 +1336,7 @@ private:
          Print("⚠️ WARNING: Could not pre-load ", m_symbol, " data (Error ", GetLastError(), ")");
 
       // SOLUCIÓN DE RAÍZ #2: Crear Helper Chart PERSISTENTE para mantener datos activos
-      if(m_helperChartId == 0 || !ChartSymbol(m_helperChartId))
+      if(m_helperChartId == 0 || ChartSymbol(m_helperChartId) == "")
       {
          // Close invalid if exists
          if(m_helperChartId > 0) ChartClose(m_helperChartId);
