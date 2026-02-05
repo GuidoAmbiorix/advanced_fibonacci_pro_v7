@@ -2162,27 +2162,15 @@ private:
          else bars_atr = 14;  // Assume valid if skipping
          bars_ema = BarsCalculated(m_hEMA);
 
-         // Track per-indicator failures
-         if(bars_rsi == -1)
-         {
-            if(i == 0)
-               Print("⚠️ RSI BarsCalculated = -1 for ", m_symbol);
-            m_rsiHealth.consecutiveFailures++;
-         }
+         // Log failures on first attempt only (don't track them here)
+         if(bars_rsi == -1 && i == 0)
+            Print("⚠️ RSI BarsCalculated = -1 for ", m_symbol);
 
-         if(bars_atr == -1 && !skipATR)
-         {
-            if(i == 0)
-               Print("⚠️ ATR BarsCalculated = -1 for ", m_symbol);
-            m_atrHealth.consecutiveFailures++;
-         }
+         if(bars_atr == -1 && !skipATR && i == 0)
+            Print("⚠️ ATR BarsCalculated = -1 for ", m_symbol);
 
-         if(bars_ema == -1)
-         {
-            if(i == 0)
-               Print("⚠️ EMA BarsCalculated = -1 for ", m_symbol);
-            m_emaHealth.consecutiveFailures++;
-         }
+         if(bars_ema == -1 && i == 0)
+            Print("⚠️ EMA BarsCalculated = -1 for ", m_symbol);
 
          // SOLUCIÓN DE RAÍZ: BarsCalculated() devuelve -1 si hay error
          if(bars_rsi == -1 || bars_atr == -1 || bars_ema == -1)
@@ -2205,7 +2193,7 @@ private:
          // Verificar suficientes barras calculadas
          if(bars_rsi >= 2 && bars_atr >= 14 && bars_ema >= 2)
          {
-            // Reset failure counters on success
+            // Success - reset failure counters
             m_rsiHealth.consecutiveFailures = 0;
             m_atrHealth.consecutiveFailures = 0;
             m_emaHealth.consecutiveFailures = 0;
@@ -2221,19 +2209,9 @@ private:
             Sleep(2000);
       }
 
-      // ENHANCED: Check if permanent failure threshold exceeded
-      if(m_rsiHealth.consecutiveFailures >= m_maxConsecutiveFailures)
-      {
-         MarkIndicatorAsPermanentlyFailed("RSI", m_rsiHealth);
-      }
-      if(m_atrHealth.consecutiveFailures >= m_maxConsecutiveFailures && !skipATR)
-      {
-         MarkIndicatorAsPermanentlyFailed("ATR", m_atrHealth);
-      }
-      if(m_emaHealth.consecutiveFailures >= m_maxConsecutiveFailures)
-      {
-         MarkIndicatorAsPermanentlyFailed("EMA", m_emaHealth);
-      }
+      // After retry loop completes, if still failed, DON'T mark permanent here
+      // Let the recovery system handle it through RecordRecoveryFailure()
+      // which properly tracks recovery attempts, not individual check failures
 
       // SOLUCIÓN DE RAÍZ: Si hay handles corruptos (-1), intentar recovery selectivo
       if(bars_rsi == -1 || bars_atr == -1 || bars_ema == -1)
@@ -2251,29 +2229,28 @@ private:
             // Reintentar verificación después de recovery
             bars_rsi = BarsCalculated(m_hRSI);
             if(!skipATR) bars_atr = BarsCalculated(m_hATR);
+            else bars_atr = 14;  // If ATR permanently failed, assume valid
             bars_ema = BarsCalculated(m_hEMA);
 
-            // Si siguen corruptos después de recovery, entonces sí es crítico
+            // Si siguen corruptos después de recovery (critical indicators only)
             if(bars_rsi == -1)
             {
                Print("❌ CRITICAL | ", m_symbol, " | RSI still broken after recovery");
-               m_rsiHealth.consecutiveFailures++;
                return false;
             }
             if(bars_atr == -1 && !skipATR)
             {
-               Print("❌ CRITICAL | ", m_symbol, " | ATR still broken after recovery");
-               m_atrHealth.consecutiveFailures++;
-               return false;
+               Print("❌ WARNING | ", m_symbol, " | ATR still broken after recovery (will retry)");
+               // Don't return false if trading without ATR is allowed
+               // Recovery system will handle permanent failure through RecordRecoveryFailure()
             }
             if(bars_ema == -1)
             {
                Print("❌ CRITICAL | ", m_symbol, " | EMA still broken after recovery");
-               m_emaHealth.consecutiveFailures++;
                return false;
             }
 
-            Print("✅ All indicators recovered successfully");
+            Print("✅ All indicators recovered successfully (or using fallback)");
          }
          else
          {
@@ -2307,7 +2284,6 @@ private:
       if(copied < 2)
       {
          Print("⚠️ UpdateIndicators FAILED | ", m_symbol, " | RSI buffer: copied ", copied, "/2 bars");
-         m_rsiHealth.consecutiveFailures++;
          return false;
       }
 
@@ -2318,7 +2294,6 @@ private:
          if(copied < 14)
          {
             Print("⚠️ UpdateIndicators FAILED | ", m_symbol, " | ATR buffer: copied ", copied, "/14 bars");
-            m_atrHealth.consecutiveFailures++;
             return false;
          }
          m_g_ATR = atr[0];
@@ -2333,7 +2308,6 @@ private:
       if(copied < 2)
       {
          Print("⚠️ UpdateIndicators FAILED | ", m_symbol, " | EMA buffer: copied ", copied, "/2 bars");
-         m_emaHealth.consecutiveFailures++;
          return false;
       }
 
