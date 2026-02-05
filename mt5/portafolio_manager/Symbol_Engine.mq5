@@ -19,7 +19,6 @@
 #include "Include\KillSwitch.mqh"
 #include "Include\Learning_MFE_MAE.mqh"
 #include "Include\GovernorAllocator.mqh"
-#include "Include\SessionGovernor.mqh"
 
 // Smart Money Concepts Modules
 #include "Include\SMC_StructureBreak.mqh"
@@ -30,7 +29,6 @@
 // Multi-Timeframe and Filters
 #include "Include\MTF_Confluence.mqh"
 #include "Include\NewsFilter.mqh"
-#include "Include\KillzoneOptimizer.mqh"
 #include "Include\KellyPositionSizer.mqh"
 
 // Learning & Memory Modules
@@ -64,11 +62,6 @@ input bool              InpEnableMobileAlerts = true;     // Enable Mobile Push 
 input group "======= DIRECTION ======="
 input int               InpDirection = 0;                 // 0=Both, 1=Buy, 2=Sell
 input int               InpBrokerUTCOffset = 2;
-
-input group "======= KILLZONES ======="
-input bool              InpUseKillzoneFilter = true;      // Enable Killzone Filter
-input bool              InpUseSymbolDefaults = true;      // Use Symbol-Specific Defaults
-input bool              InpAutoDST = true;                // Auto-adjust for DST
 
 input group "======= FIBONACCI ======="
 input int               InpSwingLookback = 20;
@@ -152,13 +145,6 @@ input bool              InpEnableVolatilityFilter = true; // Enable Flash Crash 
 input double            InpVolatilityThreshold = 3.0;     // Volatility Spike Threshold (ATR multiplier)
 input int               InpVolatilitySpikeCooldown = 15;  // Cooldown After Spike (minutes)
 
-input group "======= KILLZONE SELECTION (if not using Symbol Defaults) ======="
-input bool              InpEnableAsianKZ = false;         // Enable Asian Killzone
-input bool              InpEnableLondonOpenKZ = true;     // Enable London Open Killzone
-input bool              InpEnableNYKZ = true;             // Enable NY Killzone
-input bool              InpEnableLondonCloseKZ = false;   // Enable London Close Killzone
-input bool              InpFocusPrimeOnly = false;        // Only Trade Prime Killzones
-
 input group "======= KELLY POSITION SIZING ======="
 input bool              InpUseKelly = true;               // Enable Kelly Sizing
 input double            InpKellyFraction = 0.5;           // Kelly Fraction (0.5=Half Kelly)
@@ -175,15 +161,6 @@ input group "======= ADAPTIVE BEHAVIOR (Advanced) ======="
 input bool              InpEnableAdaptiveRisk = false;    // Enable Adaptive Risk
 input bool              InpEnableAdaptiveExits = false;   // Enable Adaptive Exits
 input bool              InpEnableAdaptiveFilters = false; // Enable Adaptive Filters
-
-input group "======= SESSION GOVERNOR ======="
-input bool              InpUseSessionGovernor = true;     // Enable Session Governor
-input int               InpMaxTradesPerSession = 3;       // Max Trades Per Session
-input double            InpMaxProfitPerSession_R = 5.0;   // Max Profit Per Session (R)
-input double            InpMaxLossPerSession_R = 2.0;     // Max Loss Per Session (R)
-input double            InpMinSessionConfidence = 0.4;    // Min Session Confidence (0-1)
-input int               InpTradeCooldownMinutes = 15;     // Cooldown Between Trades (minutes)
-input bool              InpEnableSessionBlacklist = true; // Enable Session Blacklist
 
 input group "======= PORTFOLIO PROTECTION ======="
 input bool              InpUseCorrelationFilter = true;   // Enable Correlation Protection
@@ -207,7 +184,6 @@ CMarketRegime     regime;
 CKillSwitch       killSwitch;
 CLearningEngine   learning;
 CGovernorAllocator allocator;
-CSessionGovernor  sessionGov;
 
 // ADVANCED MODULE OBJECTS
 CVolumeAnalysis   volumeAnalysis;
@@ -229,7 +205,6 @@ CSMCLiquiditySweep  smcLiquidity;
 // ADVANCED FILTER OBJECTS
 CMTFConfluence      mtfAnalysis;
 CNewsFilter         newsFilter;
-CKillzoneOptimizer  killzoneOptimizer;
 CKellyPositionSizer kellySizer;
 
 // LEARNING & MEMORY OBJECTS
@@ -375,24 +350,6 @@ int OnInit()
       newsFilter.SetVolatilityCooldown(InpVolatilitySpikeCooldown);
    }
 
-   // Initialize Killzone Optimizer
-   if(InpUseKillzoneFilter)
-   {
-      if(InpUseSymbolDefaults)
-      {
-         // Use symbol-specific defaults
-         killzoneOptimizer.Init(_Symbol, InpBrokerUTCOffset, true, InpAutoDST, InpFocusPrimeOnly);
-      }
-      else
-      {
-         // Use manual killzone selection
-         killzoneOptimizer.Init(_Symbol, InpBrokerUTCOffset,
-                                InpEnableAsianKZ, InpEnableLondonOpenKZ,
-                                InpEnableNYKZ, InpEnableLondonCloseKZ,
-                                InpFocusPrimeOnly, InpAutoDST);
-      }
-   }
-
    // Initialize Kelly Position Sizer
    if(InpUseKelly)
    {
@@ -469,16 +426,6 @@ int OnInit()
          Print("Warning: Adaptive Filter Manager initialization failed");
    }
 
-   // Initialize Session Governor
-   if(InpUseSessionGovernor && InpUseKillzoneFilter)
-   {
-      if(!sessionGov.Init(_Symbol, &killzoneOptimizer,
-                          InpMaxTradesPerSession, InpMaxProfitPerSession_R,
-                          InpMaxLossPerSession_R, InpMinSessionConfidence,
-                          InpTradeCooldownMinutes, InpEnableSessionBlacklist))
-         Print("Warning: Session Governor initialization failed");
-   }
-
    // OPTIMIZATION: Validate all critical modules initialized
    int initErrors = 0;
    if(hRSI == INVALID_HANDLE) { Print("ERROR: RSI handle invalid"); initErrors++; }
@@ -506,9 +453,7 @@ int OnInit()
    Print("    News Filter: ", InpUseNewsFilter ? "✓ ON" : "✗ OFF");
    if(InpUseNewsFilter && InpEnableVolatilityFilter)
       Print("      ⚡ Flash Crash Protection: ✓ ON (Threshold: ", InpVolatilityThreshold, "x)");
-   Print("    Killzone Filter: ", InpUseKillzoneFilter ? "✓ ON" : "✗ OFF");
    Print("    Kelly Sizing: ", InpUseKelly ? "✓ ON" : "✗ OFF");
-   Print("    Session Governor: ", InpUseSessionGovernor ? "✓ ON" : "✗ OFF");
    Print("-------------------------------------------");
    Print("  PORTFOLIO PROTECTION:");
    Print("    Correlation Filter: ", InpUseCorrelationFilter ? "✓ ON" : "✗ OFF");
@@ -821,14 +766,10 @@ void OnTick()
    // --- MODULE: NEWS FILTER ---
    if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) return;
 
-   // --- MODULE: KILLZONE FILTER ---
-   if(InpUseKillzoneFilter && !killzoneOptimizer.IsTradingAllowed()) return;
 
    // --- MODULE: KELLY POSITION SIZER (DD LIMITS) ---
    if(InpUseKelly && !kellySizer.IsTradingAllowed()) return;
 
-   // --- MODULE: SESSION GOVERNOR ---
-   if(InpUseSessionGovernor && !sessionGov.IsSessionTradingAllowed()) return;
 
    // --- PORTFOLIO PROTECTION: DAILY LOSS CIRCUIT BREAKER ---
    ResetDailyLossIfNewDay();
@@ -972,7 +913,7 @@ void OnTick()
 
          // Apply additional multipliers
          double newsMultiplier = InpUseNewsFilter ? newsFilter.GetNewsRiskMultiplier() : 1.0;
-         double killzoneMultiplier = InpUseKillzoneFilter ? killzoneOptimizer.GetRiskMultiplier() : 1.0;
+         double killzoneMultiplier = 1.0;
          double regimeMultiplier = (g_currentRegime == REGIME_TREND) ? 1.0 : 0.8;
 
          baseRisk = kellySizer.GetAdjustedRisk(quality, newsMultiplier, killzoneMultiplier, regimeMultiplier);
@@ -984,7 +925,7 @@ void OnTick()
       // Apply adaptive risk (if enabled and learning active)
       if(InpEnableLearning && InpEnableAdaptiveRisk && adaptiveRisk.IsAdaptationEnabled())
       {
-         ENUM_KILLZONE currentKZ = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
+         ENUM_KILLZONE currentKZ = KILLZONE_NONE;
          ConfluenceFactors factors;
          BuildConfluenceFactors(factors, bestDirection, bestScore);
 
@@ -999,11 +940,6 @@ void OnTick()
          baseRisk = adaptiveRisk.CalculateAdaptiveRisk(currentKZ, g_currentRegime, factors, quality);
       }
 
-      // Apply Session Governor risk multiplier
-      if(InpUseSessionGovernor)
-      {
-         baseRisk *= sessionGov.GetSessionRiskMultiplier();
-      }
 
       // GOVERNOR REQUEST
       GovernorRequest req = allocator.BuildRequest(
@@ -1140,7 +1076,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       // LOG TO DB MANAGER
       if(InpEnableLearning && InpLogTradesToFile)
       {
-         string killzoneStr = InpUseKillzoneFilter ? KillzoneToString(killzoneOptimizer.GetCurrentKillzone()) : "DISABLED";
+         string killzoneStr = "DISABLED";
          string strategyStr = "STANDARD"; // or derive from add-ons
          
          dbManager.LogTradeEntry(
@@ -1158,12 +1094,6 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
          );
       }
 
-      // Register with Session Governor
-      if(InpUseSessionGovernor)
-      {
-         int direction = (type == ORDER_TYPE_BUY) ? 1 : -1;
-         sessionGov.RegisterTrade(ticket, direction, lots, slDist);
-      }
 
       // OPTIMIZATION: Enhanced logging with all key metrics
       string tpInfo = (tp > 0) ?
@@ -1276,7 +1206,7 @@ void ManagePositions()
                 factors.orderBlock = (g_currentConfluence >= 5.0);
                 factors.fvg = (g_currentConfluence >= 6.0);
                 factors.liquiditySweep = (g_currentConfluence >= 7.0);
-                factors.killzoneActive = InpUseKillzoneFilter && killzoneOptimizer.IsTradingAllowed();
+                factors.killzoneActive = false;
                 factors.mtfAligned = (g_currentConfluence >= 8.0);
 
                 patternRecognizer.UpdatePatternDatabase(factors, profitR);
@@ -1291,12 +1221,6 @@ void ManagePositions()
 
              killSwitch.OnTradeClosed(rOutcome);
 
-             // Update Session Governor
-             if(InpUseSessionGovernor)
-             {
-                sessionGov.OnTradeClosed(ticket, profitR, profitMoney);
-                sessionGov.AddMFEMAE(mfe, mae);
-             }
 
              // Track Daily Loss for Circuit Breaker
              g_dailyLossR += profitR;
@@ -1585,11 +1509,8 @@ void UpdateModules()
 
    // OPTIMIZATION: Update filters only if enabled
    if(InpUseNewsFilter) newsFilter.Update();
-   if(InpUseKillzoneFilter) killzoneOptimizer.Update();
    if(InpUseKelly) kellySizer.Update();
 
-   // OPTIMIZATION: Update Session Governor (depends on killzone)
-   if(InpUseSessionGovernor && InpUseKillzoneFilter) sessionGov.Update();
 }
 
 //+------------------------------------------------------------------+
@@ -1606,10 +1527,10 @@ void BuildConfluenceFactors(ConfluenceFactors &factors, int direction, double sc
    factors.orderBlock = (score >= 5.0);
    factors.fvg = (score >= 6.0);
    factors.liquiditySweep = (score >= 7.0);
-   factors.killzoneActive = InpUseKillzoneFilter && killzoneOptimizer.IsTradingAllowed();
+   factors.killzoneActive = false;
    factors.mtfAligned = (score >= 8.0);
 
-   factors.killzone = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
+   factors.killzone = KILLZONE_NONE;
    factors.regime = g_currentRegime;
    factors.confluenceScore = score;
 }
@@ -2006,20 +1927,11 @@ void UpdateDashboard()
    double sellS = g_cachedSellScore;
 
    // If scores not calculated yet (first tick), calculate them
-   // BUT ONLY if we're in an active trading window
+   // ALWAYS calculate for dashboard visibility (even if trading is blocked)
    if(g_lastScoreCalcTime == 0)
    {
-      // Don't calculate confluence during non-trading hours (prevents false signals in dashboard)
-      if(InpUseKillzoneFilter && !killzoneOptimizer.IsTradingAllowed())
-      {
-         buyS = 0;
-         sellS = 0;
-      }
-      else
-      {
-         buyS = CalculateConfluenceScore(1);
-         sellS = CalculateConfluenceScore(-1);
-      }
+      buyS = CalculateConfluenceScore(1);
+      sellS = CalculateConfluenceScore(-1);
    }
 
    string govStatus = allocator.IsGovernorActive() ? "Connected " + DoubleToString(GetRiskMultiplier()*100,0) + "%" : "Standalone";
@@ -2027,9 +1939,7 @@ void UpdateDashboard()
 
    // Check for blocks
    if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) tradingStatus = "NEWS BLOCKED";
-   if(InpUseKillzoneFilter && !killzoneOptimizer.IsTradingAllowed()) tradingStatus = "KILLZONE OFF";
    if(InpUseKelly && !kellySizer.IsTradingAllowed()) tradingStatus = "DD LIMIT";
-   if(InpUseSessionGovernor && !sessionGov.IsSessionTradingAllowed()) tradingStatus = "SESSION BLOCKED";
 
    string txt = "===========================================\n";
    txt += "  SYMBOL ENGINE v2.0: " + _Symbol + "\n";
@@ -2040,9 +1950,6 @@ void UpdateDashboard()
    txt += "Price: " + DoubleToString(price, (int)symbolInfo.Digits()) + "\n";
    txt += "RSI: " + DoubleToString(g_RSI, 1) + "\n";
 
-   // Killzone info
-   if(InpUseKillzoneFilter)
-      txt += killzoneOptimizer.ToString() + "\n";
 
    // News info
    if(InpUseNewsFilter)
@@ -2106,13 +2013,6 @@ void UpdateDashboard()
       txt += "Daily DD: " + DoubleToString(kellySizer.GetDailyDD(), 2) + "/" + DoubleToString(InpDailyMaxDD, 1) + "%\n";
    }
 
-   // Session Governor stats
-   if(InpUseSessionGovernor)
-   {
-      txt += "-------------------------------------------\n";
-      txt += "SESSION GOVERNOR\n";
-      txt += sessionGov.ToString();
-   }
 
    // Directional Cooldowns
    if(InpReversalCooldownMinutes > 0)
@@ -2202,7 +2102,7 @@ void UpdateDashboard()
 
              if(InpEnableAdaptiveRisk)
              {
-                ENUM_KILLZONE currentKZ = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
+                ENUM_KILLZONE currentKZ = KILLZONE_NONE;
                 txt += adaptiveRisk.GetAdjustmentSummary(currentKZ, g_currentRegime) + "\n";
              }
 
@@ -2213,7 +2113,7 @@ void UpdateDashboard()
 
              if(InpEnableAdaptiveFilters)
              {
-                ENUM_KILLZONE currentKZ = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
+                ENUM_KILLZONE currentKZ = KILLZONE_NONE;
                 txt += adaptiveFilter.GetFilterStatus(currentKZ, g_currentRegime) + "\n";
              }
           }
@@ -2248,11 +2148,6 @@ void LogHeartbeat()
    
    // 1. Logic Active Status
    bool tradingAllowed = true;
-   if(InpUseKillzoneFilter && !killzoneOptimizer.IsTradingAllowed()) tradingAllowed = false;
-   if(InpUseSessionGovernor)
-   {
-      if(!sessionGov.IsSessionTradingAllowed()) tradingAllowed = false;
-   }
    
    heartbeat += "   Status: " + (tradingAllowed ? "ACTIVE ✅" : "IDLE zzz") + " | Regime: " + IntegerToString((int)g_currentRegime) + "\n";
    
