@@ -1177,8 +1177,8 @@ void UpdateUniverse()
          "XAUUSD",    // 4. Gold - Trending asset (London/NY)
          "AUDUSD",    // 5. Aussie - 5% volume (Asian/London)
          "USDCAD",    // 6. Loonie - 4% volume (NY oil correlation)
-         "EURJPY",    // 7. Cross - Asian/London/NY coverage
-         "USDCHF"     // 8. Swissy - EUR/USD hedge (-85% correlation)
+         "EURJPY"     // 7. Cross - Asian/London/NY coverage
+         // "USDCHF"     // 8. Swissy - EUR/USD hedge (-85% correlation) (DISABLED: Errors)
       };
       
       Print("📊 Portfolio Strategy: GROWTH (8 pairs)");
