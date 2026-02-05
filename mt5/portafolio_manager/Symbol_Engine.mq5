@@ -2139,74 +2139,67 @@ void UpdateDashboard()
    {
       txt += "-------------------------------------------\n";
       txt += "LEARNING SYSTEM (SQLite)\n";
-      // We don't have GetTotalTrades available directly easily without query, 
-      // but PerformanceAnalyzer has it
+      
       performanceAnalyzer.RefreshData();
       ContextStats overall = performanceAnalyzer.GetOverallStats();
       
       int totalTrades = overall.tradeCount;
-      // bool learningActive = (totalTrades >= InpMinTradesForLearning);
-      // Simplify status for DB version
       txt += "Trades in DB: " + IntegerToString(totalTrades) + "\n";
       
       if(totalTrades > 0)
       {
           txt += "Win Rate: " + DoubleToString(overall.winRate * 100, 1) + "% | ";
           txt += "PF: " + DoubleToString(overall.profitFactor, 2) + "\n";
-      }
-   }
-            txt += "Avg R: " + DoubleToString(overall.avgR, 2) + "\n";
-            txt += "Expectancy: " + DoubleToString(overall.expectancy, 3) + "R | ";
-            txt += "PF: " + DoubleToString(overall.profitFactor, 2) + "\n";
+          txt += "Avg R: " + DoubleToString(overall.avgR, 2) + "\n";
+          txt += "Expectancy: " + DoubleToString(overall.expectancy, 3) + "R\n";
 
-            // Show best performing contexts
-            ENUM_KILLZONE bestKZ = performanceAnalyzer.GetBestKillzone();
-            if(bestKZ != KILLZONE_NONE)
-            {
-               txt += "Best Killzone: " + KillzoneToString(bestKZ);
-               ContextStats kzStats = performanceAnalyzer.GetStatsByKillzone(bestKZ);
-               txt += " (WR: " + DoubleToString(kzStats.winRate * 100, 1) + "%)\n";
-            }
+          // Show best performing contexts
+          ENUM_KILLZONE bestKZ = performanceAnalyzer.GetBestKillzone();
+          if(bestKZ != KILLZONE_NONE)
+          {
+             txt += "Best Killzone: " + KillzoneToString(bestKZ);
+             ContextStats kzStats = performanceAnalyzer.GetStatsByKillzone(bestKZ);
+             txt += " (WR: " + DoubleToString(kzStats.winRate * 100, 1) + "%)\n";
+          }
 
-            MARKET_REGIME bestRegime = performanceAnalyzer.GetBestRegime();
-            if(bestRegime != REGIME_UNKNOWN)
-            {
-               txt += "Best Regime: " + IntegerToString((int)bestRegime);
-               ContextStats regStats = performanceAnalyzer.GetStatsByRegime(bestRegime);
-               txt += " (E: " + DoubleToString(regStats.expectancy, 2) + "R)\n";
-            }
+          MARKET_REGIME bestRegime = performanceAnalyzer.GetBestRegime();
+          if(bestRegime != REGIME_UNKNOWN)
+          {
+             txt += "Best Regime: " + IntegerToString((int)bestRegime);
+             ContextStats regStats = performanceAnalyzer.GetStatsByRegime(bestRegime);
+             txt += " (E: " + DoubleToString(regStats.expectancy, 2) + "R)\n";
+          }
 
-            // Show pattern recognition stats
-            int patternCount = patternMemory.GetPatternCount();
-            if(patternCount > 0)
-            {
-               txt += "\nPATTERN LEARNING\n";
-               txt += patternRecognizer.GetStatsString() + "\n";
-            }
+          // Show pattern recognition stats
+          int patternCount = patternMemory.GetPatternCount();
+          if(patternCount > 0)
+          {
+             txt += "\nPATTERN LEARNING\n";
+             txt += patternRecognizer.GetStatsString() + "\n";
+          }
 
-            // Show adaptive module status
-            if(InpEnableAdaptiveRisk || InpEnableAdaptiveExits || InpEnableAdaptiveFilters)
-            {
-               txt += "\nADAPTIVE BEHAVIOR\n";
+          // Show adaptive module status
+          if(InpEnableAdaptiveRisk || InpEnableAdaptiveExits || InpEnableAdaptiveFilters)
+          {
+             txt += "\nADAPTIVE BEHAVIOR\n";
 
-               if(InpEnableAdaptiveRisk)
-               {
-                  ENUM_KILLZONE currentKZ = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
-                  txt += adaptiveRisk.GetAdjustmentSummary(currentKZ, g_currentRegime) + "\n";
-               }
+             if(InpEnableAdaptiveRisk)
+             {
+                ENUM_KILLZONE currentKZ = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
+                txt += adaptiveRisk.GetAdjustmentSummary(currentKZ, g_currentRegime) + "\n";
+             }
 
-               if(InpEnableAdaptiveExits)
-               {
-                  txt += adaptiveExit.GetAdjustmentSummary(g_currentRegime) + "\n";
-               }
+             if(InpEnableAdaptiveExits)
+             {
+                txt += adaptiveExit.GetAdjustmentSummary(g_currentRegime) + "\n";
+             }
 
-               if(InpEnableAdaptiveFilters)
-               {
-                  ENUM_KILLZONE currentKZ = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
-                  txt += adaptiveFilter.GetFilterStatus(currentKZ, g_currentRegime) + "\n";
-               }
-            }
-         }
+             if(InpEnableAdaptiveFilters)
+             {
+                ENUM_KILLZONE currentKZ = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
+                txt += adaptiveFilter.GetFilterStatus(currentKZ, g_currentRegime) + "\n";
+             }
+          }
       }
    }
 
