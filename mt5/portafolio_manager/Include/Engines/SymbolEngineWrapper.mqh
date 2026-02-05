@@ -1092,18 +1092,19 @@ public:
    {
       // Continuous intra-bar scoring enabled
       
-      // UNIFIED: Use same simple update logic as OnTick
-      if(!SimpleIndicatorUpdate()) 
+      // 2. UPDATE INDICATORS (Using robust simplified logic)
+      if(!UpdateIndicators()) 
       {
-         Print("⚠️ Failed to update indicators for ranking");
-         // Attempt recreation if simple update fails
-         if(!CreateIndicatorsWithRetry())
-         {
-             m_cachedBuyScore = 0;
-             m_cachedSellScore = 0;
-             m_currentBestScore = 0;
-             return;
-         }
+         // Just wait for next tick, don't panic
+         return; 
+      }
+      // Attempt recreation if simple update fails (only if handles invalid)
+      if(m_hRSI == INVALID_HANDLE && !CreateIndicatorsWithRetry())
+      {
+          m_cachedBuyScore = 0;
+          m_cachedSellScore = 0;
+          m_currentBestScore = 0;
+          return;
       }
 
       // Update modules
@@ -1147,7 +1148,7 @@ public:
       CheckNewDay();
       
       // USAR ACTUALIZACIÓN SIMPLIFICADA
-      if(!SimpleIndicatorUpdate())
+      if(!UpdateIndicators())
       {
          Print("⚠️ Simple update failed, attempting recreation...");
          if(!CreateIndicatorsWithRetry())
@@ -1518,7 +1519,7 @@ private:
    //+------------------------------------------------------------------+
    bool VerifyIndicators()
    {
-      return (AreIndicatorsHealthy() && VerifyIndicatorData());
+      return (m_indicatorsHealthy && VerifyIndicatorData());
    }
 
    void CheckNewDay()
@@ -1556,211 +1557,6 @@ private:
       m_g_EMA100 = 0;
    }
    
-   bool AreIndicatorsHealthy()
-   {
-      // Quick check if handles are valid
-      if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
-      {
-         Print("⚠️ Indicator handles invalid - RSI:", m_hRSI, " ATR:", m_hATR, " EMA:", m_hEMA);
-         return false;
-      }
-      
-      // Check if handles are still valid (not 4807 error)
-      ResetLastError();
-      double test[1];
-      
-      
-      // CHECK RSI
-      if(CopyBuffer(m_hRSI, 0, 0, 1, test) <= 0)
-      {
-         int err = GetLastError();
-         // Temporary retry for "Data Not Found" or transient errors
-         if(err == 4806 || err == 4807) 
-         {
-             Sleep(500); // Wait 500ms
-             ResetLastError();
-             if(CopyBuffer(m_hRSI, 0, 0, 1, test) > 0) return true; // Recovered
-             err = GetLastError(); // Update error
-         }
-         
-         if(err == 4807 || err == 0) // 4807 = invalid handle, 0 = no data
-         {
-            Print("⚠️ RSI handle invalidated, error: ", err);
-            return false;
-         }
-      }
-      
-      // CHECK ATR
-      if(CopyBuffer(m_hATR, 0, 0, 1, test) <= 0)
-      {
-         int err = GetLastError();
-         if(err == 4806 || err == 4807)
-         {
-             Sleep(500);
-             ResetLastError();
-             if(CopyBuffer(m_hATR, 0, 0, 1, test) > 0) return true;
-             err = GetLastError();
-         }
-
-         if(err == 4807 || err == 0)
-         {
-            Print("⚠️ ATR handle invalidated, error: ", err);
-            return false;
-         }
-      }
-      
-      // CHECK EMA
-      if(CopyBuffer(m_hEMA, 0, 0, 1, test) <= 0)
-      {
-         int err = GetLastError();
-         if(err == 4806 || err == 4807)
-         {
-             Sleep(500);
-             ResetLastError();
-             if(CopyBuffer(m_hEMA, 0, 0, 1, test) > 0) return true;
-             err = GetLastError();
-         }
-
-         if(err == 4807 || err == 0)
-         {
-            Print("⚠️ EMA handle invalidated, error: ", err);
-            return false;
-         }
-      }
-      
-      return true;
-
-   }
-   
-   bool RecoverIndicators()
-   {
-      datetime now = TimeCurrent();
-      
-      // Prevent rapid re-recovery attempts - MODIFICADO: cooldown más corto para M5
-      if(m_lastRecoveryTime > 0 && (now - m_lastRecoveryTime) < 30) // 30 segundos en lugar de 60
-      {
-         int secondsSince = (int)(now - m_lastRecoveryTime);
-         Print("⏳ Recovery cooldown active. Last recovery: ", secondsSince, " seconds ago");
-         return m_indicatorsHealthy; // Retornar estado actual
-      }
-      
-      m_lastRecoveryTime = now;
-      m_recoveryAttempts++;
-      
-      Print("🔄 ATTEMPTING INDICATOR RECOVERY #", m_recoveryAttempts, 
-            " for ", m_symbol, " at ", TimeToString(now));
-      
-      // Step 1: Reset all handles and buffers
-      ResetIndicatorBuffers();
-      
-      // Step 2: Force chart data reload
-      // METHOD 1: Soft Reload (Background) - Try this first to avoid UI flashing
-      bool softReloadSuccess = false;
-      if(m_recoveryAttempts <= 1)
-      {
-         ResetLastError();
-         MqlRates rates[];
-         // Asking for recent data forces the terminal to sync
-         if(CopyRates(m_symbol, PERIOD_CURRENT, 0, 10, rates) > 0)
-         {
-            Print("📊 Soft data synchronization successful for ", m_symbol);
-            softReloadSuccess = true;
-         }
-         else
-         {
-            Print("⚠️ Soft synchronization failed for ", m_symbol, " (Error ", GetLastError(), ")");
-         }
-      }
-      
-      // METHOD 2: Hard Reload (Persistence Mode)
-      if(!softReloadSuccess || m_recoveryAttempts > 1)
-      {
-         long currentChartId = ChartID(); // Save current Governor chart ID
-         
-         // Reuse existing helper chart if available
-         if(m_helperChartId > 0 && ChartSymbol(m_helperChartId) == m_symbol)
-         {
-             Print("📊 Refining persistent helper chart for ", m_symbol);
-             ChartRedraw(m_helperChartId);
-         }
-         else
-         {
-             // Open new helper chart if not exists
-             m_helperChartId = ChartOpen(m_symbol, PERIOD_CURRENT);
-             
-             if(m_helperChartId > 0)
-             {
-                Print("📊 Opened persistent helper chart for ", m_symbol, " (ID: ", m_helperChartId, ")");
-                
-                // Set chart cleanly to background (remove grid, etc if needed - optional)
-                ChartSetInteger(m_helperChartId, CHART_SHOW, false); // Try to hide contents
-             }
-         }
-         
-         if(m_helperChartId > 0)
-         {
-            // TRICK: Immediately bring Governor back to top to minimize "flash"
-            if(currentChartId > 0) 
-               ChartSetInteger(currentChartId, CHART_BRING_TO_TOP, true);
-            
-            Sleep(150); // Small delay to allow data pump
-            // DO NOT CLOSE - Keep open for data stream
-         }
-      }
-      
-      // Step 3: Release invalid handles
-      if(m_hRSI != INVALID_HANDLE) IndicatorRelease(m_hRSI);
-      if(m_hATR != INVALID_HANDLE) IndicatorRelease(m_hATR);
-      if(m_hEMA != INVALID_HANDLE) IndicatorRelease(m_hEMA);
-      if(m_hEMA50 != INVALID_HANDLE) IndicatorRelease(m_hEMA50);
-      if(m_hEMA100 != INVALID_HANDLE) IndicatorRelease(m_hEMA100);
-      
-      // Step 4: Recreate indicators with delays
-      m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
-      Sleep(100);
-      
-      m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
-      Sleep(100);
-      
-      m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
-      Sleep(100);
-      
-      if(m_params.UseReversalFilter)
-      {
-         m_hEMA50 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA50_Period, 0, MODE_EMA, PRICE_CLOSE);
-         Sleep(100);
-         m_hEMA100 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA100_Period, 0, MODE_EMA, PRICE_CLOSE);
-         Sleep(100);
-      }
-      
-      // Step 5: Verify recovery
-      m_indicatorsHealthy = AreIndicatorsHealthy();
-      
-      if(m_indicatorsHealthy)
-      {
-         Print("✅ INDICATOR RECOVERY SUCCESSFUL for ", m_symbol);
-         m_recoveryAttempts = 0;
-         m_consecutiveDataFailures = 0;  // Reset error counter after successful recovery
-         return true;
-      }
-      else
-      {
-         Print("❌ INDICATOR RECOVERY FAILED for ", m_symbol);
-         
-         // Si hemos intentado demasiadas veces, desactivar temporalmente
-         if(m_recoveryAttempts >= 5)
-         {
-            Print("🚨 CRITICAL: Multiple recovery failures (", m_recoveryAttempts, 
-                  ") for ", m_symbol, ". Entering safe mode.");
-            m_indicatorsHealthy = false;
-            // Podrías agregar un temporizador más largo aquí
-            m_lastRecoveryTime = now + 300; // No intentar por 5 minutos
-         }
-         
-         return false;
-      }
-   }
-
    //+------------------------------------------------------------------+
    //| Helper Functions for Enhanced Recovery System                    |
    //+------------------------------------------------------------------+
@@ -1885,238 +1681,17 @@ private:
    }
 
    //+------------------------------------------------------------------+
-   //| ENHANCED RECOVERY: Per-Indicator with Circuit Breaker            |
-   //| Uses exponential backoff and permanent failure detection         |
-   //+------------------------------------------------------------------+
-   bool RecoverBrokenIndicators()
-   {
-      Print("🔧 ENHANCED RECOVERY: Starting per-indicator recovery for ", m_symbol);
-
-      // Check global cooldown
-      if(!CanAttemptRecovery())
-      {
-         return false;
-      }
-
-      m_lastRecoveryTime = TimeCurrent();
-
-      bool allCriticalRecovered = true;  // Track if ALL critical indicators recover
-
-      // === RECOVER RSI ===
-      int bars_rsi = BarsCalculated(m_hRSI);
-      if(bars_rsi == -1)
-      {
-         // SOFT RECOVERY: Check if handle is valid but just pending data
-         int err = GetLastError();
-         // ENHANCED: Treat 4807 (Invalid Handle) as potentially transient in multi-symbol env
-         if(err != 4002) // Only exclude 4002 (Array Index Out of Bounds) or similar fatal errors
-         {
-            Print("⚠️ RSI data pending (", err, "). Waiting...");
-            if(WaitForIndicatorCalculation(m_hRSI, "RSI", 10)) // Try waiting 10s
-            {
-                Print("✅ RSI recovered (soft wait)");
-                ResetIndicatorHealth(m_rsiHealth);
-                bars_rsi = BarsCalculated(m_hRSI); // Succcess
-            }
-         }
-      
-         if(bars_rsi == -1 && CanRecoverIndicator(m_rsiHealth, "RSI"))
-         {
-            Print("   🔄 Recreating broken RSI handle...");
-            if(m_hRSI != INVALID_HANDLE) IndicatorRelease(m_hRSI);
-            m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
-
-            // Wait with exponential backoff
-            Sleep(m_rsiHealth.currentBackoffSeconds * 1000);
-
-            if(WaitForIndicatorCalculation(m_hRSI, "RSI", 30))
-            {
-               Print("   ✅ RSI recovered");
-               ResetIndicatorHealth(m_rsiHealth);
-            }
-            else
-            {
-               Print("   ❌ RSI recovery failed");
-               RecordRecoveryFailure(m_rsiHealth, "RSI");
-               allCriticalRecovered = false;
-            }
-         }
-         else if(bars_rsi == -1)
-         {
-            allCriticalRecovered = false;
-         }
-      }
-
-
-      // === RECOVER ATR ===
-      int bars_atr = BarsCalculated(m_hATR);
-      if(bars_atr == -1)
-      {
-         // SOFT RECOVERY: Check if handle is valid but just pending data
-         int err = GetLastError();
-         // ENHANCED: Treat 4807 (Invalid Handle) as potentially transient in multi-symbol env
-         if(err != 4002) 
-         {
-            Print("⚠️ ATR data pending (", err, "). Waiting...");
-            // Use slightly longer wait for ATR (15s) as it's the most problematic
-            if(WaitForIndicatorCalculation(m_hATR, "ATR", 15)) 
-            {
-                Print("✅ ATR recovered (soft wait)");
-                ResetIndicatorHealth(m_atrHealth);
-                bars_atr = BarsCalculated(m_hATR); 
-            }
-         }
-      
-         if(bars_atr == -1 && CanRecoverIndicator(m_atrHealth, "ATR"))
-         {
-            Print("   🔄 Recreating broken ATR handle...");
-            if(m_hATR != INVALID_HANDLE) IndicatorRelease(m_hATR);
-            m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
-
-            // Wait with exponential backoff
-            Sleep(m_atrHealth.currentBackoffSeconds * 1000);
-
-            // ATR gets longer timeout (60s) as it's most problematic
-            if(WaitForIndicatorCalculation(m_hATR, "ATR", 60))
-            {
-               Print("   ✅ ATR recovered");
-               ResetIndicatorHealth(m_atrHealth);
-            }
-            else
-            {
-               Print("   ❌ ATR recovery failed");
-               RecordRecoveryFailure(m_atrHealth, "ATR");
-
-               // ATR failure only critical if trading without it is disabled
-               if(!m_allowTradingWithoutATR)
-                  allCriticalRecovered = false;
-            }
-         }
-         else if(bars_atr == -1)
-         {
-            if(!m_allowTradingWithoutATR)
-               allCriticalRecovered = false;
-         }
-      }
-
-
-      // === RECOVER EMA ===
-      int bars_ema = BarsCalculated(m_hEMA);
-      if(bars_ema == -1)
-      {
-         // SOFT RECOVERY: Check if handle is valid but just pending data
-         int err = GetLastError();
-         if(err != 4807 && err != 4002) 
-         {
-            Print("⚠️ EMA data pending (", err, "). Waiting...");
-            if(WaitForIndicatorCalculation(m_hEMA, "EMA", 10)) 
-            {
-                Print("✅ EMA recovered (soft wait)");
-                ResetIndicatorHealth(m_emaHealth);
-                bars_ema = BarsCalculated(m_hEMA); 
-            }
-         }
-      
-         if(bars_ema == -1 && CanRecoverIndicator(m_emaHealth, "EMA"))
-         {
-            Print("   🔄 Recreating broken EMA handle...");
-            if(m_hEMA != INVALID_HANDLE) IndicatorRelease(m_hEMA);
-            m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
-
-            // Wait with exponential backoff
-            Sleep(m_emaHealth.currentBackoffSeconds * 1000);
-
-            if(WaitForIndicatorCalculation(m_hEMA, "EMA", 30))
-            {
-               Print("   ✅ EMA recovered");
-               ResetIndicatorHealth(m_emaHealth);
-            }
-            else
-            {
-               Print("   ❌ EMA recovery failed");
-               RecordRecoveryFailure(m_emaHealth, "EMA");
-               allCriticalRecovered = false;
-            }
-         }
-         else if(bars_ema == -1)
-         {
-            allCriticalRecovered = false;
-         }
-      }
-
-
-      // === RECOVER EMA50/100 (if reversal filter enabled) ===
-      if(m_params.UseReversalFilter)
-      {
-         int bars_ema50 = BarsCalculated(m_hEMA50);
-         if(bars_ema50 == -1)
-         {
-            if(CanRecoverIndicator(m_ema50Health, "EMA50"))
-            {
-               Print("   🔄 Recreating broken EMA50 handle...");
-               if(m_hEMA50 != INVALID_HANDLE) IndicatorRelease(m_hEMA50);
-               m_hEMA50 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA50_Period, 0, MODE_EMA, PRICE_CLOSE);
-
-               Sleep(m_ema50Health.currentBackoffSeconds * 1000);
-
-               if(WaitForIndicatorCalculation(m_hEMA50, "EMA50", 30))
-               {
-                  Print("   ✅ EMA50 recovered");
-                  ResetIndicatorHealth(m_ema50Health);
-               }
-               else
-               {
-                  RecordRecoveryFailure(m_ema50Health, "EMA50");
-                  // EMA50 not critical for basic trading
-               }
-            }
-         }
-
-         int bars_ema100 = BarsCalculated(m_hEMA100);
-         if(bars_ema100 == -1)
-         {
-            if(CanRecoverIndicator(m_ema100Health, "EMA100"))
-            {
-               Print("   🔄 Recreating broken EMA100 handle...");
-               if(m_hEMA100 != INVALID_HANDLE) IndicatorRelease(m_hEMA100);
-               m_hEMA100 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA100_Period, 0, MODE_EMA, PRICE_CLOSE);
-
-               Sleep(m_ema100Health.currentBackoffSeconds * 1000);
-
-               if(WaitForIndicatorCalculation(m_hEMA100, "EMA100", 30))
-               {
-                  Print("   ✅ EMA100 recovered");
-                  ResetIndicatorHealth(m_ema100Health);
-               }
-               else
-               {
-                  RecordRecoveryFailure(m_ema100Health, "EMA100");
-                  // EMA100 not critical for basic trading
-               }
-            }
-         }
-      }
-
-      // CRITICAL FIX: Return true only if ALL critical indicators recovered
-      if(allCriticalRecovered)
-      {
-         Print("✅ All critical indicators recovered for ", m_symbol);
-         return true;
-      }
-      else
-      {
-         Print("❌ Some critical indicators failed to recover for ", m_symbol);
-         return false;
-      }
-   }
-
-   //+------------------------------------------------------------------+
    //| SIMPLE UPDATE: Robust, Linear, Non-Blocking                      |
    //| Replaces complex dual-recovery systems                           |
    //+------------------------------------------------------------------+
-   bool SimpleIndicatorUpdate()
+   //+------------------------------------------------------------------+
+   //| UPDATE INDICATORS: Robust, Linear, Non-Blocking                  |
+   //| "Dumb-Simple" approach: Try to copy, if fail, just wait.         |
+   //| No destruction, no complex recovery loops.                       |
+   //+------------------------------------------------------------------+
+   bool UpdateIndicators()
    {
-      // 1. Validate Handles
+      // 1. Validate Handles (Creation check only)
       if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
       {
          Print("⚠️ Invalid handles detected, attempting creation...");
@@ -2154,69 +1729,10 @@ private:
          attempts++;
       }
       
-      Print("❌ Simple update failed after 1 second. Requesting recreation.");
-      m_indicatorsHealthy = false; // Mark as unhealthy
+      Print("❌ Simple update failed after 1 second. Waiting for next tick.");
+      m_indicatorsHealthy = false; // Mark as unhealthy, but DON'T destroy handles
       return false;
    }
-
-   bool UpdateIndicatorsEnhanced()
-   {
-      // ENHANCED: Check for permanently failed critical indicators at start
-      if(m_rsiHealth.isPermanentlyFailed || m_emaHealth.isPermanentlyFailed)
-      {
-         Print("❌ Critical indicators permanently failed for ", m_symbol, " - Cannot trade");
-         return false;
-      }
-
-      // Check if ATR permanently failed AND trading without ATR is disabled
-      if(m_atrHealth.isPermanentlyFailed && !m_allowTradingWithoutATR)
-      {
-         Print("❌ ATR permanently failed and trading without ATR is disabled for ", m_symbol);
-         return false;
-      }
-
-      // PRIMERO: Verificar salud de indicadores ANTES de intentar actualizar
-      if(!m_indicatorsHealthy)
-      {
-         Print("⚠️ Indicators marked unhealthy, attempting recovery before update...");
-         if(!RecoverIndicators())
-         {
-            Print("❌ Cannot update indicators - recovery failed");
-            return false;
-         }
-      }
-
-      // Ahora intentar actualización normal
-      if(UpdateIndicatorsStandard())
-      {
-         m_indicatorsHealthy = true;
-         m_consecutiveDataFailures = 0; // Reset counter on success
-         return true;
-      }
-
-      // Si la actualización normal falla, verificar el error
-      int lastError = GetLastError();
-
-      // ENHANCED: Increased transient error tolerance from 10 to 15 failures
-      // Error 4807/4806 es NORMAL en multi-símbolo (datos temporalmente no disponibles)
-      if(lastError == 4807 || lastError == 4806)
-      {
-         m_consecutiveDataFailures++;
-
-         // Tolerar hasta 15 fallos consecutivos antes de entrar en recovery mode
-         if(m_consecutiveDataFailures < 15)
-         {
-            // Solo log cada 5 fallos para no spam
-            if(m_consecutiveDataFailures % 5 == 1)
-            {
-               Print("⏳ Data unavailable (", lastError, ") - retry #", m_consecutiveDataFailures, "/15");
-               ResetLastError(); // Clear error for next attempt
-            }
-            return false; // Retry next tick - NO marcar unhealthy
-         }
-
-         // Después de 15 fallos, usar full recovery en lugar de surgical
-         Print("⚠️ Persistent data unavailability (", m_consecutiveDataFailures, " failures). Attempting full recovery...");
 
          if(RecoverIndicators())
          {
@@ -3410,6 +2926,55 @@ private:
                }
            }
        }
+   }
+   //+------------------------------------------------------------------+
+   //| UPDATE INDICATORS: Robust, Linear, Non-Blocking                  |
+   //| "Dumb-Simple" approach: Try to copy, if fail, just wait.         |
+   //| No destruction, no complex recovery loops.                       |
+   //+------------------------------------------------------------------+
+   bool UpdateIndicators()
+   {
+      // 1. Validate Handles (Creation check only)
+      if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
+      {
+         Print("⚠️ Invalid handles detected, attempting creation...");
+         return CreateIndicatorsWithRetry();
+      }
+
+      // 2. Simple Blocking Copy with Timeout (Max 1 second)
+      double rsi[], atr[], ema[];
+      
+      // Resize to minimum needed
+      ArrayResize(rsi, 2);
+      ArrayResize(atr, 14); // Standard ATR
+      ArrayResize(ema, 2);
+
+      int attempts = 0;
+      while(attempts < 10)
+      {
+         ResetLastError();
+         int c_rsi = CopyBuffer(m_hRSI, 0, 0, 1, rsi);
+         int c_atr = CopyBuffer(m_hATR, 0, 0, 1, atr);
+         int c_ema = CopyBuffer(m_hEMA, 0, 0, 1, ema);
+         
+         if(c_rsi > 0 && c_atr > 0 && c_ema > 0)
+         {
+            // Success! Update globals
+            m_g_RSI = rsi[0];
+            m_g_ATR = atr[0];
+            m_g_EMA = ema[0];
+            m_indicatorsHealthy = true; // Mark as healthy
+            return true;
+         }
+         
+         // Transient error, wait a bit
+         Sleep(100); 
+         attempts++;
+      }
+      
+      Print("❌ Simple update failed after 1 second. Waiting for next tick.");
+      m_indicatorsHealthy = false; // Mark as unhealthy, but DON'T destroy handles
+      return false;
    }
 };
 

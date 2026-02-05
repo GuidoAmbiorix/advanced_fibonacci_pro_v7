@@ -75,7 +75,7 @@ public:
       m_timeframe = timeframe;
 
       // Adjust max hold time based on timeframe
-      if(m_timeframe == PERIOD_M5)
+      if(m_timeframe == PERIOD_M15)
          m_maxHoldBarsH1 = 72; // 72 * 5min = 6 hours (Scalp max hold)
       else if(m_timeframe == PERIOD_M15)
          m_maxHoldBarsH1 = 64; // 16 hours
@@ -285,9 +285,7 @@ public:
       // Check D1 and H4 for structure break
       ENUM_TIMEFRAMES htf = PERIOD_D1;
       
-      if(m_timeframe == PERIOD_M5)
-         htf = PERIOD_H1;  // M5 looks at H1 structure
-      else if(m_timeframe == PERIOD_M15)
+      if(m_timeframe == PERIOD_M15)
          htf = PERIOD_H4;
       else if(m_timeframe == PERIOD_H1)
          htf = PERIOD_D1;
