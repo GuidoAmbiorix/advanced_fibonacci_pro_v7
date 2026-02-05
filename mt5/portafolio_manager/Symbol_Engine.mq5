@@ -1578,6 +1578,165 @@ void BuildConfluenceFactors(ConfluenceFactors &factors, int direction, double sc
    factors.confluenceScore = score;
 }
 
+//+------------------------------------------------------------------+
+//| NEW Confluence Score (0-30) - M15 Enhanced Analysis               |
+//+------------------------------------------------------------------+
+double CalculateConfluenceScore(int direction)
+{
+   double score = 0;
+   double currentPrice = symbolInfo.Bid();
+
+   // ============ 1. CORE SMC & PRICE ACTION (~7.0 pts) ============
+
+   // Trend (EMA 200 + Slope) - 1.0 point
+   double emaSlope = g_EMA - g_EMA_Prev;
+   bool slopeStrong = MathAbs(emaSlope) >= (g_ATR * InpEMA_MinSlope);
+   if(direction == 1 && currentPrice > g_EMA && emaSlope > 0 && slopeStrong) score += 1.0;
+   if(direction == -1 && currentPrice < g_EMA && emaSlope < 0 && slopeStrong) score += 1.0;
+
+   // Market Structure - 1.0 point
+   // M15 Adaptation: Check for valid structure
+   int highestBar = iHighest(_Symbol, PERIOD_CURRENT, MODE_HIGH, InpSwingLookback, 1);
+   int lowestBar = iLowest(_Symbol, PERIOD_CURRENT, MODE_LOW, InpSwingLookback, 1);
+   
+   // Structure Strength Check (M15)
+   double structRange = 0;
+   if(highestBar >= 0 && lowestBar >= 0) 
+      structRange = iHigh(_Symbol, PERIOD_CURRENT, highestBar) - iLow(_Symbol, PERIOD_CURRENT, lowestBar);
+   
+   bool validStructure = (structRange >= g_ATR * 2.0); // Keep 2.0 ATR filter
+   
+   if(direction == 1 && lowestBar < highestBar && validStructure) score += 1.0;
+   if(direction == -1 && highestBar < lowestBar && validStructure) score += 1.0;
+
+   // RSI Extremes (Regime Aware) - 1.0 point
+   if(g_currentRegime == REGIME_TREND)
+   {
+      // In trend, look for pullbacks
+      if(direction == 1 && g_RSI < 50 && g_RSI > 30) score += 1.0;
+      if(direction == -1 && g_RSI > 50 && g_RSI < 70) score += 1.0;
+   }
+   else
+   {
+      // In range, look for extremes
+      if(direction == 1 && g_RSI <= InpRSI_Oversold) score += 1.0;
+      if(direction == -1 && g_RSI >= InpRSI_Overbought) score += 1.0;
+   }
+
+   // RSI Momentum - 0.5 point
+   if(InpRSI_Momentum)
+   {
+      if(direction == 1 && g_RSI > g_RSI_Prev) score += 0.5;
+      if(direction == -1 && g_RSI < g_RSI_Prev) score += 0.5;
+   }
+
+   // Displacement - 1.0 point
+   if(CheckDisplacement(direction)) score += 1.0;
+
+   // Volatility - 1.5 pts
+   double atrRatio = (g_ATR_MA > 0) ? g_ATR / g_ATR_MA : 1.0;
+   if(atrRatio >= 0.8 && atrRatio <= 1.3) score += 1.5;
+
+   // Chop Filter - 1.0 pt
+   if(!CheckChopFilter()) {
+      score += 1.0;
+   }
+
+   // ============ 2. INSTITUTIONAL CONCEPTS (~7.0 pts) ============
+   
+   if(InpUseSMC)
+   {
+       // Basic SMC
+       score += smcStructure.GetConfluenceScore(direction);  // ~1.0
+       score += smcOrderBlocks.GetConfluenceScore(direction); // ~1.5
+       score += smcFVG.GetConfluenceScore(direction);         // ~1.0
+       score += smcLiquidity.GetConfluenceScore(direction);   // ~1.5
+       
+       // Advanced ICT
+       // Breaker Blocks (~2.0)
+       score += breakerBlocks.GetBreakerScore(direction) * 4.0; // Scale 0.5 -> 2.0
+       
+       // Macro Windows (~1.5)
+       score += macroWindows.GetMacroScore() * 3.0; // Scale 0.5 -> 1.5
+       
+       // Power of 3 (~2.0)
+       score += powerOf3.GetPhaseScore() * 4.0; // Scale 0.5 -> 2.0
+   }
+
+   // ============ 3. ADVANCED CONFLUENCE (~16.0 pts) ============
+
+   // Volume Profile (~2.5 pts)
+   score += volumeAnalysis.GetConfluenceScore(direction);
+
+   // Multi-Timeframe (~2.0 pts)
+   if(InpUseMTF)
+      score += mtfAnalysis.GetConfluenceScore(direction);
+
+   // Divergence (~1.5 pts)
+   // FIX: Pass hRSI handle
+   score += divergence.GetDivergenceScore(direction, hRSI);
+
+   // Wyckoff (~1.5 pts)
+   score += wyckoff.GetWyckoffScore(direction) * 3.0; // Scale 0.5 -> 1.5
+
+   // Fib Zone (~1.5 pts)
+   if(highestBar >= 0 && lowestBar >= 0)
+   {
+      double swingHigh = iHigh(_Symbol, PERIOD_CURRENT, highestBar);
+      double swingLow = iLow(_Symbol, PERIOD_CURRENT, lowestBar);
+      double range = swingHigh - swingLow;
+      double tolerance = g_ATR * InpZoneTolerance;
+
+      if(range >= g_ATR * 1.5)
+      {
+         bool inZone = false;
+         if(direction == 1)
+         {
+            double f618 = swingHigh - (range * InpFibLevelLow);
+            double f786 = swingHigh - (range * InpFibLevelHigh);
+            if(currentPrice <= f618 + tolerance && currentPrice >= f786 - tolerance) inZone = true;
+         }
+         else
+         {
+            double f618 = swingLow + (range * InpFibLevelLow);
+            double f786 = swingLow + (range * InpFibLevelHigh);
+            if(currentPrice >= f618 - tolerance && currentPrice <= f786 + tolerance) inZone = true;
+         }
+         if(inZone) score += 1.5;
+      }
+   }
+   
+   // Regime Confirmation (+1.0)
+   if(g_currentRegime == REGIME_TREND) score += 1.0;
+
+
+   // ============ CRITICAL FILTERS (Penalty/Block) ============
+
+   // Reversal Filter (EMA 50/100)
+   if(InpUseReversalFilter)
+   {
+       bool emaAlignment = (direction == 1) ? (currentPrice < g_EMA50 && g_EMA50 < g_EMA100)
+                                            : (currentPrice > g_EMA50 && g_EMA50 > g_EMA100);
+                                            
+       if(emaAlignment)
+       {
+           // M15 Specific: Trend reversals are common but risky.
+           // Penalize heavily if no divergence
+           // FIX: Pass hRSI handle
+           if(divergence.GetDivergenceScore(direction, hRSI) < 0.5)
+           {
+               score -= 5.0; // Heavy penalty
+           }
+       }
+   }
+
+   // Context Multipliers
+   // Volatile Regime: -20%
+   if(g_currentRegime == REGIME_VOLATILE) score *= 0.8;
+
+   return score;  // Max possible: ~30 points
+}
+
 double GetTotalProfitR()
 {
    double total = 0;
