@@ -1805,6 +1805,15 @@ private:
        // INTRA-BAR PERSISTENCE (Stability Filter)
        if(direction != m_lastSignalDirection || bestScore < m_params.MinConfluenceEntry)
        {
+            if(bestScore >= m_params.MinConfluenceEntry - 2.0) // Only log if close to threshold
+            {
+               static datetime lastMinLog = 0;
+               if(TimeCurrent() - lastMinLog >= 60)
+               {
+                  Print("🔍 SCAN: ", m_symbol, " below threshold. Score: ", DoubleToString(bestScore, 1), " (Min: ", m_params.MinConfluenceEntry, ")");
+                  lastMinLog = TimeCurrent();
+               }
+            }
            m_signalStartTime = TimeCurrent(); // Reset timer if direction changes or score drops
            m_lastSignalDirection = direction;
            return; // Wait for next tick to start counting
