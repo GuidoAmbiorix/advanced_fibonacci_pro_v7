@@ -11,7 +11,7 @@
 
 #include "KillzoneConfig.mqh"     // For ENUM_KILLZONE
 #include "MarketRegime.mqh"       // For MARKET_REGIME enum
-#include "Learning/Learning_MFE_MAE.mqh"  // For ENTRY_QUALITY enum
+#include "Learning_MFE_MAE.mqh"  // For ENTRY_QUALITY enum
 
 //+------------------------------------------------------------------+
 //| TRADE CONTEXT STRUCTURE (Entry Information)                      |
