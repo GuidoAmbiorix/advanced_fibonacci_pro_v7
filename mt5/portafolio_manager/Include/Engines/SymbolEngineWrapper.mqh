@@ -1870,7 +1870,20 @@ private:
       int bars_rsi = BarsCalculated(m_hRSI);
       if(bars_rsi == -1)
       {
-         if(CanRecoverIndicator(m_rsiHealth, "RSI"))
+         // SOFT RECOVERY: Check if handle is valid but just pending data
+         int err = GetLastError();
+         if(err != 4807 && err != 4002) // 4807=Invalid Handle
+         {
+            Print("⚠️ RSI data pending (", err, "). Waiting...");
+            if(WaitForIndicatorCalculation(m_hRSI, "RSI", 10)) // Try waiting 10s
+            {
+                Print("✅ RSI recovered (soft wait)");
+                ResetIndicatorHealth(m_rsiHealth);
+                bars_rsi = BarsCalculated(m_hRSI); // Succcess
+            }
+         }
+      
+         if(bars_rsi == -1 && CanRecoverIndicator(m_rsiHealth, "RSI"))
          {
             Print("   🔄 Recreating broken RSI handle...");
             if(m_hRSI != INVALID_HANDLE) IndicatorRelease(m_hRSI);
@@ -1891,17 +1904,31 @@ private:
                allCriticalRecovered = false;
             }
          }
-         else
+         else if(bars_rsi == -1)
          {
             allCriticalRecovered = false;
          }
       }
 
+
       // === RECOVER ATR ===
       int bars_atr = BarsCalculated(m_hATR);
       if(bars_atr == -1)
       {
-         if(CanRecoverIndicator(m_atrHealth, "ATR"))
+         // SOFT RECOVERY: Check if handle is valid but just pending data
+         int err = GetLastError();
+         if(err != 4807 && err != 4002) 
+         {
+            Print("⚠️ ATR data pending (", err, "). Waiting...");
+            if(WaitForIndicatorCalculation(m_hATR, "ATR", 10)) 
+            {
+                Print("✅ ATR recovered (soft wait)");
+                ResetIndicatorHealth(m_atrHealth);
+                bars_atr = BarsCalculated(m_hATR); 
+            }
+         }
+      
+         if(bars_atr == -1 && CanRecoverIndicator(m_atrHealth, "ATR"))
          {
             Print("   🔄 Recreating broken ATR handle...");
             if(m_hATR != INVALID_HANDLE) IndicatorRelease(m_hATR);
@@ -1926,18 +1953,32 @@ private:
                   allCriticalRecovered = false;
             }
          }
-         else
+         else if(bars_atr == -1)
          {
             if(!m_allowTradingWithoutATR)
                allCriticalRecovered = false;
          }
       }
 
+
       // === RECOVER EMA ===
       int bars_ema = BarsCalculated(m_hEMA);
       if(bars_ema == -1)
       {
-         if(CanRecoverIndicator(m_emaHealth, "EMA"))
+         // SOFT RECOVERY: Check if handle is valid but just pending data
+         int err = GetLastError();
+         if(err != 4807 && err != 4002) 
+         {
+            Print("⚠️ EMA data pending (", err, "). Waiting...");
+            if(WaitForIndicatorCalculation(m_hEMA, "EMA", 10)) 
+            {
+                Print("✅ EMA recovered (soft wait)");
+                ResetIndicatorHealth(m_emaHealth);
+                bars_ema = BarsCalculated(m_hEMA); 
+            }
+         }
+      
+         if(bars_ema == -1 && CanRecoverIndicator(m_emaHealth, "EMA"))
          {
             Print("   🔄 Recreating broken EMA handle...");
             if(m_hEMA != INVALID_HANDLE) IndicatorRelease(m_hEMA);
@@ -1958,11 +1999,12 @@ private:
                allCriticalRecovered = false;
             }
          }
-         else
+         else if(bars_ema == -1)
          {
             allCriticalRecovered = false;
          }
       }
+
 
       // === RECOVER EMA50/100 (if reversal filter enabled) ===
       if(m_params.UseReversalFilter)
