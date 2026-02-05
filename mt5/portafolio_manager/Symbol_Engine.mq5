@@ -14,6 +14,7 @@
 #include <Trade\AccountInfo.mqh>
 #include <Trade\SymbolInfo.mqh>
 #include "Include\PortfolioGlobals.mqh"
+#include "Include\KillzoneConfig.mqh"
 #include "Include\FailSafe.mqh"
 #include "Include\MarketRegime.mqh"
 #include "Include\KillSwitch.mqh"
@@ -464,7 +465,6 @@ int OnInit()
    Print("-------------------------------------------");
    Print("  RISK PARAMETERS:");
    Print("    Base Risk: ", DoubleToString(InpRiskBase, 2), "%");
-   Print("    Max Trades/Session: ", InpMaxTradesPerSession);
    Print("    Entry Threshold: 10.0/30 (GOOD - STRICT)");
    Print("    Add-Ons: DISABLED (Performance)");
    Print("-------------------------------------------");
