@@ -2244,8 +2244,7 @@ void LogHeartbeat()
    if(InpUseKillzoneFilter && !killzoneOptimizer.IsTradingAllowed()) tradingAllowed = false;
    if(InpUseSessionGovernor)
    {
-      double confidence = 0;
-      if(!sessionGov.CanTrade(confidence)) tradingAllowed = false;
+      if(!sessionGov.IsSessionTradingAllowed()) tradingAllowed = false;
    }
    
    heartbeat += "   Status: " + (tradingAllowed ? "ACTIVE ✅" : "IDLE zzz") + " | Regime: " + IntegerToString((int)g_currentRegime) + "\n";
