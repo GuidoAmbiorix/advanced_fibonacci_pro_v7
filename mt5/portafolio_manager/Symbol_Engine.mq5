@@ -789,6 +789,20 @@ void OnTick()
    // --- UPDATE ALL MODULES ON NEW BAR ---
    UpdateModules();
 
+   // --- MODULE: MARKET REGIME ---
+   g_currentRegime = regime.Detect(g_ATR, g_ATR_MA, g_EMA, g_EMA_Prev);
+   // g_currentRegime check moved down to allow score calculation for visibility
+
+   // OPTIMIZATION: Calculate confluence once per bar (expensive operation)
+   // Moved here to ensure visibility in logs even if trading is blocked
+   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
+   if(currentBarTime != g_lastScoreCalcTime)
+   {
+      g_cachedBuyScore = CalculateConfluenceScore(1);
+      g_cachedSellScore = CalculateConfluenceScore(-1);
+      g_lastScoreCalcTime = currentBarTime;
+   }
+
    // --- MODULE: FAIL SAFE (Quick Exit) ---
    if(!failSafe.IsExecutionSafe()) return;
 
@@ -865,8 +879,10 @@ void OnTick()
       return;
    }
 
-   // --- MODULE: MARKET REGIME ---
-   g_currentRegime = regime.Detect(g_ATR, g_ATR_MA, g_EMA, g_EMA_Prev);
+
+
+   // === TRADING FILTERS START HERE ===
+   
    if(g_currentRegime == REGIME_CHAOS) return;
 
    // PRE-ENTRY FILTERS (Quick Exits for Performance)
@@ -901,15 +917,6 @@ void OnTick()
 
    // Check Governor Trading Permission
    if(!IsTradingEnabled()) return;
-
-   // OPTIMIZATION: Calculate confluence once per bar (expensive operation)
-   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
-   if(currentBarTime != g_lastScoreCalcTime)
-   {
-      g_cachedBuyScore = CalculateConfluenceScore(1);
-      g_cachedSellScore = CalculateConfluenceScore(-1);
-      g_lastScoreCalcTime = currentBarTime;
-   }
 
    double buyScore = g_cachedBuyScore;
    double sellScore = g_cachedSellScore;
