@@ -1148,16 +1148,7 @@ public:
 
       Print("🔔 NEW BAR | ", m_symbol, " | Time: ", TimeToString(TimeCurrent(), TIME_SECONDS));
       
-      // PRIMERO: Verificar salud de indicadores antes de cualquier cosa
-      if(!m_indicatorsHealthy)
-      {
-         Print("⚠️ Indicators unhealthy at start of OnTick, attempting recovery...");
-         if(!RecoverIndicators())
-         {
-            Print("❌ Unable to recover indicators. Skipping tick.");
-            return;
-         }
-      }
+      // (Removed legacy pre-tick recovery check to avoid race conditions)
       
       // Verificar nuevo día y reiniciar contadores diarios
       CheckNewDay();
@@ -1438,6 +1429,7 @@ private:
             if(VerifyIndicatorData())
             {
                Print("   ✅ Indicators have valid data");
+               m_indicatorsHealthy = true;
                return true;
             }
             else
@@ -2160,6 +2152,7 @@ private:
             m_g_RSI = rsi[0];
             m_g_ATR = atr[0];
             m_g_EMA = ema[0];
+            m_indicatorsHealthy = true; // Mark as healthy
             return true;
          }
          
@@ -2169,6 +2162,7 @@ private:
       }
       
       Print("❌ Simple update failed after 1 second. Requesting recreation.");
+      m_indicatorsHealthy = false; // Mark as unhealthy
       return false;
    }
 
