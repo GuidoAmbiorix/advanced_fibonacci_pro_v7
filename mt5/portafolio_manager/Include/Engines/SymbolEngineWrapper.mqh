@@ -755,17 +755,26 @@ public:
    {
       if(m_helperChartId > 0)
       {
-         ChartClose(m_helperChartId);
+         ChartClose(m_helperChartId); // Correct generic function
          m_helperChartId = 0;
       }
 
-      if(m_hRSI != INVALID_HANDLE) IndicatorRelease(m_hRSI);
-      if(m_hATR != INVALID_HANDLE) IndicatorRelease(m_hATR);
-      if(m_hEMA != INVALID_HANDLE) IndicatorRelease(m_hEMA);
-      if(m_hEMA50 != INVALID_HANDLE) IndicatorRelease(m_hEMA50);
-      if(m_hEMA100 != INVALID_HANDLE) IndicatorRelease(m_hEMA100);
+      if(m_hRSI != INVALID_HANDLE) { IndicatorRelease(m_hRSI); m_hRSI = INVALID_HANDLE; }
+      if(m_hATR != INVALID_HANDLE) { IndicatorRelease(m_hATR); m_hATR = INVALID_HANDLE; }
+      if(m_hEMA != INVALID_HANDLE) { IndicatorRelease(m_hEMA); m_hEMA = INVALID_HANDLE; }
+      if(m_hEMA50 != INVALID_HANDLE) { IndicatorRelease(m_hEMA50); m_hEMA50 = INVALID_HANDLE; }
+      if(m_hEMA100 != INVALID_HANDLE) { IndicatorRelease(m_hEMA100); m_hEMA100 = INVALID_HANDLE; }
 
-      // Module cleanup handled by destructors
+      // Clear state arrays
+      ArrayFree(m_rsiBuffer);
+      ArrayFree(m_states);
+      
+      // Reset health tracking to prevent stale state on re-init
+      ZeroMemory(m_rsiHealth);
+      ZeroMemory(m_atrHealth);
+      ZeroMemory(m_emaHealth);
+      ZeroMemory(m_ema50Health);
+      ZeroMemory(m_ema100Health);
    }
 
    //+------------------------------------------------------------------+
@@ -1153,12 +1162,16 @@ public:
       // Verificar nuevo día y reiniciar contadores diarios
       CheckNewDay();
       
-      // USAR ACTUALIZACIÓN MEJORADA
-      if(!UpdateIndicatorsEnhanced())
+      // USAR ACTUALIZACIÓN SIMPLIFICADA
+      if(!SimpleIndicatorUpdate())
       {
-         Print("❌ BLOCKED | ", m_symbol, " | UpdateIndicatorsEnhanced() failed");
-         m_indicatorsHealthy = false;
-         return;
+         Print("⚠️ Simple update failed, attempting recreation...");
+         if(!CreateIndicatorsWithRetry())
+         {
+            Print("❌ CRITICAL: Cannot recover indicators for ", m_symbol);
+            m_indicatorsHealthy = false;
+            return;
+         }
       }
       Print("✅ PASSED | ", m_symbol, " | Indicators updated");
 
@@ -1323,13 +1336,21 @@ private:
          Print("⚠️ WARNING: Could not pre-load ", m_symbol, " data (Error ", GetLastError(), ")");
 
       // SOLUCIÓN DE RAÍZ #2: Crear Helper Chart PERSISTENTE para mantener datos activos
-      if(m_helperChartId == 0)
+      if(m_helperChartId == 0 || !ChartSymbol(m_helperChartId))
       {
+         // Close invalid if exists
+         if(m_helperChartId > 0) ChartClose(m_helperChartId);
+
          m_helperChartId = ChartOpen(m_symbol, PERIOD_CURRENT);
          if(m_helperChartId > 0)
-            Print("✅ Persistent helper chart created for ", m_symbol, " (ID: ", m_helperChartId, ")");
+         {
+             // Configure background chart
+             ChartSetInteger(m_helperChartId, CHART_SHOW, false);
+             ChartSetInteger(m_helperChartId, CHART_BRING_TO_TOP, false);
+             Print("✅ Persistent helper chart created for ", m_symbol, " (ID: ", m_helperChartId, ")");
+         }
          else
-            Print("⚠️ WARNING: Could not create helper chart for ", m_symbol);
+             Print("⚠️ WARNING: Could not create helper chart for ", m_symbol);
       }
 
       for(int attempt = 1; attempt <= 3; attempt++)
@@ -1353,7 +1374,7 @@ private:
          }
          Sleep(300); // Aumentado de 200 a 300ms
 
-         m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14); // Standard ATR period
+         m_hATR = iATR(m_symbol, PERIOD_CURRENT, m_params.RSI_Period > 14 ? m_params.RSI_Period : 14); // Dynamic sizing or fallback
          if(m_hATR == INVALID_HANDLE)
          {
             Print("   ❌ Failed to create ATR handle");
@@ -1902,7 +1923,8 @@ private:
       {
          // SOFT RECOVERY: Check if handle is valid but just pending data
          int err = GetLastError();
-         if(err != 4807 && err != 4002) // 4807=Invalid Handle
+         // ENHANCED: Treat 4807 (Invalid Handle) as potentially transient in multi-symbol env
+         if(err != 4002) // Only exclude 4002 (Array Index Out of Bounds) or similar fatal errors
          {
             Print("⚠️ RSI data pending (", err, "). Waiting...");
             if(WaitForIndicatorCalculation(m_hRSI, "RSI", 10)) // Try waiting 10s
@@ -1947,10 +1969,12 @@ private:
       {
          // SOFT RECOVERY: Check if handle is valid but just pending data
          int err = GetLastError();
-         if(err != 4807 && err != 4002) 
+         // ENHANCED: Treat 4807 (Invalid Handle) as potentially transient in multi-symbol env
+         if(err != 4002) 
          {
             Print("⚠️ ATR data pending (", err, "). Waiting...");
-            if(WaitForIndicatorCalculation(m_hATR, "ATR", 10)) 
+            // Use slightly longer wait for ATR (15s) as it's the most problematic
+            if(WaitForIndicatorCalculation(m_hATR, "ATR", 15)) 
             {
                 Print("✅ ATR recovered (soft wait)");
                 ResetIndicatorHealth(m_atrHealth);
@@ -2101,6 +2125,53 @@ private:
       }
    }
 
+   //+------------------------------------------------------------------+
+   //| SIMPLE UPDATE: Robust, Linear, Non-Blocking                      |
+   //| Replaces complex dual-recovery systems                           |
+   //+------------------------------------------------------------------+
+   bool SimpleIndicatorUpdate()
+   {
+      // 1. Validate Handles
+      if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
+      {
+         Print("⚠️ Invalid handles detected, attempting creation...");
+         return CreateIndicatorsWithRetry();
+      }
+
+      // 2. Simple Blocking Copy with Timeout (Max 1 second)
+      double rsi[], atr[], ema[];
+      
+      // Resize to minimum needed
+      ArrayResize(rsi, 2);
+      ArrayResize(atr, 14); // Standard ATR
+      ArrayResize(ema, 2);
+
+      int attempts = 0;
+      while(attempts < 10)
+      {
+         ResetLastError();
+         int c_rsi = CopyBuffer(m_hRSI, 0, 0, 1, rsi);
+         int c_atr = CopyBuffer(m_hATR, 0, 0, 1, atr);
+         int c_ema = CopyBuffer(m_hEMA, 0, 0, 1, ema);
+         
+         if(c_rsi > 0 && c_atr > 0 && c_ema > 0)
+         {
+            // Success! Update globals
+            m_g_RSI = rsi[0];
+            m_g_ATR = atr[0];
+            m_g_EMA = ema[0];
+            return true;
+         }
+         
+         // Transient error, wait a bit
+         Sleep(100); 
+         attempts++;
+      }
+      
+      Print("❌ Simple update failed after 1 second. Requesting recreation.");
+      return false;
+   }
+
    bool UpdateIndicatorsEnhanced()
    {
       // ENHANCED: Check for permanently failed critical indicators at start
@@ -2150,7 +2221,10 @@ private:
          {
             // Solo log cada 5 fallos para no spam
             if(m_consecutiveDataFailures % 5 == 1)
-               Print("⏳ Data temporarily unavailable (4807/4806) - retry #", m_consecutiveDataFailures, "/15");
+            {
+               Print("⏳ Data unavailable (", lastError, ") - retry #", m_consecutiveDataFailures, "/15");
+               ResetLastError(); // Clear error for next attempt
+            }
             return false; // Retry next tick - NO marcar unhealthy
          }
 
