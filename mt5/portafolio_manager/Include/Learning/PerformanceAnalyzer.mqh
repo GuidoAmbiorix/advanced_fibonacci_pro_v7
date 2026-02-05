@@ -10,7 +10,7 @@
 #property link      "https://github.com/GuidoAmbiorix"
 #property strict
 
-#include "../Memory/TradeJournal.mqh"
+#include "../DatabaseManager.mqh"
 
 //+------------------------------------------------------------------+
 //| CONTEXT STATISTICS STRUCTURE                                      |
@@ -43,27 +43,27 @@ class CPerformanceAnalyzer
 {
 private:
    string         m_symbol;
-   CTradeJournal* m_journal;              // Reference to trade journal
+   CDatabaseManager* m_manager;              // Reference to DB Manager
    TradeRecord    m_trades[];             // Cached trades for analysis
    int            m_tradeCount;
    int            m_minSampleSize;        // Minimum trades for reliable stats
 
 public:
-   CPerformanceAnalyzer() : m_symbol(""), m_journal(NULL), m_tradeCount(0),
+   CPerformanceAnalyzer() : m_symbol(""), m_manager(NULL), m_tradeCount(0),
                             m_minSampleSize(20) {}
 
    //+------------------------------------------------------------------+
    //| Initialize Performance Analyzer                                   |
    //+------------------------------------------------------------------+
-   bool Init(string symbol, CTradeJournal* journal, int minSampleSize = 20)
+   bool Init(string symbol, CDatabaseManager* manager, int minSampleSize = 20)
    {
       m_symbol = symbol;
-      m_journal = journal;
+      m_manager = manager;
       m_minSampleSize = minSampleSize;
 
-      if(m_journal == NULL)
+      if(m_manager == NULL)
       {
-         Print("PerformanceAnalyzer ERROR: Journal pointer is NULL");
+         Print("PerformanceAnalyzer ERROR: Manager pointer is NULL");
          return false;
       }
 
@@ -78,13 +78,13 @@ public:
    //| Refresh data from journal                                        |
    //+------------------------------------------------------------------+
    void RefreshData()
-   {
-      if(m_journal == NULL) return;
-
-      // Get all closed trades from journal
-      m_journal.GetTrades(m_trades);
-      m_tradeCount = ArraySize(m_trades);
-   }
+    {
+       if(m_manager == NULL) return;
+ 
+       // Get all closed trades from database
+       m_manager.GetTrades(m_trades, "symbol='" + m_symbol + "'");
+       m_tradeCount = ArraySize(m_trades);
+    }
 
    //+------------------------------------------------------------------+
    //| Get statistics by killzone                                       |

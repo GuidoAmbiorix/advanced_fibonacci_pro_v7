@@ -1,9 +1,9 @@
-; EURUSD - 24h Institutional Flow
-; Core Major - Balanceado
+; EURJPY - 24h Institutional Flow
+; Cross - Asia/Europe Hybrid
 ; Optimized for 24h Operation (No Killzones)
 
 ; ====== IDENTITY ======
-InpMagicNumber=100001
+InpMagicNumber=100007
 
 ; ====== DIRECTION ======
 InpDirection=0
@@ -18,16 +18,16 @@ InpAutoDST=true
 InpSwingLookback=12
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.20
+InpZoneTolerance=0.25
 
 ; ====== DISPLACEMENT ======
 InpUseDisplacement=true
-InpDisplacementATR=1.2
+InpDisplacementATR=1.3
 InpDisplacementLookback=5
 
 ; ====== RSI ======
-InpRSI_Period=9
-InpRSI_Oversold=35
+InpRSI_Period=14
+InpRSI_Oversold=40
 InpRSI_Overbought=60
 InpRSI_Momentum=true
 
@@ -56,9 +56,9 @@ InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
 InpTPMode=2
-InpFixedTP_R=2.0
+InpFixedTP_R=2.5
 InpMinTP_R=1.2
-InpMaxTP_R=3.0
+InpMaxTP_R=4.0
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
@@ -66,8 +66,8 @@ InpTrailingMode=1
 InpPartialTP_R=1.2
 InpPartialClosePercent=45.0
 InpBE_Threshold_R=1.2
-InpTrailStart_R=1.6
-InpTrailATR_Mult=1.0
+InpTrailStart_R=1.8
+InpTrailATR_Mult=1.2
 
 ; ====== SPREAD ======
 InpMaxSpreadPoints=50
@@ -75,7 +75,7 @@ InpMaxSpreadPoints=50
 ; ====== SMC ======
 InpUseSMC=true
 InpSMC_SwingLookback=12
-InpSMC_MinImpulseATR=2.2
+InpSMC_MinImpulseATR=2.0
 InpSMC_MinFVG_ATR=0.50
 
 ; ====== MULTI-TIMEFRAME ======

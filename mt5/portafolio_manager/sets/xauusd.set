@@ -1,107 +1,82 @@
-; XAUUSD - M15 Momentum - London-NY Session
-; Optimized for 4-Pair Portfolio (EURUSD, GBPUSD, USDCAD, XAUUSD)
-; Best Timeframe: H1 (Primary), H4 (Bias/Confirmation)
-; Best Performance: NY session (8 AM New York + COMEX open), London steady activity
-; Risk Profile: Moderate - controlled by C=6 selectivity, high R-multiple potential
-; Target: Win Rate 65-75%, Profit Factor 2.5+
-; Correlation: Low to EUR/GBP/CAD, safe haven diversification
-; Characteristics: Explosive moves around US news, clean Fair Value Gaps, institutional favorite
+; XAUUSD - 24h Institutional Flow
+; Commodity - Volatile
+; Optimized for 24h Operation (No Killzones)
 
 ; ====== IDENTITY ======
-InpMagicNumber=100007
+InpMagicNumber=100006
 
 ; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
 
-; ====== KILLZONES ======
-; Gold most active during London and NY (NY preferred for institutional activity)
+; ====== KILLZONES (DISABLED FOR 24h) ======
 InpUseKillzoneFilter=false
-InpUseSymbolDefaults=true
+InpUseSymbolDefaults=false
 InpAutoDST=true
-InpEnableAsianKZ=false
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
-InpEnableLondonCloseKZ=false
-InpFocusPrimeOnly=true
 
 ; ====== FIBONACCI ======
-; Tighter lookback for M15 momentum
 InpSwingLookback=12
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.35
+InpZoneTolerance=0.30
 
 ; ====== DISPLACEMENT ======
-; Strong displacements common in gold (institutional moves)
 InpUseDisplacement=true
-InpDisplacementATR=1.8
-InpDisplacementLookback=4
+InpDisplacementATR=2.0
+InpDisplacementLookback=5
 
 ; ====== RSI ======
-; Fast RSI for M5 Momentum
-InpRSI_Period=9
-InpRSI_Oversold=32
-InpRSI_Overbought=68
+InpRSI_Period=14
+InpRSI_Oversold=30
+InpRSI_Overbought=70
 InpRSI_Momentum=true
 
 ; ====== TREND ======
-; Strong trends - higher slope requirement
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.18
+InpEMA_MinSlope=0.20
 
 ; ====== CHOP FILTER ======
-; Higher threshold to avoid choppy gold sessions
 InpUseChopFilter=true
-InpChopThreshold=0.85
+InpChopThreshold=0.80
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-; CRITICAL: Score 10.0 for M15 Enhanced (Good), 12.0 (Strong), 14.0 (Elite)
 InpMinConfluenceEntry=10
 InpEnableAddOns=false
-InpAddOn1_R=2.5
-InpAddOn2_R=4.0
+InpAddOn1_R=1.5
+InpAddOn2_R=2.8
 InpMaxPositions=1
 
-; ====== RISK (Before Governor Scaling) ======
-; UPDATED: Very conservative for volatile gold (reduced from 0.35)
-InpRiskBase=0.15
-InpRiskAddOn1=0.10
-InpRiskAddOn2=0.07
-InpMaxRisk=0.45
-InpMaxLotsPerTrade=0.5
+; ====== RISK ======
+InpRiskBase=0.20
+InpMaxRisk=0.40
+InpMaxLotsPerTrade=0.2
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
-; M5 Momentum Scalping TP (Runs further than FX)
 InpTPMode=2
-InpFixedTP_R=2.5
+InpFixedTP_R=3.0
 InpMinTP_R=1.5
 InpMaxTP_R=5.0
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
-; Wider targets for gold's trending nature
 InpTrailingMode=1
 InpPartialTP_R=1.5
-InpPartialClosePercent=35.0
+InpPartialClosePercent=40.0
 InpBE_Threshold_R=1.5
 InpTrailStart_R=2.0
 InpTrailATR_Mult=1.5
 
 ; ====== SPREAD ======
-; Relaxed spread for Gold M5 execution
-InpMaxSpreadPoints=50
+InpMaxSpreadPoints=200
 
-; ====== SMC - SMART MONEY CONCEPTS ======
-; Critical for gold - institutional liquidity sweeps are common
-; M15 Structure Settings
+; ====== SMC ======
 InpUseSMC=true
 InpSMC_SwingLookback=12
-InpSMC_MinImpulseATR=3.0
-InpSMC_MinFVG_ATR=0.70
+InpSMC_MinImpulseATR=2.5
+InpSMC_MinFVG_ATR=0.60
 
 ; ====== MULTI-TIMEFRAME ======
 InpUseMTF=true
@@ -110,48 +85,36 @@ InpMTF=16385
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
-; Critical for gold - reacts strongly to US economic news
 InpUseNewsFilter=true
-InpNewsMinutesBefore=60
-InpNewsMinutesAfter=60
+InpNewsMinutesBefore=45
+InpNewsMinutesAfter=45
 
-; ====== KELLY POSITION SIZING ======
-; UPDATED: Very conservative Quarter Kelly for gold
+; ====== KELLY ======
 InpUseKelly=true
-InpKellyFraction=0.20
-InpDailyMaxDD=1.5
-InpWeeklyMaxDD=3.0
+InpKellyFraction=0.25
+InpDailyMaxDD=3.0
+InpWeeklyMaxDD=6.0
 
-; ====== LEARNING & ADAPTATION ======
+; ====== LEARNING ======
 InpEnableLearning=true
 InpLogTradesToFile=true
 InpLearningHistory=180
 InpMinTradesForLearning=50
 
-; ====== ADAPTIVE BEHAVIOR (Advanced) ======
-; ====== ADAPTIVE BEHAVIOR (Advanced) ======
+; ====== ADAPTIVE ======
 InpEnableAdaptiveRisk=true
 InpEnableAdaptiveExits=true
 InpEnableAdaptiveFilters=true
 
-; ====== SESSION GOVERNOR ======
-; UPDATED: Active M5 Scalping (2 trades per session for Gold)
+; ====== SESSION GOVERNOR (DISABLED FOR 24h) ======
 InpUseSessionGovernor=false
-InpMaxTradesPerSession=2
-InpMaxProfitPerSession_R=6.0
-InpMaxLossPerSession_R=2.0
-InpMinSessionConfidence=0.5
+InpMaxTradesPerSession=10
 InpTradeCooldownMinutes=30
-InpEnableSessionBlacklist=true
+InpEnableSessionBlacklist=false
 
 ; ====== PORTFOLIO PROTECTION ======
-; NEW: Circuit breaker for gold (separate correlation group)
 InpUseCorrelationFilter=true
-InpDailyMaxLoss_R=2.5
-InpLossCooldownMinutes=60
+InpDailyMaxLoss_R=3.0
+InpLossCooldownMinutes=45
 InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true
-
-; ====== RISK (Before Governor Scaling) ======
-; PORTFOLIO-ADJUSTED: 0.25% for 4-pair portfolio (gold volatility controlled by C=6)
-InpRiskBase=0.25

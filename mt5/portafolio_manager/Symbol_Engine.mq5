@@ -34,8 +34,13 @@
 #include "Include\KellyPositionSizer.mqh"
 
 // Learning & Memory Modules
-#include "Include\Memory\TradeJournal.mqh"
+#include "Include\DatabaseManager.mqh"
 #include "Include\Memory\PatternMemory.mqh"
+// ... (rest of includes)
+
+// LEARNING & MEMORY OBJECTS
+CDatabaseManager    dbManager;
+CPatternMemory      patternMemory;
 #include "Include\Learning\PerformanceAnalyzer.mqh"
 #include "Include\Learning\PatternRecognizer.mqh"
 
@@ -54,6 +59,7 @@
 //+------------------------------------------------------------------+
 input group "======= IDENTITY ======="
 input int               InpMagicNumber = 100001;          // Magic Number (unique per symbol)
+input bool              InpEnableMobileAlerts = true;     // Enable Mobile Push Notifications
 
 input group "======= DIRECTION ======="
 input int               InpDirection = 0;                 // 0=Both, 1=Buy, 2=Sell
@@ -227,7 +233,7 @@ CKillzoneOptimizer  killzoneOptimizer;
 CKellyPositionSizer kellySizer;
 
 // LEARNING & MEMORY OBJECTS
-CTradeJournal       tradeJournal;
+// dbManager already declared above
 CPatternMemory      patternMemory;
 CPerformanceAnalyzer performanceAnalyzer;
 CPatternRecognizer  patternRecognizer;
@@ -413,17 +419,17 @@ int OnInit()
       kellySizer.Init(InpRiskBase, 0.25, maxRiskAdjusted, InpKellyFraction, 30, InpDailyMaxDD, InpWeeklyMaxDD);
    }
 
-   // Initialize Trade Journal (Learning System)
+   // Initialize Database Manager (replaces Trade Journal)
    if(InpEnableLearning && InpLogTradesToFile)
    {
-      if(!tradeJournal.Init(_Symbol, InpLearningHistory))
-         Print("Warning: Trade Journal initialization failed");
+      if(!dbManager.Init())
+         Print("Warning: Database Manager initialization failed");
    }
 
    // Initialize Performance Analyzer
    if(InpEnableLearning)
    {
-      if(!performanceAnalyzer.Init(_Symbol, &tradeJournal, InpMinTradesForLearning))
+      if(!performanceAnalyzer.Init(_Symbol, &dbManager, InpMinTradesForLearning))
          Print("Warning: Performance Analyzer initialization failed");
    }
 
@@ -1114,30 +1120,25 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       g_states[sz].initialRisk = slDist;
       g_states[sz].quality = quality;
 
-      // LOG TO TRADE JOURNAL
+      // LOG TO DB MANAGER
       if(InpEnableLearning && InpLogTradesToFile)
       {
-         TradeContext ctx;
-         ctx.ticket = ticket;
-         ctx.entryTime = TimeCurrent();
-         ctx.symbol = _Symbol;
-         ctx.killzone = InpUseKillzoneFilter ? killzoneOptimizer.GetCurrentKillzone() : KILLZONE_NONE;
-         MqlDateTime dt;
-         TimeToStruct(TimeCurrent(), dt);
-         ctx.dayOfWeek = dt.day_of_week;
-         ctx.regime = g_currentRegime;
-         ctx.quality = quality;
-         ctx.confluenceScore = g_currentConfluence;
-         ctx.direction = (type == ORDER_TYPE_BUY) ? 1 : -1;
-         ctx.entryPrice = price;
-         ctx.sl = sl;
-         ctx.tp = tp;
-         ctx.lots = lots;
-         ctx.riskPercent = riskPct;
-         ctx.winRateAtEntry = killSwitch.GetWinRate();
-         ctx.rollingRAtEntry = killSwitch.GetRollingR();
-
-         tradeJournal.LogEntry(ctx);
+         string killzoneStr = InpUseKillzoneFilter ? KillzoneToString(killzoneOptimizer.GetCurrentKillzone()) : "DISABLED";
+         string strategyStr = "STANDARD"; // or derive from add-ons
+         
+         dbManager.LogTradeEntry(
+            ticket, 
+            _Symbol, 
+            (type == ORDER_TYPE_BUY) ? 1 : -1, 
+            lots, 
+            price, 
+            sl, 
+            tp, 
+            g_currentConfluence, 
+            strategyStr, 
+            IntegerToString((int)g_currentRegime), 
+            killzoneStr
+         );
       }
 
       // Register with Session Governor
@@ -1173,6 +1174,16 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
          g_lastSellTime = TimeCurrent();
 
       g_tradesExecuted++;  // Performance monitoring
+ 
+       // SEND MOBILE NOTIFICATION
+       if(InpEnableMobileAlerts)
+       {
+          string notifyText = "🚀 TRADE OPENED: " + _Symbol + "\n" +
+                              EnumToString(type) + " " + DoubleToString(lots, 2) + " Lots\n" +
+                              "Price: " + DoubleToString(price, (int)symbolInfo.Digits()) + "\n" +
+                              "Score: " + DoubleToString(g_currentConfluence, 1) + "/12";
+          SendNotification(notifyText);
+       }
 
       return true;
    }
@@ -1208,21 +1219,29 @@ void ManagePositions()
              double mfe = 0, mae = 0;
              learning.GetMFEMAE(ticket, mfe, mae);
 
-             // LOG EXIT TO TRADE JOURNAL
+             // LOG EXIT TO DB MANAGER
              if(InpEnableLearning && InpLogTradesToFile)
              {
+                string exitReason = (profitMoney > 0) ? "TP" : "SL";
+                if(g_states[i].partialClosed) exitReason += "_PARTIAL";
+                
+                dbManager.LogTradeExit(
+                   ticket, 
+                   0, // Exit price (can retrieve from history if critical) 
+                   profitMoney, 
+                   0, // Commission (get from history)
+                   0, // Swap (get from history)
+                   exitReason, 
+                   mfe, 
+                   mae
+                );
+
+                // Reconstruct Context for Pattern Database (Legacy Support)
                 ExitContext exitCtx;
                 exitCtx.exitTime = TimeCurrent();
-                exitCtx.exitPrice = 0;  // Get from history if needed
-                exitCtx.exitType = (profitMoney > 0) ? "TP" : "SL";
+                exitCtx.exitType = exitReason;
                 exitCtx.profitR = profitR;
-                exitCtx.profitMoney = profitMoney;
-                exitCtx.durationMinutes = 0;  // Calculate if needed
-                exitCtx.mfe = mfe;
-                exitCtx.mae = mae;
-                exitCtx.partialClosed = g_states[i].partialClosed;
-
-                tradeJournal.LogExit(ticket, exitCtx);
+                // ... (rest used below)
 
                 // Update Pattern Database
                 // Note: We reconstruct a simplified ConfluenceFactors from available data

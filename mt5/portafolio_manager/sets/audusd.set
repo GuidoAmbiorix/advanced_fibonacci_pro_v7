@@ -1,9 +1,9 @@
-; EURUSD - 24h Institutional Flow
-; Core Major - Balanceado
+; AUDUSD - 24h Institutional Flow
+; Core Major - Asia Liquid
 ; Optimized for 24h Operation (No Killzones)
 
 ; ====== IDENTITY ======
-InpMagicNumber=100001
+InpMagicNumber=100004
 
 ; ====== DIRECTION ======
 InpDirection=0
@@ -26,15 +26,15 @@ InpDisplacementATR=1.2
 InpDisplacementLookback=5
 
 ; ====== RSI ======
-InpRSI_Period=9
-InpRSI_Oversold=35
+InpRSI_Period=14
+InpRSI_Oversold=40
 InpRSI_Overbought=60
 InpRSI_Momentum=true
 
 ; ====== TREND ======
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.10
+InpEMA_MinSlope=0.05
 
 ; ====== CHOP FILTER ======
 InpUseChopFilter=true
@@ -58,7 +58,7 @@ InpEnableMarginCheck=true
 InpTPMode=2
 InpFixedTP_R=2.0
 InpMinTP_R=1.2
-InpMaxTP_R=3.0
+InpMaxTP_R=3.5
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
@@ -75,7 +75,7 @@ InpMaxSpreadPoints=50
 ; ====== SMC ======
 InpUseSMC=true
 InpSMC_SwingLookback=12
-InpSMC_MinImpulseATR=2.2
+InpSMC_MinImpulseATR=2.0
 InpSMC_MinFVG_ATR=0.50
 
 ; ====== MULTI-TIMEFRAME ======
