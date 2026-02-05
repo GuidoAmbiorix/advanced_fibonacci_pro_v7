@@ -1101,6 +1101,35 @@ public:
        }
    }
 
+   //+------------------------------------------------------------------+
+   //| SOLUCIÓN DE RAÍZ: OnTimer para mantener datos activos           |
+   //| Previene que MT5 libere las series de tiempo del símbolo        |
+   //+------------------------------------------------------------------+
+   void OnTimer()
+   {
+      // CRÍTICO: Acceder a las series de tiempo cada 90 segundos
+      // Esto mantiene los datos "retenidos" en memoria y evita error 4807
+      MqlRates rates[1];
+      if(CopyRates(m_symbol, PERIOD_CURRENT, 0, 1, rates) > 0)
+      {
+         // Datos retenidos exitosamente
+         static int retentionCount = 0;
+         retentionCount++;
+
+         // Log cada 10 ciclos (15 minutos) para confirmar que funciona
+         if(retentionCount % 10 == 0)
+            Print("🔄 Data retention active for ", m_symbol, " (", retentionCount, " cycles, ", (retentionCount * 90 / 60), " min)");
+      }
+      else
+      {
+         // Si falla la retención, los indicadores podrían volverse unhealthy
+         Print("⚠️ Failed to retain timeseries for ", m_symbol, " - Error: ", GetLastError());
+
+         // Intentar refrescar symbol info
+         m_symbolInfo.RefreshRates();
+      }
+   }
+
 private:
    //+------------------------------------------------------------------+
    //| Helper Functions (Private)                                        |
@@ -1122,45 +1151,116 @@ private:
    bool CreateIndicatorsWithRetry()
    {
       Print("🔧 Creating indicators for ", m_symbol, "...");
-      
+
+      // SOLUCIÓN DE RAÍZ #1: Pre-cargar datos del símbolo ANTES de crear indicadores
+      Print("📊 Pre-loading timeseries data for ", m_symbol);
+      MqlRates rates[];
+      ArraySetAsSeries(rates, true);
+
+      int copied = CopyRates(m_symbol, PERIOD_CURRENT, 0, 100, rates);
+      if(copied <= 0)
+      {
+         Print("⏳ Waiting for ", m_symbol, " data to download from server...");
+         Sleep(2000); // Dar tiempo a MT5 para descargar
+         copied = CopyRates(m_symbol, PERIOD_CURRENT, 0, 100, rates);
+      }
+
+      if(copied > 0)
+         Print("✅ ", m_symbol, " timeseries loaded: ", copied, " bars");
+      else
+         Print("⚠️ WARNING: Could not pre-load ", m_symbol, " data (Error ", GetLastError(), ")");
+
+      // SOLUCIÓN DE RAÍZ #2: Crear Helper Chart PERSISTENTE para mantener datos activos
+      if(m_helperChartId == 0)
+      {
+         m_helperChartId = ChartOpen(m_symbol, PERIOD_CURRENT);
+         if(m_helperChartId > 0)
+            Print("✅ Persistent helper chart created for ", m_symbol, " (ID: ", m_helperChartId, ")");
+         else
+            Print("⚠️ WARNING: Could not create helper chart for ", m_symbol);
+      }
+
       for(int attempt = 1; attempt <= 3; attempt++)
       {
          Print("   Attempt ", attempt, "/3");
-         
+
          // Liberar handles existentes
          if(m_hRSI != INVALID_HANDLE) { IndicatorRelease(m_hRSI); m_hRSI = INVALID_HANDLE; }
          if(m_hATR != INVALID_HANDLE) { IndicatorRelease(m_hATR); m_hATR = INVALID_HANDLE; }
          if(m_hEMA != INVALID_HANDLE) { IndicatorRelease(m_hEMA); m_hEMA = INVALID_HANDLE; }
          if(m_hEMA50 != INVALID_HANDLE) { IndicatorRelease(m_hEMA50); m_hEMA50 = INVALID_HANDLE; }
          if(m_hEMA100 != INVALID_HANDLE) { IndicatorRelease(m_hEMA100); m_hEMA100 = INVALID_HANDLE; }
-         
-         // Crear indicadores principales
+
+         // SOLUCIÓN DE RAÍZ #3: Crear indicadores con delays secuenciales
          m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
-         Sleep(200);
-         
+         if(m_hRSI == INVALID_HANDLE)
+         {
+            Print("   ❌ Failed to create RSI handle");
+            Sleep(1000);
+            continue;
+         }
+         Sleep(300); // Aumentado de 200 a 300ms
+
          m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
-         Sleep(200);
-         
+         if(m_hATR == INVALID_HANDLE)
+         {
+            Print("   ❌ Failed to create ATR handle");
+            Sleep(1000);
+            continue;
+         }
+         Sleep(300);
+
          m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
-         Sleep(200);
-         
+         if(m_hEMA == INVALID_HANDLE)
+         {
+            Print("   ❌ Failed to create EMA handle");
+            Sleep(1000);
+            continue;
+         }
+         Sleep(300);
+
          // Crear indicadores de filtro de reversión si están habilitados
          if(m_params.UseReversalFilter)
          {
             m_hEMA50 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA50_Period, 0, MODE_EMA, PRICE_CLOSE);
-            Sleep(200);
+            Sleep(300);
             m_hEMA100 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA100_Period, 0, MODE_EMA, PRICE_CLOSE);
-            Sleep(200);
+            Sleep(300);
          }
-         
+
+         // SOLUCIÓN DE RAÍZ #4: Esperar a que los indicadores calculen datos
+         Print("   ⏳ Waiting for indicators to calculate...");
+         int timeout = 0;
+         bool allCalculated = false;
+
+         while(timeout < 30) // Max 30 segundos
+         {
+            int bars_rsi = BarsCalculated(m_hRSI);
+            int bars_atr = BarsCalculated(m_hATR);
+            int bars_ema = BarsCalculated(m_hEMA);
+
+            if(bars_rsi > 0 && bars_atr > 0 && bars_ema > 0)
+            {
+               Print("   ✅ All indicators calculated - RSI: ", bars_rsi, " | ATR: ", bars_atr, " | EMA: ", bars_ema);
+               allCalculated = true;
+               break;
+            }
+
+            Sleep(1000);
+            timeout++;
+         }
+
+         if(!allCalculated)
+         {
+            Print("   ⚠️ Timeout waiting for indicators to calculate on attempt ", attempt);
+            continue;
+         }
+
          // Verificar si se crearon correctamente
          if(VerifyIndicatorHandles())
          {
             Print("   ✅ Indicators created successfully on attempt ", attempt);
-            
-            // Esperar a que se calculen algunos datos
-            Sleep(300);
-            
+
             // Verificar que tengan datos
             if(VerifyIndicatorData())
             {
@@ -1548,23 +1648,61 @@ private:
 
    bool UpdateIndicatorsStandard()
    {
+      // SOLUCIÓN DE RAÍZ: Verificar handles válidos ANTES de BarsCalculated()
+      if(m_hRSI == INVALID_HANDLE || m_hATR == INVALID_HANDLE || m_hEMA == INVALID_HANDLE)
+      {
+         Print("❌ Invalid indicator handles for ", m_symbol);
+         return false;
+      }
+
       // CRITICAL: Check if indicators are fully calculated before reading
-      // Retry loop to handle transient states 
-      int maxRetries = 20; 
+      // Retry loop to handle transient states
+      int maxRetries = 20;
       int bars_rsi = -1, bars_atr = -1, bars_ema = -1;
-      
+
       for(int i=0; i<maxRetries; i++)
       {
+         ResetLastError(); // Limpiar error anterior
+
          bars_rsi = BarsCalculated(m_hRSI);
          bars_atr = BarsCalculated(m_hATR);
          bars_ema = BarsCalculated(m_hEMA);
-         
+
+         // SOLUCIÓN DE RAÍZ: BarsCalculated() devuelve -1 si hay error
+         if(bars_rsi == -1 || bars_atr == -1 || bars_ema == -1)
+         {
+            int error = GetLastError();
+            if(i == 0) // Solo log en el primer intento
+               Print("⚠️ BarsCalculated error for ", m_symbol, " - RSI: ", bars_rsi, " ATR: ", bars_atr, " EMA: ", bars_ema, " Error: ", error);
+
+            Sleep(100);
+            continue; // Retry
+         }
+
+         // Verificar suficientes barras calculadas
          if(bars_rsi >= 2 && bars_atr >= 14 && bars_ema >= 2)
             break; // All good
-            
-         Sleep(100); 
+
+         Sleep(100);
       }
-      
+
+      // Verificar resultados después del loop
+      if(bars_rsi == -1)
+      {
+         Print("❌ CRITICAL | ", m_symbol, " | RSI indicator handle invalid or broken");
+         return false;
+      }
+      if(bars_atr == -1)
+      {
+         Print("❌ CRITICAL | ", m_symbol, " | ATR indicator handle invalid or broken");
+         return false;
+      }
+      if(bars_ema == -1)
+      {
+         Print("❌ CRITICAL | ", m_symbol, " | EMA indicator handle invalid or broken");
+         return false;
+      }
+
       if(bars_rsi < 2)
       {
          Print("⏳ WAITING | ", m_symbol, " | RSI calculating... (", bars_rsi, " bars ready) Error: ", GetLastError());

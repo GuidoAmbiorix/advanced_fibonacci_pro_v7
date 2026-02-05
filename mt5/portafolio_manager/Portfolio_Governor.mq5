@@ -568,6 +568,21 @@ void OnTimer()
       }
    }
 
+   // 3.5. SOLUCIÓN DE RAÍZ: Llamar OnTimer() de cada engine para retención de datos
+   // Se ejecuta cada 90 segundos desde EventSetTimer(90) en el wrapper
+   static datetime lastTimerCall = 0;
+   if(TimeCurrent() - lastTimerCall >= 90) // Cada 90 segundos
+   {
+      for(int i=0; i<totalEngines; i++)
+      {
+         if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
+         {
+            g_engines[i].OnTimer(); // Mantiene datos del símbolo activos
+         }
+      }
+      lastTimerCall = TimeCurrent();
+   }
+
    // 4. Risk Parity Optimization
    g_optimizer.BalanceRiskContributions(g_activeSymbols);
 
