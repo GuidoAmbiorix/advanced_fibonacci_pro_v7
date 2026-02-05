@@ -1563,9 +1563,20 @@ private:
       ResetLastError();
       double test[1];
       
+      
+      // CHECK RSI
       if(CopyBuffer(m_hRSI, 0, 0, 1, test) <= 0)
       {
          int err = GetLastError();
+         // Temporary retry for "Data Not Found" or transient errors
+         if(err == 4806 || err == 4807) 
+         {
+             Sleep(500); // Wait 500ms
+             ResetLastError();
+             if(CopyBuffer(m_hRSI, 0, 0, 1, test) > 0) return true; // Recovered
+             err = GetLastError(); // Update error
+         }
+         
          if(err == 4807 || err == 0) // 4807 = invalid handle, 0 = no data
          {
             Print("⚠️ RSI handle invalidated, error: ", err);
@@ -1573,9 +1584,18 @@ private:
          }
       }
       
+      // CHECK ATR
       if(CopyBuffer(m_hATR, 0, 0, 1, test) <= 0)
       {
          int err = GetLastError();
+         if(err == 4806 || err == 4807)
+         {
+             Sleep(500);
+             ResetLastError();
+             if(CopyBuffer(m_hATR, 0, 0, 1, test) > 0) return true;
+             err = GetLastError();
+         }
+
          if(err == 4807 || err == 0)
          {
             Print("⚠️ ATR handle invalidated, error: ", err);
@@ -1583,9 +1603,18 @@ private:
          }
       }
       
+      // CHECK EMA
       if(CopyBuffer(m_hEMA, 0, 0, 1, test) <= 0)
       {
          int err = GetLastError();
+         if(err == 4806 || err == 4807)
+         {
+             Sleep(500);
+             ResetLastError();
+             if(CopyBuffer(m_hEMA, 0, 0, 1, test) > 0) return true;
+             err = GetLastError();
+         }
+
          if(err == 4807 || err == 0)
          {
             Print("⚠️ EMA handle invalidated, error: ", err);
@@ -1594,6 +1623,7 @@ private:
       }
       
       return true;
+
    }
    
    bool RecoverIndicators()
@@ -2191,8 +2221,9 @@ private:
          return false;
       }
 
-      // ENHANCED: Increased retry count from 20 to 50
-      int maxRetries = 50;
+      // ENHANCED: Reduced retry count from 50 to 3 to prevent blocking
+      // Let the wrapper handle long-term failures via "retry next tick"
+      int maxRetries = 3;
       int bars_rsi = -1, bars_atr = -1, bars_ema = -1;
 
       for(int i=0; i<maxRetries; i++)
@@ -2251,54 +2282,12 @@ private:
             Sleep(2000);
       }
 
-      // After retry loop completes, if still failed, DON'T mark permanent here
-      // Let the recovery system handle it through RecordRecoveryFailure()
-      // which properly tracks recovery attempts, not individual check failures
-
-      // SOLUCIÓN DE RAÍZ: Si hay handles corruptos (-1), intentar recovery selectivo
+      // After retry loop completes, if still failed, just return false
+      // The Enhanced wrapper will track consecutive failures and trigger recovery if needed
       if(bars_rsi == -1 || bars_atr == -1 || bars_ema == -1)
       {
-         Print("⚠️ DETECTED CORRUPTED HANDLES for ", m_symbol, " - RSI:", bars_rsi, " ATR:", bars_atr, " EMA:", bars_ema);
-
-         // Intentar recovery quirúrgico (solo recrea los corruptos)
-         if(RecoverBrokenIndicators())
-         {
-            Print("✅ Broken indicators recovered, retrying update...");
-
-            // Wait 2 seconds after recovery for indicators to stabilize
-            Sleep(2000);
-
-            // Reintentar verificación después de recovery
-            bars_rsi = BarsCalculated(m_hRSI);
-            if(!skipATR) bars_atr = BarsCalculated(m_hATR);
-            else bars_atr = 14;  // If ATR permanently failed, assume valid
-            bars_ema = BarsCalculated(m_hEMA);
-
-            // Si siguen corruptos después de recovery (critical indicators only)
-            if(bars_rsi == -1)
-            {
-               Print("❌ CRITICAL | ", m_symbol, " | RSI still broken after recovery");
-               return false;
-            }
-            if(bars_atr == -1 && !skipATR)
-            {
-               Print("❌ WARNING | ", m_symbol, " | ATR still broken after recovery (will retry)");
-               // Don't return false if trading without ATR is allowed
-               // Recovery system will handle permanent failure through RecordRecoveryFailure()
-            }
-            if(bars_ema == -1)
-            {
-               Print("❌ CRITICAL | ", m_symbol, " | EMA still broken after recovery");
-               return false;
-            }
-
-            Print("✅ All indicators recovered successfully (or using fallback)");
-         }
-         else
-         {
-            Print("❌ Surgical recovery failed");
-            return false;
-         }
+         Print("⚠️ RSI/ATR/EMA data unavailable after 3 retries (Transient Error)");
+         return false; 
       }
 
       if(bars_rsi < 2)
