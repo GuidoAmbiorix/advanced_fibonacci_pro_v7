@@ -285,6 +285,7 @@ public:
    bool m_indicatorsHealthy;
    datetime m_lastRecoveryTime;
    int m_recoveryAttempts;
+   int m_consecutiveDataFailures;  // Track temporary 4807/4806 errors before triggering recovery
 
    // State Variables
    long     m_helperChartId; // Helper Chart ID for data persistence
@@ -492,6 +493,7 @@ public:
       m_indicatorsHealthy = false;
       m_lastRecoveryTime = 0;
       m_recoveryAttempts = 0;
+      m_consecutiveDataFailures = 0;  // Initialize error counter
       m_helperChartId = 0;
 
       // Intra-Bar Init
@@ -1450,6 +1452,7 @@ private:
       {
          Print("✅ INDICATOR RECOVERY SUCCESSFUL for ", m_symbol);
          m_recoveryAttempts = 0;
+         m_consecutiveDataFailures = 0;  // Reset error counter after successful recovery
          return true;
       }
       else
@@ -1482,24 +1485,39 @@ private:
             return false;
          }
       }
-      
+
       // Ahora intentar actualización normal
-      if(UpdateIndicatorsStandard()) 
+      if(UpdateIndicatorsStandard())
       {
          m_indicatorsHealthy = true;
+         m_consecutiveDataFailures = 0; // Reset counter on success
          return true;
       }
-      
+
       // Si la actualización normal falla, verificar el error
       int lastError = GetLastError();
-      
-      // Verificar si los indicadores están fundamentalmente rotos
-      if(lastError == 4807 || !AreIndicatorsHealthy())
+
+      // FIX: Error 4807/4806 es NORMAL en multi-símbolo (datos temporalmente no disponibles)
+      // NO marcar unhealthy inmediatamente - solo esperar siguiente tick
+      if(lastError == 4807 || lastError == 4806)
       {
-         Print("⚠️ Indicators unhealthy after update (Error ", lastError, "). Attempting recovery...");
-         
+         m_consecutiveDataFailures++;
+
+         // Tolerar hasta 10 fallos consecutivos antes de entrar en recovery mode
+         if(m_consecutiveDataFailures < 10)
+         {
+            // Solo log cada 5 fallos para no spam
+            if(m_consecutiveDataFailures % 5 == 1)
+               Print("⏳ Data temporarily unavailable (4807/4806) - retry #", m_consecutiveDataFailures, "/10");
+            return false; // Retry next tick - NO marcar unhealthy
+         }
+
+         // Después de 10 fallos, intentar recovery UNA vez
+         Print("⚠️ Persistent data unavailability (", m_consecutiveDataFailures, " failures). Attempting recovery...");
+
          if(RecoverIndicators())
          {
+            m_consecutiveDataFailures = 0;
             // Intentar de nuevo después de la recuperación
             if(UpdateIndicatorsStandard())
             {
@@ -1508,8 +1526,22 @@ private:
             }
          }
       }
-      
-      // Si llegamos aquí, la recuperación falló o el error no fue 4807
+      // Error distinto a 4807/4806 - verificar handles
+      else if(!AreIndicatorsHealthy())
+      {
+         Print("⚠️ Indicator handles invalid (Error ", lastError, "). Attempting recovery...");
+
+         if(RecoverIndicators())
+         {
+            if(UpdateIndicatorsStandard())
+            {
+               Print("✅ Update successful after recovery");
+               return true;
+            }
+         }
+      }
+
+      // Si llegamos aquí, la recuperación falló
       m_indicatorsHealthy = false;
       return false;
    }
