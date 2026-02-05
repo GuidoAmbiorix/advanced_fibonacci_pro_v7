@@ -1134,13 +1134,11 @@ public:
       // Manage positions every tick for stop/TP updates
       ManagePositions();
 
-      // RESTORED: Bar-based processing to reduce indicator checks from ~300/bar to 1/bar
-      if(!IsNewBar())
+      // BAR LOGGING: Keep the notification but don't block intra-bar execution
+      if(IsNewBar())
       {
-         return;  // Skip indicator updates until new bar
+         Print("🔔 NEW BAR | ", m_symbol, " | Time: ", TimeToString(TimeCurrent(), TIME_SECONDS));
       }
-
-      Print("🔔 NEW BAR | ", m_symbol, " | Time: ", TimeToString(TimeCurrent(), TIME_SECONDS));
       
       // (Removed legacy pre-tick recovery check to avoid race conditions)
       
