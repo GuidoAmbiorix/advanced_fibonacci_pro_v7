@@ -211,6 +211,9 @@ CMacroWindows     macroWindows;
 CPowerOf3         powerOf3;
 CWyckoff          wyckoff;
 
+// Forward Declaration
+double CalculateConfluenceScore(int direction);
+
 // SMC MODULE OBJECTS
 CSMCStructureBreak  smcStructure;
 CSMCOrderBlocks     smcOrderBlocks;
