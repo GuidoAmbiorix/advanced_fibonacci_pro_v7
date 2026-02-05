@@ -1201,7 +1201,7 @@ private:
          }
          Sleep(300); // Aumentado de 200 a 300ms
 
-         m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14);
+         m_hATR = iATR(m_symbol, PERIOD_CURRENT, m_params.ATR_Period);
          if(m_hATR == INVALID_HANDLE)
          {
             Print("   ❌ Failed to create ATR handle");
@@ -1572,7 +1572,108 @@ private:
          return false;
       }
    }
-   
+
+   //+------------------------------------------------------------------+
+   //| SOLUCIÓN QUIRÚRGICA: Recrear SOLO los indicadores corruptos     |
+   //| Sin tocar los que funcionan correctamente                        |
+   //+------------------------------------------------------------------+
+   bool RecoverBrokenIndicators()
+   {
+      Print("🔧 SURGICAL RECOVERY: Checking which indicators need recreation for ", m_symbol);
+
+      bool anyRecovered = false;
+
+      // Check RSI
+      int bars_rsi = BarsCalculated(m_hRSI);
+      if(bars_rsi == -1)
+      {
+         Print("   🔄 Recreating broken RSI handle...");
+         if(m_hRSI != INVALID_HANDLE) IndicatorRelease(m_hRSI);
+         m_hRSI = iRSI(m_symbol, PERIOD_CURRENT, m_params.RSI_Period, PRICE_CLOSE);
+         Sleep(300);
+
+         if(BarsCalculated(m_hRSI) > 0)
+         {
+            Print("   ✅ RSI recovered");
+            anyRecovered = true;
+         }
+         else
+            Print("   ❌ RSI recovery failed");
+      }
+
+      // Check ATR
+      int bars_atr = BarsCalculated(m_hATR);
+      if(bars_atr == -1)
+      {
+         Print("   🔄 Recreating broken ATR handle...");
+         if(m_hATR != INVALID_HANDLE) IndicatorRelease(m_hATR);
+         m_hATR = iATR(m_symbol, PERIOD_CURRENT, m_params.ATR_Period);
+         Sleep(300);
+
+         // Esperar a que se calcule con timeout
+         int timeout = 0;
+         while(timeout < 10) // 10 segundos max
+         {
+            int calc = BarsCalculated(m_hATR);
+            if(calc > 0)
+            {
+               Print("   ✅ ATR recovered (", calc, " bars calculated)");
+               anyRecovered = true;
+               break;
+            }
+            Sleep(1000);
+            timeout++;
+         }
+
+         if(timeout >= 10)
+            Print("   ❌ ATR recovery timeout");
+      }
+
+      // Check EMA
+      int bars_ema = BarsCalculated(m_hEMA);
+      if(bars_ema == -1)
+      {
+         Print("   🔄 Recreating broken EMA handle...");
+         if(m_hEMA != INVALID_HANDLE) IndicatorRelease(m_hEMA);
+         m_hEMA = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA_Period, 0, MODE_EMA, PRICE_CLOSE);
+         Sleep(300);
+
+         if(BarsCalculated(m_hEMA) > 0)
+         {
+            Print("   ✅ EMA recovered");
+            anyRecovered = true;
+         }
+         else
+            Print("   ❌ EMA recovery failed");
+      }
+
+      // Check EMA50/100 if reversal filter enabled
+      if(m_params.UseReversalFilter)
+      {
+         int bars_ema50 = BarsCalculated(m_hEMA50);
+         if(bars_ema50 == -1)
+         {
+            Print("   🔄 Recreating broken EMA50 handle...");
+            if(m_hEMA50 != INVALID_HANDLE) IndicatorRelease(m_hEMA50);
+            m_hEMA50 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA50_Period, 0, MODE_EMA, PRICE_CLOSE);
+            Sleep(300);
+            anyRecovered = true;
+         }
+
+         int bars_ema100 = BarsCalculated(m_hEMA100);
+         if(bars_ema100 == -1)
+         {
+            Print("   🔄 Recreating broken EMA100 handle...");
+            if(m_hEMA100 != INVALID_HANDLE) IndicatorRelease(m_hEMA100);
+            m_hEMA100 = iMA(m_symbol, PERIOD_CURRENT, m_params.EMA100_Period, 0, MODE_EMA, PRICE_CLOSE);
+            Sleep(300);
+            anyRecovered = true;
+         }
+      }
+
+      return anyRecovered;
+   }
+
    bool UpdateIndicatorsEnhanced()
    {
       // PRIMERO: Verificar salud de indicadores ANTES de intentar actualizar
@@ -1686,21 +1787,45 @@ private:
          Sleep(100);
       }
 
-      // Verificar resultados después del loop
-      if(bars_rsi == -1)
+      // SOLUCIÓN DE RAÍZ: Si hay handles corruptos (-1), intentar recovery selectivo
+      if(bars_rsi == -1 || bars_atr == -1 || bars_ema == -1)
       {
-         Print("❌ CRITICAL | ", m_symbol, " | RSI indicator handle invalid or broken");
-         return false;
-      }
-      if(bars_atr == -1)
-      {
-         Print("❌ CRITICAL | ", m_symbol, " | ATR indicator handle invalid or broken");
-         return false;
-      }
-      if(bars_ema == -1)
-      {
-         Print("❌ CRITICAL | ", m_symbol, " | EMA indicator handle invalid or broken");
-         return false;
+         Print("⚠️ DETECTED CORRUPTED HANDLES for ", m_symbol, " - RSI:", bars_rsi, " ATR:", bars_atr, " EMA:", bars_ema);
+
+         // Intentar recovery quirúrgico (solo recrea los corruptos)
+         if(RecoverBrokenIndicators())
+         {
+            Print("✅ Broken indicators recovered, retrying update...");
+
+            // Reintentar verificación después de recovery
+            bars_rsi = BarsCalculated(m_hRSI);
+            bars_atr = BarsCalculated(m_hATR);
+            bars_ema = BarsCalculated(m_hEMA);
+
+            // Si siguen corruptos después de recovery, entonces sí es crítico
+            if(bars_rsi == -1)
+            {
+               Print("❌ CRITICAL | ", m_symbol, " | RSI still broken after recovery");
+               return false;
+            }
+            if(bars_atr == -1)
+            {
+               Print("❌ CRITICAL | ", m_symbol, " | ATR still broken after recovery");
+               return false;
+            }
+            if(bars_ema == -1)
+            {
+               Print("❌ CRITICAL | ", m_symbol, " | EMA still broken after recovery");
+               return false;
+            }
+
+            Print("✅ All indicators recovered successfully");
+         }
+         else
+         {
+            Print("❌ Surgical recovery failed");
+            return false;
+         }
       }
 
       if(bars_rsi < 2)
