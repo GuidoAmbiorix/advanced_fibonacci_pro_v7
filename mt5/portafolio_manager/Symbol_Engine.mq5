@@ -1543,6 +1543,14 @@ double CalculateConfluenceScore(int direction)
    double score = 0;
    double currentPrice = symbolInfo.Bid();
 
+   // DEBUG: Print indicator values
+   static datetime lastDebug = 0;
+   if(TimeCurrent() - lastDebug > 300) // Print every 5 minutes
+   {
+      Print("DEBUG Indicators: EMA=", g_EMA, " ATR=", g_ATR, " RSI=", g_RSI, " Price=", currentPrice);
+      lastDebug = TimeCurrent();
+   }
+
    // ============ 1. CORE SMC & PRICE ACTION (~7.0 pts) ============
 
    // Trend (EMA 200 + Slope) - 1.0 point
@@ -1691,6 +1699,14 @@ double CalculateConfluenceScore(int direction)
    // Volatile Regime: -20%
    if(g_currentRegime == REGIME_VOLATILE) score *= 0.8;
 
+   // DEBUG: Print final score
+   static datetime lastScoreDebug = 0;
+   if(TimeCurrent() - lastScoreDebug > 300) // Print every 5 minutes
+   {
+      Print("DEBUG Score [", (direction == 1 ? "BUY" : "SELL"), "]: ", DoubleToString(score, 2), "/30");
+      lastScoreDebug = TimeCurrent();
+   }
+
    return score;  // Max possible: ~30 points
 }
 
@@ -1722,15 +1738,35 @@ bool UpdateIndicators()
 {
    double bufRSI[2], bufATR[1], bufEMA[2];
 
-   if(CopyBuffer(hRSI, 0, 1, 2, bufRSI) != 2) return false;
-   if(CopyBuffer(hATR, 0, 1, 1, bufATR) != 1) return false;
-   if(CopyBuffer(hEMA, 0, 1, 2, bufEMA) != 2) return false;
+   if(CopyBuffer(hRSI, 0, 1, 2, bufRSI) != 2)
+   {
+      Print("ERROR: Failed to copy RSI buffer");
+      return false;
+   }
+   if(CopyBuffer(hATR, 0, 1, 1, bufATR) != 1)
+   {
+      Print("ERROR: Failed to copy ATR buffer");
+      return false;
+   }
+   if(CopyBuffer(hEMA, 0, 1, 2, bufEMA) != 2)
+   {
+      Print("ERROR: Failed to copy EMA buffer");
+      return false;
+   }
 
    g_RSI_Prev = bufRSI[0];
    g_RSI = bufRSI[1];
    g_ATR = bufATR[0];
    g_EMA_Prev = bufEMA[0];
    g_EMA = bufEMA[1];
+
+   // DEBUG: Print updated values
+   static datetime lastIndicatorDebug = 0;
+   if(TimeCurrent() - lastIndicatorDebug > 300) // Print every 5 minutes
+   {
+      Print("DEBUG UpdateIndicators: RSI=", g_RSI, " ATR=", g_ATR, " EMA=", g_EMA);
+      lastIndicatorDebug = TimeCurrent();
+   }
 
    // Update reversal filter EMAs
    if(InpUseReversalFilter)
