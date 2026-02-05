@@ -965,7 +965,7 @@ void OnTick()
           // STRICTER ENTRY THRESHOLD: M15 ENHANCED SYSTEM
           // ELITE >= 14.0, STRONG >= 12.0, GOOD >= 10.0
           // Minimum entry is GOOD (10.0), but with institutional footprint check for scores < 16.0
-          double minEntry = 10.0;  // GOOD Tier
+          double minEntry = InpMinConfluenceEntry;  // User defined threshold
 
           if(buyScore >= minEntry && (InpDirection == 0 || InpDirection == 1))
           {
@@ -1561,11 +1561,17 @@ double CalculateConfluenceScore(int direction)
 
    // ============ 1. CORE SMC & PRICE ACTION (~7.0 pts) ============
 
-   // Trend (EMA 200 + Slope) - 1.0 point
+   // Trend (EMA 200 + Slope) - 2.5 points (Boosted from 1.0)
    double emaSlope = g_EMA - g_EMA_Prev;
    bool slopeStrong = MathAbs(emaSlope) >= (g_ATR * InpEMA_MinSlope);
-   if(direction == 1 && currentPrice > g_EMA && emaSlope > 0 && slopeStrong) score += 1.0;
-   if(direction == -1 && currentPrice < g_EMA && emaSlope < 0 && slopeStrong) score += 1.0;
+   
+   // 1. Price Alignment (1.5 pts)
+   if(direction == 1 && currentPrice > g_EMA) score += 1.5;
+   if(direction == -1 && currentPrice < g_EMA) score += 1.5;
+   
+   // 2. Slope Alignment (1.0 pt)
+   if(direction == 1 && emaSlope > 0) score += 1.0;
+   if(direction == -1 && emaSlope < 0) score += 1.0;
 
    // Market Structure - 1.0 point
    // M15 Adaptation: Check for valid structure
@@ -1579,32 +1585,32 @@ double CalculateConfluenceScore(int direction)
    
    bool validStructure = (structRange >= g_ATR * 2.0); // Keep 2.0 ATR filter
    
-   if(direction == 1 && lowestBar < highestBar && validStructure) score += 1.0;
-   if(direction == -1 && highestBar < lowestBar && validStructure) score += 1.0;
+   if(direction == 1 && lowestBar < highestBar && validStructure) score += 2.0;
+   if(direction == -1 && highestBar < lowestBar && validStructure) score += 2.0;
 
    // RSI Extremes (Regime Aware) - 1.0 point
    if(g_currentRegime == REGIME_TREND)
    {
       // In trend, look for pullbacks
-      if(direction == 1 && g_RSI < 50 && g_RSI > 30) score += 1.0;
-      if(direction == -1 && g_RSI > 50 && g_RSI < 70) score += 1.0;
+      if(direction == 1 && g_RSI < 50 && g_RSI > 30) score += 1.5;
+      if(direction == -1 && g_RSI > 50 && g_RSI < 70) score += 1.5;
    }
    else
    {
       // In range, look for extremes
-      if(direction == 1 && g_RSI <= InpRSI_Oversold) score += 1.0;
-      if(direction == -1 && g_RSI >= InpRSI_Overbought) score += 1.0;
+      if(direction == 1 && g_RSI <= InpRSI_Oversold) score += 1.5;
+      if(direction == -1 && g_RSI >= InpRSI_Overbought) score += 1.5;
    }
 
-   // RSI Momentum - 0.5 point
+   // RSI Momentum - 1.0 point
    if(InpRSI_Momentum)
    {
-      if(direction == 1 && g_RSI > g_RSI_Prev) score += 0.5;
-      if(direction == -1 && g_RSI < g_RSI_Prev) score += 0.5;
+      if(direction == 1 && g_RSI > g_RSI_Prev) score += 1.0;
+      if(direction == -1 && g_RSI < g_RSI_Prev) score += 1.0;
    }
 
-   // Displacement - 1.0 point
-   if(CheckDisplacement(direction)) score += 1.0;
+   // Displacement - 1.5 point
+   if(CheckDisplacement(direction)) score += 1.5;
 
    // Volatility - 1.5 pts
    // FIX: Validate both ATR and ATR_MA before division
@@ -1624,19 +1630,19 @@ double CalculateConfluenceScore(int direction)
    {
        // Basic SMC
        score += smcStructure.GetConfluenceScore(direction);  // ~1.0
-       score += smcOrderBlocks.GetConfluenceScore(direction); // ~1.5
+       score += smcOrderBlocks.GetConfluenceScore(direction) * 1.5; // ~2.25 (Boosted multiplier)
        score += smcFVG.GetConfluenceScore(direction);         // ~1.0
-       score += smcLiquidity.GetConfluenceScore(direction);   // ~1.5
+       score += smcLiquidity.GetConfluenceScore(direction) * 1.5;   // ~2.25 (Boosted multiplier)
        
        // Advanced ICT
-       // Breaker Blocks (~2.0)
-       score += breakerBlocks.GetBreakerScore(direction) * 4.0; // Scale 0.5 -> 2.0
+       // Breaker Blocks (~2.0) - Fix: Pass ATR
+       score += breakerBlocks.GetBreakerScore(direction, g_ATR) * 4.0; // Scale 0.5 -> 2.0
        
        // Macro Windows (~1.5)
        score += macroWindows.GetMacroScore() * 3.0; // Scale 0.5 -> 1.5
        
-       // Power of 3 (~2.0)
-       score += powerOf3.GetPhaseScore() * 4.0; // Scale 0.5 -> 2.0
+       // Power of 3 (~2.0) - Fix: Pass ATR
+       score += powerOf3.GetPhaseScore(g_ATR) * 4.0; // Scale 0.5 -> 2.0
    }
 
    // ============ 3. ADVANCED CONFLUENCE (~16.0 pts) ============
@@ -1653,8 +1659,8 @@ double CalculateConfluenceScore(int direction)
    double divergenceScore = divergence.GetDivergenceScore(direction, hRSI);
    score += divergenceScore;
 
-   // Wyckoff (~1.5 pts)
-   score += wyckoff.GetWyckoffScore(direction) * 3.0; // Scale 0.5 -> 1.5
+   // Wyckoff (~1.5 pts) - Fix: Pass ATR
+   score += wyckoff.GetWyckoffScore(direction, g_ATR) * 3.0; // Scale 0.5 -> 1.5
 
    // Fib Zone (~1.5 pts)
    if(highestBar >= 0 && lowestBar >= 0)
@@ -1702,7 +1708,7 @@ double CalculateConfluenceScore(int direction)
            // FIX: Use cached divergenceScore to avoid duplicate calculation
            if(divergenceScore < 0.5)
            {
-               score -= 5.0; // Heavy penalty
+               score -= 2.0; // Reduced penalty (was 5.0)
                // FIX: Floor cap to prevent negative scores
                if(score < 0) score = 0;
            }
