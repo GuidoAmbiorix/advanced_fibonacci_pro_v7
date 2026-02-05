@@ -1607,7 +1607,10 @@ double CalculateConfluenceScore(int direction)
    if(CheckDisplacement(direction)) score += 1.0;
 
    // Volatility - 1.5 pts
-   double atrRatio = (g_ATR_MA > 0) ? g_ATR / g_ATR_MA : 1.0;
+   // FIX: Validate both ATR and ATR_MA before division
+   double atrRatio = 1.0;
+   if(g_ATR > 0 && g_ATR_MA > 0)
+      atrRatio = g_ATR / g_ATR_MA;
    if(atrRatio >= 0.8 && atrRatio <= 1.3) score += 1.5;
 
    // Chop Filter - 1.0 pt
@@ -1646,8 +1649,9 @@ double CalculateConfluenceScore(int direction)
       score += mtfAnalysis.GetConfluenceScore(direction);
 
    // Divergence (~1.5 pts)
-   // FIX: Pass hRSI handle
-   score += divergence.GetDivergenceScore(direction, hRSI);
+   // FIX: Pass hRSI handle + cache result to avoid duplicate calculation
+   double divergenceScore = divergence.GetDivergenceScore(direction, hRSI);
+   score += divergenceScore;
 
    // Wyckoff (~1.5 pts)
    score += wyckoff.GetWyckoffScore(direction) * 3.0; // Scale 0.5 -> 1.5
@@ -1690,22 +1694,24 @@ double CalculateConfluenceScore(int direction)
    {
        bool emaAlignment = (direction == 1) ? (currentPrice < g_EMA50 && g_EMA50 < g_EMA100)
                                             : (currentPrice > g_EMA50 && g_EMA50 > g_EMA100);
-                                            
+
        if(emaAlignment)
        {
            // M15 Specific: Trend reversals are common but risky.
            // Penalize heavily if no divergence
-           // FIX: Pass hRSI handle
-           if(divergence.GetDivergenceScore(direction, hRSI) < 0.5)
+           // FIX: Use cached divergenceScore to avoid duplicate calculation
+           if(divergenceScore < 0.5)
            {
                score -= 5.0; // Heavy penalty
+               // FIX: Floor cap to prevent negative scores
+               if(score < 0) score = 0;
            }
        }
    }
 
    // Context Multipliers
-   // Volatile Regime: -20%
-   if(g_currentRegime == REGIME_VOLATILE) score *= 0.8;
+   // FIX: Removed volatile regime multiplier - was applied too late and caused
+   // borderline scores (10-12) to fail entry threshold unexpectedly
 
    // DEBUG: Print final score
    static datetime lastScoreDebug = 0;

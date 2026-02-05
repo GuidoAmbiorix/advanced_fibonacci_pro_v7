@@ -154,10 +154,16 @@ public:
          analysis.emaValue = emaBuf[1];
          analysis.emaSlope = emaBuf[1] - emaBuf[0];
       }
+      else
+      {
+         // FIX: Initialize to safe defaults if CopyBuffer fails
+         analysis.emaValue = 0;
+         analysis.emaSlope = 0;
+      }
 
       // Get current price
       double currentPrice = iClose(m_symbol, tf, 0);
-      analysis.priceAboveEMA = currentPrice > analysis.emaValue;
+      analysis.priceAboveEMA = (analysis.emaValue > 0) ? (currentPrice > analysis.emaValue) : false;
 
       // Get RSI
       double rsiBuf[1];
@@ -170,15 +176,21 @@ public:
          analysis.atr = atrBuf[0];
 
       // Calculate ATR MA for trend detection
+      // FIX: Track successful reads to avoid division by zero
       double atrSum = 0;
+      int successfulReads = 0;
       for(int i = 1; i <= 20; i++)
       {
          double ab[1];
          if(CopyBuffer(handleATR, 0, i, 1, ab) == 1)
+         {
             atrSum += ab[0];
+            successfulReads++;
+         }
       }
-      double atrMa = atrSum / 20.0;
-      analysis.isTrending = (analysis.atr > atrMa * 1.1);
+      // FIX: Only calculate if we have enough data, otherwise use fallback
+      double atrMa = (successfulReads >= 10) ? (atrSum / successfulReads) : analysis.atr;
+      analysis.isTrending = (atrMa > 0) ? (analysis.atr > atrMa * 1.1) : false;
 
       // Determine swing bias (HH/HL vs LH/LL)
       analysis.swingBias = CalculateSwingBias(tf);
