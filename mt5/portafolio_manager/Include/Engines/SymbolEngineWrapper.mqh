@@ -1201,7 +1201,7 @@ private:
          }
          Sleep(300); // Aumentado de 200 a 300ms
 
-         m_hATR = iATR(m_symbol, PERIOD_CURRENT, m_params.ATR_Period);
+         m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14); // Standard ATR period
          if(m_hATR == INVALID_HANDLE)
          {
             Print("   ❌ Failed to create ATR handle");
@@ -1607,7 +1607,7 @@ private:
       {
          Print("   🔄 Recreating broken ATR handle...");
          if(m_hATR != INVALID_HANDLE) IndicatorRelease(m_hATR);
-         m_hATR = iATR(m_symbol, PERIOD_CURRENT, m_params.ATR_Period);
+         m_hATR = iATR(m_symbol, PERIOD_CURRENT, 14); // Standard ATR period
          Sleep(300);
 
          // Esperar a que se calcule con timeout
