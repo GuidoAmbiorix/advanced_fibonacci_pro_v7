@@ -21,8 +21,10 @@ db = get_db_manager()
 # Sidebar
 st.sidebar.title("🧠 Governor v3.0")
 st.sidebar.markdown(f"**DB Status:** {'🟢 Connected' if db.get_connection() else '🔴 Not Found'}")
+st.sidebar.markdown(f"**DB Path:** `{db.db_path}`")
 if st.sidebar.button("🔄 Refresh Data"):
     st.cache_data.clear()
+    st.rerun()
 
 st.sidebar.markdown("---")
 page = st.sidebar.radio("Navigation", ["Dashboard", "Configuration", "Optimization", "Trade Logs", "System Health"])
@@ -89,6 +91,7 @@ elif page == "Optimization":
                     st.success(msg)
                     # creating a clear state so the user can run optimization again if needed
                     del st.session_state['opt_results']
+                    st.session_state['force_reload_config'] = True # Force config editor to reload
                     time.sleep(1)
                     st.rerun()
                 else:
@@ -103,13 +106,22 @@ elif page == "Configuration":
     st.title("⚙️ Symbol Configuration")
     st.markdown("View and Edit Symbol Parameters stored in SQLite.")
     
+# Initialize editor validation state
+    if 'editor_key' not in st.session_state:
+        st.session_state['editor_key'] = 0
+
     df = db.load_configs()
     if not df.empty:
+        # Check for reload flag which might be set by Optimizer
+        if 'force_reload_config' in st.session_state:
+            st.session_state['editor_key'] += 1
+            del st.session_state['force_reload_config']
+
         edited_df = st.data_editor(
             df, 
             num_rows="dynamic", 
             use_container_width=True,
-            key="symbol_config_editor"
+            key=f"symbol_config_editor_{st.session_state['editor_key']}"
         )
         
         if st.button("💾 Save Configurations"):
