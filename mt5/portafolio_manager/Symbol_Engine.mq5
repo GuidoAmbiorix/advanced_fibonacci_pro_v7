@@ -2074,7 +2074,7 @@ void UpdateDashboard()
    txt += "-------------------------------------------\n";
    txt += "BUY Score: " + DoubleToString(buyS, 1) + "/30\n";
    txt += "SELL Score: " + DoubleToString(sellS, 1) + "/30\n";
-   txt += "Entry Min: 10.0/30 (Good) | 12.0 (Strong) | 14.0 (Elite)\n";
+   txt += "Entry Min: " + DoubleToString(InpMinConfluenceEntry, 1) + "/30 (Good) | " + DoubleToString(InpMinConfluenceEntry + 2.0, 1) + " (Strong) | " + DoubleToString(InpMinConfluenceEntry + 4.0, 1) + " (Elite)\n";
    txt += "-------------------------------------------\n";
 
    // TP Mode Info
