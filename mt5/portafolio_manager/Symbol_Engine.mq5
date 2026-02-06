@@ -2025,12 +2025,29 @@ void UpdateDashboard()
    // Check for blocks
    if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) tradingStatus = "NEWS BLOCKED";
    if(InpUseKelly && !kellySizer.IsTradingAllowed()) tradingStatus = "DD LIMIT";
+   if(InpUseKillzoneFilter && !CheckKillzone()) tradingStatus = "KILLZONE CLOSED";
+
+   string kzStatus = "DISABLED";
+   if(InpUseKillzoneFilter)
+   {
+       kzStatus = CheckKillzone() ? "OPEN " : "CLOSED ";
+       // Identify active KZ for display
+       datetime utcTime = TimeCurrent() - (InpBrokerUTCOffset * 3600);
+       MqlDateTime utcDt; TimeToStruct(utcTime, utcDt);
+       int estHour = (utcDt.hour - 5 + 24) % 24;
+       if(estHour >= 20 || estHour < 0) kzStatus += "[Asia]";
+       else if(estHour >= 2 && estHour < 5) kzStatus += "[LonOpen]";
+       else if(estHour >= 7 && estHour < 10) kzStatus += "[NY]";
+       else if(estHour >= 10 && estHour < 12) kzStatus += "[LonClose]";
+       else kzStatus += "[OFF]";
+   }
 
    string txt = "===========================================\n";
    txt += "  SYMBOL ENGINE v2.0: " + _Symbol + "\n";
    txt += "===========================================\n";
    txt += "Governor: " + govStatus + "\n";
    txt += "Trading: " + tradingStatus + "\n";
+   txt += "Killzone: " + kzStatus + "\n";
    txt += "-------------------------------------------\n";
    txt += "Price: " + DoubleToString(price, (int)symbolInfo.Digits()) + "\n";
    txt += "RSI: " + DoubleToString(g_RSI, 1) + "\n";
@@ -2234,7 +2251,9 @@ void LogHeartbeat()
    // 1. Logic Active Status
    bool tradingAllowed = true;
    
-   heartbeat += "   Status: " + (tradingAllowed ? "ACTIVE ✅" : "IDLE zzz") + " | Regime: " + IntegerToString((int)g_currentRegime) + "\n";
+   heartbeat += "   Status: " + (tradingAllowed ? "ACTIVE ✅" : "IDLE zzz") + " | Regime: " + IntegerToString((int)g_currentRegime);
+   if(InpUseKillzoneFilter) heartbeat += " | KZ: " + (CheckKillzone() ? "OPEN" : "CLOSED");
+   heartbeat += "\n";
    
    // 2. Confluence Scores
    heartbeat += "   Scores: BUY=" + DoubleToString(g_cachedBuyScore, 1) + "/30 | SELL=" + DoubleToString(g_cachedSellScore, 1) + "/30\n";
