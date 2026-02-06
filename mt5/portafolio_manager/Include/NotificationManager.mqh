@@ -63,6 +63,7 @@ private:
    string               GetSessionName(ENUM_TRADING_SESSION session);
    void                 SendSessionOpenAlert(ENUM_TRADING_SESSION session, double equity);
    void                 SendSessionCloseAlert(ENUM_TRADING_SESSION session, double equity);
+   void                 SendStartupAlert();
    
    string               FormatCurrency(double value);
 };
@@ -103,7 +104,10 @@ void CNotificationManager::Init(bool enable)
    m_currentSession = GetSessionForTime(TimeCurrent());
    
    if(m_enabled)
+   {
       Print("📱 NotificationManager Initialized | Session: ", GetSessionName(m_currentSession));
+      SendStartupAlert();
+   }
 }
 
 //+------------------------------------------------------------------+
@@ -117,7 +121,35 @@ void CNotificationManager::OnTick(double currentEquity, int activeTradesCount, s
    if(TimeCurrent() - m_lastCheckTime < 60) return;
    m_lastCheckTime = TimeCurrent();
    
+   // Periodic Log (Heartbeat) - Every 15 minutes
+   if(TimeCurrent() % 900 < 60) 
+   {
+       Print("💓 [GOV] Alive | Session: ", GetSessionName(m_currentSession), 
+             " | Eq: ", FormatCurrency(currentEquity), 
+             " | Trades: ", activeTradesCount);
+   }
+   
    CheckSessionTransition(currentEquity);
+}
+
+//+------------------------------------------------------------------+
+//| Send Startup Alert                                                |
+//+------------------------------------------------------------------+
+void CNotificationManager::SendStartupAlert()
+{
+   string title = "🚀 Portfolio Governor STARTED";
+   string body = "Session: " + GetSessionName(m_currentSession) + "\n";
+   body += "💰 Balance: " + FormatCurrency(m_account.Balance());
+   
+   if(!SendNotification(title + "\n" + body))
+   {
+       Print("❌ Push Notification FAILED (Error ", GetLastError(), ")");
+       Print("   >> Ensure MetaQuotes ID is set in Tools -> Options -> Notifications");
+   }
+   else
+   {
+       Print("✅ Startup Notification SENT");
+   }
 }
 
 //+------------------------------------------------------------------+
@@ -193,8 +225,14 @@ void CNotificationManager::SendSessionOpenAlert(ENUM_TRADING_SESSION session, do
    body += "📊 Eq: " + FormatCurrency(equity) + "\n";
    body += "🎯 Free Margin: " + FormatCurrency(m_account.FreeMargin());
    
-   SendNotification(title + "\n" + body);
-   Print(title);
+   if(!SendNotification(title + "\n" + body))
+   {
+       Print("❌ Push Notification FAILED (Error ", GetLastError(), ")");
+   }
+   else
+   {
+       Print(title);
+   }
 }
 
 //+------------------------------------------------------------------+
