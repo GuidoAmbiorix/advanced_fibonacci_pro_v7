@@ -855,32 +855,4 @@ string GetTopConfluencesString()
     return txt;
 }
 
-//+------------------------------------------------------------------+
-//| Sync Market Data for Python Optimizer                             |
-//+------------------------------------------------------------------+
-void SyncMarketData()
-{
-   Print("📥 Syncing Market Data for Optimization...");
-   
-   for(int i=0; i<ArraySize(g_monitoredSymbols); i++)
-   {
-       string sym = g_monitoredSymbols[i];
-       MqlRates rates[];
-       ArraySetAsSeries(rates, true);
-       
-       // Sync M5 - For High Frequency Optimization
-       int copied = CopyRates(sym, PERIOD_M5, 0, 1000, rates);
-       if(copied > 0)
-       {
-           dbManager.LogMarketData(rates, sym, PERIOD_M5);
-       }
-       
-       // Sync H1 - For Trend/Macro Context
-       copied = CopyRates(sym, PERIOD_H1, 0, 500, rates);
-       if(copied > 0)
-       {
-           dbManager.LogMarketData(rates, sym, PERIOD_H1);
-       }
-   }
-   Print("✅ Market Data Sync Complete.");
-}
+
