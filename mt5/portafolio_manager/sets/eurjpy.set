@@ -59,18 +59,18 @@ InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
 InpTPMode=2
-InpFixedTP_R=2.0
+InpFixedTP_R=2.5
 InpMinTP_R=1.0
-InpMaxTP_R=4.0
+InpMaxTP_R=3.5
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 InpTrailingMode=1
 InpPartialTP_R=1.2
 InpPartialClosePercent=45.0
-InpBE_Threshold_R=1.2
-InpTrailStart_R=1.8
-InpTrailATR_Mult=1.2
+InpBE_Threshold_R=0.8
+InpTrailStart_R=1.0
+InpTrailATR_Mult=0.8
 
 ; ====== SPREAD ======
 InpMaxSpreadPoints=50
