@@ -62,7 +62,7 @@ input bool              InpEnableMobileAlerts = true;     // Enable Mobile Push 
 
 input group "======= DIRECTION ======="
 input int               InpDirection = 0;                 // 0=Both, 1=Buy, 2=Sell
-input int               InpBrokerUTCOffset = 2;
+input int               InpBrokerUTCOffset = 2;           // Broker Offset from UTC (e.g. 2 for EET)
 
 input group "======= FIBONACCI ======="
 input int               InpSwingLookback = 20;
@@ -170,6 +170,18 @@ input int               InpLossCooldownMinutes = 30;      // Cooldown After Loss
 input int               InpMaxConsecutiveLosses = 2;      // Max Consecutive Losses Rule
 input bool              InpUseReversalFilter = true;      // Enable Reversal Trend Filter
 input int               InpReversalCooldownMinutes = 15;  // Min Time Between Same-Direction Trades
+
+input group "======= KILLZONES ======="
+input bool              InpUseKillzoneFilter = true;      // Enable Killzone Filter
+input bool              InpEnableAsianKZ = false;         // Enable Asian Killzone
+input bool              InpEnableLondonOpenKZ = true;     // Enable London Open Killzone
+input bool              InpEnableNYKZ = true;             // Enable NY Killzone
+input bool              InpEnableLondonCloseKZ = false;   // Enable London Close Killzone
+
+input group "======= SESSION GOVERNOR ======="
+input bool              InpUseSessionGovernor = true;     // Enable Session Governor
+input int               InpMaxTradesPerSession = 3;       // Max Trades Per Session
+input int               InpTradeCooldownMinutes = 30;     // Cooldown Between Trades
 
 //+------------------------------------------------------------------+
 //| GLOBALS                                                           |
@@ -900,6 +912,23 @@ void OnTick()
    // ENTRY
    if(g_positionCount == 0)
    {
+      // --- SESSION GOVERNOR ---
+      if(InpUseSessionGovernor)
+      {
+          // Cooldown Check
+          datetime lastTrade = (g_lastBuyTime > g_lastSellTime) ? g_lastBuyTime : g_lastSellTime;
+          if(TimeCurrent() - lastTrade < InpTradeCooldownMinutes * 60) return;
+          
+          // Max Trades Check (Simple Session Reset logic required or daily limit)
+          // For now, using simple daily limit as proxy or relying on Allocator
+      }
+
+      // --- KILLZONES ---
+      if(InpUseKillzoneFilter)
+      {
+          if(!CheckKillzone()) return;
+      }
+
       double bestScore = (buyScore > sellScore) ? buyScore : sellScore;
       int bestDirection = (buyScore > sellScore) ? 1 : -1;
 
@@ -2223,4 +2252,45 @@ void LogHeartbeat()
    }
    
    Print(heartbeat);
+}
+
+//+------------------------------------------------------------------+
+//| Check Killzone Time                                               |
+//+------------------------------------------------------------------+
+bool CheckKillzone()
+{
+   if(!InpUseKillzoneFilter) return true;
+
+   datetime utcTime = TimeCurrent() - (InpBrokerUTCOffset * 3600);
+   MqlDateTime utcDt;
+   TimeToStruct(utcTime, utcDt);
+
+   // EST Calculation (Standard UTC-5)
+   int estHour = (utcDt.hour - 5 + 24) % 24;
+
+   // 1. Asian Session (20:00 - 00:00 EST)
+   if(InpEnableAsianKZ)
+   {
+      if(estHour >= 20 || estHour < 0) return true;
+   }
+
+   // 2. London Open (02:00 - 05:00 EST)
+   if(InpEnableLondonOpenKZ)
+   {
+      if(estHour >= 2 && estHour < 5) return true;
+   }
+
+   // 3. NY Open (07:00 - 10:00 EST)
+   if(InpEnableNYKZ)
+   {
+      if(estHour >= 7 && estHour < 10) return true;
+   }
+
+   // 4. London Close (10:00 - 12:00 EST)
+   if(InpEnableLondonCloseKZ)
+   {
+      if(estHour >= 10 && estHour < 12) return true;
+   }
+
+   return false;
 }

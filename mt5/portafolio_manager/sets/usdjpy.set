@@ -9,10 +9,12 @@ InpMagicNumber=100003
 InpDirection=0
 InpBrokerUTCOffset=2
 
-; ====== KILLZONES (DISABLED FOR 24h) ======
-InpUseKillzoneFilter=false
-InpUseSymbolDefaults=false
-InpAutoDST=true
+; ====== KILLZONES ======
+InpUseKillzoneFilter=true
+InpEnableAsianKZ=true
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=true
+InpEnableLondonCloseKZ=false
 
 ; ====== FIBONACCI ======
 InpSwingLookback=12
@@ -107,7 +109,7 @@ InpEnableAdaptiveExits=true
 InpEnableAdaptiveFilters=true
 
 ; ====== SESSION GOVERNOR (DISABLED FOR 24h) ======
-InpUseSessionGovernor=false
+InpUseSessionGovernor=true
 InpMaxTradesPerSession=10
 InpTradeCooldownMinutes=30
 InpEnableSessionBlacklist=false
