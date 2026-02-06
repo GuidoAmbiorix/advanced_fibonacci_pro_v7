@@ -207,8 +207,17 @@ class PortfolioOptimizer:
                 if self.db.save_config(config):
                      # Verify
                      if self.db.verify_config_sync(symbol, params):
-                         print(f"✅ Verified: DB Updated for {symbol}")
+                         msg = f"✅ Verified: DB Updated for {symbol}"
+                         print(msg)
+                         return True, msg
                      else:
-                         print(f"❌ WARNING: Verification Failed for {symbol}")
+                         msg = f"❌ WARNING: Verification Failed for {symbol}. Values might not have persisted."
+                         print(msg)
+                         return False, msg
                 else:
-                    print(f"❌ Save Failed for {symbol}")
+                    msg = f"❌ Database Save Failed for {symbol}. Check logs/schema."
+                    print(msg)
+                    return False, msg
+            else:
+                return False, f"Symbol {symbol} not found in DB."
+        return False, "Could not load configs."

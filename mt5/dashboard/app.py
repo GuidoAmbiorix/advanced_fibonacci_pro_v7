@@ -84,12 +84,16 @@ elif page == "Optimization":
             st.info(f"Last Optimization for {res['symbol']}: {res['params']}")
             
             if st.button("💾 Apply Parameters to DB"):
-                optimizer.update_db(res['symbol'], res['params'])
-                st.success("Configuration Updated!")
-                # creating a clear state so the user can run optimization again if needed
-                del st.session_state['opt_results']
-                time.sleep(1)
-                st.rerun()
+                success, msg = optimizer.update_db(res['symbol'], res['params'])
+                if success:
+                    st.success(msg)
+                    # creating a clear state so the user can run optimization again if needed
+                    del st.session_state['opt_results']
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error(msg)
+                    st.warning("Ensure the Database Schema matches the Optimizer Config. You may need to delete the SQLite file to force a schema update.")
                     
         st.info("💡 Note: The Optimizer uses recent history stored in 'MarketData'. Ensure you have run the EA to populate this data.")
     else:
