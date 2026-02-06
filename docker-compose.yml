@@ -74,12 +74,12 @@ services:
 #         reservations:
 #           memory: 256M
 
-# volumes:
-#   mt5_config_v2:
+volumes:
+  mt5_config_v2:
 
-# networks:
-#   mt5_network_v2:
-#     driver: bridge
-#     ipam:
-#       config:
-#         - subnet: 10.13.13.0/24
+networks:
+  mt5_network_v2:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.13.13.0/24
