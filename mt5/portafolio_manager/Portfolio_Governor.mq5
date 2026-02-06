@@ -1,12 +1,12 @@
-//+------------------------------------------------------------------+
+﻿//+------------------------------------------------------------------+
 //|                                          Portfolio_Governor.mq5  |
-//|          🧠 CENTRAL BRAIN V3.0 - Multi-Symbol Risk Controller    |
+//|          ðŸ§  CENTRAL BRAIN V3.0 - Multi-Symbol Risk Controller    |
 //|             Manages: Symbol Engines, DB, DD, Correlation         |
 //+------------------------------------------------------------------+
 #property copyright "Portfolio Governor"
 #property link      "https://github.com/GuidoAmbiorix"
 #property version   "3.00"
-#property description "🧠 Portfolio Governor: Central Risk Brain"
+#property description "ðŸ§  Portfolio Governor: Central Risk Brain"
 #property description "Run on ONE chart only. Controls all Symbol Engines."
 #property strict
 
@@ -29,40 +29,40 @@ void SeedDefaultConfigs();
 //| INPUT PARAMETERS                                                  |
 //+------------------------------------------------------------------+
 
-input group "═══════ PORTFOLIO LIMITS ═══════"
+input group "â•â•â•â•â•â•â• PORTFOLIO LIMITS â•â•â•â•â•â•â•"
 input double InpMaxPortfolioRisk = 2.0;        // Max Total Portfolio Risk (%)
 input double InpMaxSymbolRisk = 0.6;           // Max Risk Per Symbol (%)
 input double InpMaxGroupRisk = 1.0;            // Max Risk Per Correlation Group (%)
 
-input group "═══════ DRAWDOWN GOVERNOR ═══════"
+input group "â•â•â•â•â•â•â• DRAWDOWN GOVERNOR â•â•â•â•â•â•â•"
 input double InpDD_Normal = 3.0;               // DD Level: Normal Trading (%)
 input double InpDD_Reduced = 5.0;              // DD Level: Reduced Risk (%)
 input double InpDD_Pause = 8.0;                // DD Level: Pause Trading (%)
 input double InpDD_ReducedMult = 0.5;          // Risk Multiplier when DD > Normal
 
-input group "═══════ ROLLING PF GOVERNOR ═══════"
+input group "â•â•â•â•â•â•â• ROLLING PF GOVERNOR â•â•â•â•â•â•â•"
 input int    InpRollingTrades = 30;            // Rolling Window (trades)
 input double InpPF_Normal = 1.8;               // PF Level: Normal Trading
 input double InpPF_Reduced = 1.2;              // PF Level: Reduced Risk
 input double InpPF_Pause = 1.0;                // PF Level: Pause Trading
 input double InpPF_ReducedMult = 0.7;          // Risk Mult when PF < Normal
 
-input group "═══════ DAILY/WEEKLY LIMITS ═══════"
+input group "â•â•â•â•â•â•â• DAILY/WEEKLY LIMITS â•â•â•â•â•â•â•"
 input double InpDailyMaxDD = 3.0;              // Daily Max Drawdown (%)
 input double InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown (%)
 input double InpMonthlyMaxDD = 10.0;           // Monthly Max Drawdown (%)
 
-input group "═══════ CORRELATION GUARD ═══════"
+input group "â•â•â•â•â•â•â• CORRELATION GUARD â•â•â•â•â•â•â•"
 input bool   InpUseCorrelationGuard = true;    // Enable Correlation Guard
 input double InpHighCorrelation = 0.70;        // High Correlation Threshold
 input double InpCorrelationReduction = 0.50;   // Size Reduction Factor
 input int    InpCorrelationLookback = 300;     // Bars for correlation (M15)
 
-input group "═══════ MAGIC NUMBER RANGE ═══════"
+input group "â•â•â•â•â•â•â• MAGIC NUMBER RANGE â•â•â•â•â•â•â•"
 input int    InpMagicBase = 100000;            // Magic Number Base
 input int    InpMagicRange = 999;              // Magic Number Range (Base to Base+Range)
 
-input group "═══════ UPDATE FREQUENCY ═══════"
+input group "â•â•â•â•â•â•â• UPDATE FREQUENCY â•â•â•â•â•â•â•"
 input int    InpUpdateSeconds = 1;             // Interval (seconds) - Fast for scalping
 
 //+------------------------------------------------------------------+
@@ -125,7 +125,7 @@ int OnInit()
    // Initialize database
    if(!dbManager.Init())
    {
-       Print("❌ CRITICAL: Database init failed!");
+       Print("âŒ CRITICAL: Database init failed!");
        return INIT_FAILED;
    }
    
@@ -135,7 +135,7 @@ int OnInit()
    
    if(totalConfigs == 0)
    {
-       Print("⚠️ No configs found in DB. Seeding Default Symbols...");
+       Print("âš ï¸ No configs found in DB. Seeding Default Symbols...");
        SeedDefaultConfigs();
        // Reload after seeding
        totalConfigs = dbManager.LoadSymbolConfigs(configs);
@@ -151,7 +151,7 @@ int OnInit()
            // Check if symbol exists in Market Watch
            if(!SymbolSelect(configs[i].symbol, true))
            {
-               Print("⚠️ Symbol ", configs[i].symbol, " unavailable. Skipping.");
+               Print("âš ï¸ Symbol ", configs[i].symbol, " unavailable. Skipping.");
                continue;
            }
            
@@ -162,7 +162,7 @@ int OnInit()
            }
            else
            {
-               Print("❌ Failed to init engine for ", configs[i].symbol);
+               Print("âŒ Failed to init engine for ", configs[i].symbol);
                delete g_engines[g_engineCount];
            }
        }
@@ -217,7 +217,7 @@ void OnDeinit(const int reason)
    // Mark governor as inactive
    GlobalVariableSet(GV_GOVERNOR_ACTIVE, 0);
    Comment("");
-   Print("🧠 Portfolio Governor DEACTIVATED");
+   Print("ðŸ§  Portfolio Governor DEACTIVATED");
 }
 
 //+------------------------------------------------------------------+
@@ -362,7 +362,7 @@ void UpdateCorrelationMatrix()
    ArrayResize(g_dynamicMatrix, matrixSize);
    
    int idx = 0;
-   // Print("🔄 DCE: Updating Matrix for ", symCount, " symbols..."); // Reduce noise
+   // Print("ðŸ”„ DCE: Updating Matrix for ", symCount, " symbols..."); // Reduce noise
 
    for(int i = 0; i < symCount; i++)
    {
@@ -678,7 +678,7 @@ void UpdateDashboard()
    string weeklyColor = (weeklyDD < InpWeeklyMaxDD * 0.5) ? "[OK]" : ((weeklyDD < InpWeeklyMaxDD) ? "[WARN]" : "[CRIT]");
 
    string text = "===============================================\n";
-   text += "  🧠 BRAIN v3.0 (DCE + DB + CENTRALIZED)\n";
+   text += "  ðŸ§  BRAIN v3.0 (DCE + DB + CENTRALIZED)\n";
    text += "===============================================\n";
    text += "Status: " + status + "\n";
    text += "Engines: " + IntegerToString(g_engineCount) + " Active\n";
@@ -705,47 +705,84 @@ void UpdateDashboard()
 
    Comment(text);
 }
- 
- / / + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +  
- / / |   S E E D   D E F A U L T   C O N F I G U R A T I O N S   ( I f   D B   i s   e m p t y )                                             |  
- / / + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +  
- v o i d   S e e d D e f a u l t C o n f i g s ( )  
- {  
-       P r i n t ( " � xR�   S e e d i n g   D a t a b a s e   w i t h   D e f a u l t   C o n f i g u r a t i o n s . . . " ) ;  
-        
-       s t r i n g   d e f a u l t S y m b o l s [ ]   =   { " E U R U S D " ,   " G B P U S D " ,   " A U D U S D " ,   " U S D C A D " ,   " U S D J P Y " ,   " E U R J P Y " ,   " A U D J P Y " ,   " X A U U S D " } ;  
-        
-       f o r ( i n t   i = 0 ;   i < A r r a y S i z e ( d e f a u l t S y m b o l s ) ;   i + + )  
-       {  
-               S y m b o l C o n f i g   c f g ;   / /   U s e s   d e f a u l t   c o n s t r u c t o r   f o r   b a s e   v a l u e s  
-                
-               c f g . s y m b o l   =   d e f a u l t S y m b o l s [ i ] ;  
-               c f g . m a g i c N u m b e r   =   I n p M a g i c B a s e   +   i ;  
-                
-               / /   C u s t o m i z e   p e r   s y m b o l   g r o u p  
-               i f ( S t r i n g F i n d ( c f g . s y m b o l ,   " J P Y " )   > =   0 )  
-               {  
-                       c f g . t r a i l A T R _ M u l t   =   2 . 0 ;   / /   W i d e r   s t o p s   f o r   J P Y  
-                       c f g . v o l a t i l i t y T h r e s h o l d   =   4 . 0 ;  
-               }  
-               e l s e   i f ( S t r i n g F i n d ( c f g . s y m b o l ,   " X A U " )   > =   0 )  
-               {  
-                       c f g . t r a i l A T R _ M u l t   =   2 . 5 ;   / /   G o l d   n e e d s   r o o m  
-                       c f g . r i s k B a s e   =   0 . 5 ;                     / /   H i g h e r   r i s k   f o r   G o l d  
-                       c f g . v o l a t i l i t y T h r e s h o l d   =   5 . 0 ;  
-                       c f g . m a x S p r e a d P o i n t s   =   1 0 0 ;  
-               }  
-                
-               i f ( d b M a n a g e r . S a v e S y m b o l C o n f i g ( c f g ) )  
-               {  
-                       P r i n t ( " � S&   S e e d e d   d e f a u l t   c o n f i g   f o r   " ,   c f g . s y m b o l ) ;  
-               }  
-               e l s e  
-               {  
-                       P r i n t ( " � � R  F a i l e d   t o   s e e d   c o n f i g   f o r   " ,   c f g . s y m b o l ) ;  
-               }  
-       }  
-        
-       P r i n t ( " � xR�   S e e d i n g   C o m p l e t e . " ) ;  
- }  
+
  
+ / / + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - + 
+ 
+ / / |   S E E D   D E F A U L T   C O N F I G U R A T I O N S   ( I f   D B   i s   e m p t y )                                             | 
+ 
+ / / + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - + 
+ 
+ v o i d   S e e d D e f a u l t C o n f i g s ( ) 
+ 
+ { 
+ 
+       P r i n t ( " ð xR±   S e e d i n g   D a t a b a s e   w i t h   D e f a u l t   C o n f i g u r a t i o n s . . . " ) ; 
+ 
+       
+ 
+       s t r i n g   d e f a u l t S y m b o l s [ ]   =   { " E U R U S D " ,   " G B P U S D " ,   " A U D U S D " ,   " U S D C A D " ,   " U S D J P Y " ,   " E U R J P Y " ,   " A U D J P Y " ,   " X A U U S D " } ; 
+ 
+       
+ 
+       f o r ( i n t   i = 0 ;   i < A r r a y S i z e ( d e f a u l t S y m b o l s ) ;   i + + ) 
+ 
+       { 
+ 
+               S y m b o l C o n f i g   c f g ;   / /   U s e s   d e f a u l t   c o n s t r u c t o r   f o r   b a s e   v a l u e s 
+ 
+               
+ 
+               c f g . s y m b o l   =   d e f a u l t S y m b o l s [ i ] ; 
+ 
+               c f g . m a g i c N u m b e r   =   I n p M a g i c B a s e   +   i ; 
+ 
+               
+ 
+               / /   C u s t o m i z e   p e r   s y m b o l   g r o u p 
+ 
+               i f ( S t r i n g F i n d ( c f g . s y m b o l ,   " J P Y " )   > =   0 ) 
+ 
+
+//+------------------------------------------------------------------+
+//| SEED DEFAULT CONFIGURATIONS (If DB is empty)                      |
+//+------------------------------------------------------------------+
+void SeedDefaultConfigs()
+{
+   Print("ðŸŒ± Seeding Database with Default Configurations...");
+   
+   string defaultSymbols[] = {"EURUSD", "GBPUSD", "AUDUSD", "USDCAD", "USDJPY", "EURJPY", "AUDJPY", "XAUUSD"};
+   
+   for(int i=0; i<ArraySize(defaultSymbols); i++)
+   {
+       SymbolConfig cfg; // Uses default constructor for base values
+       
+       cfg.symbol = defaultSymbols[i];
+       cfg.magicNumber = InpMagicBase + i;
+       
+       // Customize per symbol group
+       if(StringFind(cfg.symbol, "JPY") >= 0)
+       {
+           cfg.trailATR_Mult = 2.0; // Wider stops for JPY
+           cfg.volatilityThreshold = 4.0;
+       }
+       else if(StringFind(cfg.symbol, "XAU") >= 0)
+       {
+           cfg.trailATR_Mult = 2.5; // Gold needs room
+           cfg.riskBase = 0.5;          // Higher risk for Gold
+           cfg.volatilityThreshold = 5.0;
+           cfg.maxSpreadPoints = 100;
+       }
+       
+       if(dbManager.SaveSymbolConfig(cfg))
+       {
+           Print("âœ… Seeded default config for ", cfg.symbol);
+       }
+       else
+       {
+           Print("âŒ Failed to seed config for ", cfg.symbol);
+       }
+   }
+   
+   Print("ðŸŒ± Seeding Complete.");
+}
