@@ -535,9 +535,9 @@ struct SymbolConfig
        learningHistory = 180;
        minTradesForLearning = 50;
        
-       enableAdaptiveRisk = false;
-       enableAdaptiveExits = false;
-       enableAdaptiveFilters = false;
+       enableAdaptiveRisk = true;
+       enableAdaptiveExits = true;
+       enableAdaptiveFilters = true;
        
        useCorrelationFilter = true;
        dailyMaxLoss_R = 4.0;
