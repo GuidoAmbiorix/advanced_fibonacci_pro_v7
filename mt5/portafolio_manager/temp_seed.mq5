@@ -18,12 +18,12 @@ void SeedDefaultConfigs()
        // Customize per symbol group
        if(StringFind(cfg.symbol, "JPY") >= 0)
        {
-           cfg.stopLoss_ATR_Mult = 2.0; // Wider stops for JPY
+           cfg.trailATR_Mult = 2.0; // Wider stops for JPY
            cfg.volatilityThreshold = 4.0;
        }
        else if(StringFind(cfg.symbol, "XAU") >= 0)
        {
-           cfg.stopLoss_ATR_Mult = 2.5; // Gold needs room
+           cfg.trailATR_Mult = 2.5; // Gold needs room
            cfg.riskBase = 0.5;          // Higher risk for Gold
            cfg.volatilityThreshold = 5.0;
            cfg.maxSpreadPoints = 100;
