@@ -828,9 +828,9 @@ ENUM_ENTRY_TIER CSymbolEngine::GetEntryTier(double score)
 {
    if(score >= m_config.minConfluenceEntry + 2.0) return TIER_ELITE;
    if(score >= m_config.minConfluenceEntry + 1.0) return TIER_STRONG;
-   if(score >= m_config.minConfluenceEntry)       return TIER_STANDARD;
+   if(score >= m_config.minConfluenceEntry)       return TIER_GOOD;
    
-   return TIER_WEAK; 
+   return TIER_NO_TRADE; 
 }
 
 void CSymbolEngine::OnTrade() { /* Handle trade events */ }
