@@ -17,9 +17,11 @@
 #include "Include\GovernorAllocator.mqh"
 #include "Include\DatabaseManager.mqh"
 #include "Include\SymbolEngine.mqh"
+#include "Include\NotificationManager.mqh"
 
 CGovernorAllocator allocator;
 CDatabaseManager   dbManager;
+CNotificationManager notifyManager;
 
 // Forward Declaration
 void SeedDefaultConfigs();
@@ -64,6 +66,9 @@ input int    InpMagicRange = 999;              // Magic Number Range (Base to Ba
 
 input group "â•â•â•â•â•â•â• UPDATE FREQUENCY â•â•â•â•â•â•â•"
 input int    InpUpdateSeconds = 1;             // Interval (seconds) - Fast for scalping
+
+input group "═══════ NOTIFICATIONS ═══════"
+input bool   InpEnableNotifications = true;    // Enable Mobile Notifications
 
 //+------------------------------------------------------------------+
 //| GLOBAL VARIABLES                                                  |
@@ -195,6 +200,9 @@ int OnInit()
    Print("  Active Engines: ", g_engineCount);
    Print("  Database: ENABLED");
    Print("===============================================================");
+   
+   // Initialize Notifications
+   notifyManager.Init(InpEnableNotifications);
 
    return INIT_SUCCEEDED;
 }
@@ -242,6 +250,10 @@ void OnTick()
        UpdateRiskMultiplier();
        UpdateTradingStatus();
        UpdateDashboard();
+       
+       // Handle Notifications
+       notifyManager.OnTick(account.Equity(), PositionsTotal(), GetTopConfluencesString());
+       
        GlobalVariableSet(GV_LAST_UPDATE, (double)TimeCurrent());
    }
    
@@ -766,4 +778,28 @@ void SeedDefaultConfigs()
    }
    
    Print("🌱 Seeding Complete.");
+}
+
+//+------------------------------------------------------------------+
+//| Get Top Confluences Summary                                       |
+//+------------------------------------------------------------------+
+string GetTopConfluencesString()
+{
+    string txt = "";
+    int shown = 0;
+    for(int i=0; i<g_engineCount; i++)
+    {
+        if(CheckPointer(g_engines[i]) == POINTER_INVALID) continue;
+        
+        double score = g_engines[i].GetConfluenceScore();
+        if(score >= 8.0)
+        {
+            if(shown > 0) txt += " | ";
+            txt += g_engines[i].GetSymbol() + ": " + DoubleToString(score, 1);
+            shown++;
+            if(shown >= 5) break; 
+        }
+    }
+    if(shown == 0) txt = "Evaluating...";
+    return txt;
 }
