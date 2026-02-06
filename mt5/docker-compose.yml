@@ -63,7 +63,7 @@ services:
       # Read-only access to MT5 database
       - mt5_config_v2:/mt5_data:ro
     environment:
-      - DB_PATH=/mt5_data/.wine/drive_c/users/trader/AppData/Roaming/MetaQuotes/Terminal/Common/Files/PortfolioGovernor.sqlite
+      - DB_PATH=/mt5_data/.wine/drive_c/users/abc/AppData/Roaming/MetaQuotes/Terminal/Common/Files/PortfolioGovernor.sqlite
     networks:
       - mt5_network_v2
     restart: unless-stopped

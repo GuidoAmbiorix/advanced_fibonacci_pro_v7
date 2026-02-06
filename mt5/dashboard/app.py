@@ -53,12 +53,12 @@ if page == "Dashboard":
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Active Pairs", len(df_configs))
         col2.metric("Avg Risk Base", f"{df_configs['risk_base'].mean():.2f}%")
-        col3.metric("Adaptive Risk", f"{len(df_configs[df_configs['enableAdaptiveRisk'] == 1])}")
-        col4.metric("Strategies", df_configs['strategy_mode'].nunique())
-        
+        col3.metric("Adaptive Risk", f"{len(df_configs[df_configs['enable_adaptive_risk'] == 1])}")
+        col4.metric("Max Positions", df_configs['max_positions'].sum())
+
         st.subheader("🔥 Active Symbols & Confluence")
         st.dataframe(
-            df_configs[['symbol', 'magic_number', 'risk_base', 'fixed_tp_r', 'strategy_mode']].style.format({'risk_base': '{:.2f}%', 'fixed_tp_r': '{:.1f}R'}),
+            df_configs[['symbol', 'magic_number', 'risk_base', 'fixed_tp_r', 'min_confluence_entry']].style.format({'risk_base': '{:.2f}%', 'fixed_tp_r': '{:.1f}R'}),
             use_container_width=True
         )
     else:
@@ -90,6 +90,122 @@ elif page == "Trade Logs":
 
 elif page == "System Health":
     st.title("💓 System Heartbeat")
-    st.markdown("Monitoring system logs and heartbeat signals.")
-    # Assuming we create a Heartbeat table later
-    st.info("Heartbeat monitoring module pending integration.")
+
+    # Get current timestamp
+    current_time = int(time.time())
+
+    # Get Governor State
+    df_state = load_data("SELECT * FROM GovernorState")
+
+    # Get trade statistics
+    df_stats = load_data("""
+        SELECT
+            COUNT(*) as total_trades,
+            SUM(CASE WHEN profit > 0 THEN 1 ELSE 0 END) as winning_trades,
+            SUM(CASE WHEN profit < 0 THEN 1 ELSE 0 END) as losing_trades,
+            SUM(profit) as total_profit,
+            AVG(profit) as avg_profit,
+            MAX(close_time) as last_trade_time
+        FROM Trades
+    """)
+
+    # System Status Indicators
+    st.subheader("🔍 System Status")
+
+    if not df_stats.empty and df_stats.iloc[0]['last_trade_time']:
+        last_trade_time = int(df_stats.iloc[0]['last_trade_time'])
+        time_since_last_trade = current_time - last_trade_time
+
+        # Status indicator based on last activity
+        if time_since_last_trade < 3600:  # Less than 1 hour
+            status_color = "🟢"
+            status_text = "Active"
+        elif time_since_last_trade < 86400:  # Less than 1 day
+            status_color = "🟡"
+            status_text = "Idle"
+        else:
+            status_color = "🔴"
+            status_text = "Inactive"
+
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("System Status", f"{status_color} {status_text}")
+        col2.metric("Last Trade", f"{time_since_last_trade // 60} min ago" if time_since_last_trade < 3600 else f"{time_since_last_trade // 3600} hrs ago")
+        col3.metric("DB Status", "🟢 Connected")
+
+        df_symbol_count = load_data("SELECT COUNT(*) as count FROM SymbolConfigs")
+        symbol_count = int(df_symbol_count.iloc[0]['count']) if not df_symbol_count.empty else 0
+        col4.metric("Total Symbols", symbol_count)
+
+    # Trading Performance Metrics
+    st.subheader("📊 Trading Performance")
+
+    if not df_stats.empty:
+        total = int(df_stats.iloc[0]['total_trades'])
+        wins = int(df_stats.iloc[0]['winning_trades'])
+        losses = int(df_stats.iloc[0]['losing_trades'])
+        win_rate = (wins / total * 100) if total > 0 else 0
+
+        col1, col2, col3, col4, col5 = st.columns(5)
+        col1.metric("Total Trades", total)
+        col2.metric("Winning", wins, delta=f"{win_rate:.1f}%")
+        col3.metric("Losing", losses, delta=f"{100-win_rate:.1f}%", delta_color="inverse")
+        col4.metric("Total P/L", f"${df_stats.iloc[0]['total_profit']:.2f}", delta="Cumulative")
+        col5.metric("Avg P/L", f"${df_stats.iloc[0]['avg_profit']:.2f}", delta="Per Trade")
+
+    # Symbol Activity Breakdown
+    st.subheader("📈 Symbol Activity")
+
+    df_symbol_stats = load_data("""
+        SELECT
+            symbol,
+            COUNT(*) as trades,
+            SUM(CASE WHEN profit > 0 THEN 1 ELSE 0 END) as wins,
+            SUM(profit) as total_profit,
+            AVG(profit) as avg_profit,
+            MAX(close_time) as last_trade
+        FROM Trades
+        GROUP BY symbol
+        ORDER BY total_profit DESC
+    """)
+
+    if not df_symbol_stats.empty:
+        df_symbol_stats['win_rate'] = (df_symbol_stats['wins'] / df_symbol_stats['trades'] * 100).round(1)
+        st.dataframe(
+            df_symbol_stats[['symbol', 'trades', 'wins', 'win_rate', 'total_profit', 'avg_profit']].style.format({
+                'win_rate': '{:.1f}%',
+                'total_profit': '${:.2f}',
+                'avg_profit': '${:.2f}'
+            }),
+            use_container_width=True
+        )
+
+    # Recent Activity Log
+    st.subheader("📜 Recent Activity")
+
+    df_recent = load_data("""
+        SELECT
+            ticket,
+            symbol,
+            DATETIME(entry_time, 'unixepoch') as entry_time,
+            DATETIME(close_time, 'unixepoch') as close_time,
+            type,
+            lots,
+            profit,
+            magic
+        FROM Trades
+        ORDER BY close_time DESC
+        LIMIT 15
+    """)
+
+    if not df_recent.empty:
+        st.dataframe(
+            df_recent.style.format({'lots': '{:.2f}', 'profit': '${:.2f}'}),
+            use_container_width=True
+        )
+    else:
+        st.info("No recent trading activity.")
+
+    # Governor State
+    if not df_state.empty:
+        st.subheader("⚙️ Governor State")
+        st.dataframe(df_state, use_container_width=True)
