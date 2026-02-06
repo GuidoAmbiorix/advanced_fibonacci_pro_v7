@@ -1,8 +1,7 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
-import os
 import time
+from database_manager import DatabaseManager
 
 # Page Config
 st.set_page_config(
@@ -12,42 +11,28 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Constants
-DB_PATH = os.getenv("DB_PATH", "PortfolioGovernor.sqlite")
-
-# Database Connection
+# Initialize DB Manager
 @st.cache_resource
-def get_connection():
-    # Helper to check if file exists
-    if not os.path.exists(DB_PATH):
-        return None
-    return sqlite3.connect(DB_PATH, check_same_thread=False)
+def get_db_manager():
+    return DatabaseManager()
 
-def load_data(query):
-    conn = get_connection()
-    if conn:
-        try:
-            return pd.read_sql(query, conn)
-        except Exception as e:
-            st.error(f"Error reading DB: {e}")
-            return pd.DataFrame()
-    return pd.DataFrame()
+db = get_db_manager()
 
 # Sidebar
 st.sidebar.title("🧠 Governor v3.0")
-st.sidebar.markdown(f"**DB Status:** {'🟢 Connected' if os.path.exists(DB_PATH) else '🔴 Not Found'}")
+st.sidebar.markdown(f"**DB Status:** {'🟢 Connected' if db.get_connection() else '🔴 Not Found'}")
 if st.sidebar.button("🔄 Refresh Data"):
     st.cache_data.clear()
 
 st.sidebar.markdown("---")
-page = st.sidebar.radio("Navigation", ["Dashboard", "Configuration", "Trade Logs", "System Health"])
+page = st.sidebar.radio("Navigation", ["Dashboard", "Configuration", "Optimization", "Trade Logs", "System Health"])
 
 # Main Layout
 if page == "Dashboard":
     st.title("📊 Portfolio Overview")
     
     # 1. High Level Metrics from Configs
-    df_configs = load_data("SELECT * FROM SymbolConfigs")
+    df_configs = db.load_configs()
     
     if not df_configs.empty:
         col1, col2, col3, col4 = st.columns(4)
@@ -63,30 +48,85 @@ if page == "Dashboard":
         )
     else:
         st.warning("No Symbol Configurations found in Database.")
+
+elif page == "Optimization":
+    st.title("🧠 AI Optimization Engine")
+    st.markdown("Use **Optuna** to find the optimal parameters for your portfolio based on recent market data.")
+    
+    from optimizer import PortfolioOptimizer
+    optimizer = PortfolioOptimizer(db)
+    
+    df_configs = db.load_configs()
+    if not df_configs.empty:
+        symbols = df_configs['symbol'].tolist()
+        
+        col1, col2 = st.columns([3, 1])
+        selected_symbol = col1.selectbox("Select Symbol to Optimize", symbols)
+        
+        if col2.button("🚀 Run Optimization"):
+            with st.spinner(f"Optimizing {selected_symbol}..."):
+                best_params = optimizer.run_optimization(selected_symbol)
+                
+                if best_params:
+                    st.success(f"✅ Optimization Complete! Best Params: {best_params}")
+                    
+                    if st.button("💾 Apply Parameters to DB"):
+                        optimizer.update_db(selected_symbol, best_params)
+                        st.success("Configuration Updated!")
+                        time.sleep(1)
+                        st.rerun()
+                else:
+                    st.error("Optimization failed. Check if Market Data is synced (Recompile EA).")
+                    
+        st.info("💡 Note: The Optimizer uses recent history stored in 'MarketData'. Ensure you have run the EA to populate this data.")
+    else:
+        st.warning("No symbols found.")
         
 elif page == "Configuration":
     st.title("⚙️ Symbol Configuration")
     st.markdown("View and Edit Symbol Parameters stored in SQLite.")
     
-    df = load_data("SELECT * FROM SymbolConfigs")
+    df = db.load_configs()
     if not df.empty:
-        st.data_editor(df, num_rows="dynamic", use_container_width=True)
+        edited_df = st.data_editor(
+            df, 
+            num_rows="dynamic", 
+            use_container_width=True,
+            key="symbol_config_editor"
+        )
+        
+        if st.button("💾 Save Configurations"):
+            success_count = 0
+            for index, row in edited_df.iterrows():
+                # Convert row keys to dict
+                config_dict = row.to_dict()
+                if db.save_config(config_dict):
+                    success_count += 1
+            
+            st.success(f"✅ Successfully saved {success_count} configurations to Database!")
+            time.sleep(1)
+            st.rerun()
     else:
         st.info("No configurations available.")
 
 elif page == "Trade Logs":
     st.title("📜 Trade History")
-    # Placeholder query - assumes we might have a trades table later
-    # For now, show structure of DB
-    conn = get_connection()
+    
+    # Reusing direct connection for custom query flexibility here for now, 
+    # or extend DB Manager. Let's keep it simple.
+    conn = db.get_connection()
     if conn:
         tables = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table';", conn)
         st.write("Available Tables:", tables)
         
         selected_table = st.selectbox("Select Table to Inspect", tables['name'].tolist())
         if selected_table:
-            df_table = load_data(f"SELECT * FROM {selected_table} ORDER BY rowid DESC LIMIT 100")
-            st.dataframe(df_table, use_container_width=True)
+            try:
+                df_table = pd.read_sql(f"SELECT * FROM {selected_table} ORDER BY rowid DESC LIMIT 100", conn)
+                st.dataframe(df_table, use_container_width=True)
+            except:
+                st.error("Could not read table.")
+        conn.close()
 
 elif page == "System Health":
     st.title("💓 System Heartbeat")
@@ -95,19 +135,25 @@ elif page == "System Health":
     current_time = int(time.time())
 
     # Get Governor State
-    df_state = load_data("SELECT * FROM GovernorState")
+    conn = db.get_connection()
+    df_state = pd.read_sql("SELECT * FROM GovernorState", conn) if conn else pd.DataFrame()
 
     # Get trade statistics
-    df_stats = load_data("""
-        SELECT
-            COUNT(*) as total_trades,
-            SUM(CASE WHEN profit > 0 THEN 1 ELSE 0 END) as winning_trades,
-            SUM(CASE WHEN profit < 0 THEN 1 ELSE 0 END) as losing_trades,
-            SUM(profit) as total_profit,
-            AVG(profit) as avg_profit,
-            MAX(close_time) as last_trade_time
-        FROM Trades
-    """)
+    df_stats = pd.DataFrame()
+    if conn:
+        try:
+             df_stats = pd.read_sql("""
+                SELECT
+                    COUNT(*) as total_trades,
+                    SUM(CASE WHEN profit > 0 THEN 1 ELSE 0 END) as winning_trades,
+                    SUM(CASE WHEN profit < 0 THEN 1 ELSE 0 END) as losing_trades,
+                    SUM(profit) as total_profit,
+                    AVG(profit) as avg_profit,
+                    MAX(close_time) as last_trade_time
+                FROM Trades
+            """, conn)
+        except:
+             pass
 
     # System Status Indicators
     st.subheader("🔍 System Status")
@@ -115,102 +161,23 @@ elif page == "System Health":
     if not df_stats.empty and df_stats.iloc[0]['last_trade_time']:
         last_trade_time = int(df_stats.iloc[0]['last_trade_time'])
         time_since_last_trade = current_time - last_trade_time
-
-        # Status indicator based on last activity
-        if time_since_last_trade < 3600:  # Less than 1 hour
-            status_color = "🟢"
-            status_text = "Active"
-        elif time_since_last_trade < 86400:  # Less than 1 day
-            status_color = "🟡"
-            status_text = "Idle"
+        
+        # Status logic
+        if time_since_last_trade < 3600:
+            status_text = "Active 🟢"
+        elif time_since_last_trade < 86400:
+            status_text = "Idle 🟡"
         else:
-            status_color = "🔴"
-            status_text = "Inactive"
-
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("System Status", f"{status_color} {status_text}")
-        col2.metric("Last Trade", f"{time_since_last_trade // 60} min ago" if time_since_last_trade < 3600 else f"{time_since_last_trade // 3600} hrs ago")
-        col3.metric("DB Status", "🟢 Connected")
-
-        df_symbol_count = load_data("SELECT COUNT(*) as count FROM SymbolConfigs")
-        symbol_count = int(df_symbol_count.iloc[0]['count']) if not df_symbol_count.empty else 0
-        col4.metric("Total Symbols", symbol_count)
-
-    # Trading Performance Metrics
-    st.subheader("📊 Trading Performance")
-
-    if not df_stats.empty:
-        total = int(df_stats.iloc[0]['total_trades'])
-        wins = int(df_stats.iloc[0]['winning_trades'])
-        losses = int(df_stats.iloc[0]['losing_trades'])
-        win_rate = (wins / total * 100) if total > 0 else 0
-
-        col1, col2, col3, col4, col5 = st.columns(5)
-        col1.metric("Total Trades", total)
-        col2.metric("Winning", wins, delta=f"{win_rate:.1f}%")
-        col3.metric("Losing", losses, delta=f"{100-win_rate:.1f}%", delta_color="inverse")
-        col4.metric("Total P/L", f"${df_stats.iloc[0]['total_profit']:.2f}", delta="Cumulative")
-        col5.metric("Avg P/L", f"${df_stats.iloc[0]['avg_profit']:.2f}", delta="Per Trade")
-
-    # Symbol Activity Breakdown
-    st.subheader("📈 Symbol Activity")
-
-    df_symbol_stats = load_data("""
-        SELECT
-            symbol,
-            COUNT(*) as trades,
-            SUM(CASE WHEN profit > 0 THEN 1 ELSE 0 END) as wins,
-            SUM(profit) as total_profit,
-            AVG(profit) as avg_profit,
-            MAX(close_time) as last_trade
-        FROM Trades
-        GROUP BY symbol
-        ORDER BY total_profit DESC
-    """)
-
-    if not df_symbol_stats.empty:
-        df_symbol_stats['win_rate'] = (df_symbol_stats['wins'] / df_symbol_stats['trades'] * 100).round(1)
-        st.dataframe(
-            df_symbol_stats[['symbol', 'trades', 'wins', 'win_rate', 'total_profit', 'avg_profit']].style.format({
-                'win_rate': '{:.1f}%',
-                'total_profit': '${:.2f}',
-                'avg_profit': '${:.2f}'
-            }),
-            use_container_width=True
-        )
-
-    # Recent Activity Log
-    st.subheader("📜 Recent Activity")
-
-    df_recent = load_data("""
-        SELECT
-            ticket,
-            symbol,
-            DATETIME(entry_time, 'unixepoch') as entry_time,
-            DATETIME(close_time, 'unixepoch') as close_time,
-            type,
-            lots,
-            profit,
-            magic
-        FROM Trades
-        ORDER BY close_time DESC
-        LIMIT 15
-    """)
-
-    if not df_recent.empty:
-        st.dataframe(
-            df_recent.style.format({'lots': '{:.2f}', 'profit': '${:.2f}'}),
-            use_container_width=True
-        )
-    else:
-        st.info("No recent trading activity.")
-
+            status_text = "Inactive 🔴"
+            
+        st.metric("System Status", status_text)
+        
     # Governor State
     if not df_state.empty:
         st.subheader("⚙️ Governor State")
         st.dataframe(df_state, use_container_width=True)
 
-    # System Logs
+    # System Logs (Using Manager)
     st.subheader("📝 System Logs")
     
     # Auto-refresh mechanism
@@ -218,7 +185,7 @@ elif page == "System Health":
         time.sleep(5)
         st.rerun()
     
-    df_logs = load_data("SELECT * FROM SystemLogs ORDER BY time DESC LIMIT 200")
+    df_logs = db.get_logs(limit=200)
     
     if not df_logs.empty:
         # Convert timestamp
@@ -239,3 +206,5 @@ elif page == "System Health":
         )
     else:
         st.info("No system logs found yet. Waiting for Governor startup...")
+        
+    if conn: conn.close()

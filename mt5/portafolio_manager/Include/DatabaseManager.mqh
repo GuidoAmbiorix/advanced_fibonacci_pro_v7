@@ -970,10 +970,53 @@ private:
          
       if(!Execute(sqlLogs)) return false;
 
+      // 6. Market Data Table (For Python Optimizer)
+      string sqlMarket = 
+         "CREATE TABLE IF NOT EXISTS MarketData ("
+         "symbol TEXT,"
+         "timeframe INTEGER,"
+         "time INTEGER,"
+         "open REAL,"
+         "high REAL,"
+         "low REAL,"
+         "close REAL,"
+         "tick_volume INTEGER,"
+         "spread INTEGER,"
+         "real_volume INTEGER,"
+         "PRIMARY KEY (symbol, timeframe, time)"
+         ");";
+         
+      if(!Execute(sqlMarket)) return false;
+
       return true;
    }
    
    public:
+   //+------------------------------------------------------------------+
+   //| Log Market Data Batch                                             |
+   //+------------------------------------------------------------------+
+   bool LogMarketData(const MqlRates &rates[], string symbol, int timeframe)
+   {
+      if(!m_isOpen) return false;
+      int count = ArraySize(rates);
+      if(count == 0) return true;
+      
+      // Use transaction for speed
+      if(!Execute("BEGIN TRANSACTION;")) return false;
+      
+      for(int i=0; i<count; i++)
+      {
+         string query = StringFormat(
+            "INSERT OR IGNORE INTO MarketData VALUES ('%s', %d, %I64d, %.5f, %.5f, %.5f, %.5f, %I64d, %d, %I64d);",
+            symbol, timeframe, rates[i].time, 
+            rates[i].open, rates[i].high, rates[i].low, rates[i].close, 
+            rates[i].tick_volume, rates[i].spread, rates[i].real_volume
+         );
+         Execute(query);
+      }
+      
+      return Execute("COMMIT;");
+   }
    //+------------------------------------------------------------------+
    //| Log System Event                                                  |
    //+------------------------------------------------------------------+

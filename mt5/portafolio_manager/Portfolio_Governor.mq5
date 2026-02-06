@@ -25,6 +25,7 @@ CNotificationManager notifyManager;
 
 // Forward Declaration
 void SeedDefaultConfigs();
+void SyncMarketData();
 
 
 //+------------------------------------------------------------------+
@@ -82,6 +83,7 @@ int            g_engineCount = 0;
 
 double g_peakEquity = 0;
 datetime g_lastUpdate = 0;
+datetime g_lastMarketSync = 0;
 
 // Trade history for rolling PF
 double g_tradeResults[];  // Store last N trade results
@@ -255,6 +257,13 @@ void OnTick()
        notifyManager.OnTick(account.Equity(), PositionsTotal(), GetTopConfluencesString());
        
        GlobalVariableSet(GV_LAST_UPDATE, (double)TimeCurrent());
+   }
+   
+   // 3. Periodic Market Data Sync (Hourly)
+   if(TimeCurrent() - g_lastMarketSync >= 3600)
+   {
+       g_lastMarketSync = TimeCurrent();
+       SyncMarketData();
    }
    
    // 2. Run Symbol Engines (The Army)
@@ -802,4 +811,34 @@ string GetTopConfluencesString()
     }
     if(shown == 0) txt = "Evaluating...";
     return txt;
+}
+
+//+------------------------------------------------------------------+
+//| Sync Market Data for Python Optimizer                             |
+//+------------------------------------------------------------------+
+void SyncMarketData()
+{
+   Print("📥 Syncing Market Data for Optimization...");
+   
+   for(int i=0; i<ArraySize(g_monitoredSymbols); i++)
+   {
+       string sym = g_monitoredSymbols[i];
+       MqlRates rates[];
+       ArraySetAsSeries(rates, true);
+       
+       // Sync M5 - For High Frequency Optimization
+       int copied = CopyRates(sym, PERIOD_M5, 0, 1000, rates);
+       if(copied > 0)
+       {
+           dbManager.LogMarketData(rates, sym, PERIOD_M5);
+       }
+       
+       // Sync H1 - For Trend/Macro Context
+       copied = CopyRates(sym, PERIOD_H1, 0, 500, rates);
+       if(copied > 0)
+       {
+           dbManager.LogMarketData(rates, sym, PERIOD_H1);
+       }
+   }
+   Print("✅ Market Data Sync Complete.");
 }
