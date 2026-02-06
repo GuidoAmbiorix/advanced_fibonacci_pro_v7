@@ -206,7 +206,49 @@ int OnInit()
    // Initialize Notifications
    notifyManager.Init(&dbManager, InpEnableNotifications);
 
+   // Force Initial Market Data Sync
+   SyncMarketData();
+
    return INIT_SUCCEEDED;
+}
+
+// ... existing code ...
+
+//+------------------------------------------------------------------+
+//| Sync Market Data for Python Optimizer                             |
+//+------------------------------------------------------------------+
+void SyncMarketData()
+{
+   Print("📥 Syncing Market Data for Optimization...");
+   
+   for(int i=0; i<ArraySize(g_monitoredSymbols); i++)
+   {
+       string sym = g_monitoredSymbols[i];
+       MqlRates rates[];
+       ArraySetAsSeries(rates, true);
+       
+       // Sync M5
+       int copied = CopyRates(sym, PERIOD_M5, 0, 1000, rates);
+       if(copied > 0)
+       {
+           if(dbManager.LogMarketData(rates, sym, PERIOD_M5))
+               Print("   ✅ ", sym, " M5: ", copied, " bars synced.");
+           else
+               Print("   ❌ ", sym, " M5: DB Write Failed.");
+       }
+       else
+       {
+           Print("   ⚠️ ", sym, " M5: CopyRates failed. Error=", GetLastError());
+       }
+       
+       // Sync H1
+       copied = CopyRates(sym, PERIOD_H1, 0, 500, rates);
+       if(copied > 0)
+       {
+           dbManager.LogMarketData(rates, sym, PERIOD_H1);
+       }
+   }
+   Print("✅ Market Data Sync Complete.");
 }
 
 //+------------------------------------------------------------------+
