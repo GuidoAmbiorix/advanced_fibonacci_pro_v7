@@ -8,6 +8,7 @@
 
 #include <Trade\AccountInfo.mqh>
 #include "PortfolioGlobals.mqh"
+#include "DatabaseManager.mqh"
 
 //+------------------------------------------------------------------+
 //| Session Enumeration                                               |
@@ -28,6 +29,7 @@ class CNotificationManager
 {
 private:
    CAccountInfo      m_account;
+   CDatabaseManager* m_dbManager; // Pointer to DB Manager
    
    // Session State
    ENUM_TRADING_SESSION m_currentSession;
@@ -50,7 +52,7 @@ public:
    ~CNotificationManager();
 
    // Core Methods
-   void     Init(bool enable = true);
+   void     Init(CDatabaseManager* dbManager, bool enable = true);
    void     OnTick(double currentEquity, int activeTradesCount, string topConfluences);
    
    // Risk Alerts (Immediate)
@@ -72,6 +74,7 @@ private:
 //| Constructor                                                       |
 //+------------------------------------------------------------------+
 CNotificationManager::CNotificationManager() : 
+   m_dbManager(NULL),
    m_currentSession(SESSION_CLOSED),
    m_lastCheckTime(0),
    m_sessionStartEquity(0),
@@ -95,9 +98,11 @@ CNotificationManager::~CNotificationManager()
 //+------------------------------------------------------------------+
 //| Initialization                                                    |
 //+------------------------------------------------------------------+
-void CNotificationManager::Init(bool enable)
+void CNotificationManager::Init(CDatabaseManager* dbManager, bool enable)
 {
    m_enabled = enable;
+   m_dbManager = dbManager;
+   
    m_sessionStartEquity = m_account.Equity();
    m_sessionStartBalance = m_account.Balance();
    
@@ -105,7 +110,10 @@ void CNotificationManager::Init(bool enable)
    
    if(m_enabled)
    {
-      Print("📱 NotificationManager Initialized | Session: ", GetSessionName(m_currentSession));
+      string msg = "📱 NotificationManager Initialized | Session: " + GetSessionName(m_currentSession);
+      Print(msg);
+      if(m_dbManager != NULL) m_dbManager.LogSystemEvent("NotificationManager", "INFO", msg);
+      
       SendStartupAlert();
    }
 }
@@ -124,9 +132,12 @@ void CNotificationManager::OnTick(double currentEquity, int activeTradesCount, s
    // Periodic Log (Heartbeat) - Every 15 minutes
    if(TimeCurrent() % 900 < 60) 
    {
-       Print("💓 [GOV] Alive | Session: ", GetSessionName(m_currentSession), 
-             " | Eq: ", FormatCurrency(currentEquity), 
-             " | Trades: ", activeTradesCount);
+       string hbMsg = "💓 [GOV] Alive | Session: " + GetSessionName(m_currentSession) + 
+                      " | Eq: " + FormatCurrency(currentEquity) + 
+                      " | Trades: " + IntegerToString(activeTradesCount);
+       Print(hbMsg);
+       
+       if(m_dbManager != NULL) m_dbManager.LogSystemEvent("Heartbeat", "INFO", hbMsg);
    }
    
    CheckSessionTransition(currentEquity);
@@ -143,8 +154,11 @@ void CNotificationManager::SendStartupAlert()
    
    if(!SendNotification(title + "\n" + body))
    {
-       Print("❌ Push Notification FAILED (Error ", GetLastError(), ")");
+       string err = "❌ Push Notification FAILED (Error " + IntegerToString(GetLastError()) + ")";
+       Print(err);
        Print("   >> Ensure MetaQuotes ID is set in Tools -> Options -> Notifications");
+       
+       if(m_dbManager != NULL) m_dbManager.LogSystemEvent("NotificationManager", "ERROR", err);
    }
    else
    {

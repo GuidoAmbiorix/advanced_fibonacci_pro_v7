@@ -202,7 +202,7 @@ int OnInit()
    Print("===============================================================");
    
    // Initialize Notifications
-   notifyManager.Init(InpEnableNotifications);
+   notifyManager.Init(&dbManager, InpEnableNotifications);
 
    return INIT_SUCCEEDED;
 }

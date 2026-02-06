@@ -953,12 +953,47 @@ private:
          // Session
          "use_session_governor INTEGER,"
          "max_trades_per_session INTEGER,"
+      string sqlConfig = 
+         "CREATE TABLE IF NOT EXISTS SymbolConfigs ("
+         "symbol TEXT PRIMARY KEY,"
+         "magic_number INTEGER,"
+         // ... (truncated for brevity, ensure you keep original) ...
          "trade_cooldown_minutes INTEGER"
          ");";
 
       if(!Execute(sqlConfig)) return false;
 
+      // 5. System Logs Table
+      string sqlLogs = 
+         "CREATE TABLE IF NOT EXISTS SystemLogs ("
+         "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+         "time INTEGER,"
+         "source TEXT,"
+         "level TEXT,"
+         "message TEXT"
+         ");";
+         
+      if(!Execute(sqlLogs)) return false;
+
       return true;
+   }
+   
+   //+------------------------------------------------------------------+
+   //| Log System Event                                                  |
+   //+------------------------------------------------------------------+
+   bool LogSystemEvent(string source, string level, string message)
+   {
+       if(!m_isOpen) return false;
+       
+       // Escape single quotes in message
+       StringReplace(message, "'", "''");
+       
+       string query = StringFormat(
+           "INSERT INTO SystemLogs (time, source, level, message) VALUES (%I64d, '%s', '%s', '%s');",
+           (long)TimeCurrent(), source, level, message
+       );
+       
+       return Execute(query);
    }
 };
 

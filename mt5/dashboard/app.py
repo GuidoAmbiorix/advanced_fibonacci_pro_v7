@@ -209,3 +209,33 @@ elif page == "System Health":
     if not df_state.empty:
         st.subheader("⚙️ Governor State")
         st.dataframe(df_state, use_container_width=True)
+
+    # System Logs
+    st.subheader("📝 System Logs")
+    
+    # Auto-refresh mechanism
+    if st.checkbox("Auto-refresh Logs (5s)", value=False):
+        time.sleep(5)
+        st.rerun()
+    
+    df_logs = load_data("SELECT * FROM SystemLogs ORDER BY time DESC LIMIT 200")
+    
+    if not df_logs.empty:
+        # Convert timestamp
+        df_logs['time'] = pd.to_datetime(df_logs['time'], unit='s')
+        
+        # Color coding
+        def color_row(row):
+            if row['level'] == 'ERROR':
+                return ['background-color: #ffcccc'] * len(row)
+            elif row['source'] == 'Heartbeat':
+                return ['background-color: #e6f3ff'] * len(row)
+            return [''] * len(row)
+            
+        st.dataframe(
+            df_logs[['time', 'source', 'level', 'message']].style.apply(color_row, axis=1),
+            use_container_width=True,
+            height=400
+        )
+    else:
+        st.info("No system logs found yet. Waiting for Governor startup...")
