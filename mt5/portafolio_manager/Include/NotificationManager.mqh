@@ -52,7 +52,7 @@ public:
    ~CNotificationManager();
 
    // Core Methods
-   void     Init(CDatabaseManager* dbManager, bool enable = true);
+   void     Init(CDatabaseManager* pManager, bool enable = true);
    void     OnTick(double currentEquity, int activeTradesCount, string topConfluences);
    
    // Risk Alerts (Immediate)
@@ -98,10 +98,10 @@ CNotificationManager::~CNotificationManager()
 //+------------------------------------------------------------------+
 //| Initialization                                                    |
 //+------------------------------------------------------------------+
-void CNotificationManager::Init(CDatabaseManager* dbManager, bool enable)
+void CNotificationManager::Init(CDatabaseManager* pManager, bool enable)
 {
    m_enabled = enable;
-   m_dbManager = dbManager;
+   m_dbManager = pManager;
    
    m_sessionStartEquity = m_account.Equity();
    m_sessionStartBalance = m_account.Balance();
