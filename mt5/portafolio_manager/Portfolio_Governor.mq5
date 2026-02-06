@@ -152,7 +152,7 @@ int OnInit()
            }
            
            g_engines[g_engineCount] = new CSymbolEngine();
-           if(g_engines[g_engineCount].Init(configs[i], &dbManager))
+           if(g_engines[g_engineCount]->Init(configs[i], &dbManager))
            {
                g_engineCount++;
            }
@@ -169,7 +169,7 @@ int OnInit()
        ArrayResize(g_monitoredSymbols, g_engineCount);
        for(int i=0; i<g_engineCount; i++)
        {
-           g_monitoredSymbols[i] = g_engines[i].GetSymbol();
+           g_monitoredSymbols[i] = g_engines[i]->GetSymbol();
        }
    }
    
@@ -249,7 +249,7 @@ void OnTick()
    {
        if(CheckPointer(g_engines[i]) != POINTER_INVALID)
        {
-           g_engines[i].OnTick();
+           g_engines[i]->OnTick();
        }
    }
 }
@@ -460,8 +460,8 @@ void OnTrade()
                 // Also trigger Engine OnTrade if needed?
                 for(int j=0; j<g_engineCount; j++)
                 {
-                    if(g_engines[j].GetSymbol() == HistoryDealGetString(ticket, DEAL_SYMBOL))
-                        g_engines[j].OnTrade();
+                    if(g_engines[j]->GetSymbol() == HistoryDealGetString(ticket, DEAL_SYMBOL))
+                        g_engines[j]->OnTrade();
                 }
             }
          }

@@ -207,12 +207,12 @@ CSymbolEngine::~CSymbolEngine()
 //+------------------------------------------------------------------+
 //| Initialization                                                    |
 //+------------------------------------------------------------------+
-bool CSymbolEngine::Init(SymbolConfig &config, CDatabaseManager *dbManager)
+bool CSymbolEngine::Init(SymbolConfig &config, CDatabaseManager *pDbManager)
 {
    m_config = config;
    m_symbol = config.symbol;
    m_magic  = config.magicNumber;
-   m_dbManager = dbManager;
+   m_dbManager = pDbManager;
    
    if(!m_symbolInfo.Name(m_symbol)) return false;
    m_symbolInfo.RefreshRates();
@@ -455,11 +455,12 @@ double CSymbolEngine::CalculateConfluenceScore(int direction)
    // SMC Structure Break
    if(m_config.useSMC)
    {
-       bool bos = (direction == 1) ? m_smcStructure.IsBullishBOS() : m_smcStructure.IsBearishBOS();
+       ENUM_STRUCTURE_TYPE lastBreak = m_smcStructure.GetLastBreakType();
+       bool bos = (direction == 1) ? (lastBreak == STRUCT_BOS_BULLISH) : (lastBreak == STRUCT_BOS_BEARISH);
        if(bos) score += 2.0;
        
        // Change of Character
-       bool choch = (direction == 1) ? m_smcStructure.IsBullishChoCH() : m_smcStructure.IsBearishChoCH();
+       bool choch = (direction == 1) ? (lastBreak == STRUCT_CHOCH_BULLISH) : (lastBreak == STRUCT_CHOCH_BEARISH);
        if(choch) score += 1.5;
    }
 
@@ -484,18 +485,17 @@ double CSymbolEngine::CalculateConfluenceScore(int direction)
    if(m_config.useSMC)
    {
       // Order Blocks
-      bool obActive = (direction == 1) ? m_smcOrderBlocks.IsBullishBlockActive(currentPrice) : 
-                                         m_smcOrderBlocks.IsBearishBlockActive(currentPrice);
+      double obTop, obBot;
+      bool obActive = m_smcOrderBlocks.IsInOrderBlock(direction, obTop, obBot);
       if(obActive) score += 2.5;
       
       // FVG
-      bool fvgActive = (direction == 1) ? m_smcFVG.IsBullishFVG(currentPrice) : 
-                                          m_smcFVG.IsBearishFVG(currentPrice);
+      double fvgTop, fvgBot;
+      bool fvgActive = m_smcFVG.IsInFVG(direction, fvgTop, fvgBot);
       if(fvgActive) score += 2.0;
       
-      // Liquidity Sweep
-      bool sweep = (direction == 1) ? m_smcLiquidity.IsSellSideLiquiditySwept() : 
-                                      m_smcLiquidity.IsBuySideLiquiditySwept();
+      // Liquidity Sweep (aligned with direction)
+      bool sweep = m_smcLiquidity.IsSweepAligned(direction);
       if(sweep) score += 1.5;
    }
 
@@ -504,8 +504,7 @@ double CSymbolEngine::CalculateConfluenceScore(int direction)
    // MTF Confluence
    if(m_config.useMTF)
    {
-      if(direction == 1 && m_mtfAnalysis.IsBullish()) score += 2.0;
-      if(direction == -1 && m_mtfAnalysis.IsBearish()) score += 2.0;
+      if(m_mtfAnalysis.IsDirectionAligned(direction)) score += 2.0;
    }
    
    // Volume Analysis (if available) - Simple volume trend
