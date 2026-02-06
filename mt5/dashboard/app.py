@@ -68,15 +68,28 @@ elif page == "Optimization":
                 best_params = optimizer.run_optimization(selected_symbol)
                 
                 if best_params:
+                    # Store in session state
+                    st.session_state['opt_results'] = {
+                        'symbol': selected_symbol,
+                        'params': best_params,
+                        'time': time.time()
+                    }
                     st.success(f"✅ Optimization Complete! Best Params: {best_params}")
-                    
-                    if st.button("💾 Apply Parameters to DB"):
-                        optimizer.update_db(selected_symbol, best_params)
-                        st.success("Configuration Updated!")
-                        time.sleep(1)
-                        st.rerun()
                 else:
                     st.error("Optimization failed. Check if Market Data is synced (Recompile EA).")
+
+        # Display results and Apply button from Session State
+        if 'opt_results' in st.session_state and st.session_state['opt_results']['symbol'] == selected_symbol:
+            res = st.session_state['opt_results']
+            st.info(f"Last Optimization for {res['symbol']}: {res['params']}")
+            
+            if st.button("💾 Apply Parameters to DB"):
+                optimizer.update_db(res['symbol'], res['params'])
+                st.success("Configuration Updated!")
+                # creating a clear state so the user can run optimization again if needed
+                del st.session_state['opt_results']
+                time.sleep(1)
+                st.rerun()
                     
         st.info("💡 Note: The Optimizer uses recent history stored in 'MarketData'. Ensure you have run the EA to populate this data.")
     else:
