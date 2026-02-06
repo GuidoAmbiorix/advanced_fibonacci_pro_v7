@@ -821,6 +821,18 @@ void CSymbolEngine::BuildConfluenceFactors(ConfluenceFactors &factors, int direc
    factors.confluenceScore = score;
 }
 
+//+------------------------------------------------------------------+
+//| Get Entry Tier based on Score                                     |
+//+------------------------------------------------------------------+
+ENUM_ENTRY_TIER CSymbolEngine::GetEntryTier(double score)
+{
+   if(score >= m_config.minConfluenceEntry + 2.0) return TIER_ELITE;
+   if(score >= m_config.minConfluenceEntry + 1.0) return TIER_STRONG;
+   if(score >= m_config.minConfluenceEntry)       return TIER_STANDARD;
+   
+   return TIER_WEAK; 
+}
+
 void CSymbolEngine::OnTrade() { /* Handle trade events */ }
 
 #endif
