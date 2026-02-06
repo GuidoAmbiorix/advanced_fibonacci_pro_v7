@@ -953,11 +953,6 @@ private:
          // Session
          "use_session_governor INTEGER,"
          "max_trades_per_session INTEGER,"
-      string sqlConfig = 
-         "CREATE TABLE IF NOT EXISTS SymbolConfigs ("
-         "symbol TEXT PRIMARY KEY,"
-         "magic_number INTEGER,"
-         // ... (truncated for brevity, ensure you keep original) ...
          "trade_cooldown_minutes INTEGER"
          ");";
 
@@ -978,6 +973,7 @@ private:
       return true;
    }
    
+   public:
    //+------------------------------------------------------------------+
    //| Log System Event                                                  |
    //+------------------------------------------------------------------+
