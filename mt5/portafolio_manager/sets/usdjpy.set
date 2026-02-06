@@ -17,7 +17,8 @@ InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
 
 ; ====== FIBONACCI ======
-InpSwingLookback=12
+; ====== FIBONACCI ======
+InpSwingLookback=8
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.25
@@ -25,7 +26,7 @@ InpZoneTolerance=0.25
 ; ====== DISPLACEMENT ======
 InpUseDisplacement=true
 InpDisplacementATR=1.2
-InpDisplacementLookback=5
+InpDisplacementLookback=3
 
 ; ====== RSI ======
 InpRSI_Period=14
@@ -44,7 +45,7 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=10
+InpMinConfluenceEntry=11
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
@@ -59,8 +60,8 @@ InpEnableMarginCheck=true
 ; ====== TAKE PROFIT ======
 InpTPMode=2
 InpFixedTP_R=2.0
-InpMinTP_R=1.2
-InpMaxTP_R=4.0
+InpMinTP_R=1.0
+InpMaxTP_R=3.0
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
@@ -88,8 +89,8 @@ InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
 InpUseNewsFilter=true
-InpNewsMinutesBefore=30
-InpNewsMinutesAfter=30
+InpNewsMinutesBefore=15
+InpNewsMinutesAfter=15
 
 ; ====== KELLY ======
 InpUseKelly=true
@@ -111,7 +112,7 @@ InpEnableAdaptiveFilters=true
 ; ====== SESSION GOVERNOR (DISABLED FOR 24h) ======
 InpUseSessionGovernor=true
 InpMaxTradesPerSession=10
-InpTradeCooldownMinutes=30
+InpTradeCooldownMinutes=10
 InpEnableSessionBlacklist=false
 
 ; ====== PORTFOLIO PROTECTION ======
