@@ -194,16 +194,21 @@ class PortfolioOptimizer:
 
     def update_db(self, symbol, params):
         """Updates the database with optimized parameters."""
-        # Convert params to match DB schema keys
-        # e.g., 'fixed_tp_r' matches. 
-        # Add symbol and magic (fetch existing to preserve magic)
         
         current_configs = self.db.load_configs()
         if not current_configs.empty:
             row = current_configs[current_configs['symbol'] == symbol]
             if not row.empty:
                 config = row.to_dict('records')[0]
-                # Update with optimized values
+                
+                # Merge existing config with new params
                 config.update(params)
-                self.db.save_config(config)
-                print(f"💾 Updated DB for {symbol}")
+                
+                if self.db.save_config(config):
+                     # Verify
+                     if self.db.verify_config_sync(symbol, params):
+                         print(f"✅ Verified: DB Updated for {symbol}")
+                     else:
+                         print(f"❌ WARNING: Verification Failed for {symbol}")
+                else:
+                    print(f"❌ Save Failed for {symbol}")

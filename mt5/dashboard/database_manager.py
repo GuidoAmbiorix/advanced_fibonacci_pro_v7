@@ -43,19 +43,73 @@ class DatabaseManager:
             conn.close()
 
     def save_config(self, config_dict):
-        """Saves a single symbol configuration dict to DB (Upsert)."""
+        """Saves a single symbol configuration dict to DB (Update)."""
         conn = self.get_connection()
         if not conn: return False
         try:
             cursor = conn.cursor()
-            cols = ", ".join(config_dict.keys())
-            placeholders = ", ".join(["?"] * len(config_dict))
-            sql = f"INSERT OR REPLACE INTO SymbolConfigs ({cols}) VALUES ({placeholders})"
-            cursor.execute(sql, tuple(config_dict.values()))
+            symbol = config_dict.get('symbol')
+            if not symbol:
+                print("❌ Config dict missing 'symbol' key")
+                return False
+                
+            # Filter out keys that might not exist in columns or shouldn't be updated loosely if needed
+            # For now, we assume config_dict came from load_configs, so keys are valid.
+            
+            # Construct UPDATE statement
+            set_clauses = []
+            values = []
+            for key, value in config_dict.items():
+                if key != 'symbol': # Don't update the primary key
+                    set_clauses.append(f"{key} = ?")
+                    values.append(value)
+            
+            values.append(symbol) # For WHERE clause
+            
+            sql = f"UPDATE SymbolConfigs SET {', '.join(set_clauses)} WHERE symbol = ?"
+            
+            cursor.execute(sql, tuple(values))
+            
+            if cursor.rowcount == 0:
+                # If no row updated, try INSERT (Upsert fallback)
+                print(f"⚠️ Update affected 0 rows for {symbol}. Trying Insert.")
+                cols = ", ".join(config_dict.keys())
+                placeholders = ", ".join(["?"] * len(config_dict))
+                sql_insert = f"INSERT OR REPLACE INTO SymbolConfigs ({cols}) VALUES ({placeholders})"
+                cursor.execute(sql_insert, tuple(config_dict.values()))
+                
             conn.commit()
+            print(f"✅ Configuration saved for {symbol}")
             return True
         except Exception as e:
-            print(f"❌ Error saving config: {e}")
+            print(f"❌ Error saving config for {config_dict.get('symbol')}: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def verify_config_sync(self, symbol, expected_params):
+        """Verifies that the DB actually contains the expected values."""
+        conn = self.get_connection()
+        if not conn: return False
+        try:
+            config = pd.read_sql(f"SELECT * FROM SymbolConfigs WHERE symbol='{symbol}'", conn)
+            if config.empty: return False
+            
+            row = config.iloc[0].to_dict()
+            matches = True
+            for key, val in expected_params.items():
+                # Allow small float differences
+                db_val = row.get(key)
+                if isinstance(val, float) and isinstance(db_val, float):
+                    if abs(val - db_val) > 0.0001:
+                        print(f"❌ Mismatch {key}: Exp {val} vs DB {db_val}")
+                        matches = False
+                elif str(val) != str(db_val):
+                     print(f"❌ Mismatch {key}: Exp {val} vs DB {db_val}")
+                     matches = False
+            return matches
+        except Exception as e:
+            print(f"❌ Verification error: {e}")
             return False
         finally:
             conn.close()
