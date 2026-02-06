@@ -1,11 +1,11 @@
 //+------------------------------------------------------------------+
 //|                                          Portfolio_Governor.mq5  |
-//|          🧠 CENTRAL BRAIN - Multi-Symbol Risk Controller         |
-//|             Manages: DD, Exposure, PF, Correlation Groups        |
+//|          🧠 CENTRAL BRAIN V3.0 - Multi-Symbol Risk Controller    |
+//|             Manages: Symbol Engines, DB, DD, Correlation         |
 //+------------------------------------------------------------------+
 #property copyright "Portfolio Governor"
 #property link      "https://github.com/GuidoAmbiorix"
-#property version   "1.00"
+#property version   "3.00"
 #property description "🧠 Portfolio Governor: Central Risk Brain"
 #property description "Run on ONE chart only. Controls all Symbol Engines."
 #property strict
@@ -15,8 +15,11 @@
 #include <Trade\AccountInfo.mqh>
 #include "Include\PortfolioGlobals.mqh"
 #include "Include\GovernorAllocator.mqh"
+#include "Include\DatabaseManager.mqh"
+#include "Include\SymbolEngine.mqh"
 
 CGovernorAllocator allocator;
+CDatabaseManager   dbManager;
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
@@ -49,19 +52,24 @@ input group "═══════ CORRELATION GUARD ═══════"
 input bool   InpUseCorrelationGuard = true;    // Enable Correlation Guard
 input double InpHighCorrelation = 0.70;        // High Correlation Threshold
 input double InpCorrelationReduction = 0.50;   // Size Reduction Factor
+input int    InpCorrelationLookback = 300;     // Bars for correlation (M15)
 
 input group "═══════ MAGIC NUMBER RANGE ═══════"
 input int    InpMagicBase = 100000;            // Magic Number Base
 input int    InpMagicRange = 999;              // Magic Number Range (Base to Base+Range)
 
 input group "═══════ UPDATE FREQUENCY ═══════"
-input int    InpUpdateSeconds = 5;             // Update Interval (seconds)
+input int    InpUpdateSeconds = 1;             // Interval (seconds) - Fast for scalping
 
 //+------------------------------------------------------------------+
 //| GLOBAL VARIABLES                                                  |
 //+------------------------------------------------------------------+
 CPositionInfo position;
 CAccountInfo  account;
+
+// Managed Soldiers
+CSymbolEngine *g_engines[];
+int            g_engineCount = 0;
 
 double g_peakEquity = 0;
 datetime g_lastUpdate = 0;
@@ -81,24 +89,19 @@ bool g_dailyLimitHit = false;
 bool g_weeklyLimitHit = false;
 bool g_monthlyLimitHit = false;
 
-// Correlation matrix (pre-defined known correlations)
-struct SymbolCorrelation
+// Correlation Engine
+struct DynamicCorrelation
 {
    string symbol1;
    string symbol2;
    double correlation;
 };
 
-SymbolCorrelation g_correlations[] = {
-   {"EURUSD", "GBPUSD", 0.85},
-   {"EURUSD", "USDCHF", -0.90},
-   {"GBPUSD", "EURGBP", -0.75},
-   {"AUDUSD", "NZDUSD", 0.90},
-   {"USDJPY", "EURJPY", 0.80},
-   {"XAUUSD", "EURUSD", 0.60},
-   {"XAUUSD", "USDJPY", -0.50},
-   {"XAUUSD", "DXY", -0.80}
-};
+// Monitored symbols for dynamic correlation
+string g_monitoredSymbols[] = {"EURUSD", "GBPUSD", "AUDUSD", "USDCAD", "USDJPY", "EURJPY", "AUDJPY", "XAUUSD"}; // Will be updated from DB
+DynamicCorrelation g_dynamicMatrix[];
+datetime g_lastMatrixUpdate = 0;
+
 
 //+------------------------------------------------------------------+
 //| Expert initialization                                             |
@@ -115,18 +118,66 @@ int OnInit()
    GlobalVariableSet(GV_PEAK_EQUITY, account.Equity());
    GlobalVariableSet(GV_LAST_UPDATE, (double)TimeCurrent());
    
-   // Initialize group risks
-   GlobalVariableSet(GV_GROUP_USD_RISK, 0);
-   GlobalVariableSet(GV_GROUP_JPY_RISK, 0);
-   GlobalVariableSet(GV_GROUP_GBP_RISK, 0);
-   GlobalVariableSet(GV_GROUP_METALS_RISK, 0);
-   GlobalVariableSet(GV_GROUP_INDICES_RISK, 0);
+   // Initialize database
+   if(!dbManager.Init())
+   {
+       Print("❌ CRITICAL: Database init failed!");
+       return INIT_FAILED;
+   }
    
+   // Load Configs
+   SymbolConfig configs[];
+   int totalConfigs = dbManager.LoadSymbolConfigs(configs);
+   
+   if(totalConfigs == 0)
+   {
+       Print("⚠️ No configs found in DB. Seeding Default Symbols...");
+       SeedDefaultConfigs();
+       // Reload after seeding
+       totalConfigs = dbManager.LoadSymbolConfigs(configs);
+   }
+   
+   if(totalConfigs > 0)
+   {
+       ArrayResize(g_engines, totalConfigs);
+       g_engineCount = 0;
+       
+       for(int i=0; i<totalConfigs; i++)
+       {
+           // Check if symbol exists in Market Watch
+           if(!SymbolSelect(configs[i].symbol, true))
+           {
+               Print("⚠️ Symbol ", configs[i].symbol, " unavailable. Skipping.");
+               continue;
+           }
+           
+           g_engines[g_engineCount] = new CSymbolEngine();
+           if(g_engines[g_engineCount].Init(configs[i], &dbManager))
+           {
+               g_engineCount++;
+           }
+           else
+           {
+               Print("❌ Failed to init engine for ", configs[i].symbol);
+               delete g_engines[g_engineCount];
+           }
+       }
+       // Resize to actual successful inits
+       ArrayResize(g_engines, g_engineCount);
+       
+       // Update Monitored Symbols from Configs
+       ArrayResize(g_monitoredSymbols, g_engineCount);
+       for(int i=0; i<g_engineCount; i++)
+       {
+           g_monitoredSymbols[i] = g_engines[i].GetSymbol();
+       }
+   }
+   
+   // Initialize Risk/Metrics
    g_peakEquity = account.Equity();
    ArrayResize(g_tradeResults, InpRollingTrades);
    ArrayInitialize(g_tradeResults, 0);
 
-   // Initialize daily/weekly/monthly tracking
    g_dailyStartEquity = account.Equity();
    g_weeklyStartEquity = account.Equity();
    g_monthlyStartEquity = account.Equity();
@@ -134,23 +185,11 @@ int OnInit()
    g_lastWeekCheck = TimeCurrent();
    g_lastMonthCheck = TimeCurrent();
 
-   // Set initial GV values for daily/weekly
-   GlobalVariableSet(GV_DAILY_DD, 0);
-   GlobalVariableSet(GV_WEEKLY_DD, 0);
-   GlobalVariableSet(GV_DAILY_START_EQUITY, g_dailyStartEquity);
-   GlobalVariableSet(GV_WEEKLY_START_EQUITY, g_weeklyStartEquity);
-
    Print("===============================================================");
-   Print("  PORTFOLIO GOVERNOR v2.0 ACTIVATED");
+   Print("  PORTFOLIO GOVERNOR v3.0 (CENTRALIZED) ACTIVATED");
    Print("===============================================================");
-   Print("  Max Portfolio Risk: ", InpMaxPortfolioRisk, "%");
-   Print("  Max Symbol Risk: ", InpMaxSymbolRisk, "%");
-   Print("  Max Group Risk: ", InpMaxGroupRisk, "%");
-   Print("  DD Pause Level: ", InpDD_Pause, "%");
-   Print("  PF Pause Level: < ", InpPF_Pause);
-   Print("  Daily Max DD: ", InpDailyMaxDD, "%");
-   Print("  Weekly Max DD: ", InpWeeklyMaxDD, "%");
-   Print("  Correlation Guard: ", InpUseCorrelationGuard ? "ON" : "OFF");
+   Print("  Active Engines: ", g_engineCount);
+   Print("  Database: ENABLED");
    Print("===============================================================");
 
    return INIT_SUCCEEDED;
@@ -161,6 +200,16 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
+   // Cleanup Engines
+   for(int i=0; i<g_engineCount; i++)
+   {
+       if(CheckPointer(g_engines[i]) == POINTER_DYNAMIC)
+           delete g_engines[i];
+   }
+   ArrayResize(g_engines, 0);
+   
+   dbManager.Close();
+
    // Mark governor as inactive
    GlobalVariableSet(GV_GOVERNOR_ACTIVE, 0);
    Comment("");
@@ -172,30 +221,37 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-   // Throttle updates
-   if(TimeCurrent() - g_lastUpdate < InpUpdateSeconds) return;
-   g_lastUpdate = TimeCurrent();
-
-   // 0. Check period resets (daily/weekly/monthly)
-   CheckPeriodReset();
-
-   // 1. Calculate portfolio metrics
-   CalculatePortfolioMetrics();
-
-   // 2. Calculate daily/weekly drawdowns
-   CalculatePeriodDrawdowns();
-
-   // 3. Update risk multiplier
-   UpdateRiskMultiplier();
-
-   // 4. Update trading enabled status
-   UpdateTradingStatus();
-
-   // 5. Update dashboard
-   UpdateDashboard();
-
-   // 6. Publish update timestamp
-   GlobalVariableSet(GV_LAST_UPDATE, (double)TimeCurrent());
+   // 1. Run Governor Logic (Metrics, Risk, Correlation)
+   // Throttle only the heavy metrics, but engines might needs faster ticks?
+   // We'll throttle logic but run engines every tick or throttle them slightly less.
+   
+   static datetime lastGovUpdate = 0;
+   
+   if(TimeCurrent() - lastGovUpdate >= InpUpdateSeconds)
+   {
+       lastGovUpdate = TimeCurrent();
+       
+       CheckPeriodReset();
+       UpdateCorrelationMatrix();
+       CalculatePortfolioMetrics();
+       CalculatePeriodDrawdowns();
+       UpdateRiskMultiplier();
+       UpdateTradingStatus();
+       UpdateDashboard();
+       GlobalVariableSet(GV_LAST_UPDATE, (double)TimeCurrent());
+   }
+   
+   // 2. Run Symbol Engines (The Army)
+   // We run them sequentially. Since MT5 is single-threaded per EA, this is standard.
+   // Caution: If many symbols, this loop must be fast.
+   
+   for(int i=0; i<g_engineCount; i++)
+   {
+       if(CheckPointer(g_engines[i]) != POINTER_INVALID)
+       {
+           g_engines[i].OnTick();
+       }
+   }
 }
 
 //+------------------------------------------------------------------+
@@ -287,71 +343,88 @@ void CalculatePeriodDrawdowns()
 }
 
 //+------------------------------------------------------------------+
+//| Update Dynamic Correlation Matrix                                 |
+//+------------------------------------------------------------------+
+void UpdateCorrelationMatrix()
+{
+   // Update once per hour
+   if(TimeCurrent() - g_lastMatrixUpdate < 3600 && ArraySize(g_dynamicMatrix) > 0) return;
+
+   g_lastMatrixUpdate = TimeCurrent();
+   int symCount = ArraySize(g_monitoredSymbols);
+   
+   // Calculate combinations (n * (n-1)) / 2
+   int matrixSize = (symCount * (symCount - 1)) / 2;
+   ArrayResize(g_dynamicMatrix, matrixSize);
+   
+   int idx = 0;
+   // Print("🔄 DCE: Updating Matrix for ", symCount, " symbols..."); // Reduce noise
+
+   for(int i = 0; i < symCount; i++)
+   {
+      for(int j = i + 1; j < symCount; j++)
+      {
+         double corr = CalculatePearsonCorrelation(g_monitoredSymbols[i], g_monitoredSymbols[j]);
+         g_dynamicMatrix[idx].symbol1 = g_monitoredSymbols[i];
+         g_dynamicMatrix[idx].symbol2 = g_monitoredSymbols[j];
+         g_dynamicMatrix[idx].correlation = corr;
+         idx++;
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Calculate Pearson Correlation                                     |
+//+------------------------------------------------------------------+
+double CalculatePearsonCorrelation(string s1, string s2)
+{
+   int lookback = InpCorrelationLookback;
+   double close1[], close2[];
+   
+   // Copy M15 closes
+   if(CopyClose(s1, PERIOD_M15, 0, lookback, close1) != lookback) return 0;
+   if(CopyClose(s2, PERIOD_M15, 0, lookback, close2) != lookback) return 0;
+   
+   double sum1 = 0, sum2 = 0;
+   for(int i=0; i<lookback; i++) { sum1 += close1[i]; sum2 += close2[i]; }
+   double mean1 = sum1 / lookback;
+   double mean2 = sum2 / lookback;
+   
+   double num = 0, den1 = 0, den2 = 0;
+   for(int i=0; i<lookback; i++)
+   {
+      double d1 = close1[i] - mean1;
+      double d2 = close2[i] - mean2;
+      num += d1 * d2;
+      den1 += d1 * d1;
+      den2 += d2 * d2;
+   }
+   
+   if(den1 * den2 == 0) return 0;
+   return num / MathSqrt(den1 * den2);
+}
+
+//+------------------------------------------------------------------+
 //| Get correlation between two symbols                               |
 //+------------------------------------------------------------------+
 double GetSymbolCorrelation(string sym1, string sym2)
 {
-   // Normalize symbols
-   string s1 = sym1, s2 = sym2;
+   string s1 = sym1;
+   string s2 = sym2;
    StringToUpper(s1);
    StringToUpper(s2);
 
-   // Remove common suffixes
-   StringReplace(s1, ".PRO", "");
-   StringReplace(s2, ".PRO", "");
-
-   // Check predefined correlations
-   for(int i = 0; i < ArraySize(g_correlations); i++)
+   // Check dynamic matrix
+   for(int i = 0; i < ArraySize(g_dynamicMatrix); i++)
    {
-      if((g_correlations[i].symbol1 == s1 && g_correlations[i].symbol2 == s2) ||
-         (g_correlations[i].symbol1 == s2 && g_correlations[i].symbol2 == s1))
+      if((g_dynamicMatrix[i].symbol1 == s1 && g_dynamicMatrix[i].symbol2 == s2) ||
+         (g_dynamicMatrix[i].symbol1 == s2 && g_dynamicMatrix[i].symbol2 == s1))
       {
-         return g_correlations[i].correlation;
+         return g_dynamicMatrix[i].correlation;
       }
    }
 
-   // Check if same correlation group
-   ENUM_CORR_GROUP group1 = GetCorrelationGroup(s1);
-   ENUM_CORR_GROUP group2 = GetCorrelationGroup(s2);
-
-   if(group1 == group2 && group1 != GROUP_OTHER)
-      return 0.70;  // Assume moderate correlation within same group
-
-   return 0.0;  // Unknown correlation
-}
-
-//+------------------------------------------------------------------+
-//| Check if adding position would exceed correlation limits          |
-//+------------------------------------------------------------------+
-double GetCorrelationAdjustedRisk(string symbol, double requestedRisk)
-{
-   if(!InpUseCorrelationGuard) return requestedRisk;
-
-   double adjustedRisk = requestedRisk;
-   double maxCorrelation = 0;
-
-   // Scan existing positions for correlated pairs
-   for(int i = PositionsTotal() - 1; i >= 0; i--)
-   {
-      if(position.SelectByIndex(i))
-      {
-         string existingSym = position.Symbol();
-         if(existingSym == symbol) continue;  // Skip same symbol
-
-         double corr = MathAbs(GetSymbolCorrelation(symbol, existingSym));
-         if(corr > maxCorrelation) maxCorrelation = corr;
-      }
-   }
-
-   // Apply reduction if high correlation exists
-   if(maxCorrelation >= InpHighCorrelation)
-   {
-      adjustedRisk *= InpCorrelationReduction;
-      // Print("Correlation guard: ", symbol, " reduced to ", DoubleToString(adjustedRisk, 2),
-      //       "% (corr=", DoubleToString(maxCorrelation, 2), ")");
-   }
-
-   return adjustedRisk;
+   return 0.0; // Unknown
 }
 
 //+------------------------------------------------------------------+
@@ -376,14 +449,20 @@ void OnTrade()
             long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
             long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
             
-            // Check if it's our trade and an exit
-            if(magic >= InpMagicBase && magic <= InpMagicBase + InpMagicRange)
+            // Allow any magic in our monitored range?
+            // Actually, with centralized engine, we know the magics. 
+            // Simplified check:
+            if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_INOUT)
             {
-               if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_INOUT)
-               {
-                  double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
-                  AddTradeResult(profit);
-               }
+                double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+                AddTradeResult(profit);
+                
+                // Also trigger Engine OnTrade if needed?
+                for(int j=0; j<g_engineCount; j++)
+                {
+                    if(g_engines[j].GetSymbol() == HistoryDealGetString(ticket, DEAL_SYMBOL))
+                        g_engines[j].OnTrade();
+                }
             }
          }
       }
@@ -446,33 +525,31 @@ void CalculatePortfolioMetrics()
    {
       if(position.SelectByIndex(i))
       {
-         long magic = position.Magic();
+         // We monitor ALL positions now, or just ours?
+         // Safer to monitor everything for exposure calculation
+         string sym = position.Symbol();
+         double openPrice = position.PriceOpen();
+         double sl = position.StopLoss();
+         double volume = position.Volume();
          
-         // Check if it's our trade
-         if(magic >= InpMagicBase && magic <= InpMagicBase + InpMagicRange)
-         {
-            string sym = position.Symbol();
-            double openPrice = position.PriceOpen();
-            double sl = position.StopLoss();
-            double volume = position.Volume();
-            
-            // Calculate risk for this position
-            double riskPoints = MathAbs(openPrice - sl);
-            double tickValue = SymbolInfoDouble(sym, SYMBOL_TRADE_TICK_VALUE);
-            double tickSize = SymbolInfoDouble(sym, SYMBOL_TRADE_TICK_SIZE);
-            
-            double riskMoney = 0;
-            if(tickSize > 0)
-               riskMoney = (riskPoints / tickSize) * tickValue * volume;
-            
-            double riskPercent = (equity > 0) ? (riskMoney / equity) * 100.0 : 0;
-            
-            totalExposure += riskPercent;
-            
-            // Add to correlation group
-            ENUM_CORR_GROUP group = GetCorrelationGroup(sym);
-            groupRisks[(int)group] += riskPercent;
-         }
+         // Calculate risk for this position
+         double riskPoints = MathAbs(openPrice - sl);
+         if(sl == 0) riskPoints = 0; // No SL, hard to guess risk. Maybe use ATR?
+         
+         double tickValue = SymbolInfoDouble(sym, SYMBOL_TRADE_TICK_VALUE);
+         double tickSize = SymbolInfoDouble(sym, SYMBOL_TRADE_TICK_SIZE);
+         
+         double riskMoney = 0;
+         if(tickSize > 0 && riskPoints > 0)
+            riskMoney = (riskPoints / tickSize) * tickValue * volume;
+         
+         double riskPercent = (equity > 0) ? (riskMoney / equity) * 100.0 : 0;
+         
+         totalExposure += riskPercent;
+         
+         // Add to correlation group
+         ENUM_CORR_GROUP group = GetCorrelationGroup(sym);
+         groupRisks[(int)group] += riskPercent;
       }
    }
    
@@ -573,52 +650,6 @@ void UpdateTradingStatus()
 }
 
 //+------------------------------------------------------------------+
-//| Check if trade request is allowed                                 |
-//+------------------------------------------------------------------+
-bool CanOpenTrade(string symbol, double requestedRisk, double &approvedRisk)
-{
-   // Check if trading enabled
-   if(GlobalVariableGet(GV_TRADING_ENABLED) != 1)
-   {
-      approvedRisk = 0;
-      return false;
-   }
-
-   double totalExposure = GlobalVariableGet(GV_TOTAL_EXPOSURE);
-   double riskMult = GlobalVariableGet(GV_RISK_MULTIPLIER);
-
-   // Apply risk multiplier
-   double scaledRisk = requestedRisk * riskMult;
-
-   // Apply correlation guard adjustment
-   scaledRisk = GetCorrelationAdjustedRisk(symbol, scaledRisk);
-
-   // Check portfolio limit
-   if(totalExposure + scaledRisk > InpMaxPortfolioRisk)
-   {
-      scaledRisk = MathMax(0, InpMaxPortfolioRisk - totalExposure);
-   }
-
-   // Check symbol limit
-   scaledRisk = MathMin(scaledRisk, InpMaxSymbolRisk);
-
-   // Check group limit
-   ENUM_CORR_GROUP group = GetCorrelationGroup(symbol);
-   string gvKey = GetGroupGVKey(group);
-   if(gvKey != "")
-   {
-      double groupRisk = GlobalVariableGet(gvKey);
-      if(groupRisk + scaledRisk > InpMaxGroupRisk)
-      {
-         scaledRisk = MathMax(0, InpMaxGroupRisk - groupRisk);
-      }
-   }
-
-   approvedRisk = scaledRisk;
-   return (scaledRisk > 0.05); // Minimum viable risk
-}
-
-//+------------------------------------------------------------------+
 //| Dashboard                                                         |
 //+------------------------------------------------------------------+
 void UpdateDashboard()
@@ -643,9 +674,10 @@ void UpdateDashboard()
    string weeklyColor = (weeklyDD < InpWeeklyMaxDD * 0.5) ? "[OK]" : ((weeklyDD < InpWeeklyMaxDD) ? "[WARN]" : "[CRIT]");
 
    string text = "===============================================\n";
-   text += "  PORTFOLIO GOVERNOR v2.0\n";
+   text += "  🧠 BRAIN v3.0 (DCE + DB + CENTRALIZED)\n";
    text += "===============================================\n";
    text += "Status: " + status + "\n";
+   text += "Engines: " + IntegerToString(g_engineCount) + " Active\n";
    text += "-----------------------------------------------\n";
    text += "Equity: $" + DoubleToString(account.Equity(), 2) + "\n";
    text += ddColor + " Portfolio DD: " + DoubleToString(dd, 2) + "% (Pause: " + DoubleToString(InpDD_Pause, 1) + "%)\n";
@@ -669,4 +701,3 @@ void UpdateDashboard()
 
    Comment(text);
 }
-//+------------------------------------------------------------------+

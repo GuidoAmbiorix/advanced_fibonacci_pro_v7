@@ -309,3 +309,251 @@ struct PairCorrelation
 // AUDUSD/NZDUSD: +0.90 (high positive)
 
 #endif
+
+//+------------------------------------------------------------------+
+//| SYMBOL CONFIGURATION (Database-Driven)                            |
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| SYMBOL CONFIGURATION (Full Database Mirror)                       |
+//+------------------------------------------------------------------+
+struct SymbolConfig
+{
+    // ======= IDENTITY =======
+    string symbol;
+    long   magicNumber;
+    bool   enableMobileAlerts;
+
+    // ======= DIRECTION =======
+    int    direction;                 // 0=Both, 1=Buy, 2=Sell
+    int    brokerUTCOffset;
+
+    // ======= FIBONACCI =======
+    int    swingLookback;
+    double fibLevelLow;
+    double fibLevelHigh;
+    double zoneTolerance;
+
+    // ======= DISPLACEMENT =======
+    bool   useDisplacement;
+    double displacementATR;
+    int    displacementLookback;
+
+    // ======= RSI =======
+    int    rsiPeriod;
+    int    rsiOversold;
+    int    rsiOverbought;
+    bool   rsiMomentum;
+
+    // ======= TREND =======
+    int    emaPeriod;
+    bool   useTrendFilter;
+    double emaMinSlope;
+
+    // ======= CHOP FILTER =======
+    bool   useChopFilter;
+    double chopThreshold;
+    int    atrMaPeriod;
+
+    // ======= CONFLUENCE =======
+    int    minConfluenceEntry;
+    bool   enableAddOns;
+    double addOn1_R;
+    double addOn2_R;
+    int    maxPositions;
+
+    // ======= RISK =======
+    double riskBase;
+    double riskAddOn1;
+    double riskAddOn2;
+    double maxRisk;
+    double maxLotsPerTrade;
+    bool   enableMarginCheck;
+
+    // ======= TAKE PROFIT =======
+    int    tpMode;                    // 0=None, 1=Fixed, 2=Adaptive, 3=Hybrid
+    double fixedTP_R;
+    double minTP_R;
+    double maxTP_R;
+    bool   tpUseLearnedMFE;
+
+    // ======= EXIT =======
+    int    trailingMode;              // 0=Off, 1=Runner, 2=Full
+    double partialTP_R;
+    double partialClosePercent;
+    double beThreshold_R;
+    double trailStart_R;
+    double trailATR_Mult;
+
+    // ======= SPREAD =======
+    int    maxSpreadPoints;
+
+    // ======= SMC =======
+    bool   useSMC;
+    int    smcSwingLookback;
+    double smcMinImpulseATR;
+    double smcMinFVG_ATR;
+
+    // ======= MULTI-TIMEFRAME =======
+    bool   useMTF;
+    ENUM_TIMEFRAMES htf;
+    ENUM_TIMEFRAMES mtf;
+    int    mtfEmaPeriod;
+
+    // ======= NEWS FILTER =======
+    bool   useNewsFilter;
+    int    newsMinutesBefore;
+    int    newsMinutesAfter;
+
+    // ======= VOLATILITY =======
+    bool   enableVolatilityFilter;
+    double volatilityThreshold;
+    int    volatilitySpikeCooldown;
+
+    // ======= KELLY =======
+    bool   useKelly;
+    double kellyFraction;
+    double dailyMaxDD;
+    double weeklyMaxDD;
+
+    // ======= LEARNING =======
+    bool   enableLearning;
+    bool   logTradesToFile;
+    int    learningHistory;
+    int    minTradesForLearning;
+
+    // ======= ADAPTIVE =======
+    bool   enableAdaptiveRisk;
+    bool   enableAdaptiveExits;
+    bool   enableAdaptiveFilters;
+
+    // ======= PORTFOLIO PROTECTION =======
+    bool   useCorrelationFilter;
+    double dailyMaxLoss_R;
+    int    lossCooldownMinutes;
+    int    maxConsecutiveLosses;
+    bool   useReversalFilter;
+    int    reversalCooldownMinutes;
+
+    // ======= KILLZONES =======
+    bool   useKillzoneFilter;
+    bool   enableAsianKZ;
+    bool   enableLondonOpenKZ;
+    bool   enableNYKZ;
+    bool   enableLondonCloseKZ;
+
+    // ======= SESSION GOVERNOR =======
+    bool   useSessionGovernor;
+    int    maxTradesPerSession;
+    int    tradeCooldownMinutes;
+    
+    // Default Constructor
+    SymbolConfig()
+    {
+       // Default Initialization (Matches Symbol_Engine defaults)
+       symbol = "";
+       magicNumber = 100001;
+       enableMobileAlerts = true;
+       
+       direction = 0;
+       brokerUTCOffset = 2;
+       
+       swingLookback = 20;
+       fibLevelLow = 0.618;
+       fibLevelHigh = 0.786;
+       zoneTolerance = 0.25;
+       
+       useDisplacement = true;
+       displacementATR = 1.2;
+       displacementLookback = 5;
+       
+       rsiPeriod = 14;
+       rsiOversold = 45;
+       rsiOverbought = 55;
+       rsiMomentum = true;
+       
+       emaPeriod = 200;
+       useTrendFilter = true;
+       emaMinSlope = 0.1;
+       
+       useChopFilter = true;
+       chopThreshold = 0.75;
+       atrMaPeriod = 20;
+       
+       minConfluenceEntry = 4;
+       enableAddOns = true;
+       addOn1_R = 1.5;
+       addOn2_R = 2.5;
+       maxPositions = 3;
+       
+       riskBase = 0.25;
+       riskAddOn1 = 0.15;
+       riskAddOn2 = 0.10;
+       maxRisk = 0.75;
+       maxLotsPerTrade = 0.5;
+       enableMarginCheck = true;
+       
+       tpMode = 2;
+       fixedTP_R = 3.0;
+       minTP_R = 1.5;
+       maxTP_R = 5.0;
+       tpUseLearnedMFE = true;
+       
+       trailingMode = 1;
+       partialTP_R = 1.5;
+       partialClosePercent = 40.0;
+       beThreshold_R = 1.8;
+       trailStart_R = 2.0;
+       trailATR_Mult = 1.2;
+       
+       maxSpreadPoints = 50;
+       
+       useSMC = true;
+       smcSwingLookback = 20;
+       smcMinImpulseATR = 2.0;
+       smcMinFVG_ATR = 0.5;
+       
+       useMTF = true;
+       htf = PERIOD_H4;
+       mtf = PERIOD_H1;
+       mtfEmaPeriod = 50;
+       
+       useNewsFilter = true;
+       newsMinutesBefore = 30;
+       newsMinutesAfter = 30;
+       
+       enableVolatilityFilter = true;
+       volatilityThreshold = 3.0;
+       volatilitySpikeCooldown = 15;
+       
+       useKelly = true;
+       kellyFraction = 0.5;
+       dailyMaxDD = 3.0;
+       weeklyMaxDD = 6.0;
+       
+       enableLearning = true;
+       logTradesToFile = true;
+       learningHistory = 180;
+       minTradesForLearning = 50;
+       
+       enableAdaptiveRisk = false;
+       enableAdaptiveExits = false;
+       enableAdaptiveFilters = false;
+       
+       useCorrelationFilter = true;
+       dailyMaxLoss_R = 4.0;
+       lossCooldownMinutes = 30;
+       maxConsecutiveLosses = 2;
+       useReversalFilter = true;
+       reversalCooldownMinutes = 15;
+       
+       useKillzoneFilter = true;
+       enableAsianKZ = false;
+       enableLondonOpenKZ = true;
+       enableNYKZ = true;
+       enableLondonCloseKZ = false;
+       
+       useSessionGovernor = true;
+       maxTradesPerSession = 3;
+       tradeCooldownMinutes = 30;
+    }
+};
