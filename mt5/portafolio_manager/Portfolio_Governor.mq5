@@ -712,9 +712,14 @@ void UpdateDashboard()
 //+------------------------------------------------------------------+
 void SeedDefaultConfigs()
 {
-   Print("ðŸŒ± Seeding Database with Default Configurations...");
+   Print("🌱 Seeding Database with Default Configurations...");
    
-   string defaultSymbols[] = {"EURUSD", "GBPUSD", "AUDUSD", "USDCAD", "USDJPY", "EURJPY", "AUDJPY", "XAUUSD"};
+   // 10 Strategic Pairs for 24/7 M5 Scalping
+   string defaultSymbols[] = {
+       "EURUSD", "GBPUSD", "AUDUSD", "USDCAD", "USDCHF",  // Majors
+       "USDJPY", "EURJPY", "AUDJPY", "GBPJPY",            // JPY Crosses (Asian/London)
+       "XAUUSD"                                           // Gold (NY Volatility)
+   };
    
    for(int i=0; i<ArraySize(defaultSymbols); i++)
    {
@@ -723,29 +728,42 @@ void SeedDefaultConfigs()
        cfg.symbol = defaultSymbols[i];
        cfg.magicNumber = InpMagicBase + i;
        
+       // Global Rule: Minimum score of 11 required
+       cfg.minConfluenceEntry = 11;
+       
        // Customize per symbol group
        if(StringFind(cfg.symbol, "JPY") >= 0)
        {
-           cfg.trailATR_Mult = 2.0; // Wider stops for JPY
+           // JPY Crosses: Higher volatility, wider stops
+           cfg.trailATR_Mult = 2.0; 
            cfg.volatilityThreshold = 4.0;
+           cfg.riskBase = 0.35; // Slightly higher risk for high probability moves
        }
        else if(StringFind(cfg.symbol, "XAU") >= 0)
        {
-           cfg.trailATR_Mult = 2.5; // Gold needs room
-           cfg.riskBase = 0.5;          // Higher risk for Gold
+           // Gold: Max volatility handling
+           cfg.trailATR_Mult = 2.5; 
+           cfg.riskBase = 0.50;         // High reward targeting
            cfg.volatilityThreshold = 5.0;
            cfg.maxSpreadPoints = 100;
+       }
+       else
+       {
+           // Standard Majors (EU, GU, etc)
+           cfg.riskBase = 0.25; 
+           cfg.trailATR_Mult = 1.2;
+           cfg.volatilityThreshold = 3.0;
        }
        
        if(dbManager.SaveSymbolConfig(cfg))
        {
-           Print("âœ… Seeded default config for ", cfg.symbol);
+           Print("✅ Seeded default config for ", cfg.symbol);
        }
        else
        {
-           Print("âŒ Failed to seed config for ", cfg.symbol);
+           Print("❌ Failed to seed config for ", cfg.symbol);
        }
    }
    
-   Print("ðŸŒ± Seeding Complete.");
+   Print("🌱 Seeding Complete.");
 }

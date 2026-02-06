@@ -479,7 +479,7 @@ struct SymbolConfig
        chopThreshold = 0.75;
        atrMaPeriod = 20;
        
-       minConfluenceEntry = 4;
+       minConfluenceEntry = 11;
        enableAddOns = true;
        addOn1_R = 1.5;
        addOn2_R = 2.5;
