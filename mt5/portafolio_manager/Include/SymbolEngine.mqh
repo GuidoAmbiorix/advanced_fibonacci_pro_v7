@@ -356,6 +356,7 @@ void CSymbolEngine::Uninit()
       m_learning.Deinit();
       m_patternMemory.Deinit();
    }
+}
    
 //+------------------------------------------------------------------+
 //| Update Indicators                                                 |
@@ -822,3 +823,5 @@ void CSymbolEngine::BuildConfluenceFactors(ConfluenceFactors &factors, int direc
 }
 
 void CSymbolEngine::OnTrade() { /* Handle trade events */ }
+
+#endif
