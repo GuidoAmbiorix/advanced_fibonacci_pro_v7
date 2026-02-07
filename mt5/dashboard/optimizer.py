@@ -3,12 +3,17 @@ import pandas as pd
 import numpy as np
 import time
 from database_manager import DatabaseManager
-from optimizer_config import PARAM_SPACES, OPTIMIZATION_SETTINGS, TOTAL_PARAM_COUNT
+from optimizer_config import (
+    PARAM_SPACES, OPTIMIZATION_SETTINGS, TOTAL_PARAM_COUNT,
+    TIMEFRAMES, get_timeframe_settings
+)
 from metrics import PerformanceMetrics, MultiObjectiveMetrics
 
 class PortfolioOptimizer:
-    def __init__(self, db_manager):
+    def __init__(self, db_manager, timeframe=None):
         self.db = db_manager
+        self.timeframe = timeframe or OPTIMIZATION_SETTINGS.get("default_timeframe", 15)
+        self.tf_settings = get_timeframe_settings(self.timeframe)
 
     def validate_params(self, params):
         """
@@ -224,7 +229,9 @@ class PortfolioOptimizer:
                 trades.append(r_result)
 
         # Metric: Sharpe Ratio substitute
-        if len(trades) < OPTIMIZATION_SETTINGS["min_trades"]:
+        # Use timeframe-specific minimum trades
+        min_trades = self.tf_settings['min_trades']
+        if len(trades) < min_trades:
             return -10 # Penalty
             
         returns = np.array(trades)
@@ -373,11 +380,12 @@ class PortfolioOptimizer:
         Returns:
             Dictionary with best balanced solution and Pareto front info
         """
-        print(f"🎯 Starting Multi-Objective Optimization for {symbol}...")
+        print(f"🎯 Starting Multi-Objective Optimization for {symbol} on {self.tf_settings['timeframe_name']}...")
         start_time = int(time.time())
 
-        # Load data
-        df_full = self.db.get_market_data(symbol, 5, limit=5000)
+        # Load data with timeframe-specific limit
+        data_limit = self.tf_settings['data_limit']
+        df_full = self.db.get_market_data(symbol, self.timeframe, limit=data_limit)
         if df_full.empty or len(df_full) < 100:
             print(f"⚠️ Not enough data for {symbol}")
             return None
@@ -425,7 +433,7 @@ class PortfolioOptimizer:
         # Log to database
         run_data = {
             'symbol': symbol,
-            'mode': 'multi_objective',
+            'mode': f'multi_objective_{self.tf_settings["timeframe_name"]}',
             'status': 'completed',
             'started_at': start_time,
             'completed_at': int(time.time()),
@@ -575,7 +583,7 @@ class PortfolioOptimizer:
         Returns:
             Dictionary with results including train/test metrics
         """
-        print(f"🚀 Starting Optimization for {symbol}...")
+        print(f"🚀 Starting Optimization for {symbol} on {self.tf_settings['timeframe_name']}...")
 
         # Track optimization run
         start_time = int(time.time())
@@ -584,8 +592,13 @@ class PortfolioOptimizer:
         if enable_oos_test is None:
             enable_oos_test = OPTIMIZATION_SETTINGS.get("enable_oos_validation", True)
 
-        # 1. Load Data
-        df_full = self.db.get_market_data(symbol, 5, limit=5000)
+        # 1. Load Data with timeframe-specific limit
+        data_limit = self.tf_settings['data_limit']
+        df_full = self.db.get_market_data(symbol, self.timeframe, limit=data_limit)
+
+        print(f"   Timeframe: {self.tf_settings['timeframe_name']}")
+        print(f"   Data points: {len(df_full)}")
+        print(f"   Min trades required: {self.tf_settings['min_trades']}")
         if df_full.empty or len(df_full) < 100:
             print(f"⚠️ Not enough data for {symbol}")
             return None
@@ -633,7 +646,7 @@ class PortfolioOptimizer:
             # Log to database
             run_data = {
                 'symbol': symbol,
-                'mode': 'single',
+                'mode': f'single_{self.tf_settings["timeframe_name"]}',
                 'status': 'completed',
                 'started_at': start_time,
                 'completed_at': int(time.time()),
@@ -677,7 +690,7 @@ class PortfolioOptimizer:
             # Log to database
             run_data = {
                 'symbol': symbol,
-                'mode': 'single',
+                'mode': f'single_{self.tf_settings["timeframe_name"]}',
                 'status': 'completed',
                 'started_at': start_time,
                 'completed_at': int(time.time()),
@@ -740,9 +753,11 @@ class WalkForwardOptimizer:
     - Analyzing stability of results across windows
     """
 
-    def __init__(self, db_manager):
+    def __init__(self, db_manager, timeframe=None):
         self.db = db_manager
-        self.optimizer = PortfolioOptimizer(db_manager)
+        self.timeframe = timeframe or OPTIMIZATION_SETTINGS.get("default_timeframe", 15)
+        self.optimizer = PortfolioOptimizer(db_manager, timeframe=self.timeframe)
+        self.tf_settings = get_timeframe_settings(self.timeframe)
 
     def run_walk_forward(self, symbol, train_bars=200, test_bars=50, step=50, n_trials=50):
         """
@@ -758,10 +773,11 @@ class WalkForwardOptimizer:
         Returns:
             Dictionary with walk-forward results and stability metrics
         """
-        print(f"🔄 Starting Walk-Forward Analysis for {symbol}")
+        print(f"🔄 Starting Walk-Forward Analysis for {symbol} on {self.tf_settings['timeframe_name']}")
         print(f"   Train: {train_bars} bars, Test: {test_bars} bars, Step: {step} bars")
 
-        df_full = self.db.get_market_data(symbol, 5, limit=5000)
+        data_limit = self.tf_settings['data_limit']
+        df_full = self.db.get_market_data(symbol, self.timeframe, limit=data_limit)
 
         if df_full.empty or len(df_full) < train_bars + test_bars:
             print(f"⚠️ Not enough data for walk-forward analysis")

@@ -7,7 +7,7 @@ import json
 import numpy as np
 from optimizer import PortfolioOptimizer, WalkForwardOptimizer
 from database_manager import DatabaseManager
-from optimizer_config import OPTIMIZATION_SETTINGS
+from optimizer_config import OPTIMIZATION_SETTINGS, TIMEFRAMES
 from metrics import PerformanceMetrics
 from scheduler import get_scheduler
 
@@ -165,20 +165,90 @@ elif page == "AI Optimization":
     else:
         available_symbols = df_configs['symbol'].tolist()
 
-        st.subheader("Select Symbol to Optimize")
-        selected_symbol = st.selectbox(
-            "Symbol",
-            available_symbols,
-            help="Choose the currency pair to optimize"
-        )
+        st.subheader("⚙️ Optimization Settings")
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
+
+        with col1:
+            selected_symbol = st.selectbox(
+                "Symbol",
+                available_symbols,
+                help="Choose the currency pair to optimize"
+            )
+
+        with col2:
+            # Timeframe selector
+            timeframe_options = {
+                "M1 (1-Minute)": 1,
+                "M5 (5-Minute)": 5,
+                "M15 (15-Minute) ⭐ Recommended": 15,
+                "M30 (30-Minute)": 30,
+                "H1 (1-Hour)": 60,
+                "H4 (4-Hour)": 240,
+                "D1 (Daily)": 1440
+            }
+
+            selected_tf_name = st.selectbox(
+                "Timeframe",
+                list(timeframe_options.keys()),
+                index=2,  # Default to M15
+                help="Timeframe for optimization. Different timeframes need different parameters!"
+            )
+
+            selected_timeframe = timeframe_options[selected_tf_name]
+
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Optimization Trials", OPTIMIZATION_SETTINGS["n_trials"])
         with col2:
-            st.metric("Training Days", OPTIMIZATION_SETTINGS["train_days"])
+            st.metric("Timeframe", selected_tf_name.split()[0])
         with col3:
+            st.metric("Training Days", OPTIMIZATION_SETTINGS["train_days"])
+        with col4:
             st.metric("Target Metric", OPTIMIZATION_SETTINGS["target_metric"].upper())
+
+        st.info("💡 **Important:** Parameters optimized for M15 will NOT work well on H1 or D1. Always optimize for your actual trading timeframe!")
+
+        # Timeframe impact explanation
+        with st.expander("📚 Understanding Timeframe Selection"):
+            st.markdown("""
+            ### Why Timeframe Matters
+
+            **Different timeframes require different parameters:**
+
+            - **M1-M5 (Scalping):**
+              - Need tight stops and quick exits
+              - Many trades per day (50-100+)
+              - Lower RSI periods (7-10)
+              - Shorter EMA periods (20-50)
+
+            - **M15-M30 (Day Trading) ⭐ Recommended:**
+              - Balanced parameters
+              - 5-15 trades per day
+              - Standard RSI (14)
+              - Medium EMA (50-100)
+
+            - **H1-H4 (Swing Trading):**
+              - Wider stops and targets
+              - 2-5 trades per day
+              - Higher RSI periods (14-21)
+              - Longer EMA (100-200)
+
+            - **D1 (Position Trading):**
+              - Very wide stops
+              - 1-3 trades per week
+              - Long lookback periods
+              - Large EMA (200+)
+
+            **Data Requirements:**
+            - M5: 5000 bars ≈ 17 days
+            - M15: 3000 bars ≈ 31 days
+            - H1: 1500 bars ≈ 62 days
+            - H4: 1000 bars ≈ 166 days
+            - D1: 500 bars ≈ 1.4 years
+
+            **💡 Tip:** Start with M15, optimize for 2 weeks, then adjust based on results.
+            """)
 
         st.info("💡 Note: The Optimizer uses recent history stored in 'MarketData'. Ensure you have run the EA to populate this data.")
 
@@ -224,7 +294,9 @@ elif page == "AI Optimization":
                     progress_bar.progress(10)
 
                     # Check if market data exists
-                    df_market = db_manager.get_market_data(selected_symbol, 5, limit=5000)
+                    from optimizer_config import get_timeframe_settings
+                    tf_settings = get_timeframe_settings(selected_timeframe)
+                    df_market = db_manager.get_market_data(selected_symbol, selected_timeframe, limit=tf_settings['data_limit'])
 
                     if df_market.empty or len(df_market) < 100:
                         st.error(f"❌ Insufficient market data for {selected_symbol}. Please run the EA to collect data.")
@@ -233,10 +305,10 @@ elif page == "AI Optimization":
                         st.success(f"✅ Loaded {len(df_market)} data points")
                         progress_bar.progress(20)
 
-                        status_text.text(f"🧠 Running Optuna optimization ({OPTIMIZATION_SETTINGS['n_trials']} trials)...")
+                        status_text.text(f"🧠 Running Optuna optimization ({OPTIMIZATION_SETTINGS['n_trials']} trials on {tf_settings['timeframe_name']})...")
 
-                        # Run optimization
-                        optimizer = PortfolioOptimizer(db_manager)
+                        # Run optimization with selected timeframe
+                        optimizer = PortfolioOptimizer(db_manager, timeframe=selected_timeframe)
                         results_dict = optimizer.run_optimization(selected_symbol)
 
                         progress_bar.progress(80)
@@ -299,25 +371,29 @@ elif page == "AI Optimization":
                 results_container = st.container()
 
                 try:
-                    optimizer = PortfolioOptimizer(db_manager)
+                    # Use selected timeframe for bulk optimization too
+                    from optimizer_config import get_timeframe_settings
+                    tf_settings = get_timeframe_settings(selected_timeframe)
+
+                    optimizer = PortfolioOptimizer(db_manager, timeframe=selected_timeframe)
                     total_symbols = len(available_symbols)
                     successful = 0
                     failed = 0
 
                     for idx, symbol in enumerate(available_symbols):
-                        main_status.text(f"⚡ Optimizing {symbol} ({idx+1}/{total_symbols})...")
+                        main_status.text(f"⚡ Optimizing {symbol} on {tf_settings['timeframe_name']} ({idx+1}/{total_symbols})...")
 
                         with results_container:
-                            st.markdown(f"### 🎯 {symbol}")
+                            st.markdown(f"### 🎯 {symbol} ({tf_settings['timeframe_name']})")
                             symbol_progress = st.progress(0)
                             symbol_status = st.empty()
 
                         try:
                             # Load market data
-                            symbol_status.text(f"📊 Loading data...")
+                            symbol_status.text(f"📊 Loading {tf_settings['timeframe_name']} data...")
                             symbol_progress.progress(20)
 
-                            df_market = db_manager.get_market_data(symbol, 5, limit=5000)
+                            df_market = db_manager.get_market_data(symbol, selected_timeframe, limit=tf_settings['data_limit'])
 
                             if df_market.empty or len(df_market) < 100:
                                 symbol_status.warning(f"⚠️ Insufficient data - Skipped")

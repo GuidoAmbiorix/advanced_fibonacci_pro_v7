@@ -141,12 +141,49 @@ PARAM_SPACES = {
     }
 }
 
+# Timeframe Mappings (MT5 format)
+TIMEFRAMES = {
+    "M1": 1,
+    "M5": 5,
+    "M15": 15,
+    "M30": 30,
+    "H1": 60,
+    "H4": 240,
+    "D1": 1440,
+    "W1": 10080
+}
+
+# Timeframe-specific data requirements
+TIMEFRAME_DATA_LIMITS = {
+    1: 10000,      # M1: Need lots of bars
+    5: 5000,       # M5: 5000 bars ≈ 17 days
+    15: 3000,      # M15: 3000 bars ≈ 31 days
+    30: 2000,      # M30: 2000 bars ≈ 42 days
+    60: 1500,      # H1: 1500 bars ≈ 62 days
+    240: 1000,     # H4: 1000 bars ≈ 166 days
+    1440: 500,     # D1: 500 bars ≈ 1.4 years
+    10080: 200     # W1: 200 bars ≈ 3.8 years
+}
+
+# Timeframe-specific minimum trades for valid backtest
+TIMEFRAME_MIN_TRADES = {
+    1: 50,         # M1: Expect many trades
+    5: 40,         # M5: Expect many trades
+    15: 30,        # M15: Moderate trades
+    30: 25,        # M30: Moderate trades
+    60: 20,        # H1: Fewer trades
+    240: 15,       # H4: Few trades
+    1440: 10,      # D1: Very few trades
+    10080: 5       # W1: Minimal trades
+}
+
 # Optimization Settings
 OPTIMIZATION_SETTINGS = {
     "n_trials": 100,                    # Trials per optimization run
+    "default_timeframe": 15,            # M15 default
     "train_days": 90,
     "test_days": 14,
-    "min_trades": 30,                   # Minimum trades required for valid backtest
+    "min_trades": 30,                   # Will be adjusted based on timeframe
     "target_metric": "sharpe",          # Primary metric
     "optimization_mode": "single",      # 'single' or 'multi'
     "enable_oos_validation": True,      # Out-of-sample testing
@@ -167,3 +204,19 @@ OPTIMIZATION_SETTINGS = {
 
 # Total parameter count for tracking
 TOTAL_PARAM_COUNT = 83
+
+def get_timeframe_settings(timeframe):
+    """
+    Get optimization settings adjusted for specific timeframe.
+
+    Args:
+        timeframe: MT5 timeframe value (1, 5, 15, 60, etc.)
+
+    Returns:
+        Dictionary with timeframe-specific settings
+    """
+    return {
+        'data_limit': TIMEFRAME_DATA_LIMITS.get(timeframe, 2000),
+        'min_trades': TIMEFRAME_MIN_TRADES.get(timeframe, 20),
+        'timeframe_name': next((k for k, v in TIMEFRAMES.items() if v == timeframe), f"TF{timeframe}")
+    }
