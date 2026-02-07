@@ -4,3 +4,4 @@ plotly
 watchdog
 optuna
 numpy
+schedule
