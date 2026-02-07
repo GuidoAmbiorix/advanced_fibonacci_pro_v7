@@ -60,8 +60,8 @@ services:
     ports:
       - "8501:8501"
     volumes:
-      # Read-only access to MT5 database
-      - mt5_config_v2:/mt5_data:ro
+      # Read-write access to MT5 database (for optimizer)
+      - mt5_config_v2:/mt5_data
     environment:
       - DB_PATH=/mt5_data/.wine/drive_c/users/abc/AppData/Roaming/MetaQuotes/Terminal/Common/Files/PortfolioGovernor.sqlite
     networks:

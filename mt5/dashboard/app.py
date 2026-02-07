@@ -3,6 +3,9 @@ import sqlite3
 import pandas as pd
 import os
 import time
+from optimizer import PortfolioOptimizer
+from database_manager import DatabaseManager
+from optimizer_config import OPTIMIZATION_SETTINGS
 
 # Page Config
 st.set_page_config(
@@ -40,7 +43,7 @@ if st.sidebar.button("🔄 Refresh Data"):
     st.cache_data.clear()
 
 st.sidebar.markdown("---")
-page = st.sidebar.radio("Navigation", ["Dashboard", "Configuration", "Trade Logs", "System Health"])
+page = st.sidebar.radio("Navigation", ["Dashboard", "AI Optimization", "Configuration", "Trade Logs", "System Health"])
 
 # Main Layout
 if page == "Dashboard":
@@ -63,14 +66,221 @@ if page == "Dashboard":
         )
     else:
         st.warning("No Symbol Configurations found in Database.")
-        
+
+elif page == "AI Optimization":
+    st.title("🧠 AI Optimization Engine")
+    st.markdown("Use Optuna to find the optimal parameters for your portfolio based on recent market data.")
+
+    # Initialize database manager
+    db_manager = DatabaseManager(DB_PATH)
+
+    # Load available symbols
+    df_configs = load_data("SELECT symbol FROM SymbolConfigs")
+
+    if df_configs.empty:
+        st.error("❌ No symbols configured in database. Please add symbols first.")
+    else:
+        available_symbols = df_configs['symbol'].tolist()
+
+        st.subheader("Select Symbol to Optimize")
+        selected_symbol = st.selectbox(
+            "Symbol",
+            available_symbols,
+            help="Choose the currency pair to optimize"
+        )
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Optimization Trials", OPTIMIZATION_SETTINGS["n_trials"])
+        with col2:
+            st.metric("Training Days", OPTIMIZATION_SETTINGS["train_days"])
+        with col3:
+            st.metric("Target Metric", OPTIMIZATION_SETTINGS["target_metric"].upper())
+
+        st.info("💡 Note: The Optimizer uses recent history stored in 'MarketData'. Ensure you have run the EA to populate this data.")
+
+        # Load current configuration for selected symbol
+        current_config_df = load_data(f"SELECT * FROM SymbolConfigs WHERE symbol='{selected_symbol}'")
+
+        if not current_config_df.empty:
+            st.subheader("📊 Current Configuration")
+            current_config = current_config_df.iloc[0].to_dict()
+
+            # Display key parameters
+            key_params = ['risk_base', 'fixed_tp_r', 'rsi_period', 'ema_period',
+                         'trail_start_r', 'trail_atr_mult', 'min_confluence_entry']
+
+            cols = st.columns(len(key_params))
+            for i, param in enumerate(key_params):
+                if param in current_config:
+                    cols[i].metric(param.replace('_', ' ').title(), f"{current_config[param]}")
+
+        st.markdown("---")
+
+        # Optimization controls
+        if 'optimization_running' not in st.session_state:
+            st.session_state.optimization_running = False
+        if 'optimization_results' not in st.session_state:
+            st.session_state.optimization_results = None
+
+        col_btn1, col_btn2 = st.columns([1, 3])
+
+        with col_btn1:
+            if st.button("🚀 Start Optimization", disabled=st.session_state.optimization_running, type="primary"):
+                st.session_state.optimization_running = True
+                st.session_state.optimization_results = None
+
+                # Create progress indicators
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+
+                try:
+                    status_text.text(f"🔍 Loading market data for {selected_symbol}...")
+                    progress_bar.progress(10)
+
+                    # Check if market data exists
+                    df_market = db_manager.get_market_data(selected_symbol, 5, limit=5000)
+
+                    if df_market.empty or len(df_market) < 100:
+                        st.error(f"❌ Insufficient market data for {selected_symbol}. Please run the EA to collect data.")
+                        st.session_state.optimization_running = False
+                    else:
+                        st.success(f"✅ Loaded {len(df_market)} data points")
+                        progress_bar.progress(20)
+
+                        status_text.text(f"🧠 Running Optuna optimization ({OPTIMIZATION_SETTINGS['n_trials']} trials)...")
+
+                        # Run optimization
+                        optimizer = PortfolioOptimizer(db_manager)
+                        best_params = optimizer.run_optimization(selected_symbol)
+
+                        progress_bar.progress(80)
+
+                        if best_params:
+                            status_text.text("💾 Saving results to database...")
+
+                            # Update database
+                            success, message = optimizer.update_db(selected_symbol, best_params)
+
+                            progress_bar.progress(100)
+
+                            if success:
+                                st.session_state.optimization_results = {
+                                    'symbol': selected_symbol,
+                                    'best_params': best_params,
+                                    'message': message,
+                                    'timestamp': time.time()
+                                }
+
+                                # Log event
+                                db_manager.log_event("Optimizer", "INFO",
+                                    f"Optimization completed for {selected_symbol}")
+
+                                status_text.text("✅ Optimization complete!")
+                                st.success(message)
+
+                                # Clear cache to reload data
+                                st.cache_data.clear()
+
+                            else:
+                                st.error(f"❌ Failed to save results: {message}")
+                        else:
+                            st.error("❌ Optimization failed to produce results")
+
+                except Exception as e:
+                    st.error(f"❌ Optimization error: {str(e)}")
+                    import traceback
+                    st.code(traceback.format_exc())
+
+                finally:
+                    st.session_state.optimization_running = False
+
+        with col_btn2:
+            if st.button("🔄 Refresh Data"):
+                st.cache_data.clear()
+                st.rerun()
+
+        # Display optimization results
+        if st.session_state.optimization_results:
+            st.markdown("---")
+            st.subheader("✨ Optimization Results")
+
+            results = st.session_state.optimization_results
+
+            st.success(f"✅ {results['message']}")
+
+            # Load updated configuration
+            updated_config_df = load_data(f"SELECT * FROM SymbolConfigs WHERE symbol='{results['symbol']}'")
+
+            if not updated_config_df.empty:
+                updated_config = updated_config_df.iloc[0].to_dict()
+
+                # Before/After Comparison
+                st.subheader("📈 Parameter Changes")
+
+                comparison_data = []
+                for param, new_value in results['best_params'].items():
+                    old_value = current_config.get(param, 'N/A')
+
+                    if old_value != 'N/A' and old_value != new_value:
+                        try:
+                            if isinstance(new_value, (int, float)) and isinstance(old_value, (int, float)):
+                                delta = ((new_value - old_value) / old_value * 100) if old_value != 0 else 0
+                                delta_str = f"{delta:+.1f}%"
+                            else:
+                                delta_str = "Changed"
+                        except:
+                            delta_str = "Changed"
+                    else:
+                        delta_str = "No change"
+
+                    comparison_data.append({
+                        'Parameter': param,
+                        'Old Value': f"{old_value}",
+                        'New Value': f"{new_value}",
+                        'Change': delta_str
+                    })
+
+                df_comparison = pd.DataFrame(comparison_data)
+                st.dataframe(df_comparison, use_container_width=True, hide_index=True)
+
+                st.info(f"⏰ Optimized at: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(results['timestamp']))}")
+
 elif page == "Configuration":
     st.title("⚙️ Symbol Configuration")
     st.markdown("View and Edit Symbol Parameters stored in SQLite.")
-    
+
+    col1, col2 = st.columns([3, 1])
+    with col2:
+        if st.button("🔄 Reload from Database"):
+            st.cache_data.clear()
+            st.rerun()
+
     df = load_data("SELECT * FROM SymbolConfigs")
+
     if not df.empty:
+        st.subheader(f"📋 {len(df)} Symbol(s) Configured")
+
+        # Add optimization status if available from SystemLogs
+        try:
+            db_manager = DatabaseManager(DB_PATH)
+            recent_logs = db_manager.get_logs(limit=50)
+
+            if not recent_logs.empty:
+                # Find recent optimization events
+                opt_logs = recent_logs[recent_logs['source'] == 'Optimizer']
+
+                if not opt_logs.empty:
+                    st.info(f"🧠 Last optimization activity: {opt_logs.iloc[0]['message']}")
+        except:
+            pass
+
+        # Display editable configuration
         st.data_editor(df, num_rows="dynamic", use_container_width=True)
+
+        st.markdown("---")
+        st.caption("💡 Tip: Use the AI Optimization page to automatically tune parameters based on historical data.")
+
     else:
         st.info("No configurations available.")
 
