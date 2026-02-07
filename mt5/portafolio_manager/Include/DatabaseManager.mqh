@@ -959,7 +959,7 @@ private:
       if(!Execute(sqlConfig)) return false;
 
       // 5. System Logs Table
-      string sqlLogs = 
+      string sqlLogs =
          "CREATE TABLE IF NOT EXISTS SystemLogs ("
          "id INTEGER PRIMARY KEY AUTOINCREMENT,"
          "time INTEGER,"
@@ -967,8 +967,31 @@ private:
          "level TEXT,"
          "message TEXT"
          ");";
-         
+
       if(!Execute(sqlLogs)) return false;
+
+      // 6. Market Data Table (For Optimizer)
+      string sqlMarketData =
+         "CREATE TABLE IF NOT EXISTS MarketData ("
+         "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+         "symbol TEXT NOT NULL,"
+         "timeframe INTEGER NOT NULL,"
+         "time INTEGER NOT NULL,"
+         "open REAL NOT NULL,"
+         "high REAL NOT NULL,"
+         "low REAL NOT NULL,"
+         "close REAL NOT NULL,"
+         "tick_volume INTEGER,"
+         "spread INTEGER,"
+         "real_volume INTEGER,"
+         "UNIQUE(symbol, timeframe, time)"
+         ");";
+
+      if(!Execute(sqlMarketData)) return false;
+
+      // Create index for faster queries
+      string sqlIndex = "CREATE INDEX IF NOT EXISTS idx_market_data ON MarketData(symbol, timeframe, time);";
+      if(!Execute(sqlIndex)) return false;
 
       return true;
    }
@@ -990,6 +1013,109 @@ private:
        );
        
        return Execute(query);
+   }
+
+   //+------------------------------------------------------------------+
+   //| Store Market Data Bar                                            |
+   //+------------------------------------------------------------------+
+   bool StoreMarketBar(string symbol, int timeframe, datetime time,
+                       double open, double high, double low, double close,
+                       long tick_volume, int spread, long real_volume = 0)
+   {
+       if(!m_isOpen) return false;
+
+       string query = StringFormat(
+           "INSERT OR REPLACE INTO MarketData (symbol, timeframe, time, open, high, low, close, tick_volume, spread, real_volume) "
+           "VALUES ('%s', %d, %I64d, %.5f, %.5f, %.5f, %.5f, %I64d, %d, %I64d);",
+           symbol, timeframe, (long)time, open, high, low, close, tick_volume, spread, real_volume
+       );
+
+       return Execute(query);
+   }
+
+   //+------------------------------------------------------------------+
+   //| Import Historical Market Data (Call on Init)                     |
+   //+------------------------------------------------------------------+
+   bool ImportHistoricalData(string symbol, ENUM_TIMEFRAMES timeframe, int bars = 5000)
+   {
+       if(!m_isOpen) return false;
+
+       Print("📊 Importing ", bars, " bars of ", symbol, " ", EnumToString(timeframe), " data...");
+
+       MqlRates rates[];
+       ArraySetAsSeries(rates, true);
+
+       int copied = CopyRates(symbol, timeframe, 0, bars, rates);
+
+       if(copied <= 0)
+       {
+           Print("❌ Failed to copy rates for ", symbol, ": ", GetLastError());
+           return false;
+       }
+
+       // Start transaction for bulk insert (much faster)
+       if(!Execute("BEGIN TRANSACTION;")) return false;
+
+       int success = 0;
+       for(int i = 0; i < copied; i++)
+       {
+           if(StoreMarketBar(
+               symbol,
+               (int)timeframe,
+               rates[i].time,
+               rates[i].open,
+               rates[i].high,
+               rates[i].low,
+               rates[i].close,
+               rates[i].tick_volume,
+               rates[i].spread,
+               rates[i].real_volume
+           ))
+           {
+               success++;
+           }
+       }
+
+       // Commit transaction
+       if(!Execute("COMMIT;"))
+       {
+           Execute("ROLLBACK;");
+           return false;
+       }
+
+       Print("✅ Imported ", success, "/", copied, " bars for ", symbol);
+       return (success > 0);
+   }
+
+   //+------------------------------------------------------------------+
+   //| Update Market Data for All Symbols (Call periodically)           |
+   //+------------------------------------------------------------------+
+   void UpdateMarketDataForAllSymbols(string &symbols[], ENUM_TIMEFRAMES timeframe = PERIOD_M5)
+   {
+       if(!m_isOpen) return;
+
+       for(int i = 0; i < ArraySize(symbols); i++)
+       {
+           // Get latest bar
+           MqlRates rates[1];
+           int copied = CopyRates(symbols[i], timeframe, 0, 1, rates);
+
+           if(copied > 0)
+           {
+               StoreMarketBar(
+                   symbols[i],
+                   (int)timeframe,
+                   rates[0].time,
+                   rates[0].open,
+                   rates[0].high,
+                   rates[0].low,
+                   rates[0].close,
+                   rates[0].tick_volume,
+                   rates[0].spread,
+                   rates[0].real_volume
+               );
+           }
+       }
    }
 };
 

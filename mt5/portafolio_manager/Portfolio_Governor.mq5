@@ -180,8 +180,25 @@ int OnInit()
        {
            g_monitoredSymbols[i] = g_engines[i].GetSymbol();
        }
+
+       // Import historical market data for optimizer (M5 + M15 timeframes)
+       Print("📊 Importing historical market data for optimizer...");
+       for(int i=0; i<g_engineCount; i++)
+       {
+           string sym = g_monitoredSymbols[i];
+
+           // Import M5 data (5000 bars ≈ 17 days)
+           dbManager.ImportHistoricalData(sym, PERIOD_M5, 5000);
+
+           // Import M15 data (3000 bars ≈ 31 days)
+           dbManager.ImportHistoricalData(sym, PERIOD_M15, 3000);
+
+           // Import H1 data (1500 bars ≈ 62 days)
+           dbManager.ImportHistoricalData(sym, PERIOD_H1, 1500);
+       }
+       Print("✅ Market data import complete");
    }
-   
+
    // Initialize Risk/Metrics
    g_peakEquity = account.Equity();
    ArrayResize(g_tradeResults, InpRollingTrades);
@@ -242,7 +259,7 @@ void OnTick()
    if(TimeCurrent() - lastGovUpdate >= InpUpdateSeconds)
    {
        lastGovUpdate = TimeCurrent();
-       
+
        CheckPeriodReset();
        UpdateCorrelationMatrix();
        CalculatePortfolioMetrics();
@@ -250,10 +267,21 @@ void OnTick()
        UpdateRiskMultiplier();
        UpdateTradingStatus();
        UpdateDashboard();
-       
+
+       // Update market data for optimizer (once per minute)
+       static datetime lastMarketDataUpdate = 0;
+       if(TimeCurrent() - lastMarketDataUpdate >= 60)  // Every 60 seconds
+       {
+           lastMarketDataUpdate = TimeCurrent();
+           // Update latest bar for each symbol on M5, M15, H1
+           dbManager.UpdateMarketDataForAllSymbols(g_monitoredSymbols, PERIOD_M5);
+           dbManager.UpdateMarketDataForAllSymbols(g_monitoredSymbols, PERIOD_M15);
+           dbManager.UpdateMarketDataForAllSymbols(g_monitoredSymbols, PERIOD_H1);
+       }
+
        // Handle Notifications
        notifyManager.OnTick(account.Equity(), PositionsTotal(), GetTopConfluencesString());
-       
+
        GlobalVariableSet(GV_LAST_UPDATE, (double)TimeCurrent());
    }
    
