@@ -26,6 +26,7 @@ class MT5Tester:
     def prepare_db(self, params: dict, symbol: str):
         """
         Updates the Database with the specific parameters for this trial.
+        Dynamically checks for existing columns to avoid 'no such column' errors.
         """
         if not os.path.exists(self.db_path):
             logger.error(f"Database not found at {self.db_path}")
@@ -35,7 +36,12 @@ class MT5Tester:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            # 1. Update SymbolConfigs
+            # 1. Get existing columns in SymbolConfigs
+            cursor.execute("PRAGMA table_info(SymbolConfigs)")
+            columns_info = cursor.fetchall()
+            existing_columns = {info[1] for info in columns_info} # Set of column names
+            
+            # 2. Update SymbolConfigs
             # We assume a record already exists for the symbol (imported from default)
             # We optimize by updating specific columns
             
@@ -43,12 +49,17 @@ class MT5Tester:
             values = []
             
             for key, value in params.items():
-                # Sanitize key to match DB column names (assuming params match DB columns)
-                cols.append(f"{key} = ?")
-                values.append(value)
+                # Check if param exists in DB columns
+                if key in existing_columns:
+                    cols.append(f"{key} = ?")
+                    values.append(value)
+                else:
+                    # Log warning only once per session or debug level
+                    logger.debug(f"Skipping parameter '{key}' - Column not found in DB")
             
             if not cols:
-                return True # Nothing to update
+                logger.warning(f"No valid parameters to update for {symbol}")
+                return True 
                 
             sql = f"UPDATE SymbolConfigs SET {', '.join(cols)} WHERE symbol = ?"
             values.append(symbol)
