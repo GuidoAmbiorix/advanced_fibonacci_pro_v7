@@ -62,6 +62,8 @@ services:
     volumes:
       # Read-write access to MT5 database (for optimizer)
       - mt5_config_v2:/mt5_data
+      # Allow controlling sibling containers
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - DB_PATH=/mt5_data/.wine/drive_c/users/abc/AppData/Roaming/MetaQuotes/Terminal/Common/Files/PortfolioGovernor.sqlite
     networks:

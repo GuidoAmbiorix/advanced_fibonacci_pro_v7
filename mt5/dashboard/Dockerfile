@@ -2,9 +2,10 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Install system dependencies if needed (e.g. for sqlite)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     sqlite3 \
+    docker.io \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

@@ -196,16 +196,31 @@ elif page == "AI Optimization":
             )
 
             selected_timeframe = timeframe_options[selected_tf_name]
+        
+        # Backtest Mode Selector
+        st.write("")
+        backtest_mode = st.radio(
+            "Backtest Precision",
+            ["⚡ Fast (Python Approximation)", "🛡️ Guardian (High-Fidelity MT5)"],
+            index=0,
+            help="Fast: Uses indicators in Python (Good for initial search). Guardian: Uses ACTUAL MT5 Strategy Tester (Slow, but 100% accurate)."
+        )
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("Optimization Trials", OPTIMIZATION_SETTINGS["n_trials"])
+            if "Guardian" in backtest_mode:
+                st.metric("Optimization Trials", OPTIMIZATION_SETTINGS.get("guardian_trials", 20))
+            else:
+                st.metric("Optimization Trials", OPTIMIZATION_SETTINGS["n_trials"])
         with col2:
             st.metric("Timeframe", selected_tf_name.split()[0])
         with col3:
             st.metric("Training Days", OPTIMIZATION_SETTINGS["train_days"])
         with col4:
             st.metric("Target Metric", OPTIMIZATION_SETTINGS["target_metric"].upper())
+            
+        if "Guardian" in backtest_mode:
+            st.warning("⚠️ **Guardian Mode Active:** This will launch the MT5 Strategy Tester via Docker for EACH trial. It is significantly slower but verifies the logic exactly as it runs in production. Expect 1-2 minutes per trial.")
 
         st.info("💡 **Important:** Parameters optimized for M15 will NOT work well on H1 or D1. Always optimize for your actual trading timeframe!")
 
@@ -213,7 +228,7 @@ elif page == "AI Optimization":
         with st.expander("📚 Understanding Timeframe Selection"):
             st.markdown("""
             ### Why Timeframe Matters
-
+            
             **Different timeframes require different parameters:**
 
             - **M1-M5 (Scalping):**
@@ -290,13 +305,53 @@ elif page == "AI Optimization":
                 status_text = st.empty()
 
                 try:
-                    status_text.text(f"🔍 Loading market data for {selected_symbol}...")
-                    progress_bar.progress(10)
+                    optimizer = PortfolioOptimizer(db_manager, timeframe=selected_timeframe)
+                    
+                    if "Guardian" in backtest_mode:
+                         status_text.text(f"🛡️ Launching Guardian Optimization for {selected_symbol}...")
+                         # Guardian Mode
+                         results = optimizer.run_guardian_optimization(selected_symbol)
+                         
+                         st.session_state.optimization_results = results
+                         st.session_state.optimization_running = False
+                         
+                         if results and results.get('best_value'):
+                             st.success(f"✅ Guardian Optimization Complete! Best Profit: ${results['best_value']:.2f}")
+                             st.balloons()
+                         else:
+                             st.error("Optimization failed or returned no results.")
+                             
+                    else:
+                        # Standard Fast Mode
+                        status_text.text(f"🔍 Loading market data for {selected_symbol}...")
+                        progress_bar.progress(10)
+    
+                        # Check if market data exists
+                        from optimizer_config import get_timeframe_settings
+                        tf_settings = get_timeframe_settings(selected_timeframe)
+                        df_market = db_manager.get_market_data(selected_symbol, selected_timeframe, limit=tf_settings['data_limit'])
+                        
+                        if df_market.empty:
+                             st.error(f"❌ No market data found for {selected_symbol}. Please run the EA first.")
+                             st.session_state.optimization_running = False
+                        else:
+                             # Run Optimization
+                             status_text.text(f"🚀 Optimizing parameters ({OPTIMIZATION_SETTINGS['n_trials']} trials)...")
+                             progress_bar.progress(30)
+                             
+                             results = optimizer.run_optimization(selected_symbol)
+                             
+                             progress_bar.progress(100)
+                             status_text.text("✅ Optimization Complete!")
+                             
+                             st.session_state.optimization_results = results
+                             st.session_state.optimization_running = False
+                             if results:
+                                 st.balloons()
 
-                    # Check if market data exists
-                    from optimizer_config import get_timeframe_settings
-                    tf_settings = get_timeframe_settings(selected_timeframe)
-                    df_market = db_manager.get_market_data(selected_symbol, selected_timeframe, limit=tf_settings['data_limit'])
+                except Exception as e:
+                    st.error(f"Optimization failed: {e}")
+                    st.session_state.optimization_running = False
 
                     if df_market.empty or len(df_market) < 100:
                         st.error(f"❌ Insufficient market data for {selected_symbol}. Please run the EA to collect data.")

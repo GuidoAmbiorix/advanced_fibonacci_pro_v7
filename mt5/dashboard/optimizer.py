@@ -8,12 +8,17 @@ from optimizer_config import (
     TIMEFRAMES, get_timeframe_settings
 )
 from metrics import PerformanceMetrics, MultiObjectiveMetrics
+from mt5_tester import MT5Tester
+import logging
+
+logger = logging.getLogger("Optimizer")
 
 class PortfolioOptimizer:
     def __init__(self, db_manager, timeframe=None):
         self.db = db_manager
         self.timeframe = timeframe or OPTIMIZATION_SETTINGS.get("default_timeframe", 15)
         self.tf_settings = get_timeframe_settings(self.timeframe)
+        self.tester = MT5Tester()
 
     def validate_params(self, params):
         """
@@ -72,6 +77,58 @@ class PortfolioOptimizer:
             issues.append("max_trades_per_day must be at least 1")
 
         return len(issues) == 0, issues
+
+    def objective_guardian_db(self, trial, symbol):
+        """
+        High-Fidelity Backtesting using MT5 Strategy Tester via DB Bridge.
+        """
+        # Suggest Parameters (Reuse logic from objective)
+        space = PARAM_SPACES.get("default")
+        if "JPY" in symbol: space = {**space, **PARAM_SPACES.get("JPY", {})}
+        elif "XAU" in symbol: space = {**space, **PARAM_SPACES.get("XAU", {})}
+        
+        def suggest(name):
+            conf = space.get(name, PARAM_SPACES["default"].get(name))
+            if conf["type"] == "int":
+                return trial.suggest_int(name, conf["low"], conf["high"], step=conf.get("step", 1))
+            else:
+                return trial.suggest_float(name, conf["low"], conf["high"], step=conf.get("step", 0.1))
+
+        # Build Data Dict for DB Update
+        params = {}
+        for key in space.keys():
+            params[key] = suggest(key)
+        
+        # Override magic number for testing to isolate results
+        test_magic = 999999
+        params['magicNumber'] = test_magic 
+            
+        # Update Database
+        if not self.tester.prepare_db(params, symbol):
+            logger.error("Failed to prepare DB for trial")
+            return -100 # Penalty
+            
+        # Clean previous results for this symbol/magic
+        self.tester.clean_symbol_trades(symbol)
+            
+        # Run Tester
+        # Use period from settings
+        period = self.tf_settings['timeframe_name']
+        self.tester.create_ini_file(symbol, period=period)
+        
+        if not self.tester.run_tester():
+            logger.error("MT5 Tester Failed")
+            return -100
+            
+        # Get Results
+        result = self.tester.get_result(symbol, magic=test_magic)
+        
+        if not result or result['count'] == 0:
+            return -100
+            
+        # Metric: Profit (Simple for now, can be sophisticated later)
+        # Optuna maximizes this value
+        return result['profit']
 
     def objective(self, trial, symbol, df_data):
         """
@@ -454,6 +511,54 @@ class PortfolioOptimizer:
             'composite_score': max(scores, key=lambda x: x[0])[0],
             'pareto_front_size': len(pareto_trials),
             'param_count': len(best_trial.params)
+        }
+
+    def run_guardian_optimization(self, symbol):
+        """
+        Run High-Fidelity "Guardian" Optimization using MT5 Tester.
+        """
+        print(f"🛡️ Starting Guardian (High-Fidelity) Optimization for {symbol}...")
+        start_time = int(time.time())
+        
+        # 1. Create Study
+        study = optuna.create_study(direction="maximize")
+        
+        # 2. Optimize
+        # Fewer trials because it's slower (MT5 backtest)
+        n_trials = OPTIMIZATION_SETTINGS.get("guardian_trials", 20) 
+        
+        study.optimize(
+            lambda trial: self.objective_guardian_db(trial, symbol),
+            n_trials=n_trials
+        )
+        
+        best_params = study.best_params
+        best_value = study.best_value
+        
+        print(f"✅ Guardian Optimization Complete for {symbol}")
+        print(f"   Best Value: {best_value}")
+        print(f"   Best Params: {best_params}")
+        
+        # 3. Log to DB
+        run_data = {
+            'symbol': symbol,
+            'mode': f'guardian_db_{self.tf_settings["timeframe_name"]}',
+            'status': 'completed',
+            'started_at': start_time,
+            'completed_at': int(time.time()),
+            'n_trials': n_trials,
+            'best_sharpe': best_value, # Using profit as proxy for now
+            'best_params': best_params,
+            'param_count': len(best_params)
+        }
+        
+        self.db.log_optimization_run(run_data)
+        
+        return {
+            'best_params': best_params,
+            'best_value': best_value,
+            'param_count': len(best_params),
+            'study': study
         }
 
     def objective_deterministic(self, symbol, df_data, params):

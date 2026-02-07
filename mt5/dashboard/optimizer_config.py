@@ -199,7 +199,8 @@ OPTIMIZATION_SETTINGS = {
     "pruning": {
         "enabled": True,        # Enable Optuna pruning for faster optimization
         "patience": 20          # Stop unpromising trials early
-    }
+    },
+    "guardian_trials": 20       # Trials for High-Fidelity MT5 Backtest
 }
 
 # Total parameter count for tracking
