@@ -3,49 +3,126 @@
 
 PARAM_SPACES = {
     "default": {
-        # --- Fibonacci ---
+        # --- Fibonacci Structure (8 params) ---
         "swing_lookback": {"type": "int", "low": 20, "high": 100, "step": 10},
         "zone_tolerance": {"type": "float", "low": 0.05, "high": 0.2, "step": 0.01},
-        
-        # --- Displacement ---
+        "fib_level_low": {"type": "float", "low": 0.618, "high": 0.786, "step": 0.01},
+        "fib_level_high": {"type": "float", "low": 0.618, "high": 0.786, "step": 0.01},
+        "use_fib_extensions": {"type": "int", "low": 0, "high": 1},
+        "fib_ext_161": {"type": "int", "low": 0, "high": 1},
+        "fib_ext_261": {"type": "int", "low": 0, "high": 1},
+        "min_swing_points": {"type": "int", "low": 3, "high": 10, "step": 1},
+
+        # --- Displacement (3 params) ---
         "use_displacement": {"type": "int", "low": 0, "high": 1},
         "displacement_atr": {"type": "float", "low": 0.5, "high": 3.0, "step": 0.1},
         "displacement_lookback": {"type": "int", "low": 5, "high": 30, "step": 5},
-        
-        # --- RSI ---
+
+        # --- SMC Smart Money Concepts (6 params) ---
+        "use_smc": {"type": "int", "low": 0, "high": 1},
+        "smc_swing_lookback": {"type": "int", "low": 10, "high": 50, "step": 5},
+        "smc_min_impulse_atr": {"type": "float", "low": 1.0, "high": 5.0, "step": 0.5},
+        "smc_min_fvg_atr": {"type": "float", "low": 0.5, "high": 3.0, "step": 0.25},
+        "smc_order_block_strength": {"type": "int", "low": 1, "high": 5, "step": 1},
+        "smc_bos_confirmation": {"type": "int", "low": 0, "high": 1},
+
+        # --- RSI (3 params) ---
         "rsi_period": {"type": "int", "low": 7, "high": 21, "step": 1},
         "rsi_oversold": {"type": "int", "low": 20, "high": 40, "step": 5},
         "rsi_overbought": {"type": "int", "low": 60, "high": 80, "step": 5},
-        
-        # --- Trend ---
+
+        # --- Trend/EMA (2 params) ---
         "ema_period": {"type": "int", "low": 50, "high": 200, "step": 25},
         "ema_min_slope": {"type": "float", "low": 0.0, "high": 0.5, "step": 0.1},
-        
-        # --- Chop Filter ---
+
+        # --- Multi-Timeframe (4 params) ---
+        "use_mtf": {"type": "int", "low": 0, "high": 1},
+        "htf": {"type": "int", "low": 15, "high": 240, "step": 15},
+        "mtf_ema_period": {"type": "int", "low": 20, "high": 200, "step": 20},
+        "mtf_require_alignment": {"type": "int", "low": 0, "high": 1},
+
+        # --- Chop Filter (2 params) ---
         "use_chop_filter": {"type": "int", "low": 0, "high": 1},
         "chop_threshold": {"type": "float", "low": 35.0, "high": 60.0, "step": 5.0},
-        
-        # --- Confluence ---
+
+        # --- Confluence (1 param) ---
         "min_confluence_entry": {"type": "int", "low": 8, "high": 14, "step": 1},
-        
-        # --- Risk Management ---
+
+        # --- Adaptive Systems (3 params) ---
+        "enable_adaptive_risk": {"type": "int", "low": 0, "high": 1},
+        "enable_adaptive_exits": {"type": "int", "low": 0, "high": 1},
+        "enable_adaptive_filters": {"type": "int", "low": 0, "high": 1},
+
+        # --- Risk Management (2 params) ---
         "risk_base": {"type": "float", "low": 0.1, "high": 0.5, "step": 0.05},
         "max_risk": {"type": "float", "low": 1.0, "high": 3.0, "step": 0.5},
-        "enable_adaptive_risk": {"type": "int", "low": 0, "high": 1},
-        
-        # --- Take Profit ---
+
+        # --- Take Profit Modes (4 params) ---
+        "tp_mode": {"type": "int", "low": 0, "high": 2},
         "fixed_tp_r": {"type": "float", "low": 1.5, "high": 5.0, "step": 0.1},
-        "min_tp_r": {"type": "float", "low": 1.0, "high": 2.0, "step": 0.1},
-        
-        # --- Trailing Stop ---
+        "min_tp_r": {"type": "float", "low": 1.0, "high": 2.5, "step": 0.1},
+        "max_tp_r": {"type": "float", "low": 3.0, "high": 8.0, "step": 0.25},
+        "tp_use_learned_mfe": {"type": "int", "low": 0, "high": 1},
+
+        # --- Partial TP & Breakeven (4 params) ---
+        "use_partial_tp": {"type": "int", "low": 0, "high": 1},
+        "partial_tp_r": {"type": "float", "low": 0.5, "high": 2.0, "step": 0.1},
+        "partial_close_percent": {"type": "float", "low": 0.3, "high": 0.7, "step": 0.05},
+        "be_threshold_r": {"type": "float", "low": 0.3, "high": 1.5, "step": 0.1},
+
+        # --- Trailing Stop (2 params) ---
         "trail_start_r": {"type": "float", "low": 0.5, "high": 2.0, "step": 0.1},
         "trail_atr_mult": {"type": "float", "low": 1.0, "high": 3.0, "step": 0.1},
-        
-        # --- Volatility ---
+
+        # --- News Filter (3 params) ---
+        "use_news_filter": {"type": "int", "low": 0, "high": 1},
+        "news_minutes_before": {"type": "int", "low": 15, "high": 120, "step": 15},
+        "news_minutes_after": {"type": "int", "low": 15, "high": 120, "step": 15},
+
+        # --- Kelly Criterion (3 params) ---
+        "use_kelly": {"type": "int", "low": 0, "high": 1},
+        "kelly_fraction": {"type": "float", "low": 0.1, "high": 0.5, "step": 0.05},
+        "kelly_max_multiplier": {"type": "float", "low": 1.5, "high": 3.0, "step": 0.25},
+
+        # --- Volatility (1 param) ---
         "volatility_threshold": {"type": "float", "low": 2.0, "high": 6.0, "step": 0.5},
-        
-        # --- Spread ---
+
+        # --- Spread (1 param) ---
         "max_spread_points": {"type": "int", "low": 20, "high": 100, "step": 10},
+
+        # --- Session Filters (4 params) ---
+        "trade_london": {"type": "int", "low": 0, "high": 1},
+        "trade_newyork": {"type": "int", "low": 0, "high": 1},
+        "trade_asia": {"type": "int", "low": 0, "high": 1},
+        "avoid_rollover": {"type": "int", "low": 0, "high": 1},
+
+        # --- Pattern Recognition (3 params) ---
+        "use_engulfing": {"type": "int", "low": 0, "high": 1},
+        "use_pinbar": {"type": "int", "low": 0, "high": 1},
+        "pattern_min_size_atr": {"type": "float", "low": 0.5, "high": 2.0, "step": 0.25},
+
+        # --- Volume Analysis (3 params) ---
+        "use_volume_filter": {"type": "int", "low": 0, "high": 1},
+        "volume_ma_period": {"type": "int", "low": 10, "high": 50, "step": 5},
+        "volume_threshold_mult": {"type": "float", "low": 1.0, "high": 3.0, "step": 0.25},
+
+        # --- ATR Settings (3 params) ---
+        "atr_period": {"type": "int", "low": 10, "high": 20, "step": 2},
+        "atr_sl_multiplier": {"type": "float", "low": 1.0, "high": 3.0, "step": 0.25},
+        "min_atr_points": {"type": "int", "low": 5, "high": 50, "step": 5},
+
+        # --- Trade Management (5 params) ---
+        "max_trades_per_day": {"type": "int", "low": 1, "high": 10, "step": 1},
+        "max_consecutive_losses": {"type": "int", "low": 2, "high": 5, "step": 1},
+        "daily_loss_limit_pct": {"type": "float", "low": 1.0, "high": 5.0, "step": 0.5},
+        "position_spacing_bars": {"type": "int", "low": 5, "high": 50, "step": 5},
+        "weekend_close_positions": {"type": "int", "low": 0, "high": 1},
+
+        # --- Exit Strategies (4 params) ---
+        "use_time_exit": {"type": "int", "low": 0, "high": 1},
+        "max_trade_duration_bars": {"type": "int", "low": 20, "high": 200, "step": 20},
+        "use_opposite_signal_exit": {"type": "int", "low": 0, "high": 1},
+        "use_trailing_activation": {"type": "int", "low": 0, "high": 1},
     },
     
     "JPY": {
@@ -66,9 +143,27 @@ PARAM_SPACES = {
 
 # Optimization Settings
 OPTIMIZATION_SETTINGS = {
-    "n_trials": 100,          # Increased trials for larger search space
-    "train_days": 90,         
-    "test_days": 14,          
-    "min_trades": 30,         
-    "target_metric": "sharpe" 
+    "n_trials": 100,                    # Trials per optimization run
+    "train_days": 90,
+    "test_days": 14,
+    "min_trades": 30,                   # Minimum trades required for valid backtest
+    "target_metric": "sharpe",          # Primary metric
+    "optimization_mode": "single",      # 'single' or 'multi'
+    "enable_oos_validation": True,      # Out-of-sample testing
+    "oos_degradation_threshold": 0.5,   # Warn if train-test gap exceeds this
+    "objectives": ["sharpe", "win_rate", "max_dd", "profit_factor"],
+    "objective_weights": [0.4, 0.3, 0.2, 0.1],  # Composite score weights
+    "walk_forward": {
+        "enabled": False,
+        "train_bars": 200,
+        "test_bars": 50,
+        "step": 50
+    },
+    "pruning": {
+        "enabled": True,        # Enable Optuna pruning for faster optimization
+        "patience": 20          # Stop unpromising trials early
+    }
 }
+
+# Total parameter count for tracking
+TOTAL_PARAM_COUNT = 83
