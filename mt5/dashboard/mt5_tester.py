@@ -152,7 +152,7 @@ execution_mode=0
         # docker exec mt5-v2 wine "C:\Program Files\MetaTrader 5\terminal64.exe" /config:"Z:\config\tester.ini" /portable
         
         cmd = [
-            "docker", "exec", container_name,
+            "docker", "exec", "--user", "trader", container_name,
             "wine",
             "C:\\Program Files\\MetaTrader 5\\terminal64.exe",
             f"/config:{internal_ini_path_wine}",
