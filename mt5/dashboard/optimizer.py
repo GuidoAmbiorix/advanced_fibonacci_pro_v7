@@ -558,7 +558,9 @@ class PortfolioOptimizer:
             'best_params': best_params,
             'best_value': best_value,
             'param_count': len(best_params),
-            'study': study
+            'study': study,
+            'message': f"Guardian Optimization Complete for {symbol}. Best Profit: ${best_value:.2f}",
+            'symbol': symbol
         }
 
     def objective_deterministic(self, symbol, df_data, params):
