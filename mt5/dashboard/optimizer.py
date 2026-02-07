@@ -560,8 +560,28 @@ class PortfolioOptimizer:
             'param_count': len(best_params),
             'study': study,
             'message': f"Guardian Optimization Complete for {symbol}. Best Profit: ${best_value:.2f}",
-            'symbol': symbol
+            'symbol': symbol,
+            'timestamp': int(time.time())
         }
+
+    def analyze_parameter_importance(self, study):
+        """
+        Calculates parameter importance using Optuna.
+        """
+        try:
+            import optuna.importance
+            # Get importances
+            importances = optuna.importance.get_param_importances(study)
+            # Get top 5
+            top_5 = list(importances.items())[:5]
+            
+            return {
+                'importances': importances,
+                'top_5': top_5
+            }
+        except Exception as e:
+            logger.error(f"Error calculating importance: {e}")
+            return {}
 
     def objective_deterministic(self, symbol, df_data, params):
         """
