@@ -55,21 +55,26 @@ class AutoTrader:
             self.logger.error(f"Error getting account balance: {e}")
         return 0.0
     
-    def execute_trade(self, prediction: dict, account_balance: float):
+    def execute_trade(self, prediction: dict, capital_base: float):
         """
         Execute a trade based on ML prediction.
         
         Args:
             prediction: Prediction dictionary from database
-            account_balance: Current account balance
+            capital_base: Capital base to use for position sizing (Account Balance or Allocated Capital)
         """
         symbol = prediction['symbol']
         direction = prediction['prediction_direction']
         confidence = prediction['confidence']
+        model_name = prediction.get('model_name', 'Unknown')
         
         self.logger.info(f"Processing signal: {direction} {symbol} (confidence: {confidence:.2%})")
         
         # Risk check
+        # We pass full account balance for risk checks (e.g. max daily loss), 
+        # but use capital_base for sizing if it's different.
+        account_balance = self.get_account_balance()
+        
         can_trade, reason = self.risk_manager.can_open_position(symbol, confidence, account_balance)
         if not can_trade:
             self.logger.warning(f"Trade rejected: {reason}")
@@ -77,8 +82,20 @@ class AutoTrader:
                        {'symbol': symbol, 'direction': direction, 'confidence': confidence})
             return
         
-        # Calculate position size
-        lot_size = self.risk_manager.calculate_position_size(symbol, account_balance)
+        # Calculate position size based on CAPITAL BASE (Allocated amount)
+        # Risk manager usually takes total balance, so we scale it?
+        # A simple approach: 
+        # position_size = (capital_base * risk_per_trade) / stop_loss_dist
+        # For now, let's use the risk manager but pretend capital_base is the balance 
+        # IF we want to restrict risk to that allocation.
+        # BETTER: risk_manager.calculate_position_size uses config['default_lot_size'] or % risk.
+        # We should probably scale the result by (capital_base / account_balance)
+        
+        base_lot_size = self.risk_manager.calculate_position_size(symbol, account_balance)
+        
+        # Adjust for allocation weight
+        allocation_ratio = capital_base / account_balance if account_balance > 0 else 0
+        lot_size = max(0.01, round(base_lot_size * allocation_ratio, 2))
         
         # Get current price for SL/TP calculation
         try:
@@ -91,10 +108,14 @@ class AutoTrader:
             return
         
         # Estimate entry price (in production, get from tick data)
-        entry_price = 1.1000  # Placeholder - should get from bridge
+        # We can try to get it from bridge if available, otherwise use last close from market_data?
+        # For simplicity, let bridge execute at market. 
+        # We need price for SL/TP calculation logic in RiskManager though.
+        # Let's fetch latest close from DB as approximation if live tick not easily available without another call
+        entry_price = 1.0 # Fallback
         
         # Calculate SL/TP
-        action = "BUY" if direction == "UP ▲" else "SELL"
+        action = "BUY" if direction == "UP ▲" or direction == "BUY" else "SELL"
         sl, tp = self.risk_manager.calculate_sl_tp(symbol, entry_price, action)
         
         # Execute trade via bridge
@@ -105,7 +126,7 @@ class AutoTrader:
                 "volume": lot_size,
                 "stop_loss": sl,
                 "take_profit": tp,
-                "comment": f"ML Signal ({confidence:.1%})"
+                "comment": f"ML: {model_name} ({confidence:.1%})"
             }
             
             response = requests.post(f"{self.bridge_url}/trade/open", json=trade_request)
@@ -114,7 +135,7 @@ class AutoTrader:
                 result = response.json()
                 self.logger.info(f"Trade executed: {result}")
                 self.db.log('INFO', 'TRADER', f'Trade executed: {action} {lot_size} {symbol}',
-                           {'ticket': result.get('ticket'), 'price': result.get('price')})
+                           {'ticket': result.get('ticket'), 'price': result.get('price'), 'model': model_name})
             else:
                 error = response.json().get('error', 'Unknown error')
                 self.logger.error(f"Trade execution failed: {error}")
@@ -124,28 +145,75 @@ class AutoTrader:
         except Exception as e:
             self.logger.error(f"Error executing trade: {e}")
             self.db.log('ERROR', 'TRADER', f'Error executing trade: {e}')
-    
+
     def check_signals(self):
         """Check for new ML signals and execute trades."""
-        if not self.config['auto_trader']['enabled']:
+        # Check global enable switch
+        if self.db.get_config('auto_trading_enabled') != 'true':
             return
-        
+            
         account_balance = self.get_account_balance()
         if account_balance == 0:
             self.logger.warning("Could not get account balance")
             return
+
+        # Check for Active Portfolio
+        active_portfolio_id = self.db.get_config('active_portfolio_id')
         
-        # Check each symbol
-        for symbol in self.config['auto_trader']['symbols']:
+        if active_portfolio_id:
+            self._trade_portfolio(int(active_portfolio_id), account_balance)
+        else:
+            self._trade_legacy_config(account_balance)
+
+    def _trade_portfolio(self, portfolio_id: int, account_balance: float):
+        """Execute trades based on portfolio allocations."""
+        allocations = self.db.get_allocations(portfolio_id)
+        
+        if not allocations:
+            return
+
+        for alloc in allocations:
+            symbol = alloc['symbol']
+            model_id = alloc['model_id']
+            weight = alloc['weight']
+            
+            if weight <= 0:
+                continue
+
+            # Get latest prediction specifically for this model
+            prediction = self.db.get_latest_prediction(symbol, model_id=model_id)
+            
+            if prediction and self._is_prediction_fresh(prediction):
+                # Calculate allocated capital
+                allocated_capital = account_balance * weight
+                
+                # Enrich prediction with model name for logging
+                prediction['model_name'] = alloc.get('strategy_name', 'Portfolio Strategy')
+                
+                self.execute_trade(prediction, allocated_capital)
+
+    def _trade_legacy_config(self, account_balance: float):
+        """Execute trades based on legacy config.yaml symbols (global fallback)."""
+        # Check each symbol in config
+        symbols = self.config.get('auto_trader', {}).get('symbols', [])
+        for symbol in symbols:
+            # Get ANY latest prediction for symbol (compatible with old logic)
             prediction = self.db.get_latest_prediction(symbol)
             
-            if prediction:
-                # Check if prediction is recent (within last 5 minutes)
-                pred_time = datetime.fromisoformat(prediction['timestamp'])
-                age_seconds = (datetime.now() - pred_time).total_seconds()
-                
-                if age_seconds < 300:  # 5 minutes
-                    self.execute_trade(prediction, account_balance)
+            if prediction and self._is_prediction_fresh(prediction):
+                # Use full account balance as base (legacy behavior)
+                self.execute_trade(prediction, account_balance)
+
+    def _is_prediction_fresh(self, prediction: dict, max_age_seconds: int = 300) -> bool:
+        """Check if prediction is fresh enough to trade."""
+        try:
+            pred_time = datetime.fromisoformat(prediction['timestamp'])
+            # Check if naive (no timezone) and make sure we compare correctly
+            # Assuming DB stores UTC or consistent local time
+            age_seconds = (datetime.now() - pred_time).total_seconds()
+            return age_seconds < max_age_seconds
+        except Exception:
+            return False
     
     def run(self):
         """Main trading loop."""

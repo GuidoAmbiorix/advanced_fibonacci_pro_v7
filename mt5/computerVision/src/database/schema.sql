@@ -147,3 +147,57 @@ CREATE TABLE IF NOT EXISTS system_logs (
 
 CREATE INDEX IF NOT EXISTS idx_logs_level_time ON system_logs(level, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_logs_component ON system_logs(component);
+
+-- ==================== Portfolio Management ====================
+
+-- Portfolios Table
+CREATE TABLE IF NOT EXISTS portfolios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    description TEXT,
+    initial_capital REAL NOT NULL,
+    current_capital REAL NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Strategies Table
+CREATE TABLE IF NOT EXISTS strategies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    type TEXT NOT NULL, -- 'ML_MODEL', 'RULE_BASED'
+    model_id INTEGER, -- Link to models table if type is ML_MODEL
+    config TEXT, -- JSON configuration for rule-based strategies
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (model_id) REFERENCES models(id)
+);
+
+-- Portfolio Allocations Table
+CREATE TABLE IF NOT EXISTS portfolio_allocations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    portfolio_id INTEGER NOT NULL,
+    strategy_id INTEGER NOT NULL,
+    symbol TEXT NOT NULL,
+    weight REAL NOT NULL, -- 0.0 to 1.0 (allocation percentage)
+    is_active BOOLEAN DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (portfolio_id) REFERENCES portfolios(id),
+    FOREIGN KEY (strategy_id) REFERENCES strategies(id),
+    UNIQUE(portfolio_id, strategy_id, symbol)
+);
+
+-- Portfolio Performance Table
+CREATE TABLE IF NOT EXISTS portfolio_performance (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    portfolio_id INTEGER NOT NULL,
+    date DATETIME NOT NULL,
+    total_equity REAL NOT NULL,
+    daily_pnl REAL NOT NULL,
+    drawdown REAL NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (portfolio_id) REFERENCES portfolios(id),
+    UNIQUE(portfolio_id, date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_performance_portfolio_date ON portfolio_performance(portfolio_id, date DESC);

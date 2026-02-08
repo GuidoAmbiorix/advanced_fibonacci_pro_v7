@@ -146,3 +146,56 @@
 2026-02-08 13:40:01,019 - root - INFO - Fetched and stored 1000 bars for EURUSD M30
 2026-02-08 13:40:01,020 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:40:01] "POST /data/fetch HTTP/1.1" 200 -
 2026-02-08 13:40:07,732 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:40:07] "GET /status HTTP/1.1" 200 -
+2026-02-08 14:56:38,603 - root - INFO - MT5 connected successfully
+2026-02-08 14:56:38,613 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 14:56:38,613 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 14:56:39,999 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.4:5000
+2026-02-08 14:56:40,000 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 14:59:48,301 - root - INFO - MT5 connected successfully
+2026-02-08 14:59:48,315 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 14:59:48,317 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 14:59:49,676 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.4:5000
+2026-02-08 14:59:49,676 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 15:05:28,007 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:28] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:05:29,129 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:29] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:05:29,778 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:29] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:05:31,131 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:31] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:05:32,376 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:32] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:05:34,712 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:34] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:05:34,841 - root - INFO - Fetched and stored 1000 bars for EURUSD M1
+2026-02-08 15:05:34,850 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:34] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 15:05:37,117 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:37] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:05:37,728 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:37] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:05:37,832 - root - INFO - Fetched and stored 1000 bars for EURUSD H1
+2026-02-08 15:05:37,833 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:37] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 15:05:39,473 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:39] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:05:41,714 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:41] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:05:45,630 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:45] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:05:46,129 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:46] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:05:46,240 - root - INFO - Fetched and stored 1000 bars for EURUSD H1
+2026-02-08 15:05:46,240 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:05:46] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 15:07:12,975 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:07:12] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:07:14,834 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:07:14] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:07:15,215 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:07:15] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:07:17,429 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:07:17] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:07:17,962 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:07:17] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:07:18,096 - root - INFO - Fetched and stored 1000 bars for EURUSD M30
+2026-02-08 15:07:18,096 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:07:18] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 15:07:20,181 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:07:20] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:07:20,745 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:07:20] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:07:20,877 - root - INFO - Fetched and stored 1000 bars for EURUSD H1
+2026-02-08 15:07:20,878 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:07:20] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 15:11:28,012 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:11:28] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:11:29,197 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:11:29] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:11:29,983 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:11:29] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:11:30,779 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:11:30] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:11:31,080 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:11:31] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:11:32,529 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:11:32] "GET /status HTTP/1.1" 200 -
+2026-02-08 15:11:32,722 - root - INFO - Fetched and stored 1000 bars for EURUSD M1
+2026-02-08 15:11:32,723 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 15:11:32] "POST /data/fetch HTTP/1.1" 200 -

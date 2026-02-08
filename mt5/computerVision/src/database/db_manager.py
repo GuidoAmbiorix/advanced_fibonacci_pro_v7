@@ -8,14 +8,20 @@ import pandas as pd
 class DatabaseManager:
     """Manages all database operations for the CV Trading Agent."""
     
-    def __init__(self, db_path: str = "data/cv_agent.db"):
+    def __init__(self, db_path: str = None):
         """
         Initialize database manager.
         
         Args:
             db_path: Path to SQLite database file
         """
-        self.db_path = db_path
+        if db_path is None:
+            # Resolve path relative to this file: src/database/db_manager.py -> project_root/data/cv_agent.db
+            root_dir = Path(__file__).parent.parent.parent
+            self.db_path = str(root_dir / "data" / "cv_agent.db")
+        else:
+            self.db_path = db_path
+            
         self._ensure_db_exists()
     
     def _ensure_db_exists(self):
@@ -149,15 +155,27 @@ class DatabaseManager:
             conn.commit()
             return cursor.lastrowid
     
-    def get_latest_prediction(self, symbol: str) -> Optional[Dict]:
-        """Get the most recent prediction for a symbol."""
+    def get_latest_prediction(self, symbol: str, model_id: int = None) -> Optional[Dict]:
+        """Get the most recent prediction for a symbol, optionally filtered by model."""
         with self.get_connection() as conn:
-            row = conn.execute("""
-                SELECT * FROM predictions 
-                WHERE symbol = ? 
-                ORDER BY timestamp DESC 
-                LIMIT 1
-            """, (symbol,)).fetchone()
+            if model_id:
+                query = """
+                    SELECT * FROM predictions 
+                    WHERE symbol = ? AND model_id = ?
+                    ORDER BY timestamp DESC 
+                    LIMIT 1
+                """
+                params = (symbol, model_id)
+            else:
+                query = """
+                    SELECT * FROM predictions 
+                    WHERE symbol = ? 
+                    ORDER BY timestamp DESC 
+                    LIMIT 1
+                """
+                params = (symbol,)
+                
+            row = conn.execute(query, params).fetchone()
             return dict(row) if row else None
     
     # ==================== Positions ====================
@@ -280,4 +298,91 @@ class DatabaseManager:
         
         with self.get_connection() as conn:
             rows = conn.execute(query, params).fetchall()
+            return [dict(row) for row in rows]
+            
+    # ==================== Portfolio Management ====================
+    
+    def create_portfolio(self, name: str, initial_capital: float, description: str = None) -> int:
+        """Create a new portfolio."""
+        with self.get_connection() as conn:
+            cursor = conn.execute("""
+                INSERT INTO portfolios (name, initial_capital, current_capital, description)
+                VALUES (?, ?, ?, ?)
+            """, (name, initial_capital, initial_capital, description))
+            conn.commit()
+            return cursor.lastrowid
+            
+    def get_portfolios(self) -> List[Dict]:
+        """Get all portfolios."""
+        with self.get_connection() as conn:
+            rows = conn.execute("SELECT * FROM portfolios ORDER BY created_at DESC").fetchall()
+            return [dict(row) for row in rows]
+            
+    def get_portfolio(self, portfolio_id: int) -> Optional[Dict]:
+        """Get specific portfolio."""
+        with self.get_connection() as conn:
+            row = conn.execute("SELECT * FROM portfolios WHERE id = ?", (portfolio_id,)).fetchone()
+            return dict(row) if row else None
+            
+    def create_strategy(self, name: str, type: str, model_id: int = None, config: Dict = None) -> int:
+        """Create a new trading strategy."""
+        with self.get_connection() as conn:
+            cursor = conn.execute("""
+                INSERT INTO strategies (name, type, model_id, config)
+                VALUES (?, ?, ?, ?)
+            """, (name, type, model_id, json.dumps(config) if config else None))
+            conn.commit()
+            return cursor.lastrowid
+            
+    def get_strategies(self) -> List[Dict]:
+        """Get all strategies."""
+        with self.get_connection() as conn:
+            rows = conn.execute("""
+                SELECT s.*, m.name as model_name 
+                FROM strategies s
+                LEFT JOIN models m ON s.model_id = m.id
+                ORDER BY s.created_at DESC
+            """).fetchall()
+            return [dict(row) for row in rows]
+            
+    def set_allocation(self, portfolio_id: int, strategy_id: int, symbol: str, weight: float):
+        """Set allocation for a strategy/symbol pair in a portfolio."""
+        with self.get_connection() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO portfolio_allocations (portfolio_id, strategy_id, symbol, weight)
+                VALUES (?, ?, ?, ?)
+            """, (portfolio_id, strategy_id, symbol, weight))
+            conn.commit()
+            
+    def get_allocations(self, portfolio_id: int) -> List[Dict]:
+        """Get allocations for a portfolio."""
+        with self.get_connection() as conn:
+            rows = conn.execute("""
+                SELECT a.*, s.name as strategy_name, s.type as strategy_type, s.model_id
+                FROM portfolio_allocations a
+                JOIN strategies s ON a.strategy_id = s.id
+                WHERE a.portfolio_id = ? AND a.is_active = 1
+                ORDER BY a.weight DESC
+            """, (portfolio_id,)).fetchall()
+            return [dict(row) for row in rows]
+            
+    def update_portfolio_performance(self, portfolio_id: int, total_equity: float, daily_pnl: float, drawdown: float):
+        """Record daily portfolio performance."""
+        date_str = datetime.now().date().isoformat()
+        with self.get_connection() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO portfolio_performance (portfolio_id, date, total_equity, daily_pnl, drawdown)
+                VALUES (?, ?, ?, ?, ?)
+            """, (portfolio_id, date_str, total_equity, daily_pnl, drawdown))
+            conn.commit()
+            
+    def get_portfolio_performance(self, portfolio_id: int, days: int = 30) -> List[Dict]:
+        """Get performance history for a portfolio."""
+        with self.get_connection() as conn:
+            rows = conn.execute("""
+                SELECT * FROM portfolio_performance 
+                WHERE portfolio_id = ? 
+                ORDER BY date ASC 
+                LIMIT ?
+            """, (portfolio_id, days)).fetchall()
             return [dict(row) for row in rows]

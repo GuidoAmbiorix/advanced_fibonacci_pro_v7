@@ -36,7 +36,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigation",
-    ["Dashboard", "Live Predictions", "Trading Control", "Live Trades", "Training", "System Logs"]
+    ["Dashboard", "Live Predictions", "Portfolios", "Trading Control", "Live Trades", "Training", "System Logs"]
 )
 
 st.sidebar.markdown("---")
@@ -299,6 +299,37 @@ elif page == "Trading Control":
             st.success("Auto-trading disabled!")
             st.rerun()
     
+    # Portfolio Selection
+    st.subheader("Active Portfolio")
+    portfolios = db.get_portfolios()
+    
+    if not portfolios:
+        st.warning("No portfolios available. Create one in the 'Portfolios' page.")
+        active_portfolio_id = None
+    else:
+        current_portfolio_id = db.get_config('active_portfolio_id')
+        
+        # Find index of current portfolio
+        current_index = 0
+        if current_portfolio_id:
+            for i, p in enumerate(portfolios):
+                if str(p['id']) == current_portfolio_id:
+                    current_index = i
+                    break
+        
+        selected_portfolio_id = st.selectbox(
+            "Select Portfolio using for Auto-Trading",
+            options=[p['id'] for p in portfolios],
+            format_func=lambda x: next((p['name'] for p in portfolios if p['id'] == x), str(x)),
+            index=current_index
+        )
+        
+        if str(selected_portfolio_id) != str(current_portfolio_id):
+            db.set_config('active_portfolio_id', str(selected_portfolio_id))
+            st.success(f"Active portfolio updated to: {next((p['name'] for p in portfolios if p['id'] == selected_portfolio_id), '')}")
+            # Log the change
+            db.log('INFO', 'DASHBOARD', f"Active portfolio changed to ID {selected_portfolio_id}")
+
     st.markdown("---")
     
     # Risk parameters
@@ -635,6 +666,189 @@ elif page == "Training":
         st.header("Step 4: Backtest Strategy")
         st.warning("🚧 Coming soon: Backtrader integration for strategy validation")
         st.info("You'll be able to test your models on historical data with realistic trading conditions")
+
+
+# ==================== Portfolio Management Page ====================
+elif page == "Portfolios":
+    st.title("💼 Portfolio Management")
+    
+    from src.trading.portfolio_manager import PortfolioManager
+    pm = PortfolioManager(db)
+    
+    tab1, tab2, tab3 = st.tabs(["Dashboard", "Create Portfolio", "Manage Allocations"])
+    
+    # === Tab 1: Portfolio Dashboard ===
+    with tab1:
+        portfolios = pm.db.get_portfolios()
+        
+        if not portfolios:
+            st.info("No portfolios created yet. Go to 'Create Portfolio' tab to get started.")
+        else:
+            selected_portfolio_id = st.selectbox(
+                "Select Portfolio", 
+                options=[p['id'] for p in portfolios],
+                format_func=lambda x: next((p['name'] for p in portfolios if p['id'] == x), str(x))
+            )
+            
+            # Get live balance from session state (if available) or default to 0
+            # We already fetch account info in the sidebar loop
+            current_balance = 0.0
+            try:
+                # Re-fetch for latest balance
+                bridge_url = os.getenv('BRIDGE_URL', 'http://host.docker.internal:5000')
+                response = requests.get(f"{bridge_url}/status", timeout=2)
+                if response.status_code == 200:
+                    status_data = response.json()
+                    if status_data.get('account_info'):
+                        current_balance = status_data['account_info']['balance']
+            except:
+                pass
+            
+            summary = pm.get_portfolio_summary(selected_portfolio_id, total_account_balance=current_balance)
+            
+            if summary:
+                p_info = summary['info']
+                
+                # Metric Cards
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                   st.metric("Portfolio Initial", f"${p_info['initial_capital']:,.2f}")
+                with col2:
+                    current_cap = p_info['current_capital']
+                    initial_cap = p_info['initial_capital']
+                    delta = current_cap - initial_cap
+                    st.metric("Portfolio Equity", f"${current_cap:,.2f}", delta=f"${delta:,.2f}")
+                with col3:
+                    if current_balance > 0:
+                        # Calculate portfolio weight based on initial capital vs current balance
+                        # This is a bit simplistic but shows relative size
+                        weight = (p_info['current_capital'] / current_balance) if current_balance else 0
+                        st.metric("Weight of Account", f"{weight:.1%}", help=f"Based on Account Balance: ${current_balance:,.2f}")
+                    else:
+                        st.metric("Weight of Account", "N/A")
+                with col4:
+                    allocated_pct = summary['total_allocated_weight']
+                    st.metric("Active Allocation", f"{allocated_pct:.1%}")
+                
+                st.markdown("---")
+                
+                # Allocation Table
+                st.subheader("Asset Allocation")
+                allocations = summary.get('allocations', [])
+                if allocations:
+                    alloc_df = pd.DataFrame(allocations)
+                    st.dataframe(
+                        alloc_df[['symbol', 'strategy_name', 'weight', 'strategy_type']],
+                        column_config={
+                            "weight": st.column_config.ProgressColumn(
+                                "Allocation %",
+                                format="%.1f%%",
+                                min_value=0,
+                                max_value=1,
+                            )
+                        },
+                        use_container_width=True
+                    )
+                else:
+                    st.info("No strategies allocated. Go to 'Manage Allocations' tab.")
+                
+                # Performance Chart (Placeholder for now)
+                st.subheader("Performance History")
+                perf_data = summary['performance']
+                if perf_data:
+                    perf_df = pd.DataFrame(perf_data)
+                    st.line_chart(perf_df.set_index('date')['total_equity'])
+                else:
+                    st.caption("No performance data available yet.")
+
+    # === Tab 2: Create Portfolio ===
+    with tab2:
+        st.header("Create New Portfolio")
+        
+        with st.form("create_portfolio_form"):
+            p_name = st.text_input("Portfolio Name", placeholder="e.g., Aggressive Scalper")
+            p_desc = st.text_area("Description", placeholder="Strategy details...")
+            
+            # Use current live balance as initial capital
+            current_balance = 0.0
+            try:
+                bridge_url = os.getenv('BRIDGE_URL', 'http://10.0.0.4:5000')
+                response = requests.get(f"{bridge_url}/status", timeout=2)
+                if response.status_code == 200:
+                    status_data = response.json()
+                    if status_data.get('account_info'):
+                        current_balance = status_data['account_info']['balance']
+            except:
+                pass
+            
+            if st.form_submit_button("Create Portfolio"):
+                if p_name:
+                    try:
+                        # If bridge is offline or balance is 0, default to 0.0 or a placeholder
+                        initial_cap = current_balance if current_balance > 0 else 0.0
+                        pm.create_portfolio(p_name, initial_cap, p_desc)
+                        st.success(f"Portfolio '{p_name}' created successfully with Initial Capital: ${initial_cap:,.2f}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error creating portfolio: {str(e)}")
+                else:
+                    st.error("Portfolio name is required.")
+
+    # === Tab 3: Manage Allocations ===
+    with tab3:
+        st.header("Assign Strategies to Portfolios")
+        
+        portfolios = pm.db.get_portfolios()
+        if not portfolios:
+            st.warning("Create a portfolio first.")
+        else:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                target_portfolio_id = st.selectbox(
+                    "Target Portfolio",
+                    options=[p['id'] for p in portfolios],
+                    format_func=lambda x: next((p['name'] for p in portfolios if p['id'] == x), str(x)),
+                    key="alloc_portfolio_select"
+                )
+            
+            with col2:
+                # Get available trained models
+                with db.get_connection() as conn:
+                    models = conn.execute("SELECT id, name FROM models ORDER BY created_at DESC").fetchall()
+                
+                selected_model_id = st.selectbox(
+                    "Select Strategy/Model",
+                    options=[m['id'] for m in models],
+                    format_func=lambda x: next((m['name'] for m in models if m['id'] == x), str(x))
+                )
+            
+            col3, col4 = st.columns(2)
+            with col3:
+                target_symbol = st.selectbox(
+                    "Target Symbol", 
+                    ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "AUDUSD", "USDCAD", "USDCHF", "NZDUSD", "EURJPY"],
+                    key="alloc_symbol"
+                )
+            with col4:
+                alloc_weight = st.slider("Allocation Weight (%)", 1, 100, 20) / 100.0
+            
+            if st.button("Add Strategy Allocation"):
+                try:
+                    model_name = next((m['name'] for m in models if m['id'] == selected_model_id), "Unknown Model")
+                    pm.add_strategy_to_portfolio(
+                        portfolio_id=target_portfolio_id,
+                        strategy_name=f"{model_name} - {target_symbol}",
+                        model_id=selected_model_id,
+                        symbol=target_symbol,
+                        weight=alloc_weight
+                    )
+                    st.success(f"Successfully allocated {alloc_weight:.0%} to {target_symbol}!")
+                    st.rerun()
+                except ValueError as ve:
+                    st.error(str(ve))
+                except Exception as e:
+                    st.error(f"Allocation failed: {str(e)}")
 
 
 # ==================== System Logs Page ====================
