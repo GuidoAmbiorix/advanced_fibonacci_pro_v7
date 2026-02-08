@@ -1981,8 +1981,12 @@ bool CheckMarginRequirement(string symbol, ENUM_ORDER_TYPE type, double lots)
       return false;
    }
 
-   // Require at least 150% of needed margin for safety buffer
+   // Require at least 150% of needed margin for safety buffer (Standard)
    double safetyMultiplier = 1.5;
+   
+   // OPTIMIZATION: Relax for micro accounts to allow trading updates
+   if(account.Equity() < 100) safetyMultiplier = 1.05; // 5% buffer for small accounts
+   
    double safetyMargin = requiredMargin * safetyMultiplier;
 
    if(freeMargin < safetyMargin)
