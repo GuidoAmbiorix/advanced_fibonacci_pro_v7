@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Streamlit Dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: cv_dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Use Windows host IP instead of host.docker.internal
+      - BRIDGE_URL=http://10.0.0.4:5000
+    restart: unless-stopped
+    networks:
+      - cv_network
+
+  # Auto-Trader Service
+  trader:
+    build:
+      context: .
+      dockerfile: Dockerfile.trader
+    container_name: cv_trader
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./src/trading/config.yaml:/app/src/trading/config.yaml
+    environment:
+      - PYTHONUNBUFFERED=1
+      - BRIDGE_URL=http://10.0.0.4:5000
+    restart: unless-stopped
+    networks:
+      - cv_network
+    depends_on:
+      - dashboard
+
+networks:
+  cv_network:
+    driver: bridge

@@ -1,0 +1,26 @@
+# Trading Configuration
+
+# Risk Management
+risk:
+  max_positions: 3
+  max_daily_loss_pct: 5.0  # Maximum daily loss as % of account balance
+  min_confidence: 0.70  # Minimum ML prediction confidence to trade
+  position_size_pct: 2.0  # Position size as % of account balance
+  
+# Trade Parameters
+trade:
+  default_lot_size: 0.01
+  stop_loss_pips: 50
+  take_profit_pips: 100
+  slippage_pips: 20
+  
+# Auto-Trader
+auto_trader:
+  enabled: false  # Start disabled for safety
+  check_interval_seconds: 60  # How often to check for new signals
+  symbols:
+    - EURUSD
+  
+# MT5 Bridge
+bridge:
+  url: "http://localhost:5000"

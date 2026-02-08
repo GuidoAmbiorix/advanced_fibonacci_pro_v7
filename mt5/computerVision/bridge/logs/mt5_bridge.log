@@ -1,0 +1,148 @@
+2026-02-08 13:07:59,463 - root - INFO - MT5 connected successfully
+2026-02-08 13:07:59,473 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 13:07:59,473 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 13:08:00,891 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.4:5000
+2026-02-08 13:08:00,892 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 13:09:08,169 - root - INFO - MT5 connected successfully
+2026-02-08 13:09:08,179 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 13:09:08,179 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 13:09:12,451 - root - INFO - MT5 connected successfully
+2026-02-08 13:09:12,461 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 13:09:12,461 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 13:09:13,316 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.4:5000
+2026-02-08 13:09:13,316 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 13:09:21,570 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 13:09:21] "[33mGET / HTTP/1.1[0m" 404 -
+2026-02-08 13:09:21,658 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 13:09:21] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-02-08 13:09:25,916 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:09:25] "[33mGET / HTTP/1.1[0m" 404 -
+2026-02-08 13:09:25,997 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:09:25] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-02-08 13:16:45,328 - root - INFO - MT5 connected successfully
+2026-02-08 13:16:45,337 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 13:16:45,337 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 13:16:46,654 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.4:5000
+2026-02-08 13:16:46,654 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 13:18:16,248 - root - INFO - MT5 connected successfully
+2026-02-08 13:18:16,257 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 13:18:16,257 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 13:18:17,570 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.4:5000
+2026-02-08 13:18:17,571 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 13:19:38,600 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 13:19:38] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:21:53,456 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 13:21:53] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:23:59,208 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 13:23:59] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:29:14,046 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:29:14] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:29:22,501 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:29:22] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:29:23,288 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:29:23] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:29:24,344 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:29:24] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:29:25,845 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:29:25] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:29:55,762 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:29:55] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:29:56,208 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:29:56] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:29:57,579 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:29:57] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:29:59,213 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:29:59] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:32:24,074 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:32:24] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:32:25,602 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:32:25] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:32:27,514 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:32:27] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:32:28,098 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:32:28] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:32:34,984 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:32:34] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:32:35,646 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:32:35] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:33:41,214 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:41] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:33:43,341 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:43] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:33:47,948 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:47] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:33:48,463 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:48] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:33:48,475 - root - ERROR - Failed to fetch data for EURUSD
+2026-02-08 13:33:48,476 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:48] "[35m[1mPOST /data/fetch HTTP/1.1[0m" 500 -
+2026-02-08 13:33:54,159 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:54] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:33:54,171 - root - ERROR - Failed to fetch data for EURUSD
+2026-02-08 13:33:54,171 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:54] "[35m[1mPOST /data/fetch HTTP/1.1[0m" 500 -
+2026-02-08 13:33:55,407 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:55] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:33:55,419 - root - ERROR - Failed to fetch data for EURUSD
+2026-02-08 13:33:55,419 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:55] "[35m[1mPOST /data/fetch HTTP/1.1[0m" 500 -
+2026-02-08 13:33:56,352 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:56] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:33:57,645 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:57] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:33:58,366 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:58] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:33:58,379 - root - ERROR - Failed to fetch data for EURUSD
+2026-02-08 13:33:58,379 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:33:58] "[35m[1mPOST /data/fetch HTTP/1.1[0m" 500 -
+2026-02-08 13:34:03,528 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:34:03] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:34:03,541 - root - ERROR - Failed to fetch data for EURUSD
+2026-02-08 13:34:03,542 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:34:03] "[35m[1mPOST /data/fetch HTTP/1.1[0m" 500 -
+2026-02-08 13:34:04,215 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:34:04] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:34:04,232 - root - ERROR - Failed to fetch data for EURUSD
+2026-02-08 13:34:04,232 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:34:04] "[35m[1mPOST /data/fetch HTTP/1.1[0m" 500 -
+2026-02-08 13:34:04,400 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:34:04] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:34:04,415 - root - ERROR - Failed to fetch data for EURUSD
+2026-02-08 13:34:04,416 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:34:04] "[35m[1mPOST /data/fetch HTTP/1.1[0m" 500 -
+2026-02-08 13:34:16,833 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:34:16] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:34:17,763 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:34:17] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:34:17,777 - root - ERROR - Failed to fetch data for EURUSD
+2026-02-08 13:34:17,777 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:34:17] "[35m[1mPOST /data/fetch HTTP/1.1[0m" 500 -
+2026-02-08 13:35:04,109 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:35:04] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:35:05,165 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:35:05] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:35:07,367 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:35:07] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:35:07,879 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:35:07] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:35:07,891 - root - ERROR - Failed to fetch data for EURUSD
+2026-02-08 13:35:07,892 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:35:07] "[35m[1mPOST /data/fetch HTTP/1.1[0m" 500 -
+2026-02-08 13:37:35,832 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:37:35] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:37:35,886 - root - ERROR - Error storing market data: Error binding parameter 3: type 'Timestamp' is not supported
+2026-02-08 13:37:35,890 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:37:35] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 13:37:41,644 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:37:41] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:37:42,796 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:37:42] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:37:47,823 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:37:47] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:37:47,845 - root - ERROR - Error storing market data: Error binding parameter 3: type 'Timestamp' is not supported
+2026-02-08 13:37:47,846 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:37:47] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 13:37:52,678 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:37:52] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:37:55,038 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:37:55] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:37:55,055 - root - ERROR - Error storing market data: Error binding parameter 3: type 'Timestamp' is not supported
+2026-02-08 13:37:55,057 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:37:55] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 13:37:56,878 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:37:56] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:38:16,828 - root - ERROR - Error syncing EURUSD: Error binding parameter 3: type 'Timestamp' is not supported
+2026-02-08 13:38:16,884 - root - ERROR - Error syncing GBPUSD: Error binding parameter 3: type 'Timestamp' is not supported
+2026-02-08 13:38:16,930 - root - ERROR - Error syncing USDJPY: Error binding parameter 3: type 'Timestamp' is not supported
+2026-02-08 13:39:04,552 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:04] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:05,451 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:05] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:07,182 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:07] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:07,712 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:07] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:07,730 - root - ERROR - Error storing market data: Error binding parameter 3: type 'Timestamp' is not supported
+2026-02-08 13:39:07,731 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:07] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 13:39:10,019 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:10] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:10,979 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:10] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:14,583 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:14] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:16,822 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:16] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:16,839 - root - ERROR - Error storing market data: Error binding parameter 3: type 'Timestamp' is not supported
+2026-02-08 13:39:16,840 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:16] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 13:39:16,962 - root - ERROR - Error syncing EURUSD: Error binding parameter 3: type 'Timestamp' is not supported
+2026-02-08 13:39:16,991 - root - ERROR - Error syncing GBPUSD: Error binding parameter 3: type 'Timestamp' is not supported
+2026-02-08 13:39:17,021 - root - ERROR - Error syncing USDJPY: Error binding parameter 3: type 'Timestamp' is not supported
+2026-02-08 13:39:38,155 - root - INFO - MT5 connected successfully
+2026-02-08 13:39:38,165 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 13:39:38,165 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 13:39:39,566 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.4:5000
+2026-02-08 13:39:39,566 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 13:39:41,976 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:41] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:42,145 - root - INFO - Fetched and stored 1000 bars for EURUSD H1
+2026-02-08 13:39:42,149 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:42] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 13:39:43,781 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:43] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:45,663 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:45] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:47,569 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:47] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:50,947 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:50] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:51,313 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:51] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:55,480 - root - INFO - Fetched and stored 1000 bars for EURUSD M30
+2026-02-08 13:39:55,481 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:55] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 13:39:57,452 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:57] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:39:58,746 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:39:58] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:40:00,893 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:40:00] "GET /status HTTP/1.1" 200 -
+2026-02-08 13:40:01,019 - root - INFO - Fetched and stored 1000 bars for EURUSD M30
+2026-02-08 13:40:01,020 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:40:01] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 13:40:07,732 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 13:40:07] "GET /status HTTP/1.1" 200 -

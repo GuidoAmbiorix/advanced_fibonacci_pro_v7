@@ -244,20 +244,25 @@ int GetKillzoneQuality()
 //+------------------------------------------------------------------+
 //| CONFLUENCE SCORE THRESHOLDS                                       |
 //+------------------------------------------------------------------+
-#define CONFLUENCE_ELITE    14.0   // Elite entry: 14+/30 points (M15 Enhancement)
-#define CONFLUENCE_STRONG   12.0   // Strong entry: 12-13.9/30 points
-#define CONFLUENCE_GOOD     10.0   // Good entry: 10-11.9/30 points
-#define CONFLUENCE_WEAK     0.0    // Weak entry: <10/30 points - NO TRADE
+//+------------------------------------------------------------------+
+//| CONFLUENCE SCORE THRESHOLDS                                       |
+//+------------------------------------------------------------------+
+#define CONFLUENCE_ELITE    14.0   // Elite entry: 14+/30
+#define CONFLUENCE_STRONG   12.0   // Strong entry: 12-13.9/30
+#define CONFLUENCE_GOOD     10.0   // Good entry: 10-11.9/30
+#define CONFLUENCE_BASIC    5.0    // Basic entry: 5.0-9.9/30 (Aggressive)
+#define CONFLUENCE_WEAK     0.0    // Weak entry: <5/30 - NO TRADE
 
 //+------------------------------------------------------------------+
 //| ENTRY TIER ENUM (for new confluence system)                       |
 //+------------------------------------------------------------------+
 enum ENUM_ENTRY_TIER
 {
-   TIER_NO_TRADE = 0,   // Score < 10: Skip
-   TIER_GOOD = 1,       // Score 10-11.9: 60% position
-   TIER_STRONG = 2,     // Score 12-13.9: 80% position
-   TIER_ELITE = 3       // Score 14+: 100% position
+   TIER_NO_TRADE = 0,   // Score < 5: Skip
+   TIER_BASIC = 1,      // Score 5-9.9: 40% position (New)
+   TIER_GOOD = 2,       // Score 10-11.9: 60% position
+   TIER_STRONG = 3,     // Score 12-13.9: 80% position
+   TIER_ELITE = 4       // Score 14+: 100% position
 };
 
 //+------------------------------------------------------------------+
@@ -268,6 +273,7 @@ ENUM_ENTRY_TIER GetEntryTier(double confluenceScore)
    if(confluenceScore >= CONFLUENCE_ELITE) return TIER_ELITE;
    if(confluenceScore >= CONFLUENCE_STRONG) return TIER_STRONG;
    if(confluenceScore >= CONFLUENCE_GOOD) return TIER_GOOD;
+   if(confluenceScore >= CONFLUENCE_BASIC) return TIER_BASIC;
    return TIER_NO_TRADE;
 }
 
@@ -281,6 +287,7 @@ double GetTierSizeMultiplier(ENUM_ENTRY_TIER tier)
       case TIER_ELITE:  return 1.0;    // 100%
       case TIER_STRONG: return 0.8;    // 80%
       case TIER_GOOD:   return 0.6;    // 60%
+      case TIER_BASIC:  return 0.4;    // 40% (Aggressive Entry)
       default:          return 0.0;    // No trade
    }
 }

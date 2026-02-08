@@ -1049,6 +1049,19 @@ void OnTick()
              ExecuteTrade(ORDER_TYPE_SELL, approvedRisk, "Entry", quality);
           }
       }
+      else
+      {
+          // DEBUG: Score was high enough, but Governor rejected risk?
+          if((buyScore >= InpMinConfluenceEntry || sellScore >= InpMinConfluenceEntry) && approvedRisk <= 0.05)
+          {
+             static datetime lastGovBlock = 0;
+             if(TimeCurrent() - lastGovBlock > 60)
+             {
+                Print("⚠️ ENTRY BLOCKED: Governor approved 0 risk (Check Exposure/Daily Limits)");
+                lastGovBlock = TimeCurrent();
+             }
+          }
+      }
    }
 
    // OPTIMIZATION: Add-ons disabled in all .set files - skip processing
@@ -1417,6 +1430,7 @@ void ManagePositions()
       }
    }
 }
+
 
 void OnTrade()
 {
@@ -1867,7 +1881,7 @@ bool CheckSpread()
       static datetime lastSpreadWarning = 0;
       if(TimeCurrent() - lastSpreadWarning > 60)
       {
-         Print("⚠️ Spread too wide: ", lastSpread, " > ", InpMaxSpreadPoints, " points");
+         Print("⚠️ SPREAD BLOCK: ", lastSpread, " > ", InpMaxSpreadPoints, " points");
          lastSpreadWarning = TimeCurrent();
       }
       return false;

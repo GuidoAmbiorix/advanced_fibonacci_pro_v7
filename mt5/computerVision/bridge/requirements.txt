@@ -1,0 +1,4 @@
+flask
+pyyaml
+schedule
+MetaTrader5

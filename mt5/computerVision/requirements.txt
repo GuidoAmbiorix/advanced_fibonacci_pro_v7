@@ -1,0 +1,13 @@
+MetaTrader5
+pandas
+numpy
+matplotlib
+scikit-learn
+pyyaml
+requests
+streamlit
+plotly
+flask
+schedule
+TA-Lib
+optuna
