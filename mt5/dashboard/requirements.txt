@@ -6,3 +6,6 @@ optuna
 numpy
 schedule
 matplotlib
+apscheduler
+scikit-learn
+scipy

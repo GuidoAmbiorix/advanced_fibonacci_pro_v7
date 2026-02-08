@@ -6,8 +6,8 @@ PARAM_SPACES = {
         # --- Fibonacci Structure (8 params) ---
         "swing_lookback": {"type": "int", "low": 20, "high": 100, "step": 10},
         "zone_tolerance": {"type": "float", "low": 0.05, "high": 0.2, "step": 0.01},
-        "fib_level_low": {"type": "float", "low": 0.618, "high": 0.786, "step": 0.01},
-        "fib_level_high": {"type": "float", "low": 0.618, "high": 0.786, "step": 0.01},
+        "fib_level_low": {"type": "float", "low": 0.38, "high": 0.70, "step": 0.01},
+        "fib_level_high": {"type": "float", "low": 0.65, "high": 0.88, "step": 0.01},
         "use_fib_extensions": {"type": "int", "low": 0, "high": 1},
         "fib_ext_161": {"type": "int", "low": 0, "high": 1},
         "fib_ext_261": {"type": "int", "low": 0, "high": 1},
@@ -127,8 +127,8 @@ PARAM_SPACES = {
     
     "JPY": {
         "risk_base": {"type": "float", "low": 0.2, "high": 0.6, "step": 0.05},
-        "fixed_tp_r": {"type": "float", "low": 2.0, "high": 6.0, "step": 0.2}, 
-        "trail_atr_mult": {"type": "float", "low": 1.5, "high": 4.0, "step": 0.2},
+        "fixed_tp_r": {"type": "float", "low": 2.0, "high": 6.0, "step": 0.2},
+        "trail_atr_mult": {"type": "float", "low": 1.5, "high": 3.9, "step": 0.2},
         "volatility_threshold": {"type": "float", "low": 3.0, "high": 6.0, "step": 0.5},
     },
     

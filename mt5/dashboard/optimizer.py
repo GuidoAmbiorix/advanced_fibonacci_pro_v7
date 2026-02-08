@@ -9,6 +9,8 @@ from optimizer_config import (
 )
 from metrics import PerformanceMetrics, MultiObjectiveMetrics
 from mt5_tester import MT5Tester
+from backtester.confluence_engine import ConfluenceEngine
+from backtester.technical_indicators import TechnicalIndicators
 import logging
 
 logger = logging.getLogger("Optimizer")
@@ -110,13 +112,12 @@ class PortfolioOptimizer:
             
         # Clean previous results for this symbol/magic
         self.tester.clean_symbol_trades(symbol)
-            
-        # Run Tester
+
+        # Run MT5 Tester
         # Use period from settings
         period = self.tf_settings['timeframe_name']
-        self.tester.create_ini_file(symbol, period=period)
-        
-        if not self.tester.run_tester():
+
+        if not self.tester.run_tester(symbol=symbol, period=period, backtest_days=90):
             logger.error("MT5 Tester Failed")
             return -100
             
@@ -132,14 +133,14 @@ class PortfolioOptimizer:
 
     def objective(self, trial, symbol, df_data):
         """
-        Objective function for Optuna.
-        Simulates trading performance based on expanded parameter set.
+        Enhanced Objective function for Optuna using 30-point confluence scoring.
+        Mirrors MT5 EA's sophisticated trading logic.
         """
         # 1. Suggest Parameters
         space = PARAM_SPACES.get("default")
         if "JPY" in symbol: space = {**space, **PARAM_SPACES.get("JPY", {})}
         elif "XAU" in symbol: space = {**space, **PARAM_SPACES.get("XAU", {})}
-        
+
         # Helper to get suggestion safely
         def suggest(name):
             conf = space.get(name, PARAM_SPACES["default"].get(name))
@@ -148,60 +149,52 @@ class PortfolioOptimizer:
             else:
                 return trial.suggest_float(name, conf["low"], conf["high"], step=conf.get("step", 0.1))
 
-        # Core Params
-        risk_base = suggest("risk_base")
-        fixed_tp_r = suggest("fixed_tp_r")
-        
-        # Indicators
-        rsi_period = suggest("rsi_period")
-        rsi_oversold = suggest("rsi_oversold")
-        rsi_overbought = suggest("rsi_overbought")
-        
-        ema_period = suggest("ema_period")
-        ema_min_slope = suggest("ema_min_slope")
-        
-        # Exits
-        trail_start_r = suggest("trail_start_r")
-        trail_atr_mult = suggest("trail_atr_mult")
-        
-        # 2. Enhanced Vectorized Backtest
+        # Build params dict
+        params = {}
+        for key in space.keys():
+            params[key] = suggest(key)
+
+        # Enforce Fibonacci constraint: fib_level_low must be <= fib_level_high
+        if 'fib_level_low' in params and 'fib_level_high' in params:
+            if params['fib_level_low'] > params['fib_level_high']:
+                # Swap them to maintain constraint
+                params['fib_level_low'], params['fib_level_high'] = params['fib_level_high'], params['fib_level_low']
+
+        # Validate params
+        is_valid, issues = self.validate_params(params)
+        if not is_valid:
+            logger.warning(f"Invalid params: {issues}")
+            return -100  # Penalty for invalid params
+
+        # Core Params (for trade simulation)
+        risk_base = params.get("risk_base")
+        fixed_tp_r = params.get("fixed_tp_r")
+        trail_start_r = params.get("trail_start_r")
+        trail_atr_mult = params.get("trail_atr_mult")
+
+        # 2. Calculate All Indicators
         df = df_data.copy()
-        
-        # Indicators
-        # RSI
-        delta = df['close'].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=rsi_period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=rsi_period).mean()
-        rs = gain / loss
-        df['rsi'] = 100 - (100 / (1 + rs))
-        
-        # EMA
-        df['ema'] = df['close'].ewm(span=ema_period, adjust=False).mean()
-        df['ema_slope'] = (df['ema'] - df['ema'].shift(5)) / 5 # Simple 5-bar slope
-        
-        # ATR (14 default for calculation, separate param possible)
-        df['tr'] = np.maximum(df['high'] - df['low'], np.abs(df['high'] - df['close'].shift(1)))
-        df['atr'] = df['tr'].rolling(window=14).mean()
-        
-        # Signal Generation (Proxy for Confluence)
-        # Long: Close > EMA + Slope Positive + RSI < Overbought
-        # Short: Close < EMA + Slope Negative + RSI > Oversold
-        # Note: This is an *optimization proxy*, not the exact MQL5 strategy, but tunes the same inputs.
-        
+        df = TechnicalIndicators.calculate_all_indicators(df, params)
+
+        # 3. Generate Confluence Scores (NEW - mirrors MT5)
+        confluence = ConfluenceEngine(params)
+
+        df['buy_score'] = confluence.calculate_confluence_score(df, 1, params)
+        df['sell_score'] = confluence.calculate_confluence_score(df, -1, params)
+
+        # 4. Apply Entry Thresholds (NEW)
+        min_score = params.get('min_confluence_entry', 15.0)
         df['signal'] = 0
-        
-        # Vectorized Conditions
-        long_cond = (df['close'] > df['ema']) & (df['ema_slope'] > ema_min_slope) & (df['rsi'] < rsi_overbought)
-        short_cond = (df['close'] < df['ema']) & (df['ema_slope'] < -ema_min_slope) & (df['rsi'] > rsi_oversold)
-        
-        df.loc[long_cond, 'signal'] = 1
-        df.loc[short_cond, 'signal'] = -1
+        df.loc[df['buy_score'] >= min_score, 'signal'] = 1
+        df.loc[df['sell_score'] >= min_score, 'signal'] = -1
         
         # Simulation Loop
         trades = []
         equity = 10000
-        
-        # Skip warmup
+
+        # Skip warmup (extract periods from params)
+        rsi_period = params.get('rsi_period', 14)
+        ema_period = params.get('ema_period', 200)
         start_idx = max(rsi_period, ema_period) + 20
         
         for i in range(start_idx, len(df)):
@@ -299,7 +292,7 @@ class PortfolioOptimizer:
 
     def objective_multi(self, trial, symbol, df_data):
         """
-        Multi-objective optimization function.
+        Enhanced Multi-objective optimization function using confluence scoring.
         Returns tuple of objectives for Pareto optimization.
 
         Returns: (sharpe, win_rate, -max_dd, profit_factor)
@@ -316,47 +309,50 @@ class PortfolioOptimizer:
             else:
                 return trial.suggest_float(name, conf["low"], conf["high"], step=conf.get("step", 0.1))
 
-        # Core Params
-        risk_base = suggest("risk_base")
-        fixed_tp_r = suggest("fixed_tp_r")
+        # Build params dict
+        params = {}
+        for key in space.keys():
+            params[key] = suggest(key)
 
-        # Indicators
-        rsi_period = suggest("rsi_period")
-        rsi_oversold = suggest("rsi_oversold")
-        rsi_overbought = suggest("rsi_overbought")
+        # Enforce Fibonacci constraint: fib_level_low must be <= fib_level_high
+        if 'fib_level_low' in params and 'fib_level_high' in params:
+            if params['fib_level_low'] > params['fib_level_high']:
+                # Swap them to maintain constraint
+                params['fib_level_low'], params['fib_level_high'] = params['fib_level_high'], params['fib_level_low']
 
-        ema_period = suggest("ema_period")
-        ema_min_slope = suggest("ema_min_slope")
+        # Validate params
+        is_valid, issues = self.validate_params(params)
+        if not is_valid:
+            return (-10, 0, -1, 0)  # Penalty values
 
-        # Exits
-        trail_start_r = suggest("trail_start_r")
-        trail_atr_mult = suggest("trail_atr_mult")
+        # Core Params (for trade simulation)
+        risk_base = params.get("risk_base")
+        fixed_tp_r = params.get("fixed_tp_r")
+        trail_start_r = params.get("trail_start_r")
+        trail_atr_mult = params.get("trail_atr_mult")
 
-        # Backtest (same as objective())
+        # Calculate All Indicators
         df = df_data.copy()
+        df = TechnicalIndicators.calculate_all_indicators(df, params)
 
-        delta = df['close'].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=rsi_period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=rsi_period).mean()
-        rs = gain / loss
-        df['rsi'] = 100 - (100 / (1 + rs))
+        # Generate Confluence Scores
+        confluence = ConfluenceEngine(params)
 
-        df['ema'] = df['close'].ewm(span=ema_period, adjust=False).mean()
-        df['ema_slope'] = (df['ema'] - df['ema'].shift(5)) / 5
+        df['buy_score'] = confluence.calculate_confluence_score(df, 1, params)
+        df['sell_score'] = confluence.calculate_confluence_score(df, -1, params)
 
-        df['tr'] = np.maximum(df['high'] - df['low'], np.abs(df['high'] - df['close'].shift(1)))
-        df['atr'] = df['tr'].rolling(window=14).mean()
-
+        # Apply Entry Thresholds
+        min_score = params.get('min_confluence_entry', 15.0)
         df['signal'] = 0
-
-        long_cond = (df['close'] > df['ema']) & (df['ema_slope'] > ema_min_slope) & (df['rsi'] < rsi_overbought)
-        short_cond = (df['close'] < df['ema']) & (df['ema_slope'] < -ema_min_slope) & (df['rsi'] > rsi_oversold)
-
-        df.loc[long_cond, 'signal'] = 1
-        df.loc[short_cond, 'signal'] = -1
+        df.loc[df['buy_score'] >= min_score, 'signal'] = 1
+        df.loc[df['sell_score'] >= min_score, 'signal'] = -1
 
         trades = []
         equity = 10000
+
+        # Skip warmup (extract periods from params)
+        rsi_period = params.get('rsi_period', 14)
+        ema_period = params.get('ema_period', 200)
         start_idx = max(rsi_period, ema_period) + 20
 
         for i in range(start_idx, len(df)):
@@ -570,67 +566,65 @@ class PortfolioOptimizer:
         """
         try:
             import optuna.importance
+
+            # Check if we have enough variance in results
+            completed_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+            if len(completed_trials) < 2:
+                logger.warning("Not enough completed trials for importance analysis")
+                return {}
+
+            values = [t.value for t in completed_trials]
+            if len(set(values)) == 1:
+                logger.warning("All trials have identical values - cannot calculate importance")
+                return {}
+
             # Get importances
             importances = optuna.importance.get_param_importances(study)
             # Get top 5
             top_5 = list(importances.items())[:5]
-            
+
             return {
                 'importances': importances,
                 'top_5': top_5
             }
         except Exception as e:
-            logger.error(f"Error calculating importance: {e}")
+            logger.warning(f"Could not calculate importance: {e}")
             return {}
 
     def objective_deterministic(self, symbol, df_data, params):
         """
-        Run backtest with fixed parameters (for validation).
-        Uses same logic as objective() but without trial.suggest_*().
+        Run enhanced backtest with fixed parameters (for validation).
+        Uses confluence scoring like objective() but without trial.suggest_*().
         """
         # Use provided params dict directly
         risk_base = params.get("risk_base", 0.3)
         fixed_tp_r = params.get("fixed_tp_r", 3.0)
-
-        # Indicators
-        rsi_period = params.get("rsi_period", 14)
-        rsi_oversold = params.get("rsi_oversold", 30)
-        rsi_overbought = params.get("rsi_overbought", 70)
-
-        ema_period = params.get("ema_period", 100)
-        ema_min_slope = params.get("ema_min_slope", 0.1)
-
-        # Exits
         trail_start_r = params.get("trail_start_r", 1.0)
         trail_atr_mult = params.get("trail_atr_mult", 2.0)
 
-        # Run same backtest logic
+        # Calculate All Indicators
         df = df_data.copy()
+        df = TechnicalIndicators.calculate_all_indicators(df, params)
 
-        # Indicators
-        delta = df['close'].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=rsi_period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=rsi_period).mean()
-        rs = gain / loss
-        df['rsi'] = 100 - (100 / (1 + rs))
+        # Generate Confluence Scores
+        confluence = ConfluenceEngine(params)
 
-        df['ema'] = df['close'].ewm(span=ema_period, adjust=False).mean()
-        df['ema_slope'] = (df['ema'] - df['ema'].shift(5)) / 5
+        df['buy_score'] = confluence.calculate_confluence_score(df, 1, params)
+        df['sell_score'] = confluence.calculate_confluence_score(df, -1, params)
 
-        df['tr'] = np.maximum(df['high'] - df['low'], np.abs(df['high'] - df['close'].shift(1)))
-        df['atr'] = df['tr'].rolling(window=14).mean()
-
+        # Apply Entry Thresholds
+        min_score = params.get('min_confluence_entry', 15.0)
         df['signal'] = 0
-
-        long_cond = (df['close'] > df['ema']) & (df['ema_slope'] > ema_min_slope) & (df['rsi'] < rsi_overbought)
-        short_cond = (df['close'] < df['ema']) & (df['ema_slope'] < -ema_min_slope) & (df['rsi'] > rsi_oversold)
-
-        df.loc[long_cond, 'signal'] = 1
-        df.loc[short_cond, 'signal'] = -1
+        df.loc[df['buy_score'] >= min_score, 'signal'] = 1
+        df.loc[df['sell_score'] >= min_score, 'signal'] = -1
 
         # Simulation
         trades = []
         equity = 10000
+
+        # Skip warmup (extract periods from params)
+        rsi_period = params.get('rsi_period', 14)
+        ema_period = params.get('ema_period', 200)
         start_idx = max(rsi_period, ema_period) + 20
 
         for i in range(start_idx, len(df)):
@@ -839,31 +833,74 @@ class PortfolioOptimizer:
             }
 
     def update_db(self, symbol, params):
-        """Updates the database with optimized parameters."""
-        
+        """
+        Updates the database with optimized parameters.
+        Includes verification and retry logic for reliability.
+
+        Args:
+            symbol: Trading symbol
+            params: Parameter dictionary to save
+
+        Returns:
+            Tuple[bool, str]: (success, message)
+        """
         current_configs = self.db.load_configs()
         if not current_configs.empty:
             row = current_configs[current_configs['symbol'] == symbol]
             if not row.empty:
                 config = row.to_dict('records')[0]
-                
-                # Merge existing config with new params
-                config.update(params)
-                
-                if self.db.save_config(config):
-                     # Verify
-                     if self.db.verify_config_sync(symbol, params):
-                         msg = f"✅ Verified: DB Updated for {symbol}"
-                         print(msg)
-                         return True, msg
-                     else:
-                         msg = f"❌ WARNING: Verification Failed for {symbol}. Values might not have persisted."
-                         print(msg)
-                         return False, msg
-                else:
-                    msg = f"❌ Database Save Failed for {symbol}. Check logs/schema."
-                    print(msg)
-                    return False, msg
+
+                # Get valid database columns
+                valid_columns = set(current_configs.columns.tolist())
+
+                # Filter params to only include columns that exist in database
+                filtered_params = {k: v for k, v in params.items() if k in valid_columns}
+
+                # Log filtered out parameters for debugging
+                filtered_out = set(params.keys()) - valid_columns
+                if filtered_out:
+                    logger.debug(f"Filtered out {len(filtered_out)} params not in DB schema: {filtered_out}")
+
+                # Merge existing config with filtered params
+                config.update(filtered_params)
+
+                # Try saving with retry logic
+                max_retries = 2
+                for attempt in range(max_retries):
+                    if self.db.save_config(config):
+                        # Verify write was successful (only check filtered params)
+                        if self.db.verify_config_sync(symbol, filtered_params):
+                            msg = f"✅ Parameters synced to DB for {symbol}"
+                            logger.info(msg)
+                            print(msg)
+                            return True, msg
+                        else:
+                            msg = f"⚠️ Verification failed for {symbol} (attempt {attempt + 1}/{max_retries})"
+                            logger.warning(msg)
+
+                            # Retry once with delay
+                            if attempt < max_retries - 1:
+                                logger.info(f"Retrying database write for {symbol}...")
+                                time.sleep(1)  # 1-second delay before retry
+                                continue
+                            else:
+                                error_msg = f"❌ Verification failed for {symbol} after {max_retries} attempts. Values might not have persisted."
+                                logger.error(error_msg)
+                                print(error_msg)
+                                return False, error_msg
+                    else:
+                        msg = f"❌ Database save failed for {symbol} (attempt {attempt + 1}/{max_retries})"
+                        logger.error(msg)
+
+                        if attempt < max_retries - 1:
+                            logger.info(f"Retrying database write for {symbol}...")
+                            time.sleep(1)
+                            continue
+                        else:
+                            error_msg = f"❌ Database save failed for {symbol} after {max_retries} attempts. Check logs/schema."
+                            logger.error(error_msg)
+                            print(error_msg)
+                            return False, error_msg
             else:
                 return False, f"Symbol {symbol} not found in DB."
         return False, "Could not load configs."

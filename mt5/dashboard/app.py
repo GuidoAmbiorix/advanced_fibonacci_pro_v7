@@ -120,1264 +120,937 @@ with st.sidebar.expander("⚙️ Scheduler Settings"):
 st.sidebar.markdown("---")
 
 page = st.sidebar.radio("Navigation", [
-    "Dashboard",
-    "AI Optimization",
-    "Optimization History",
-    "Configuration",
-    "Trade Logs",
-    "System Health"
+    "🔴 Live Control Center",
+    "📊 Performance",
+    "🧠 Optimization",
+    "⚙️ Settings"
 ])
 
 # Main Layout
-if page == "Dashboard":
-    st.title("📊 Portfolio Overview")
-    
-    # 1. High Level Metrics from Configs
-    df_configs = load_data("SELECT * FROM SymbolConfigs")
-    
-    if not df_configs.empty:
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Active Pairs", len(df_configs))
-        col2.metric("Avg Risk Base", f"{df_configs['risk_base'].mean():.2f}%")
-        col3.metric("Adaptive Risk", f"{len(df_configs[df_configs['enable_adaptive_risk'] == 1])}")
-        col4.metric("Max Positions", df_configs['max_positions'].sum())
+if page == "🔴 Live Control Center":
+    st.title("🔴 Live Control Center")
+    st.caption("Real-time portfolio monitoring and control")
 
-        st.subheader("🔥 Active Symbols & Confluence")
-        st.dataframe(
-            df_configs[['symbol', 'magic_number', 'risk_base', 'fixed_tp_r', 'min_confluence_entry']].style.format({'risk_base': '{:.2f}%', 'fixed_tp_r': '{:.1f}R'}),
-            use_container_width=True
-        )
-    else:
-        st.warning("No Symbol Configurations found in Database.")
+    # Auto-refresh control
+    col_ref1, col_ref2 = st.columns([4, 1])
+    with col_ref1:
+        auto_refresh = st.checkbox("🔄 Auto-refresh (5 sec)", value=False, key="live_auto_refresh")
+    with col_ref2:
+        if st.button("🔄 Refresh", key="live_refresh_btn"):
+            st.rerun()
 
-elif page == "AI Optimization":
-    st.title("🧠 AI Optimization Engine")
-    st.markdown("Use Optuna to find the optimal parameters for your portfolio based on recent market data.")
+    if auto_refresh:
+        time.sleep(5)
+        st.rerun()
 
-    # Initialize database manager
-    db_manager = DatabaseManager(DB_PATH)
+    st.markdown("---")
 
-    # Load available symbols
-    df_configs = load_data("SELECT symbol FROM SymbolConfigs")
+    # ============================================================================
+    # TIER 1: PORTFOLIO HEALTH (Top 1/3)
+    # ============================================================================
+    st.subheader("📊 Portfolio Health")
 
-    if df_configs.empty:
-        st.error("❌ No symbols configured in database. Please add symbols first.")
-    else:
-        available_symbols = df_configs['symbol'].tolist()
+    # Calculate portfolio metrics
+    try:
+        # Get recent trades for P&L
+        df_trades_today = load_data("""
+            SELECT SUM(profit) as daily_pnl, COUNT(*) as trade_count
+            FROM Trades
+            WHERE close_time > unixepoch('now', '-1 day')
+        """)
 
-        st.subheader("⚙️ Optimization Settings")
+        # Get current open positions
+        df_open_positions = load_data("""
+            SELECT COUNT(DISTINCT symbol) as open_count
+            FROM Trades
+            WHERE close_time IS NULL OR close_time = 0
+        """)
 
-        col1, col2 = st.columns(2)
+        # Get symbol configs for risk calculation
+        df_configs = load_data("SELECT * FROM SymbolConfigs")
 
-        with col1:
-            selected_symbol = st.selectbox(
-                "Symbol",
-                available_symbols,
-                help="Choose the currency pair to optimize"
-            )
+        # Calculate metrics
+        daily_pnl = df_trades_today['daily_pnl'].iloc[0] if not df_trades_today.empty and pd.notna(df_trades_today['daily_pnl'].iloc[0]) else 0
+        daily_pnl_pct = (daily_pnl / 10000) * 100 if daily_pnl != 0 else 0  # Assuming 10k account
+        open_positions = df_open_positions['open_count'].iloc[0] if not df_open_positions.empty else 0
+        total_symbols = len(df_configs) if not df_configs.empty else 10
+        avg_risk = df_configs['risk_base'].mean() if not df_configs.empty else 0
+        current_risk = open_positions * avg_risk
 
-        with col2:
-            # Timeframe selector
-            timeframe_options = {
-                "M1 (1-Minute)": 1,
-                "M5 (5-Minute)": 5,
-                "M15 (15-Minute) ⭐ Recommended": 15,
-                "M30 (30-Minute)": 30,
-                "H1 (1-Hour)": 60,
-                "H4 (4-Hour)": 240,
-                "D1 (Daily)": 1440
-            }
+        # Get latest optimization Sharpe if available
+        df_opt_sharpe = load_data("""
+            SELECT best_sharpe
+            FROM OptimizationRuns
+            ORDER BY completed_at DESC
+            LIMIT 1
+        """)
+        portfolio_sharpe = df_opt_sharpe['best_sharpe'].iloc[0] if not df_opt_sharpe.empty else 0
 
-            selected_tf_name = st.selectbox(
-                "Timeframe",
-                list(timeframe_options.keys()),
-                index=2,  # Default to M15
-                help="Timeframe for optimization. Different timeframes need different parameters!"
-            )
+        # Display metrics
+        col1, col2, col3, col4, col5 = st.columns(5)
 
-            selected_timeframe = timeframe_options[selected_tf_name]
-        
-        # Backtest Mode Selector
-        st.write("")
-        backtest_mode = st.radio(
-            "Backtest Precision",
-            ["⚡ Fast (Python Approximation)", "🛡️ Guardian (High-Fidelity MT5)"],
-            index=0,
-            help="Fast: Uses indicators in Python (Good for initial search). Guardian: Uses ACTUAL MT5 Strategy Tester (Slow, but 100% accurate)."
+        # Daily P&L
+        pnl_delta_color = "normal" if daily_pnl >= 0 else "inverse"
+        col1.metric(
+            "Daily P&L",
+            f"${daily_pnl:.2f}",
+            f"{daily_pnl_pct:+.2f}%",
+            delta_color=pnl_delta_color
         )
 
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            if "Guardian" in backtest_mode:
-                st.metric("Optimization Trials", OPTIMIZATION_SETTINGS.get("guardian_trials", 20))
-            else:
-                st.metric("Optimization Trials", OPTIMIZATION_SETTINGS["n_trials"])
-        with col2:
-            st.metric("Timeframe", selected_tf_name.split()[0])
-        with col3:
-            st.metric("Training Days", OPTIMIZATION_SETTINGS["train_days"])
-        with col4:
-            st.metric("Target Metric", OPTIMIZATION_SETTINGS["target_metric"].upper())
-            
-        if "Guardian" in backtest_mode:
-            st.warning("⚠️ **Guardian Mode Active:** This will launch the MT5 Strategy Tester via Docker for EACH trial. It is significantly slower but verifies the logic exactly as it runs in production. Expect 1-2 minutes per trial.")
+        # Open Positions
+        col2.metric(
+            "Open Positions",
+            f"{open_positions}/{total_symbols}",
+            f"{(open_positions/total_symbols*100):.0f}% active" if total_symbols > 0 else "N/A"
+        )
 
-        st.info("💡 **Important:** Parameters optimized for M15 will NOT work well on H1 or D1. Always optimize for your actual trading timeframe!")
+        # Current Risk
+        risk_status = "🟢" if current_risk < 3 else "🟡" if current_risk < 5 else "🔴"
+        col3.metric(
+            "Current Risk",
+            f"{current_risk:.1f}%",
+            f"{risk_status} Max 5%"
+        )
 
-        # Timeframe impact explanation
-        with st.expander("📚 Understanding Timeframe Selection"):
-            st.markdown("""
-            ### Why Timeframe Matters
-            
-            **Different timeframes require different parameters:**
+        # Portfolio Sharpe
+        col4.metric(
+            "Portfolio Sharpe",
+            f"{portfolio_sharpe:.2f}",
+            "From last optimization"
+        )
 
-            - **M1-M5 (Scalping):**
-              - Need tight stops and quick exits
-              - Many trades per day (50-100+)
-              - Lower RSI periods (7-10)
-              - Shorter EMA periods (20-50)
+        # Account Status
+        status_icon = "🟢 ACTIVE" if open_positions > 0 or df_configs.empty == False else "🟡 IDLE"
+        col5.metric(
+            "Status",
+            status_icon,
+            f"{total_symbols} symbols configured"
+        )
 
-            - **M15-M30 (Day Trading) ⭐ Recommended:**
-              - Balanced parameters
-              - 5-15 trades per day
-              - Standard RSI (14)
-              - Medium EMA (50-100)
+    except Exception as e:
+        st.error(f"Error loading portfolio metrics: {e}")
+        # Show empty metrics
+        col1, col2, col3, col4, col5 = st.columns(5)
+        col1.metric("Daily P&L", "$0.00", "0%")
+        col2.metric("Open Positions", "0/10")
+        col3.metric("Current Risk", "0%")
+        col4.metric("Portfolio Sharpe", "0.00")
+        col5.metric("Status", "🔴 ERROR")
 
-            - **H1-H4 (Swing Trading):**
-              - Wider stops and targets
-              - 2-5 trades per day
-              - Higher RSI periods (14-21)
-              - Longer EMA (100-200)
+    st.markdown("---")
 
-            - **D1 (Position Trading):**
-              - Very wide stops
-              - 1-3 trades per week
-              - Long lookback periods
-              - Large EMA (200+)
+    # ============================================================================
+    # TIER 2: SYMBOL ACTIVITY (Middle 1/3)
+    # ============================================================================
+    st.subheader("📡 Symbol Activity (Real-Time)")
 
-            **Data Requirements:**
-            - M5: 5000 bars ≈ 17 days
-            - M15: 3000 bars ≈ 31 days
-            - H1: 1500 bars ≈ 62 days
-            - H4: 1000 bars ≈ 166 days
-            - D1: 500 bars ≈ 1.4 years
+    try:
+        # Get latest signals for each symbol
+        df_signals = load_data("""
+            SELECT
+                s1.symbol,
+                s1.time,
+                datetime(s1.time, 'unixepoch') as signal_time,
+                CASE s1.direction
+                    WHEN 1 THEN '🟢 BUY'
+                    WHEN -1 THEN '🔴 SELL'
+                    ELSE '⚪ NONE'
+                END as signal,
+                printf('%.1f', s1.score) as confluence,
+                CASE s1.allowed
+                    WHEN 1 THEN '✅ YES'
+                    ELSE '❌ NO'
+                END as allowed,
+                COALESCE(s1.rejection_reason, '-') as reason,
+                s1.smc_score,
+                s1.fib_score
+            FROM Signals s1
+            INNER JOIN (
+                SELECT symbol, MAX(time) as max_time
+                FROM Signals
+                WHERE time > unixepoch('now', '-1 hour')
+                GROUP BY symbol
+            ) s2 ON s1.symbol = s2.symbol AND s1.time = s2.max_time
+            ORDER BY s1.score DESC
+        """)
 
-            **💡 Tip:** Start with M15, optimize for 2 weeks, then adjust based on results.
+        if not df_signals.empty:
+            # Add sorting option
+            sort_by = st.selectbox(
+                "Sort by:",
+                ["Confluence Score ▼", "Symbol", "Time", "Status"],
+                key="signal_sort"
+            )
+
+            # Apply sorting
+            if "Confluence" in sort_by:
+                df_signals = df_signals.sort_values('confluence', ascending=False)
+            elif "Symbol" in sort_by:
+                df_signals = df_signals.sort_values('symbol')
+            elif "Time" in sort_by:
+                df_signals = df_signals.sort_values('time', ascending=False)
+
+            # Display table
+            display_cols = ['symbol', 'signal', 'confluence', 'allowed', 'reason', 'signal_time']
+
+            # Color code rows
+            def highlight_signals(row):
+                if '✅' in str(row['allowed']):
+                    return ['background-color: rgba(26, 77, 46, 0.3)'] * len(row)
+                elif '❌' in str(row['allowed']):
+                    return ['background-color: rgba(77, 26, 26, 0.3)'] * len(row)
+                else:
+                    return [''] * len(row)
+
+            st.dataframe(
+                df_signals[display_cols].style.apply(highlight_signals, axis=1),
+                use_container_width=True,
+                height=350
+            )
+
+            # Quick stats
+            col1, col2, col3, col4 = st.columns(4)
+            total_signals = len(df_signals)
+            allowed_signals = (df_signals['allowed'] == '✅ YES').sum()
+            blocked_signals = total_signals - allowed_signals
+            avg_confluence = df_signals['confluence'].astype(float).mean()
+
+            col1.metric("Total Signals", total_signals, "Last hour")
+            col2.metric("Allowed", allowed_signals, f"{allowed_signals/total_signals*100:.0f}%" if total_signals > 0 else "0%")
+            col3.metric("Blocked", blocked_signals, f"{blocked_signals/total_signals*100:.0f}%" if total_signals > 0 else "0%")
+            col4.metric("Avg Confluence", f"{avg_confluence:.1f}", "0-30 scale")
+
+        else:
+            st.info("💤 No signals in the last hour. Market quiet or EA needs time to initialize.")
+
+            # Show configured symbols as fallback
+            df_configs = load_data("SELECT symbol FROM SymbolConfigs ORDER BY symbol")
+            if not df_configs.empty:
+                st.caption(f"Configured symbols ({len(df_configs)}): {', '.join(df_configs['symbol'].tolist())}")
+
+    except Exception as e:
+        st.error(f"Error loading signals: {e}")
+
+    st.markdown("---")
+
+    # ============================================================================
+    # TIER 3: RECENT ACTIVITY + ALERTS (Bottom 1/3)
+    # ============================================================================
+
+    col_left, col_right = st.columns(2)
+
+    # LEFT: Recent Trades
+    with col_left:
+        st.subheader("📈 Recent Trades (Last 10)")
+
+        try:
+            df_recent_trades = load_data("""
+                SELECT
+                    datetime(entry_time, 'unixepoch') as entry,
+                    symbol,
+                    CASE type WHEN 0 THEN '🟢 BUY' ELSE '🔴 SELL' END as type,
+                    printf('%.4f', entry_price) as entry_price,
+                    CASE
+                        WHEN close_time IS NULL OR close_time = 0 THEN '🔄 Running'
+                        ELSE printf('%.4f', close_price)
+                    END as exit_price,
+                    CASE
+                        WHEN close_time IS NULL OR close_time = 0 THEN '-'
+                        ELSE printf('%+.1fR', profit / (lots * 100))
+                    END as result,
+                    CASE
+                        WHEN close_time IS NULL OR close_time = 0 THEN '🔄'
+                        WHEN profit > 0 THEN '✅'
+                        ELSE '❌'
+                    END as status
+                FROM Trades
+                ORDER BY entry_time DESC
+                LIMIT 10
             """)
 
-        st.info("💡 Note: The Optimizer uses recent history stored in 'MarketData'. Ensure you have run the EA to populate this data.")
+            if not df_recent_trades.empty:
+                st.dataframe(df_recent_trades, use_container_width=True, height=300)
+            else:
+                st.info("No trades yet. EA will start trading when conditions are met.")
 
-        # Load current configuration for selected symbol
-        current_config_df = load_data(f"SELECT * FROM SymbolConfigs WHERE symbol='{selected_symbol}'")
+        except Exception as e:
+            st.error(f"Error loading trades: {e}")
 
-        if not current_config_df.empty:
-            st.subheader("📊 Current Configuration")
-            current_config = current_config_df.iloc[0].to_dict()
+    # RIGHT: Live Alerts
+    with col_right:
+        st.subheader("🔔 Live Alerts")
 
-            # Display key parameters
-            key_params = ['risk_base', 'fixed_tp_r', 'rsi_period', 'ema_period',
-                         'trail_start_r', 'trail_atr_mult', 'min_confluence_entry']
+        try:
+            # Get recent system logs and signals
+            df_alerts = load_data("""
+                SELECT
+                    datetime(time, 'unixepoch') as timestamp,
+                    CASE
+                        WHEN message LIKE '%rejected%' OR allowed = 0 THEN '⚠️'
+                        WHEN message LIKE '%success%' OR message LIKE '%complete%' THEN '✅'
+                        WHEN message LIKE '%error%' OR message LIKE '%failed%' THEN '🔴'
+                        ELSE '📊'
+                    END as icon,
+                    COALESCE(rejection_reason, message) as alert
+                FROM (
+                    SELECT time, NULL as message, rejection_reason, allowed
+                    FROM Signals
+                    WHERE time > unixepoch('now', '-1 hour')
+                    AND allowed = 0
 
-            cols = st.columns(len(key_params))
-            for i, param in enumerate(key_params):
-                if param in current_config:
-                    cols[i].metric(param.replace('_', ' ').title(), f"{current_config[param]}")
+                    UNION ALL
 
-        st.markdown("---")
+                    SELECT time, message, NULL as rejection_reason, NULL as allowed
+                    FROM SystemLogs
+                    WHERE time > unixepoch('now', '-1 hour')
+                    AND level IN ('WARNING', 'ERROR', 'INFO')
+                )
+                ORDER BY time DESC
+                LIMIT 15
+            """)
 
-        # Optimization controls
-        if 'optimization_running' not in st.session_state:
-            st.session_state.optimization_running = False
-        if 'optimization_results' not in st.session_state:
-            st.session_state.optimization_results = None
-        if 'bulk_optimization_results' not in st.session_state:
-            st.session_state.bulk_optimization_results = None
+            if not df_alerts.empty:
+                # Format as alert feed
+                for _, alert in df_alerts.iterrows():
+                    st.markdown(f"{alert['icon']} **{alert['timestamp']}** - {alert['alert']}")
+            else:
+                st.success("✅ No alerts - system running smoothly")
 
-        col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 2])
+        except Exception as e:
+            st.info("Alert system initializing...")
 
-        with col_btn1:
-            if st.button("🚀 Start Optimization", disabled=st.session_state.optimization_running, type="primary"):
-                st.session_state.optimization_running = True
-                st.session_state.optimization_results = None
+    st.markdown("---")
 
-                # Create progress indicators
-                progress_bar = st.progress(0)
-                status_text = st.empty()
+    # ============================================================================
+    # QUICK ACTIONS (Always Visible)
+    # ============================================================================
+    st.subheader("⚡ Quick Actions")
 
-                try:
-                    optimizer = PortfolioOptimizer(db_manager, timeframe=selected_timeframe)
-                    
-                    if "Guardian" in backtest_mode:
-                         status_text.text(f"🛡️ Launching Guardian Optimization for {selected_symbol}...")
-                         # Guardian Mode
-                         results = optimizer.run_guardian_optimization(selected_symbol)
-                         
-                         st.session_state.optimization_results = results
-                         st.session_state.optimization_running = False
-                         
-                         if results and results.get('best_value'):
-                             st.success(f"✅ Guardian Optimization Complete! Best Profit: ${results['best_value']:.2f}")
-                             st.balloons()
-                         else:
-                             st.error("Optimization failed or returned no results.")
-                             
-                    else:
-                        # Standard Fast Mode
-                        status_text.text(f"🔍 Loading market data for {selected_symbol}...")
-                        progress_bar.progress(10)
-    
-                        # Check if market data exists
-                        from optimizer_config import get_timeframe_settings
-                        tf_settings = get_timeframe_settings(selected_timeframe)
-                        df_market = db_manager.get_market_data(selected_symbol, selected_timeframe, limit=tf_settings['data_limit'])
-                        
-                        if df_market.empty:
-                             st.error(f"❌ No market data found for {selected_symbol}. Please run the EA first.")
-                             st.session_state.optimization_running = False
-                        else:
-                             # Run Optimization
-                             status_text.text(f"🚀 Optimizing parameters ({OPTIMIZATION_SETTINGS['n_trials']} trials)...")
-                             progress_bar.progress(30)
-                             
-                             results = optimizer.run_optimization(selected_symbol)
-                             
-                             progress_bar.progress(100)
-                             status_text.text("✅ Optimization Complete!")
-                             
-                             st.session_state.optimization_results = results
-                             st.session_state.optimization_running = False
-                             if results:
-                                 st.balloons()
+    col_act1, col_act2, col_act3, col_act4 = st.columns(4)
 
-                except Exception as e:
-                    st.error(f"Optimization failed: {e}")
-                    st.session_state.optimization_running = False
+    with col_act1:
+        if st.button("🔄 Restart EA", use_container_width=True, type="secondary"):
+            with st.spinner("Restarting MT5 EA..."):
+                os.system("docker compose restart mt5")
+            st.success("✅ EA restarted! Wait 30 seconds for initialization.")
+            time.sleep(2)
+            st.rerun()
 
-                    if df_market.empty or len(df_market) < 100:
-                        st.error(f"❌ Insufficient market data for {selected_symbol}. Please run the EA to collect data.")
-                        st.session_state.optimization_running = False
-                    else:
-                        st.success(f"✅ Loaded {len(df_market)} data points")
-                        progress_bar.progress(20)
+    with col_act2:
+        if st.button("🧠 Run Optimization", use_container_width=True, type="primary"):
+            st.session_state['redirect_to_optimization'] = True
+            st.rerun()
 
-                        status_text.text(f"🧠 Running Optuna optimization ({OPTIMIZATION_SETTINGS['n_trials']} trials on {tf_settings['timeframe_name']})...")
+    with col_act3:
+        if st.button("📊 View Performance", use_container_width=True, type="secondary"):
+            st.session_state['redirect_to_performance'] = True
+            st.rerun()
 
-                        # Run optimization with selected timeframe
-                        optimizer = PortfolioOptimizer(db_manager, timeframe=selected_timeframe)
-                        results_dict = optimizer.run_optimization(selected_symbol)
+    with col_act4:
+        if st.button("⚙️ Settings", use_container_width=True, type="secondary"):
+            st.session_state['redirect_to_settings'] = True
+            st.rerun()
 
-                        progress_bar.progress(80)
+    # Handle redirects
+    if st.session_state.get('redirect_to_optimization'):
+        st.session_state['redirect_to_optimization'] = False
+        st.sidebar.success("➡️ Navigate to 🧠 Optimization")
 
-                        if results_dict:
-                            best_params = results_dict.get('best_params', {})
-                            study = results_dict.get('study')
-                            status_text.text("💾 Saving results to database...")
+    if st.session_state.get('redirect_to_performance'):
+        st.session_state['redirect_to_performance'] = False
+        st.sidebar.success("➡️ Navigate to 📊 Performance")
 
-                            # Update database
-                            success, message = optimizer.update_db(selected_symbol, best_params)
+    if st.session_state.get('redirect_to_settings'):
+        st.session_state['redirect_to_settings'] = False
+        st.sidebar.success("➡️ Navigate to ⚙️ Settings")
 
-                            progress_bar.progress(100)
+elif page == "📊 Performance":
+    st.title("📊 Performance Analytics")
+    st.caption("Track trading performance, analyze results, and monitor strategy effectiveness")
 
-                            if success:
-                                st.session_state.optimization_results = {
-                                    'symbol': selected_symbol,
-                                    'best_params': best_params,
-                                    'message': message,
-                                    'timestamp': time.time(),
-                                    'study': study,
-                                    'train_sharpe': results_dict.get('train_sharpe'),
-                                    'test_sharpe': results_dict.get('test_sharpe'),
-                                    'oos_degradation': results_dict.get('oos_degradation'),
-                                    'overfitting_risk': results_dict.get('overfitting_risk')
-                                }
+    # Tabs for different views
+    tab1, tab2, tab3 = st.tabs(["📈 Portfolio Analytics", "📋 Trade Journal", "🎯 Optimization Impact"])
 
-                                # Log event
-                                db_manager.log_event("Optimizer", "INFO",
-                                    f"Optimization completed for {selected_symbol}")
+    with tab1:
+        st.subheader("Performance Summary (Last 30 Days)")
 
-                                status_text.text("✅ Optimization complete!")
-                                st.success(message)
+        try:
+            # Get trade statistics
+            df_stats = load_data("""
+                SELECT
+                    COUNT(*) as total_trades,
+                    SUM(CASE WHEN profit > 0 THEN 1 ELSE 0 END) as wins,
+                    SUM(CASE WHEN profit <= 0 THEN 1 ELSE 0 END) as losses,
+                    SUM(profit) as total_profit,
+                    AVG(profit) as avg_profit,
+                    MAX(profit) as best_trade,
+                    MIN(profit) as worst_trade
+                FROM Trades
+                WHERE entry_time > unixepoch('now', '-30 days')
+                AND close_time IS NOT NULL AND close_time > 0
+            """)
 
-                                # Clear cache to reload data
-                                st.cache_data.clear()
+            if not df_stats.empty and df_stats['total_trades'].iloc[0] > 0:
+                stats = df_stats.iloc[0]
+                total_trades = int(stats['total_trades'])
+                wins = int(stats['wins'])
+                losses = int(stats['losses'])
+                win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
+                total_profit = stats['total_profit']
+                avg_profit = stats['avg_profit']
 
-                            else:
-                                st.error(f"❌ Failed to save results: {message}")
-                        else:
-                            st.error("❌ Optimization failed to produce results")
+                # Display metrics
+                col1, col2, col3, col4 = st.columns(4)
+                col1.metric("Total Trades", total_trades)
+                col2.metric("Win Rate", f"{win_rate:.1f}%", f"{wins}W / {losses}L")
+                col3.metric("Total Profit", f"${total_profit:.2f}",
+                           delta_color="normal" if total_profit >= 0 else "inverse")
+                col4.metric("Avg Trade", f"${avg_profit:.2f}")
 
-                except Exception as e:
-                    st.error(f"❌ Optimization error: {str(e)}")
-                    import traceback
-                    st.code(traceback.format_exc())
+                st.markdown("---")
 
-                finally:
-                    st.session_state.optimization_running = False
+                # Symbol Performance Matrix
+                st.subheader("Symbol Performance Breakdown")
+                df_by_symbol = load_data("""
+                    SELECT
+                        symbol,
+                        COUNT(*) as trades,
+                        CAST(SUM(CASE WHEN profit > 0 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100 as win_pct,
+                        SUM(profit) as total_profit,
+                        AVG(profit) as avg_profit,
+                        MAX(profit) as best,
+                        MIN(profit) as worst
+                    FROM Trades
+                    WHERE entry_time > unixepoch('now', '-30 days')
+                    AND close_time IS NOT NULL AND close_time > 0
+                    GROUP BY symbol
+                    ORDER BY total_profit DESC
+                """)
 
-        with col_btn2:
-            if st.button("🔥 Optimize All Pairs", disabled=st.session_state.optimization_running, type="secondary"):
-                st.session_state.optimization_running = True
-                st.session_state.bulk_optimization_results = []
+                if not df_by_symbol.empty:
+                    # Format the dataframe
+                    df_display = df_by_symbol.copy()
+                    df_display['win_pct'] = df_display['win_pct'].apply(lambda x: f"{x:.1f}%")
+                    df_display['total_profit'] = df_display['total_profit'].apply(lambda x: f"${x:.2f}")
+                    df_display['avg_profit'] = df_display['avg_profit'].apply(lambda x: f"${x:.2f}")
+                    df_display['best'] = df_display['best'].apply(lambda x: f"${x:.2f}")
+                    df_display['worst'] = df_display['worst'].apply(lambda x: f"${x:.2f}")
 
-                # Create main progress container
-                main_progress = st.progress(0)
-                main_status = st.empty()
+                    st.dataframe(df_display, use_container_width=True, height=350)
+                else:
+                    st.info("No trades by symbol yet")
 
-                results_container = st.container()
+            else:
+                st.info("📊 No closed trades in the last 30 days. Start trading to see performance analytics!")
 
-                try:
-                    # Use selected timeframe for bulk optimization too
-                    from optimizer_config import get_timeframe_settings
-                    tf_settings = get_timeframe_settings(selected_timeframe)
+        except Exception as e:
+            st.error(f"Error loading performance data: {e}")
 
-                    optimizer = PortfolioOptimizer(db_manager, timeframe=selected_timeframe)
-                    total_symbols = len(available_symbols)
-                    successful = 0
-                    failed = 0
+    with tab2:
+        st.subheader("Trade Journal")
 
-                    for idx, symbol in enumerate(available_symbols):
-                        main_status.text(f"⚡ Optimizing {symbol} on {tf_settings['timeframe_name']} ({idx+1}/{total_symbols})...")
+        # Filters
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            filter_symbol = st.selectbox("Symbol", ["All"] + load_data("SELECT DISTINCT symbol FROM Trades ORDER BY symbol")['symbol'].tolist() if not load_data("SELECT DISTINCT symbol FROM Trades").empty else ["All"])
+        with col2:
+            filter_result = st.selectbox("Result", ["All", "Wins Only", "Losses Only"])
+        with col3:
+            days_back = st.number_input("Days Back", min_value=1, max_value=365, value=30)
+        with col4:
+            limit = st.number_input("Max Trades", min_value=10, max_value=1000, value=100, step=10)
 
-                        with results_container:
-                            st.markdown(f"### 🎯 {symbol} ({tf_settings['timeframe_name']})")
-                            symbol_progress = st.progress(0)
-                            symbol_status = st.empty()
+        # Build query
+        query = f"""
+            SELECT
+                datetime(entry_time, 'unixepoch') as entry,
+                datetime(close_time, 'unixepoch') as exit,
+                symbol,
+                CASE type WHEN 0 THEN 'BUY' ELSE 'SELL' END as type,
+                printf('%.4f', entry_price) as entry_price,
+                printf('%.4f', close_price) as exit_price,
+                printf('$%.2f', profit) as profit,
+                CASE WHEN profit > 0 THEN '✅ Win' ELSE '❌ Loss' END as result
+            FROM Trades
+            WHERE entry_time > unixepoch('now', '-{days_back} days')
+            AND close_time IS NOT NULL AND close_time > 0
+        """
 
-                        try:
-                            # Load market data
-                            symbol_status.text(f"📊 Loading {tf_settings['timeframe_name']} data...")
-                            symbol_progress.progress(20)
+        if filter_symbol != "All":
+            query += f" AND symbol = '{filter_symbol}'"
+        if filter_result == "Wins Only":
+            query += " AND profit > 0"
+        elif filter_result == "Losses Only":
+            query += " AND profit <= 0"
 
-                            df_market = db_manager.get_market_data(symbol, selected_timeframe, limit=tf_settings['data_limit'])
+        query += f" ORDER BY entry_time DESC LIMIT {limit}"
 
-                            if df_market.empty or len(df_market) < 100:
-                                symbol_status.warning(f"⚠️ Insufficient data - Skipped")
-                                failed += 1
-                                st.session_state.bulk_optimization_results.append({
-                                    'symbol': symbol,
-                                    'status': 'skipped',
-                                    'reason': 'Insufficient market data'
-                                })
-                                continue
+        try:
+            df_trades = load_data(query)
+            if not df_trades.empty:
+                st.dataframe(df_trades, use_container_width=True, height=500)
 
-                            # Run optimization
-                            symbol_status.text(f"🧠 Optimizing ({OPTIMIZATION_SETTINGS['n_trials']} trials)...")
-                            symbol_progress.progress(40)
+                # Export option
+                csv = df_trades.to_csv(index=False)
+                st.download_button(
+                    label="📥 Download CSV",
+                    data=csv,
+                    file_name=f"trades_{time.strftime('%Y%m%d')}.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.info("No trades match the selected filters")
+        except Exception as e:
+            st.error(f"Error loading trades: {e}")
 
-                            best_params = optimizer.run_optimization(symbol)
-                            symbol_progress.progress(80)
+    with tab3:
+        st.subheader("Optimization Impact Analysis")
 
-                            if best_params:
-                                # Save to database
-                                symbol_status.text("💾 Saving results...")
-                                success, message = optimizer.update_db(symbol, best_params)
-                                symbol_progress.progress(100)
+        try:
+            # Get optimization history
+            df_opt_history = load_data("""
+                SELECT
+                    id,
+                    datetime(completed_at, 'unixepoch') as completed,
+                    mode,
+                    best_sharpe,
+                    test_sharpe,
+                    oos_degradation
+                FROM OptimizationRuns
+                WHERE status = 'completed'
+                ORDER BY completed_at DESC
+                LIMIT 10
+            """)
 
-                                if success:
-                                    symbol_status.success(f"✅ Optimized successfully!")
-                                    successful += 1
+            if not df_opt_history.empty:
+                st.markdown("### Recent Optimizations")
+                st.dataframe(df_opt_history, use_container_width=True)
 
-                                    # Log event
-                                    db_manager.log_event("BulkOptimizer", "INFO",
-                                        f"Bulk optimization completed for {symbol}")
+                # Show impact comparison if we have before/after data
+                st.markdown("### Before/After Metrics")
+                st.info("💡 Compare live performance before and after each optimization run to track effectiveness")
 
-                                    st.session_state.bulk_optimization_results.append({
-                                        'symbol': symbol,
-                                        'status': 'success',
-                                        'params': best_params,
-                                        'timestamp': time.time()
-                                    })
-                                else:
-                                    symbol_status.error(f"❌ Save failed: {message}")
-                                    failed += 1
-                                    st.session_state.bulk_optimization_results.append({
-                                        'symbol': symbol,
-                                        'status': 'failed',
-                                        'reason': message
-                                    })
-                            else:
-                                symbol_status.error("❌ Optimization failed")
-                                failed += 1
-                                st.session_state.bulk_optimization_results.append({
-                                    'symbol': symbol,
-                                    'status': 'failed',
-                                    'reason': 'No results produced'
-                                })
+                # Placeholder for comparison chart
+                st.caption("📊 Optimization timeline chart coming in Phase 2")
 
-                        except Exception as e:
-                            symbol_status.error(f"❌ Error: {str(e)}")
-                            failed += 1
-                            st.session_state.bulk_optimization_results.append({
-                                'symbol': symbol,
-                                'status': 'error',
-                                'reason': str(e)
+            else:
+                st.info("No optimization runs completed yet. Run your first optimization from the 🧠 Optimization page!")
+
+        except Exception as e:
+            st.warning(f"Optimization history not available: {e}")
+
+elif page == "🧠 Optimization":
+    st.title("🧠 Optimization Hub")
+    st.caption("Portfolio-level optimization with Optuna - All symbols optimized together")
+
+    # Tabs: Run Optimization + History
+    tab1, tab2 = st.tabs(["🚀 Run Optimization", "📜 History"])
+
+    with tab1:
+        st.subheader("Portfolio-Level Optimization")
+        st.info("✅ **Strategy architecture is FROZEN** - Only 12 execution parameters are optimized for portfolio performance")
+
+        # Initialize database manager
+        db_manager = DatabaseManager(DB_PATH)
+
+        # Check if portfolio optimizer is available
+        try:
+            from portfolio_optimizer import PortfolioLevelOptimizer
+            portfolio_available = True
+        except ImportError:
+            portfolio_available = False
+            st.error("❌ Portfolio optimizer not found. Check installation.")
+
+        if portfolio_available:
+            # Settings
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                timeframe_options = {
+                    "M1 (1-Minute)": 1,
+                    "M5 (5-Minute)": 5,
+                    "M15 (15-Minute) ⭐": 15,
+                    "M30 (30-Minute)": 30,
+                    "H1 (1-Hour)": 60
+                }
+                selected_tf_name = st.selectbox("Timeframe", list(timeframe_options.keys()), index=2)
+                selected_timeframe = timeframe_options[selected_tf_name]
+
+            with col2:
+                n_trials = st.number_input("Number of Trials", min_value=10, max_value=500, value=100, step=10,
+                                          help="More trials = better results but slower. 100 is recommended.")
+
+            with col3:
+                st.metric("Parameters Optimized", "12", "Fixed architecture")
+                st.caption("75 params frozen ✅")
+
+            st.markdown("---")
+
+            # What gets optimized
+            with st.expander("📋 What Gets Optimized (12 Parameters)"):
+                st.markdown("""
+                **Structure (4 params):**
+                - `swing_lookback` - Swing detection period
+                - `zone_tolerance` - Fibonacci zone width
+                - `fib_level_low` - Lower Fib retracement
+                - `fib_level_high` - Upper Fib retracement
+
+                **Filters (2 params):**
+                - `atr_period` - ATR calculation period
+                - `chop_threshold` - Chop filter sensitivity
+
+                **Entry (1 param):**
+                - `min_confluence_entry` - Minimum score to enter
+
+                **Risk (1 param):**
+                - `risk_base` - Base risk % (0.3-0.7)
+
+                **Exits (4 params):**
+                - `fixed_tp_r` - Take profit in R
+                - `min_tp_r` - Minimum TP
+                - `trail_start_r` - When to start trailing
+                - `trail_atr_mult` - Trail distance
+                """)
+
+            with st.expander("🔒 What's FROZEN (Cannot Change)"):
+                st.markdown("""
+                **Strategy Core:**
+                - `use_smc: 1` - Smart Money Concepts ON
+                - `use_mtf: 1` - Multi-timeframe ON
+                - `use_displacement: 1` - Displacement detection ON
+                - `use_chop_filter: 1` - Chop filter ON
+                - `use_trend_filter: 1` - Trend filter ON
+                - `use_news_filter: 1` - News avoidance ON
+                - All killzone settings (London/NY ON, Asian OFF)
+
+                **Plus 69 more parameters with sensible defaults**
+                """)
+
+            st.markdown("---")
+
+            # Run button
+            if st.button("🚀 RUN PORTFOLIO OPTIMIZATION", type="primary", use_container_width=True):
+                with st.spinner(f"Running {n_trials} trials on all symbols... This will take ~{n_trials//2} minutes"):
+                    try:
+                        # Initialize optimizer
+                        opt = PortfolioLevelOptimizer(db_manager, timeframe=selected_timeframe)
+
+                        # Progress placeholder
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+
+                        # Run optimization
+                        status_text.text("🔄 Initializing optimization...")
+                        results = opt.run_portfolio_optimization(n_trials=n_trials)
+                        progress_bar.progress(100)
+
+                        # Display results
+                        st.success("✅ Optimization Complete!")
+
+                        st.subheader("📊 Portfolio Metrics")
+                        col1, col2, col3, col4 = st.columns(4)
+
+                        portfolio_sharpe = results['portfolio_metrics']['portfolio_sharpe']
+                        avg_corr = results['portfolio_metrics']['avg_correlation']
+                        div_ratio = results['portfolio_metrics']['diversification_ratio']
+                        worst_sharpe = results['portfolio_metrics']['worst_symbol_sharpe']
+
+                        col1.metric("Portfolio Sharpe", f"{portfolio_sharpe:.3f}",
+                                   "✅ Good" if portfolio_sharpe > 0.6 else "⚠️ Weak")
+                        col2.metric("Avg Correlation", f"{avg_corr:.3f}",
+                                   "✅ Low" if avg_corr < 0.6 else "⚠️ High")
+                        col3.metric("Diversification", f"{div_ratio:.2f}",
+                                   "✅ Good" if div_ratio > 2.0 else "⚠️ Weak")
+                        col4.metric("Worst Symbol", f"{worst_sharpe:.3f}",
+                                   "✅ Positive" if worst_sharpe > 0 else "❌ Negative")
+
+                        # Individual symbol results
+                        st.markdown("### Individual Symbol Results")
+                        symbol_results = []
+                        for symbol, metrics in results['individual_results'].items():
+                            symbol_results.append({
+                                'Symbol': symbol,
+                                'Sharpe': f"{metrics['sharpe']:.3f}",
+                                'Trades': metrics['total_trades'],
+                                'Max DD': f"{metrics['max_drawdown']*100:.1f}%"
                             })
 
-                        # Update main progress
-                        main_progress.progress((idx + 1) / total_symbols)
+                        df_results = pd.DataFrame(symbol_results)
+                        st.dataframe(df_results, use_container_width=True)
 
-                    # Final summary
-                    main_status.success(f"🎉 Bulk Optimization Complete: {successful} successful, {failed} failed/skipped")
+                        # Save option
+                        st.markdown("---")
+                        if st.button("💾 SAVE TO DATABASE & APPLY", type="primary", use_container_width=True):
+                            with st.spinner("Saving parameters to all symbols..."):
+                                success = opt.save_portfolio_results(results)
+                                if success:
+                                    st.success("✅ Parameters saved! Restart MT5 EA to apply.")
+                                    st.info("Run: `docker compose restart mt5`")
+                                else:
+                                    st.error("❌ Failed to save some parameters. Check logs.")
 
-                    # Clear cache
-                    st.cache_data.clear()
+                    except Exception as e:
+                        st.error(f"❌ Optimization failed: {e}")
+                        import traceback
+                        st.code(traceback.format_exc())
 
-                except Exception as e:
-                    st.error(f"❌ Bulk optimization error: {str(e)}")
-                    import traceback
-                    st.code(traceback.format_exc())
+    with tab2:
+        st.subheader("Optimization History")
 
-                finally:
-                    st.session_state.optimization_running = False
+        try:
+            # Load optimization history
+            db_manager = DatabaseManager(DB_PATH)
+            df_history = db_manager.get_optimization_history(limit=50)
 
-        with col_btn3:
-            if st.button("🔄 Refresh Data"):
+            if not df_history.empty:
+                # Display recent runs
+                st.markdown("### Recent Optimization Runs")
+
+                # Format for display
+                df_display = df_history.copy()
+                if 'completed_at' in df_display.columns:
+                    df_display['completed_at'] = pd.to_datetime(df_display['completed_at'], unit='s').dt.strftime('%Y-%m-%d %H:%M')
+
+                # Show key columns
+                display_cols = ['completed_at', 'mode', 'best_sharpe', 'test_sharpe', 'oos_degradation', 'status']
+                available_cols = [col for col in display_cols if col in df_display.columns]
+
+                st.dataframe(df_display[available_cols] if available_cols else df_display,
+                           use_container_width=True, height=400)
+
+                # Stats
+                st.markdown("### Statistics")
+                col1, col2, col3 = st.columns(3)
+
+                completed = (df_history['status'] == 'completed').sum() if 'status' in df_history.columns else len(df_history)
+                avg_sharpe = df_history['best_sharpe'].mean() if 'best_sharpe' in df_history.columns else 0
+
+                col1.metric("Total Runs", len(df_history))
+                col2.metric("Completed", completed)
+                col3.metric("Avg Sharpe", f"{avg_sharpe:.3f}")
+
+            else:
+                st.info("📊 No optimization history yet. Run your first optimization above!")
+
+        except Exception as e:
+            st.warning(f"Could not load optimization history: {e}")
+
+elif page == "⚙️ Settings":
+    st.title("⚙️ Settings")
+    st.caption("System configuration, symbol management, and database tools")
+
+    # Tabs for different settings sections
+    tab1, tab2, tab3 = st.tabs(["🎯 Symbol Configuration", "⚙️ System Settings", "💾 Database Management"])
+
+    with tab1:
+        st.subheader("Symbol Configuration")
+
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            if st.button("🔄 Reload from DB", key="reload_configs"):
                 st.cache_data.clear()
                 st.rerun()
 
-        # Display optimization results
-        if st.session_state.optimization_results:
-            st.markdown("---")
-            st.subheader("✨ Optimization Results")
+        # Load symbol configs
+        df_configs = load_data("SELECT * FROM SymbolConfigs")
 
-            results = st.session_state.optimization_results
+        if not df_configs.empty:
+            st.info(f"📋 **{len(df_configs)} symbols configured**")
 
-            st.success(f"✅ {results['message']}")
+            # Display configuration table (editable)
+            st.markdown("### Configuration Table")
+            st.caption("⚠️ Editing directly here does NOT save to database. Use optimizer or manual SQL updates.")
 
-            # Load updated configuration
-            updated_config_df = load_data(f"SELECT * FROM SymbolConfigs WHERE symbol='{results['symbol']}'")
+            # Show subset of important columns if too many
+            if len(df_configs.columns) > 20:
+                key_cols = ['symbol', 'timeframe', 'risk_base', 'min_confluence_entry',
+                           'swing_lookback', 'atr_period', 'fixed_tp_r', 'trail_start_r']
+                available_key_cols = [col for col in key_cols if col in df_configs.columns]
 
-            if not updated_config_df.empty:
-                updated_config = updated_config_df.iloc[0].to_dict()
+                show_all = st.checkbox("Show all columns", value=False, key="show_all_cols")
 
-                # Before/After Comparison
-                st.subheader("📈 Parameter Changes")
-
-                comparison_data = []
-                for param, new_value in results['best_params'].items():
-                    old_value = current_config.get(param, 'N/A')
-
-                    if old_value != 'N/A' and old_value != new_value:
-                        try:
-                            if isinstance(new_value, (int, float)) and isinstance(old_value, (int, float)):
-                                delta = ((new_value - old_value) / old_value * 100) if old_value != 0 else 0
-                                delta_str = f"{delta:+.1f}%"
-                            else:
-                                delta_str = "Changed"
-                        except:
-                            delta_str = "Changed"
-                    else:
-                        delta_str = "No change"
-
-                    comparison_data.append({
-                        'Parameter': param,
-                        'Old Value': f"{old_value}",
-                        'New Value': f"{new_value}",
-                        'Change': delta_str
-                    })
-
-                df_comparison = pd.DataFrame(comparison_data)
-                st.dataframe(df_comparison, use_container_width=True, hide_index=True)
-
-                # Show OOS validation metrics if available
-                if results.get('train_sharpe') is not None:
-                    st.subheader("🧪 Out-of-Sample Validation")
-
-                    col1, col2, col3, col4 = st.columns(4)
-                    col1.metric("Train Sharpe", f"{results['train_sharpe']:.3f}")
-                    col2.metric("Test Sharpe", f"{results['test_sharpe']:.3f}")
-                    col3.metric("Degradation", f"{results['oos_degradation']:.3f}")
-
-                    risk = results.get('overfitting_risk', 'UNKNOWN')
-                    risk_emoji = {"LOW": "🟢", "MEDIUM": "🟡", "HIGH": "🔴"}.get(risk, "⚪")
-                    col4.metric("Overfitting Risk", f"{risk_emoji} {risk}")
-
-                    if risk == "HIGH":
-                        st.warning("⚠️ High overfitting risk detected. Parameters may not generalize well to new data.")
-                    elif risk == "MEDIUM":
-                        st.info("ℹ️ Moderate overfitting detected. Monitor performance carefully.")
-                    else:
-                        st.success("✅ Low overfitting risk. Parameters show good generalization.")
-
-                # Show parameter importance if study is available
-                if results.get('study') is not None:
-                    st.subheader("🎯 Parameter Importance Analysis")
-                    st.markdown("Which parameters had the biggest impact on performance?")
-
-                    try:
-                        importance_data = optimizer.analyze_parameter_importance(results['study'])
-
-                        if importance_data['importances']:
-                            # Create DataFrame for visualization
-                            df_importance = pd.DataFrame([
-                                {'Parameter': k, 'Importance': v}
-                                for k, v in list(importance_data['importances'].items())[:10]
-                            ])
-
-                            # Bar chart
-                            st.bar_chart(df_importance.set_index('Parameter')['Importance'])
-
-                            # Highlight top 5
-                            top_5_names = [p[0] for p in importance_data['top_5']]
-                            st.success(f"🔝 **Top 5 most important:** {', '.join(top_5_names)}")
-
-                            # Full table in expander
-                            with st.expander("📊 View All Parameter Importances"):
-                                st.dataframe(df_importance, use_container_width=True, hide_index=True)
-                        else:
-                            st.info("Parameter importance analysis not available for this optimization.")
-                    except Exception as e:
-                        st.warning(f"Could not calculate parameter importance: {e}")
-
-                st.info(f"⏰ Optimized at: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(results['timestamp']))}")
-
-        # Display bulk optimization results
-        if st.session_state.bulk_optimization_results:
-            st.markdown("---")
-            st.subheader("📊 Bulk Optimization Summary")
-
-            bulk_results = st.session_state.bulk_optimization_results
-
-            # Count statuses
-            successful = sum(1 for r in bulk_results if r['status'] == 'success')
-            failed = sum(1 for r in bulk_results if r['status'] in ['failed', 'error'])
-            skipped = sum(1 for r in bulk_results if r['status'] == 'skipped')
-
-            # Display metrics
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Total Pairs", len(bulk_results))
-            col2.metric("✅ Successful", successful)
-            col3.metric("❌ Failed", failed)
-            col4.metric("⚠️ Skipped", skipped)
-
-            # Display detailed results table
-            st.subheader("📋 Detailed Results")
-
-            summary_data = []
-            for result in bulk_results:
-                if result['status'] == 'success':
-                    param_count = len(result.get('params', {}))
-                    status_emoji = "✅"
-                    details = f"{param_count} parameters optimized"
-                elif result['status'] == 'skipped':
-                    status_emoji = "⚠️"
-                    details = result.get('reason', 'Skipped')
+                if show_all:
+                    st.dataframe(df_configs, use_container_width=True, height=400)
                 else:
-                    status_emoji = "❌"
-                    details = result.get('reason', 'Failed')
-
-                summary_data.append({
-                    'Status': status_emoji,
-                    'Symbol': result['symbol'],
-                    'Result': result['status'].upper(),
-                    'Details': details
-                })
-
-            df_summary = pd.DataFrame(summary_data)
-            st.dataframe(df_summary, use_container_width=True, hide_index=True)
-
-            # Show expanded view for successful optimizations
-            if successful > 0:
-                st.subheader("🎯 Successful Optimizations")
-
-                for result in bulk_results:
-                    if result['status'] == 'success':
-                        with st.expander(f"📈 {result['symbol']} - View Changes"):
-                            # Load current and updated configs
-                            current_cfg = load_data(f"SELECT * FROM SymbolConfigs WHERE symbol='{result['symbol']}'")
-
-                            if not current_cfg.empty:
-                                current_dict = current_cfg.iloc[0].to_dict()
-                                params = result['params']
-
-                                change_data = []
-                                for param, new_val in params.items():
-                                    old_val = current_dict.get(param, 'N/A')
-                                    if old_val != 'N/A' and old_val != new_val:
-                                        try:
-                                            if isinstance(new_val, (int, float)) and isinstance(old_val, (int, float)):
-                                                delta = ((new_val - old_val) / old_val * 100) if old_val != 0 else 0
-                                                delta_str = f"{delta:+.1f}%"
-                                            else:
-                                                delta_str = "Changed"
-                                        except:
-                                            delta_str = "Changed"
-
-                                        change_data.append({
-                                            'Parameter': param,
-                                            'Before': f"{old_val}",
-                                            'After': f"{new_val}",
-                                            'Δ': delta_str
-                                        })
-
-                                if change_data:
-                                    df_changes = pd.DataFrame(change_data)
-                                    st.dataframe(df_changes, use_container_width=True, hide_index=True)
-                                else:
-                                    st.info("No parameter changes detected")
-
-                            st.caption(f"⏰ Optimized at: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(result.get('timestamp', 0)))}")
-
-            if st.button("🗑️ Clear Bulk Results"):
-                st.session_state.bulk_optimization_results = None
-                st.rerun()
-
-elif page == "Optimization History":
-    st.title("📜 Optimization History")
-    st.markdown("Track and compare past optimization runs")
-
-    # Initialize database manager
-    db_manager = DatabaseManager(DB_PATH)
-
-    # Load optimization history
-    df_history = db_manager.get_optimization_history(limit=100)
-
-    if not df_history.empty:
-        # Filters
-        st.subheader("🔍 Filters")
-        col1, col2, col3, col4 = st.columns(4)
-
-        with col1:
-            symbols = ["All"] + sorted(df_history['symbol'].unique().tolist())
-            filter_symbol = st.selectbox("Symbol", symbols)
-
-        with col2:
-            modes = ["All", "single", "bulk", "multi_objective", "portfolio"]
-            filter_mode = st.selectbox("Mode", modes)
-
-        with col3:
-            statuses = ["All", "completed", "running", "failed"]
-            filter_status = st.selectbox("Status", statuses)
-
-        with col4:
-            risk_levels = ["All", "LOW", "MEDIUM", "HIGH"]
-            filter_risk = st.selectbox("Overfitting Risk", risk_levels)
-
-        # Apply filters
-        df_filtered = df_history.copy()
-        if filter_symbol != "All":
-            df_filtered = df_filtered[df_filtered['symbol'] == filter_symbol]
-        if filter_mode != "All":
-            df_filtered = df_filtered[df_filtered['mode'] == filter_mode]
-        if filter_status != "All":
-            df_filtered = df_filtered[df_filtered['status'] == filter_status]
-        if filter_risk != "All":
-            df_filtered = df_filtered[df_filtered['overfitting_risk'] == filter_risk]
-
-        # Display summary metrics
-        st.subheader("📊 Summary Metrics")
-        col1, col2, col3, col4 = st.columns(4)
-
-        col1.metric("Total Runs", len(df_filtered))
-
-        if len(df_filtered) > 0:
-            avg_sharpe = df_filtered['best_sharpe'].mean()
-            col2.metric("Avg Sharpe", f"{avg_sharpe:.3f}" if not pd.isna(avg_sharpe) else "N/A")
-
-            avg_oos = df_filtered['oos_degradation'].mean()
-            col3.metric("Avg OOS Degradation", f"{avg_oos:.3f}" if not pd.isna(avg_oos) else "N/A")
-
-            success_rate = (df_filtered['status'] == 'completed').sum() / len(df_filtered) * 100
-            col4.metric("Success Rate", f"{success_rate:.1f}%")
-
-        # Sharpe evolution chart
-        if len(df_filtered) > 0 and 'started_at' in df_filtered.columns:
-            st.subheader("📈 Performance Over Time")
-
-            # Convert timestamp to datetime
-            df_chart = df_filtered.copy()
-            df_chart['date'] = pd.to_datetime(df_chart['started_at'], unit='s')
-
-            # Plot train vs test sharpe if available
-            chart_cols = []
-            if 'train_sharpe' in df_chart.columns and df_chart['train_sharpe'].notna().any():
-                chart_cols.append('train_sharpe')
-            if 'test_sharpe' in df_chart.columns and df_chart['test_sharpe'].notna().any():
-                chart_cols.append('test_sharpe')
-            if 'best_sharpe' in df_chart.columns:
-                chart_cols.append('best_sharpe')
-
-            if chart_cols:
-                chart_data = df_chart[['date'] + chart_cols].set_index('date')
-                st.line_chart(chart_data)
-
-        # Detailed table
-        st.subheader("📋 Run Details")
-
-        # Format the display dataframe
-        display_df = df_filtered[[
-            'id', 'symbol', 'mode', 'status', 'started_at',
-            'n_trials', 'best_sharpe', 'train_sharpe', 'test_sharpe',
-            'oos_degradation', 'overfitting_risk'
-        ]].copy()
-
-        # Convert timestamp to readable format
-        display_df['started_at'] = pd.to_datetime(display_df['started_at'], unit='s').dt.strftime('%Y-%m-%d %H:%M')
-
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
-
-        # Click to view individual run details
-        st.subheader("🔍 Detailed Run Analysis")
-
-        selected_run_id = st.selectbox("Select Run ID to View Details", df_filtered['id'].tolist())
-
-        if selected_run_id:
-            run_data = df_filtered[df_filtered['id'] == selected_run_id].iloc[0]
-
-            with st.expander(f"📊 Run #{selected_run_id} - {run_data['symbol']}", expanded=True):
-                col1, col2, col3 = st.columns(3)
-
-                with col1:
-                    st.metric("Mode", run_data['mode'])
-                    st.metric("Status", run_data['status'])
-                    st.metric("Trials", run_data['n_trials'])
-
-                with col2:
-                    if not pd.isna(run_data.get('train_sharpe')):
-                        st.metric("Train Sharpe", f"{run_data['train_sharpe']:.3f}")
-                    if not pd.isna(run_data.get('test_sharpe')):
-                        st.metric("Test Sharpe", f"{run_data['test_sharpe']:.3f}")
-                    st.metric("Best Sharpe", f"{run_data['best_sharpe']:.3f}")
-
-                with col3:
-                    if not pd.isna(run_data.get('oos_degradation')):
-                        st.metric("OOS Degradation", f"{run_data['oos_degradation']:.3f}")
-                    if run_data.get('overfitting_risk'):
-                        risk = run_data['overfitting_risk']
-                        risk_emoji = {"LOW": "🟢", "MEDIUM": "🟡", "HIGH": "🔴"}.get(risk, "⚪")
-                        st.metric("Overfitting Risk", f"{risk_emoji} {risk}")
-                    st.metric("Parameters Optimized", run_data.get('param_count', 'N/A'))
-
-                # Show parameters if available
-                if run_data.get('best_params'):
-                    st.subheader("🔧 Optimized Parameters")
-                    try:
-                        params = json.loads(run_data['best_params']) if isinstance(run_data['best_params'], str) else run_data['best_params']
-
-                        # Create a nice display
-                        param_cols = st.columns(3)
-                        for idx, (param, value) in enumerate(params.items()):
-                            col_idx = idx % 3
-                            with param_cols[col_idx]:
-                                st.text(f"{param}: {value}")
-                    except Exception as e:
-                        st.error(f"Could not parse parameters: {e}")
-
-                # Show error message if failed
-                if run_data['status'] == 'failed' and run_data.get('error_message'):
-                    st.error(f"Error: {run_data['error_message']}")
-
-        # Parameter comparison tool
-        st.markdown("---")
-        st.subheader("🔬 Parameter Explorer")
-        st.markdown("Compare parameters across multiple runs")
-
-        # Filter to completed runs only for comparison
-        completed_runs = df_filtered[df_filtered['status'] == 'completed']
-
-        if len(completed_runs) >= 2:
-            # Allow selection of up to 5 runs
-            max_runs = min(5, len(completed_runs))
-            selected_runs = st.multiselect(
-                "Select runs to compare (max 5)",
-                completed_runs['id'].tolist(),
-                max_selections=max_runs
-            )
-
-            if len(selected_runs) >= 2:
-                comparison_data = []
-
-                for run_id in selected_runs:
-                    run = completed_runs[completed_runs['id'] == run_id].iloc[0]
-                    try:
-                        params = json.loads(run['best_params']) if isinstance(run['best_params'], str) else run['best_params']
-
-                        row = {
-                            'Run ID': run_id,
-                            'Symbol': run['symbol'],
-                            'Sharpe': run['best_sharpe'],
-                            'Date': pd.to_datetime(run['started_at'], unit='s').strftime('%Y-%m-%d')
-                        }
-                        row.update(params)
-                        comparison_data.append(row)
-                    except:
-                        continue
-
-                if comparison_data:
-                    df_comparison = pd.DataFrame(comparison_data)
-                    st.dataframe(df_comparison, use_container_width=True, hide_index=True)
-
-                    # Visualize key parameter changes
-                    st.subheader("📊 Parameter Evolution")
-                    key_params = ['risk_base', 'fixed_tp_r', 'rsi_period', 'ema_period', 'trail_start_r']
-
-                    available_params = [p for p in key_params if p in df_comparison.columns]
-
-                    if available_params:
-                        selected_param = st.selectbox("Select parameter to visualize", available_params)
-
-                        if selected_param:
-                            chart_data = df_comparison[['Run ID', selected_param]].set_index('Run ID')
-                            st.line_chart(chart_data)
-                    else:
-                        st.info("No common parameters found across selected runs.")
-        else:
-            st.info("Need at least 2 completed optimization runs to enable parameter comparison.")
-
-    else:
-        st.info("No optimization history available yet. Run some optimizations to see results here!")
-
-        st.markdown("""
-        ### 💡 Tips for Using Optimization History
-
-        - Track performance improvements over time
-        - Compare different optimization strategies
-        - Identify overfitting trends
-        - Find optimal parameter ranges for your symbols
-        - Monitor out-of-sample degradation
-        """)
-
-elif page == "Configuration":
-    st.title("⚙️ Symbol Configuration")
-    st.markdown("View and Edit Symbol Parameters stored in SQLite.")
-
-    col1, col2 = st.columns([3, 1])
-    with col2:
-        if st.button("🔄 Reload from Database"):
-            st.cache_data.clear()
-            st.rerun()
-
-    df = load_data("SELECT * FROM SymbolConfigs")
-
-    if not df.empty:
-        st.subheader(f"📋 {len(df)} Symbol(s) Configured")
-
-        # Add optimization status if available from SystemLogs
-        try:
-            db_manager = DatabaseManager(DB_PATH)
-            recent_logs = db_manager.get_logs(limit=50)
-
-            if not recent_logs.empty:
-                # Find recent optimization events
-                opt_logs = recent_logs[recent_logs['source'] == 'Optimizer']
-
-                if not opt_logs.empty:
-                    st.info(f"🧠 Last optimization activity: {opt_logs.iloc[0]['message']}")
-        except:
-            pass
-
-        # Display editable configuration
-        st.data_editor(df, num_rows="dynamic", use_container_width=True)
-
-        st.markdown("---")
-
-        # Configuration Management Section
-        st.subheader("🔄 Configuration Management")
-
-        # Create tabs for different management features
-        tab1, tab2, tab3 = st.tabs(["📦 Backup & Restore", "🧪 A/B Testing", "📊 Portfolio Optimization"])
-
-        with tab1:
-            st.markdown("### Backup & Restore Configurations")
+                    st.dataframe(df_configs[available_key_cols] if available_key_cols else df_configs,
+                               use_container_width=True, height=400)
+            else:
+                st.dataframe(df_configs, use_container_width=True, height=400)
+
+            # Bulk operations
+            st.markdown("---")
+            st.markdown("### Bulk Operations")
 
             col1, col2 = st.columns(2)
 
             with col1:
-                st.markdown("#### 📦 Backups")
-
-                # Select symbol to view backups
-                backup_symbol = st.selectbox("Select Symbol", df['symbol'].tolist(), key="backup_symbol")
-
-                if backup_symbol:
-                    # Load backups for this symbol
-                    backups_df = db_manager.get_backups(backup_symbol, limit=10)
-
-                    if not backups_df.empty:
-                        st.dataframe(backups_df, use_container_width=True, hide_index=True)
-
-                        # Restore functionality
-                        selected_backup = st.selectbox(
-                            "Select backup to restore",
-                            backups_df['backup_id'].tolist(),
-                            format_func=lambda x: f"Backup #{x} - {backups_df[backups_df['backup_id']==x]['backed_up_at'].iloc[0]}"
-                        )
-
-                        if st.button("🔙 Restore This Backup", type="primary"):
-                            with st.spinner("Restoring configuration..."):
-                                success = db_manager.restore_config(backup_symbol, selected_backup)
-
-                            if success:
-                                st.success(f"✅ Configuration restored for {backup_symbol}!")
-                                st.cache_data.clear()
-                                time.sleep(1)
-                                st.rerun()
-                            else:
-                                st.error("❌ Restore failed. Check logs.")
-                    else:
-                        st.info(f"No backups available for {backup_symbol}")
-
-                        # Manual backup button
-                        if st.button("📸 Create Manual Backup"):
-                            success = db_manager.backup_config(backup_symbol, reason="manual_backup")
-                            if success:
-                                st.success(f"✅ Backup created for {backup_symbol}")
-                                st.rerun()
-                            else:
-                                st.error("❌ Backup failed")
+                st.markdown("**Export Configuration**")
+                if st.button("📥 Export All Symbols to CSV"):
+                    csv = df_configs.to_csv(index=False)
+                    st.download_button(
+                        label="💾 Download CSV",
+                        data=csv,
+                        file_name=f"symbol_configs_{time.strftime('%Y%m%d_%H%M%S')}.csv",
+                        mime="text/csv"
+                    )
 
             with col2:
-                st.markdown("#### ℹ️ Backup Information")
-                st.info("""
-                **Automatic Backups:**
-                - Created before each optimization
-                - Created by scheduled optimizations
-                - Stored in SymbolConfigsBackup table
+                st.markdown("**Apply Optimized Parameters**")
+                st.caption("Parameters are applied automatically after optimization")
+                if st.button("🔄 Sync from Last Optimization"):
+                    st.info("Sync happens automatically. Run optimization from 🧠 Optimization page.")
 
-                **Manual Backups:**
-                - Create backups before making changes
-                - Restore any previous configuration
-                - Keep up to 10 most recent backups
-
-                **Use Cases:**
-                - Revert after failed optimization
-                - Compare performance of different configs
-                - Safety net for configuration changes
-                """)
-
-        with tab2:
-            st.markdown("### 🧪 A/B Testing")
-            st.info("A/B Testing allows you to compare current vs optimized parameters in live trading")
-
-            # A/B test creation
-            st.markdown("#### Create New A/B Test")
-
-            ab_symbol = st.selectbox("Select Symbol", df['symbol'].tolist(), key="ab_symbol")
-
-            if ab_symbol:
-                # Load current config
-                current_config_df = load_data(f"SELECT * FROM SymbolConfigs WHERE symbol='{ab_symbol}'")
-
-                if not current_config_df.empty:
-                    current_config = current_config_df.iloc[0].to_dict()
-
-                    # Load latest optimization for this symbol
-                    latest_opt = db_manager.get_optimization_history(symbol=ab_symbol, limit=1)
-
-                    if not latest_opt.empty and latest_opt.iloc[0].get('best_params'):
-                        latest_params = json.loads(latest_opt.iloc[0]['best_params']) if isinstance(latest_opt.iloc[0]['best_params'], str) else latest_opt.iloc[0]['best_params']
-
-                        col1, col2 = st.columns(2)
-
-                        with col1:
-                            st.markdown("**Config A (Current)**")
-                            st.json({k: v for k, v in current_config.items() if k in ['risk_base', 'fixed_tp_r', 'rsi_period', 'ema_period']})
-
-                        with col2:
-                            st.markdown("**Config B (Optimized)**")
-                            st.json({k: v for k, v in latest_params.items() if k in ['risk_base', 'fixed_tp_r', 'rsi_period', 'ema_period']})
-
-                        # Test duration
-                        test_duration_days = st.slider("Test Duration (days)", 7, 30, 14)
-
-                        if st.button("🚀 Start A/B Test", type="primary"):
-                            # Create A/B test entry
-                            try:
-                                conn = get_connection()
-                                if conn:
-                                    cursor = conn.cursor()
-
-                                    start_time = int(time.time())
-                                    end_time = start_time + (test_duration_days * 86400)
-
-                                    cursor.execute("""
-                                        INSERT INTO ABTests (
-                                            symbol, start_time, end_time,
-                                            config_a, config_b,
-                                            status
-                                        ) VALUES (?, ?, ?, ?, ?, ?)
-                                    """, (
-                                        ab_symbol,
-                                        start_time,
-                                        end_time,
-                                        json.dumps(current_config),
-                                        json.dumps(latest_params),
-                                        'running'
-                                    ))
-
-                                    conn.commit()
-                                    conn.close()
-
-                                    st.success(f"✅ A/B test started for {ab_symbol}! Duration: {test_duration_days} days")
-                                    st.info("📊 Results will be available after the test period. Monitor both configurations in live trading.")
-
-                                    # Log event
-                                    db_manager.log_event("ABTest", "INFO", f"A/B test started for {ab_symbol}")
-                                else:
-                                    st.error("❌ Database connection failed")
-                            except Exception as e:
-                                st.error(f"❌ Failed to create A/B test: {e}")
-                    else:
-                        st.warning(f"⚠️ No optimized parameters available for {ab_symbol}. Run optimization first.")
-
-                # Show active A/B tests
-                st.markdown("---")
-                st.markdown("#### Active A/B Tests")
-
-                try:
-                    active_tests = load_data("SELECT * FROM ABTests WHERE status='running' ORDER BY start_time DESC")
-
-                    if not active_tests.empty:
-                        for idx, test in active_tests.iterrows():
-                            with st.expander(f"🧪 {test['symbol']} - Test #{test['test_id']}"):
-                                start_date = pd.to_datetime(test['start_time'], unit='s')
-                                end_date = pd.to_datetime(test['end_time'], unit='s')
-
-                                st.write(f"**Started:** {start_date.strftime('%Y-%m-%d %H:%M')}")
-                                st.write(f"**Ends:** {end_date.strftime('%Y-%m-%d %H:%M')}")
-
-                                # Progress bar
-                                current_time = int(time.time())
-                                progress = min(1.0, (current_time - test['start_time']) / (test['end_time'] - test['start_time']))
-                                st.progress(progress)
-
-                                col1, col2 = st.columns(2)
-                                with col1:
-                                    st.metric("Config A Trades", test.get('trades_a', 0))
-                                    st.metric("Config A Sharpe", f"{test.get('sharpe_a', 0):.3f}")
-
-                                with col2:
-                                    st.metric("Config B Trades", test.get('trades_b', 0))
-                                    st.metric("Config B Sharpe", f"{test.get('sharpe_b', 0):.3f}")
-
-                                if st.button(f"🛑 Stop Test #{test['test_id']}", key=f"stop_test_{test['test_id']}"):
-                                    # Update test status
-                                    conn = get_connection()
-                                    if conn:
-                                        cursor = conn.cursor()
-                                        cursor.execute("UPDATE ABTests SET status='stopped' WHERE test_id=?", (test['test_id'],))
-                                        conn.commit()
-                                        conn.close()
-
-                                        st.success("✅ Test stopped")
-                                        st.rerun()
-                    else:
-                        st.info("No active A/B tests. Create one above to get started!")
-
-                except Exception as e:
-                    st.warning(f"Could not load A/B tests: {e}")
-
-        with tab3:
-            st.markdown("### 📊 Portfolio-Level Optimization")
-            st.info("Optimize parameters across all symbols considering correlations")
-
-            if st.button("🎯 Run Portfolio Optimization", type="primary"):
-                with st.spinner("Running portfolio optimization..."):
-                    try:
-                        from optimizer import PortfolioLevelOptimizer
-
-                        symbols = df['symbol'].tolist()
-
-                        portfolio_optimizer = PortfolioLevelOptimizer(db_manager, symbols)
-                        results = portfolio_optimizer.run_portfolio_optimization(n_trials=50)
-
-                        if results:
-                            st.success("✅ Portfolio optimization complete!")
-
-                            col1, col2, col3 = st.columns(3)
-                            col1.metric("Portfolio Sharpe", f"{results['portfolio_sharpe']:.3f}")
-                            col2.metric("Symbols Analyzed", results['symbols_count'])
-                            col3.metric("High Correlation Pairs", len(results.get('high_correlation_pairs', [])))
-
-                            st.subheader("🔧 Optimal Portfolio Parameters")
-                            st.json(results['best_params'])
-
-                            # Show correlation matrix
-                            if results.get('correlation_matrix'):
-                                st.subheader("🔗 Correlation Matrix")
-                                corr_df = pd.DataFrame(results['correlation_matrix'])
-                                st.dataframe(corr_df.style.background_gradient(cmap='coolwarm', vmin=-1, vmax=1))
-
-                            # Show high correlation pairs
-                            if results.get('high_correlation_pairs'):
-                                st.warning("⚠️ High Correlation Pairs (Consider reducing position sizes)")
-                                for pair in results['high_correlation_pairs']:
-                                    st.write(f"  • {pair['symbol1']} ↔ {pair['symbol2']}: {pair['correlation']:.3f}")
-                        else:
-                            st.error("❌ Portfolio optimization failed")
-
-                    except Exception as e:
-                        st.error(f"❌ Error: {e}")
-                        import traceback
-                        st.code(traceback.format_exc())
-
-        st.markdown("---")
-        st.caption("💡 Tip: Use the AI Optimization page to automatically tune parameters based on historical data.")
-
-    else:
-        st.info("No configurations available.")
-
-elif page == "Trade Logs":
-    st.title("📜 Trade History")
-    # Placeholder query - assumes we might have a trades table later
-    # For now, show structure of DB
-    conn = get_connection()
-    if conn:
-        tables = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table';", conn)
-        st.write("Available Tables:", tables)
-        
-        selected_table = st.selectbox("Select Table to Inspect", tables['name'].tolist())
-        if selected_table:
-            df_table = load_data(f"SELECT * FROM {selected_table} ORDER BY rowid DESC LIMIT 100")
-            st.dataframe(df_table, use_container_width=True)
-
-elif page == "System Health":
-    st.title("💓 System Heartbeat")
-
-    # Get current timestamp
-    current_time = int(time.time())
-
-    # Get Governor State
-    df_state = load_data("SELECT * FROM GovernorState")
-
-    # Get trade statistics
-    df_stats = load_data("""
-        SELECT
-            COUNT(*) as total_trades,
-            SUM(CASE WHEN profit > 0 THEN 1 ELSE 0 END) as winning_trades,
-            SUM(CASE WHEN profit < 0 THEN 1 ELSE 0 END) as losing_trades,
-            SUM(profit) as total_profit,
-            AVG(profit) as avg_profit,
-            MAX(close_time) as last_trade_time
-        FROM Trades
-    """)
-
-    # System Status Indicators
-    st.subheader("🔍 System Status")
-
-    if not df_stats.empty and df_stats.iloc[0]['last_trade_time']:
-        last_trade_time = int(df_stats.iloc[0]['last_trade_time'])
-        time_since_last_trade = current_time - last_trade_time
-
-        # Status indicator based on last activity
-        if time_since_last_trade < 3600:  # Less than 1 hour
-            status_color = "🟢"
-            status_text = "Active"
-        elif time_since_last_trade < 86400:  # Less than 1 day
-            status_color = "🟡"
-            status_text = "Idle"
         else:
-            status_color = "🔴"
-            status_text = "Inactive"
+            st.warning("⚠️ No symbol configurations found in database")
+            st.info("Symbols should be automatically created when EA starts. Check MT5 container.")
+
+    with tab2:
+        st.subheader("System Settings")
+
+        # System Health Status
+        st.markdown("### System Health")
 
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("System Status", f"{status_color} {status_text}")
-        col2.metric("Last Trade", f"{time_since_last_trade // 60} min ago" if time_since_last_trade < 3600 else f"{time_since_last_trade // 3600} hrs ago")
-        col3.metric("DB Status", "🟢 Connected")
 
-        df_symbol_count = load_data("SELECT COUNT(*) as count FROM SymbolConfigs")
-        symbol_count = int(df_symbol_count.iloc[0]['count']) if not df_symbol_count.empty else 0
-        col4.metric("Total Symbols", symbol_count)
+        # Database status
+        db_exists = os.path.exists(DB_PATH)
+        col1.metric("Database", "🟢 Connected" if db_exists else "🔴 Not Found")
 
-    # Trading Performance Metrics
-    st.subheader("📊 Trading Performance")
+        # Database size
+        if db_exists:
+            db_size = os.path.getsize(DB_PATH) / 1024 / 1024  # MB
+            col2.metric("DB Size", f"{db_size:.2f} MB")
+        else:
+            col2.metric("DB Size", "N/A")
 
-    if not df_stats.empty:
-        total = int(df_stats.iloc[0]['total_trades'])
-        wins = int(df_stats.iloc[0]['winning_trades'])
-        losses = int(df_stats.iloc[0]['losing_trades'])
-        win_rate = (wins / total * 100) if total > 0 else 0
+        # Table counts
+        try:
+            table_counts = {
+                'Trades': load_data("SELECT COUNT(*) as cnt FROM Trades")['cnt'].iloc[0],
+                'Signals': load_data("SELECT COUNT(*) as cnt FROM Signals")['cnt'].iloc[0],
+                'Configs': load_data("SELECT COUNT(*) as cnt FROM SymbolConfigs")['cnt'].iloc[0],
+            }
+            col3.metric("Total Trades", table_counts['Trades'])
+            col4.metric("Total Signals", table_counts['Signals'])
+        except:
+            col3.metric("Total Trades", "N/A")
+            col4.metric("Total Signals", "N/A")
 
-        col1, col2, col3, col4, col5 = st.columns(5)
-        col1.metric("Total Trades", total)
-        col2.metric("Winning", wins, delta=f"{win_rate:.1f}%")
-        col3.metric("Losing", losses, delta=f"{100-win_rate:.1f}%", delta_color="inverse")
-        col4.metric("Total P/L", f"${df_stats.iloc[0]['total_profit']:.2f}", delta="Cumulative")
-        col5.metric("Avg P/L", f"${df_stats.iloc[0]['avg_profit']:.2f}", delta="Per Trade")
+        st.markdown("---")
 
-    # Symbol Activity Breakdown
-    st.subheader("📈 Symbol Activity")
+        # Auto-optimization settings (reference to scheduler)
+        st.markdown("### Auto-Optimization")
+        st.info("⏰ Scheduler settings are available in the left sidebar under 'Auto-Optimization'")
 
-    df_symbol_stats = load_data("""
-        SELECT
-            symbol,
-            COUNT(*) as trades,
-            SUM(CASE WHEN profit > 0 THEN 1 ELSE 0 END) as wins,
-            SUM(profit) as total_profit,
-            AVG(profit) as avg_profit,
-            MAX(close_time) as last_trade
-        FROM Trades
-        GROUP BY symbol
-        ORDER BY total_profit DESC
-    """)
+        # Risk limits
+        st.markdown("### Risk Management")
+        st.caption("These settings should be configured in the MT5 EA code")
 
-    if not df_symbol_stats.empty:
-        df_symbol_stats['win_rate'] = (df_symbol_stats['wins'] / df_symbol_stats['trades'] * 100).round(1)
-        st.dataframe(
-            df_symbol_stats[['symbol', 'trades', 'wins', 'win_rate', 'total_profit', 'avg_profit']].style.format({
-                'win_rate': '{:.1f}%',
-                'total_profit': '${:.2f}',
-                'avg_profit': '${:.2f}'
-            }),
-            use_container_width=True
-        )
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Max Positions", "10", "Configured in EA")
+        with col2:
+            st.metric("Max Drawdown Alert", "25%", "Configured in EA")
 
-    # Recent Activity Log
-    st.subheader("📜 Recent Activity")
+    with tab3:
+        st.subheader("Database Management")
 
-    df_recent = load_data("""
-        SELECT
-            ticket,
-            symbol,
-            DATETIME(entry_time, 'unixepoch') as entry_time,
-            DATETIME(close_time, 'unixepoch') as close_time,
-            type,
-            lots,
-            profit,
-            magic
-        FROM Trades
-        ORDER BY close_time DESC
-        LIMIT 15
-    """)
+        if not db_exists:
+            st.error(f"❌ Database not found at: {DB_PATH}")
+            st.info("The database should be created automatically by the MT5 EA. Check if the EA is running.")
+        else:
+            # Database info
+            st.success(f"✅ Database connected: `{DB_PATH}`")
 
-    if not df_recent.empty:
-        st.dataframe(
-            df_recent.style.format({'lots': '{:.2f}', 'profit': '${:.2f}'}),
-            use_container_width=True
-        )
-    else:
-        st.info("No recent trading activity.")
+            # Table information
+            st.markdown("### Database Tables")
 
-    # Governor State
-    if not df_state.empty:
-        st.subheader("⚙️ Governor State")
-        st.dataframe(df_state, use_container_width=True)
+            try:
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                df_tables = load_data(tables_query)
 
-    # System Logs
-    st.subheader("📝 System Logs")
-    
-    # Auto-refresh mechanism
-    if st.checkbox("Auto-refresh Logs (5s)", value=False):
-        time.sleep(5)
-        st.rerun()
-    
-    df_logs = load_data("SELECT * FROM SystemLogs ORDER BY time DESC LIMIT 200")
-    
-    if not df_logs.empty:
-        # Convert timestamp
-        df_logs['time'] = pd.to_datetime(df_logs['time'], unit='s')
-        
-        # Color coding
-        def color_row(row):
-            if row['level'] == 'ERROR':
-                return ['background-color: #ffcccc'] * len(row)
-            elif row['source'] == 'Heartbeat':
-                return ['background-color: #e6f3ff'] * len(row)
-            return [''] * len(row)
-            
-        st.dataframe(
-            df_logs[['time', 'source', 'level', 'message']].style.apply(color_row, axis=1),
-            use_container_width=True,
-            height=400
-        )
-    else:
-        st.info("No system logs found yet. Waiting for Governor startup...")
+                if not df_tables.empty:
+                    table_info = []
+                    for table in df_tables['name'].tolist():
+                        try:
+                            count = load_data(f"SELECT COUNT(*) as cnt FROM {table}")['cnt'].iloc[0]
+                            table_info.append({
+                                'Table': table,
+                                'Rows': count,
+                                'Status': '✅' if count > 0 else '⚪'
+                            })
+                        except:
+                            table_info.append({
+                                'Table': table,
+                                'Rows': 'Error',
+                                'Status': '❌'
+                            })
+
+                    df_table_info = pd.DataFrame(table_info)
+                    st.dataframe(df_table_info, use_container_width=True)
+                else:
+                    st.warning("No tables found in database")
+
+            except Exception as e:
+                st.error(f"Error reading database structure: {e}")
+
+            st.markdown("---")
+
+            # Maintenance operations
+            st.markdown("### Maintenance Operations")
+
+            st.warning("⚠️ **Caution**: These operations can delete data. Use carefully!")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.markdown("**Clear Old Data**")
+                days_to_keep = st.number_input("Keep last N days", min_value=7, max_value=365, value=30)
+
+                if st.button("🗑️ Clear Old Signals", key="clear_signals"):
+                    confirm = st.checkbox("Confirm deletion", key="confirm_signals")
+                    if confirm:
+                        try:
+                            conn = get_connection()
+                            cursor = conn.cursor()
+                            cursor.execute(f"DELETE FROM Signals WHERE time < unixepoch('now', '-{days_to_keep} days')")
+                            conn.commit()
+                            deleted = cursor.rowcount
+                            st.success(f"✅ Deleted {deleted} old signals")
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+
+                if st.button("🗑️ Clear Old Trades", key="clear_trades"):
+                    confirm = st.checkbox("Confirm deletion", key="confirm_trades")
+                    if confirm:
+                        try:
+                            conn = get_connection()
+                            cursor = conn.cursor()
+                            cursor.execute(f"DELETE FROM Trades WHERE entry_time < unixepoch('now', '-{days_to_keep} days')")
+                            conn.commit()
+                            deleted = cursor.rowcount
+                            st.success(f"✅ Deleted {deleted} old trades")
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+
+            with col2:
+                st.markdown("**Database Health**")
+
+                if st.button("🔍 Run VACUUM", key="vacuum_db"):
+                    try:
+                        conn = get_connection()
+                        conn.execute("VACUUM")
+                        st.success("✅ Database optimized")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+
+                if st.button("🔍 Check Integrity", key="check_integrity"):
+                    try:
+                        result = load_data("PRAGMA integrity_check")
+                        if result.iloc[0, 0] == "ok":
+                            st.success("✅ Database integrity OK")
+                        else:
+                            st.error(f"❌ Integrity issues: {result}")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
