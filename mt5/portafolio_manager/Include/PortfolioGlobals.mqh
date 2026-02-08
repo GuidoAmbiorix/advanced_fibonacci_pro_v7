@@ -30,6 +30,10 @@
 #define GV_WEEKLY_DD             "PG_WeeklyDD"             // This week's drawdown %
 #define GV_DAILY_START_EQUITY    "PG_DailyStartEquity"     // Equity at day start
 #define GV_WEEKLY_START_EQUITY   "PG_WeeklyStartEquity"    // Equity at week start
+#define GV_DAILY_PROFIT_HIT      "PG_DailyProfitHit"       // 1 = Daily target hit
+#define GV_DAILY_LOSS_HIT        "PG_DailyLossHit"         // 1 = Daily loss limit hit
+#define GV_DAILY_TARGET_MONEY    "PG_DailyTargetMoney"     // Target in money
+#define GV_DAILY_TARGET_PCT      "PG_DailyTargetPct"       // Target in %
 
 // Session Status (Legacy - kept for backwards compatibility)
 #define GV_CURRENT_SESSION       "PG_CurrentSession"       // Current trading session (legacy)

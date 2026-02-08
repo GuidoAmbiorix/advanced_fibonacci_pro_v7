@@ -41,9 +41,15 @@ input double InpPF_Pause = 1.0;                // PF Level: Pause Trading
 input double InpPF_ReducedMult = 0.7;          // Risk Mult when PF < Normal
 
 input group "═══════ DAILY/WEEKLY LIMITS ═══════"
-input double InpDailyMaxDD = 3.0;              // Daily Max Drawdown (%)
-input double InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown (%)
-input double InpMonthlyMaxDD = 10.0;           // Monthly Max Drawdown (%)
+input double InpDailyMaxDD = 20.0;             // Daily Max Drawdown (%) (Legacy)
+input double InpWeeklyMaxDD = 30.0;            // Weekly Max Drawdown (%)
+input double InpMonthlyMaxDD = 50.0;           // Monthly Max Drawdown (%)
+
+input group "═══════ AGGRESSIVE STRATEGY ($10 Acc) ═══════"
+input bool   InpUseDailyLimits = true;         // Use Profit/Loss Brackets
+input double InpDailyProfitTarget = 1.0;       // Daily Profit Target ($)
+input double InpDailyLossLimit = 1.0;          // Daily Loss Limit ($)
+input bool   InpCloseAllOnLimit = true;        // Close All When Limit Hit
 
 input group "═══════ CORRELATION GUARD ═══════"
 input bool   InpUseCorrelationGuard = true;    // Enable Correlation Guard
@@ -55,7 +61,8 @@ input int    InpMagicBase = 100000;            // Magic Number Base
 input int    InpMagicRange = 999;              // Magic Number Range (Base to Base+Range)
 
 input group "═══════ UPDATE FREQUENCY ═══════"
-input int    InpUpdateSeconds = 5;             // Update Interval (seconds)
+input group "═══════ UPDATE FREQUENCY ═══════"
+input int    InpUpdateSeconds = 1;             // Update Interval (seconds)
 
 //+------------------------------------------------------------------+
 //| GLOBAL VARIABLES                                                  |
@@ -139,6 +146,10 @@ int OnInit()
    GlobalVariableSet(GV_WEEKLY_DD, 0);
    GlobalVariableSet(GV_DAILY_START_EQUITY, g_dailyStartEquity);
    GlobalVariableSet(GV_WEEKLY_START_EQUITY, g_weeklyStartEquity);
+   
+   // Initialize Daily Bracket Status
+   if(!GlobalVariableCheck(GV_DAILY_PROFIT_HIT)) GlobalVariableSet(GV_DAILY_PROFIT_HIT, 0);
+   if(!GlobalVariableCheck(GV_DAILY_LOSS_HIT)) GlobalVariableSet(GV_DAILY_LOSS_HIT, 0);
 
    Print("===============================================================");
    Print("  PORTFOLIO GOVERNOR v2.0 ACTIVATED");
@@ -178,6 +189,9 @@ void OnTick()
 
    // 0. Check period resets (daily/weekly/monthly)
    CheckPeriodReset();
+   
+   // 0b. Check Daily Aggressive Limits (New)
+   CheckDailyLimits();
 
    // 1. Calculate portfolio metrics
    CalculatePortfolioMetrics();
@@ -210,13 +224,18 @@ void CheckPeriodReset()
    TimeToStruct(g_lastMonthCheck, lastMonth);
 
    // New day check
-   if(current.day != lastDay.day || current.mon != lastDay.mon)
+   if(current.day != lastDay.day || lastDay.day == 0) // Handle initialization or new day
    {
       g_dailyStartEquity = account.Equity();
       g_dailyLimitHit = false;
+      
+      // Reset Aggressive Flags
+      GlobalVariableSet(GV_DAILY_PROFIT_HIT, 0);
+      GlobalVariableSet(GV_DAILY_LOSS_HIT, 0);
+      
       g_lastDayCheck = TimeCurrent();
       GlobalVariableSet(GV_DAILY_START_EQUITY, g_dailyStartEquity);
-      Print("New trading day - Daily DD reset. Start Equity: ", g_dailyStartEquity);
+      Print("New trading day - Daily DD & Limits reset. Start Equity: ", g_dailyStartEquity);
    }
 
    // New week check (Monday)
@@ -565,6 +584,19 @@ void UpdateTradingStatus()
       enabled = false;
       reason = "Monthly DD limit hit";
    }
+   
+   // Aggressive Strategy Limits
+   if(GlobalVariableGet(GV_DAILY_PROFIT_HIT) == 1)
+   {
+      enabled = false;
+      reason = "Daily PROFIT Target Hit ($" + DoubleToString(InpDailyProfitTarget, 2) + ")";
+   }
+   
+   if(GlobalVariableGet(GV_DAILY_LOSS_HIT) == 1)
+   {
+      enabled = false;
+      reason = "Daily LOSS Limit Hit (-$" + DoubleToString(InpDailyLossLimit, 2) + ")";
+   }
 
    if(!enabled && reason != "")
       Print("Trading PAUSED: ", reason);
@@ -642,6 +674,12 @@ void UpdateDashboard()
    string dailyColor = (dailyDD < InpDailyMaxDD * 0.5) ? "[OK]" : ((dailyDD < InpDailyMaxDD) ? "[WARN]" : "[CRIT]");
    string weeklyColor = (weeklyDD < InpWeeklyMaxDD * 0.5) ? "[OK]" : ((weeklyDD < InpWeeklyMaxDD) ? "[WARN]" : "[CRIT]");
 
+   // Daily Net for $10 Strategy
+   double dailyNet = account.Equity() - GlobalVariableGet(GV_DAILY_START_EQUITY);
+   string netColor = (dailyNet >= 0) ? "[WIN]" : "[LOSS]";
+   if(GlobalVariableGet(GV_DAILY_PROFIT_HIT) == 1) netColor = "[TARGET HIT]";
+   if(GlobalVariableGet(GV_DAILY_LOSS_HIT) == 1) netColor = "[STOPPED]";
+
    string text = "===============================================\n";
    text += "  PORTFOLIO GOVERNOR v2.0\n";
    text += "===============================================\n";
@@ -650,6 +688,10 @@ void UpdateDashboard()
    text += "Equity: $" + DoubleToString(account.Equity(), 2) + "\n";
    text += ddColor + " Portfolio DD: " + DoubleToString(dd, 2) + "% (Pause: " + DoubleToString(InpDD_Pause, 1) + "%)\n";
    text += pfColor + " Rolling PF: " + DoubleToString(pf, 2) + " (Last " + IntegerToString(MathMin(g_tradeCount, InpRollingTrades)) + " trades)\n";
+   text += "-----------------------------------------------\n";
+   text += "DAILY NET ($10 STRATEGY):\n";
+   text += netColor + " Net: $" + DoubleToString(dailyNet, 2) + "\n";
+   text += " Targets: +$" + DoubleToString(InpDailyProfitTarget, 2) + " / -$" + DoubleToString(InpDailyLossLimit, 2) + "\n";
    text += "-----------------------------------------------\n";
    text += "PERIOD DRAWDOWNS:\n";
    text += dailyColor + " Daily: " + DoubleToString(dailyDD, 2) + "% / " + DoubleToString(InpDailyMaxDD, 1) + "%\n";
@@ -668,5 +710,86 @@ void UpdateDashboard()
    text += "===============================================\n";
 
    Comment(text);
+}
+
+//+------------------------------------------------------------------+
+//| Check Daily Profit/Loss Limits ($10 Account Strategy)            |
+//+------------------------------------------------------------------+
+void CheckDailyLimits()
+{
+   if(!InpUseDailyLimits) return;
+   
+   // If already hit, ensure we stay hit (in case of restart)
+   if(GlobalVariableGet(GV_DAILY_PROFIT_HIT) == 1 || GlobalVariableGet(GV_DAILY_LOSS_HIT) == 1)
+   {
+      // Ensure trading disabled
+      if(GlobalVariableGet(GV_TRADING_ENABLED) == 1)
+      {
+         GlobalVariableSet(GV_TRADING_ENABLED, 0);
+         Print("Daily Limit previously hit. Trading disabled.");
+      }
+      return;
+   }
+
+   double currentEquity = account.Equity();
+   double startEquity = GlobalVariableGet(GV_DAILY_START_EQUITY);
+   
+   if(startEquity <= 0) return; // specific initialization check
+   
+   double dailyNet = currentEquity - startEquity;
+   
+   // 1. CHECK PROFIT TARGET
+   if(dailyNet >= InpDailyProfitTarget)
+   {
+      GlobalVariableSet(GV_DAILY_PROFIT_HIT, 1);
+      GlobalVariableSet(GV_TRADING_ENABLED, 0);
+      
+      Print("🎯 DAILY PROFIT TARGET HIT! Net: $", DoubleToString(dailyNet, 2), 
+            " (Target: $", DoubleToString(InpDailyProfitTarget, 2), ")");
+      
+      if(InpCloseAllOnLimit)
+      {
+         CloseAllPositions("Daily Profit Target Hit");
+      }
+   }
+   
+   // 2. CHECK LOSS LIMIT
+   if(dailyNet <= -InpDailyLossLimit)
+   {
+      GlobalVariableSet(GV_DAILY_LOSS_HIT, 1);
+      GlobalVariableSet(GV_TRADING_ENABLED, 0);
+      
+      Print("🛑 DAILY LOSS LIMIT HIT! Net: $", DoubleToString(dailyNet, 2), 
+            " (Limit: -$", DoubleToString(InpDailyLossLimit, 2), ")");
+      
+      if(InpCloseAllOnLimit)
+      {
+         CloseAllPositions("Daily Loss Limit Hit");
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Close ALL Positions                                               |
+//+------------------------------------------------------------------+
+void CloseAllPositions(string reason)
+{
+   Print(">>> CLOSING ALL POSITIONS: ", reason, " <<<");
+   
+   CTrade trade;
+   
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      if(position.SelectByIndex(i))
+      {
+         long magic = position.Magic();
+         // Only close our managed trades (or all if configured to extend)
+         if(magic >= InpMagicBase && magic <= InpMagicBase + InpMagicRange)
+         {
+            trade.PositionClose(position.Ticket());
+            Print("Closed Position: ", position.Symbol(), " Ticket: ", position.Ticket());
+         }
+      }
+   }
 }
 //+------------------------------------------------------------------+
