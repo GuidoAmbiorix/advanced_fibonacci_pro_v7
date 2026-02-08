@@ -29,6 +29,7 @@ services:
     container_name: cv_trader
     volumes:
       - ./data:/app/data
+      - ./models:/app/models
       - ./logs:/app/logs
       - ./src/trading/config.yaml:/app/src/trading/config.yaml
     environment:

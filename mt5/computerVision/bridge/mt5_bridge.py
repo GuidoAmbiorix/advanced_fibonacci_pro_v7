@@ -100,6 +100,33 @@ def list_symbols():
         'symbols': [s.name for s in symbols]
     })
 
+@app.route('/symbols/<symbol>/info', methods=['GET'])
+def get_symbol_info(symbol):
+    """Get symbol specifications including minimum stop level."""
+    if not mt5_connected:
+        return jsonify({'error': 'MT5 not connected'}), 503
+    
+    # Get symbol info
+    symbol_info = mt5.symbol_info(symbol)
+    if symbol_info is None:
+        return jsonify({'error': f'Symbol {symbol} not found'}), 404
+    
+    # Get stop level (minimum distance for stops in points)
+    stops_level = symbol_info.trade_stops_level
+    point = symbol_info.point
+    
+    return jsonify({
+        'symbol': symbol,
+        'stops_level': stops_level,  # Minimum stop distance in points
+        'point': point,  # Point size
+        'digits': symbol_info.digits,
+        'trade_contract_size': symbol_info.trade_contract_size,
+        'volume_min': symbol_info.volume_min,
+        'volume_max': symbol_info.volume_max,
+        'volume_step': symbol_info.volume_step
+    })
+
+
 @app.route('/data/fetch', methods=['POST'])
 def fetch_data():
     """
@@ -233,7 +260,7 @@ def open_trade():
         "magic": 234000,
         "comment": comment,
         "type_time": mt5.ORDER_TIME_GTC,
-        "type_filling": mt5.ORDER_FILLING_IOC,
+        "type_filling": mt5.ORDER_FILLING_FOK,
     }
     
     # Send order
@@ -314,7 +341,7 @@ def close_trade():
         "magic": 234000,
         "comment": "Close by API",
         "type_time": mt5.ORDER_TIME_GTC,
-        "type_filling": mt5.ORDER_FILLING_IOC,
+        "type_filling": mt5.ORDER_FILLING_FOK,
     }
     
     result = mt5.order_send(request_dict)

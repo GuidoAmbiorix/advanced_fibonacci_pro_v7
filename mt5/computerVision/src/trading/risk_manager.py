@@ -63,29 +63,65 @@ class RiskManager:
         self.logger.info(f"Calculated position size: {lot_size} lots (risk: ${risk_amount:.2f})")
         return lot_size
     
-    def calculate_sl_tp(self, symbol: str, entry_price: float, direction: str) -> tuple[float, float]:
+    def calculate_sl_tp(self, symbol: str, entry_price: float, direction: str, bridge_url: str = "http://10.0.0.4:5000") -> tuple[float, float]:
         """
-        Calculate stop loss and take profit levels.
+        Calculate stop loss and take profit levels respecting broker minimums.
         
         Args:
             symbol: Trading symbol
             entry_price: Entry price
             direction: 'BUY' or 'SELL'
+            bridge_url: MT5 Bridge URL
             
         Returns:
             (stop_loss, take_profit) tuple
         """
-        # Simple pip-based calculation (assumes 5-digit broker for forex)
+        import requests
+        
+        # Query broker's minimum stop level from MT5
+        try:
+            response = requests.get(f"{bridge_url}/symbols/{symbol}/info", timeout=5)
+            if response.status_code == 200:
+                symbol_info = response.json()
+                stops_level = symbol_info['stops_level']  # Minimum distance in points
+                point = symbol_info['point']  # Point size
+                
+                # Convert stops_level from points to price distance
+                # Add 50% safety margin to avoid rejection
+                broker_min_distance = stops_level * point * 1.5
+                
+                self.logger.info(f"{symbol} minimum stop level: {stops_level} points = {broker_min_distance:.5f} price distance")
+            else:
+                # Fallback to default if query fails
+                self.logger.warning(f"Could not query stop level for {symbol}, using default 0")
+                broker_min_distance = 0.0
+        except Exception as e:
+            self.logger.error(f"Error querying symbol info: {e}")
+            broker_min_distance = 0.0
+        
+        # Calculate config-based distance
         pip_value = 0.0001 if 'JPY' not in symbol else 0.01
+        config_sl_distance = self.config['trade']['stop_loss_pips'] * pip_value
         
-        sl_pips = self.config['trade']['stop_loss_pips']
-        tp_pips = self.config['trade']['take_profit_pips']
+        # Use the larger of the two to be safe
+        min_sl_distance = max(broker_min_distance, config_sl_distance)
         
+        # For TP, use max of (broker_min * 2) or (config_tp_pips * pip_value)
+        config_tp_distance = self.config['trade']['take_profit_pips'] * pip_value
+        min_tp_distance = max(broker_min_distance * 2, config_tp_distance)
+        
+        # Calculate SL/TP using the distances
         if direction == 'BUY':
-            sl = entry_price - (sl_pips * pip_value)
-            tp = entry_price + (tp_pips * pip_value)
+            sl = entry_price - min_sl_distance
+            tp = entry_price + min_tp_distance
         else:  # SELL
-            sl = entry_price + (sl_pips * pip_value)
-            tp = entry_price - (tp_pips * pip_value)
+            sl = entry_price + min_sl_distance
+            tp = entry_price - min_tp_distance
         
-        return round(sl, 5), round(tp, 5)
+        # Round to appropriate decimal places
+        digits = 5 if 'JPY' not in symbol else 3
+        sl = round(sl, digits)
+        tp = round(tp, digits)
+        
+        self.logger.info(f"Calculated SL/TP for {symbol}: SL={sl}, TP={tp} (distance={min_sl_distance:.5f})")
+        return sl, tp

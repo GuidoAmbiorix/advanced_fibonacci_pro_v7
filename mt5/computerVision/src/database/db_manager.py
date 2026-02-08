@@ -128,6 +128,12 @@ class DatabaseManager:
             conn.execute("UPDATE models SET is_active = 1 WHERE id = ?", (model_id,))
             conn.commit()
     
+    def get_model(self, model_id: int) -> Optional[Dict]:
+        """Get model by ID."""
+        with self.get_connection() as conn:
+            row = conn.execute("SELECT * FROM models WHERE id = ?", (model_id,)).fetchone()
+            return dict(row) if row else None
+    
     def get_active_model(self) -> Optional[Dict]:
         """Get the currently active model."""
         with self.get_connection() as conn:

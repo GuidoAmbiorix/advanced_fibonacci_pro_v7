@@ -14,6 +14,7 @@ from datetime import datetime
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from src.database import DatabaseManager
 from src.trading.risk_manager import RiskManager
+from src.trading.prediction_service import PredictionService
 
 class AutoTrader:
     """Automated trading engine based on ML predictions."""
@@ -38,6 +39,7 @@ class AutoTrader:
         # Initialize components
         self.db = DatabaseManager()
         self.risk_manager = RiskManager(self.config, self.db)
+        self.prediction_service = PredictionService(self.db)
         self.bridge_url = self.config['bridge']['url']
         self.running = False
         
@@ -126,7 +128,7 @@ class AutoTrader:
                 "volume": lot_size,
                 "stop_loss": sl,
                 "take_profit": tp,
-                "comment": f"ML: {model_name} ({confidence:.1%})"
+                "comment": f"ML {confidence:.0%}"[:31]  # MT5 limit: 31 chars
             }
             
             response = requests.post(f"{self.bridge_url}/trade/open", json=trade_request)
@@ -161,6 +163,13 @@ class AutoTrader:
         active_portfolio_id = self.db.get_config('active_portfolio_id')
         
         if active_portfolio_id:
+            # First, generate fresh predictions for this portfolio
+            try:
+                self.prediction_service.generate_predictions_for_portfolio(int(active_portfolio_id))
+            except Exception as e:
+                self.logger.error(f"Error generating predictions: {e}")
+            
+            # Then execute trades based on predictions
             self._trade_portfolio(int(active_portfolio_id), account_balance)
         else:
             self._trade_legacy_config(account_balance)
