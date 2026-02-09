@@ -1976,3 +1976,74 @@
 2026-02-09 02:30:03,439 - src.trading.exit_manager - INFO - Exit strategies initialized
 2026-02-09 02:30:03,439 - __main__ - INFO - Auto-Trader initialized with killzone and exit strategies
 2026-02-09 02:30:03,440 - __main__ - INFO - Auto-Trader started
+2026-02-09 02:32:21,949 - src.trading.killzone_manager - INFO - Killzone filtering enabled with 3 windows in Europe/Athens
+2026-02-09 02:32:21,949 - src.trading.killzone_manager - INFO - Holiday calendar loaded: 2 dates
+2026-02-09 02:32:21,949 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-09 02:32:21,950 - __main__ - INFO - Auto-Trader initialized with killzone and exit strategies
+2026-02-09 02:32:21,950 - __main__ - INFO - Auto-Trader started
+2026-02-09 02:34:23,002 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 02:34:23,041 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (97.1%)
+2026-02-09 02:34:23,049 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 02:34:23,078 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 02:34:23,086 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 02:34:23,117 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (99.9%)
+2026-02-09 02:34:23,126 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 97.08%)
+2026-02-09 02:34:23,132 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: London Open on Tue in 29h 25m
+2026-02-09 02:34:23,157 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 02:34:23,162 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: London Open on Tue in 29h 25m
+2026-02-09 02:34:23,185 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 99.94%)
+2026-02-09 02:34:23,190 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: London Open on Tue in 29h 25m
+2026-02-09 02:35:23,238 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 02:35:23,284 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (97.6%)
+2026-02-09 02:35:23,293 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 02:35:23,322 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 02:35:23,331 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 02:35:23,369 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (99.9%)
+2026-02-09 02:35:23,378 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 97.61%)
+2026-02-09 02:35:23,382 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: London Open on Tue in 29h 24m
+2026-02-09 02:35:23,406 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.99%)
+2026-02-09 02:35:23,410 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: London Open on Tue in 29h 24m
+2026-02-09 02:35:23,433 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 99.94%)
+2026-02-09 02:35:23,437 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: London Open on Tue in 29h 24m
+2026-02-09 02:36:23,493 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 02:36:23,534 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (98.3%)
+2026-02-09 02:36:23,542 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 02:36:23,579 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 02:36:23,586 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 02:36:23,616 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (99.9%)
+2026-02-09 02:36:23,630 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 98.29%)
+2026-02-09 02:36:23,636 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: London Open on Tue in 29h 23m
+2026-02-09 02:36:23,668 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.99%)
+2026-02-09 02:36:23,679 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: London Open on Tue in 29h 23m
+2026-02-09 02:36:23,715 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 99.93%)
+2026-02-09 02:36:23,724 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: London Open on Tue in 29h 23m
+2026-02-09 02:37:13,399 - src.trading.killzone_manager - INFO - Killzone filtering enabled with 3 windows in Europe/Athens
+2026-02-09 02:37:13,399 - src.trading.killzone_manager - INFO - Holiday calendar loaded: 2 dates
+2026-02-09 02:37:13,400 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-09 02:37:13,400 - __main__ - INFO - Auto-Trader initialized with killzone and exit strategies
+2026-02-09 02:37:13,400 - __main__ - INFO - Auto-Trader started
+2026-02-09 02:37:14,017 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 02:37:14,050 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (98.3%)
+2026-02-09 02:37:14,057 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 02:37:14,088 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 02:37:14,096 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 02:37:14,126 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (99.9%)
+2026-02-09 02:37:14,135 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 98.29%)
+2026-02-09 02:37:14,148 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $100.72)
+2026-02-09 02:37:14,156 - __main__ - INFO - Using entry price: 1.1825 for EURUSD SELL
+2026-02-09 02:37:14,160 - src.trading.risk_manager - INFO - EURUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 02:37:14,160 - src.trading.risk_manager - INFO - Calculated SL/TP for EURUSD: SL=1.1835, TP=1.181 (distance=0.00100)
+2026-02-09 02:37:14,562 - __main__ - INFO - Trade executed: {'price': 1.1825, 'success': True, 'ticket': 271473892, 'volume': 0.01}
+2026-02-09 02:37:14,587 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.99%)
+2026-02-09 02:37:14,599 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $100.72)
+2026-02-09 02:37:14,606 - __main__ - INFO - Using entry price: 1.36081 for GBPUSD BUY
+2026-02-09 02:37:14,610 - src.trading.risk_manager - INFO - GBPUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 02:37:14,611 - src.trading.risk_manager - INFO - Calculated SL/TP for GBPUSD: SL=1.35981, TP=1.36231 (distance=0.00100)
+2026-02-09 02:37:15,031 - __main__ - INFO - Trade executed: {'price': 1.36081, 'success': True, 'ticket': 271473896, 'volume': 0.01}
+2026-02-09 02:37:15,054 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 99.93%)
+2026-02-09 02:37:15,069 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $100.72)
+2026-02-09 02:37:15,079 - __main__ - INFO - Using entry price: 156.832 for USDJPY SELL
+2026-02-09 02:37:15,084 - src.trading.risk_manager - INFO - USDJPY minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 02:37:15,084 - src.trading.risk_manager - INFO - Calculated SL/TP for USDJPY: SL=156.932, TP=156.682 (distance=0.10000)
+2026-02-09 02:37:15,590 - __main__ - INFO - Trade executed: {'price': 156.832, 'success': True, 'ticket': 271473898, 'volume': 0.01}
+2026-02-09 02:37:15,621 - __main__ - ERROR - Error monitoring positions: 'direction'
