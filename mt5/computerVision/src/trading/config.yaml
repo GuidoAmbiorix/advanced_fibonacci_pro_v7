@@ -10,8 +10,8 @@ risk:
 # Trade Parameters
 trade:
   default_lot_size: 0.01
-  stop_loss_pips: 50
-  take_profit_pips: 100
+  stop_loss_pips: 10
+  take_profit_pips: 15
   slippage_pips: 20
   
 # Auto-Trader

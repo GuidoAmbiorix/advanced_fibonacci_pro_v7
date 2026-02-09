@@ -1202,3 +1202,167 @@
 2026-02-09 00:30:19,321 - __main__ - WARNING - Trade rejected: Max positions (3) reached
 2026-02-09 00:30:19,348 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 84.81%)
 2026-02-09 00:30:19,358 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:31:19,404 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:31:19,464 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (100.0%)
+2026-02-09 00:31:19,479 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:31:19,483 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:31:19,490 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:31:19,520 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (84.8%)
+2026-02-09 00:31:19,529 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 99.99%)
+2026-02-09 00:31:19,538 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:31:19,565 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 84.80%)
+2026-02-09 00:31:19,573 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:32:48,221 - __main__ - INFO - Auto-Trader initialized
+2026-02-09 00:32:48,222 - __main__ - INFO - Auto-Trader started
+2026-02-09 00:32:50,291 - __main__ - ERROR - Error getting account balance: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /status (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-09 00:32:50,291 - __main__ - WARNING - Could not get account balance
+2026-02-09 00:34:32,340 - __main__ - INFO - Auto-Trader initialized
+2026-02-09 00:34:32,340 - __main__ - INFO - Auto-Trader started
+2026-02-09 00:36:33,342 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:36:33,382 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:36:33,390 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:36:33,394 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:36:33,401 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:36:33,427 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (79.8%)
+2026-02-09 00:36:33,435 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.91%)
+2026-02-09 00:36:33,446 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $29.66)
+2026-02-09 00:36:33,454 - __main__ - INFO - Using entry price: 1.36114 for GBPUSD BUY
+2026-02-09 00:36:33,459 - src.trading.risk_manager - INFO - GBPUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 00:36:33,459 - src.trading.risk_manager - INFO - Calculated SL/TP for GBPUSD: SL=1.35614, TP=1.37114 (distance=0.00500)
+2026-02-09 00:36:33,664 - __main__ - INFO - Trade executed: {'price': 1.36114, 'success': True, 'ticket': 752266632, 'volume': 0.01}
+2026-02-09 00:36:33,693 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 79.76%)
+2026-02-09 00:36:33,707 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $29.66)
+2026-02-09 00:36:33,716 - __main__ - INFO - Using entry price: 1.1829 for EURUSD BUY
+2026-02-09 00:36:33,720 - src.trading.risk_manager - INFO - EURUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 00:36:33,720 - src.trading.risk_manager - INFO - Calculated SL/TP for EURUSD: SL=1.1779, TP=1.1929 (distance=0.00500)
+2026-02-09 00:36:33,930 - __main__ - INFO - Trade executed: {'price': 1.1829, 'success': True, 'ticket': 752266633, 'volume': 0.01}
+2026-02-09 00:37:33,992 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:37:34,039 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:37:34,047 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:37:34,052 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:37:34,060 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:37:34,090 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (78.8%)
+2026-02-09 00:37:34,099 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.91%)
+2026-02-09 00:37:34,108 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:37:34,135 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 78.76%)
+2026-02-09 00:37:34,143 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:38:34,203 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:38:34,243 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:38:34,251 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:38:34,255 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:38:34,262 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:38:34,291 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (79.2%)
+2026-02-09 00:38:34,300 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.91%)
+2026-02-09 00:38:34,308 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:38:34,335 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 79.16%)
+2026-02-09 00:38:34,344 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:39:34,391 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:39:34,437 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:39:34,446 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:39:34,450 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:39:34,458 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:39:34,489 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (80.5%)
+2026-02-09 00:39:34,499 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.93%)
+2026-02-09 00:39:34,508 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:39:34,535 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 80.46%)
+2026-02-09 00:39:34,546 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:40:34,603 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:40:34,652 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:40:34,662 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:40:34,666 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:40:34,673 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:40:34,701 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (80.4%)
+2026-02-09 00:40:34,710 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.93%)
+2026-02-09 00:40:34,718 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:40:34,744 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 80.42%)
+2026-02-09 00:40:34,752 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:41:34,812 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:41:34,857 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:41:34,865 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:41:34,870 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:41:34,877 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:41:34,906 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (87.1%)
+2026-02-09 00:41:34,915 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.93%)
+2026-02-09 00:41:34,923 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:41:34,948 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 87.08%)
+2026-02-09 00:41:34,956 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:42:35,010 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:42:35,060 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:42:35,068 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:42:35,073 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:42:35,080 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:42:35,108 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (87.4%)
+2026-02-09 00:42:35,117 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.93%)
+2026-02-09 00:42:35,125 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:42:35,155 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 87.43%)
+2026-02-09 00:42:35,164 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:43:35,202 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:43:35,243 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:43:35,250 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:43:35,255 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:43:35,262 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:43:35,290 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (80.1%)
+2026-02-09 00:43:35,299 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.92%)
+2026-02-09 00:43:35,308 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:43:35,336 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 80.05%)
+2026-02-09 00:43:35,345 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:44:35,388 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:44:35,428 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:44:35,435 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:44:35,439 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:44:35,446 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:44:35,474 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (80.0%)
+2026-02-09 00:44:35,484 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.92%)
+2026-02-09 00:44:35,493 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:44:35,520 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 80.02%)
+2026-02-09 00:44:35,529 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:45:35,579 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:45:35,621 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:45:35,628 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:45:35,632 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:45:35,639 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:45:35,669 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (79.6%)
+2026-02-09 00:45:35,679 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.92%)
+2026-02-09 00:45:35,687 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:45:35,713 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 79.61%)
+2026-02-09 00:45:35,721 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:46:35,770 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:46:35,818 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:46:35,826 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:46:35,831 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:46:35,837 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:46:35,868 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (79.8%)
+2026-02-09 00:46:35,876 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.93%)
+2026-02-09 00:46:35,885 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:46:35,914 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 79.77%)
+2026-02-09 00:46:35,922 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:47:35,981 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:47:36,030 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:47:36,037 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:47:36,042 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:47:36,048 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:47:36,077 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (79.4%)
+2026-02-09 00:47:36,086 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.93%)
+2026-02-09 00:47:36,094 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:47:36,121 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 79.40%)
+2026-02-09 00:47:36,130 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:48:36,187 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:48:36,238 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:48:36,246 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:48:36,250 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:48:36,257 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:48:36,287 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (78.7%)
+2026-02-09 00:48:36,295 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.93%)
+2026-02-09 00:48:36,304 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:48:36,330 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 78.66%)
+2026-02-09 00:48:36,338 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:49:36,374 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:49:36,418 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (99.9%)
+2026-02-09 00:49:36,426 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:49:36,431 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:49:36,437 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:49:36,467 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (79.1%)
+2026-02-09 00:49:36,477 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.93%)
+2026-02-09 00:49:36,486 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
+2026-02-09 00:49:36,514 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 79.10%)
+2026-02-09 00:49:36,522 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
