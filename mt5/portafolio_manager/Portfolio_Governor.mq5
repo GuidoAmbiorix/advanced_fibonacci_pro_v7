@@ -741,6 +741,43 @@ void UpdateDashboard()
    text += "  GBP: " + DoubleToString(GlobalVariableGet(GV_GROUP_GBP_RISK), 2) + "%\n";
    text += "  Metals: " + DoubleToString(GlobalVariableGet(GV_GROUP_METALS_RISK), 2) + "%\n";
    text += "  Indices: " + DoubleToString(GlobalVariableGet(GV_GROUP_INDICES_RISK), 2) + "%\n";
+   text += "-----------------------------------------------\n";
+   text += "CONFLUENCE SCORES (BUY / SELL):\n";
+
+   // Show BUY and SELL confluence for each symbol
+   for(int i=0; i<g_engineCount; i++)
+   {
+      if(CheckPointer(g_engines[i]) == POINTER_INVALID) continue;
+
+      string symName = g_engines[i].GetSymbol();
+      double buyScore = 0.0;
+      double sellScore = 0.0;
+
+      // Get latest BUY score
+      int hBuy = DatabasePrepare(dbManager.GetHandle(),
+         "SELECT score FROM Signals WHERE symbol=? AND direction=1 ORDER BY time DESC LIMIT 1");
+      if(hBuy >= 0)
+      {
+         DatabaseBindText(hBuy, 0, symName);
+         if(DatabaseRead(hBuy))
+            DatabaseColumnDouble(hBuy, 0, buyScore);
+         DatabaseFinalize(hBuy);
+      }
+
+      // Get latest SELL score
+      int hSell = DatabasePrepare(dbManager.GetHandle(),
+         "SELECT score FROM Signals WHERE symbol=? AND direction=-1 ORDER BY time DESC LIMIT 1");
+      if(hSell >= 0)
+      {
+         DatabaseBindText(hSell, 0, symName);
+         if(DatabaseRead(hSell))
+            DatabaseColumnDouble(hSell, 0, sellScore);
+         DatabaseFinalize(hSell);
+      }
+
+      text += StringFormat("  %-8s: B:%4.1f S:%4.1f\n", symName, buyScore, sellScore);
+   }
+
    text += "===============================================\n";
 
    Comment(text);
