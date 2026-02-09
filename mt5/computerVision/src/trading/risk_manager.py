@@ -126,30 +126,47 @@ class RiskManager:
         # Get position sizing method from config
         method = self.config.get('position_sizing_method', 'risk_based')
         
-        if method == 'risk_based' and entry_price is not None and stop_loss is not None:
-            return self.calculate_position_size_risk_based(symbol, entry_price, stop_loss, account_balance)
-        else:
-            # Fallback to fixed lot size
-            lot_size = float(self.config['trade']['default_lot_size'])
-            self.logger.info(f"Using fixed lot size: {lot_size} lots")
-            return lot_size
+        # Debug logging
+        self.logger.info(f"Position sizing - Method: {method}, Entry: {entry_price}, SL: {stop_loss}, Balance: {account_balance}")
+        
+        if method == 'risk_based':
+            if entry_price is None:
+                self.logger.warning(f"⚠️ Risk-based sizing failed: entry_price is None, falling back to fixed lot")
+            elif stop_loss is None:
+                self.logger.warning(f"⚠️ Risk-based sizing failed: stop_loss is None, falling back to fixed lot")
+            elif entry_price is not None and stop_loss is not None:
+                self.logger.info(f"✅ Using risk-based position sizing")
+                return self.calculate_position_size_risk_based(symbol, entry_price, stop_loss, account_balance)
+        
+        # Fallback to fixed lot size
+        lot_size = float(self.config['trade']['default_lot_size'])
+        self.logger.warning(f"⚠️ Using fallback fixed lot size: {lot_size} lots (method={method})")
+        return lot_size
     
-    def calculate_sl_tp(self, symbol: str, entry_price: float, direction: str, bridge_url: str = "http://10.0.0.4:5000") -> tuple[float, float]:
+    def calculate_sl_tp(self, symbol: str, entry_price: float, direction: str, 
+                       timeframe: str = 'H1', bridge_url: str = "http://10.0.0.4:5000") -> tuple[float, float]:
         """
-        Calculate stop loss and take profit levels respecting broker minimums.
+        Calculate stop loss and take profit levels dynamically based on ATR.
+        No more hardcoded pips - adapts to any timeframe!
         
         Args:
             symbol: Trading symbol
             entry_price: Entry price
             direction: 'BUY' or 'SELL'
+            timeframe: Timeframe for ATR calculation (M5, H1, H4, D1)
             bridge_url: MT5 Bridge URL
             
         Returns:
             (stop_loss, take_profit) tuple
         """
         import requests
+        from src.database import DatabaseManager
+        
+        # Get database instance for config
+        db = DatabaseManager()
         
         # Query broker's minimum stop level from MT5
+        broker_min_distance = 0.0
         try:
             response = requests.get(f"{bridge_url}/symbols/{symbol}/info", timeout=5)
             if response.status_code == 200:
@@ -163,23 +180,54 @@ class RiskManager:
                 
                 self.logger.info(f"{symbol} minimum stop level: {stops_level} points = {broker_min_distance:.5f} price distance")
             else:
-                # Fallback to default if query fails
                 self.logger.warning(f"Could not query stop level for {symbol}, using default 0")
-                broker_min_distance = 0.0
         except Exception as e:
             self.logger.error(f"Error querying symbol info: {e}")
-            broker_min_distance = 0.0
         
-        # Calculate config-based distance
-        pip_value = 0.0001 if 'JPY' not in symbol else 0.01
-        config_sl_distance = self.config['trade']['stop_loss_pips'] * pip_value
+        # Get ATR for dynamic SL/TP calculation
+        try:
+            response = requests.get(
+                f"{bridge_url}/indicators/atr",
+                params={'symbol': symbol, 'timeframe': timeframe, 'period': 14},
+                timeout=5
+            )
+            if response.status_code == 200:
+                atr = response.json().get('atr', 0.0)
+                self.logger.info(f"{symbol} {timeframe} ATR: {atr:.5f}")
+            else:
+                # Fallback ATR values by timeframe
+                atr_fallbacks = {
+                    'M5': 0.0010,   # 10 pips
+                    'M15': 0.0020,  # 20 pips
+                    'M30': 0.0030,  # 30 pips
+                    'H1': 0.0050,   # 50 pips
+                    'H4': 0.0100,   # 100 pips
+                    'D1': 0.0200    # 200 pips
+                }
+                atr = atr_fallbacks.get(timeframe, 0.0050)
+                self.logger.warning(f"Could not fetch ATR, using fallback: {atr:.5f} for {timeframe}")
+        except Exception as e:
+            # Fallback based on timeframe
+            atr_fallbacks = {
+                'M5': 0.0010, 'M15': 0.0020, 'M30': 0.0030,
+                'H1': 0.0050, 'H4': 0.0100, 'D1': 0.0200
+            }
+            atr = atr_fallbacks.get(timeframe, 0.0050)
+            self.logger.warning(f"Error fetching ATR: {e}, using fallback: {atr:.5f}")
         
-        # Use the larger of the two to be safe
+        # Get ATR multiplier from database (not config.yaml!)
+        atr_multiplier = float(db.get_config('atr_multiplier', '1.0'))
+        
+        # Calculate SL distance: ATR × multiplier
+        # H1 with 1.0x: 50 pips × 1.0 = 50 pips
+        # M5 with 1.5x: 10 pips × 1.5 = 15 pips
+        config_sl_distance = atr * atr_multiplier
+        
+        # Use the larger of broker minimum or ATR-based distance
         min_sl_distance = max(broker_min_distance, config_sl_distance)
         
-        # For TP, use max of (broker_min * 2) or (config_tp_pips * pip_value)
-        config_tp_distance = self.config['trade']['take_profit_pips'] * pip_value
-        min_tp_distance = max(broker_min_distance * 2, config_tp_distance)
+        # TP distance: 2x SL for 1:2 R:R ratio
+        min_tp_distance = max(broker_min_distance * 2, config_sl_distance * 2)
         
         # Calculate SL/TP using the distances
         if direction == 'BUY':
@@ -194,5 +242,5 @@ class RiskManager:
         sl = round(sl, digits)
         tp = round(tp, digits)
         
-        self.logger.info(f"Calculated SL/TP for {symbol}: SL={sl}, TP={tp} (distance={min_sl_distance:.5f})")
+        self.logger.info(f"Calculated SL/TP for {symbol} {timeframe}: SL={sl}, TP={tp} (ATR={atr:.5f}, multiplier={atr_multiplier}, distance={min_sl_distance:.5f})")
         return sl, tp
