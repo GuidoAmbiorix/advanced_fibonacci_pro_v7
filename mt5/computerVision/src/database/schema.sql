@@ -110,10 +110,20 @@ CREATE TABLE IF NOT EXISTS killzone_windows (
 
 CREATE INDEX IF NOT EXISTS idx_killzone_active ON killzone_windows(is_active);
 
--- Insert default killzone windows
+-- Insert default killzone windows (GMT+2 timezone for FundingPips)
 INSERT OR IGNORE INTO killzone_windows (name, start_time, end_time, days_of_week, timezone, priority) VALUES
-    ('London Open', '03:00', '05:00', '1,2,3,4,5', 'America/New_York', 'high'),
-    ('NY Open', '08:00', '12:00', '1,2,3,4,5', 'America/New_York', 'high');
+    -- Asian Session
+    ('Tokyo Open', '03:00', '07:00', '0,1,2,3,4', 'Europe/Athens', 'medium'),
+    ('Tokyo Close', '10:00', '12:00', '0,1,2,3,4', 'Europe/Athens', 'high'),
+    -- European Session
+    ('London Open', '10:00', '12:00', '0,1,2,3,4', 'Europe/Athens', 'high'),
+    ('London Mid-Session', '12:00', '14:00', '0,1,2,3,4', 'Europe/Athens', 'medium'),
+    ('London-NY Overlap', '14:00', '17:00', '0,1,2,3,4', 'Europe/Athens', 'high'),
+    ('London Close', '17:00', '19:00', '0,1,2,3,4', 'Europe/Athens', 'high'),
+    -- American Session
+    ('NY Open', '14:00', '17:00', '0,1,2,3,4', 'Europe/Athens', 'high'),
+    ('NY Mid-Session', '17:00', '20:00', '0,1,2,3,4', 'Europe/Athens', 'medium'),
+    ('NY Close', '20:00', '22:00', '0,1,2,3,4', 'Europe/Athens', 'high');
 
 -- Trades Table (Completed trades)
 CREATE TABLE IF NOT EXISTS trades (

@@ -23,7 +23,21 @@ auto_trader:
   enabled: false # Start disabled for safety
   check_interval_seconds: 60 # How often to check for new signals
   symbols:
+    # Major Pairs
     - EURUSD
+    - GBPUSD
+    - USDJPY
+    - USDCHF
+    - AUDUSD
+    - USDCAD
+    - NZDUSD
+    # Cross Pairs
+    - EURJPY
+    - GBPJPY
+    - EURGBP
+    - AUDJPY
+    # Commodities
+    - XAUUSD
 
 # MT5 Bridge
 bridge:
@@ -51,35 +65,116 @@ killzones:
 
   # Per-symbol overrides (optional)
   symbol_overrides:
-    # Example: XAUUSD with different windows
-    # XAUUSD:
-    #   enabled: true
-    #   windows:
-    #     - name: "Gold Session"
-    #       start: "02:00"
-    #       end: "11:00"
-    #       days: [1, 2, 3, 4, 5]
+    # Gold (XAUUSD) - Best during high liquidity periods
+    XAUUSD:
+      enabled: true
+      windows:
+        - name: "Gold London Open"
+          start: "10:00"
+          end: "12:00"
+          days: [0, 1, 2, 3, 4]
+        - name: "Gold London-NY Overlap"
+          start: "14:00"
+          end: "17:00"
+          days: [0, 1, 2, 3, 4]
+        - name: "Gold NY Mid-Session"
+          start: "17:00"
+          end: "20:00"
+          days: [0, 1, 2, 3, 4]
+
+    # Japanese Yen pairs - Best during Tokyo and major sessions
+    USDJPY:
+      enabled: true
+      windows:
+        - name: "Tokyo Session"
+          start: "03:00"
+          end: "12:00"
+          days: [0, 1, 2, 3, 4]
+        - name: "NY Session"
+          start: "14:00"
+          end: "19:00"
+          days: [0, 1, 2, 3, 4]
+
+    EURJPY:
+      enabled: true
+      windows:
+        - name: "Tokyo Session"
+          start: "03:00"
+          end: "12:00"
+          days: [0, 1, 2, 3, 4]
+        - name: "London Session"
+          start: "10:00"
+          end: "17:00"
+          days: [0, 1, 2, 3, 4]
 
   # Define active trading windows (FundingPips broker time = GMT+2)
   # Days: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
   windows:
+    # Asian Session (Tokyo)
+    - name: "Tokyo Open"
+      start: "03:00" # 01:00 GMT = 03:00 GMT+2
+      end: "07:00" # 05:00 GMT = 07:00 GMT+2
+      days: [0, 1, 2, 3, 4]
+      priority: medium
+      optimal_pairs: ["USDJPY", "AUDJPY", "NZDJPY", "EURJPY"]
+
+    - name: "Tokyo Close"
+      start: "10:00" # 08:00 GMT = 10:00 GMT+2
+      end: "12:00" # 10:00 GMT = 12:00 GMT+2
+      days: [0, 1, 2, 3, 4]
+      priority: high
+      optimal_pairs: ["USDJPY", "EURJPY", "GBPJPY"]
+
+    # European Session (London)
     - name: "London Open"
       start: "10:00" # 08:00 GMT = 10:00 GMT+2
       end: "12:00" # 10:00 GMT = 12:00 GMT+2
-      days: [0, 1, 2, 3, 4] # Mon-Fri
+      days: [0, 1, 2, 3, 4]
       priority: high
+      optimal_pairs: ["EURUSD", "GBPUSD", "EURGBP", "EURJPY"]
 
-    - name: "NY Open"
-      start: "14:00" # 12:00 GMT = 14:00 GMT+2 (8:00 AM DR)
+    - name: "London Mid-Session"
+      start: "12:00" # 10:00 GMT = 12:00 GMT+2
+      end: "14:00" # 12:00 GMT = 14:00 GMT+2
+      days: [0, 1, 2, 3, 4]
+      priority: medium
+      optimal_pairs: ["EURUSD", "GBPUSD", "XAUUSD"]
+
+    - name: "London-NY Overlap"
+      start: "14:00" # 12:00 GMT = 14:00 GMT+2
+      end: "17:00" # 15:00 GMT = 17:00 GMT+2
+      days: [0, 1, 2, 3, 4]
+      priority: high
+      optimal_pairs: ["EURUSD", "GBPUSD", "XAUUSD", "USDCAD"]
+
+    - name: "London Close"
+      start: "17:00" # 15:00 GMT = 17:00 GMT+2
       end: "19:00" # 17:00 GMT = 19:00 GMT+2
       days: [0, 1, 2, 3, 4]
       priority: high
+      optimal_pairs: ["GBPUSD", "EURGBP", "EURUSD"]
 
-    - name: "Asian Session"
-      start: "02:00" # 00:00 GMT = 02:00 GMT+2
-      end: "06:00" # 04:00 GMT = 06:00 GMT+2
+    # American Session (New York)
+    - name: "NY Open"
+      start: "14:00" # 12:00 GMT = 14:00 GMT+2
+      end: "17:00" # 15:00 GMT = 17:00 GMT+2
+      days: [0, 1, 2, 3, 4]
+      priority: high
+      optimal_pairs: ["EURUSD", "GBPUSD", "USDCAD", "USDCHF"]
+
+    - name: "NY Mid-Session"
+      start: "17:00" # 15:00 GMT = 17:00 GMT+2
+      end: "20:00" # 18:00 GMT = 20:00 GMT+2
       days: [0, 1, 2, 3, 4]
       priority: medium
+      optimal_pairs: ["USDCAD", "USDCHF", "XAUUSD"]
+
+    - name: "NY Close"
+      start: "20:00" # 18:00 GMT = 20:00 GMT+2
+      end: "22:00" # 20:00 GMT = 22:00 GMT+2
+      days: [0, 1, 2, 3, 4]
+      priority: high
+      optimal_pairs: ["USDCAD", "USDCHF"]
 
 # Exit Strategy Settings
 exit_strategies:

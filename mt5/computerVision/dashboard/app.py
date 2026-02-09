@@ -1392,6 +1392,55 @@ elif page == "Killzone Settings":
             else:
                 st.error("Please fill in all fields")
     
+    st.markdown("---")
+    
+    # Pair-Killzone Compatibility Matrix
+    st.subheader("📊 Pair-Killzone Compatibility Matrix")
+    st.caption("Shows which currency pairs are optimal for each trading session")
+    
+    # Define all supported pairs
+    all_pairs = ["EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD", 
+                 "EURJPY", "GBPJPY", "EURGBP", "AUDJPY", "XAUUSD"]
+    
+    # Get active killzones
+    active_killzones = db.get_killzone_windows(active_only=True)
+    
+    if active_killzones:
+        # Load config to get optimal_pairs
+        killzone_config = config.get('killzones', {})
+        config_windows = killzone_config.get('windows', [])
+        
+        # Create compatibility matrix
+        matrix_data = []
+        for pair in all_pairs:
+            row = {"Pair": pair}
+            for kz in active_killzones:
+                # Find matching config window to get optimal_pairs
+                optimal_pairs = []
+                for cw in config_windows:
+                    if cw.get('name') == kz['name']:
+                        optimal_pairs = cw.get('optimal_pairs', [])
+                        break
+                
+                # Check if pair is optimal for this killzone
+                if optimal_pairs and pair in optimal_pairs:
+                    row[kz['name']] = "✅"
+                elif not optimal_pairs:
+                    # If no optimal_pairs specified, all pairs are allowed
+                    row[kz['name']] = "⚪"
+                else:
+                    row[kz['name']] = "❌"
+            matrix_data.append(row)
+        
+        matrix_df = pd.DataFrame(matrix_data)
+        st.dataframe(matrix_df, use_container_width=True, hide_index=True)
+        
+        st.caption("✅ = Optimal for this session | ⚪ = Allowed | ❌ = Not optimal")
+    else:
+        st.info("No active killzones to display matrix.")
+    
+    st.markdown("---")
+    
     # Save Global Settings
     if st.button("💾 Save Global Settings"):
         config['killzones']['enabled'] = enabled
@@ -1401,6 +1450,7 @@ elif page == "Killzone Settings":
             yaml.dump(config, f, default_flow_style=False)
         
         st.success("Global settings saved! Restart trader for changes to take effect.")
+
 
 
 # ==================== Exit Strategies Page ====================

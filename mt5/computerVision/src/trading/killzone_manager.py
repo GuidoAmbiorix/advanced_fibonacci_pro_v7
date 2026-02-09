@@ -78,6 +78,12 @@ class KillzoneManager:
             # Check if today is an active day
             if current_day not in window.get('days', []):
                 continue
+            
+            # NEW: Check if this window is optimal for the symbol
+            optimal_pairs = window.get('optimal_pairs', [])
+            if optimal_pairs and symbol and symbol not in optimal_pairs:
+                # Skip this window, not optimal for this pair
+                continue
                 
             # Parse window times
             start = datetime.strptime(window['start'], "%H:%M").time()
@@ -86,18 +92,22 @@ class KillzoneManager:
             # Check if current time is within window
             if start <= current_time <= end:
                 window_name = window.get('name', 'Active Window')
-                self.logger.debug(f"Trading allowed: {window_name}")
+                self.logger.debug(f"Trading allowed: {window_name} for {symbol or 'any symbol'}")
                 return True, f"Inside {window_name}"
         
         # No active window found
-        next_window = self._get_next_window(now)
-        reason = f"Outside killzones. Next: {next_window}"
+        next_window = self._get_next_window(now, symbol)
+        reason = f"Outside killzones{' for ' + symbol if symbol else ''}. Next: {next_window}"
         self.logger.debug(reason)
         return False, reason
     
-    def _get_next_window(self, current_time: datetime) -> str:
+    def _get_next_window(self, current_time: datetime, symbol: Optional[str] = None) -> str:
         """
         Phase 6: Calculate when the next trading window opens.
+        
+        Args:
+            current_time: Current datetime
+            symbol: Optional symbol to filter by optimal_pairs
         
         Returns:
             Human-readable string with next window time and countdown
@@ -108,6 +118,11 @@ class KillzoneManager:
         # Check windows for today (after current time)
         for window in self.windows:
             if current_day not in window.get('days', []):
+                continue
+            
+            # Filter by optimal pairs if symbol provided
+            optimal_pairs = window.get('optimal_pairs', [])
+            if optimal_pairs and symbol and symbol not in optimal_pairs:
                 continue
             
             start = datetime.strptime(window['start'], "%H:%M").time()
@@ -127,6 +142,11 @@ class KillzoneManager:
             
             for window in self.windows:
                 if check_day not in window.get('days', []):
+                    continue
+                
+                # Filter by optimal pairs if symbol provided
+                optimal_pairs = window.get('optimal_pairs', [])
+                if optimal_pairs and symbol and symbol not in optimal_pairs:
                     continue
                 
                 # Found next window
