@@ -60,7 +60,7 @@ killzones:
       priority: high
       
     - name: "NY Open"
-      start: "15:00"  # 13:00 GMT = 15:00 GMT+2
+      start: "14:00"  # 12:00 GMT = 14:00 GMT+2 (8:00 AM DR)
       end: "19:00"    # 17:00 GMT = 19:00 GMT+2
       days: [0, 1, 2, 3, 4]
       priority: high

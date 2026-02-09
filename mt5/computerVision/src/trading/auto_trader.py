@@ -263,6 +263,10 @@ class AutoTrader:
             
             positions = response.json()
             
+            # Sync with local database (clear closed positions)
+            open_tickets = [p['ticket'] for p in positions]
+            self.db.sync_open_positions(open_tickets)
+            
             for position in positions:
                 symbol = position['symbol']
                 ticket = position['ticket']

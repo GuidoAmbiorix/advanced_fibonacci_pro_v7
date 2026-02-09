@@ -442,6 +442,41 @@ class DatabaseManager:
         with self.get_connection() as conn:
             conn.execute("DELETE FROM killzone_windows WHERE id = ?", (killzone_id,))
             conn.commit()
+            
+    def sync_open_positions(self, open_tickets: List[int]):
+        """
+        Sync open positions with MT5.
+        Mark positions as closed if they are in our DB (active) but NOT in the open_tickets list.
+        """
+        with self.get_connection() as conn:
+            if not open_tickets:
+                # If no open positions, close ALL active positions in DB
+                query = """
+                    UPDATE positions 
+                    SET exit_time = CURRENT_TIMESTAMP, 
+                        exit_price = 0, 
+                        profit = 0,
+                        status = 'CLOSED_SYNC'
+                    WHERE (exit_time IS NULL OR exit_time = '')
+                    AND ticket > 0
+                """
+                conn.execute(query)
+            else:
+                # Find positions that are 'active' (status='OPEN') in DB but NOT in open_tickets
+                placeholders = ','.join(['?'] * len(open_tickets))
+                query = f"""
+                    UPDATE positions 
+                    SET exit_time = CURRENT_TIMESTAMP, 
+                        exit_price = 0, 
+                        profit = 0,
+                        status = 'CLOSED_SYNC'
+                    WHERE ticket NOT IN ({placeholders}) 
+                    AND (exit_time IS NULL OR exit_time = '')
+                    AND ticket > 0
+                """
+                conn.execute(query, open_tickets)
+                
+            conn.commit()
     
     # ==================== Position Tracking ====================
     
