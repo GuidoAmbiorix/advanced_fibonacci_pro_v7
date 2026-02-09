@@ -15,6 +15,8 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from src.database import DatabaseManager
 from src.trading.risk_manager import RiskManager
 from src.trading.prediction_service import PredictionService
+from src.trading.killzone_manager import KillzoneManager
+from src.trading.exit_manager import ExitManager
 
 class AutoTrader:
     """Automated trading engine based on ML predictions."""
@@ -43,7 +45,16 @@ class AutoTrader:
         self.bridge_url = self.config['bridge']['url']
         self.running = False
         
-        self.logger.info("Auto-Trader initialized")
+        # Initialize killzone manager
+        self.killzone_manager = KillzoneManager(self.config)
+        
+        # Initialize exit manager
+        self.exit_manager = ExitManager(self.config, self.bridge_url)
+        
+        # Pass killzone manager to risk manager
+        self.risk_manager.killzone_manager = self.killzone_manager
+        
+        self.logger.info("Auto-Trader initialized with killzone and exit strategies")
     
     def get_account_balance(self) -> float:
         """Get current account balance from MT5."""
@@ -242,6 +253,104 @@ class AutoTrader:
         except Exception:
             return False
     
+    def monitor_positions(self):
+        """Monitor open positions and apply exit strategies."""
+        try:
+            # Get all open positions from bridge
+            response = requests.get(f"{self.bridge_url}/positions", timeout=5)
+            if response.status_code != 200:
+                return
+            
+            positions = response.json()
+            
+            for position in positions:
+                symbol = position['symbol']
+                ticket = position['ticket']
+                
+                # Get current price
+                tick_response = requests.get(f"{self.bridge_url}/symbols/{symbol}/info", timeout=5)
+                if tick_response.status_code != 200:
+                    continue
+                
+                tick_data = tick_response.json()
+                current_price = tick_data['bid'] if position['direction'] == 'SELL' else tick_data['ask']
+                
+                # Get ATR
+                atr = self.exit_manager.get_atr(symbol)
+                
+                # Check exit conditions
+                should_exit, reason, modification = self.exit_manager.check_exit_conditions(
+                    position, current_price, atr
+                )
+                
+                if should_exit:
+                    self.logger.info(f"{symbol} exit trigger: {reason}")
+                    
+                    if modification is None:
+                        # Full close
+                        self._close_position(ticket, reason)
+                        
+                    elif modification['action'] == 'modify':
+                        # Modify SL/TP
+                        self._modify_position(ticket, modification['new_sl'], modification['new_tp'])
+                        
+                        # Update position metadata
+                        if modification.get('breakeven_set'):
+                            position['breakeven_set'] = True
+                        
+                    elif modification['action'] == 'partial_close':
+                        # Partial close
+                        self._close_partial(ticket, modification['close_percent'])
+                        position['partial_taken'] = True
+                        
+        except Exception as e:
+            self.logger.error(f"Error monitoring positions: {e}")
+    
+    def _modify_position(self, ticket: int, new_sl: float, new_tp: float):
+        """Modify position SL/TP via bridge."""
+        try:
+            response = requests.post(
+                f"{self.bridge_url}/trade/modify",
+                json={'ticket': ticket, 'sl': new_sl, 'tp': new_tp},
+                timeout=10
+            )
+            if response.status_code == 200:
+                self.logger.info(f"Modified position {ticket}")
+            else:
+                self.logger.error(f"Failed to modify {ticket}: {response.text}")
+        except Exception as e:
+            self.logger.error(f"Error modifying position: {e}")
+    
+    def _close_partial(self, ticket: int, close_percent: float):
+        """Close partial position via bridge."""
+        try:
+            response = requests.post(
+                f"{self.bridge_url}/trade/close_partial",
+                json={'ticket': ticket, 'close_percent': close_percent},
+                timeout=10
+            )
+            if response.status_code == 200:
+                self.logger.info(f"Closed {close_percent*100}% of {ticket}")
+            else:
+                self.logger.error(f"Failed to close partial {ticket}: {response.text}")
+        except Exception as e:
+            self.logger.error(f"Error closing partial: {e}")
+    
+    def _close_position(self, ticket: int, reason: str):
+        """Close position completely via bridge."""
+        try:
+            response = requests.post(
+                f"{self.bridge_url}/trade/close",
+                json={'ticket': ticket},
+                timeout=10
+            )
+            if response.status_code == 200:
+                self.logger.info(f"Closed position {ticket}: {reason}")
+            else:
+                self.logger.error(f"Failed to close {ticket}: {response.text}")
+        except Exception as e:
+            self.logger.error(f"Error closing position: {e}")
+    
     def run(self):
         """Main trading loop."""
         self.running = True
@@ -252,7 +361,12 @@ class AutoTrader:
         
         try:
             while self.running:
+                # Check for new signals
                 self.check_signals()
+                
+                # Monitor existing positions for exits
+                self.monitor_positions()
+                
                 time.sleep(check_interval)
         except KeyboardInterrupt:
             self.logger.info("Auto-Trader stopped by user")

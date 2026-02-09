@@ -420,6 +420,162 @@ def run_scheduler():
         schedule.run_pending()
         time.sleep(1)
 
+@app.route('/trade/modify', methods=['POST'])
+def modify_trade():
+    """Modify an existing position's SL/TP."""
+    if not mt5_connected:
+        return jsonify({'success': False, 'error': 'MT5 not connected'}), 503
+    
+    data = request.json
+    ticket = data.get('ticket')
+    new_sl = data.get('sl')
+    new_tp = data.get('tp')
+    
+    if not ticket:
+        return jsonify({'success': False, 'error': 'Ticket required'}), 400
+    
+    # Get position info
+    position = mt5.positions_get(ticket=ticket)
+    if not position:
+        return jsonify({'success': False, 'error': 'Position not found'}), 404
+    
+    position = position[0]
+    
+    # Create modification request
+    request_dict = {
+        "action": mt5.TRADE_ACTION_SLTP,
+        "position": ticket,
+        "sl": new_sl if new_sl else position.sl,
+        "tp": new_tp if new_tp else position.tp,
+    }
+    
+    # Send modification
+    result = mt5.order_send(request_dict)
+    
+    if result.retcode != mt5.TRADE_RETCODE_DONE:
+        error_msg = f"Modification failed: {result.comment}"
+        logging.error(error_msg)
+        return jsonify({'success': False, 'error': error_msg, 'retcode': result.retcode}), 400
+    
+    logging.info(f"Modified position {ticket}: SL={new_sl}, TP={new_tp}")
+    return jsonify({
+        'success': True,
+        'ticket': ticket,
+        'new_sl': new_sl,
+        'new_tp': new_tp
+    })
+
+@app.route('/trade/close_partial', methods=['POST'])
+def close_partial():
+    """Close a partial amount of a position."""
+    if not mt5_connected:
+        return jsonify({'success': False, 'error': 'MT5 not connected'}), 503
+    
+    data = request.json
+    ticket = data.get('ticket')
+    close_percent = data.get('close_percent', 0.5)  # Default 50%
+    
+    if not ticket:
+        return jsonify({'success': False, 'error': 'Ticket required'}), 400
+    
+    # Get position
+    position = mt5.positions_get(ticket=ticket)
+    if not position:
+        return jsonify({'success': False, 'error': 'Position not found'}), 404
+    
+    position = position[0]
+    
+    # Calculate partial volume
+    partial_volume = round(position.volume * close_percent, 2)
+    
+    # Ensure minimum volume
+    symbol_info = mt5.symbol_info(position.symbol)
+    if partial_volume < symbol_info.volume_min:
+        return jsonify({'success': False, 'error': 'Partial volume too small'}), 400
+    
+    # Close partial
+    request_dict = {
+        "action": mt5.TRADE_ACTION_DEAL,
+        "position": ticket,
+        "symbol": position.symbol,
+        "volume": partial_volume,
+        "type": mt5.ORDER_TYPE_SELL if position.type == mt5.ORDER_TYPE_BUY else mt5.ORDER_TYPE_BUY,
+        "price": mt5.symbol_info_tick(position.symbol).bid if position.type == mt5.ORDER_TYPE_BUY else mt5.symbol_info_tick(position.symbol).ask,
+        "deviation": 20,
+        "magic": 234000,
+        "comment": "Partial close",
+        "type_time": mt5.ORDER_TIME_GTC,
+        "type_filling": mt5.ORDER_FILLING_IOC,
+    }
+    
+    result = mt5.order_send(request_dict)
+    
+    if result.retcode != mt5.TRADE_RETCODE_DONE:
+        error_msg = f"Partial close failed: {result.comment}"
+        logging.error(error_msg)
+        return jsonify({'success': False, 'error': error_msg, 'retcode': result.retcode}), 400
+    
+    logging.info(f"Closed {close_percent*100}% of position {ticket}")
+    return jsonify({
+        'success': True,
+        'ticket': ticket,
+        'closed_volume': partial_volume,
+        'remaining_volume': position.volume - partial_volume
+    })
+
+@app.route('/indicators/atr', methods=['GET'])
+def get_atr():
+    """Calculate ATR for a symbol."""
+    if not mt5_connected:
+        return jsonify({'error': 'MT5 not connected'}), 503
+    
+    symbol = request.args.get('symbol', 'EURUSD')
+    timeframe = request.args.get('timeframe', 'M5')
+    period = int(request.args.get('period', 14))
+    
+    # Map timeframe string to MT5 constant
+    timeframe_map = {
+        'M1': mt5.TIMEFRAME_M1,
+        'M5': mt5.TIMEFRAME_M5,
+        'M15': mt5.TIMEFRAME_M15,
+        'M30': mt5.TIMEFRAME_M30,
+        'H1': mt5.TIMEFRAME_H1,
+        'H4': mt5.TIMEFRAME_H4,
+        'D1': mt5.TIMEFRAME_D1
+    }
+    
+    tf = timeframe_map.get(timeframe, mt5.TIMEFRAME_M5)
+    
+    # Get recent bars
+    bars = mt5.copy_rates_from_pos(symbol, tf, 0, period + 1)
+    
+    if bars is None or len(bars) < period:
+        return jsonify({'error': 'Insufficient data'}), 400
+    
+    # Calculate True Range for each bar
+    true_ranges = []
+    for i in range(1, len(bars)):
+        high = bars[i]['high']
+        low = bars[i]['low']
+        prev_close = bars[i-1]['close']
+        
+        tr = max(
+            high - low,
+            abs(high - prev_close),
+            abs(low - prev_close)
+        )
+        true_ranges.append(tr)
+    
+    # ATR is the average of true ranges
+    atr = sum(true_ranges[-period:]) / period
+    
+    return jsonify({
+        'symbol': symbol,
+        'timeframe': timeframe,
+        'period': period,
+        'atr': atr
+    })
+
 # ==================== Main ====================
 
 if __name__ == '__main__':

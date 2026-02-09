@@ -27,6 +27,12 @@ class RiskManager:
         Returns:
             (can_open, reason) tuple
         """
+        # NEW: Check killzone first
+        if hasattr(self, 'killzone_manager'):
+            allowed, reason = self.killzone_manager.is_trading_allowed()
+            if not allowed:
+                return False, f"Outside trading hours: {reason}"
+        
         # Check confidence threshold
         min_confidence = self.config['risk']['min_confidence']
         if confidence < min_confidence:

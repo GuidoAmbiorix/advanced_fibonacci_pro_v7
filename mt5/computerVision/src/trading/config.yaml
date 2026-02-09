@@ -24,3 +24,45 @@ auto_trader:
 # MT5 Bridge
 bridge:
   url: "http://10.0.0.4:5000"
+
+# Killzone Settings
+killzones:
+  enabled: true
+  timezone: "America/New_York"  # Broker timezone (match MT5 server time)
+  
+  # Define active trading windows (broker time)
+  windows:
+    - name: "London Open"
+      start: "03:00"  # 08:00 GMT in EST
+      end: "05:00"    # 10:00 GMT in EST
+      days: [1, 2, 3, 4, 5]  # Mon-Fri
+      priority: high
+      
+    - name: "NY Open"
+      start: "08:00"  # 13:00 GMT in EST
+      end: "12:00"    # 17:00 GMT in EST
+      days: [1, 2, 3, 4, 5]
+      priority: high
+
+# Exit Strategy Settings
+exit_strategies:
+  # Breakeven Stop
+  breakeven_enabled: true
+  breakeven_ratio: 1.0  # Move to BE after 1:1 R:R
+  
+  # Partial Profit Taking
+  partial_profit_enabled: true
+  partial_profit_ratio: 0.5  # Take profit at 50% of TP
+  partial_close_percent: 0.5  # Close 50% of position
+  
+  # Trailing Stop (ATR-based)
+  trailing_stop_enabled: true
+  atr_multiplier: 1.5  # Trail at 1.5x ATR distance
+  atr_period: 14  # ATR calculation period
+  
+  # Time-Based Exit
+  time_exit_enabled: true
+  max_hold_minutes: 240  # Exit after 4 hours
+  
+  # Killzone Exit
+  close_on_killzone_end: false  # Keep positions open after killzone
