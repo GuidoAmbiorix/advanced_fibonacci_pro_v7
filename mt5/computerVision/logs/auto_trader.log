@@ -4856,3 +4856,133 @@
 2026-02-09 11:53:04,084 - __main__ - INFO - Auto-Trader started
 2026-02-09 11:53:06,148 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
 2026-02-09 11:54:08,210 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-09 11:55:10,274 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-09 11:56:11,234 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 11:56:11,275 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (98.4%)
+2026-02-09 11:56:11,286 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 11:56:11,328 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 11:56:11,338 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 11:56:11,378 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (94.7%)
+2026-02-09 11:56:11,395 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 98.39%)
+2026-02-09 11:56:11,401 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: NY Open in 0h 3m
+2026-02-09 11:56:11,427 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.98%)
+2026-02-09 11:56:11,436 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: NY Open in 0h 3m
+2026-02-09 11:56:11,465 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 94.71%)
+2026-02-09 11:56:11,472 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: NY Open in 0h 3m
+2026-02-09 11:56:11,503 - __main__ - ERROR - Error monitoring positions: no such column: exit_time
+2026-02-09 11:57:11,535 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 11:57:11,581 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (98.0%)
+2026-02-09 11:57:11,591 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 11:57:11,625 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 11:57:11,634 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 11:57:11,669 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (94.2%)
+2026-02-09 11:57:11,679 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 98.03%)
+2026-02-09 11:57:11,686 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: NY Open in 0h 2m
+2026-02-09 11:57:11,712 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.98%)
+2026-02-09 11:57:11,717 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: NY Open in 0h 2m
+2026-02-09 11:57:11,742 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 94.15%)
+2026-02-09 11:57:11,748 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: NY Open in 0h 2m
+2026-02-09 11:57:11,778 - __main__ - ERROR - Error monitoring positions: no such column: exit_time
+2026-02-09 11:58:11,807 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 11:58:11,856 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (98.1%)
+2026-02-09 11:58:11,864 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 11:58:11,902 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 11:58:11,911 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 11:58:11,943 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (94.2%)
+2026-02-09 11:58:11,955 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 98.08%)
+2026-02-09 11:58:11,961 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: NY Open in 0h 1m
+2026-02-09 11:58:11,990 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.99%)
+2026-02-09 11:58:11,995 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: NY Open in 0h 1m
+2026-02-09 11:58:12,020 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 94.18%)
+2026-02-09 11:58:12,025 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: NY Open in 0h 1m
+2026-02-09 11:58:12,056 - __main__ - ERROR - Error monitoring positions: no such column: exit_time
+2026-02-09 11:59:12,086 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 11:59:12,139 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (98.3%)
+2026-02-09 11:59:12,148 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 11:59:12,184 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 11:59:12,193 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 11:59:12,231 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (94.4%)
+2026-02-09 11:59:12,243 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 98.31%)
+2026-02-09 11:59:12,247 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: NY Open in 0h 0m
+2026-02-09 11:59:12,275 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.98%)
+2026-02-09 11:59:12,279 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: NY Open in 0h 0m
+2026-02-09 11:59:12,305 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 94.36%)
+2026-02-09 11:59:12,309 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: NY Open in 0h 0m
+2026-02-09 11:59:12,340 - __main__ - ERROR - Error monitoring positions: no such column: exit_time
+2026-02-09 12:00:12,373 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 12:00:12,426 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (98.3%)
+2026-02-09 12:00:12,436 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 12:00:12,469 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 12:00:12,478 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 12:00:12,513 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (94.5%)
+2026-02-09 12:00:12,525 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 98.29%)
+2026-02-09 12:00:12,538 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $100.74)
+2026-02-09 12:00:12,546 - __main__ - INFO - Using entry price: 1.18714 for EURUSD SELL
+2026-02-09 12:00:12,550 - src.trading.risk_manager - INFO - EURUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 12:00:12,551 - src.trading.risk_manager - INFO - Calculated SL/TP for EURUSD: SL=1.18814, TP=1.18564 (distance=0.00100)
+2026-02-09 12:00:13,017 - __main__ - INFO - Trade executed: {'price': 1.18711, 'success': True, 'ticket': 271976136, 'volume': 0.01}
+2026-02-09 12:00:13,045 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.98%)
+2026-02-09 12:00:13,060 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $100.74)
+2026-02-09 12:00:13,069 - __main__ - INFO - Using entry price: 1.36392 for GBPUSD BUY
+2026-02-09 12:00:13,074 - src.trading.risk_manager - INFO - GBPUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 12:00:13,074 - src.trading.risk_manager - INFO - Calculated SL/TP for GBPUSD: SL=1.36292, TP=1.36542 (distance=0.00100)
+2026-02-09 12:00:13,562 - __main__ - INFO - Trade executed: {'price': 1.36392, 'success': True, 'ticket': 271976144, 'volume': 0.01}
+2026-02-09 12:00:13,591 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 94.47%)
+2026-02-09 12:00:13,607 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $100.74)
+2026-02-09 12:00:13,614 - __main__ - INFO - Using entry price: 156.447 for USDJPY SELL
+2026-02-09 12:00:13,619 - src.trading.risk_manager - INFO - USDJPY minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 12:00:13,619 - src.trading.risk_manager - INFO - Calculated SL/TP for USDJPY: SL=156.547, TP=156.297 (distance=0.10000)
+2026-02-09 12:00:14,208 - __main__ - INFO - Trade executed: {'price': 156.447, 'success': True, 'ticket': 271976149, 'volume': 0.01}
+2026-02-09 12:00:14,243 - __main__ - ERROR - Error monitoring positions: no such column: exit_time
+2026-02-09 12:01:14,263 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 12:01:14,308 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (98.5%)
+2026-02-09 12:01:14,316 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 12:01:14,351 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 12:01:14,360 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 12:01:14,396 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (93.6%)
+2026-02-09 12:01:14,408 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 98.48%)
+2026-02-09 12:01:14,416 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 12:01:14,441 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.98%)
+2026-02-09 12:01:14,450 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 12:01:14,475 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 93.55%)
+2026-02-09 12:01:14,484 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 12:01:14,513 - __main__ - ERROR - Error monitoring positions: no such column: exit_time
+2026-02-09 12:02:14,541 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 12:02:14,595 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (98.3%)
+2026-02-09 12:02:14,607 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 12:02:14,648 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 12:02:14,658 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 12:02:14,690 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (92.9%)
+2026-02-09 12:02:14,699 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 98.30%)
+2026-02-09 12:02:14,711 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 12:02:14,736 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.98%)
+2026-02-09 12:02:14,745 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 12:02:14,770 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 92.94%)
+2026-02-09 12:02:14,780 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 12:02:14,812 - __main__ - ERROR - Error monitoring positions: no such column: exit_time
+2026-02-09 12:03:14,837 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 12:03:14,879 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (98.3%)
+2026-02-09 12:03:14,888 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 12:03:14,923 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 12:03:14,932 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 12:03:14,965 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (92.7%)
+2026-02-09 12:03:14,978 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 98.29%)
+2026-02-09 12:03:14,989 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 12:03:15,013 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.98%)
+2026-02-09 12:03:15,023 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 12:03:15,047 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 92.69%)
+2026-02-09 12:03:15,058 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 12:03:15,088 - __main__ - ERROR - Error monitoring positions: no such column: exit_time
+2026-02-09 12:04:15,122 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 12:04:15,172 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (98.3%)
+2026-02-09 12:04:15,181 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 12:04:15,212 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 12:04:15,221 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 12:04:15,254 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (92.9%)
+2026-02-09 12:04:15,264 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 98.30%)
+2026-02-09 12:04:15,273 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 12:04:15,296 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 99.98%)
+2026-02-09 12:04:15,304 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 12:04:15,325 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 92.86%)
+2026-02-09 12:04:15,333 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 12:04:15,359 - __main__ - ERROR - Error monitoring positions: no such column: exit_time
