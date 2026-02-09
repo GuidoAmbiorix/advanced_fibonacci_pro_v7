@@ -14,6 +14,14 @@ except ImportError:
     TALIB_AVAILABLE = False
     print("WARNING: TA-Lib not installed. Using basic features only.")
 
+# Import advanced features
+try:
+    from .advanced_features import create_all_advanced_features, get_advanced_feature_list
+    ADVANCED_FEATURES_AVAILABLE = True
+except ImportError:
+    ADVANCED_FEATURES_AVAILABLE = False
+    print("WARNING: Advanced features module not available.")
+
 
 def create_basic_features(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -49,12 +57,13 @@ def create_basic_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def create_talib_features(df: pd.DataFrame) -> pd.DataFrame:
+def create_talib_features(df: pd.DataFrame, use_advanced: bool = True) -> pd.DataFrame:
     """
     Create advanced features using TA-Lib.
     
     Args:
         df: DataFrame with OHLCV data (must have: open, high, low, close, volume)
+        use_advanced: If True, include all 150+ advanced features
         
     Returns:
         DataFrame with TA-Lib features added
@@ -73,7 +82,7 @@ def create_talib_features(df: pd.DataFrame) -> pd.DataFrame:
     volume = (df['tick_volume'].astype('float64').values if 'tick_volume' in df.columns 
               else df['real_volume'].astype('float64').values)
     
-    # ==================== TREND INDICATORS ====================
+    # ==================== CORE INDICATORS (Always included) ====================
     
     # ADX - Average Directional Movement Index
     df['ADX'] = talib.ADX(high_prices, low_prices, close_prices, timeperiod=14)
@@ -136,7 +145,7 @@ def create_talib_features(df: pd.DataFrame) -> pd.DataFrame:
     # Chaikin A/D Line
     df['AD'] = talib.AD(high_prices, low_prices, close_prices, volume)
     
-    # ==================== PATTERN RECOGNITION ====================
+    # ==================== PATTERN RECOGNITION (Basic) ====================
     
     # Candlestick patterns (returns -100, 0, or 100)
     df['CDLDOJI'] = talib.CDLDOJI(open_prices, high_prices, low_prices, close_prices)
@@ -158,21 +167,30 @@ def create_talib_features(df: pd.DataFrame) -> pd.DataFrame:
     # RSI divergence
     df['RSI_change'] = df['RSI'].diff()
     
+    # ==================== ADVANCED FEATURES (150+) ====================
+    
+    if use_advanced and ADVANCED_FEATURES_AVAILABLE:
+        print("🚀 Adding 150+ advanced TA-Lib features...")
+        df = create_all_advanced_features(df)
+    
     return df
 
 
-def get_feature_list(use_talib: bool = True) -> list:
+
+def get_feature_list(use_talib: bool = True, use_advanced: bool = True) -> list:
     """
     Get list of feature names for model training.
     
     Args:
         use_talib: Whether to include TA-Lib features
+        use_advanced: Whether to include advanced features (150+)
         
     Returns:
         List of feature column names
     """
     if use_talib and TALIB_AVAILABLE:
-        return [
+        # Core features (always included)
+        core_features = [
             # Trend
             'ADX', 'MACD', 'MACD_signal', 'MACD_hist',
             'SMA_10', 'SMA_20', 'EMA_10', 'EMA_20',
@@ -189,6 +207,13 @@ def get_feature_list(use_talib: bool = True) -> list:
             # Derived
             'trend_strength', 'price_vs_sma20', 'price_vs_ema20', 'RSI_change'
         ]
+        
+        # Add advanced features if available
+        if use_advanced and ADVANCED_FEATURES_AVAILABLE:
+            advanced_features = get_advanced_feature_list()
+            return core_features + advanced_features
+        
+        return core_features
     else:
         return [
             'price_change', 'high_low_range',

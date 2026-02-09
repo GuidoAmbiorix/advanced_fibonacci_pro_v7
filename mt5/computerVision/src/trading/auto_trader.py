@@ -54,7 +54,12 @@ class AutoTrader:
         # Pass killzone manager to risk manager
         self.risk_manager.killzone_manager = self.killzone_manager
         
+        # Prediction regeneration tracking
+        self.last_prediction_time = {}  # Track last prediction time per symbol
+        self.prediction_interval = self.config.get('prediction', {}).get('regeneration_interval_seconds', 300)
+        
         self.logger.info("Auto-Trader initialized with killzone and exit strategies")
+        self.logger.info(f"Prediction regeneration interval: {self.prediction_interval}s")
     
     def get_account_balance(self) -> float:
         """Get current account balance from MT5."""
@@ -177,6 +182,50 @@ class AutoTrader:
             self.logger.error(f"Error executing trade: {e}")
             self.db.log('ERROR', 'TRADER', f'Error executing trade: {e}')
 
+    def ensure_fresh_predictions(self):
+        """
+        Ensure fresh predictions are available for all active symbols.
+        Regenerates predictions if they're older than prediction_interval.
+        """
+        current_time = datetime.now()
+        
+        # Get active symbols based on portfolio or config
+        active_portfolio_id = self.db.get_config('active_portfolio_id')
+        
+        if active_portfolio_id:
+            # Portfolio mode: get allocated symbols
+            allocations = self.db.get_allocations(int(active_portfolio_id))
+            symbols_to_update = [(a['symbol'], a['model_id']) for a in allocations if a['weight'] > 0]
+        else:
+            # Legacy mode: get symbols from config
+            symbols = self.config.get('auto_trader', {}).get('symbols', [])
+            symbols_to_update = [(symbol, None) for symbol in symbols]
+        
+        # Check each symbol and regenerate if needed
+        for symbol, model_id in symbols_to_update:
+            last_time = self.last_prediction_time.get(symbol)
+            
+            # Regenerate if: never generated OR interval elapsed
+            if last_time is None or (current_time - last_time).total_seconds() > self.prediction_interval:
+                try:
+                    if active_portfolio_id:
+                        # Generate for specific portfolio
+                        self.prediction_service.generate_predictions_for_portfolio(int(active_portfolio_id))
+                        self.logger.info(f"🔄 Regenerated predictions for portfolio {active_portfolio_id}")
+                    else:
+                        # For legacy mode, we'd need to call prediction service differently
+                        # For now, log that we need a prediction
+                        self.logger.warning(f"⚠️ Legacy mode: prediction regeneration not fully implemented for {symbol}")
+                    
+                    # Update timestamp for all symbols in this batch
+                    for sym, _ in symbols_to_update:
+                        self.last_prediction_time[sym] = current_time
+                    
+                    break  # Only regenerate once per check cycle
+                    
+                except Exception as e:
+                    self.logger.error(f"❌ Failed to regenerate predictions: {e}")
+    
     def check_signals(self):
         """Check for new ML signals and execute trades."""
         # Check global enable switch
@@ -358,17 +407,20 @@ class AutoTrader:
     def run(self):
         """Main trading loop."""
         self.running = True
-        self.logger.info("Auto-Trader started")
+        self.logger.info("🚀 Auto-Trader started")
         self.db.log('INFO', 'TRADER', 'Auto-Trader started')
         
         check_interval = self.config['auto_trader']['check_interval_seconds']
         
         try:
             while self.running:
-                # Check for new signals
+                # STEP 1: Ensure fresh predictions are available
+                self.ensure_fresh_predictions()
+                
+                # STEP 2: Check for new signals and execute trades
                 self.check_signals()
                 
-                # Monitor existing positions for exits
+                # STEP 3: Monitor existing positions for exits
                 self.monitor_positions()
                 
                 time.sleep(check_interval)

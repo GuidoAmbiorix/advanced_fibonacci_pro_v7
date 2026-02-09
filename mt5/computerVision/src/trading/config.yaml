@@ -3,42 +3,48 @@
 # Risk Management
 risk:
   max_positions: 3
-  max_daily_loss_pct: 5.0  # Maximum daily loss as % of account balance
-  min_confidence: 0.70  # Minimum ML prediction confidence to trade
-  position_size_pct: 2.0  # Position size as % of account balance
-  
+  max_daily_loss_pct: 5.0 # Maximum daily loss as % of account balance
+  min_confidence: 0.70 # Minimum ML prediction confidence to trade
+  position_size_pct: 2.0 # Position size as % of account balance
+
 # Trade Parameters
 trade:
   default_lot_size: 0.1
   stop_loss_pips: 10
   take_profit_pips: 15
   slippage_pips: 20
-  
+
 # Auto-Trader
 auto_trader:
-  enabled: false  # Start disabled for safety
-  check_interval_seconds: 60  # How often to check for new signals
+  enabled: false # Start disabled for safety
+  check_interval_seconds: 60 # How often to check for new signals
   symbols:
     - EURUSD
-  
+
 # MT5 Bridge
 bridge:
   url: "http://10.0.0.4:5000"
 
+# Prediction Settings
+prediction:
+  regeneration_interval_seconds: 300 # Generate new predictions every 5 minutes
+  max_prediction_age_seconds: 600 # Max age before prediction is considered stale
+  min_data_bars: 100 # Minimum bars needed for prediction
+
 # Killzone Settings
 killzones:
   enabled: true
-  timezone: "Europe/Athens"  # FundingPips uses GMT+2 (EET/EEST)
-  
+  timezone: "Europe/Athens" # FundingPips uses GMT+2 (EET/EEST)
+
   # Phase 6: Advanced Features
-  max_spread_pips: 3.0  # Maximum allowed spread in pips
-  
+  max_spread_pips: 3.0 # Maximum allowed spread in pips
+
   # Holiday calendar (YYYY-MM-DD format) - trading disabled on these dates
   holidays:
-    - "2026-01-01"  # New Year's Day
-    - "2026-12-25"  # Christmas
+    - "2026-01-01" # New Year's Day
+    - "2026-12-25" # Christmas
     # Add more holidays as needed
-  
+
   # Per-symbol overrides (optional)
   symbol_overrides:
     # Example: XAUUSD with different windows
@@ -49,25 +55,25 @@ killzones:
     #       start: "02:00"
     #       end: "11:00"
     #       days: [1, 2, 3, 4, 5]
-  
+
   # Define active trading windows (FundingPips broker time = GMT+2)
   # Days: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
   windows:
     - name: "London Open"
-      start: "10:00"  # 08:00 GMT = 10:00 GMT+2
-      end: "12:00"    # 10:00 GMT = 12:00 GMT+2
-      days: [0, 1, 2, 3, 4]  # Mon-Fri
+      start: "10:00" # 08:00 GMT = 10:00 GMT+2
+      end: "12:00" # 10:00 GMT = 12:00 GMT+2
+      days: [0, 1, 2, 3, 4] # Mon-Fri
       priority: high
-      
+
     - name: "NY Open"
-      start: "14:00"  # 12:00 GMT = 14:00 GMT+2 (8:00 AM DR)
-      end: "19:00"    # 17:00 GMT = 19:00 GMT+2
+      start: "14:00" # 12:00 GMT = 14:00 GMT+2 (8:00 AM DR)
+      end: "19:00" # 17:00 GMT = 19:00 GMT+2
       days: [0, 1, 2, 3, 4]
       priority: high
-    
+
     - name: "Asian Session"
-      start: "02:00"  # 00:00 GMT = 02:00 GMT+2
-      end: "06:00"    # 04:00 GMT = 06:00 GMT+2
+      start: "02:00" # 00:00 GMT = 02:00 GMT+2
+      end: "06:00" # 04:00 GMT = 06:00 GMT+2
       days: [0, 1, 2, 3, 4]
       priority: medium
 
@@ -75,21 +81,21 @@ killzones:
 exit_strategies:
   # Breakeven Stop
   breakeven_enabled: true
-  breakeven_ratio: 1.0  # Move to BE after 1:1 R:R
-  
+  breakeven_ratio: 1.0 # Move to BE after 1:1 R:R
+
   # Partial Profit Taking
   partial_profit_enabled: true
-  partial_profit_ratio: 0.5  # Take profit at 50% of TP
-  partial_close_percent: 0.5  # Close 50% of position
-  
+  partial_profit_ratio: 0.5 # Take profit at 50% of TP
+  partial_close_percent: 0.5 # Close 50% of position
+
   # Trailing Stop (ATR-based)
   trailing_stop_enabled: true
-  atr_multiplier: 1.5  # Trail at 1.5x ATR distance
-  atr_period: 14  # ATR calculation period
-  
+  atr_multiplier: 1.5 # Trail at 1.5x ATR distance
+  atr_period: 14 # ATR calculation period
+
   # Time-Based Exit
   time_exit_enabled: true
-  max_hold_minutes: 240  # Exit after 4 hours
-  
+  max_hold_minutes: 240 # Exit after 4 hours
+
   # Killzone Exit
-  close_on_killzone_end: false  # Keep positions open after killzone
+  close_on_killzone_end: false # Keep positions open after killzone
