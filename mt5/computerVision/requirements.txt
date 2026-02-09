@@ -1,3 +1,4 @@
+# Core dependencies
 MetaTrader5
 pandas
 numpy
@@ -5,17 +6,22 @@ matplotlib
 scikit-learn
 pyyaml
 requests
-MetaTrader5
-pandas
-numpy
-matplotlib
-scikit-learn
-pyyaml
-requests
+pytz
+
+# Web frameworks
 streamlit
 plotly
 flask
-schedule
+
+# ML libraries
 TA-Lib
 optuna
-pytz
+xgboost
+lightgbm
+
+# Deep Learning
+tensorflow>=2.13.0
+tensorboard
+
+# Scheduling
+schedule

@@ -707,9 +707,388 @@ elif page == "Training":
     
     # ==================== TAB 3: Advanced Models ====================
     with tab3:
-        st.header("Step 3: Advanced Models (LSTM, Ensemble)")
-        st.warning("🚧 Coming soon: LSTM, Transformer, and Ensemble models")
-        st.info("These models will be available in the next update")
+        st.header("Step 3: Advanced Deep Learning Models")
+        st.info("🚀 **TensorFlow/Keras models** with LSTM, CNN-LSTM, and Hybrid Ensemble for improved accuracy")
+        
+        # Create sub-tabs
+        subtab1, subtab2, subtab3, subtab4 = st.tabs([
+            "3.1 LSTM Model",
+            "3.2 CNN-LSTM Model",
+            "3.3 Hybrid Ensemble",
+            "3.4 Model Comparison"
+        ])
+        
+        # ========== Sub-tab 3.1: LSTM Model ==========
+        with subtab1:
+            st.subheader("🔷 LSTM Model Training")
+            st.caption("Long Short-Term Memory networks capture temporal patterns in price sequences")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                lstm_sequence_length = st.slider("Sequence Length", 10, 100, 20, step=5, key="lstm_seq_len")
+                st.caption("Number of bars to look back")
+            with col2:
+                lstm_units_1 = st.select_slider("LSTM Layer 1 Units", options=[32, 64, 128, 256], value=128, key="lstm_units_1")
+                lstm_units_2 = st.select_slider("LSTM Layer 2 Units", options=[16, 32, 64, 128], value=64, key="lstm_units_2")
+            with col3:
+                lstm_dropout = st.slider("Dropout Rate", 0.1, 0.5, 0.3, 0.05, key="lstm_dropout")
+                lstm_use_attention = st.checkbox("Use Attention Mechanism", value=True, key="lstm_attention")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                lstm_epochs = st.number_input("Epochs", 10, 200, 50, step=10, key="lstm_epochs")
+            with col2:
+                lstm_batch_size = st.select_slider("Batch Size", options=[16, 32, 64, 128], value=32, key="lstm_batch")
+            
+            if st.button("🚀 Train LSTM Model", type="primary", disabled=(data_count < 500)):
+                with st.spinner("Training LSTM model... This may take 10-20 minutes"):
+                    try:
+                        from src.training.tf_trainer import TensorFlowTrainer
+                        from pathlib import Path
+                        
+                        # Initialize trainer
+                        trainer = TensorFlowTrainer(db)
+                        
+                        # Prepare data
+                        progress_bar = st.progress(0, text="Preparing data...")
+                        X_train, X_val, X_test, y_train, y_val, y_test, scaler, features, info = trainer.prepare_data(
+                            symbol=train_symbol,
+                            timeframe=train_timeframe,
+                            sequence_length=lstm_sequence_length
+                        )
+                        progress_bar.progress(20, text="Data prepared. Training model...")
+                        
+                        # Train LSTM
+                        model, history = trainer.train_lstm(
+                            X_train, y_train, X_val, y_val,
+                            lstm_units=[lstm_units_1, lstm_units_2],
+                            dense_units=[32, 16],
+                            dropout_rate=lstm_dropout,
+                            use_attention=lstm_use_attention,
+                            epochs=lstm_epochs,
+                            batch_size=lstm_batch_size
+                        )
+                        progress_bar.progress(80, text="Evaluating model...")
+                        
+                        # Evaluate
+                        test_metrics = trainer.evaluate(X_test, y_test)
+                        progress_bar.progress(90, text="Saving model...")
+                        
+                        # Save
+                        train_metrics = {
+                            'accuracy': history.history['accuracy'][-1],
+                            'loss': history.history['loss'][-1]
+                        }
+                        
+                        model_id = trainer.save_model(
+                            symbol=train_symbol,
+                            timeframe=train_timeframe,
+                            model_type='LSTM',
+                            train_metrics=train_metrics,
+                            test_metrics=test_metrics,
+                            hyperparameters={
+                                'sequence_length': lstm_sequence_length,
+                                'lstm_units': [lstm_units_1, lstm_units_2],
+                                'dropout_rate': lstm_dropout,
+                                'use_attention': lstm_use_attention,
+                                'epochs': lstm_epochs,
+                                'batch_size': lstm_batch_size
+                            }
+                        )
+                        
+                        progress_bar.progress(100, text="Complete!")
+                        
+                        # Display results
+                        st.success(f"✅ LSTM model trained successfully! Model ID: {model_id}")
+                        
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Test Accuracy", f"{test_metrics['accuracy']:.2%}")
+                        with col2:
+                            st.metric("Test AUC", f"{test_metrics.get('auc', 0):.4f}")
+                        with col3:
+                            st.metric("Sequences Used", info['total_sequences'])
+                        
+                        # Plot training history
+                        st.subheader("Training History")
+                        history_df = pd.DataFrame({
+                            'Epoch': range(1, len(history.history['accuracy']) + 1),
+                            'Train Accuracy': history.history['accuracy'],
+                            'Val Accuracy': history.history['val_accuracy'],
+                            'Train Loss': history.history['loss'],
+                            'Val Loss': history.history['val_loss']
+                        })
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.line_chart(history_df.set_index('Epoch')[['Train Accuracy', 'Val Accuracy']])
+                        with col2:
+                            st.line_chart(history_df.set_index('Epoch')[['Train Loss', 'Val Loss']])
+                        
+                    except Exception as e:
+                        st.error(f"Training failed: {str(e)}")
+                        import traceback
+                        st.code(traceback.format_exc())
+        
+        # ========== Sub-tab 3.2: CNN-LSTM Model ==========
+        with subtab2:
+            st.subheader("🔶 CNN-LSTM Hybrid Model Training")
+            st.caption("CNN extracts patterns, LSTM captures temporal dependencies")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                cnn_sequence_length = st.slider("Sequence Length", 10, 100, 20, step=5, key="cnn_seq_len")
+                cnn_filters_1 = st.select_slider("CNN Filters 1", options=[32, 64, 128], value=64, key="cnn_filters_1")
+                cnn_filters_2 = st.select_slider("CNN Filters 2", options=[16, 32, 64], value=32, key="cnn_filters_2")
+            with col2:
+                cnn_kernel_size = st.slider("Kernel Size", 2, 5, 3, key="cnn_kernel")
+                cnn_lstm_units_1 = st.select_slider("LSTM Units 1", options=[64, 128, 256], value=128, key="cnn_lstm_1")
+                cnn_lstm_units_2 = st.select_slider("LSTM Units 2", options=[32, 64, 128], value=64, key="cnn_lstm_2")
+            with col3:
+                cnn_dropout = st.slider("Dropout Rate", 0.1, 0.5, 0.3, 0.05, key="cnn_dropout")
+                cnn_use_attention = st.checkbox("Use Attention", value=True, key="cnn_attention")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                cnn_epochs = st.number_input("Epochs", 10, 200, 50, step=10, key="cnn_epochs")
+            with col2:
+                cnn_batch_size = st.select_slider("Batch Size", options=[16, 32, 64], value=32, key="cnn_batch")
+            
+            if st.button("🚀 Train CNN-LSTM Model", type="primary", disabled=(data_count < 500)):
+                with st.spinner("Training CNN-LSTM model... This may take 15-30 minutes"):
+                    try:
+                        from src.training.tf_trainer import TensorFlowTrainer
+                        
+                        trainer = TensorFlowTrainer(db)
+                        
+                        progress_bar = st.progress(0, text="Preparing data...")
+                        X_train, X_val, X_test, y_train, y_val, y_test, scaler, features, info = trainer.prepare_data(
+                            symbol=train_symbol,
+                            timeframe=train_timeframe,
+                            sequence_length=cnn_sequence_length
+                        )
+                        progress_bar.progress(20, text="Training CNN-LSTM...")
+                        
+                        model, history = trainer.train_cnn_lstm(
+                            X_train, y_train, X_val, y_val,
+                            cnn_filters=[cnn_filters_1, cnn_filters_2],
+                            kernel_size=cnn_kernel_size,
+                            lstm_units=[cnn_lstm_units_1, cnn_lstm_units_2],
+                            dense_units=[32],
+                            dropout_rate=cnn_dropout,
+                            use_attention=cnn_use_attention,
+                            epochs=cnn_epochs,
+                            batch_size=cnn_batch_size
+                        )
+                        progress_bar.progress(80, text="Evaluating...")
+                        
+                        test_metrics = trainer.evaluate(X_test, y_test)
+                        progress_bar.progress(90, text="Saving...")
+                        
+                        train_metrics = {
+                            'accuracy': history.history['accuracy'][-1],
+                            'loss': history.history['loss'][-1]
+                        }
+                        
+                        model_id = trainer.save_model(
+                            symbol=train_symbol,
+                            timeframe=train_timeframe,
+                            model_type='CNN-LSTM',
+                            train_metrics=train_metrics,
+                            test_metrics=test_metrics,
+                            hyperparameters={
+                                'sequence_length': cnn_sequence_length,
+                                'cnn_filters': [cnn_filters_1, cnn_filters_2],
+                                'kernel_size': cnn_kernel_size,
+                                'lstm_units': [cnn_lstm_units_1, cnn_lstm_units_2],
+                                'dropout_rate': cnn_dropout,
+                                'use_attention': cnn_use_attention
+                            }
+                        )
+                        
+                        progress_bar.progress(100, text="Complete!")
+                        
+                        st.success(f"✅ CNN-LSTM model trained! Model ID: {model_id}")
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.metric("Test Accuracy", f"{test_metrics['accuracy']:.2%}")
+                        with col2:
+                            st.metric("Test AUC", f"{test_metrics.get('auc', 0):.4f}")
+                        
+                        # Plot history
+                        history_df = pd.DataFrame({
+                            'Epoch': range(1, len(history.history['accuracy']) + 1),
+                            'Train Accuracy': history.history['accuracy'],
+                            'Val Accuracy': history.history['val_accuracy']
+                        })
+                        st.line_chart(history_df.set_index('Epoch'))
+                        
+                    except Exception as e:
+                        st.error(f"Training failed: {str(e)}")
+                        import traceback
+                        st.code(traceback.format_exc())
+        
+        # ========== Sub-tab 3.3: Hybrid Ensemble ==========
+        with subtab3:
+            st.subheader("🎯 Hybrid Ensemble Training")
+            st.caption("Combines TensorFlow (LSTM, CNN-LSTM) with Scikit-Learn (XGBoost, RF, MLP) for best accuracy")
+            
+            st.markdown("#### Select Models to Include")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**TensorFlow Models:**")
+                include_lstm = st.checkbox("LSTM", value=True, key="ens_lstm")
+                include_cnn_lstm = st.checkbox("CNN-LSTM", value=True, key="ens_cnn_lstm")
+            with col2:
+                st.markdown("**Scikit-Learn Models:**")
+                include_xgb = st.checkbox("XGBoost", value=True, key="ens_xgb")
+                include_rf = st.checkbox("Random Forest", value=True, key="ens_rf")
+                include_mlp = st.checkbox("MLP", value=True, key="ens_mlp")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                ens_sequence_length = st.slider("Sequence Length (for LSTM)", 10, 50, 20, key="ens_seq")
+            with col2:
+                ens_voting = st.selectbox("Voting Method", ["soft", "hard"], key="ens_voting")
+                st.caption("Soft = probability averaging, Hard = majority vote")
+            
+            n_models_selected = sum([include_lstm, include_cnn_lstm, include_xgb, include_rf, include_mlp])
+            st.info(f"📊 Selected {n_models_selected} models for ensemble")
+            
+            if st.button("🎯 Train Hybrid Ensemble", type="primary", disabled=(data_count < 500 or n_models_selected < 2)):
+                with st.spinner("Training hybrid ensemble... This may take 30-60 minutes"):
+                    try:
+                        from src.training.ensemble_trainer import HybridEnsembleTrainer
+                        
+                        trainer = HybridEnsembleTrainer(db)
+                        
+                        progress_bar = st.progress(0, text="Training ensemble models...")
+                        
+                        ensemble, metrics = trainer.train_ensemble(
+                            symbol=train_symbol,
+                            timeframe=train_timeframe,
+                            include_lstm=include_lstm,
+                            include_cnn_lstm=include_cnn_lstm,
+                            include_xgboost=include_xgb,
+                            include_rf=include_rf,
+                            include_mlp=include_mlp,
+                            sequence_length=ens_sequence_length,
+                            voting=ens_voting
+                        )
+                        
+                        progress_bar.progress(90, text="Saving ensemble...")
+                        
+                        model_id = trainer.save_ensemble(train_symbol, train_timeframe, metrics)
+                        
+                        progress_bar.progress(100, text="Complete!")
+                        
+                        st.success(f"✅ Hybrid ensemble trained! Model ID: {model_id}")
+                        
+                        # Display metrics
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Ensemble Test Accuracy", f"{metrics['ensemble_test_accuracy']:.2%}")
+                        with col2:
+                            st.metric("Number of Models", metrics['n_models'])
+                        with col3:
+                            improvement = (metrics['ensemble_test_accuracy'] - max(metrics['individual_scores'].values())) * 100
+                            st.metric("Improvement", f"+{improvement:.1f}%", delta="vs best individual")
+                        
+                        # Individual model scores
+                        st.subheader("Individual Model Performance")
+                        scores_df = pd.DataFrame({
+                            'Model': list(metrics['individual_scores'].keys()),
+                            'Accuracy': list(metrics['individual_scores'].values())
+                        }).sort_values('Accuracy', ascending=False)
+                        
+                        st.dataframe(
+                            scores_df,
+                            column_config={
+                                "Accuracy": st.column_config.ProgressColumn(
+                                    "Accuracy",
+                                    format="%.2f%%",
+                                    min_value=0,
+                                    max_value=1,
+                                )
+                            },
+                            hide_index=True,
+                            use_container_width=True
+                        )
+                        
+                    except Exception as e:
+                        st.error(f"Ensemble training failed: {str(e)}")
+                        import traceback
+                        st.code(traceback.format_exc())
+        
+        # ========== Sub-tab 3.4: Model Comparison ==========
+        with subtab4:
+            st.subheader("📊 Model Comparison")
+            st.caption("Compare all trained models and select the best one")
+            
+            # Get all models from database
+            query = "SELECT * FROM models ORDER BY created_at DESC LIMIT 20"
+            with db.get_connection() as conn:
+                models_df = pd.read_sql_query(query, conn)
+            
+            if len(models_df) > 0:
+                # Display comparison table
+                comparison_df = models_df[['id', 'name', 'model_type', 'validation_accuracy', 'training_accuracy', 'created_at']].copy()
+                comparison_df['validation_accuracy'] = comparison_df['validation_accuracy'] * 100
+                comparison_df['training_accuracy'] = comparison_df['training_accuracy'] * 100
+                
+                st.dataframe(
+                    comparison_df,
+                    column_config={
+                        "id": "ID",
+                        "name": "Model Name",
+                        "model_type": "Type",
+                        "validation_accuracy": st.column_config.ProgressColumn(
+                            "Val Accuracy (%)",
+                            format="%.2f%%",
+                            min_value=0,
+                            max_value=100,
+                        ),
+                        "training_accuracy": st.column_config.ProgressColumn(
+                            "Train Accuracy (%)",
+                            format="%.2f%%",
+                            min_value=0,
+                            max_value=100,
+                        ),
+                        "created_at": "Created"
+                    },
+                    hide_index=True,
+                    use_container_width=True
+                )
+                
+                # Select best model
+                st.markdown("---")
+                st.subheader("Set Active Model")
+                
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    selected_model_id = st.selectbox(
+                        "Select model to activate",
+                        options=models_df['id'].tolist(),
+                        format_func=lambda x: f"ID {x}: {models_df[models_df['id']==x]['name'].values[0]} ({models_df[models_df['id']==x]['validation_accuracy'].values[0]:.2%})"
+                    )
+                with col2:
+                    st.write("")
+                    st.write("")
+                    if st.button("✅ Set as Active", type="primary"):
+                        db.set_active_model(selected_model_id)
+                        st.success(f"Model {selected_model_id} is now active!")
+                        st.rerun()
+                
+                # Show active model
+                active_model_id = db.get_config('active_model_id')
+                if active_model_id:
+                    active_model = models_df[models_df['id'] == int(active_model_id)]
+                    if len(active_model) > 0:
+                        st.info(f"🟢 **Currently Active:** {active_model['name'].values[0]} (ID: {active_model_id})")
+            else:
+                st.warning("No models trained yet. Train a model in Tab 1, 2, or 3 first.")
+
     
     # ==================== TAB 4: Backtesting ====================
     with tab4:
