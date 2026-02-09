@@ -391,6 +391,51 @@ elif page == "Trading Control":
         max_daily_loss = st.number_input("Max Daily Loss %", value=float(config.get('max_daily_loss_pct', 5.0)), min_value=1.0, max_value=20.0)
         default_lot = st.number_input("Default Lot Size (Fallback)", value=float(config.get('default_lot_size', 0.01)), min_value=0.01, step=0.01)
     
+    st.markdown("---")
+    
+    # Exit Strategy Settings
+    st.markdown("#### 🎯 Exit Strategy & Timeframe Settings")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        trading_timeframe = st.selectbox(
+            "Trading Timeframe",
+            ["M5", "M15", "M30", "H1", "H4", "D1"],
+            index=["M5", "M15", "M30", "H1", "H4", "D1"].index(config.get('trading_timeframe', 'H1')),
+            help="Timeframe for SL/TP calculation and ATR"
+        )
+    
+    with col2:
+        atr_multiplier = st.slider(
+            "ATR Multiplier (SL Distance)", 
+            0.5, 3.0, 
+            float(config.get('atr_multiplier', '1.0')), 
+            0.1,
+            help="H1: 1.0 | M5: 1.5 | H4: 0.8"
+        )
+        st.caption(f"SL = ATR × {atr_multiplier}")
+    
+    with col3:
+        max_hold_hours = st.number_input(
+            "Max Hold Time (hours)", 
+            1, 72, 
+            int(config.get('max_hold_minutes', '1440')) // 60,
+            help="H1: 24h | M5: 4h | H4: 48h"
+        )
+        st.caption(f"= {max_hold_hours * 60} minutes")
+    
+    # Show estimated SL/TP for selected timeframe
+    atr_estimates = {
+        'M5': 0.0010, 'M15': 0.0020, 'M30': 0.0030,
+        'H1': 0.0050, 'H4': 0.0100, 'D1': 0.0200
+    }
+    estimated_atr = atr_estimates.get(trading_timeframe, 0.0050)
+    estimated_sl_pips = (estimated_atr * atr_multiplier) * 10000  # Convert to pips
+    estimated_tp_pips = estimated_sl_pips * 2  # 1:2 R:R
+    
+    st.info(f"📊 **Estimated for {trading_timeframe}:** SL ≈ {estimated_sl_pips:.0f} pips | TP ≈ {estimated_tp_pips:.0f} pips (1:2 R:R)")
+    
     if st.button("💾 Save Configuration"):
         # Save risk settings (account balance is auto-fetched, no need to save)
         db.set_config('risk_per_trade_pct', str(risk_per_trade_pct))
@@ -402,8 +447,13 @@ elif page == "Trading Control":
         db.set_config('max_daily_loss_pct', str(max_daily_loss))
         db.set_config('default_lot_size', str(default_lot))
         
-        db.log('INFO', 'DASHBOARD', f'Configuration updated: Balance=${account_balance}, Risk={risk_per_trade_pct}%, Method={position_sizing_method}')
-        st.success("✅ Configuration saved!")
+        # Save exit strategy settings
+        db.set_config('trading_timeframe', trading_timeframe)
+        db.set_config('atr_multiplier', str(atr_multiplier))
+        db.set_config('max_hold_minutes', str(max_hold_hours * 60))
+        
+        db.log('INFO', 'DASHBOARD', f'Configuration updated: Balance=${account_balance}, Risk={risk_per_trade_pct}%, Method={position_sizing_method}, Timeframe={trading_timeframe}, ATR={atr_multiplier}x')
+        st.success(f"✅ Configuration saved! Trading on {trading_timeframe} with {atr_multiplier}x ATR multiplier")
 
 # ==================== Live Trades Page ====================
 elif page == "Live Trades":
@@ -734,16 +784,22 @@ elif page == "Training":
                 lstm_dropout = st.slider("Dropout Rate", 0.1, 0.5, 0.3, 0.05, key="lstm_dropout")
                 lstm_use_attention = st.checkbox("Use Attention Mechanism", value=True, key="lstm_attention")
             
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
                 lstm_epochs = st.number_input("Epochs", 10, 200, 50, step=10, key="lstm_epochs")
             with col2:
                 lstm_batch_size = st.select_slider("Batch Size", options=[16, 32, 64, 128], value=32, key="lstm_batch")
+            with col3:
+                lstm_use_optuna = st.checkbox("🔍 Optimize with Optuna", value=False, key="lstm_optuna")
+                if lstm_use_optuna:
+                    lstm_optuna_trials = st.number_input("Optuna Trials", 5, 50, 20, step=5, key="lstm_optuna_trials")
+                    st.caption("Auto-finds best hyperparameters")
             
             if st.button("🚀 Train LSTM Model", type="primary", disabled=(data_count < 500)):
                 with st.spinner("Training LSTM model... This may take 10-20 minutes"):
                     try:
                         from src.training.tf_trainer import TensorFlowTrainer
+                        from src.training.optuna_optimizer import OptunaOptimizer
                         from pathlib import Path
                         
                         # Initialize trainer
@@ -756,25 +812,75 @@ elif page == "Training":
                             timeframe=train_timeframe,
                             sequence_length=lstm_sequence_length
                         )
-                        progress_bar.progress(20, text="Data prepared. Training model...")
+                        progress_bar.progress(20, text="Data prepared.")
                         
-                        # Train LSTM
-                        model, history = trainer.train_lstm(
-                            X_train, y_train, X_val, y_val,
-                            lstm_units=[lstm_units_1, lstm_units_2],
-                            dense_units=[32, 16],
-                            dropout_rate=lstm_dropout,
-                            use_attention=lstm_use_attention,
-                            epochs=lstm_epochs,
-                            batch_size=lstm_batch_size
-                        )
+                        # Check if using Optuna optimization
+                        if lstm_use_optuna:
+                            progress_bar.progress(30, text=f"Running Optuna optimization ({lstm_optuna_trials} trials)...")
+                            st.info(f"🔍 **Optimizing hyperparameters** with {lstm_optuna_trials} trials. This may take 20-40 minutes...")
+                            
+                            # Run Optuna optimization
+                            optimizer = OptunaOptimizer(db)
+                            best_params = optimizer.optimize_lstm(
+                                X_train, y_train, X_val, y_val,
+                                n_trials=lstm_optuna_trials
+                            )
+                            
+                            # Display best params
+                            st.success(f"✅ **Optimization complete!** Best params found:")
+                            st.json(best_params)
+                            
+                            # Train final model with best params
+                            progress_bar.progress(60, text="Training final model with best params...")
+                            model, history = trainer.train_lstm(
+                                X_train, y_train, X_val, y_val,
+                                lstm_units=[best_params['lstm_units_1'], best_params['lstm_units_2']],
+                                dense_units=[32, 16],
+                                dropout_rate=best_params['dropout'],
+                                use_attention=lstm_use_attention,
+                                epochs=lstm_epochs,
+                                batch_size=best_params['batch_size']
+                            )
+                            
+                            # Save best params for display
+                            final_hyperparams = {
+                                'sequence_length': lstm_sequence_length,
+                                'lstm_units': [best_params['lstm_units_1'], best_params['lstm_units_2']],
+                                'dropout_rate': best_params['dropout'],
+                                'use_attention': lstm_use_attention,
+                                'epochs': lstm_epochs,
+                                'batch_size': best_params['batch_size'],
+                                'optimized_with_optuna': True,
+                                'optuna_trials': lstm_optuna_trials
+                            }
+                        else:
+                            # Train with manual parameters
+                            progress_bar.progress(30, text="Training model with manual params...")
+                            model, history = trainer.train_lstm(
+                                X_train, y_train, X_val, y_val,
+                                lstm_units=[lstm_units_1, lstm_units_2],
+                                dense_units=[32, 16],
+                                dropout_rate=lstm_dropout,
+                                use_attention=lstm_use_attention,
+                                epochs=lstm_epochs,
+                                batch_size=lstm_batch_size
+                            )
+                            
+                            final_hyperparams = {
+                                'sequence_length': lstm_sequence_length,
+                                'lstm_units': [lstm_units_1, lstm_units_2],
+                                'dropout_rate': lstm_dropout,
+                                'use_attention': lstm_use_attention,
+                                'epochs': lstm_epochs,
+                                'batch_size': lstm_batch_size
+                            }
+                        
+                        # Evaluate model
                         progress_bar.progress(80, text="Evaluating model...")
-                        
-                        # Evaluate
                         test_metrics = trainer.evaluate(X_test, y_test)
-                        progress_bar.progress(90, text="Saving model...")
                         
-                        # Save
+                        # Save model
+                        progress_bar.progress(90, text="Saving model...")
                         train_metrics = {
                             'accuracy': history.history['accuracy'][-1],
                             'loss': history.history['loss'][-1]
@@ -786,14 +892,7 @@ elif page == "Training":
                             model_type='LSTM',
                             train_metrics=train_metrics,
                             test_metrics=test_metrics,
-                            hyperparameters={
-                                'sequence_length': lstm_sequence_length,
-                                'lstm_units': [lstm_units_1, lstm_units_2],
-                                'dropout_rate': lstm_dropout,
-                                'use_attention': lstm_use_attention,
-                                'epochs': lstm_epochs,
-                                'batch_size': lstm_batch_size
-                            }
+                            hyperparameters=final_hyperparams
                         )
                         
                         progress_bar.progress(100, text="Complete!")

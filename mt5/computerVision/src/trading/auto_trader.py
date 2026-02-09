@@ -135,9 +135,12 @@ class AutoTrader:
             
         self.logger.info(f"Using entry price: {entry_price} for {symbol} {direction}")
         
+        # Get timeframe from database config (set in dashboard)
+        timeframe = self.db.get_config('trading_timeframe', 'H1')
+        
         # Calculate SL/TP FIRST (needed for risk-based position sizing)
         action = "BUY" if direction == "UP ▲" or direction == "BUY" else "SELL"
-        sl, tp = self.risk_manager.calculate_sl_tp(symbol, entry_price, action)
+        sl, tp = self.risk_manager.calculate_sl_tp(symbol, entry_price, action, timeframe=timeframe)
         
         # NOW calculate position size based on SL distance (for risk-based method)
         # Pass entry_price and stop_loss for risk-based calculation
