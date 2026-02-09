@@ -337,6 +337,50 @@ elif page == "Trading Control":
     
     config = db.get_all_config()
     
+    # Account & Risk Settings
+    st.markdown("#### 💰 Account & Risk Settings")
+    
+    # Fetch account balance from MT5 Bridge
+    account_balance = 0.0
+    try:
+        bridge_url = os.getenv('BRIDGE_URL', 'http://host.docker.internal:5000')
+        response = requests.get(f"{bridge_url}/status", timeout=2)
+        if response.status_code == 200:
+            status_data = response.json()
+            if status_data.get('account_info'):
+                account_balance = status_data['account_info']['balance']
+    except:
+        pass
+    
+    # Display account balance (read-only from MT5)
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if account_balance > 0:
+            st.metric("Account Balance (MT5)", f"${account_balance:,.2f}", help="Fetched automatically from MT5")
+        else:
+            st.warning("⚠️ MT5 Bridge offline - cannot fetch balance")
+            account_balance = float(config.get('account_size_fallback', 5000.0))
+            st.caption(f"Using fallback: ${account_balance:,.2f}")
+    
+    with col2:
+        risk_per_trade_pct = st.slider("Risk Per Trade (%)", 0.1, 5.0, float(config.get('risk_per_trade_pct', 1.0)), 0.1)
+    
+    with col3:
+        position_sizing_method = st.selectbox(
+            "Position Sizing Method", 
+            ["risk_based", "fixed_lot"],
+            index=0 if config.get('position_sizing_method', 'risk_based') == 'risk_based' else 1
+        )
+    
+    # Display calculated risk amount
+    risk_amount = account_balance * (risk_per_trade_pct / 100)
+    st.info(f"💵 **Risk per trade:** ${risk_amount:.2f} ({risk_per_trade_pct}% of ${account_balance:,.2f})")
+    
+    st.markdown("---")
+    
+    # Trading Limits
+    st.markdown("#### 🛡️ Trading Limits")
     col1, col2 = st.columns(2)
     
     with col1:
@@ -345,15 +389,21 @@ elif page == "Trading Control":
     
     with col2:
         max_daily_loss = st.number_input("Max Daily Loss %", value=float(config.get('max_daily_loss_pct', 5.0)), min_value=1.0, max_value=20.0)
-        default_lot = st.number_input("Default Lot Size", value=float(config.get('default_lot_size', 0.01)), min_value=0.01, step=0.01)
+        default_lot = st.number_input("Default Lot Size (Fallback)", value=float(config.get('default_lot_size', 0.01)), min_value=0.01, step=0.01)
     
     if st.button("💾 Save Configuration"):
+        # Save risk settings (account balance is auto-fetched, no need to save)
+        db.set_config('risk_per_trade_pct', str(risk_per_trade_pct))
+        db.set_config('position_sizing_method', position_sizing_method)
+        
+        # Save trading limits
         db.set_config('max_positions', str(max_positions))
         db.set_config('min_confidence', str(min_confidence))
         db.set_config('max_daily_loss_pct', str(max_daily_loss))
         db.set_config('default_lot_size', str(default_lot))
-        db.log('INFO', 'DASHBOARD', 'Configuration updated')
-        st.success("Configuration saved!")
+        
+        db.log('INFO', 'DASHBOARD', f'Configuration updated: Balance=${account_balance}, Risk={risk_per_trade_pct}%, Method={position_sizing_method}')
+        st.success("✅ Configuration saved!")
 
 # ==================== Live Trades Page ====================
 elif page == "Live Trades":

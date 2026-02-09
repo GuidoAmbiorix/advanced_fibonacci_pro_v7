@@ -100,21 +100,6 @@ class AutoTrader:
                        {'symbol': symbol, 'direction': direction, 'confidence': confidence})
             return
         
-        # Calculate position size based on CAPITAL BASE (Allocated amount)
-        # Risk manager usually takes total balance, so we scale it?
-        # A simple approach: 
-        # position_size = (capital_base * risk_per_trade) / stop_loss_dist
-        # For now, let's use the risk manager but pretend capital_base is the balance 
-        # IF we want to restrict risk to that allocation.
-        # BETTER: risk_manager.calculate_position_size uses config['default_lot_size'] or % risk.
-        # We should probably scale the result by (capital_base / account_balance)
-        
-        base_lot_size = self.risk_manager.calculate_position_size(symbol, account_balance)
-        
-        # Adjust for allocation weight
-        allocation_ratio = capital_base / account_balance if account_balance > 0 else 0
-        lot_size = max(0.01, round(base_lot_size * allocation_ratio, 2))
-        
         # Get current price for SL/TP calculation
         try:
             response = requests.get(f"{self.bridge_url}/status")
@@ -150,9 +135,22 @@ class AutoTrader:
             
         self.logger.info(f"Using entry price: {entry_price} for {symbol} {direction}")
         
-        # Calculate SL/TP
+        # Calculate SL/TP FIRST (needed for risk-based position sizing)
         action = "BUY" if direction == "UP ▲" or direction == "BUY" else "SELL"
         sl, tp = self.risk_manager.calculate_sl_tp(symbol, entry_price, action)
+        
+        # NOW calculate position size based on SL distance (for risk-based method)
+        # Pass entry_price and stop_loss for risk-based calculation
+        base_lot_size = self.risk_manager.calculate_position_size(
+            symbol=symbol,
+            account_balance=account_balance,
+            entry_price=entry_price,
+            stop_loss=sl
+        )
+        
+        # Adjust for allocation weight
+        allocation_ratio = capital_base / account_balance if account_balance > 0 else 0
+        lot_size = max(0.01, round(base_lot_size * allocation_ratio, 2))
         
         # Execute trade via bridge
         try:

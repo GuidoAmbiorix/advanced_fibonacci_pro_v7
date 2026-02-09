@@ -58,22 +58,81 @@ class RiskManager:
         
         return True, "OK"
     
-    def calculate_position_size(self, symbol: str, account_balance: float) -> float:
+    def calculate_position_size_risk_based(self, symbol: str, entry_price: float, 
+                                           stop_loss: float, account_balance: float) -> float:
         """
-        Calculate position size based on account balance.
+        Calculate position size based on risk percentage and SL distance.
         
+        Formula:
+        Risk Amount = Account Balance × Risk %
+        Position Size = Risk Amount / (SL Distance × Contract Size)
+        
+        Args:
+            symbol: Trading symbol
+            entry_price: Entry price
+            stop_loss: Stop loss price
+            account_balance: Account balance
+            
         Returns:
             Lot size
         """
-        position_size_pct = self.config['risk']['position_size_pct']
-        risk_amount = account_balance * (position_size_pct / 100)
+        # Get risk percentage from config
+        risk_pct = float(self.config.get('risk_per_trade_pct', 1.0))
+        risk_amount = account_balance * (risk_pct / 100)
         
-        # Simple calculation: use default lot size
-        # In production, you'd calculate based on stop loss distance
-        lot_size = self.config['trade']['default_lot_size']
+        # Calculate SL distance
+        sl_distance = abs(entry_price - stop_loss)
         
-        self.logger.info(f"Calculated position size: {lot_size} lots (risk: ${risk_amount:.2f})")
+        if sl_distance == 0:
+            self.logger.warning(f"SL distance is 0, using default lot size")
+            return float(self.config['trade']['default_lot_size'])
+        
+        # Contract size (standard lot = 100,000 for forex)
+        # For XAUUSD (Gold), it's typically 100 oz
+        if 'XAU' in symbol or 'GOLD' in symbol:
+            contract_size = 100
+        else:
+            contract_size = 100000  # Standard forex lot
+        
+        # Calculate position size
+        # Risk Amount / (SL Distance × Contract Size) = Lots
+        lot_size = risk_amount / (sl_distance * contract_size)
+        
+        # Round to 2 decimal places and enforce minimum
+        lot_size = max(0.01, round(lot_size, 2))
+        
+        self.logger.info(f"Risk-based position size: {lot_size} lots (Risk: ${risk_amount:.2f}, SL Distance: {sl_distance:.5f})")
+        
         return lot_size
+    
+    def calculate_position_size(self, symbol: str, account_balance: float, 
+                               entry_price: float = None, stop_loss: float = None) -> float:
+        """
+        Calculate position size based on configured method.
+        
+        Methods:
+        - risk_based: Calculate based on risk % and SL distance
+        - fixed_lot: Use fixed lot size from config
+        
+        Args:
+            symbol: Trading symbol
+            account_balance: Account balance
+            entry_price: Entry price (required for risk_based)
+            stop_loss: Stop loss price (required for risk_based)
+            
+        Returns:
+            Lot size
+        """
+        # Get position sizing method from config
+        method = self.config.get('position_sizing_method', 'risk_based')
+        
+        if method == 'risk_based' and entry_price is not None and stop_loss is not None:
+            return self.calculate_position_size_risk_based(symbol, entry_price, stop_loss, account_balance)
+        else:
+            # Fallback to fixed lot size
+            lot_size = float(self.config['trade']['default_lot_size'])
+            self.logger.info(f"Using fixed lot size: {lot_size} lots")
+            return lot_size
     
     def calculate_sl_tp(self, symbol: str, entry_price: float, direction: str, bridge_url: str = "http://10.0.0.4:5000") -> tuple[float, float]:
         """

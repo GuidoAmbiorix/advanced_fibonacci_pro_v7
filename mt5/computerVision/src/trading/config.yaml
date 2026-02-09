@@ -5,7 +5,11 @@ risk:
   max_positions: 3
   max_daily_loss_pct: 5.0 # Maximum daily loss as % of account balance
   min_confidence: 0.70 # Minimum ML prediction confidence to trade
-  position_size_pct: 2.0 # Position size as % of account balance
+
+# Account & Position Sizing
+account_size: 5000.0 # Your account balance in USD
+risk_per_trade_pct: 1.0 # Risk 1% per trade = $50 on $5k account
+position_sizing_method: "risk_based" # Options: "risk_based" or "fixed_lot"
 
 # Trade Parameters
 trade:
