@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only necessary requirements (not MetaTrader5)
-COPY requirements.txt ./
-RUN pip install --no-cache-dir pandas numpy scikit-learn pyyaml requests TA-Lib
+COPY requirements-linux.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY src/ ./src/

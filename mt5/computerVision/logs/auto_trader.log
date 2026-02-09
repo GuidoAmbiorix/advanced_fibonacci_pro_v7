@@ -1366,3 +1366,562 @@
 2026-02-09 00:49:36,486 - __main__ - WARNING - Trade rejected: Position already open for GBPUSD
 2026-02-09 00:49:36,514 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 79.10%)
 2026-02-09 00:49:36,522 - __main__ - WARNING - Trade rejected: Position already open for EURUSD
+2026-02-09 00:53:06,762 - __main__ - INFO - Auto-Trader initialized
+2026-02-09 00:53:06,762 - __main__ - INFO - Auto-Trader started
+2026-02-09 00:55:07,801 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 00:55:07,844 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (90.5%)
+2026-02-09 00:55:07,852 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:55:07,880 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 00:55:07,888 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:55:07,919 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (78.7%)
+2026-02-09 00:55:07,927 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 90.46%)
+2026-02-09 00:55:07,939 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $29.64)
+2026-02-09 00:55:07,949 - __main__ - INFO - Using entry price: 156.919 for USDJPY SELL
+2026-02-09 00:55:07,953 - src.trading.risk_manager - INFO - USDJPY minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 00:55:07,953 - src.trading.risk_manager - INFO - Calculated SL/TP for USDJPY: SL=157.019, TP=156.769 (distance=0.10000)
+2026-02-09 00:55:08,147 - __main__ - INFO - Trade executed: {'price': 156.919, 'success': True, 'ticket': 752347048, 'volume': 0.01}
+2026-02-09 00:55:08,171 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 00:55:08,183 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $29.64)
+2026-02-09 00:55:08,192 - __main__ - INFO - Using entry price: 1.36094 for GBPUSD BUY
+2026-02-09 00:55:08,196 - src.trading.risk_manager - INFO - GBPUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 00:55:08,196 - src.trading.risk_manager - INFO - Calculated SL/TP for GBPUSD: SL=1.35994, TP=1.36244 (distance=0.00100)
+2026-02-09 00:55:08,396 - __main__ - INFO - Trade executed: {'price': 1.3609499999999999, 'success': True, 'ticket': 752347056, 'volume': 0.01}
+2026-02-09 00:55:08,423 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 78.73%)
+2026-02-09 00:55:08,436 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $29.64)
+2026-02-09 00:55:08,445 - __main__ - INFO - Using entry price: 1.183 for EURUSD BUY
+2026-02-09 00:55:08,449 - src.trading.risk_manager - INFO - EURUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 00:55:08,449 - src.trading.risk_manager - INFO - Calculated SL/TP for EURUSD: SL=1.182, TP=1.1845 (distance=0.00100)
+2026-02-09 00:55:08,654 - __main__ - INFO - Trade executed: {'price': 1.18299, 'success': True, 'ticket': 752347066, 'volume': 0.01}
+2026-02-09 00:56:08,709 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 00:56:08,755 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (92.9%)
+2026-02-09 00:56:08,765 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:56:08,793 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 00:56:08,801 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:56:08,830 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (78.5%)
+2026-02-09 00:56:08,839 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 92.88%)
+2026-02-09 00:56:08,848 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:56:08,870 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 00:56:08,878 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:56:08,900 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 78.49%)
+2026-02-09 00:56:08,908 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:57:08,962 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 00:57:09,003 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (93.2%)
+2026-02-09 00:57:09,012 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:57:09,039 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 00:57:09,047 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:57:09,075 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (78.5%)
+2026-02-09 00:57:09,083 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 93.18%)
+2026-02-09 00:57:09,093 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:57:09,115 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 00:57:09,124 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:57:09,146 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 78.52%)
+2026-02-09 00:57:09,155 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:58:09,214 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 00:58:09,259 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (93.8%)
+2026-02-09 00:58:09,267 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:58:09,295 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 00:58:09,304 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:58:09,334 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (78.1%)
+2026-02-09 00:58:09,342 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 93.83%)
+2026-02-09 00:58:09,350 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:58:09,373 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 00:58:09,381 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:58:09,402 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 78.09%)
+2026-02-09 00:58:09,410 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:59:09,455 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 00:59:09,496 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (90.4%)
+2026-02-09 00:59:09,505 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:59:09,535 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 00:59:09,543 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:59:09,573 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (77.5%)
+2026-02-09 00:59:09,582 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 90.37%)
+2026-02-09 00:59:09,590 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:59:09,612 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 00:59:09,620 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:59:09,641 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 77.55%)
+2026-02-09 00:59:09,649 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:00:09,704 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:00:09,746 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (90.8%)
+2026-02-09 01:00:09,754 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:00:09,784 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:00:09,792 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:00:09,821 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (77.5%)
+2026-02-09 01:00:09,830 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 90.76%)
+2026-02-09 01:00:09,838 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:00:09,862 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:00:09,869 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:00:09,893 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 77.50%)
+2026-02-09 01:00:09,901 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:01:09,947 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:01:09,986 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (90.6%)
+2026-02-09 01:01:09,996 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:01:10,024 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:01:10,033 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:01:10,062 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (81.3%)
+2026-02-09 01:01:10,071 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 90.60%)
+2026-02-09 01:01:10,080 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:01:10,102 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:01:10,110 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:01:10,132 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 81.26%)
+2026-02-09 01:01:10,140 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:02:10,185 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:02:10,229 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (89.7%)
+2026-02-09 01:02:10,238 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:02:10,270 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:02:10,278 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:02:10,308 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (81.4%)
+2026-02-09 01:02:10,316 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 89.71%)
+2026-02-09 01:02:10,325 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:02:10,348 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:02:10,357 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:02:10,381 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 81.43%)
+2026-02-09 01:02:10,390 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:03:10,438 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:03:10,479 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (91.2%)
+2026-02-09 01:03:10,487 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:03:10,516 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:03:10,524 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:03:10,554 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (82.2%)
+2026-02-09 01:03:10,565 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 91.19%)
+2026-02-09 01:03:10,573 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:03:10,597 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:03:10,604 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:03:10,627 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 82.15%)
+2026-02-09 01:03:10,635 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:04:10,676 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:04:10,720 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (92.4%)
+2026-02-09 01:04:10,729 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:04:10,759 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:04:10,766 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:04:10,795 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (82.0%)
+2026-02-09 01:04:10,803 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 92.42%)
+2026-02-09 01:04:10,813 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:04:10,836 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:04:10,844 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:04:10,866 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 81.95%)
+2026-02-09 01:04:10,875 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:05:10,915 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:05:10,955 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (92.4%)
+2026-02-09 01:05:10,964 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:05:10,993 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:05:11,001 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:05:11,030 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (81.5%)
+2026-02-09 01:05:11,039 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 92.40%)
+2026-02-09 01:05:11,047 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:05:11,068 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:05:11,077 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:05:11,098 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 81.54%)
+2026-02-09 01:05:11,106 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:06:11,146 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:06:11,196 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (94.1%)
+2026-02-09 01:06:11,205 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:06:11,232 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:06:11,240 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:06:11,268 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.3%)
+2026-02-09 01:06:11,277 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 94.09%)
+2026-02-09 01:06:11,285 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:06:11,306 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:06:11,318 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:06:11,348 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.29%)
+2026-02-09 01:06:11,360 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:07:11,411 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:07:11,457 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (93.4%)
+2026-02-09 01:07:11,466 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:07:11,495 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:07:11,502 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:07:11,531 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.7%)
+2026-02-09 01:07:11,539 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 93.42%)
+2026-02-09 01:07:11,547 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:07:11,568 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:07:11,577 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:07:11,598 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.74%)
+2026-02-09 01:07:11,606 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:08:11,649 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:08:11,689 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (90.0%)
+2026-02-09 01:08:11,699 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:08:11,729 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:08:11,737 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:08:11,766 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.5%)
+2026-02-09 01:08:11,774 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 89.96%)
+2026-02-09 01:08:11,782 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:08:11,803 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:08:11,812 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:08:11,834 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.50%)
+2026-02-09 01:08:11,842 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:09:11,907 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:09:11,954 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (90.9%)
+2026-02-09 01:09:11,963 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:09:11,992 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:09:12,000 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:09:12,029 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.3%)
+2026-02-09 01:09:12,039 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 90.89%)
+2026-02-09 01:09:12,047 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:09:12,070 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:09:12,079 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:09:12,101 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.31%)
+2026-02-09 01:09:12,110 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:10:12,166 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:10:12,209 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (90.8%)
+2026-02-09 01:10:12,217 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:10:12,249 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:10:12,257 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:10:12,287 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.6%)
+2026-02-09 01:10:12,296 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 90.78%)
+2026-02-09 01:10:12,306 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:10:12,331 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:10:12,339 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:10:12,363 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.58%)
+2026-02-09 01:10:12,371 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:11:12,414 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:11:12,458 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (87.4%)
+2026-02-09 01:11:12,467 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:11:12,497 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:11:12,505 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:11:12,535 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (83.9%)
+2026-02-09 01:11:12,544 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 87.43%)
+2026-02-09 01:11:12,554 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:11:12,580 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:11:12,589 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:11:12,613 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 83.89%)
+2026-02-09 01:11:12,623 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:12:12,668 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:12:12,710 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (87.7%)
+2026-02-09 01:12:12,720 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:12:12,749 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:12:12,757 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:12:12,787 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.1%)
+2026-02-09 01:12:12,797 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 87.74%)
+2026-02-09 01:12:12,805 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:12:12,828 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:12:12,836 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:12:12,859 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.14%)
+2026-02-09 01:12:12,868 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:13:12,925 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:13:12,966 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (87.6%)
+2026-02-09 01:13:12,978 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:13:13,006 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:13:13,016 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:13:13,045 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (85.0%)
+2026-02-09 01:13:13,055 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 87.56%)
+2026-02-09 01:13:13,064 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:13:13,086 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:13:13,095 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:13:13,118 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 85.00%)
+2026-02-09 01:13:13,127 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:14:13,181 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:14:13,222 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (83.7%)
+2026-02-09 01:14:13,242 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:14:13,271 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:14:13,286 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:14:13,315 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (85.0%)
+2026-02-09 01:14:13,325 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 83.69%)
+2026-02-09 01:14:13,333 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:14:13,354 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:14:13,363 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:14:13,386 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.96%)
+2026-02-09 01:14:13,395 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:15:13,442 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:15:13,484 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (79.5%)
+2026-02-09 01:15:13,494 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:15:13,524 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:15:13,534 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:15:13,563 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (85.1%)
+2026-02-09 01:15:13,572 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 79.53%)
+2026-02-09 01:15:13,580 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:15:13,602 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:15:13,610 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:15:13,633 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 85.08%)
+2026-02-09 01:15:13,640 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:16:13,686 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:16:13,737 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (77.0%)
+2026-02-09 01:16:13,746 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:16:13,776 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:16:13,783 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:16:13,815 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (83.5%)
+2026-02-09 01:16:13,824 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 77.00%)
+2026-02-09 01:16:13,832 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:16:13,854 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:16:13,863 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:16:13,884 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 83.50%)
+2026-02-09 01:16:13,893 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:17:13,949 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:17:13,999 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (77.8%)
+2026-02-09 01:17:14,009 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:17:14,039 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:17:14,047 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:17:14,076 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.5%)
+2026-02-09 01:17:14,084 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 77.76%)
+2026-02-09 01:17:14,092 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:17:14,114 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:17:14,122 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:17:14,144 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.54%)
+2026-02-09 01:17:14,152 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:18:14,210 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:18:14,250 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (80.0%)
+2026-02-09 01:18:14,258 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:18:14,286 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:18:14,294 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:18:14,321 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.6%)
+2026-02-09 01:18:14,331 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 80.01%)
+2026-02-09 01:18:14,339 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:18:14,360 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:18:14,368 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:18:14,389 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.57%)
+2026-02-09 01:18:14,398 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:19:14,457 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:19:14,503 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (68.4%)
+2026-02-09 01:19:14,511 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:19:14,541 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:19:14,548 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:19:14,576 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (83.6%)
+2026-02-09 01:19:14,584 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 68.36%)
+2026-02-09 01:19:14,590 - __main__ - WARNING - Trade rejected: Confidence 68.36% below minimum 70.00%
+2026-02-09 01:19:14,613 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:19:14,621 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:19:14,643 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 83.64%)
+2026-02-09 01:19:14,651 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:20:14,715 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:20:14,756 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (75.2%)
+2026-02-09 01:20:14,764 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:20:14,793 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:20:14,801 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:20:14,829 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.0%)
+2026-02-09 01:20:14,838 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 75.17%)
+2026-02-09 01:20:14,847 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:20:14,868 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:20:14,877 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:20:14,899 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.01%)
+2026-02-09 01:20:14,907 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:21:14,968 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:21:15,016 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (73.9%)
+2026-02-09 01:21:15,025 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:21:15,053 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:21:15,061 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:21:15,089 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.7%)
+2026-02-09 01:21:15,098 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 73.89%)
+2026-02-09 01:21:15,108 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:21:15,130 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:21:15,138 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:21:15,160 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.66%)
+2026-02-09 01:21:15,168 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:22:15,218 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:22:15,266 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (76.2%)
+2026-02-09 01:22:15,276 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:22:15,304 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:22:15,312 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:22:15,340 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.6%)
+2026-02-09 01:22:15,349 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 76.23%)
+2026-02-09 01:22:15,357 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:22:15,379 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:22:15,387 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:22:15,410 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.55%)
+2026-02-09 01:22:15,418 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:23:15,473 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:23:15,513 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (70.2%)
+2026-02-09 01:23:15,523 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:23:15,551 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:23:15,559 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:23:15,588 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.6%)
+2026-02-09 01:23:15,596 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 70.22%)
+2026-02-09 01:23:15,604 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:23:15,626 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:23:15,635 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:23:15,657 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.58%)
+2026-02-09 01:23:15,665 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:24:15,722 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:24:15,771 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (65.4%)
+2026-02-09 01:24:15,781 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:24:15,811 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:24:15,818 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:24:15,847 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (85.2%)
+2026-02-09 01:24:15,855 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 65.37%)
+2026-02-09 01:24:15,860 - __main__ - WARNING - Trade rejected: Confidence 65.37% below minimum 70.00%
+2026-02-09 01:24:15,882 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:24:15,890 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:24:15,914 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 85.18%)
+2026-02-09 01:24:15,922 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:25:15,968 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:25:16,015 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (69.0%)
+2026-02-09 01:25:16,024 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:25:16,054 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:25:16,063 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:25:16,092 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (85.1%)
+2026-02-09 01:25:16,101 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 69.03%)
+2026-02-09 01:25:16,104 - __main__ - WARNING - Trade rejected: Confidence 69.03% below minimum 70.00%
+2026-02-09 01:25:16,128 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:25:16,137 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:25:16,159 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 85.08%)
+2026-02-09 01:25:16,167 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:26:16,229 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:26:16,284 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (69.7%)
+2026-02-09 01:26:16,293 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:26:16,322 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:26:16,331 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:26:16,359 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (87.7%)
+2026-02-09 01:26:16,367 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 69.68%)
+2026-02-09 01:26:16,371 - __main__ - WARNING - Trade rejected: Confidence 69.68% below minimum 70.00%
+2026-02-09 01:26:16,393 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:26:16,402 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:26:16,423 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 87.67%)
+2026-02-09 01:26:16,432 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:27:16,488 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:27:16,538 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (64.5%)
+2026-02-09 01:27:16,547 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:27:16,576 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:27:16,583 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:27:16,612 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (87.9%)
+2026-02-09 01:27:16,621 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 64.50%)
+2026-02-09 01:27:16,625 - __main__ - WARNING - Trade rejected: Confidence 64.50% below minimum 70.00%
+2026-02-09 01:27:16,648 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:27:16,656 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:27:16,679 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 87.94%)
+2026-02-09 01:27:16,687 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:28:16,744 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:28:16,784 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (61.4%)
+2026-02-09 01:28:16,793 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:28:16,822 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:28:16,830 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:28:16,858 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (87.0%)
+2026-02-09 01:28:16,868 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 61.44%)
+2026-02-09 01:28:16,872 - __main__ - WARNING - Trade rejected: Confidence 61.44% below minimum 70.00%
+2026-02-09 01:28:16,895 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:28:16,903 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:28:16,925 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 87.03%)
+2026-02-09 01:28:16,934 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:29:16,979 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:29:17,028 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (61.4%)
+2026-02-09 01:29:17,037 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:29:17,066 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:29:17,074 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:29:17,102 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (87.3%)
+2026-02-09 01:29:17,111 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 61.42%)
+2026-02-09 01:29:17,115 - __main__ - WARNING - Trade rejected: Confidence 61.42% below minimum 70.00%
+2026-02-09 01:29:17,138 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:29:17,147 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:29:17,168 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 87.31%)
+2026-02-09 01:29:17,177 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:30:17,240 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:30:17,280 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (57.1%)
+2026-02-09 01:30:17,288 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:30:17,318 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:30:17,326 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:30:17,354 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (86.1%)
+2026-02-09 01:30:17,363 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 57.13%)
+2026-02-09 01:30:17,367 - __main__ - WARNING - Trade rejected: Confidence 57.13% below minimum 70.00%
+2026-02-09 01:30:17,391 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:30:17,399 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:30:17,421 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 86.08%)
+2026-02-09 01:30:17,429 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:31:17,486 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:31:17,568 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: BUY (53.9%)
+2026-02-09 01:31:17,578 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:31:17,606 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:31:17,614 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:31:17,642 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (84.0%)
+2026-02-09 01:31:17,651 - __main__ - INFO - Processing signal: BUY USDJPY (confidence: 53.94%)
+2026-02-09 01:31:17,655 - __main__ - WARNING - Trade rejected: Confidence 53.94% below minimum 70.00%
+2026-02-09 01:31:17,677 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:31:17,685 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:31:17,708 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 84.04%)
+2026-02-09 01:31:17,717 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:32:17,763 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:32:17,812 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (54.6%)
+2026-02-09 01:32:17,820 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:32:17,850 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:32:17,858 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:32:17,889 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (83.3%)
+2026-02-09 01:32:17,900 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 54.59%)
+2026-02-09 01:32:17,904 - __main__ - WARNING - Trade rejected: Confidence 54.59% below minimum 70.00%
+2026-02-09 01:32:17,927 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:32:17,935 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:32:17,956 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 83.28%)
+2026-02-09 01:32:17,965 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:33:18,004 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:33:18,049 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (59.5%)
+2026-02-09 01:33:18,058 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:33:18,089 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:33:18,098 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:33:18,128 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (82.1%)
+2026-02-09 01:33:18,137 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 59.49%)
+2026-02-09 01:33:18,142 - __main__ - WARNING - Trade rejected: Confidence 59.49% below minimum 70.00%
+2026-02-09 01:33:18,166 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:33:18,175 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:33:18,198 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 82.10%)
+2026-02-09 01:33:18,206 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:34:18,264 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:34:18,315 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (54.5%)
+2026-02-09 01:34:18,323 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:34:18,353 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:34:18,362 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:34:18,391 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (82.6%)
+2026-02-09 01:34:18,400 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 54.49%)
+2026-02-09 01:34:18,404 - __main__ - WARNING - Trade rejected: Confidence 54.49% below minimum 70.00%
+2026-02-09 01:34:18,427 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:34:18,435 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:34:18,456 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 82.57%)
+2026-02-09 01:34:18,466 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:35:18,518 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:35:18,559 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: BUY (65.9%)
+2026-02-09 01:35:18,568 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:35:18,598 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:35:18,606 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:35:18,635 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (79.0%)
+2026-02-09 01:35:18,644 - __main__ - INFO - Processing signal: BUY USDJPY (confidence: 65.85%)
+2026-02-09 01:35:18,649 - __main__ - WARNING - Trade rejected: Confidence 65.85% below minimum 70.00%
+2026-02-09 01:35:18,675 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:35:18,684 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:35:18,707 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 79.00%)
+2026-02-09 01:35:18,716 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:36:18,773 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:36:18,817 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: BUY (61.9%)
+2026-02-09 01:36:18,827 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:36:18,857 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:36:18,865 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:36:18,896 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (79.2%)
+2026-02-09 01:36:18,905 - __main__ - INFO - Processing signal: BUY USDJPY (confidence: 61.94%)
+2026-02-09 01:36:18,909 - __main__ - WARNING - Trade rejected: Confidence 61.94% below minimum 70.00%
+2026-02-09 01:36:18,934 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:36:18,943 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:36:18,967 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 79.17%)
+2026-02-09 01:36:18,976 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:37:19,032 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 01:37:19,078 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: BUY (55.5%)
+2026-02-09 01:37:19,087 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 01:37:19,119 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 01:37:19,128 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 01:37:19,164 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: BUY (83.9%)
+2026-02-09 01:37:19,174 - __main__ - INFO - Processing signal: BUY USDJPY (confidence: 55.46%)
+2026-02-09 01:37:19,180 - __main__ - WARNING - Trade rejected: Confidence 55.46% below minimum 70.00%
+2026-02-09 01:37:19,206 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 01:37:19,217 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 01:37:19,242 - __main__ - INFO - Processing signal: BUY EURUSD (confidence: 83.86%)
+2026-02-09 01:37:19,251 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 02:08:31,363 - src.trading.killzone_manager - INFO - Killzone filtering enabled with 2 windows in America/New_York
+2026-02-09 02:08:31,363 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-09 02:08:31,364 - __main__ - INFO - Auto-Trader initialized with killzone and exit strategies
+2026-02-09 02:08:31,364 - __main__ - INFO - Auto-Trader started
+2026-02-09 02:08:33,426 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-09 02:10:34,139 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 02:10:34,173 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (96.6%)
+2026-02-09 02:10:34,183 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 02:10:34,213 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 02:10:34,222 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 02:10:34,253 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (99.9%)
+2026-02-09 02:10:34,262 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 96.55%)
+2026-02-09 02:10:34,267 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: check schedule
+2026-02-09 02:10:34,292 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 02:10:34,297 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: check schedule
+2026-02-09 02:10:34,320 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 99.92%)
+2026-02-09 02:10:34,325 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: check schedule
+2026-02-09 02:11:34,384 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 02:11:34,422 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (96.5%)
+2026-02-09 02:11:34,429 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 02:11:34,459 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (100.0%)
+2026-02-09 02:11:34,468 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-09 02:11:34,497 - src.trading.prediction_service - INFO - ✅ Generated prediction for USDJPY: SELL (99.9%)
+2026-02-09 02:11:34,505 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 96.55%)
+2026-02-09 02:11:34,510 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: check schedule
+2026-02-09 02:11:34,532 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 100.00%)
+2026-02-09 02:11:34,536 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: check schedule
+2026-02-09 02:11:34,559 - __main__ - INFO - Processing signal: SELL USDJPY (confidence: 99.93%)
+2026-02-09 02:11:34,569 - __main__ - WARNING - Trade rejected: Outside trading hours: Outside killzones. Next: check schedule

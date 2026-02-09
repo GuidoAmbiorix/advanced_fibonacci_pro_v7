@@ -1,11 +1,3 @@
-MetaTrader5
-pandas
-numpy
-matplotlib
-scikit-learn
-pyyaml
-requests
-MetaTrader5
 pandas
 numpy
 matplotlib

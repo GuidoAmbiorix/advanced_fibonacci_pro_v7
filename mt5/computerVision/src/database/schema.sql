@@ -82,12 +82,38 @@ CREATE TABLE IF NOT EXISTS positions (
     take_profit REAL,
     prediction_id INTEGER,
     status TEXT NOT NULL DEFAULT 'OPEN', -- 'OPEN', 'CLOSED'
+    -- Exit strategy tracking
+    breakeven_set BOOLEAN DEFAULT 0,
+    partial_taken BOOLEAN DEFAULT 0,
+    partial_volume REAL DEFAULT 0,
+    trailing_active BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (prediction_id) REFERENCES predictions(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_positions_status ON positions(status);
 CREATE INDEX IF NOT EXISTS idx_positions_symbol ON positions(symbol);
+
+-- Killzone Windows Table
+CREATE TABLE IF NOT EXISTS killzone_windows (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    start_time TEXT NOT NULL, -- HH:MM format
+    end_time TEXT NOT NULL, -- HH:MM format
+    days_of_week TEXT NOT NULL, -- Comma-separated: "1,2,3,4,5" for Mon-Fri
+    timezone TEXT NOT NULL DEFAULT 'America/New_York',
+    priority TEXT DEFAULT 'medium', -- 'high', 'medium', 'low'
+    is_active BOOLEAN DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_killzone_active ON killzone_windows(is_active);
+
+-- Insert default killzone windows
+INSERT OR IGNORE INTO killzone_windows (name, start_time, end_time, days_of_week, timezone, priority) VALUES
+    ('London Open', '03:00', '05:00', '1,2,3,4,5', 'America/New_York', 'high'),
+    ('NY Open', '08:00', '12:00', '1,2,3,4,5', 'America/New_York', 'high');
 
 -- Trades Table (Completed trades)
 CREATE TABLE IF NOT EXISTS trades (

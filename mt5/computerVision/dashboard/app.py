@@ -36,7 +36,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigation",
-    ["Dashboard", "Live Predictions", "Portfolios", "Trading Control", "Live Trades", "Training", "System Logs"]
+    ["Dashboard", "Live Predictions", "Portfolios", "Trading Control", "Live Trades", "Killzone Settings", "Exit Strategies", "Training", "System Logs"]
 )
 
 st.sidebar.markdown("---")
@@ -849,6 +849,247 @@ elif page == "Portfolios":
                     st.error(str(ve))
                 except Exception as e:
                     st.error(f"Allocation failed: {str(e)}")
+
+
+# ==================== Killzone Settings Page ====================
+elif page == "Killzone Settings":
+    st.title("🕒 Killzone Settings")
+    
+    st.markdown("""
+    Configure time-based trading windows to restrict trading to high-liquidity periods.
+    Killzones help avoid low-liquidity periods and improve trade quality.
+    """)
+    
+    # Load current config
+    import yaml
+    config_path = Path(__file__).parent.parent / "src" / "trading" / "config.yaml"
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    
+    killzone_config = config.get('killzones', {})
+    
+    # Global Settings
+    st.subheader("⚙️ Global Settings")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        enabled = st.checkbox("Enable Killzone Filtering", value=killzone_config.get('enabled', False))
+    
+    with col2:
+        timezone = st.selectbox("Timezone", 
+                               ["America/New_York", "Europe/London", "Asia/Tokyo", "UTC"],
+                               index=["America/New_York", "Europe/London", "Asia/Tokyo", "UTC"].index(killzone_config.get('timezone', 'America/New_York')))
+    
+    st.markdown("---")
+    
+    # Existing Killzones
+    st.subheader("📋 Active Killzones")
+    
+    killzones = db.get_killzone_windows(active_only=False)
+    
+    if killzones:
+        for kz in killzones:
+            with st.expander(f"{'🟢' if kz['is_active'] else '🔴'} {kz['name']}", expanded=False):
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.text_input("Name", value=kz['name'], key=f"name_{kz['id']}", disabled=True)
+                    st.text_input("Start Time", value=kz['start_time'], key=f"start_{kz['id']}", disabled=True)
+                
+                with col2:
+                    st.text_input("End Time", value=kz['end_time'], key=f"end_{kz['id']}", disabled=True)
+                    st.text_input("Days", value=kz['days_of_week'], key=f"days_{kz['id']}", disabled=True)
+                
+                with col3:
+                    st.text_input("Priority", value=kz['priority'], key=f"priority_{kz['id']}", disabled=True)
+                    is_active = st.checkbox("Active", value=bool(kz['is_active']), key=f"active_{kz['id']}")
+                
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    if st.button("🗑️ Delete", key=f"delete_{kz['id']}"):
+                        db.delete_killzone_window(kz['id'])
+                        st.success(f"Deleted {kz['name']}")
+                        st.rerun()
+                
+                with col_b:
+                    if st.button("💾 Update Status", key=f"update_{kz['id']}"):
+                        db.update_killzone_window(kz['id'], is_active=is_active)
+                        st.success(f"Updated {kz['name']}")
+                        st.rerun()
+    else:
+        st.info("No killzones configured. Add one below.")
+    
+    st.markdown("---")
+    
+    # Add New Killzone
+    st.subheader("➕ Add New Killzone")
+    
+    with st.form("add_killzone"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            new_name = st.text_input("Name", placeholder="e.g., Asian Session")
+            new_start = st.time_input("Start Time", value=datetime.strptime("08:00", "%H:%M").time())
+            new_priority = st.selectbox("Priority", ["high", "medium", "low"])
+        
+        with col2:
+            new_end = st.time_input("End Time", value=datetime.strptime("12:00", "%H:%M").time())
+            days_options = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            new_days = st.multiselect("Active Days", days_options, default=days_options[:5])
+        
+        submitted = st.form_submit_button("Add Killzone")
+        
+        if submitted:
+            if new_name and new_days:
+                # Convert day names to numbers (0=Monday, 6=Sunday)
+                day_map = {day: str(i) for i, day in enumerate(days_options)}
+                days_str = ",".join([day_map[day] for day in new_days])
+                
+                db.add_killzone_window(
+                    name=new_name,
+                    start_time=new_start.strftime("%H:%M"),
+                    end_time=new_end.strftime("%H:%M"),
+                    days_of_week=days_str,
+                    timezone=timezone,
+                    priority=new_priority
+                )
+                st.success(f"Added killzone: {new_name}")
+                st.rerun()
+            else:
+                st.error("Please fill in all fields")
+    
+    # Save Global Settings
+    if st.button("💾 Save Global Settings"):
+        config['killzones']['enabled'] = enabled
+        config['killzones']['timezone'] = timezone
+        
+        with open(config_path, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
+        
+        st.success("Global settings saved! Restart trader for changes to take effect.")
+
+
+# ==================== Exit Strategies Page ====================
+elif page == "Exit Strategies":
+    st.title("🎯 Exit Strategies")
+    
+    st.markdown("""
+    Configure advanced exit strategies to optimize trade management.
+    These strategies work together to protect capital and maximize profits.
+    """)
+    
+    # Load current config
+    import yaml
+    config_path = Path(__file__).parent.parent / "src" / "trading" / "config.yaml"
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    
+    exit_config = config.get('exit_strategies', {})
+    
+    # Breakeven Stop
+    st.subheader("🛡️ Breakeven Stop")
+    st.markdown("Move stop loss to entry price after reaching a specified risk-reward ratio.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        breakeven_enabled = st.checkbox("Enable Breakeven Stop", value=exit_config.get('breakeven_enabled', True))
+    with col2:
+        breakeven_ratio = st.number_input("Breakeven Ratio (R:R)", min_value=0.5, max_value=3.0, value=exit_config.get('breakeven_ratio', 1.0), step=0.1)
+    
+    st.caption("💡 Recommended: 1.0 (move to BE after 1:1 R:R)")
+    
+    st.markdown("---")
+    
+    # Partial Profit Taking
+    st.subheader("💰 Partial Profit Taking")
+    st.markdown("Close a portion of the position at an interim target, let the rest run.")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        partial_enabled = st.checkbox("Enable Partial Profits", value=exit_config.get('partial_profit_enabled', True))
+    with col2:
+        partial_ratio = st.number_input("Target Ratio", min_value=0.3, max_value=0.9, value=exit_config.get('partial_profit_ratio', 0.5), step=0.1)
+    with col3:
+        partial_percent = st.number_input("Close %", min_value=0.2, max_value=0.8, value=exit_config.get('partial_close_percent', 0.5), step=0.1)
+    
+    st.caption("💡 Recommended: Close 50% at 50% of TP")
+    
+    st.markdown("---")
+    
+    # ATR Trailing Stop
+    st.subheader("📈 ATR Trailing Stop")
+    st.markdown("Dynamic stop loss that trails price based on market volatility (ATR).")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        trailing_enabled = st.checkbox("Enable Trailing Stop", value=exit_config.get('trailing_stop_enabled', True))
+    with col2:
+        atr_multiplier = st.number_input("ATR Multiplier", min_value=1.0, max_value=3.0, value=exit_config.get('atr_multiplier', 1.5), step=0.1)
+    with col3:
+        atr_period = st.number_input("ATR Period", min_value=7, max_value=21, value=exit_config.get('atr_period', 14), step=1)
+    
+    st.caption("💡 Recommended: 1.5x ATR with 14-period for M5 scalping")
+    
+    st.markdown("---")
+    
+    # Time-Based Exit
+    st.subheader("⏱️ Time-Based Exit")
+    st.markdown("Close positions held longer than a specified duration to avoid overnight exposure.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        time_exit_enabled = st.checkbox("Enable Time Exit", value=exit_config.get('time_exit_enabled', True))
+    with col2:
+        max_hold_minutes = st.number_input("Max Hold Time (minutes)", min_value=30, max_value=1440, value=exit_config.get('max_hold_minutes', 240), step=30)
+    
+    st.caption("💡 Recommended: 240 minutes (4 hours) for M5 scalping")
+    
+    st.markdown("---")
+    
+    # Killzone Exit
+    st.subheader("🕒 Killzone Exit")
+    st.markdown("Optionally close all positions when a killzone ends.")
+    
+    close_on_killzone_end = st.checkbox("Close on Killzone End", value=exit_config.get('close_on_killzone_end', False))
+    st.caption("⚠️ Not recommended: May cut winning trades short")
+    
+    st.markdown("---")
+    
+    # Save Button
+    if st.button("💾 Save Exit Strategy Settings"):
+        config['exit_strategies'] = {
+            'breakeven_enabled': breakeven_enabled,
+            'breakeven_ratio': breakeven_ratio,
+            'partial_profit_enabled': partial_enabled,
+            'partial_profit_ratio': partial_ratio,
+            'partial_close_percent': partial_percent,
+            'trailing_stop_enabled': trailing_enabled,
+            'atr_multiplier': atr_multiplier,
+            'atr_period': int(atr_period),
+            'time_exit_enabled': time_exit_enabled,
+            'max_hold_minutes': int(max_hold_minutes),
+            'close_on_killzone_end': close_on_killzone_end
+        }
+        
+        with open(config_path, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
+        
+        st.success("✅ Exit strategy settings saved! Restart trader for changes to take effect.")
+    
+    # Current Status Summary
+    st.markdown("---")
+    st.subheader("📊 Current Configuration Summary")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.metric("Breakeven Stop", "✅ Enabled" if breakeven_enabled else "❌ Disabled")
+        st.metric("Partial Profits", "✅ Enabled" if partial_enabled else "❌ Disabled")
+        st.metric("Trailing Stop", "✅ Enabled" if trailing_enabled else "❌ Disabled")
+    
+    with col2:
+        st.metric("Time Exit", "✅ Enabled" if time_exit_enabled else "❌ Disabled")
+        st.metric("Killzone Exit", "✅ Enabled" if close_on_killzone_end else "❌ Disabled")
 
 
 # ==================== System Logs Page ====================

@@ -392,3 +392,84 @@ class DatabaseManager:
                 LIMIT ?
             """, (portfolio_id, days)).fetchall()
             return [dict(row) for row in rows]
+    
+    # ==================== Killzone Management ====================
+    
+    def get_killzone_windows(self, active_only: bool = True) -> List[Dict]:
+        """Get all killzone windows."""
+        with self.get_connection() as conn:
+            query = "SELECT * FROM killzone_windows"
+            if active_only:
+                query += " WHERE is_active = 1"
+            query += " ORDER BY priority DESC, start_time ASC"
+            
+            rows = conn.execute(query).fetchall()
+            return [dict(row) for row in rows]
+    
+    def add_killzone_window(self, name: str, start_time: str, end_time: str, 
+                           days_of_week: str, timezone: str = 'America/New_York', 
+                           priority: str = 'medium') -> int:
+        """Add a new killzone window."""
+        with self.get_connection() as conn:
+            cursor = conn.execute("""
+                INSERT INTO killzone_windows (name, start_time, end_time, days_of_week, timezone, priority)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (name, start_time, end_time, days_of_week, timezone, priority))
+            conn.commit()
+            return cursor.lastrowid
+    
+    def update_killzone_window(self, killzone_id: int, **kwargs):
+        """Update a killzone window."""
+        allowed_fields = ['name', 'start_time', 'end_time', 'days_of_week', 'timezone', 'priority', 'is_active']
+        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
+        
+        if not updates:
+            return
+        
+        set_clause = ', '.join([f"{k} = ?" for k in updates.keys()])
+        values = list(updates.values()) + [killzone_id]
+        
+        with self.get_connection() as conn:
+            conn.execute(f"""
+                UPDATE killzone_windows 
+                SET {set_clause}, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, values)
+            conn.commit()
+    
+    def delete_killzone_window(self, killzone_id: int):
+        """Delete a killzone window."""
+        with self.get_connection() as conn:
+            conn.execute("DELETE FROM killzone_windows WHERE id = ?", (killzone_id,))
+            conn.commit()
+    
+    # ==================== Position Tracking ====================
+    
+    def update_position_metadata(self, mt5_ticket: int, **kwargs):
+        """Update position metadata for exit strategies."""
+        allowed_fields = ['breakeven_set', 'partial_taken', 'partial_volume', 'trailing_active']
+        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
+        
+        if not updates:
+            return
+        
+        set_clause = ', '.join([f"{k} = ?" for k in updates.keys()])
+        values = list(updates.values()) + [mt5_ticket]
+        
+        with self.get_connection() as conn:
+            conn.execute(f"""
+                UPDATE positions 
+                SET {set_clause}
+                WHERE mt5_ticket = ?
+            """, values)
+            conn.commit()
+    
+    def get_position_metadata(self, mt5_ticket: int) -> Optional[Dict]:
+        """Get position metadata."""
+        with self.get_connection() as conn:
+            row = conn.execute("""
+                SELECT breakeven_set, partial_taken, partial_volume, trailing_active
+                FROM positions
+                WHERE mt5_ticket = ?
+            """, (mt5_ticket,)).fetchone()
+            return dict(row) if row else None

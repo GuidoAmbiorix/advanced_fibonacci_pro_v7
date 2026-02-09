@@ -30,6 +30,26 @@ killzones:
   enabled: true
   timezone: "America/New_York"  # Broker timezone (match MT5 server time)
   
+  # Phase 6: Advanced Features
+  max_spread_pips: 3.0  # Maximum allowed spread in pips
+  
+  # Holiday calendar (YYYY-MM-DD format) - trading disabled on these dates
+  holidays:
+    - "2026-01-01"  # New Year's Day
+    - "2026-12-25"  # Christmas
+    # Add more holidays as needed
+  
+  # Per-symbol overrides (optional)
+  symbol_overrides:
+    # Example: XAUUSD with different windows
+    # XAUUSD:
+    #   enabled: true
+    #   windows:
+    #     - name: "Gold Session"
+    #       start: "02:00"
+    #       end: "11:00"
+    #       days: [1, 2, 3, 4, 5]
+  
   # Define active trading windows (broker time)
   windows:
     - name: "London Open"

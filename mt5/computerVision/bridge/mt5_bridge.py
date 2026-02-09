@@ -367,6 +367,18 @@ def close_trade():
         'close_price': result.price
     })
 
+@app.route('/positions', methods=['GET'])
+def get_positions():
+    """Get all open positions (direct list)."""
+    if not mt5_connected:
+        return jsonify({'error': 'MT5 not connected'}), 503
+    
+    positions = mt5.positions_get()
+    if positions is None:
+        return jsonify([])
+    
+    return jsonify([p._asdict() for p in positions])
+
 @app.route('/positions/list', methods=['GET'])
 def list_positions():
     """Get all open positions."""

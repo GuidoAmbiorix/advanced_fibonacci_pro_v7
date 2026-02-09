@@ -1723,3 +1723,199 @@ AttributeError: module 'MetaTrader5' has no attribute 'symbol_info_integer'. Did
 2026-02-08 21:37:19,573 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:37:19] "GET /status HTTP/1.1" 200 -
 2026-02-08 21:37:20,502 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:37:20] "GET /status HTTP/1.1" 200 -
 2026-02-08 21:37:20,628 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:37:20] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:43:29,185 - root - INFO - MT5 connected successfully
+2026-02-08 21:43:29,196 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 21:43:29,196 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 21:43:30,619 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.4:5000
+2026-02-08 21:43:30,619 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 21:46:19,695 - root - INFO - MT5 connected successfully
+2026-02-08 21:46:19,719 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 21:46:19,719 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 21:46:21,070 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.4:5000
+2026-02-08 21:46:21,071 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 21:46:36,342 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:46:36] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:46:53,104 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:46:53] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:46:53,817 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:46:53] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:46:54,367 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:46:54] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:46:56,285 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:46:56] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:46:57,884 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:46:57] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:46:59,367 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:46:59] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:46:59,393 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:46:59] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:09,408 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:09] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:12,051 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:12] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:13,751 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:13] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:14,256 - root - INFO - Fetched and stored 1000 bars for EURUSD M5
+2026-02-08 21:47:14,267 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:14] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 21:47:15,868 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:15] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:19,517 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:19] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:28,692 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:28] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:30,133 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:30] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:30,558 - root - INFO - Fetched and stored 1000 bars for GBPUSD M5
+2026-02-08 21:47:30,559 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:30] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 21:47:32,133 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:32] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:34,384 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:34] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:46,948 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:46] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:47,902 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:47] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:48,409 - root - INFO - Fetched and stored 1000 bars for USDJPY M5
+2026-02-08 21:47:48,410 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:48] "POST /data/fetch HTTP/1.1" 200 -
+2026-02-08 21:47:49,476 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:49] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:47:52,517 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:47:52] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:00,958 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:00] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:00,977 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:00] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:06,812 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:06] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:06,834 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:06] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:06,923 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:06] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:06,943 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:06] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:06,971 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:06] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:12,283 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:12] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:12,298 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:12] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:12,325 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:12] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:14,718 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:14] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:14,734 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:14] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:14,765 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:14] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:14,883 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:14] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:14,902 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:14] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:14,934 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:14] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:16,555 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:16] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:16,571 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:16] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:16,607 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:16] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:17,867 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:17] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:17,882 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:17] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:17,915 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:17] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:19,084 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:19] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:19,104 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:19] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:19,131 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:19] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:19,253 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:19] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:19,272 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:19] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:19,305 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:19] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:20,235 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:20] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:20,326 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:20] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:20,429 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:20] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:21,882 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:21] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:21,897 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:21] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:21,927 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:21] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:23,284 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:23] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:23,301 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:23] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:23,332 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:23] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:25,413 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:25] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:25,429 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:25] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:25,457 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:25] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:25,578 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:25] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:25,596 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:25] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:25,623 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:25] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:30,935 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:30] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:31,867 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:31] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:33,758 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:33] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:34,400 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:34] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:48:59,108 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:48:59] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:49:00,580 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:49:00] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:49:04,515 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:49:04] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:49:04,619 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:49:04] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:49:06,222 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:49:06] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:49:07,518 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:49:07] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:55:00,744 - root - INFO - MT5 connected successfully
+2026-02-08 21:55:00,755 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 21:55:00,755 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 21:55:02,078 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.4:5000
+2026-02-08 21:55:02,078 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 21:55:04,868 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:55:04] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:55:06,651 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:55:06] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:55:07,235 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:55:07] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:55:09,254 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:55:09] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:55:09,278 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:55:09] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:55:09,317 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:55:09] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:55:11,917 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:55:11] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:55:13,447 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:55:13] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:55:14,135 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:55:14] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:55:15,596 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:55:15] "GET /status HTTP/1.1" 200 -
+2026-02-08 21:55:15,695 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 21:55:15] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:04,654 - root - INFO - MT5 connected successfully
+2026-02-08 22:00:04,666 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 22:00:04,666 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 22:00:05,990 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.4:5000
+2026-02-08 22:00:05,991 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 22:00:13,922 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:13] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:16,001 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:16] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:16,542 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:16] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:16,917 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:16] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:16,939 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:16] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:16,971 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:16] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:18,902 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:18] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:19,631 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:19] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:20,968 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:20] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:23,269 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:23] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:24,766 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:24] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:25,985 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:25] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:26,005 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:26] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:00:26,036 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:00:26] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:40,913 - root - INFO - MT5 connected successfully
+2026-02-08 22:08:40,924 - root - INFO - Background sync enabled (every 60s)
+2026-02-08 22:08:40,924 - root - INFO - Starting MT5 Bridge API on 0.0.0.0:5000
+2026-02-08 22:08:42,257 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.4:5000
+2026-02-08 22:08:42,257 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 22:08:43,890 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:43] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:48,393 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:48] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:49,116 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:49] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:49,138 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:49] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:49,170 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:49] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:49,863 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:49] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:50,668 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:50] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:52,862 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:52] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:53,956 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:53] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:54,419 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:54] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:56,686 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:56] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:56,704 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:56] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:08:56,734 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:08:56] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:02,940 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:02] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:04,694 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:04] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:06,450 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:06] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:08,645 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:08] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:08,663 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:08] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:08,696 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:08] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:09,702 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:09] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:12,216 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:12] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:12,313 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:12] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:29,763 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:29] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:29,871 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:29] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:32,818 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:32] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:33,436 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:33] "[33mGET /positions HTTP/1.1[0m" 404 -
+2026-02-08 22:09:33,777 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:33] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:33,881 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:33] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:48,718 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:48] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:52,933 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:52] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:53,355 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:53] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:55,100 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:55] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:58,483 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:58] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:58,500 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:58] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:09:58,527 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:09:58] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:10:00,798 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:10:00] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:10:02,001 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:10:02] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:10:02,755 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:10:02] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:10:09,035 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:10:09] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:10:15,157 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:10:15] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:10:15,785 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:10:15] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:10:33,457 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:10:33] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:10:34,266 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:10:34] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:10:34,295 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:10:34] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:10:34,324 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:10:34] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:10:34,347 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:10:34] "[33mGET /positions HTTP/1.1[0m" 404 -
+2026-02-08 22:11:34,364 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:11:34] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:11:34,508 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:11:34] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:11:34,535 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:11:34] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:11:34,567 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:11:34] "GET /status HTTP/1.1" 200 -
+2026-02-08 22:11:34,598 - werkzeug - INFO - 10.0.0.4 - - [08/Feb/2026 22:11:34] "[33mGET /positions HTTP/1.1[0m" 404 -
