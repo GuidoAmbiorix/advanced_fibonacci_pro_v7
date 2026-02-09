@@ -28,7 +28,7 @@ bridge:
 # Killzone Settings
 killzones:
   enabled: true
-  timezone: "America/New_York"  # Broker timezone (match MT5 server time)
+  timezone: "Europe/Athens"  # FundingPips uses GMT+2 (EET/EEST)
   
   # Phase 6: Advanced Features
   max_spread_pips: 3.0  # Maximum allowed spread in pips
@@ -50,19 +50,25 @@ killzones:
     #       end: "11:00"
     #       days: [1, 2, 3, 4, 5]
   
-  # Define active trading windows (broker time)
+  # Define active trading windows (FundingPips broker time = GMT+2)
   windows:
     - name: "London Open"
-      start: "03:00"  # 08:00 GMT in EST
-      end: "05:00"    # 10:00 GMT in EST
+      start: "10:00"  # 08:00 GMT = 10:00 GMT+2
+      end: "12:00"    # 10:00 GMT = 12:00 GMT+2
       days: [1, 2, 3, 4, 5]  # Mon-Fri
       priority: high
       
     - name: "NY Open"
-      start: "08:00"  # 13:00 GMT in EST
-      end: "12:00"    # 17:00 GMT in EST
+      start: "15:00"  # 13:00 GMT = 15:00 GMT+2
+      end: "19:00"    # 17:00 GMT = 19:00 GMT+2
       days: [1, 2, 3, 4, 5]
       priority: high
+    
+    - name: "Asian Session"
+      start: "02:00"  # 00:00 GMT = 02:00 GMT+2
+      end: "06:00"    # 04:00 GMT = 06:00 GMT+2
+      days: [1, 2, 3, 4, 5]
+      priority: medium
 
 # Exit Strategy Settings
 exit_strategies:

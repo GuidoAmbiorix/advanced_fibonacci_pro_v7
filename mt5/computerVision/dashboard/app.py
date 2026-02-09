@@ -876,9 +876,14 @@ elif page == "Killzone Settings":
         enabled = st.checkbox("Enable Killzone Filtering", value=killzone_config.get('enabled', False))
     
     with col2:
+        timezone_options = ["America/New_York", "Europe/London", "Europe/Athens", "Asia/Tokyo", "UTC"]
+        current_tz = killzone_config.get('timezone', 'America/New_York')
+        # Handle unknown timezones gracefully
+        if current_tz not in timezone_options:
+            timezone_options.append(current_tz)
         timezone = st.selectbox("Timezone", 
-                               ["America/New_York", "Europe/London", "Asia/Tokyo", "UTC"],
-                               index=["America/New_York", "Europe/London", "Asia/Tokyo", "UTC"].index(killzone_config.get('timezone', 'America/New_York')))
+                               timezone_options,
+                               index=timezone_options.index(current_tz))
     
     st.markdown("---")
     
