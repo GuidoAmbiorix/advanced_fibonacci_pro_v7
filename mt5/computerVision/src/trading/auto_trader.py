@@ -110,11 +110,29 @@ class AutoTrader:
             return
         
         # Estimate entry price (in production, get from tick data)
-        # We can try to get it from bridge if available, otherwise use last close from market_data?
-        # For simplicity, let bridge execute at market. 
-        # We need price for SL/TP calculation logic in RiskManager though.
-        # Let's fetch latest close from DB as approximation if live tick not easily available without another call
-        entry_price = 1.0 # Fallback
+        # We fetch real-time price from bridge to ensure accurate SL/TP calculation
+        entry_price = 0.0
+        try:
+            response = requests.get(f"{self.bridge_url}/symbols/{symbol}/info", timeout=5)
+            if response.status_code == 200:
+                info = response.json()
+                # Use ASK for BUY, BID for SELL
+                if direction == "UP ▲" or direction == "BUY":
+                    entry_price = info.get('ask', 0.0)
+                else:
+                    entry_price = info.get('bid', 0.0)
+                
+                if entry_price <= 0:
+                     self.logger.warning(f"Bridge returned invalid price {entry_price} for {symbol}, using fallback")
+                     entry_price = 1.0 # Should ideally fail here, but keeping fallback for safety
+            else:
+                 self.logger.error(f"Failed to get symbol info for {symbol}: {response.text}")
+                 entry_price = 1.0
+        except Exception as e:
+            self.logger.error(f"Error fetching symbol info: {e}")
+            entry_price = 1.0
+            
+        self.logger.info(f"Using entry price: {entry_price} for {symbol} {direction}")
         
         # Calculate SL/TP
         action = "BUY" if direction == "UP ▲" or direction == "BUY" else "SELL"

@@ -58,8 +58,37 @@ class PredictionService:
         # Load model to get features list
         model_file = Path(model_path)
         if not model_file.exists():
-            self.logger.error(f"Model file not found: {model_path}")
-            return
+            self.logger.warning(f"Model file not found: {model_path}")
+            # Try to find substitute model for same symbol/timeframe
+            # Pattern: mlp_optuna_{symbol}_{timeframe}_*.pkl
+            try:
+                models_dir = Path("/app/models")
+                if models_dir.exists():
+                    # Construct pattern based on expected naming convention
+                    # We need symbol and timeframe. Metadata from DB has 'hyperparameters' which usually has them
+                    # Or we can guess from the filename payload
+                    # Let's try to match the prefix of the missing file
+                    filename = model_file.name
+                    parts = filename.split('_')
+                    # e.g. mlp_optuna_EURUSD_M15_2026...
+                    if len(parts) >= 4:
+                        prefix = "_".join(parts[:4]) # mlp_optuna_EURUSD_M15
+                        candidates = list(models_dir.glob(f"{prefix}*.pkl"))
+                        if candidates:
+                            # Sort by modification time (latest first)
+                            candidates.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+                            model_file = candidates[0]
+                            self.logger.info(f"Found substitute model: {model_file}")
+                        else:
+                             self.logger.error(f"No substitute models found for pattern {prefix}")
+                             return
+                    else:
+                        return
+                else:
+                    return
+            except Exception as e:
+                self.logger.error(f"Error searching for substitute model: {e}")
+                return
         
         with open(model_file, 'rb') as f:
             model_data = pickle.load(f)

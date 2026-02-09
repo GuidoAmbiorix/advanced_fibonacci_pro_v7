@@ -115,8 +115,15 @@ def get_symbol_info(symbol):
     stops_level = symbol_info.trade_stops_level
     point = symbol_info.point
     
+    # Get current prices
+    tick = mt5.symbol_info_tick(symbol)
+    bid = tick.bid if tick else 0.0
+    ask = tick.ask if tick else 0.0
+    
     return jsonify({
         'symbol': symbol,
+        'bid': bid,
+        'ask': ask,
         'stops_level': stops_level,  # Minimum stop distance in points
         'point': point,  # Point size
         'digits': symbol_info.digits,

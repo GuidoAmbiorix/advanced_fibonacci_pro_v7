@@ -1086,3 +1086,97 @@
 2026-02-08 23:51:04,804 - src.trading.risk_manager - INFO - EURUSD minimum stop level: 0 points = 0.00000 price distance
 2026-02-08 23:51:04,804 - __main__ - ERROR - Auto-Trader error: name 'min_distance' is not defined
 2026-02-08 23:51:04,824 - __main__ - INFO - Auto-Trader stopped
+2026-02-09 00:19:00,182 - __main__ - INFO - Auto-Trader initialized
+2026-02-09 00:19:00,182 - __main__ - INFO - Auto-Trader started
+2026-02-09 00:19:01,711 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:19:01,755 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (100.0%)
+2026-02-09 00:19:01,768 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:19:01,773 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:19:01,781 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 100.00%)
+2026-02-09 00:19:01,795 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $29.67)
+2026-02-09 00:19:01,803 - src.trading.risk_manager - INFO - EURUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 00:19:01,804 - src.trading.risk_manager - INFO - Calculated SL/TP for EURUSD: SL=1.005, TP=0.99 (distance=0.00500)
+2026-02-09 00:19:01,818 - __main__ - ERROR - Trade execution failed: Order failed: Invalid stops
+2026-02-09 00:20:01,873 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:20:01,919 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (100.0%)
+2026-02-09 00:20:01,930 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:20:01,935 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:20:01,942 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 100.00%)
+2026-02-09 00:20:01,954 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $29.67)
+2026-02-09 00:20:01,963 - src.trading.risk_manager - INFO - EURUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 00:20:01,964 - src.trading.risk_manager - INFO - Calculated SL/TP for EURUSD: SL=1.005, TP=0.99 (distance=0.00500)
+2026-02-09 00:20:01,980 - __main__ - ERROR - Trade execution failed: Order failed: Invalid stops
+2026-02-09 00:21:02,043 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:21:02,088 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (100.0%)
+2026-02-09 00:21:02,099 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:21:02,105 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:21:02,113 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 99.96%)
+2026-02-09 00:21:02,126 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $29.67)
+2026-02-09 00:21:02,136 - src.trading.risk_manager - INFO - EURUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 00:21:02,136 - src.trading.risk_manager - INFO - Calculated SL/TP for EURUSD: SL=1.005, TP=0.99 (distance=0.00500)
+2026-02-09 00:21:02,154 - __main__ - ERROR - Trade execution failed: Order failed: Invalid stops
+2026-02-09 00:22:02,214 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:22:02,255 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (100.0%)
+2026-02-09 00:22:02,267 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:22:02,272 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:22:02,280 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 99.96%)
+2026-02-09 00:22:02,293 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $29.67)
+2026-02-09 00:22:02,301 - src.trading.risk_manager - INFO - EURUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 00:22:02,301 - src.trading.risk_manager - INFO - Calculated SL/TP for EURUSD: SL=1.005, TP=0.99 (distance=0.00500)
+2026-02-09 00:22:02,317 - __main__ - ERROR - Trade execution failed: Order failed: Invalid stops
+2026-02-09 00:22:49,530 - __main__ - INFO - Auto-Trader initialized
+2026-02-09 00:22:49,530 - __main__ - INFO - Auto-Trader started
+2026-02-09 00:22:50,337 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:22:50,379 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (100.0%)
+2026-02-09 00:22:50,395 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:22:50,400 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:22:50,408 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 99.96%)
+2026-02-09 00:22:50,423 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $29.67)
+2026-02-09 00:22:50,433 - __main__ - INFO - Using entry price: 1.1826 for EURUSD SELL
+2026-02-09 00:22:50,437 - src.trading.risk_manager - INFO - EURUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 00:22:50,438 - src.trading.risk_manager - INFO - Calculated SL/TP for EURUSD: SL=1.1876, TP=1.1726 (distance=0.00500)
+2026-02-09 00:22:50,653 - __main__ - INFO - Trade executed: {'price': 1.18259, 'success': True, 'ticket': 752220930, 'volume': 0.01}
+2026-02-09 00:23:50,728 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:23:50,784 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (100.0%)
+2026-02-09 00:23:50,799 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:23:50,804 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:23:50,812 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 99.98%)
+2026-02-09 00:23:50,825 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $29.67)
+2026-02-09 00:23:50,836 - __main__ - INFO - Using entry price: 1.18261 for EURUSD SELL
+2026-02-09 00:23:50,841 - src.trading.risk_manager - INFO - EURUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 00:23:50,841 - src.trading.risk_manager - INFO - Calculated SL/TP for EURUSD: SL=1.18761, TP=1.17261 (distance=0.00500)
+2026-02-09 00:23:51,044 - __main__ - INFO - Trade executed: {'price': 1.18261, 'success': True, 'ticket': 752224280, 'volume': 0.01}
+2026-02-09 00:24:51,107 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:24:51,158 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (100.0%)
+2026-02-09 00:24:51,172 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:24:51,178 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:24:51,187 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:24:51,219 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (87.3%)
+2026-02-09 00:24:51,231 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 99.99%)
+2026-02-09 00:24:51,246 - src.trading.risk_manager - INFO - Calculated position size: 0.01 lots (risk: $29.67)
+2026-02-09 00:24:51,256 - __main__ - INFO - Using entry price: 1.18292 for EURUSD SELL
+2026-02-09 00:24:51,263 - src.trading.risk_manager - INFO - EURUSD minimum stop level: 0 points = 0.00000 price distance
+2026-02-09 00:24:51,263 - src.trading.risk_manager - INFO - Calculated SL/TP for EURUSD: SL=1.18792, TP=1.17292 (distance=0.00500)
+2026-02-09 00:24:51,479 - __main__ - INFO - Trade executed: {'price': 1.1829, 'success': True, 'ticket': 752228244, 'volume': 0.01}
+2026-02-09 00:24:51,510 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 87.35%)
+2026-02-09 00:24:51,519 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:25:51,571 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:25:51,616 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (100.0%)
+2026-02-09 00:25:51,627 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:25:51,632 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:25:51,639 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:25:51,667 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (94.6%)
+2026-02-09 00:25:51,676 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 99.99%)
+2026-02-09 00:25:51,685 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:25:51,711 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 94.61%)
+2026-02-09 00:25:51,720 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:26:51,784 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:26:51,825 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (100.0%)
+2026-02-09 00:26:51,836 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:26:51,841 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:26:51,849 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:26:51,884 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (91.3%)
+2026-02-09 00:26:51,893 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 99.99%)
+2026-02-09 00:26:51,902 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:26:51,929 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 91.25%)
+2026-02-09 00:26:51,938 - __main__ - WARNING - Trade rejected: Max positions (3) reached
