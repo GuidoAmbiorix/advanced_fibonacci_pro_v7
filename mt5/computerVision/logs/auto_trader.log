@@ -1180,3 +1180,25 @@
 2026-02-09 00:26:51,902 - __main__ - WARNING - Trade rejected: Max positions (3) reached
 2026-02-09 00:26:51,929 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 91.25%)
 2026-02-09 00:26:51,938 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:27:52,004 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:27:52,052 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (100.0%)
+2026-02-09 00:27:52,066 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:27:52,070 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:27:52,077 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:27:52,107 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (90.7%)
+2026-02-09 00:27:52,117 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 99.99%)
+2026-02-09 00:27:52,127 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:27:52,153 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 90.75%)
+2026-02-09 00:27:52,162 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:29:18,147 - __main__ - INFO - Auto-Trader initialized
+2026-02-09 00:29:18,148 - __main__ - INFO - Auto-Trader started
+2026-02-09 00:30:19,200 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-09 00:30:19,250 - src.trading.prediction_service - INFO - ✅ Generated prediction for EURUSD: SELL (100.0%)
+2026-02-09 00:30:19,262 - src.trading.prediction_service - INFO - Generating prediction for XAUUSD using TA-Lib features
+2026-02-09 00:30:19,267 - src.trading.prediction_service - WARNING - Not enough data for XAUUSD (got 0 bars)
+2026-02-09 00:30:19,274 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-09 00:30:19,303 - src.trading.prediction_service - INFO - ✅ Generated prediction for GBPUSD: BUY (84.8%)
+2026-02-09 00:30:19,311 - __main__ - INFO - Processing signal: SELL EURUSD (confidence: 99.99%)
+2026-02-09 00:30:19,321 - __main__ - WARNING - Trade rejected: Max positions (3) reached
+2026-02-09 00:30:19,348 - __main__ - INFO - Processing signal: BUY GBPUSD (confidence: 84.81%)
+2026-02-09 00:30:19,358 - __main__ - WARNING - Trade rejected: Max positions (3) reached

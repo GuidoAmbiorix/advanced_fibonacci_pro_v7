@@ -37,6 +37,12 @@ class RiskManager:
         max_positions = self.config['risk']['max_positions']
         if len(open_positions) >= max_positions:
             return False, f"Max positions ({max_positions}) reached"
+            
+        # Check if we already have a position for this symbol
+        # We only want ONE open trade per symbol at a time
+        for pos in open_positions:
+            if pos['symbol'] == symbol:
+                return False, f"Position already open for {symbol}"
         
         # Check daily loss limit
         daily_pnl = self.db.get_daily_pnl()
