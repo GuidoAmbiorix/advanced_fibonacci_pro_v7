@@ -240,3 +240,66 @@ CREATE TABLE IF NOT EXISTS portfolio_performance (
 );
 
 CREATE INDEX IF NOT EXISTS idx_performance_portfolio_date ON portfolio_performance(portfolio_id, date DESC);
+
+-- ==================== Signal Confirmation System ====================
+
+-- Signal Confirmations Table (tracks signal validation lifecycle)
+CREATE TABLE IF NOT EXISTS signal_confirmations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prediction_id INTEGER NOT NULL,
+    symbol TEXT NOT NULL,
+    direction TEXT NOT NULL, -- 'BUY', 'SELL'
+    initial_confidence REAL NOT NULL,
+
+    -- Confirmation tracking
+    status TEXT NOT NULL DEFAULT 'PENDING', -- 'PENDING', 'CONFIRMED', 'REJECTED', 'EXPIRED', 'EXECUTED'
+    confirmation_score REAL DEFAULT 0,
+
+    -- Signal validation metrics
+    mtf_alignment INTEGER DEFAULT 0, -- -1 (against), 0 (neutral), 1 (aligned)
+    mtf_score REAL DEFAULT 0,
+    momentum_score REAL DEFAULT 0,
+    volume_score REAL DEFAULT 0,
+    trend_score REAL DEFAULT 0,
+    fibonacci_score REAL DEFAULT 0,
+    smc_score REAL DEFAULT 0,
+    volume_confirmed BOOLEAN DEFAULT 0,
+    trend_confirmed BOOLEAN DEFAULT 0,
+    fibonacci_details TEXT, -- JSON with Fib analysis details
+    smc_details TEXT, -- JSON with SMC analysis details
+
+    -- Timing
+    signal_generated_at DATETIME NOT NULL,
+    confirmation_window_end DATETIME NOT NULL,
+    confirmed_at DATETIME,
+    executed_at DATETIME,
+
+    -- Rejection tracking
+    rejection_reason TEXT,
+    validation_details TEXT, -- JSON with detailed validation breakdown
+
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (prediction_id) REFERENCES predictions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_signal_confirmations_status ON signal_confirmations(status, symbol);
+CREATE INDEX IF NOT EXISTS idx_signal_confirmations_symbol_time ON signal_confirmations(symbol, signal_generated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_signal_confirmations_pending ON signal_confirmations(status) WHERE status = 'PENDING';
+CREATE INDEX IF NOT EXISTS idx_signal_confirmations_fib_score ON signal_confirmations(fibonacci_score);
+CREATE INDEX IF NOT EXISTS idx_signal_confirmations_smc_score ON signal_confirmations(smc_score);
+
+-- Trade Cooldowns Table (prevents overtrading)
+CREATE TABLE IF NOT EXISTS trade_cooldowns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT NOT NULL,
+    last_trade_time DATETIME NOT NULL,
+    cooldown_end_time DATETIME NOT NULL,
+    reason TEXT, -- 'TRADE_EXECUTED', 'STOP_LOSS', 'RAPID_SIGNALS'
+    trade_direction TEXT, -- 'BUY', 'SELL' from last trade
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cooldown_symbol ON trade_cooldowns(symbol);
+CREATE INDEX IF NOT EXISTS idx_cooldown_end_time ON trade_cooldowns(cooldown_end_time);

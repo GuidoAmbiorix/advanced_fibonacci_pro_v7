@@ -532,3 +532,99 @@ class DatabaseManager:
                 WHERE mt5_ticket = ?
             """, (mt5_ticket,)).fetchone()
             return dict(row) if row else None
+
+    # ==================== Signal Confirmation System ====================
+
+    def get_pending_signals(self, limit: int = 50) -> List[Dict]:
+        """Get pending signals awaiting validation."""
+        with self.get_connection() as conn:
+            rows = conn.execute("""
+                SELECT * FROM signal_confirmations
+                WHERE status = 'PENDING'
+                AND confirmation_window_end > datetime('now')
+                ORDER BY signal_generated_at ASC
+                LIMIT ?
+            """, (limit,)).fetchall()
+            return [dict(row) for row in rows]
+
+    def get_confirmed_signals_ready_to_trade(self, limit: int = 10) -> List[Dict]:
+        """Get confirmed signals ready for execution."""
+        with self.get_connection() as conn:
+            rows = conn.execute("""
+                SELECT sc.*, p.symbol, p.prediction_direction, p.confidence
+                FROM signal_confirmations sc
+                JOIN predictions p ON sc.prediction_id = p.id
+                WHERE sc.status = 'CONFIRMED'
+                AND sc.executed_at IS NULL
+                AND sc.confirmation_window_end > datetime('now')
+                ORDER BY sc.confirmation_score DESC, sc.confirmed_at ASC
+                LIMIT ?
+            """, (limit,)).fetchall()
+            return [dict(row) for row in rows]
+
+    def get_signal_by_id(self, signal_id: int) -> Optional[Dict]:
+        """Get signal confirmation by ID."""
+        with self.get_connection() as conn:
+            row = conn.execute("""
+                SELECT * FROM signal_confirmations WHERE id = ?
+            """, (signal_id,)).fetchone()
+            return dict(row) if row else None
+
+    def get_recent_signals(self, hours: int = 24, status: str = None) -> List[Dict]:
+        """Get recent signals for monitoring."""
+        from datetime import datetime, timedelta
+        time_window = datetime.now() - timedelta(hours=hours)
+
+        with self.get_connection() as conn:
+            if status:
+                rows = conn.execute("""
+                    SELECT * FROM signal_confirmations
+                    WHERE signal_generated_at > ?
+                    AND status = ?
+                    ORDER BY signal_generated_at DESC
+                """, (time_window, status)).fetchall()
+            else:
+                rows = conn.execute("""
+                    SELECT * FROM signal_confirmations
+                    WHERE signal_generated_at > ?
+                    ORDER BY signal_generated_at DESC
+                """, (time_window,)).fetchall()
+            return [dict(row) for row in rows]
+
+    def get_active_cooldowns(self) -> List[Dict]:
+        """Get all active cooldowns."""
+        with self.get_connection() as conn:
+            rows = conn.execute("""
+                SELECT * FROM trade_cooldowns
+                WHERE cooldown_end_time > datetime('now')
+                ORDER BY cooldown_end_time ASC
+            """).fetchall()
+            return [dict(row) for row in rows]
+
+    def get_signal_stats_summary(self, hours: int = 24) -> Dict:
+        """Get signal confirmation statistics."""
+        from datetime import datetime, timedelta
+        time_window = datetime.now() - timedelta(hours=hours)
+
+        with self.get_connection() as conn:
+            rows = conn.execute("""
+                SELECT
+                    status,
+                    COUNT(*) as count,
+                    AVG(confirmation_score) as avg_score
+                FROM signal_confirmations
+                WHERE signal_generated_at > ?
+                GROUP BY status
+            """, (time_window,)).fetchall()
+
+            stats = {}
+            total = 0
+            for row in rows:
+                stats[row['status']] = {
+                    'count': row['count'],
+                    'avg_score': round(row['avg_score'], 1) if row['avg_score'] else 0
+                }
+                total += row['count']
+
+            stats['total'] = total
+            return stats

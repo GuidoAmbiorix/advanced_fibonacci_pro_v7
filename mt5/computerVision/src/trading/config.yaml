@@ -191,6 +191,89 @@ risk:
   min_confidence: 0.70
   max_daily_loss_pct: 5.0
 
+# Signal Confirmation Settings (NEW!)
+# Prevents immediate trade execution - validates signals first
+signal_confirmation:
+  enabled: true # Set to false to disable confirmation system
+
+  # Confirmation window (how long to wait before validating signal)
+  confirmation_window_seconds: 180 # 3 minutes (H1 timeframe)
+
+  # Minimum confirmation score to execute (0-100)
+  min_confirmation_score: 70
+
+  # Scoring weights (7 factors, sum to 100)
+  weights:
+    mtf_alignment: 25 # Multi-timeframe trend alignment
+    momentum_confluence: 20 # RSI, MACD, Stochastic
+    volume_confirmation: 15 # Volume supporting move
+    trend_strength: 12 # ADX and DI alignment
+    fibonacci_alignment: 12 # OTE zones, retracements, confluence
+    model_confidence: 8 # ML model prediction confidence
+    smc_confluence: 8 # Order Blocks, FVG, BOS, CHoCH
+
+  # Multi-timeframe validation
+  mtf_validation:
+    enabled: true
+    require_htf_alignment: true # Require higher TF to agree
+    min_htf_count: 2 # Check at least 2 higher timeframes
+
+  # Momentum confirmation
+  momentum_validation:
+    enabled: true
+    require_rsi_alignment: true
+    require_macd_alignment: true
+    require_stochastic_alignment: false # Optional
+
+  # Volume validation
+  volume_validation:
+    enabled: true
+    min_volume_ratio: 1.2 # Volume must be 1.2x average
+
+  # Trend strength validation
+  trend_validation:
+    enabled: true
+    min_adx: 20 # Minimum ADX for trend strength
+    require_di_alignment: true
+
+  # Fibonacci validation (NEW! ✨)
+  fibonacci_validation:
+    enabled: true
+    swing_lookback: 50 # Bars to look back for swing high/low
+    min_confluence_distance_pips: 5 # Pips for Fib level confluence
+    require_ote_zone: false # Don't strictly require OTE zone
+    min_fib_score: 40 # Minimum Fibonacci score (0-100)
+
+  # Smart Money Concepts validation (NEW! ✨)
+  smc_validation:
+    enabled: true
+    order_block_lookback: 50 # Bars to detect order blocks
+    fvg_min_gap_ratio: 0.0001 # Minimum gap size for Fair Value Gap
+    bos_lookback: 30 # Bars for Break of Structure detection
+    require_premium_discount: false # Don't strictly require premium/discount zone
+    min_smc_score: 40 # Minimum SMC score (0-100)
+
+  # Confluence requirements
+  min_confluence_factors: 3 # Need at least 3 confirming factors
+
+# Cooldown Settings (NEW!)
+# Prevents overtrading and revenge trading
+cooldowns:
+  enabled: true
+
+  # Per-symbol cooldown after trade
+  symbol_cooldown_minutes: 60 # 1 hour for H1 timeframe (1 bar)
+
+  # Extended cooldown after loss
+  loss_cooldown_minutes: 180 # 3 hours after stop loss (3 bars)
+
+  # Minimum time between ANY trades
+  global_cooldown_minutes: 15 # 15 minutes between any trades
+
+  # Cooldown after multiple rapid signals (prevent over-trading)
+  rapid_signal_threshold: 3 # More than 3 signals in window
+  rapid_signal_cooldown_minutes: 120 # 2 hour cooldown
+
 # Fallback Defaults (only used if database is empty)
 # All these settings are now managed in the Dashboard
 defaults:

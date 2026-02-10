@@ -1,5 +1,11 @@
 """
 Auto-Trader - Main trading loop that executes ML-based trades
+
+NEW FLOW with Signal Confirmation System:
+1. Generate predictions
+2. Register signals for validation
+3. Validate pending signals (MTF, momentum, volume, trend)
+4. Execute only confirmed signals (with cooldown checks)
 """
 
 import logging
@@ -17,6 +23,9 @@ from src.trading.risk_manager import RiskManager
 from src.trading.prediction_service import PredictionService
 from src.trading.killzone_manager import KillzoneManager
 from src.trading.exit_manager import ExitManager
+from src.trading.signal_validator import SignalValidator
+from src.trading.cooldown_manager import CooldownManager
+from src.trading.signal_confirmation_manager import SignalConfirmationManager
 
 class AutoTrader:
     """Automated trading engine based on ML predictions."""
@@ -50,16 +59,30 @@ class AutoTrader:
         
         # Initialize exit manager
         self.exit_manager = ExitManager(self.config, self.bridge_url)
-        
+
         # Pass killzone manager to risk manager
         self.risk_manager.killzone_manager = self.killzone_manager
-        
+
+        # Initialize Signal Confirmation System
+        self.signal_validator = SignalValidator(self.db, self.config, self.bridge_url)
+        self.cooldown_manager = CooldownManager(self.db, self.config)
+        self.confirmation_manager = SignalConfirmationManager(
+            self.db, self.config, self.signal_validator, self.cooldown_manager
+        )
+
         # Prediction regeneration tracking
         self.last_prediction_time = {}  # Track last prediction time per symbol
         self.prediction_interval = self.config.get('prediction', {}).get('regeneration_interval_seconds', 300)
-        
-        self.logger.info("Auto-Trader initialized with killzone and exit strategies")
-        self.logger.info(f"Prediction regeneration interval: {self.prediction_interval}s")
+
+        # Check if confirmation system is enabled
+        confirmation_enabled = self.config.get('signal_confirmation', {}).get('enabled', True)
+
+        self.logger.info("🚀 Auto-Trader initialized with Signal Confirmation System")
+        self.logger.info(f"  ├─ Killzone Management: {'✓' if self.killzone_manager else '✗'}")
+        self.logger.info(f"  ├─ Exit Strategies: {'✓' if self.exit_manager else '✗'}")
+        self.logger.info(f"  ├─ Signal Confirmation: {'✓' if confirmation_enabled else '✗ (disabled)'}")
+        self.logger.info(f"  ├─ Cooldown System: {'✓' if self.cooldown_manager.enabled else '✗ (disabled)'}")
+        self.logger.info(f"  └─ Prediction interval: {self.prediction_interval}s")
     
     def get_account_balance(self) -> float:
         """Get current account balance from MT5."""
@@ -228,30 +251,157 @@ class AutoTrader:
                     self.logger.error(f"❌ Failed to regenerate predictions: {e}")
     
     def check_signals(self):
-        """Check for new ML signals and execute trades."""
+        """
+        NEW 3-PHASE SIGNAL FLOW:
+        1. Generate predictions & register new signals for validation
+        2. Process and validate pending signals
+        3. Execute only confirmed signals
+        """
         # Check global enable switch
         if self.db.get_config('auto_trading_enabled') != 'true':
             return
-            
+
         account_balance = self.get_account_balance()
         if account_balance == 0:
             self.logger.warning("Could not get account balance")
             return
 
+        # PHASE 1: Generate predictions & register new signals
+        self._register_new_signals(account_balance)
+
+        # PHASE 2: Process and validate pending signals
+        self.confirmation_manager.process_pending_signals()
+
+        # PHASE 3: Execute confirmed signals
+        self._execute_confirmed_signals(account_balance)
+
+    def _register_new_signals(self, account_balance: float):
+        """
+        PHASE 1: Generate predictions and register them for validation.
+        This replaces immediate trade execution with signal registration.
+        """
         # Check for Active Portfolio
         active_portfolio_id = self.db.get_config('active_portfolio_id')
-        
+
         if active_portfolio_id:
-            # First, generate fresh predictions for this portfolio
+            # Portfolio mode: generate predictions for portfolio
             try:
                 self.prediction_service.generate_predictions_for_portfolio(int(active_portfolio_id))
             except Exception as e:
                 self.logger.error(f"Error generating predictions: {e}")
-            
-            # Then execute trades based on predictions
-            self._trade_portfolio(int(active_portfolio_id), account_balance)
+                return
+
+            # Register signals from portfolio allocations
+            allocations = self.db.get_allocations(int(active_portfolio_id))
+
+            for alloc in allocations:
+                if alloc['weight'] <= 0:
+                    continue
+
+                symbol = alloc['symbol']
+                model_id = alloc['model_id']
+
+                # Get latest prediction
+                prediction = self.db.get_latest_prediction(symbol, model_id=model_id)
+
+                if prediction and self._is_prediction_fresh(prediction):
+                    # Check if signal already registered
+                    if not self._is_signal_already_registered(prediction['id']):
+                        # Get trading timeframe from config
+                        trading_timeframe = self.db.get_config('trading_timeframe', 'H1')
+
+                        # Register signal for validation
+                        signal_id = self.confirmation_manager.register_new_signal(
+                            prediction, trading_timeframe
+                        )
+
+                        if signal_id:
+                            self.logger.info(f"📝 Registered signal #{signal_id} for {symbol} {prediction['prediction_direction']}")
+
         else:
-            self._trade_legacy_config(account_balance)
+            # Legacy mode: generate predictions from config symbols
+            self.logger.warning("⚠️ Legacy mode active - consider creating a portfolio for better management")
+            # TODO: Implement legacy mode signal registration if needed
+
+    def _is_signal_already_registered(self, prediction_id: int) -> bool:
+        """Check if prediction already has a signal confirmation entry."""
+        try:
+            query = """
+                SELECT COUNT(*) as count FROM signal_confirmations
+                WHERE prediction_id = ?
+                AND status IN ('PENDING', 'CONFIRMED')
+            """
+
+            with self.db.get_connection() as conn:
+                row = conn.execute(query, (prediction_id,)).fetchone()
+                return row['count'] > 0 if row else False
+
+        except Exception as e:
+            self.logger.error(f"Error checking signal registration: {e}")
+            return False
+
+    def _execute_confirmed_signals(self, account_balance: float):
+        """
+        PHASE 3: Execute trades for signals that passed validation.
+        This replaces immediate execution with confirmation-gated execution.
+        """
+        # Get confirmed signals ready for execution
+        confirmed_signals = self.confirmation_manager.get_confirmed_signals()
+
+        if not confirmed_signals:
+            return
+
+        self.logger.info(f"🎯 Processing {len(confirmed_signals)} confirmed signal(s)")
+
+        for signal in confirmed_signals:
+            symbol = signal['symbol']
+            direction = signal['prediction_direction']
+            signal_id = signal['id']
+            prediction_id = signal['prediction_id']
+
+            # Final gate: check cooldown and other conditions
+            can_execute, reason = self.confirmation_manager.can_execute_signal(signal)
+
+            if not can_execute:
+                self.logger.warning(f"⛔ Cannot execute signal #{signal_id} for {symbol}: {reason}")
+                continue
+
+            # Get full prediction details
+            prediction = self.db.get_latest_prediction(symbol)
+
+            if not prediction:
+                self.logger.error(f"❌ Prediction not found for signal #{signal_id}")
+                continue
+
+            # Get portfolio allocation (if using portfolio mode)
+            active_portfolio_id = self.db.get_config('active_portfolio_id')
+
+            if active_portfolio_id:
+                allocations = self.db.get_allocations(int(active_portfolio_id))
+                alloc = next((a for a in allocations if a['symbol'] == symbol), None)
+
+                if alloc:
+                    allocated_capital = account_balance * alloc['weight']
+                    prediction['model_name'] = alloc.get('strategy_name', 'Portfolio Strategy')
+                else:
+                    allocated_capital = account_balance
+            else:
+                allocated_capital = account_balance
+
+            # Execute the trade
+            self.logger.info(f"🚀 Executing confirmed signal: {direction} {symbol} (score: {signal['confirmation_score']:.1f})")
+
+            try:
+                self.execute_trade(prediction, allocated_capital)
+
+                # Mark signal as executed
+                self.confirmation_manager.mark_signal_executed(signal_id)
+
+                # Set cooldown
+                self.cooldown_manager.set_cooldown(symbol, reason='TRADE_EXECUTED', direction=direction)
+
+            except Exception as e:
+                self.logger.error(f"❌ Error executing signal #{signal_id}: {e}")
 
     def _trade_portfolio(self, portfolio_id: int, account_balance: float):
         """Execute trades based on portfolio allocations."""
@@ -406,30 +556,37 @@ class AutoTrader:
             self.logger.error(f"Error closing position: {e}")
     
     def run(self):
-        """Main trading loop."""
+        """Main trading loop with Signal Confirmation System."""
         self.running = True
-        self.logger.info("🚀 Auto-Trader started")
-        self.db.log('INFO', 'TRADER', 'Auto-Trader started')
-        
+        self.logger.info("🚀 Auto-Trader started with Signal Confirmation System")
+        self.db.log('INFO', 'TRADER', 'Auto-Trader started with Signal Confirmation')
+
         check_interval = self.config['auto_trader']['check_interval_seconds']
-        
+
         try:
             while self.running:
                 # STEP 1: Ensure fresh predictions are available
                 self.ensure_fresh_predictions()
-                
-                # STEP 2: Check for new signals and execute trades
+
+                # STEP 2: Process signals (3-phase flow: register → validate → execute)
                 self.check_signals()
-                
+
                 # STEP 3: Monitor existing positions for exits
                 self.monitor_positions()
-                
+
+                # STEP 4: Cleanup expired cooldowns and old signals
+                self.cooldown_manager.cleanup_expired_cooldowns()
+                self.confirmation_manager.cleanup_old_signals(days=7)
+
                 time.sleep(check_interval)
+
         except KeyboardInterrupt:
             self.logger.info("Auto-Trader stopped by user")
         except Exception as e:
             self.logger.error(f"Auto-Trader error: {e}")
             self.db.log('ERROR', 'TRADER', f'Auto-Trader error: {e}')
+            import traceback
+            self.logger.error(traceback.format_exc())
         finally:
             self.running = False
             self.logger.info("Auto-Trader stopped")

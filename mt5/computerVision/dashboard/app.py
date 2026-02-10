@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 from datetime import datetime, timedelta
 
 # Add parent directory to path
@@ -36,7 +37,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigation",
-    ["Dashboard", "Live Predictions", "Portfolios", "Trading Control", "Live Trades", "Killzone Settings", "Exit Strategies", "Training", "System Logs"]
+    ["Dashboard", "Live Predictions", "Portfolios", "Trading Control", "Signal Monitor", "Live Trades", "Killzone Settings", "Exit Strategies", "Training", "System Logs"]
 )
 
 st.sidebar.markdown("---")
@@ -454,6 +455,248 @@ elif page == "Trading Control":
         
         db.log('INFO', 'DASHBOARD', f'Configuration updated: Balance=${account_balance}, Risk={risk_per_trade_pct}%, Method={position_sizing_method}, Timeframe={trading_timeframe}, ATR={atr_multiplier}x')
         st.success(f"✅ Configuration saved! Trading on {trading_timeframe} with {atr_multiplier}x ATR multiplier")
+
+# ==================== Signal Monitor Page ====================
+elif page == "Signal Monitor":
+    st.title("🔍 Signal Monitor - Confirmation System")
+
+    st.markdown("""
+    **Signal Flow:** Predictions → Validation → Confirmation → Execution
+    - **Pending**: Awaiting validation
+    - **Confirmed**: Passed validation, ready to trade
+    - **Rejected**: Failed validation
+    - **Executed**: Trade placed
+    - **Expired**: Confirmation window elapsed
+    """)
+
+    # Get signal statistics
+    stats = db.get_signal_stats_summary(hours=24)
+
+    # Show stats overview
+    st.subheader("📊 24-Hour Statistics")
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        total = stats.get('total', 0)
+        st.metric("Total Signals", total)
+
+    with col2:
+        confirmed = stats.get('CONFIRMED', {}).get('count', 0)
+        executed = stats.get('EXECUTED', {}).get('count', 0)
+        confirmation_rate = round((confirmed + executed) / total * 100, 1) if total > 0 else 0
+        st.metric("Confirmation Rate", f"{confirmation_rate}%")
+
+    with col3:
+        rejected = stats.get('REJECTED', {}).get('count', 0)
+        st.metric("Rejected", rejected, delta=None, delta_color="inverse")
+
+    with col4:
+        executed_count = stats.get('EXECUTED', {}).get('count', 0)
+        st.metric("Executed", executed_count)
+
+    st.markdown("---")
+
+    # Tabs for different views
+    tab1, tab2, tab3, tab4 = st.tabs(["🕐 Pending Signals", "✅ Confirmed Signals", "❌ Rejected Signals", "🛡️ Active Cooldowns"])
+
+    # Tab 1: Pending Signals
+    with tab1:
+        st.subheader("Pending Signals (Awaiting Validation)")
+
+        pending = db.get_pending_signals(limit=50)
+
+        if pending:
+            df = pd.DataFrame(pending)
+            df['time_remaining'] = (pd.to_datetime(df['confirmation_window_end']) - pd.Timestamp.now()).dt.total_seconds() / 60
+
+            display_df = df[['symbol', 'direction', 'initial_confidence', 'time_remaining', 'signal_generated_at']]
+            display_df['initial_confidence'] = display_df['initial_confidence'].apply(lambda x: f"{x*100:.1f}%")
+            display_df['time_remaining'] = display_df['time_remaining'].apply(lambda x: f"{x:.1f} min")
+
+            st.dataframe(display_df, use_container_width=True)
+        else:
+            st.info("No pending signals")
+
+    # Tab 2: Confirmed Signals
+    with tab2:
+        st.subheader("Confirmed Signals (Ready to Execute)")
+
+        confirmed_signals = db.get_confirmed_signals_ready_to_trade(limit=50)
+
+        if confirmed_signals:
+            df = pd.DataFrame(confirmed_signals)
+
+            display_df = df[['symbol', 'prediction_direction', 'confirmation_score', 'mtf_score', 'momentum_score', 'volume_score', 'trend_score', 'fibonacci_score', 'smc_score', 'confirmed_at']]
+            display_df.columns = ['Symbol', 'Direction', 'Total Score', 'MTF', 'Momentum', 'Volume', 'Trend', 'Fibonacci', 'SMC', 'Confirmed At']
+
+            # Format scores
+            for col in ['Total Score', 'MTF', 'Momentum', 'Volume', 'Trend', 'Fibonacci', 'SMC']:
+                display_df[col] = display_df[col].apply(lambda x: f"{x:.1f}" if pd.notna(x) else "N/A")
+
+            st.dataframe(display_df, use_container_width=True)
+
+            # Show validation breakdown for selected signal
+            if len(confirmed_signals) > 0:
+                st.markdown("---")
+                st.subheader("Validation Breakdown")
+
+                selected_idx = st.selectbox("Select signal to view details:", range(len(confirmed_signals)),
+                                           format_func=lambda i: f"{confirmed_signals[i]['symbol']} {confirmed_signals[i]['prediction_direction']} ({confirmed_signals[i]['confirmation_score']:.1f})")
+
+                signal = confirmed_signals[selected_idx]
+
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    st.markdown("**Core Validation:**")
+                    st.progress(signal['confirmation_score'] / 100, text=f"Overall: {signal['confirmation_score']:.1f}/100")
+                    st.progress(signal['mtf_score'] / 100, text=f"MTF Alignment: {signal['mtf_score']:.1f}/100")
+                    st.progress(signal['momentum_score'] / 100, text=f"Momentum: {signal['momentum_score']:.1f}/100")
+
+                with col2:
+                    st.markdown("**Technical Analysis:**")
+                    st.progress(signal['volume_score'] / 100, text=f"Volume: {signal['volume_score']:.1f}/100")
+                    st.progress(signal['trend_score'] / 100, text=f"Trend Strength: {signal['trend_score']:.1f}/100")
+
+                    # Show MTF alignment
+                    mtf_status = "✅ Aligned" if signal['mtf_alignment'] == 1 else ("❌ Against" if signal['mtf_alignment'] == -1 else "⚪ Neutral")
+                    st.caption(f"**MTF:** {mtf_status}")
+
+                with col3:
+                    st.markdown("**Institutional Analysis:**")
+                    fibonacci_score = signal.get('fibonacci_score', 50)
+                    smc_score = signal.get('smc_score', 50)
+                    st.progress(fibonacci_score / 100, text=f"Fibonacci: {fibonacci_score:.1f}/100")
+                    st.progress(smc_score / 100, text=f"Smart Money: {smc_score:.1f}/100")
+
+                    # Show if in OTE zone or near Order Block
+                    if fibonacci_score >= 60:
+                        st.caption("✨ Strong Fibonacci setup")
+                    if smc_score >= 60:
+                        st.caption("✨ Strong SMC setup")
+
+        else:
+            st.info("No confirmed signals ready to execute")
+
+    # Tab 3: Rejected Signals
+    with tab3:
+        st.subheader("Recently Rejected Signals")
+
+        rejected = db.get_recent_signals(hours=24, status='REJECTED')
+
+        if rejected:
+            df = pd.DataFrame(rejected)
+
+            display_df = df[['symbol', 'direction', 'initial_confidence', 'confirmation_score', 'rejection_reason', 'signal_generated_at']]
+            display_df['initial_confidence'] = display_df['initial_confidence'].apply(lambda x: f"{x*100:.1f}%")
+            display_df['confirmation_score'] = display_df['confirmation_score'].apply(lambda x: f"{x:.1f}" if pd.notna(x) else "N/A")
+
+            st.dataframe(display_df, use_container_width=True)
+
+            # Show common rejection reasons
+            st.markdown("---")
+            st.subheader("Common Rejection Reasons")
+
+            reasons = df['rejection_reason'].value_counts()
+            if not reasons.empty:
+                fig = px.bar(x=reasons.index, y=reasons.values,
+                            labels={'x': 'Reason', 'y': 'Count'},
+                            title="Rejection Reasons Distribution")
+                st.plotly_chart(fig, use_container_width=True)
+
+        else:
+            st.info("No rejected signals in the last 24 hours")
+
+    # Tab 4: Active Cooldowns
+    with tab4:
+        st.subheader("Active Cooldowns")
+
+        cooldowns = db.get_active_cooldowns()
+
+        if cooldowns:
+            data = []
+            for cd in cooldowns:
+                from datetime import datetime
+                cooldown_end = datetime.fromisoformat(cd['cooldown_end_time'])
+                remaining = (cooldown_end - datetime.now()).total_seconds() / 60
+
+                data.append({
+                    'Symbol': cd['symbol'],
+                    'Reason': cd['reason'],
+                    'Last Direction': cd['trade_direction'] or 'N/A',
+                    'Remaining (min)': f"{remaining:.1f}",
+                    'Cooldown Ends': cd['cooldown_end_time']
+                })
+
+            df = pd.DataFrame(data)
+            st.dataframe(df, use_container_width=True)
+
+            # Show cooldown distribution
+            st.markdown("---")
+            st.subheader("Cooldown Reasons")
+
+            reason_counts = pd.Series([cd['reason'] for cd in cooldowns]).value_counts()
+            fig = px.pie(values=reason_counts.values, names=reason_counts.index,
+                        title="Cooldown Distribution")
+            st.plotly_chart(fig, use_container_width=True)
+
+        else:
+            st.success("✅ No active cooldowns - all symbols available for trading")
+
+    # Show confirmation system settings
+    st.markdown("---")
+    st.subheader("⚙️ Confirmation System Settings")
+
+    with st.expander("View Current Settings"):
+        import yaml
+        try:
+            with open('src/trading/config.yaml', 'r') as f:
+                config = yaml.safe_load(f)
+
+            conf_settings = config.get('signal_confirmation', {})
+            cooldown_settings = config.get('cooldowns', {})
+            weights = conf_settings.get('weights', {})
+            fib_settings = conf_settings.get('fibonacci_validation', {})
+            smc_settings = conf_settings.get('smc_validation', {})
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.markdown("**Signal Confirmation:**")
+                st.text(f"Enabled: {conf_settings.get('enabled', False)}")
+                st.text(f"Confirmation Window: {conf_settings.get('confirmation_window_seconds', 0)}s")
+                st.text(f"Min Score: {conf_settings.get('min_confirmation_score', 0)}")
+
+                st.markdown("**Scoring Weights:**")
+                st.text(f"MTF: {weights.get('mtf_alignment', 0)}%")
+                st.text(f"Momentum: {weights.get('momentum_confluence', 0)}%")
+                st.text(f"Volume: {weights.get('volume_confirmation', 0)}%")
+                st.text(f"Trend: {weights.get('trend_strength', 0)}%")
+                st.text(f"Fibonacci: {weights.get('fibonacci_alignment', 0)}%")
+                st.text(f"SMC: {weights.get('smc_confluence', 0)}%")
+                st.text(f"Model: {weights.get('model_confidence', 0)}%")
+
+            with col2:
+                st.markdown("**Fibonacci Validation:**")
+                st.text(f"Enabled: {fib_settings.get('enabled', False)}")
+                st.text(f"Swing Lookback: {fib_settings.get('swing_lookback', 50)} bars")
+                st.text(f"Min Score: {fib_settings.get('min_fib_score', 40)}")
+                st.text(f"Require OTE: {fib_settings.get('require_ote_zone', False)}")
+
+                st.markdown("**SMC Validation:**")
+                st.text(f"Enabled: {smc_settings.get('enabled', False)}")
+                st.text(f"OB Lookback: {smc_settings.get('order_block_lookback', 50)} bars")
+                st.text(f"Min Score: {smc_settings.get('min_smc_score', 40)}")
+
+            with col3:
+                st.markdown("**Cooldowns:**")
+                st.text(f"Enabled: {cooldown_settings.get('enabled', False)}")
+                st.text(f"Symbol Cooldown: {cooldown_settings.get('symbol_cooldown_minutes', 0)} min")
+                st.text(f"Loss Cooldown: {cooldown_settings.get('loss_cooldown_minutes', 0)} min")
+                st.text(f"Global Cooldown: {cooldown_settings.get('global_cooldown_minutes', 0)} min")
+
+        except Exception as e:
+            st.error(f"Error loading config: {e}")
 
 # ==================== Live Trades Page ====================
 elif page == "Live Trades":
