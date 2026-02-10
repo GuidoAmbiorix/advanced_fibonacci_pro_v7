@@ -11,3 +11,7 @@ schedule
 TA-Lib
 optuna
 pytz
+xgboost
+lightgbm
+tensorflow>=2.13.0
+tensorboard

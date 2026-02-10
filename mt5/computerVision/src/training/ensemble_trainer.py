@@ -20,9 +20,18 @@ from src.training.sequence_generator import prepare_sequences_for_training
 from src.features import prepare_training_data
 
 try:
+    import os
     import tensorflow as tf
     from tensorflow import keras
+
+    # Force CPU usage (disable GPU)
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    tf.config.set_visible_devices([], 'GPU')
+
+    # Import custom layers to register them with Keras
+    from src.training.tf_models import AttentionLayer
     TENSORFLOW_AVAILABLE = True
+    print("✅ TensorFlow configured for CPU")
 except ImportError:
     TENSORFLOW_AVAILABLE = False
     print("⚠️ TensorFlow not available")
@@ -30,6 +39,7 @@ except ImportError:
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, VotingClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
+from sklearn.base import BaseEstimator, ClassifierMixin
 
 try:
     from xgboost import XGBClassifier
@@ -44,15 +54,17 @@ except ImportError:
     LIGHTGBM_AVAILABLE = False
 
 
-class TensorFlowWrapper:
+class TensorFlowWrapper(BaseEstimator, ClassifierMixin):
     """
     Wrapper to make TensorFlow models compatible with Scikit-Learn ensemble.
     """
     
-    def __init__(self, model: keras.Model, sequence_length: int):
+    _estimator_type = "classifier"
+    
+    def __init__(self, model: Any, sequence_length: int):
         """
         Initialize wrapper.
-        
+
         Args:
             model: Trained TensorFlow model
             sequence_length: Sequence length used for training
@@ -60,44 +72,122 @@ class TensorFlowWrapper:
         self.model = model
         self.sequence_length = sequence_length
         self.classes_ = np.array([0, 1])
+        self.n_features_in_ = None
+        self._is_fitted = False
+        self.model_path = None # For serialization
+        
+    def __sklearn_tags__(self):
+        """Explicit tags for scikit-learn 1.6+ compatibility."""
+        # Return a simple tags object that works with all sklearn versions
+        class Tags:
+            def __init__(self):
+                self.estimator_type = "classifier"
+                self.requires_y = True
+                self.binary_only = False
+                self.allow_nan = False
+        return Tags()
+
+    def _get_tags(self):
+        """Tags for older scikit-learn versions."""
+        return {"estimator_type": "classifier"}
+
+    def __sklearn_clone__(self):
+        """
+        Prevent cloning of the wrapper since the model is already trained.
+        """
+        cloned = TensorFlowWrapper(self.model, self.sequence_length)
+        cloned.n_features_in_ = self.n_features_in_
+        cloned._is_fitted = self._is_fitted
+        cloned.model_path = self.model_path
+        return cloned
+
+    def __getstate__(self):
+        """Custom state for pickling - remove model object."""
+        state = self.__dict__.copy()
+        if 'model' in state:
+            # We don't pickle the model object itself
+            del state['model']
+        return state
+
+    def __setstate__(self, state):
+        """Restore state - model remains None until loaded manually."""
+        self.__dict__.update(state)
+        # self.model will be loaded by PredictionService or similar
+        self.model = None
+    
+    def fit(self, X, y=None):
+        """
+        Dummy fit method to satisfy Scikit-Learn.
+
+        Args:
+            X: Training data
+            y: Target labels
+        Returns:
+            self
+        """
+        if hasattr(X, "shape"):
+            self.n_features_in_ = X.shape[1]
+        # Mark as fitted for sklearn 1.8+ compatibility
+        self._is_fitted = True
+        return self
     
     def predict(self, X):
         """
         Predict classes.
-        
+
         Args:
             X: Input features (tabular or sequences)
-            
+
         Returns:
             Predicted classes
         """
         # If X is tabular, convert to sequences
         if len(X.shape) == 2:
             X_seq = self._create_sequences(X)
+            # Get predictions for sequences
+            seq_probs = self.model.predict(X_seq, verbose=0)
+            seq_preds = np.argmax(seq_probs, axis=1)
+
+            # Pad predictions for first sequence_length samples
+            # Use the first prediction for padding
+            if len(seq_preds) > 0:
+                padding = np.full(self.sequence_length, seq_preds[0])
+                return np.concatenate([padding, seq_preds])
+            else:
+                # If no sequences, return default predictions
+                return np.zeros(len(X), dtype=int)
         else:
             X_seq = X
-        
-        # Get predictions
-        probs = self.model.predict(X_seq, verbose=0)
-        return np.argmax(probs, axis=1)
+            probs = self.model.predict(X_seq, verbose=0)
+            return np.argmax(probs, axis=1)
     
     def predict_proba(self, X):
         """
         Predict class probabilities.
-        
+
         Args:
             X: Input features
-            
+
         Returns:
             Class probabilities
         """
         # If X is tabular, convert to sequences
         if len(X.shape) == 2:
             X_seq = self._create_sequences(X)
+            # Get probability predictions for sequences
+            seq_probs = self.model.predict(X_seq, verbose=0)
+
+            # Pad probabilities for first sequence_length samples
+            # Use the first prediction for padding
+            if len(seq_probs) > 0:
+                padding = np.tile(seq_probs[0], (self.sequence_length, 1))
+                return np.vstack([padding, seq_probs])
+            else:
+                # If no sequences, return default probabilities (50/50)
+                return np.full((len(X), 2), 0.5)
         else:
             X_seq = X
-        
-        return self.model.predict(X_seq, verbose=0)
+            return self.model.predict(X_seq, verbose=0)
     
     def _create_sequences(self, X):
         """
@@ -180,7 +270,16 @@ class HybridEnsembleTrainer:
         # Create features
         X, y, feature_names = prepare_training_data(df, use_talib=True)
         self.feature_names = feature_names
-        
+
+        # Validate data size
+        min_required = sequence_length + 100  # Minimum samples needed
+        if len(X) < min_required:
+            raise ValueError(
+                f"Insufficient data: {len(X)} samples. "
+                f"Need at least {min_required} samples "
+                f"(sequence_length={sequence_length} + 100 for training)."
+            )
+
         # Scale features
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
@@ -191,10 +290,14 @@ class HybridEnsembleTrainer:
         X_train_tab, X_test_tab, y_train, y_test = train_test_split(
             X_scaled, y, test_size=0.2, random_state=42, shuffle=False
         )
-        
+
+        # Convert y to numpy array if it's a pandas Series
+        y_train_array = y_train.values if hasattr(y_train, 'values') else y_train
+        y_test_array = y_test.values if hasattr(y_test, 'values') else y_test
+
         # Create sequences for TensorFlow models
         X_train_seq, X_val_seq, X_test_seq, y_train_seq, y_val_seq, y_test_seq, info = prepare_sequences_for_training(
-            X_train_tab, y_train,
+            X_train_tab, y_train_array,
             sequence_length=sequence_length,
             test_size=0.2,
             val_size=0.1,
@@ -223,7 +326,7 @@ class HybridEnsembleTrainer:
                     validation_data=(X_val_seq, y_val_seq),
                     epochs=50,
                     batch_size=32,
-                    callbacks=get_callbacks('models/temp_lstm.h5', patience=10),
+                    callbacks=get_callbacks('models/temp_lstm.keras', patience=10),
                     verbose=0
                 )
                 
@@ -251,7 +354,7 @@ class HybridEnsembleTrainer:
                     validation_data=(X_val_seq, y_val_seq),
                     epochs=50,
                     batch_size=32,
-                    callbacks=get_callbacks('models/temp_cnn_lstm.h5', patience=10),
+                    callbacks=get_callbacks('models/temp_cnn_lstm.keras', patience=10),
                     verbose=0
                 )
                 
@@ -303,7 +406,8 @@ class HybridEnsembleTrainer:
         
         # Create ensemble
         print(f"\n🎯 Creating {voting} voting ensemble with {len(estimators)} models...")
-        ensemble = VotingClassifier(estimators=estimators, voting=voting, n_jobs=-1)
+        # Use n_jobs=1 to avoid parallelization issues with TensorFlow models
+        ensemble = VotingClassifier(estimators=estimators, voting=voting, n_jobs=1)
         ensemble.fit(X_train_tab, y_train)
         
         self.ensemble = ensemble
@@ -363,11 +467,20 @@ class HybridEnsembleTrainer:
         # Save ensemble
         ensemble_path = model_dir / f"hybrid_ensemble_{symbol}_{timeframe}_{timestamp}.pkl"
         
+        # Phase 7: Handle TF models separately for serialization
+        tf_model_paths = {}
+        for name, est in self.ensemble.estimators_:
+            if isinstance(est, TensorFlowWrapper):
+                tf_path = model_dir / f"tf_part_{name}_{symbol}_{timeframe}_{timestamp}.keras"
+                est.model.save(str(tf_path))
+                tf_model_paths[name] = str(tf_path)
+                est.model_path = str(tf_path) # Update wrapper with its path
+        
         ensemble_data = {
             'ensemble': self.ensemble,
             'scaler': self.scaler,
             'features': self.feature_names,
-            'models': self.models,
+            'tf_model_paths': tf_model_paths,
             'metrics': metrics,
             'use_talib': True,
             'framework': 'hybrid'
@@ -390,7 +503,8 @@ class HybridEnsembleTrainer:
                 'individual_scores': metrics['individual_scores'],
                 'features': self.feature_names,
                 'n_features': len(self.feature_names),
-                'framework': 'hybrid'
+                'framework': 'hybrid',
+                'tf_model_paths': tf_model_paths
             }
         )
         

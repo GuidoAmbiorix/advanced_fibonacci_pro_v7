@@ -11,8 +11,14 @@ import pandas as pd
 import pickle
 from datetime import datetime
 from typing import Tuple, Dict, Any
+import os
 import tensorflow as tf
 from tensorflow import keras
+
+# Force CPU usage (disable GPU)
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+tf.config.set_visible_devices([], 'GPU')
+print("✅ TensorFlow configured for CPU")
 
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -99,7 +105,7 @@ class TensorFlowTrainer:
         
         # Create sequences
         X_train, X_val, X_test, y_train, y_val, y_test, info = prepare_sequences_for_training(
-            X_scaled, y,
+            X_scaled, y.values,
             sequence_length=sequence_length,
             test_size=test_size,
             val_size=val_size,
@@ -165,7 +171,7 @@ class TensorFlowTrainer:
         
         # Prepare callbacks
         if model_save_path is None:
-            model_save_path = f"models/tensorflow/lstm_temp.h5"
+            model_save_path = f"models/tensorflow/lstm_temp.keras"
         
         Path(model_save_path).parent.mkdir(parents=True, exist_ok=True)
         
@@ -248,7 +254,7 @@ class TensorFlowTrainer:
         
         # Prepare callbacks
         if model_save_path is None:
-            model_save_path = f"models/tensorflow/cnn_lstm_temp.h5"
+            model_save_path = f"models/tensorflow/cnn_lstm_temp.keras"
         
         Path(model_save_path).parent.mkdir(parents=True, exist_ok=True)
         
@@ -334,7 +340,7 @@ class TensorFlowTrainer:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         # Save TensorFlow model
-        model_filename = f"{model_type.lower()}_{symbol}_{timeframe}_{timestamp}.h5"
+        model_filename = f"{model_type.lower()}_{symbol}_{timeframe}_{timestamp}.keras"
         model_path = model_dir / model_filename
         self.model.save(model_path)
         
@@ -354,14 +360,27 @@ class TensorFlowTrainer:
         with open(metadata_path, 'wb') as f:
             pickle.dump(metadata, f)
         
+        # Robust metric retrieval
+        train_acc = train_metrics.get('accuracy', train_metrics.get('acc', 0.0))
+        test_acc = test_metrics.get('accuracy', test_metrics.get('acc', 0.0))
+        
+        # Fallback search
+        if train_acc == 0.0:
+            acc_keys = [k for k in train_metrics.keys() if 'acc' in k.lower()]
+            if acc_keys: train_acc = train_metrics[acc_keys[0]]
+            
+        if test_acc == 0.0:
+            acc_keys = [k for k in test_metrics.keys() if 'acc' in k.lower()]
+            if acc_keys: test_acc = test_metrics[acc_keys[0]]
+
         # Save to database
         model_id = self.db.save_model(
             name=f"{model_type}_{symbol}_{timeframe}",
             version=timestamp,
             model_type=model_type,
             file_path=str(model_path),
-            training_accuracy=train_metrics.get('accuracy', 0.0),
-            validation_accuracy=test_metrics.get('accuracy', 0.0),
+            training_accuracy=float(train_acc),
+            validation_accuracy=float(test_acc),
             parameters={
                 **hyperparameters,
                 'features': self.feature_names,

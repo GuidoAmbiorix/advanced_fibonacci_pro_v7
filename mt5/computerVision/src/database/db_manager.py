@@ -255,11 +255,11 @@ class DatabaseManager:
     
     # ==================== Configuration ====================
     
-    def get_config(self, key: str) -> Optional[str]:
-        """Get configuration value."""
+    def get_config(self, key: str, default: str = None) -> Optional[str]:
+        """Get configuration value with optional default."""
         with self.get_connection() as conn:
             row = conn.execute("SELECT value FROM trading_config WHERE key = ?", (key,)).fetchone()
-            return row['value'] if row else None
+            return row['value'] if row else default
     
     def set_config(self, key: str, value: str):
         """Set configuration value."""
@@ -448,34 +448,58 @@ class DatabaseManager:
         Sync open positions with MT5.
         Mark positions as closed if they are in our DB (active) but NOT in the open_tickets list.
         """
+        import logging
+        logger = logging.getLogger(__name__)
+
         with self.get_connection() as conn:
             if not open_tickets:
                 # If no open positions, close ALL active positions in DB
+                # First check how many will be affected
+                count_query = "SELECT COUNT(*) as cnt FROM positions WHERE status = 'OPEN' AND mt5_ticket > 0"
+                count = conn.execute(count_query).fetchone()['cnt']
+
+                if count > 0:
+                    logger.info(f"🔄 Syncing: Closing {count} open position(s) in DB (MT5 has 0 open)")
+
                 query = """
-                    UPDATE positions 
-                    SET exit_time = CURRENT_TIMESTAMP, 
-                        exit_price = 0, 
+                    UPDATE positions
+                    SET exit_time = CURRENT_TIMESTAMP,
+                        exit_price = 0,
                         profit = 0,
                         status = 'CLOSED_SYNC'
-                    WHERE (exit_time IS NULL OR exit_time = '')
-                    AND ticket > 0
+                    WHERE status = 'OPEN'
+                    AND mt5_ticket > 0
                 """
                 conn.execute(query)
             else:
                 # Find positions that are 'active' (status='OPEN') in DB but NOT in open_tickets
                 placeholders = ','.join(['?'] * len(open_tickets))
+
+                # Check which positions will be closed
+                check_query = f"""
+                    SELECT mt5_ticket, symbol FROM positions
+                    WHERE mt5_ticket NOT IN ({placeholders})
+                    AND status = 'OPEN'
+                    AND mt5_ticket > 0
+                """
+                to_close = conn.execute(check_query, open_tickets).fetchall()
+
+                if to_close:
+                    tickets = [row['mt5_ticket'] for row in to_close]
+                    logger.info(f"🔄 Syncing: Closing {len(to_close)} position(s) in DB: {tickets} (MT5 has {len(open_tickets)} open)")
+
                 query = f"""
-                    UPDATE positions 
-                    SET exit_time = CURRENT_TIMESTAMP, 
-                        exit_price = 0, 
+                    UPDATE positions
+                    SET exit_time = CURRENT_TIMESTAMP,
+                        exit_price = 0,
                         profit = 0,
                         status = 'CLOSED_SYNC'
-                    WHERE ticket NOT IN ({placeholders}) 
-                    AND (exit_time IS NULL OR exit_time = '')
-                    AND ticket > 0
+                    WHERE mt5_ticket NOT IN ({placeholders})
+                    AND status = 'OPEN'
+                    AND mt5_ticket > 0
                 """
                 conn.execute(query, open_tickets)
-                
+
             conn.commit()
     
     # ==================== Position Tracking ====================

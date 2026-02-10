@@ -87,6 +87,10 @@ CREATE TABLE IF NOT EXISTS positions (
     partial_taken BOOLEAN DEFAULT 0,
     partial_volume REAL DEFAULT 0,
     trailing_active BOOLEAN DEFAULT 0,
+    -- Exit results
+    exit_time DATETIME,
+    exit_price REAL,
+    profit REAL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (prediction_id) REFERENCES predictions(id)
 );
@@ -97,7 +101,7 @@ CREATE INDEX IF NOT EXISTS idx_positions_symbol ON positions(symbol);
 -- Killzone Windows Table
 CREATE TABLE IF NOT EXISTS killzone_windows (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     start_time TEXT NOT NULL, -- HH:MM format
     end_time TEXT NOT NULL, -- HH:MM format
     days_of_week TEXT NOT NULL, -- Comma-separated: "1,2,3,4,5" for Mon-Fri
@@ -108,20 +112,19 @@ CREATE TABLE IF NOT EXISTS killzone_windows (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_killzone_name ON killzone_windows(name);
 CREATE INDEX IF NOT EXISTS idx_killzone_active ON killzone_windows(is_active);
 
 -- Insert default killzone windows (GMT+2 timezone for FundingPips)
 INSERT OR IGNORE INTO killzone_windows (name, start_time, end_time, days_of_week, timezone, priority) VALUES
     -- Asian Session
     ('Tokyo Open', '03:00', '07:00', '0,1,2,3,4', 'Europe/Athens', 'medium'),
-    ('Tokyo Close', '10:00', '12:00', '0,1,2,3,4', 'Europe/Athens', 'high'),
+    ('Tokyo Close / London Open', '10:00', '12:00', '0,1,2,3,4', 'Europe/Athens', 'high'),
     -- European Session
-    ('London Open', '10:00', '12:00', '0,1,2,3,4', 'Europe/Athens', 'high'),
     ('London Mid-Session', '12:00', '14:00', '0,1,2,3,4', 'Europe/Athens', 'medium'),
     ('London-NY Overlap', '14:00', '17:00', '0,1,2,3,4', 'Europe/Athens', 'high'),
     ('London Close', '17:00', '19:00', '0,1,2,3,4', 'Europe/Athens', 'high'),
     -- American Session
-    ('NY Open', '14:00', '17:00', '0,1,2,3,4', 'Europe/Athens', 'high'),
     ('NY Mid-Session', '17:00', '20:00', '0,1,2,3,4', 'Europe/Athens', 'medium'),
     ('NY Close', '20:00', '22:00', '0,1,2,3,4', 'Europe/Athens', 'high');
 

@@ -900,22 +900,37 @@ elif page == "Training":
                         # Display results
                         st.success(f"✅ LSTM model trained successfully! Model ID: {model_id}")
                         
+                        # Robust metric retrieval
+                        test_acc = test_metrics.get('accuracy', test_metrics.get('acc', 0.0))
+                        # If still not found, try searching for keys containing 'acc'
+                        if test_acc == 0.0:
+                            acc_keys = [k for k in test_metrics.keys() if 'acc' in k.lower()]
+                            if acc_keys:
+                                test_acc = test_metrics[acc_keys[0]]
+
                         col1, col2, col3 = st.columns(3)
                         with col1:
-                            st.metric("Test Accuracy", f"{test_metrics['accuracy']:.2%}")
+                            st.metric("Test Accuracy", f"{test_acc:.2%}")
                         with col2:
-                            st.metric("Test AUC", f"{test_metrics.get('auc', 0):.4f}")
+                            st.metric("Test Loss", f"{test_metrics.get('loss', 0):.4f}")
                         with col3:
                             st.metric("Sequences Used", info['total_sequences'])
                         
                         # Plot training history
                         st.subheader("Training History")
+                        
+                        # Robust key lookup
+                        train_acc_key = next((k for k in history.history.keys() if 'accuracy' in k.lower() or 'acc' in k.lower() and 'val' not in k.lower()), 'accuracy')
+                        val_acc_key = next((k for k in history.history.keys() if 'val' in k.lower() and ('accuracy' in k.lower() or 'acc' in k.lower())), 'val_accuracy')
+                        train_loss_key = next((k for k in history.history.keys() if 'loss' in k.lower() and 'val' not in k.lower()), 'loss')
+                        val_loss_key = next((k for k in history.history.keys() if 'val' in k.lower() and 'loss' in k.lower()), 'val_loss')
+                        
                         history_df = pd.DataFrame({
-                            'Epoch': range(1, len(history.history['accuracy']) + 1),
-                            'Train Accuracy': history.history['accuracy'],
-                            'Val Accuracy': history.history['val_accuracy'],
-                            'Train Loss': history.history['loss'],
-                            'Val Loss': history.history['val_loss']
+                            'Epoch': range(1, len(history.history[train_acc_key]) + 1),
+                            'Train Accuracy': history.history[train_acc_key],
+                            'Val Accuracy': history.history.get(val_acc_key, [0.0] * len(history.history[train_acc_key])),
+                            'Train Loss': history.history[train_loss_key],
+                            'Val Loss': history.history.get(val_loss_key, [0.0] * len(history.history[train_acc_key]))
                         })
                         
                         col1, col2 = st.columns(2)
@@ -1009,17 +1024,29 @@ elif page == "Training":
                         
                         st.success(f"✅ CNN-LSTM model trained! Model ID: {model_id}")
                         
-                        col1, col2 = st.columns(2)
+                        # Robust metric retrieval
+                        test_acc = test_metrics.get('accuracy', test_metrics.get('acc', 0.0))
+                        if test_acc == 0.0:
+                            acc_keys = [k for k in test_metrics.keys() if 'acc' in k.lower()]
+                            if acc_keys:
+                                test_acc = test_metrics[acc_keys[0]]
+
+                        col1, col2, col3 = st.columns(3)
                         with col1:
-                            st.metric("Test Accuracy", f"{test_metrics['accuracy']:.2%}")
+                            st.metric("Test Accuracy", f"{test_acc:.2%}")
                         with col2:
-                            st.metric("Test AUC", f"{test_metrics.get('auc', 0):.4f}")
+                            st.metric("Test Loss", f"{test_metrics.get('loss', 0):.4f}")
+                        with col3:
+                            st.metric("Sequences Used", info['total_sequences'])
                         
                         # Plot history
+                        train_acc_key = next((k for k in history.history.keys() if 'accuracy' in k.lower() or 'acc' in k.lower() and 'val' not in k.lower()), 'accuracy')
+                        val_acc_key = next((k for k in history.history.keys() if 'val' in k.lower() and ('accuracy' in k.lower() or 'acc' in k.lower())), 'val_accuracy')
+                        
                         history_df = pd.DataFrame({
-                            'Epoch': range(1, len(history.history['accuracy']) + 1),
-                            'Train Accuracy': history.history['accuracy'],
-                            'Val Accuracy': history.history['val_accuracy']
+                            'Epoch': range(1, len(history.history[train_acc_key]) + 1),
+                            'Train Accuracy': history.history[train_acc_key],
+                            'Val Accuracy': history.history.get(val_acc_key, [0.0] * len(history.history[train_acc_key]))
                         })
                         st.line_chart(history_df.set_index('Epoch'))
                         

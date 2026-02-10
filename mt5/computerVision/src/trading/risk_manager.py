@@ -77,7 +77,7 @@ class RiskManager:
             Lot size
         """
         # Get risk percentage from config
-        risk_pct = float(self.config.get('risk_per_trade_pct', 1.0))
+        risk_pct = float(self.config.get('risk', {}).get('risk_per_trade_pct', 1.0))
         risk_amount = account_balance * (risk_pct / 100)
         
         # Calculate SL distance
@@ -124,7 +124,7 @@ class RiskManager:
             Lot size
         """
         # Get position sizing method from config
-        method = self.config.get('position_sizing_method', 'risk_based')
+        method = self.config.get('defaults', {}).get('position_sizing_method', 'risk_based')
         
         # Debug logging
         self.logger.info(f"Position sizing - Method: {method}, Entry: {entry_price}, SL: {stop_loss}, Balance: {account_balance}")

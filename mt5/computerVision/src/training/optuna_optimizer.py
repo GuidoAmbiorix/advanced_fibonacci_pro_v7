@@ -16,6 +16,22 @@ class OptunaOptimizer:
     def __init__(self, db_manager):
         self.db = db_manager
         self.logger = logging.getLogger(__name__)
+
+    def _get_best_val_acc(self, history) -> float:
+        """Robustly retrieve the best validation accuracy from history."""
+        h = history.history
+        # Try common variants
+        acc_keys = [k for k in h.keys() if 'val' in k.lower() and 'acc' in k.lower()]
+        if not acc_keys:
+            # Fallback to any metric containing 'acc'
+            acc_keys = [k for k in h.keys() if 'acc' in k.lower()]
+            
+        if acc_keys:
+            # Use the first matching key
+            return max(h[acc_keys[0]])
+        
+        # Absolute fallback
+        return 0.0
     
     def optimize_lstm(self, X_train, y_train, X_val, y_val, n_trials=20) -> Dict:
         """
@@ -43,7 +59,8 @@ class OptunaOptimizer:
             
             # Build model with suggested params
             model = build_lstm_model(
-                input_shape=(X_train.shape[1], X_train.shape[2]),
+                sequence_length=X_train.shape[1],
+                n_features=X_train.shape[2],
                 lstm_units=[lstm_units_1, lstm_units_2],
                 dropout_rate=dropout,
                 learning_rate=learning_rate
@@ -66,7 +83,7 @@ class OptunaOptimizer:
             )
             
             # Return best validation accuracy
-            return max(history.history['val_accuracy'])
+            return self._get_best_val_acc(history)
         
         # Create study and optimize
         study = optuna.create_study(direction='maximize')
@@ -104,10 +121,11 @@ class OptunaOptimizer:
             
             # Build model
             model = build_cnn_lstm_model(
-                input_shape=(X_train.shape[1], X_train.shape[2]),
-                conv_filters=conv_filters,
+                sequence_length=X_train.shape[1],
+                n_features=X_train.shape[2],
+                cnn_filters=[conv_filters],
                 kernel_size=kernel_size,
-                lstm_units=lstm_units,
+                lstm_units=[lstm_units],
                 dropout_rate=dropout,
                 learning_rate=learning_rate
             )
@@ -128,7 +146,8 @@ class OptunaOptimizer:
                 verbose=0
             )
             
-            return max(history.history['val_accuracy'])
+            # Return best validation accuracy
+            return self._get_best_val_acc(history)
         
         # Optimize
         study = optuna.create_study(direction='maximize')
@@ -153,7 +172,7 @@ class OptunaOptimizer:
         Returns:
             Dictionary of best hyperparameters
         """
-        from src.training.tf_models import build_bilstm_attention_model
+        from src.training.tf_models import build_bidirectional_lstm_model
         
         def objective(trial):
             # Suggest hyperparameters
@@ -163,12 +182,14 @@ class OptunaOptimizer:
             batch_size = trial.suggest_categorical('batch_size', [16, 32, 64])
             
             # Build model
-            model = build_bilstm_attention_model(
-                input_shape=(X_train.shape[1], X_train.shape[2]),
-                lstm_units=lstm_units,
+            model = build_bidirectional_lstm_model(
+                sequence_length=X_train.shape[1],
+                n_features=X_train.shape[2],
+                lstm_units=[lstm_units],
                 dropout_rate=dropout,
                 learning_rate=learning_rate
             )
+
             
             # Train
             early_stop = keras.callbacks.EarlyStopping(
@@ -186,7 +207,8 @@ class OptunaOptimizer:
                 verbose=0
             )
             
-            return max(history.history['val_accuracy'])
+            # Return best validation accuracy
+            return self._get_best_val_acc(history)
         
         # Optimize
         study = optuna.create_study(direction='maximize')

@@ -93,16 +93,45 @@ class PredictionService:
         with open(model_file, 'rb') as f:
             model_data = pickle.load(f)
         
-        features = model_data['features']
+        framework = model_data.get('framework', 'standard')
+        
+        # Phase 7: Handle Hybrid Ensembles
+        if framework == 'hybrid':
+            self.logger.info(f"Loading hybrid ensemble for {symbol}")
+            ensemble = model_data['ensemble']
+            tf_model_paths = model_data.get('tf_model_paths', {})
+            
+            # Reconstruct TF models in the wrappers
+            from tensorflow import keras
+            from src.training.ensemble_trainer import TensorFlowWrapper
+            
+            for name, est in ensemble.estimators_:
+                if isinstance(est, TensorFlowWrapper):
+                    path = tf_model_paths.get(name) or est.model_path
+                    if path and Path(path).exists():
+                        self.logger.debug(f"Loading TF model part '{name}' from {path}")
+                        # Use custom_objects if needed
+                        from src.training.tf_models import AttentionLayer
+                        est.model = keras.models.load_model(path, custom_objects={'AttentionLayer': AttentionLayer})
+                    else:
+                        self.logger.error(f"TF model part '{name}' not found at {path}")
+                        return
+            
+            model = ensemble
+            scaler = model_data['scaler']
+            features = model_data['features']
+        else:
+            model = model_data['model']
+            scaler = model_data['scaler']
+            features = model_data.get('features', [])
+            if not features and 'feature_names' in model_data:
+                features = model_data['feature_names']
         
         # Auto-detect if TA-Lib features are used
         talib_indicators = ['ADX', 'MACD', 'RSI', 'SMA_', 'EMA_', 'ATR', 'BBANDS', 'STOCH', 'WILLR', 'ROC', 'CCI', 'OBV', 'MFI', 'AD']
         use_talib = any(any(indicator in feat for indicator in talib_indicators) for feat in features)
         
         self.logger.info(f"Generating prediction for {symbol} using {'TA-Lib' if use_talib else 'basic'} features")
-        
-        model = model_data['model']
-        scaler = model_data['scaler']
         
         # Get market data (need more bars for TA-Lib indicators)
         bars_needed = 100 if use_talib else 50

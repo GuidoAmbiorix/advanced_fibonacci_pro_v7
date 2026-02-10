@@ -1,14 +1,22 @@
-FROM continuumio/miniconda3:23.3.1-0
+FROM tensorflow/tensorflow:2.13.0-gpu
 
 WORKDIR /app
 
-# Install TA-Lib via conda (easiest and most reliable method)
+# Install miniconda
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py38_23.1.0-1-Linux-x86_64.sh -O miniconda.sh && \
+    bash miniconda.sh -b -p /opt/conda && \
+    rm miniconda.sh && \
+    /opt/conda/bin/conda clean -afy
+
+ENV PATH=/opt/conda/bin:$PATH
+
+# Install TA-Lib via conda (easiest method)
 RUN conda install -c conda-forge ta-lib -y && \
     conda clean -afy
 
 # Copy requirements and install (excluding TA-Lib since it's from conda)
 COPY requirements-linux.txt ./requirements.txt
-RUN grep -v "^TA-Lib" requirements.txt > requirements-filtered.txt || cp requirements.txt requirements-filtered.txt && \
+RUN grep -v "^TA-Lib" requirements.txt > requirements-filtered.txt && \
     pip install --no-cache-dir -r requirements-filtered.txt
 
 # Copy application code

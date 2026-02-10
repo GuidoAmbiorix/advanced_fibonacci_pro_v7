@@ -9,6 +9,7 @@ bridge:
 # Broker Settings
 trade:
   slippage_pips: 20 # Broker-specific setting
+  default_lot_size: 0.01
 
 # Auto-Trader
 auto_trader:
@@ -182,14 +183,17 @@ exit_strategies:
   # Killzone Exit
   close_on_killzone_end: false # Keep positions open after killzone
 
-# Fallback Defaults (only used if database is empty)
-# All these settings are now managed in the Dashboard
-defaults:
+# Risk Management Settings
+# These settings can be overridden by Dashboard configuration
+risk:
   risk_per_trade_pct: 1.0
   max_positions: 3
   min_confidence: 0.70
   max_daily_loss_pct: 5.0
-  default_lot_size: 0.01
+
+# Fallback Defaults (only used if database is empty)
+# All these settings are now managed in the Dashboard
+defaults:
   position_sizing_method: "risk_based"
   trading_timeframe: "H1" # Default to H1
   atr_multiplier: 1.0 # H1 default

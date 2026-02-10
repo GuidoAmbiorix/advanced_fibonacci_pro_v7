@@ -12,11 +12,12 @@ from typing import Tuple, List, Dict
 import numpy as np
 
 
+@keras.utils.register_keras_serializable(package="CustomLayers")
 class AttentionLayer(layers.Layer):
     """
     Custom attention layer for focusing on important time steps.
     """
-    
+
     def __init__(self, **kwargs):
         super(AttentionLayer, self).__init__(**kwargs)
     
@@ -48,6 +49,11 @@ class AttentionLayer(layers.Layer):
     
     def compute_output_shape(self, input_shape):
         return (input_shape[0], input_shape[-1])
+
+    def get_config(self):
+        """Get layer configuration for serialization."""
+        config = super(AttentionLayer, self).get_config()
+        return config
 
 
 def build_lstm_model(sequence_length: int,
@@ -105,7 +111,7 @@ def build_lstm_model(sequence_length: int,
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
         loss='sparse_categorical_crossentropy',
-        metrics=['accuracy', keras.metrics.AUC(name='auc')]
+        metrics=['accuracy']
     )
     
     return model
@@ -190,7 +196,7 @@ def build_cnn_lstm_model(sequence_length: int,
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
         loss='sparse_categorical_crossentropy',
-        metrics=['accuracy', keras.metrics.AUC(name='auc')]
+        metrics=['accuracy']
     )
     
     return model
@@ -244,7 +250,7 @@ def build_bidirectional_lstm_model(sequence_length: int,
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
         loss='sparse_categorical_crossentropy',
-        metrics=['accuracy', keras.metrics.AUC(name='auc')]
+        metrics=['accuracy']
     )
     
     return model
@@ -315,8 +321,8 @@ def print_model_summary(model: Model):
     print("="*60)
     
     # Count parameters
-    trainable_params = np.sum([np.prod(v.get_shape()) for v in model.trainable_weights])
-    non_trainable_params = np.sum([np.prod(v.get_shape()) for v in model.non_trainable_weights])
+    trainable_params = np.sum([np.prod(v.shape) for v in model.trainable_weights])
+    non_trainable_params = np.sum([np.prod(v.shape) for v in model.non_trainable_weights])
     total_params = trainable_params + non_trainable_params
     
     print(f"\n📊 Parameters:")
