@@ -328,7 +328,7 @@ class AutoTrader:
         try:
             query = """
                 SELECT COUNT(*) as count FROM signal_confirmations
-                WHERE prediction_id = ?
+                WHERE prediction_id = %s
                 AND status IN ('PENDING', 'CONFIRMED')
             """
 

@@ -124,7 +124,7 @@ class PortfolioManager:
             
         # Update current capital
         with self.db.get_connection() as conn:
-            conn.execute("UPDATE portfolios SET current_capital = ? WHERE id = ?", 
+            conn.execute("UPDATE portfolios SET current_capital = %s WHERE id = %s", 
                        (current_equity, portfolio_id))
             conn.commit()
             

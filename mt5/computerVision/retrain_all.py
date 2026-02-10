@@ -68,7 +68,7 @@ def retrain_active_symbols():
             # (wait, portfolio_allocations usually joins with strategies which has model_id)
             # Actually, let's update the strategy's model_id
             cursor = db.get_connection().cursor()
-            cursor.execute("UPDATE strategies SET model_id = ? WHERE id = ?", (model_id, alloc['strategy_id']))
+            cursor.execute("UPDATE strategies SET model_id = %s WHERE id = %s", (model_id, alloc['strategy_id']))
             db.get_connection().commit()
             
             print(f"Successfully retrained and updated {symbol} with Model ID {model_id}")

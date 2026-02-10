@@ -1,32 +1,41 @@
-import sqlite3
+"""
+Clean all killzone windows from the PostgreSQL database.
+"""
 import os
+import sys
 from pathlib import Path
 
-# Path to database
-db_path = Path("data/cv_agent.db")
+sys.path.append(str(Path(__file__).parent))
+from src.database import DatabaseManager
+from dotenv import load_dotenv
 
-if not db_path.exists():
-    print(f"Database not found at {db_path}")
-    exit(1)
+load_dotenv()
 
-print(f"Connecting to database at {db_path}...")
-conn = sqlite3.connect(db_path)
-cursor = conn.cursor()
+def main():
+    """Clean all killzone windows from database."""
+    db_url = os.environ.get('DATABASE_URL')
+    if not db_url:
+        print("ERROR: DATABASE_URL environment variable not set")
+        sys.exit(1)
 
-# Check current count
-cursor.execute("SELECT count(*) FROM killzone_windows")
-count = cursor.fetchone()[0]
-print(f"Found {count} killzone entries.")
+    print(f"Connecting to PostgreSQL database...")
+    db = DatabaseManager(db_url=db_url)
 
-# Delete all entries
-print("Deleting all killzone entries...")
-cursor.execute("DELETE FROM killzone_windows")
-conn.commit()
+    with db.get_connection() as conn:
+        cursor = conn.execute("SELECT count(*) as cnt FROM killzone_windows")
+        count = cursor.fetchone()['cnt']
+        print(f"Found {count} killzone entries.")
 
-# Verify
-cursor.execute("SELECT count(*) FROM killzone_windows")
-new_count = cursor.fetchone()[0]
-print(f"Remaining entries: {new_count}")
+        print("Deleting all killzone entries...")
+        conn.execute("DELETE FROM killzone_windows")
+        conn.commit()
 
-conn.close()
-print("Done. Please restart the trader to reload killzones from config.yaml.")
+        cursor = conn.execute("SELECT count(*) as cnt FROM killzone_windows")
+        new_count = cursor.fetchone()['cnt']
+        print(f"Remaining entries: {new_count}")
+
+    db.close()
+    print("Done. Please restart the trader to reload killzones from config.yaml.")
+
+if __name__ == '__main__':
+    main()

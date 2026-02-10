@@ -105,7 +105,7 @@ def optimize_hyperparameters(symbol='EURUSD', timeframe='H1', n_trials=50):
     print("📥 Fetching market data...")
     query = """
         SELECT * FROM market_data 
-        WHERE symbol = ? AND timeframe = ?
+        WHERE symbol = %s AND timeframe = %s
         ORDER BY timestamp DESC
         LIMIT 1000
     """

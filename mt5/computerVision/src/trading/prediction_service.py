@@ -137,9 +137,9 @@ class PredictionService:
         bars_needed = 100 if use_talib else 50
         query = """
             SELECT * FROM market_data 
-            WHERE symbol = ? AND timeframe = ?
+            WHERE symbol = %s AND timeframe = %s
             ORDER BY timestamp DESC
-            LIMIT ?
+            LIMIT %s
         """
         with self.db.get_connection() as conn:
             df = pd.read_sql_query(query, conn, params=(symbol, timeframe, bars_needed))

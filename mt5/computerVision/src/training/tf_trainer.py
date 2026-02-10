@@ -79,14 +79,15 @@ class TensorFlowTrainer:
         
     # Get market data from database
     query = """
-        SELECT * FROM market_data 
-        WHERE symbol = ? AND timeframe = ?
+        SELECT * FROM market_data
+        WHERE symbol = %s AND timeframe = %s
         ORDER BY timestamp DESC
         LIMIT 2000
     """
-    query, params = self.db._convert_query_to_postgres(query, (symbol, timeframe))
     with self.db.get_connection() as conn:
-        df = pd.read_sql_query(query, conn, params=params)
+        cursor = conn.execute(query, (symbol, timeframe))
+        rows = cursor.fetchall()
+        df = pd.DataFrame(rows)
         
         if len(df) < 100:
             raise ValueError(f"Not enough data for {symbol}. Need at least 100 bars, got {len(df)}")

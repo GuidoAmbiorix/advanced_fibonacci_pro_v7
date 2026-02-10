@@ -167,13 +167,15 @@ elif page == "Live Predictions":
                         
                         # Get latest market data (need more for TA-Lib indicators)
                         query = """
-                            SELECT * FROM market_data 
-                            WHERE symbol = ?
+                            SELECT * FROM market_data
+                            WHERE symbol = %s
                             ORDER BY timestamp DESC
                             LIMIT 100
                         """
                         with db.get_connection() as conn:
-                            df = pd.read_sql_query(query, conn, params=(symbol,))
+                            cursor = conn.execute(query, (symbol,))
+                            rows = cursor.fetchall()
+                            df = pd.DataFrame(rows)
                         
                         if len(df) < 50:
                             st.error(f"Not enough data for {symbol}. Need at least 50 bars. Fetch data first.")
@@ -791,7 +793,7 @@ elif page == "Training":
                         st.error(f"Error: {str(e)}")
         
         # Check data availability
-        query = "SELECT COUNT(*) as cnt FROM market_data WHERE symbol = ? AND timeframe = ?"
+        query = "SELECT COUNT(*) as cnt FROM market_data WHERE symbol = %s AND timeframe = %s"
         with db.get_connection() as conn:
             cursor = conn.execute(query, (train_symbol, train_timeframe))
             data_count = cursor.fetchone()['cnt']
@@ -824,10 +826,11 @@ elif page == "Training":
                     from pathlib import Path
                     
                     # Get data
-                    query = "SELECT * FROM market_data WHERE symbol = ? AND timeframe = ? ORDER BY timestamp DESC LIMIT 1000"
-                    q, p = db._convert_query_to_postgres(query, (train_symbol, train_timeframe))
+                    query = "SELECT * FROM market_data WHERE symbol = %s AND timeframe = %s ORDER BY timestamp DESC LIMIT 1000"
                     with db.get_connection() as conn:
-                        df = pd.read_sql_query(q, conn, params=p)
+                        cursor = conn.execute(query, (train_symbol, train_timeframe))
+                        rows = cursor.fetchall()
+                        df = pd.DataFrame(rows)
                     
                     # Prepare features
                     X, y, feature_names = prepare_training_data(df, use_talib=True)
@@ -904,10 +907,11 @@ elif page == "Training":
                     from pathlib import Path
                     
                     # Get data
-                    query = "SELECT * FROM market_data WHERE symbol = ? AND timeframe = ? ORDER BY timestamp DESC LIMIT 1000"
-                    q, p = db._convert_query_to_postgres(query, (train_symbol, train_timeframe))
+                    query = "SELECT * FROM market_data WHERE symbol = %s AND timeframe = %s ORDER BY timestamp DESC LIMIT 1000"
                     with db.get_connection() as conn:
-                        df = pd.read_sql_query(q, conn, params=p)
+                        cursor = conn.execute(query, (train_symbol, train_timeframe))
+                        rows = cursor.fetchall()
+                        df = pd.DataFrame(rows)
                     
                     X, y, feature_names = prepare_training_data(df, use_talib=True)
                     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -1399,9 +1403,10 @@ elif page == "Training":
             
             # Get all models from database
             query = "SELECT * FROM models ORDER BY created_at DESC LIMIT 20"
-            q, p = db._convert_query_to_postgres(query, ())
             with db.get_connection() as conn:
-                models_df = pd.read_sql_query(q, conn, params=p)
+                cursor = conn.execute(query)
+                rows = cursor.fetchall()
+                models_df = pd.DataFrame(rows)
             
             if len(models_df) > 0:
                 # Display comparison table

@@ -69,8 +69,8 @@ class CooldownManager:
             query = """
                 SELECT cooldown_end_time, reason
                 FROM trade_cooldowns
-                WHERE symbol = ?
-                AND cooldown_end_time > datetime('now')
+                WHERE symbol = %s
+                AND cooldown_end_time > CURRENT_TIMESTAMP
             """
 
             with self.db.get_connection() as conn:
@@ -155,9 +155,16 @@ class CooldownManager:
         try:
             # Insert or replace cooldown
             query = """
-                INSERT OR REPLACE INTO trade_cooldowns
+                INSERT INTO trade_cooldowns
                 (symbol, last_trade_time, cooldown_end_time, reason, trade_direction)
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (symbol)
+                DO UPDATE SET
+                    last_trade_time = EXCLUDED.last_trade_time,
+                    cooldown_end_time = EXCLUDED.cooldown_end_time,
+                    reason = EXCLUDED.reason,
+                    trade_direction = EXCLUDED.trade_direction,
+                    created_at = CURRENT_TIMESTAMP
             """
 
             with self.db.get_connection() as conn:
@@ -187,8 +194,8 @@ class CooldownManager:
             query = """
                 SELECT COUNT(*) as count
                 FROM signal_confirmations
-                WHERE symbol = ?
-                AND signal_generated_at > ?
+                WHERE symbol = %s
+                AND signal_generated_at > %s
             """
 
             with self.db.get_connection() as conn:
@@ -248,7 +255,7 @@ class CooldownManager:
         try:
             query = """
                 DELETE FROM trade_cooldowns
-                WHERE cooldown_end_time < datetime('now')
+                WHERE cooldown_end_time < CURRENT_TIMESTAMP
             """
 
             with self.db.get_connection() as conn:
@@ -276,14 +283,14 @@ class CooldownManager:
             if symbol:
                 query = """
                     SELECT * FROM trade_cooldowns
-                    WHERE symbol = ?
-                    AND cooldown_end_time > datetime('now')
+                    WHERE symbol = %s
+                    AND cooldown_end_time > CURRENT_TIMESTAMP
                 """
                 params = (symbol,)
             else:
                 query = """
                     SELECT * FROM trade_cooldowns
-                    WHERE cooldown_end_time > datetime('now')
+                    WHERE cooldown_end_time > CURRENT_TIMESTAMP
                     ORDER BY cooldown_end_time ASC
                 """
                 params = ()

@@ -111,7 +111,7 @@ class SignalConfirmationManager:
                 INSERT INTO signal_confirmations
                 (prediction_id, symbol, direction, initial_confidence,
                  status, signal_generated_at, confirmation_window_end)
-                VALUES (?, ?, ?, ?, 'PENDING', ?, ?)
+                VALUES (%s, %s, %s, %s, 'PENDING', %s, %s)
             """
 
             with self.db.get_connection() as conn:
@@ -190,25 +190,26 @@ class SignalConfirmationManager:
             # Update signal in database
             update_query = """
                 UPDATE signal_confirmations
-                SET status = ?,
-                    confirmation_score = ?,
-                    mtf_alignment = ?,
-                    mtf_score = ?,
-                    momentum_score = ?,
-                    volume_score = ?,
-                    trend_score = ?,
-                    fibonacci_score = ?,
-                    smc_score = ?,
-                    fibonacci_details = ?,
-                    smc_details = ?,
-                    confirmed_at = ?,
-                    rejection_reason = ?,
-                    validation_details = ?,
-                    updated_at = datetime('now')
-                WHERE id = ?
+                SET status = %s,
+                    confirmation_score = %s,
+                    mtf_alignment = %s,
+                    mtf_score = %s,
+                    momentum_score = %s,
+                    volume_score = %s,
+                    trend_score = %s,
+                    fibonacci_score = %s,
+                    smc_score = %s,
+                    fibonacci_details = %s,
+                    smc_details = %s,
+                    confirmed_at = %s,
+                    rejection_reason = %s,
+                    validation_details = %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
             """
 
             # Convert numpy types to Python native types for JSON serialization
+            import psycopg2.extras
             serializable_details = convert_to_serializable(validation_details)
             serializable_fib_details = convert_to_serializable(fibonacci_details)
             serializable_smc_details = convert_to_serializable(smc_details)
@@ -219,8 +220,8 @@ class SignalConfirmationManager:
                     (status, confirmation_score, mtf_alignment, mtf_score,
                      momentum_score, volume_score, trend_score,
                      fibonacci_score, smc_score,
-                     json.dumps(serializable_fib_details), json.dumps(serializable_smc_details),
-                     confirmed_at, rejection_reason, json.dumps(serializable_details),
+                     psycopg2.extras.Json(serializable_fib_details), psycopg2.extras.Json(serializable_smc_details),
+                     confirmed_at, rejection_reason, psycopg2.extras.Json(serializable_details),
                      signal_id)
                 )
                 conn.commit()
@@ -249,7 +250,7 @@ class SignalConfirmationManager:
                 SELECT * FROM signal_confirmations
                 WHERE status = 'PENDING'
                 OR (status = 'CONFIRMED'
-                    AND confirmation_window_end < datetime('now')
+                    AND confirmation_window_end < CURRENT_TIMESTAMP
                     AND executed_at IS NULL)
             """
 
@@ -280,8 +281,8 @@ class SignalConfirmationManager:
                 UPDATE signal_confirmations
                 SET status = 'EXPIRED',
                     rejection_reason = 'Confirmation window expired',
-                    updated_at = datetime('now')
-                WHERE id = ?
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
             """
 
             with self.db.get_connection() as conn:
@@ -310,7 +311,7 @@ class SignalConfirmationManager:
                 JOIN predictions p ON sc.prediction_id = p.id
                 WHERE sc.status = 'CONFIRMED'
                 AND sc.executed_at IS NULL
-                AND sc.confirmation_window_end > datetime('now')
+                AND sc.confirmation_window_end > CURRENT_TIMESTAMP
                 ORDER BY sc.confirmation_score DESC, sc.confirmed_at ASC
             """
 
@@ -372,9 +373,9 @@ class SignalConfirmationManager:
             query = """
                 UPDATE signal_confirmations
                 SET status = 'EXECUTED',
-                    executed_at = datetime('now'),
-                    updated_at = datetime('now')
-                WHERE id = ?
+                    executed_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
             """
 
             with self.db.get_connection() as conn:
@@ -405,7 +406,7 @@ class SignalConfirmationManager:
                     COUNT(*) as count,
                     AVG(confirmation_score) as avg_score
                 FROM signal_confirmations
-                WHERE signal_generated_at > ?
+                WHERE signal_generated_at > %s
                 GROUP BY status
             """
 
@@ -454,7 +455,7 @@ class SignalConfirmationManager:
 
             query = """
                 DELETE FROM signal_confirmations
-                WHERE signal_generated_at < ?
+                WHERE signal_generated_at < %s
                 AND status IN ('REJECTED', 'EXPIRED', 'EXECUTED')
             """
 

@@ -613,10 +613,9 @@ if __name__ == '__main__':
     # DatabaseManager will automatically detect DATABASE_TYPE and DATABASE_URL from environment
     db = DatabaseManager()
 
-    # Log database type being used
-    logging.info(f"Database type: {db.db_type}")
-    if db.db_type == 'postgresql':
-        logging.info(f"PostgreSQL connection: {db.db_url.split('@')[1] if '@' in db.db_url else 'configured'}")
+    # Log database connection
+    logging.info("Database type: PostgreSQL")
+    logging.info(f"PostgreSQL connection: {db.db_url.split('@')[1] if '@' in db.db_url else 'configured'}")
     
     # Connect to MT5
     if not connect_mt5():

@@ -34,7 +34,7 @@ def train_model(symbol='EURUSD', timeframe='H1', use_talib=True):
     print("📥 Fetching market data...")
     query = """
         SELECT * FROM market_data 
-        WHERE symbol = ? AND timeframe = ?
+        WHERE symbol = %s AND timeframe = %s
         ORDER BY timestamp DESC
         LIMIT 1000
     """

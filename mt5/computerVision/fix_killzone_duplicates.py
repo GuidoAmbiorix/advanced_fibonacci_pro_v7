@@ -1,75 +1,74 @@
-import sqlite3
+"""
+Fix killzone duplicate entries in PostgreSQL database.
+"""
 import os
+import sys
 from pathlib import Path
 
-# Path to database
-# Try different locations based on project structure
-possible_paths = [
-    Path("mt5/computerVision/data/cv_agent.db"),
-    Path("data/cv_agent.db"),
-    Path("../data/cv_agent.db")
-]
+sys.path.append(str(Path(__file__).parent))
+from src.database import DatabaseManager
+from dotenv import load_dotenv
 
-db_path = None
-for p in possible_paths:
-    if p.exists():
-        db_path = p
-        break
+load_dotenv()
 
-if not db_path:
-    # If not found, try to resolve relative to this script
-    script_dir = Path(__file__).parent
-    db_path = script_dir / "mt5" / "computerVision" / "data" / "cv_agent.db"
-    if not db_path.exists():
-        db_path = script_dir / "data" / "cv_agent.db"
+def main():
+    """Remove duplicate killzones and add unique constraint."""
+    db_url = os.environ.get('DATABASE_URL')
+    if not db_url:
+        print("ERROR: DATABASE_URL environment variable not set")
+        sys.exit(1)
 
-if not db_path.exists():
-    print(f"Database not found. Checked: {[str(p) for p in possible_paths]}")
-    exit(1)
+    print(f"Connecting to PostgreSQL database...")
+    db = DatabaseManager(db_url=db_url)
 
-print(f"Connecting to database at {db_path}...")
-conn = sqlite3.connect(db_path)
-cursor = conn.cursor()
+    try:
+        with db.get_connection() as conn:
+            # Count current entries
+            cursor = conn.execute("SELECT count(*) as total_count FROM killzone_windows")
+            total_count = cursor.fetchone()['total_count']
 
-try:
-    # 1. Count current entries
-    cursor.execute("SELECT count(*) FROM killzone_windows")
-    total_count = cursor.fetchone()[0]
-    cursor.execute("SELECT count(DISTINCT name) FROM killzone_windows")
-    unique_count = cursor.fetchone()[0]
-    
-    print(f"Total killzone entries: {total_count}")
-    print(f"Unique killzone names: {unique_count}")
-    
-    if total_count > unique_count:
-        print("Duplicates detected. Cleaning up...")
-        
-        # 2. Keep only the latest entry for each name
-        cursor.execute("""
-            DELETE FROM killzone_windows 
-            WHERE id NOT IN (
-                SELECT MAX(id) 
-                FROM killzone_windows 
-                GROUP BY name
-            )
-        """)
-        print(f"Deleted {total_count - unique_count} duplicates.")
-    else:
-        print("No duplicates found.")
-        
-    # 3. Add UNIQUE constraint to the table by recreating or adding index
-    # SQLite doesn't support ADD CONSTRAINT UNIQUE on existing columns easily
-    # But we can create a UNIQUE INDEX
-    print("Creating unique index on 'name'...")
-    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_killzone_name ON killzone_windows(name)")
-    
-    conn.commit()
-    print("Optimization complete.")
-    
-except Exception as e:
-    print(f"Error: {e}")
-    conn.rollback()
-finally:
-    conn.close()
+            cursor = conn.execute("SELECT count(DISTINCT name) as unique_count FROM killzone_windows")
+            unique_count = cursor.fetchone()['unique_count']
 
-print("Done.")
+            print(f"Total killzone entries: {total_count}")
+            print(f"Unique killzone names: {unique_count}")
+
+            if total_count > unique_count:
+                print("Duplicates detected. Cleaning up...")
+
+                # Keep only the latest entry for each name
+                conn.execute("""
+                    DELETE FROM killzone_windows
+                    WHERE id NOT IN (
+                        SELECT MAX(id)
+                        FROM killzone_windows
+                        GROUP BY name
+                    )
+                """)
+                print(f"Deleted {total_count - unique_count} duplicates.")
+            else:
+                print("No duplicates found.")
+
+            # Add UNIQUE constraint if it doesn't exist
+            print("Ensuring unique constraint on 'name'...")
+            conn.execute("""
+                ALTER TABLE killzone_windows
+                DROP CONSTRAINT IF EXISTS killzone_windows_name_unique
+            """)
+            conn.execute("""
+                ALTER TABLE killzone_windows
+                ADD CONSTRAINT killzone_windows_name_unique UNIQUE (name)
+            """)
+
+            conn.commit()
+            print("Optimization complete.")
+
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        db.close()
+
+    print("Done.")
+
+if __name__ == '__main__':
+    main()

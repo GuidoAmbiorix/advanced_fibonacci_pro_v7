@@ -30290,3 +30290,181 @@ LINE 4:                 AND status IN ('REJECTED', 'EXPIRED', 'EXECU...
 2026-02-10 12:12:24,679 - __main__ - INFO -   └─ Prediction interval: 300s
 2026-02-10 12:12:24,679 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
 2026-02-10 12:12:24,685 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-10 17:38:17,679 - src.trading.killzone_manager - INFO - Killzone filtering enabled with 9 windows in Europe/Athens
+2026-02-10 17:38:17,679 - src.trading.killzone_manager - INFO - Holiday calendar loaded: 2 dates
+2026-02-10 17:38:17,680 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-10 17:38:17,680 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-10 17:38:17,680 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-10 17:38:17,680 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-10 17:38:17,680 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-10 17:38:17,680 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-10 17:38:17,681 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-10 17:38:17,681 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-10 17:38:17,681 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-10 17:38:17,681 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-10 17:38:17,687 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-10 17:38:19,734 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-10 21:17:00,916 - src.trading.killzone_manager - INFO - Killzone filtering enabled with 9 windows in Europe/Athens
+2026-02-10 21:17:00,916 - src.trading.killzone_manager - INFO - Holiday calendar loaded: 2 dates
+2026-02-10 21:17:00,916 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-10 21:17:00,917 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-10 21:17:00,917 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-10 21:17:00,917 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-10 21:17:00,917 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-10 21:17:00,917 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-10 21:17:00,918 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-10 21:17:00,918 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-10 21:17:00,918 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-10 21:17:00,918 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-10 21:17:00,924 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-10 21:17:02,978 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-10 21:17:02,980 - src.trading.cooldown_manager - ERROR - Error cleaning cooldowns: function datetime(unknown) does not exist
+LINE 3:                 WHERE cooldown_end_time < datetime('now')
+                                                  ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+
+2026-02-10 21:17:02,980 - src.trading.signal_confirmation_manager - ERROR - Error cleaning up signals: syntax error at or near "AND"
+LINE 4:                 AND status IN ('REJECTED', 'EXPIRED', 'EXECU...
+                        ^
+
+2026-02-10 21:18:05,034 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-10 21:18:05,035 - src.trading.cooldown_manager - ERROR - Error cleaning cooldowns: function datetime(unknown) does not exist
+LINE 3:                 WHERE cooldown_end_time < datetime('now')
+                                                  ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+
+2026-02-10 21:18:05,037 - src.trading.signal_confirmation_manager - ERROR - Error cleaning up signals: syntax error at or near "AND"
+LINE 4:                 AND status IN ('REJECTED', 'EXPIRED', 'EXECU...
+                        ^
+
+2026-02-10 21:19:07,103 - src.trading.cooldown_manager - ERROR - Error cleaning cooldowns: function datetime(unknown) does not exist
+LINE 3:                 WHERE cooldown_end_time < datetime('now')
+                                                  ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+
+2026-02-10 21:19:07,104 - src.trading.signal_confirmation_manager - ERROR - Error cleaning up signals: syntax error at or near "AND"
+LINE 4:                 AND status IN ('REJECTED', 'EXPIRED', 'EXECU...
+                        ^
+
+2026-02-10 21:42:34,324 - src.trading.killzone_manager - INFO - Killzone filtering enabled with 9 windows in Europe/Athens
+2026-02-10 21:42:34,324 - src.trading.killzone_manager - INFO - Holiday calendar loaded: 2 dates
+2026-02-10 21:42:34,325 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-10 21:42:34,325 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-10 21:42:34,326 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-10 21:42:34,326 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-10 21:42:34,326 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-10 21:42:34,326 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-10 21:42:34,327 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-10 21:42:34,327 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-10 21:42:34,327 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-10 21:42:34,328 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-10 21:42:34,344 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-10 21:42:36,387 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-10 21:42:36,394 - src.trading.cooldown_manager - ERROR - Error cleaning cooldowns: function datetime(unknown) does not exist
+LINE 3:                 WHERE cooldown_end_time < datetime('now')
+                                                  ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+
+2026-02-10 21:42:36,395 - src.trading.signal_confirmation_manager - ERROR - Error cleaning up signals: syntax error at or near "AND"
+LINE 4:                 AND status IN ('REJECTED', 'EXPIRED', 'EXECU...
+                        ^
+
+2026-02-10 21:43:36,409 - src.trading.cooldown_manager - ERROR - Error cleaning cooldowns: function datetime(unknown) does not exist
+LINE 3:                 WHERE cooldown_end_time < datetime('now')
+                                                  ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+
+2026-02-10 21:43:36,409 - src.trading.signal_confirmation_manager - ERROR - Error cleaning up signals: syntax error at or near "AND"
+LINE 4:                 AND status IN ('REJECTED', 'EXPIRED', 'EXECU...
+                        ^
+
+2026-02-10 21:44:36,417 - src.trading.cooldown_manager - ERROR - Error cleaning cooldowns: function datetime(unknown) does not exist
+LINE 3:                 WHERE cooldown_end_time < datetime('now')
+                                                  ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+
+2026-02-10 21:44:36,418 - src.trading.signal_confirmation_manager - ERROR - Error cleaning up signals: syntax error at or near "AND"
+LINE 4:                 AND status IN ('REJECTED', 'EXPIRED', 'EXECU...
+                        ^
+
+2026-02-10 21:52:19,087 - src.trading.killzone_manager - INFO - Killzone filtering enabled with 9 windows in Europe/Athens
+2026-02-10 21:52:19,087 - src.trading.killzone_manager - INFO - Holiday calendar loaded: 2 dates
+2026-02-10 21:52:19,088 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-10 21:52:19,088 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-10 21:52:19,088 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-10 21:52:19,088 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-10 21:52:19,088 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-10 21:52:19,089 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-10 21:52:19,089 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-10 21:52:19,089 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-10 21:52:19,089 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-10 21:52:19,089 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-10 21:52:19,104 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-10 21:52:21,145 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-10 21:52:21,149 - src.trading.cooldown_manager - ERROR - Error cleaning cooldowns: function datetime(unknown) does not exist
+LINE 3:                 WHERE cooldown_end_time < datetime('now')
+                                                  ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+
+2026-02-10 21:53:21,182 - src.trading.cooldown_manager - ERROR - Error cleaning cooldowns: function datetime(unknown) does not exist
+LINE 3:                 WHERE cooldown_end_time < datetime('now')
+                                                  ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+
+2026-02-10 21:54:21,185 - src.trading.cooldown_manager - ERROR - Error cleaning cooldowns: function datetime(unknown) does not exist
+LINE 3:                 WHERE cooldown_end_time < datetime('now')
+                                                  ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+
+2026-02-10 21:58:46,122 - src.trading.killzone_manager - INFO - Killzone filtering enabled with 9 windows in Europe/Athens
+2026-02-10 21:58:46,122 - src.trading.killzone_manager - INFO - Holiday calendar loaded: 2 dates
+2026-02-10 21:58:46,123 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-10 21:58:46,123 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-10 21:58:46,123 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-10 21:58:46,124 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-10 21:58:46,124 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-10 21:58:46,124 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-10 21:58:46,124 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-10 21:58:46,125 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-10 21:58:46,125 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-10 21:58:46,125 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-10 21:58:46,131 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-10 21:58:48,178 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-10 22:04:05,007 - src.trading.killzone_manager - INFO - Killzone filtering enabled with 9 windows in Europe/Athens
+2026-02-10 22:04:05,007 - src.trading.killzone_manager - INFO - Holiday calendar loaded: 2 dates
+2026-02-10 22:04:05,008 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-10 22:04:05,008 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-10 22:04:05,008 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-10 22:04:05,008 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-10 22:04:05,008 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-10 22:04:05,009 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-10 22:04:05,009 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-10 22:04:05,009 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-10 22:04:05,009 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-10 22:04:05,009 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-10 22:04:05,015 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-10 22:04:07,054 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-10 22:10:58,886 - src.trading.killzone_manager - INFO - Killzone filtering enabled with 9 windows in Europe/Athens
+2026-02-10 22:10:58,886 - src.trading.killzone_manager - INFO - Holiday calendar loaded: 2 dates
+2026-02-10 22:10:58,886 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-10 22:10:58,887 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-10 22:10:58,887 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-10 22:10:58,888 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-10 22:10:58,888 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-10 22:10:58,888 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-10 22:10:58,889 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-10 22:10:58,889 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-10 22:10:58,889 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-10 22:10:58,889 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-10 22:10:59,982 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-10 22:11:00,125 - src.trading.prediction_service - ERROR - Failed to generate prediction for EURUSD: could not convert string to float: 'open'
+2026-02-10 22:11:00,134 - src.trading.prediction_service - INFO - Generating prediction for GBPUSD using TA-Lib features
+2026-02-10 22:11:00,137 - src.trading.prediction_service - ERROR - Failed to generate prediction for GBPUSD: could not convert string to float: 'open'
+2026-02-10 22:11:00,143 - src.trading.prediction_service - INFO - Generating prediction for USDJPY using TA-Lib features
+2026-02-10 22:11:00,146 - src.trading.prediction_service - ERROR - Failed to generate prediction for USDJPY: could not convert string to float: 'open'
+2026-02-10 22:11:00,152 - src.trading.prediction_service - INFO - Generating prediction for AUDUSD using TA-Lib features
+2026-02-10 22:11:00,155 - src.trading.prediction_service - ERROR - Failed to generate prediction for AUDUSD: could not convert string to float: 'open'
+2026-02-10 22:11:00,170 - src.trading.prediction_service - INFO - Generating prediction for EURJPY using TA-Lib features
+2026-02-10 22:11:00,173 - src.trading.prediction_service - ERROR - Failed to generate prediction for EURJPY: could not convert string to float: 'open'
+2026-02-10 22:11:00,173 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-10 22:11:02,207 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))

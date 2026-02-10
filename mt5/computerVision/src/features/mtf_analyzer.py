@@ -224,7 +224,7 @@ class MTFAnalyzer:
             if self.db:
                 query = """
                     SELECT * FROM market_data 
-                    WHERE symbol = ? AND timeframe = ?
+                    WHERE symbol = %s AND timeframe = %s
                     ORDER BY timestamp DESC
                     LIMIT 200
                 """
@@ -250,7 +250,7 @@ class MTFAnalyzer:
         
         # Calculate alignment scores
         if len(features) > 0:
-            # Trend alignment: all trends pointing same direction?
+            # Trend alignment: all trends pointing same direction%s
             trend_keys = [k for k in features.keys() if k.endswith('_trend')]
             trends = [features[k] for k in trend_keys]
             
@@ -326,7 +326,7 @@ def create_mtf_features_for_training(symbol: str, base_timeframe: str,
     # Get base timeframe data
     query = """
         SELECT * FROM market_data 
-        WHERE symbol = ? AND timeframe = ?
+        WHERE symbol = %s AND timeframe = %s
         ORDER BY timestamp ASC
     """
     with db_manager.get_connection() as conn:

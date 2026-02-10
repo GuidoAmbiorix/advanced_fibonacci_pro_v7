@@ -258,15 +258,16 @@ class HybridEnsembleTrainer:
         # Prepare data
         print("📥 Preparing data...")
         query = """
-            SELECT * FROM market_data 
-            WHERE symbol = ? AND timeframe = ?
+            SELECT * FROM market_data
+            WHERE symbol = %s AND timeframe = %s
             ORDER BY timestamp DESC
             LIMIT 2000
         """
         import pandas as pd
-        query, params = self.db._convert_query_to_postgres(query, (symbol, timeframe))
         with self.db.get_connection() as conn:
-            df = pd.read_sql_query(query, conn, params=params)
+            cursor = conn.execute(query, (symbol, timeframe))
+            rows = cursor.fetchall()
+            df = pd.DataFrame(rows)
         
         # Create features
         X, y, feature_names = prepare_training_data(df, use_talib=True)

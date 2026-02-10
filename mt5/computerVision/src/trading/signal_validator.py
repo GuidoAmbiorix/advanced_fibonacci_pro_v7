@@ -283,7 +283,7 @@ class SignalValidator:
         try:
             query = """
                 SELECT * FROM market_data
-                WHERE symbol = ? AND timeframe = 'H1'
+                WHERE symbol = %s AND timeframe = 'H1'
                 ORDER BY timestamp DESC
                 LIMIT 100
             """
@@ -335,7 +335,7 @@ class SignalValidator:
             # Fetch volume data from database
             query = """
                 SELECT tick_volume, close, timestamp FROM market_data
-                WHERE symbol = ? AND timeframe = 'H1'
+                WHERE symbol = %s AND timeframe = 'H1'
                 ORDER BY timestamp DESC
                 LIMIT 20
             """
@@ -394,7 +394,7 @@ class SignalValidator:
             # Fetch data from database
             query = """
                 SELECT high, low, close, timestamp FROM market_data
-                WHERE symbol = ? AND timeframe = 'H1'
+                WHERE symbol = %s AND timeframe = 'H1'
                 ORDER BY timestamp DESC
                 LIMIT 50
             """
@@ -468,7 +468,7 @@ class SignalValidator:
             # Fetch price data from database
             query = """
                 SELECT open, high, low, close, timestamp FROM market_data
-                WHERE symbol = ? AND timeframe = 'H1'
+                WHERE symbol = %s AND timeframe = 'H1'
                 ORDER BY timestamp DESC
                 LIMIT 100
             """
@@ -520,7 +520,7 @@ class SignalValidator:
             # Fetch price data from database
             query = """
                 SELECT open, high, low, close, timestamp FROM market_data
-                WHERE symbol = ? AND timeframe = 'H1'
+                WHERE symbol = %s AND timeframe = 'H1'
                 ORDER BY timestamp DESC
                 LIMIT 100
             """

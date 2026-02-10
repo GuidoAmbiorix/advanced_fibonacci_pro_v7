@@ -41,7 +41,7 @@ services:
       - PYTHONUNBUFFERED=1
       # Use Windows host IP instead of host.docker.internal
       - BRIDGE_URL=http://10.0.0.4:5000
-      - DATABASE_TYPE=${DATABASE_TYPE:-sqlite}
+      - DATABASE_TYPE=postgresql
       - DATABASE_URL=${DATABASE_URL}
     restart: unless-stopped
     networks:
@@ -64,7 +64,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - BRIDGE_URL=http://10.0.0.4:5000
-      - DATABASE_TYPE=${DATABASE_TYPE:-sqlite}
+      - DATABASE_TYPE=postgresql
       - DATABASE_URL=${DATABASE_URL}
     restart: unless-stopped
     networks:
