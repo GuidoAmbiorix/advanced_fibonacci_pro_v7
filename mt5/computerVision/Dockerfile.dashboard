@@ -14,10 +14,12 @@ RUN grep -v "^TA-Lib" requirements.txt > requirements-filtered.txt || cp require
 # Copy application code
 COPY src/ ./src/
 COPY dashboard/ ./dashboard/
-COPY data/ ./data/
 
-# Create models directory
-RUN mkdir -p ./models
+# Create directories for volume mounts (don't copy data - will be mounted)
+RUN mkdir -p ./data ./models ./logs
+
+# Set environment variable to indicate Docker environment
+ENV DOCKER_CONTAINER=true
 
 EXPOSE 8501
 

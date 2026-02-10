@@ -1,6 +1,30 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: cv_postgres
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=cv_trading
+      - POSTGRES_USER=cv_agent
+      - POSTGRES_PASSWORD=123
+      - POSTGRES_HOST_AUTH_METHOD=md5
+      - POSTGRES_INITDB_ARGS=--auth-host=md5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/database/schema_postgres.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cv_agent -d cv_trading"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - cv_network
+
   # Streamlit Dashboard
   dashboard:
     build:
@@ -17,9 +41,14 @@ services:
       - PYTHONUNBUFFERED=1
       # Use Windows host IP instead of host.docker.internal
       - BRIDGE_URL=http://10.0.0.4:5000
+      - DATABASE_TYPE=${DATABASE_TYPE:-sqlite}
+      - DATABASE_URL=${DATABASE_URL}
     restart: unless-stopped
     networks:
       - cv_network
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   # Auto-Trader Service
   trader:
@@ -35,11 +64,20 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - BRIDGE_URL=http://10.0.0.4:5000
+      - DATABASE_TYPE=${DATABASE_TYPE:-sqlite}
+      - DATABASE_URL=${DATABASE_URL}
     restart: unless-stopped
     networks:
       - cv_network
     depends_on:
-      - dashboard
+      postgres:
+        condition: service_healthy
+      dashboard:
+        condition: service_started
+
+volumes:
+  postgres_data:
+    driver: local
 
 networks:
   cv_network:

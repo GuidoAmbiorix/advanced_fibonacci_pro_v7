@@ -55,22 +55,22 @@ class MTFAnalyzer:
     def get_higher_timeframes(self, base_timeframe: str, count: int = 3) -> list:
         """
         Get higher timeframes for analysis.
-        
+
         Args:
             base_timeframe: Base timeframe (e.g., 'M15')
             count: Number of higher timeframes to return
-            
+
         Returns:
             List of higher timeframe strings
         """
         base_minutes = self.TIMEFRAME_MAP.get(base_timeframe, 15)
-        
+
         # Get all higher timeframes
         higher_tfs = [
             (tf, minutes) for tf, minutes in self.TIMEFRAME_MAP.items()
             if minutes > base_minutes
         ]
-        
+
         # Sort by minutes and take first 'count'
         higher_tfs.sort(key=lambda x: x[1])
         return [tf for tf, _ in higher_tfs[:count]]

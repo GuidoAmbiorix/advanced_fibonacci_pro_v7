@@ -151,14 +151,22 @@ class SignalConfirmationManager:
                 prediction, trading_timeframe
             )
 
-            # Extract individual scores
+            # Extract individual scores (ensure they're floats, not booleans or other types)
             scores = validation_details.get('scores', {})
-            mtf_score = scores.get('mtf_alignment', 0)
-            momentum_score = scores.get('momentum_confluence', 0)
-            volume_score = scores.get('volume_confirmation', 0)
-            trend_score = scores.get('trend_strength', 0)
-            fibonacci_score = scores.get('fibonacci_alignment', 50)
-            smc_score = scores.get('smc_confluence', 50)
+            mtf_score = float(scores.get('mtf_alignment', 0))
+            momentum_score = float(scores.get('momentum_confluence', 0))
+            volume_score = float(scores.get('volume_confirmation', 0))
+            trend_score = float(scores.get('trend_strength', 0))
+            fibonacci_score = float(scores.get('fibonacci_alignment', 50))
+            smc_score = float(scores.get('smc_confluence', 50))
+
+            # Clamp scores to 0-100 range (in case of calculation errors)
+            mtf_score = max(0.0, min(100.0, mtf_score))
+            momentum_score = max(0.0, min(100.0, momentum_score))
+            volume_score = max(0.0, min(100.0, volume_score))
+            trend_score = max(0.0, min(100.0, trend_score))
+            fibonacci_score = max(0.0, min(100.0, fibonacci_score))
+            smc_score = max(0.0, min(100.0, smc_score))
 
             # Determine MTF alignment
             mtf_details = validation_details.get('mtf', {})

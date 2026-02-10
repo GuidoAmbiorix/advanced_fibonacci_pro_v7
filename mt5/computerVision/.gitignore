@@ -1,0 +1,45 @@
+# Environment variables (contain sensitive database credentials)
+.env
+bridge/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Models
+models/*.pkl
+models/*.h5
+models/*.keras
+
+# Data
+data/*.db
+data/*.csv
+data/*.parquet
+
+# OS
+.DS_Store
+Thumbs.db

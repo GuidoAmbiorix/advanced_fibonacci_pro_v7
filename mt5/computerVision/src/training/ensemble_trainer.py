@@ -264,8 +264,9 @@ class HybridEnsembleTrainer:
             LIMIT 2000
         """
         import pandas as pd
+        query, params = self.db._convert_query_to_postgres(query, (symbol, timeframe))
         with self.db.get_connection() as conn:
-            df = pd.read_sql_query(query, conn, params=(symbol, timeframe))
+            df = pd.read_sql_query(query, conn, params=params)
         
         # Create features
         X, y, feature_names = prepare_training_data(df, use_talib=True)

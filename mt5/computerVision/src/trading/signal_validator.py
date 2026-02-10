@@ -334,7 +334,7 @@ class SignalValidator:
         try:
             # Fetch volume data from database
             query = """
-                SELECT tick_volume, close FROM market_data
+                SELECT tick_volume, close, timestamp FROM market_data
                 WHERE symbol = ? AND timeframe = 'H1'
                 ORDER BY timestamp DESC
                 LIMIT 20
@@ -345,7 +345,8 @@ class SignalValidator:
             if len(df) < 10:
                 return True, 50, {'note': 'Insufficient volume data'}
 
-            df = df.sort_values('timestamp', ascending=False)
+            # Data already sorted by timestamp DESC from query
+            # df = df.sort_values('timestamp', ascending=False)
 
             # Volume ratio (current vs average)
             current_volume = df['tick_volume'].iloc[0]
@@ -392,7 +393,7 @@ class SignalValidator:
         try:
             # Fetch data from database
             query = """
-                SELECT high, low, close FROM market_data
+                SELECT high, low, close, timestamp FROM market_data
                 WHERE symbol = ? AND timeframe = 'H1'
                 ORDER BY timestamp DESC
                 LIMIT 50

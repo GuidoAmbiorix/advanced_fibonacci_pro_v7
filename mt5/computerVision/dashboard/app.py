@@ -794,7 +794,7 @@ elif page == "Training":
         query = "SELECT COUNT(*) as cnt FROM market_data WHERE symbol = ? AND timeframe = ?"
         with db.get_connection() as conn:
             cursor = conn.execute(query, (train_symbol, train_timeframe))
-            data_count = cursor.fetchone()[0]
+            data_count = cursor.fetchone()['cnt']
         
         if data_count > 0:
             st.metric("Available Data", f"{data_count} bars", delta="Ready ✅")
@@ -825,8 +825,9 @@ elif page == "Training":
                     
                     # Get data
                     query = "SELECT * FROM market_data WHERE symbol = ? AND timeframe = ? ORDER BY timestamp DESC LIMIT 1000"
+                    q, p = db._convert_query_to_postgres(query, (train_symbol, train_timeframe))
                     with db.get_connection() as conn:
-                        df = pd.read_sql_query(query, conn, params=(train_symbol, train_timeframe))
+                        df = pd.read_sql_query(q, conn, params=p)
                     
                     # Prepare features
                     X, y, feature_names = prepare_training_data(df, use_talib=True)
@@ -904,8 +905,9 @@ elif page == "Training":
                     
                     # Get data
                     query = "SELECT * FROM market_data WHERE symbol = ? AND timeframe = ? ORDER BY timestamp DESC LIMIT 1000"
+                    q, p = db._convert_query_to_postgres(query, (train_symbol, train_timeframe))
                     with db.get_connection() as conn:
-                        df = pd.read_sql_query(query, conn, params=(train_symbol, train_timeframe))
+                        df = pd.read_sql_query(q, conn, params=p)
                     
                     X, y, feature_names = prepare_training_data(df, use_talib=True)
                     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -1397,8 +1399,9 @@ elif page == "Training":
             
             # Get all models from database
             query = "SELECT * FROM models ORDER BY created_at DESC LIMIT 20"
+            q, p = db._convert_query_to_postgres(query, ())
             with db.get_connection() as conn:
-                models_df = pd.read_sql_query(query, conn)
+                models_df = pd.read_sql_query(q, conn, params=p)
             
             if len(models_df) > 0:
                 # Display comparison table

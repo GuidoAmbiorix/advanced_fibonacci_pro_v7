@@ -34,13 +34,13 @@ class RiskManager:
                 return False, f"Outside trading hours: {reason}"
         
         # Check confidence threshold
-        min_confidence = self.config['risk']['min_confidence']
+        min_confidence = float(self.db.get_config('min_confidence', self.config['risk']['min_confidence']))
         if confidence < min_confidence:
             return False, f"Confidence {confidence:.2%} below minimum {min_confidence:.2%}"
         
         # Check max positions
         open_positions = self.db.get_open_positions()
-        max_positions = self.config['risk']['max_positions']
+        max_positions = int(self.db.get_config('max_positions', self.config['risk']['max_positions']))
         if len(open_positions) >= max_positions:
             return False, f"Max positions ({max_positions}) reached"
             
@@ -52,7 +52,8 @@ class RiskManager:
         
         # Check daily loss limit
         daily_pnl = self.db.get_daily_pnl()
-        max_daily_loss = account_balance * (self.config['risk']['max_daily_loss_pct'] / 100)
+        max_daily_loss_pct = float(self.db.get_config('max_daily_loss_pct', self.config['risk']['max_daily_loss_pct']))
+        max_daily_loss = account_balance * (max_daily_loss_pct / 100)
         if daily_pnl < -max_daily_loss:
             return False, f"Daily loss limit reached: {daily_pnl:.2f} < -{max_daily_loss:.2f}"
         

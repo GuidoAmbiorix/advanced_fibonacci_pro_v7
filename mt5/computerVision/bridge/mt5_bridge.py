@@ -9,6 +9,7 @@ import MetaTrader5 as mt5
 from flask import Flask, jsonify, request
 import yaml
 import logging
+import os
 from datetime import datetime, timedelta
 import pandas as pd
 from pathlib import Path
@@ -16,6 +17,7 @@ import sys
 import threading
 import time
 import schedule
+from dotenv import load_dotenv
 
 # Add parent directory to path for database access
 sys.path.append(str(Path(__file__).parent.parent))
@@ -396,35 +398,36 @@ def list_positions():
 # ==================== Background Data Sync ====================
 
 def sync_market_data():
-    """Background task to sync market data."""
+    """Background task to sync market data for multiple timeframes."""
     if not mt5_connected or not config['sync']['enabled']:
         return
-    
+
+    # Timeframes to sync for MTF analysis
+    timeframes_to_sync = {
+        'H1': mt5.TIMEFRAME_H1,
+        'H4': mt5.TIMEFRAME_H4,
+        'D1': mt5.TIMEFRAME_D1
+    }
+
     for symbol in config['sync']['symbols']:
-        try:
-            timeframe_str = config['sync']['timeframe']
-            num_bars = config['sync']['bars_to_fetch']
-            
-            # Use the fetch_data logic
-            timeframe_map = {
-                'M1': mt5.TIMEFRAME_M1,
-                'M5': mt5.TIMEFRAME_M5,
-                'M15': mt5.TIMEFRAME_M15,
-                'M30': mt5.TIMEFRAME_M30,
-                'H1': mt5.TIMEFRAME_H1,
-                'H4': mt5.TIMEFRAME_H4,
-                'D1': mt5.TIMEFRAME_D1
-            }
-            timeframe = timeframe_map.get(timeframe_str, mt5.TIMEFRAME_H1)
-            
-            rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, num_bars)
-            if rates is not None and len(rates) > 0:
-                df = pd.DataFrame(rates)
-                df['timestamp'] = pd.to_datetime(df['time'], unit='s')
-                db.insert_market_data(symbol, timeframe_str, df)
-                logging.debug(f"Synced {len(df)} bars for {symbol}")
-        except Exception as e:
-            logging.error(f"Error syncing {symbol}: {e}")
+        for timeframe_str, timeframe_constant in timeframes_to_sync.items():
+            try:
+                # Adjust bars based on timeframe (need more history for higher TFs)
+                if timeframe_str == 'H1':
+                    num_bars = config['sync']['bars_to_fetch']  # e.g., 5000
+                elif timeframe_str == 'H4':
+                    num_bars = 1500  # 1500 H4 bars = ~250 days
+                else:  # D1
+                    num_bars = 500   # 500 D1 bars = ~500 days
+
+                rates = mt5.copy_rates_from_pos(symbol, timeframe_constant, 0, num_bars)
+                if rates is not None and len(rates) > 0:
+                    df = pd.DataFrame(rates)
+                    df['timestamp'] = pd.to_datetime(df['time'], unit='s')
+                    db.insert_market_data(symbol, timeframe_str, df)
+                    logging.debug(f"Synced {len(df)} bars for {symbol} {timeframe_str}")
+            except Exception as e:
+                logging.error(f"Error syncing {symbol} {timeframe_str}: {e}")
 
 def run_scheduler():
     """Run the background scheduler."""
@@ -591,11 +594,29 @@ def get_atr():
 # ==================== Main ====================
 
 if __name__ == '__main__':
+    # Load environment variables from bridge/.env (for PostgreSQL config)
+    bridge_env_path = Path(__file__).parent / '.env'
+    if bridge_env_path.exists():
+        load_dotenv(bridge_env_path)
+        print(f"✓ Loaded environment variables from {bridge_env_path}")
+    else:
+        print(f"✗ WARNING: {bridge_env_path} not found!")
+
+    # Debug: Print what was loaded
+    print(f"DATABASE_TYPE = {os.environ.get('DATABASE_TYPE', 'NOT SET')}")
+    print(f"DATABASE_URL = {os.environ.get('DATABASE_URL', 'NOT SET')}")
+
     # Load configuration
     load_config()
-    
+
     # Initialize database
+    # DatabaseManager will automatically detect DATABASE_TYPE and DATABASE_URL from environment
     db = DatabaseManager()
+
+    # Log database type being used
+    logging.info(f"Database type: {db.db_type}")
+    if db.db_type == 'postgresql':
+        logging.info(f"PostgreSQL connection: {db.db_url.split('@')[1] if '@' in db.db_url else 'configured'}")
     
     # Connect to MT5
     if not connect_mt5():

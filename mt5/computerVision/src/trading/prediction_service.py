@@ -171,8 +171,8 @@ class PredictionService:
             self.logger.error(f"Missing features for {symbol}: {missing_features[:5]}")
             return
         
-        # Prepare input
-        X = [[latest[f] for f in features]]
+        # Prepare input as DataFrame to preserve feature names
+        X = pd.DataFrame([[latest[f] for f in features]], columns=features)
         X_scaled = scaler.transform(X)
         
         # Make prediction

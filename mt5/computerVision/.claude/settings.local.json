@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(cd:*)",
+      "Bash(python -c:*)",
+      "Bash(find:*)",
+      "Bash(sqlite3:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker compose up:*)"
     ]
   }
 }
