@@ -521,10 +521,26 @@ class AutoTrader:
                 
                 # Get ATR
                 atr = self.exit_manager.get_atr(symbol)
-                
+
+                # Normalize MT5 position format for exit_manager
+                # MT5 uses: price_open, type (0/1), sl, tp
+                # exit_manager expects: entry_price, direction (BUY/SELL), sl, tp
+                normalized_position = {
+                    'symbol': symbol,
+                    'ticket': ticket,
+                    'entry_price': position.get('price_open', position.get('entry_price', 0)),
+                    'direction': 'SELL' if is_sell else 'BUY',
+                    'sl': position.get('sl', 0),
+                    'tp': position.get('tp', 0),
+                    'open_time': position.get('time', position.get('open_time')),
+                    'volume': position.get('volume', 0),
+                    'breakeven_set': position.get('breakeven_set', False),
+                    'partial_taken': position.get('partial_taken', False)
+                }
+
                 # Check exit conditions
                 should_exit, reason, modification = self.exit_manager.check_exit_conditions(
-                    position, current_price, atr
+                    normalized_position, current_price, atr
                 )
                 
                 if should_exit:
@@ -559,9 +575,16 @@ class AutoTrader:
                 timeout=10
             )
             if response.status_code == 200:
-                self.logger.info(f"Modified position {ticket}")
+                result = response.json()
+                if result.get('success'):
+                    self.logger.info(f"✅ Modified position {ticket} (SL={new_sl:.5f}, TP={new_tp:.5f})")
+                elif result.get('retcode') == 10025:
+                    # No changes needed - SL/TP already at target values
+                    self.logger.debug(f"Position {ticket} already at target SL/TP")
+                else:
+                    self.logger.warning(f"⚠️ Modify {ticket} returned: {result.get('error', 'Unknown')}")
             else:
-                self.logger.error(f"Failed to modify {ticket}: {response.text}")
+                self.logger.error(f"❌ Failed to modify {ticket}: {response.text}")
         except Exception as e:
             self.logger.error(f"Error modifying position: {e}")
     
