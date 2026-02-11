@@ -227,13 +227,14 @@ class HybridEnsembleTrainer:
         self.feature_names = None
     
     def train_ensemble(self, symbol: str, timeframe: str,
-                      include_lstm: bool = True,
-                      include_cnn_lstm: bool = True,
-                      include_xgboost: bool = True,
-                      include_rf: bool = True,
-                      include_mlp: bool = True,
-                      sequence_length: int = 20,
-                      voting: str = 'soft') -> Tuple[Any, Dict]:
+                       include_lstm: bool = True,
+                       include_cnn_lstm: bool = True,
+                       include_xgboost: bool = True,
+                       include_rf: bool = True,
+                       include_mlp: bool = True,
+                       sequence_length: int = 20,
+                       voting: str = 'soft',
+                       df: pd.DataFrame = None) -> Tuple[Any, Dict]:
         """
         Train hybrid ensemble.
         
@@ -247,6 +248,7 @@ class HybridEnsembleTrainer:
             include_mlp: Include MLP
             sequence_length: Sequence length for LSTM models
             voting: 'soft' or 'hard' voting
+            df: Optional pre-loaded DataFrame (prevents reloading from DB)
             
         Returns:
             (ensemble, metrics)
@@ -256,18 +258,21 @@ class HybridEnsembleTrainer:
         print(f"{'='*60}\n")
         
         # Prepare data
-        print("📥 Preparing data...")
-        query = """
-            SELECT * FROM market_data
-            WHERE symbol = %s AND timeframe = %s
-            ORDER BY timestamp DESC
-            LIMIT 2000
-        """
-        import pandas as pd
-        with self.db.get_connection() as conn:
-            cursor = conn.execute(query, (symbol, timeframe))
-            rows = cursor.fetchall()
-            df = pd.DataFrame(rows)
+        if df is None:
+            print("📥 Fetching data from DB...")
+            query = """
+                SELECT * FROM market_data
+                WHERE symbol = %s AND timeframe = %s
+                ORDER BY timestamp DESC
+                LIMIT 2000
+            """
+            import pandas as pd
+            with self.db.get_connection() as conn:
+                cursor = conn.execute(query, (symbol, timeframe))
+                rows = cursor.fetchall()
+                df = pd.DataFrame(rows)
+        else:
+            print("📥 Using provided DataFrame...")
         
         # Create features
         X, y, feature_names = prepare_training_data(df, use_talib=True)
@@ -419,32 +424,26 @@ class HybridEnsembleTrainer:
         train_acc = ensemble.score(X_train_tab, y_train)
         test_acc = ensemble.score(X_test_tab, y_test)
         
-        # Evaluate individual models
-        individual_scores = {}
-        for name, model in self.models.items():
-            if 'lstm' in name.lower():
-                # TensorFlow models need sequences
-                score = model.evaluate(X_test_seq, y_test_seq, verbose=0)[1]
-            else:
-                score = model.score(X_test_tab, y_test)
-            individual_scores[name] = score
+        # Calculate metrics
+        from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+        
+        y_pred = self.ensemble.predict(X_test_tab)
+        y_pred_proba = self.ensemble.predict_proba(X_test_tab)
         
         metrics = {
-            'ensemble_train_accuracy': train_acc,
-            'ensemble_test_accuracy': test_acc,
-            'individual_scores': individual_scores,
-            'n_models': len(estimators),
-            'model_names': [name for name, _ in estimators]
+            'ensemble_test_accuracy': accuracy_score(y_test_array, y_pred),
+            'ensemble_precision': precision_score(y_test_array, y_pred, zero_division=0),
+            'ensemble_recall': recall_score(y_test_array, y_pred, zero_division=0),
+            'ensemble_f1': f1_score(y_test_array, y_pred, zero_division=0),
+            'n_models': len(self.ensemble.estimators_),
+            # CRITICAL: Return the index where test set starts to align backtest
+            'test_start_index': len(X_train_tab), 
+            'total_samples': len(X)
         }
         
-        print(f"\n✅ Ensemble Results:")
-        print(f"   Train Accuracy: {train_acc:.4f}")
-        print(f"   Test Accuracy:  {test_acc:.4f}")
-        print(f"\n   Individual Model Scores:")
-        for name, score in individual_scores.items():
-            print(f"      {name}: {score:.4f}")
+        print(f"✅ Ensemble Trained. Test Acc: {metrics['ensemble_test_accuracy']:.2%}")
         
-        return ensemble, metrics
+        return self.ensemble, metrics
     
     def save_ensemble(self, symbol: str, timeframe: str, metrics: Dict) -> int:
         """

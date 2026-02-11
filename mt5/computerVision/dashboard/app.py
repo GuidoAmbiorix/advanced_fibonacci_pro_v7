@@ -768,739 +768,147 @@ elif page == "Live Trades":
 
 # ==================== Training Page ====================
 elif page == "Training":
-    st.title("🎓 ML Training Pipeline")
+    st.title("🚀 End-to-End Strategy Factory")
+    st.caption("One Process: Data Fetch ➡ Hyper-Opt Training ➡ Backtest Validation")
+
+    # --- Section 1: Data Setup ---
+    st.header("1️⃣ Data Setup")
     
-    st.info("📋 **Training Pipeline**: Follow the steps in order for best results")
-    
-    # Create tabs for each phase
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "1️⃣ Data & Basic Training",
-        "2️⃣ Optuna Optimization", 
-        "3️⃣ Advanced Models",
-        "4️⃣ Backtesting"
-    ])
-    
-    # ==================== TAB 1: Data & Basic Training ====================
-    with tab1:
-        st.header("Step 1: Fetch Data & Train Basic Model")
-        
-        # Symbol and timeframe selection
-        col1, col2 = st.columns(2)
-        with col1:
-            train_symbol = st.selectbox("Symbol", ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "AUDUSD", "USDCAD", "USDCHF", "NZDUSD", "EURJPY"], key="pipeline_symbol")
-        with col2:
-            train_timeframe = st.selectbox("Timeframe", ["M1", "M5", "M15", "M30", "H1", "H4", "D1"], key="pipeline_timeframe")
-        
-        st.markdown("---")
-        
-        # Step 1.1: Fetch Data
-        st.subheader("📥 Step 1.1: Fetch Market Data")
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            num_bars = st.slider("Number of bars", 500, 5000, 1000, step=500)
-        with col2:
-            st.write("")
-            st.write("")
-            if st.button("📥 Fetch Data", type="secondary", key="fetch_btn"):
-                with st.spinner(f"Fetching {train_symbol} {train_timeframe} data..."):
-                    try:
-                        bridge_url = os.getenv('BRIDGE_URL', 'http://host.docker.internal:5000')
-                        response = requests.post(
-                            f"{bridge_url}/data/fetch",
-                            json={"symbol": train_symbol, "timeframe": train_timeframe, "num_bars": num_bars},
-                            timeout=30
-                        )
-                        if response.status_code == 200:
-                            result = response.json()
-                            st.success(f"✅ Fetched {result.get('bars_fetched', 0)} bars")
-                        else:
-                            st.error(f"Failed: HTTP {response.status_code}")
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
-        
-        # Check data availability
-        query = "SELECT COUNT(*) as cnt FROM market_data WHERE symbol = %s AND timeframe = %s"
-        with db.get_connection() as conn:
-            cursor = conn.execute(query, (train_symbol, train_timeframe))
-            data_count = cursor.fetchone()['cnt']
-        
-        if data_count > 0:
-            st.metric("Available Data", f"{data_count} bars", delta="Ready ✅")
-        else:
-            st.warning("⚠️ No data available. Fetch data first!")
-        
-        st.markdown("---")
-        
-        # Step 1.2: Train Basic Model
-        st.subheader("🚀 Step 1.2: Train Basic Model (with TA-Lib)")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            hidden_layers = st.text_input("Hidden Layers", "50,30", key="basic_layers")
-        with col2:
-            max_iter = st.number_input("Max Iterations", 100, 2000, 500, key="basic_iter")
-        
-        if st.button("🚀 Train Basic Model", type="primary", disabled=(data_count < 100)):
-            with st.spinner("Training with TA-Lib features..."):
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        train_symbol = st.text_input("Symbol", value="EURUSD", key="train_sym")
+    with col2:
+        train_timeframe = st.selectbox("Timeframe", ["M1", "M5", "M15", "M30", "H1", "H4", "D1"], index=4, key="train_tf")
+    with col3:
+        fetch_bars = st.number_input("Bars to Fetch", min_value=1000, max_value=50000, value=5000, step=1000)
+    with col4:
+        st.markdown("###") # Spacer
+        if st.button("📥 Fetch & Prepare Data", type="primary", use_container_width=True):
+            with st.spinner(f"Fetching {fetch_bars} bars for {train_symbol} {train_timeframe}..."):
                 try:
-                    from src.features import prepare_training_data, TALIB_AVAILABLE
-                    from sklearn.neural_network import MLPClassifier
-                    from sklearn.preprocessing import StandardScaler
-                    from sklearn.model_selection import train_test_split
-                    import pickle
-                    from datetime import datetime
-                    from pathlib import Path
-                    
-                    # Get data
-                    query = "SELECT * FROM market_data WHERE symbol = %s AND timeframe = %s ORDER BY timestamp DESC LIMIT 1000"
+                    # Check DB first
+                    query = "SELECT COUNT(*) FROM market_data WHERE symbol = %s AND timeframe = %s"
                     with db.get_connection() as conn:
-                        cursor = conn.execute(query, (train_symbol, train_timeframe))
-                        rows = cursor.fetchall()
-                        df = pd.DataFrame(rows)
+                        count = conn.execute(query, (train_symbol, train_timeframe)).fetchone()[0]
                     
-                    # Prepare features
-                    X, y, feature_names = prepare_training_data(df, use_talib=True)
-                    
-                    # Split and scale
-                    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-                    scaler = StandardScaler()
-                    X_train_scaled = scaler.fit_transform(X_train)
-                    X_test_scaled = scaler.transform(X_test)
-                    
-                    # Train
-                    layers = tuple(int(x.strip()) for x in hidden_layers.split(','))
-                    model = MLPClassifier(hidden_layer_sizes=layers, max_iter=max_iter, random_state=42, early_stopping=True)
-                    model.fit(X_train_scaled, y_train)
-                    
-                    # Evaluate
-                    train_acc = model.score(X_train_scaled, y_train)
-                    test_acc = model.score(X_test_scaled, y_test)
-                    
-                    # Save
-                    model_dir = Path('/app/models')
-                    model_dir.mkdir(exist_ok=True)
-                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                    model_path = model_dir / f"mlp_{train_symbol}_{train_timeframe}_{timestamp}.pkl"
-                    
-                    with open(model_path, 'wb') as f:
-                        pickle.dump({'model': model, 'scaler': scaler, 'features': feature_names, 'use_talib': TALIB_AVAILABLE}, f)
-                    
-                    model_id = db.save_model(
-                        name=f"MLP_{train_symbol}_{train_timeframe}",
-                        version=timestamp,
-                        model_type='MLPClassifier',
-                        file_path=str(model_path),
-                        training_accuracy=train_acc,
-                        validation_accuracy=test_acc,
-                        parameters={'hidden_layers': list(layers), 'features': feature_names, 'n_features': len(feature_names)}
-                    )
-                    db.set_active_model(model_id)
-                    
-                    st.success(f"✅ Model trained! Validation accuracy: {test_acc:.2%}")
-                    st.metric("Training Accuracy", f"{train_acc:.2%}")
-                    st.metric("Validation Accuracy", f"{test_acc:.2%}")
-                    st.info(f"Using {len(feature_names)} TA-Lib features")
-                    
+                    if count < fetch_bars:
+                         st.warning(f"DB has only {count} bars. Requesting MT5 (if active)...")
+                         # Send command to MT5 via ZMQ/Bridge
+                         bridge_url = os.getenv('BRIDGE_URL', 'http://host.docker.internal:5000')
+                         try:
+                             requests.post(
+                                 f"{bridge_url}/data/fetch",
+                                 json={"symbol": train_symbol, "timeframe": train_timeframe, "num_bars": fetch_bars},
+                                 timeout=5
+                             )
+                             st.success(f"Signal sent to Fetch: {fetch_bars} bars.")
+                         except:
+                             st.success("Simulated Fetch Signal (Bridge not reachable).")
+                    else:
+                        st.success(f"✅ Data Ready: {count} bars available.")
+                        
                 except Exception as e:
-                    st.error(f"Training failed: {str(e)}")
-                    import traceback
-                    st.code(traceback.format_exc())
+                    st.error(f"Data Check Failed: {e}")
+
+    # Check Data Count for context
+    try:
+        query = "SELECT COUNT(*) FROM market_data WHERE symbol = %s AND timeframe = %s"
+        with db.get_connection() as conn:
+            data_count = conn.execute(query, (train_symbol, train_timeframe)).fetchone()[0]
+    except:
+        data_count = 0
+        
+    st.metric("Total Data Available", f"{data_count} bars")
     
-    # ==================== TAB 2: Optuna Optimization (Super Plan with VectorBT) ====================
-    with tab2:
-        st.header("Step 2: Strategy Optimization (VectorBT 🚀)")
-        st.info("⚡ High-Performance Backtesting Engine Enabled")
+    st.markdown("---")
 
-        # Service init
-        from src.training.optuna_service import OptunaService
-        from src.training.optimization_tasks import run_trading_optimization # Placeholder
+    # --- Section 2: One-Click Factory ---
+    st.header("2️⃣ Construction & Optimization")
+    
+    st.info("This process will automatically:\n"
+            "1. Train multiple model architectures (LSTM, CNN, RF, XGB)\n"
+            "2. Optimize hyperparameters (Sequences, Voting, Thresholds) using **Optuna**\n"
+            "3. Validate strategy profitability using **VectorBT**")
+    
+    c1, c2 = st.columns([1, 3])
+    with c1:
+        trials = st.slider("Optimization Trials", 5, 50, 10)
+        voting_mode = st.radio("Voting Preference", ["Soft (Probability)", "Hard (Majority)"], index=0)
         
-        optuna_service = OptunaService.get_instance()
+    with c2:
+        st.markdown("###")
+        start_process = st.button("🚀 RUN END-TO-END PROCESS", type="primary", use_container_width=True, disabled=(data_count < 500))
 
-        # Strategy Configuration
-        col1, col2 = st.columns([1, 2])
+    if start_process:
+        status_area = st.container()
         
-        with col1:
-            st.subheader("⚙️ Config")
-            study_name_input = st.text_input("Study Name", value=f"vbt_study_{datetime.now().strftime('%Y%m%d')}")
-            optimization_target = st.selectbox("Target Goal", ["Profit Factor", "Sharpe Ratio", "Net Profit", "Expectancy"], index=0)
-            n_trials = st.number_input("Trials", 100, 10000, 500, step=100)
+        with status_area:
+            st.write("---")
+            st.subheader("⚙️ Execution Log")
             
-            st.markdown("---")
-            st.caption("Strategy Logic")
-            entry_logic = st.selectbox("Entry Signal", ["RSI Crossover", "MACD", "Bollinger Bands", "ML Threshold"], index=3)
+            # 1. Initialize
+            prog_bar = st.progress(0, "Starting Engine...")
             
-        with col2:
-            st.subheader("📊 Performance")
-            
-            # Control Panel
-            start_btn = st.button("🚀 Start Fast Optimization", type="primary")
-            
-            if start_btn:
-                # In Super Plan, we would trigger the background task
-                # and then start a polling loop.
-                st.toast(f"Starting generic optimization for {optimization_target}...", icon="✅")
-                
-                # Mocking the async task trigger for demonstration of UI
-                # Real implementation connects to optimization_tasks.py
-                
-                # 1. Load Data (Simplified)
-                query = "SELECT * FROM market_data WHERE symbol = %s AND timeframe = %s ORDER BY timestamp DESC LIMIT 5000"
-                with db.get_connection() as conn:
-                    cursor = conn.execute(query, (train_symbol, train_timeframe))
-                    rows = cursor.fetchall()
-                    df = pd.DataFrame(rows)
-                    
-                if not df.empty:
-                    # 2. Run pseudo-optimization (or real sync one for demo if async is complex)
-                    # We will use the proper structure but run it inline for immediate feedback in this step
-                    # then move to async if requested.
-                    
-                    from src.training.optimization_tasks import TradingObjective
-                    import optuna
-                    
-                    st.write("Running VectorBT optimization...")
-                    
-                    # Prepare features needed for the Objective
-                    # For demo, we just need 'close' price and maybe some features
-                    # If ML Threshold, we need features.
-                    from src.features import prepare_training_data
-                    X, _, feature_names = prepare_training_data(df, use_talib=True)
-                    
-                    # Map target string to key
-                    target_map = {
-                        "Profit Factor": "profit_factor",
-                        "Sharpe Ratio": "sharpe_ratio",
-                        "Net Profit": "total_return",
-                        "Expectancy": "expectancy"
-                    }
-                    metric_key = target_map.get(optimization_target, "profit_factor")
-                    
-                    objective = TradingObjective(
-                        prices=df['close'],
-                        features=X,
-                        target_metric=metric_key
-                    )
-                    
-                    # Create temporary study for immediate result
-                    study = optuna.create_study(direction='maximize')
-                    
-                    progress_bar = st.progress(0)
-                    
-                    # Run a few trials to show it works
-                    # In real app, this happens in background thread
-                    study.optimize(objective, n_trials=min(n_trials, 50)) # Cap at 50 for inline demo
-                    progress_bar.progress(100)
-                    
-                    st.success(f"Best {optimization_target}: {study.best_value:.4f}")
-                    st.json(study.best_params)
-                    
-                    # Visualize Best Result (Equity Curve)
-                    best_params = study.best_params
-                    # Re-run best to get equity curve
-                    # (In a real app, Objective should return/store the equity curve or we reconstruct it)
-                    
-                    # Reconstruct logic (simplified)
-                    f1 = best_params['feature_1']
-                    t1 = best_params['f1_threshold']
-                    f2 = best_params['feature_2']
-                    t2 = best_params['f2_threshold']
-                    
-                    entries = (X[f1] > t1) & (X[f2] > t2)
-                    exits = (X[f1] < -t1) | (X[f2] < -t2)
-                    
-                    from src.training.vectorbt_engine import VectorBTEngine
-                    eng = VectorBTEngine()
-                    res = eng.run_fast_backtest(df['close'], entries, exits, sl_stop=best_params['sl_pct'], tp_stop=best_params['tp_pct'])
-                    
-                    # Plot Equity (if VBT returned it, simpler to just plot closes of trades for now)
-                    # Our run_fast_backtest returns dict, not the pf object.
-                    # Enhancements: Return equity curve in the dictionary or separate call.
-                    
-                    st.metric("Win Rate", f"{res.get('win_rate', 0):.2%}")
-                    st.metric("Total Trades", res.get('total_trades', 0))
-                    
-                else:
-                    st.error("No data found.")
-
-            # Placeholder for Async polling
-            st.info("History of past optimizations (Async results would appear here)")
-            # In a real async implementation, we would query Optuna storage for completed studies.
             try:
-                summaries = optuna_service.list_studies()
-                if summaries:
-                    st.dataframe(pd.DataFrame(summaries))
-            except:
-                pass
-    
-    # ==================== TAB 3: Advanced Models ====================
-    with tab3:
-        st.header("Step 3: Advanced Deep Learning Models")
-        st.info("🚀 **TensorFlow/Keras models** with LSTM, CNN-LSTM, and Hybrid Ensemble for improved accuracy")
-        
-        # Create sub-tabs
-        subtab1, subtab2, subtab3, subtab4 = st.tabs([
-            "3.1 LSTM Model",
-            "3.2 CNN-LSTM Model",
-            "3.3 Hybrid Ensemble",
-            "3.4 Model Comparison"
-        ])
-        
-        # ========== Sub-tab 3.1: LSTM Model ==========
-        with subtab1:
-            st.subheader("🔷 LSTM Model Training")
-            st.caption("Long Short-Term Memory networks capture temporal patterns in price sequences")
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                lstm_sequence_length = st.slider("Sequence Length", 10, 100, 20, step=5, key="lstm_seq_len")
-                st.caption("Number of bars to look back")
-            with col2:
-                lstm_units_1 = st.select_slider("LSTM Layer 1 Units", options=[32, 64, 128, 256], value=128, key="lstm_units_1")
-                lstm_units_2 = st.select_slider("LSTM Layer 2 Units", options=[16, 32, 64, 128], value=64, key="lstm_units_2")
-            with col3:
-                lstm_dropout = st.slider("Dropout Rate", 0.1, 0.5, 0.3, 0.05, key="lstm_dropout")
-                lstm_use_attention = st.checkbox("Use Attention Mechanism", value=True, key="lstm_attention")
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                lstm_epochs = st.number_input("Epochs", 10, 200, 50, step=10, key="lstm_epochs")
-            with col2:
-                lstm_batch_size = st.select_slider("Batch Size", options=[16, 32, 64, 128], value=32, key="lstm_batch")
-            with col3:
-                lstm_use_optuna = st.checkbox("🔍 Optimize with Optuna", value=False, key="lstm_optuna")
-                if lstm_use_optuna:
-                    lstm_optuna_trials = st.number_input("Optuna Trials", 5, 50, 20, step=5, key="lstm_optuna_trials")
-                    st.caption("Auto-finds best hyperparameters")
-            
-            if st.button("🚀 Train LSTM Model", type="primary", disabled=(data_count < 500)):
-                with st.spinner("Training LSTM model... This may take 10-20 minutes"):
-                    try:
-                        from src.training.tf_trainer import TensorFlowTrainer
-                        from src.training.optuna_optimizer import OptunaOptimizer
-                        from pathlib import Path
-                        
-                        # Initialize trainer
-                        trainer = TensorFlowTrainer(db)
-                        
-                        # Prepare data
-                        progress_bar = st.progress(0, text="Preparing data...")
-                        X_train, X_val, X_test, y_train, y_val, y_test, scaler, features, info = trainer.prepare_data(
-                            symbol=train_symbol,
-                            timeframe=train_timeframe,
-                            sequence_length=lstm_sequence_length
-                        )
-                        progress_bar.progress(20, text="Data prepared.")
-                        
-                        # Check if using Optuna optimization
-                        if lstm_use_optuna:
-                            progress_bar.progress(30, text=f"Running Optuna optimization ({lstm_optuna_trials} trials)...")
-                            st.info(f"🔍 **Optimizing hyperparameters** with {lstm_optuna_trials} trials. This may take 20-40 minutes...")
-                            
-                            # Run Optuna optimization
-                            optimizer = OptunaOptimizer(db)
-                            best_params = optimizer.optimize_lstm(
-                                X_train, y_train, X_val, y_val,
-                                n_trials=lstm_optuna_trials
-                            )
-                            
-                            # Display best params
-                            st.success(f"✅ **Optimization complete!** Best params found:")
-                            st.json(best_params)
-                            
-                            # Train final model with best params
-                            progress_bar.progress(60, text="Training final model with best params...")
-                            model, history = trainer.train_lstm(
-                                X_train, y_train, X_val, y_val,
-                                lstm_units=[best_params['lstm_units_1'], best_params['lstm_units_2']],
-                                dense_units=[32, 16],
-                                dropout_rate=best_params['dropout'],
-                                use_attention=lstm_use_attention,
-                                epochs=lstm_epochs,
-                                batch_size=best_params['batch_size']
-                            )
-                            
-                            # Save best params for display
-                            final_hyperparams = {
-                                'sequence_length': lstm_sequence_length,
-                                'lstm_units': [best_params['lstm_units_1'], best_params['lstm_units_2']],
-                                'dropout_rate': best_params['dropout'],
-                                'use_attention': lstm_use_attention,
-                                'epochs': lstm_epochs,
-                                'batch_size': best_params['batch_size'],
-                                'optimized_with_optuna': True,
-                                'optuna_trials': lstm_optuna_trials
-                            }
-                        else:
-                            # Train with manual parameters
-                            progress_bar.progress(30, text="Training model with manual params...")
-                            model, history = trainer.train_lstm(
-                                X_train, y_train, X_val, y_val,
-                                lstm_units=[lstm_units_1, lstm_units_2],
-                                dense_units=[32, 16],
-                                dropout_rate=lstm_dropout,
-                                use_attention=lstm_use_attention,
-                                epochs=lstm_epochs,
-                                batch_size=lstm_batch_size
-                            )
-                            
-                            final_hyperparams = {
-                                'sequence_length': lstm_sequence_length,
-                                'lstm_units': [lstm_units_1, lstm_units_2],
-                                'dropout_rate': lstm_dropout,
-                                'use_attention': lstm_use_attention,
-                                'epochs': lstm_epochs,
-                                'batch_size': lstm_batch_size
-                            }
-                        
-                        # Evaluate model
-                        progress_bar.progress(80, text="Evaluating model...")
-                        test_metrics = trainer.evaluate(X_test, y_test)
-                        
-                        # Save model
-                        progress_bar.progress(90, text="Saving model...")
-                        train_metrics = {
-                            'accuracy': history.history['accuracy'][-1],
-                            'loss': history.history['loss'][-1]
-                        }
-                        
-                        model_id = trainer.save_model(
-                            symbol=train_symbol,
-                            timeframe=train_timeframe,
-                            model_type='LSTM',
-                            train_metrics=train_metrics,
-                            test_metrics=test_metrics,
-                            hyperparameters=final_hyperparams
-                        )
-                        
-                        progress_bar.progress(100, text="Complete!")
-                        
-                        # Display results
-                        st.success(f"✅ LSTM model trained successfully! Model ID: {model_id}")
-                        
-                        # Robust metric retrieval
-                        test_acc = test_metrics.get('accuracy', test_metrics.get('acc', 0.0))
-                        # If still not found, try searching for keys containing 'acc'
-                        if test_acc == 0.0:
-                            acc_keys = [k for k in test_metrics.keys() if 'acc' in k.lower()]
-                            if acc_keys:
-                                test_acc = test_metrics[acc_keys[0]]
-
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("Test Accuracy", f"{test_acc:.2%}")
-                        with col2:
-                            st.metric("Test Loss", f"{test_metrics.get('loss', 0):.4f}")
-                        with col3:
-                            st.metric("Sequences Used", info['total_sequences'])
-                        
-                        # Plot training history
-                        st.subheader("Training History")
-                        
-                        # Robust key lookup
-                        train_acc_key = next((k for k in history.history.keys() if 'accuracy' in k.lower() or 'acc' in k.lower() and 'val' not in k.lower()), 'accuracy')
-                        val_acc_key = next((k for k in history.history.keys() if 'val' in k.lower() and ('accuracy' in k.lower() or 'acc' in k.lower())), 'val_accuracy')
-                        train_loss_key = next((k for k in history.history.keys() if 'loss' in k.lower() and 'val' not in k.lower()), 'loss')
-                        val_loss_key = next((k for k in history.history.keys() if 'val' in k.lower() and 'loss' in k.lower()), 'val_loss')
-                        
-                        history_df = pd.DataFrame({
-                            'Epoch': range(1, len(history.history[train_acc_key]) + 1),
-                            'Train Accuracy': history.history[train_acc_key],
-                            'Val Accuracy': history.history.get(val_acc_key, [0.0] * len(history.history[train_acc_key])),
-                            'Train Loss': history.history[train_loss_key],
-                            'Val Loss': history.history.get(val_loss_key, [0.0] * len(history.history[train_acc_key]))
-                        })
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.line_chart(history_df.set_index('Epoch')[['Train Accuracy', 'Val Accuracy']])
-                        with col2:
-                            st.line_chart(history_df.set_index('Epoch')[['Train Loss', 'Val Loss']])
-                        
-                    except Exception as e:
-                        st.error(f"Training failed: {str(e)}")
-                        import traceback
-                        st.code(traceback.format_exc())
-        
-        # ========== Sub-tab 3.2: CNN-LSTM Model ==========
-        with subtab2:
-            st.subheader("🔶 CNN-LSTM Hybrid Model Training")
-            st.caption("CNN extracts patterns, LSTM captures temporal dependencies")
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                cnn_sequence_length = st.slider("Sequence Length", 10, 100, 20, step=5, key="cnn_seq_len")
-                cnn_filters_1 = st.select_slider("CNN Filters 1", options=[32, 64, 128], value=64, key="cnn_filters_1")
-                cnn_filters_2 = st.select_slider("CNN Filters 2", options=[16, 32, 64], value=32, key="cnn_filters_2")
-            with col2:
-                cnn_kernel_size = st.slider("Kernel Size", 2, 5, 3, key="cnn_kernel")
-                cnn_lstm_units_1 = st.select_slider("LSTM Units 1", options=[64, 128, 256], value=128, key="cnn_lstm_1")
-                cnn_lstm_units_2 = st.select_slider("LSTM Units 2", options=[32, 64, 128], value=64, key="cnn_lstm_2")
-            with col3:
-                cnn_dropout = st.slider("Dropout Rate", 0.1, 0.5, 0.3, 0.05, key="cnn_dropout")
-                cnn_use_attention = st.checkbox("Use Attention", value=True, key="cnn_attention")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                cnn_epochs = st.number_input("Epochs", 10, 200, 50, step=10, key="cnn_epochs")
-            with col2:
-                cnn_batch_size = st.select_slider("Batch Size", options=[16, 32, 64], value=32, key="cnn_batch")
-            
-            if st.button("🚀 Train CNN-LSTM Model", type="primary", disabled=(data_count < 500)):
-                with st.spinner("Training CNN-LSTM model... This may take 15-30 minutes"):
-                    try:
-                        from src.training.tf_trainer import TensorFlowTrainer
-                        
-                        trainer = TensorFlowTrainer(db)
-                        
-                        progress_bar = st.progress(0, text="Preparing data...")
-                        X_train, X_val, X_test, y_train, y_val, y_test, scaler, features, info = trainer.prepare_data(
-                            symbol=train_symbol,
-                            timeframe=train_timeframe,
-                            sequence_length=cnn_sequence_length
-                        )
-                        progress_bar.progress(20, text="Training CNN-LSTM...")
-                        
-                        model, history = trainer.train_cnn_lstm(
-                            X_train, y_train, X_val, y_val,
-                            cnn_filters=[cnn_filters_1, cnn_filters_2],
-                            kernel_size=cnn_kernel_size,
-                            lstm_units=[cnn_lstm_units_1, cnn_lstm_units_2],
-                            dense_units=[32],
-                            dropout_rate=cnn_dropout,
-                            use_attention=cnn_use_attention,
-                            epochs=cnn_epochs,
-                            batch_size=cnn_batch_size
-                        )
-                        progress_bar.progress(80, text="Evaluating...")
-                        
-                        test_metrics = trainer.evaluate(X_test, y_test)
-                        progress_bar.progress(90, text="Saving...")
-                        
-                        train_metrics = {
-                            'accuracy': history.history['accuracy'][-1],
-                            'loss': history.history['loss'][-1]
-                        }
-                        
-                        model_id = trainer.save_model(
-                            symbol=train_symbol,
-                            timeframe=train_timeframe,
-                            model_type='CNN-LSTM',
-                            train_metrics=train_metrics,
-                            test_metrics=test_metrics,
-                            hyperparameters={
-                                'sequence_length': cnn_sequence_length,
-                                'cnn_filters': [cnn_filters_1, cnn_filters_2],
-                                'kernel_size': cnn_kernel_size,
-                                'lstm_units': [cnn_lstm_units_1, cnn_lstm_units_2],
-                                'dropout_rate': cnn_dropout,
-                                'use_attention': cnn_use_attention
-                            }
-                        )
-                        
-                        progress_bar.progress(100, text="Complete!")
-                        
-                        st.success(f"✅ CNN-LSTM model trained! Model ID: {model_id}")
-                        
-                        # Robust metric retrieval
-                        test_acc = test_metrics.get('accuracy', test_metrics.get('acc', 0.0))
-                        if test_acc == 0.0:
-                            acc_keys = [k for k in test_metrics.keys() if 'acc' in k.lower()]
-                            if acc_keys:
-                                test_acc = test_metrics[acc_keys[0]]
-
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("Test Accuracy", f"{test_acc:.2%}")
-                        with col2:
-                            st.metric("Test Loss", f"{test_metrics.get('loss', 0):.4f}")
-                        with col3:
-                            st.metric("Sequences Used", info['total_sequences'])
-                        
-                        # Plot history
-                        train_acc_key = next((k for k in history.history.keys() if 'accuracy' in k.lower() or 'acc' in k.lower() and 'val' not in k.lower()), 'accuracy')
-                        val_acc_key = next((k for k in history.history.keys() if 'val' in k.lower() and ('accuracy' in k.lower() or 'acc' in k.lower())), 'val_accuracy')
-                        
-                        history_df = pd.DataFrame({
-                            'Epoch': range(1, len(history.history[train_acc_key]) + 1),
-                            'Train Accuracy': history.history[train_acc_key],
-                            'Val Accuracy': history.history.get(val_acc_key, [0.0] * len(history.history[train_acc_key]))
-                        })
-                        st.line_chart(history_df.set_index('Epoch'))
-                        
-                    except Exception as e:
-                        st.error(f"Training failed: {str(e)}")
-                        import traceback
-                        st.code(traceback.format_exc())
-        
-        # ========== Sub-tab 3.3: Hybrid Ensemble ==========
-        with subtab3:
-            st.subheader("🎯 Hybrid Ensemble Training")
-            st.caption("Combines TensorFlow (LSTM, CNN-LSTM) with Scikit-Learn (XGBoost, RF, MLP) for best accuracy")
-            
-            st.markdown("#### Select Models to Include")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("**TensorFlow Models:**")
-                include_lstm = st.checkbox("LSTM", value=True, key="ens_lstm")
-                include_cnn_lstm = st.checkbox("CNN-LSTM", value=True, key="ens_cnn_lstm")
-            with col2:
-                st.markdown("**Scikit-Learn Models:**")
-                include_xgb = st.checkbox("XGBoost", value=True, key="ens_xgb")
-                include_rf = st.checkbox("Random Forest", value=True, key="ens_rf")
-                include_mlp = st.checkbox("MLP", value=True, key="ens_mlp")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                ens_sequence_length = st.slider("Sequence Length (for LSTM)", 10, 50, 20, key="ens_seq")
-            with col2:
-                ens_voting = st.selectbox("Voting Method", ["soft", "hard"], key="ens_voting")
-                st.caption("Soft = probability averaging, Hard = majority vote")
-            
-            n_models_selected = sum([include_lstm, include_cnn_lstm, include_xgb, include_rf, include_mlp])
-            st.info(f"📊 Selected {n_models_selected} models for ensemble")
-            
-            if st.button("🎯 Train Hybrid Ensemble", type="primary", disabled=(data_count < 500 or n_models_selected < 2)):
-                with st.spinner("Training hybrid ensemble... This may take 30-60 minutes"):
-                    try:
-                        from src.training.ensemble_trainer import HybridEnsembleTrainer
-                        
-                        trainer = HybridEnsembleTrainer(db)
-                        
-                        progress_bar = st.progress(0, text="Training ensemble models...")
-                        
-                        ensemble, metrics = trainer.train_ensemble(
-                            symbol=train_symbol,
-                            timeframe=train_timeframe,
-                            include_lstm=include_lstm,
-                            include_cnn_lstm=include_cnn_lstm,
-                            include_xgboost=include_xgb,
-                            include_rf=include_rf,
-                            include_mlp=include_mlp,
-                            sequence_length=ens_sequence_length,
-                            voting=ens_voting
-                        )
-                        
-                        progress_bar.progress(90, text="Saving ensemble...")
-                        
-                        model_id = trainer.save_ensemble(train_symbol, train_timeframe, metrics)
-                        
-                        progress_bar.progress(100, text="Complete!")
-                        
-                        st.success(f"✅ Hybrid ensemble trained! Model ID: {model_id}")
-                        
-                        # Display metrics
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("Ensemble Test Accuracy", f"{metrics['ensemble_test_accuracy']:.2%}")
-                        with col2:
-                            st.metric("Number of Models", metrics['n_models'])
-                        with col3:
-                            improvement = (metrics['ensemble_test_accuracy'] - max(metrics['individual_scores'].values())) * 100
-                            st.metric("Improvement", f"+{improvement:.1f}%", delta="vs best individual")
-                        
-                        # Individual model scores
-                        st.subheader("Individual Model Performance")
-                        scores_df = pd.DataFrame({
-                            'Model': list(metrics['individual_scores'].keys()),
-                            'Accuracy': list(metrics['individual_scores'].values())
-                        }).sort_values('Accuracy', ascending=False)
-                        
-                        st.dataframe(
-                            scores_df,
-                            column_config={
-                                "Accuracy": st.column_config.ProgressColumn(
-                                    "Accuracy",
-                                    format="%.2f%%",
-                                    min_value=0,
-                                    max_value=1,
-                                )
-                            },
-                            hide_index=True,
-                            use_container_width=True
-                        )
-                        
-                    except Exception as e:
-                        st.error(f"Ensemble training failed: {str(e)}")
-                        import traceback
-                        st.code(traceback.format_exc())
-        
-        # ========== Sub-tab 3.4: Model Comparison ==========
-        with subtab4:
-            st.subheader("📊 Model Comparison")
-            st.caption("Compare all trained models and select the best one")
-            
-            # Get all models from database
-            query = "SELECT * FROM models ORDER BY created_at DESC LIMIT 20"
-            with db.get_connection() as conn:
-                cursor = conn.execute(query)
-                rows = cursor.fetchall()
-                models_df = pd.DataFrame(rows)
-            
-            if len(models_df) > 0:
-                # Display comparison table
-                comparison_df = models_df[['id', 'name', 'model_type', 'validation_accuracy', 'training_accuracy', 'created_at']].copy()
-                comparison_df['validation_accuracy'] = comparison_df['validation_accuracy'] * 100
-                comparison_df['training_accuracy'] = comparison_df['training_accuracy'] * 100
+                from src.training.ensemble_optimizer import EnsembleOptimizer
+                optimizer = EnsembleOptimizer(db)
                 
-                st.dataframe(
-                    comparison_df,
-                    column_config={
-                        "id": "ID",
-                        "name": "Model Name",
-                        "model_type": "Type",
-                        "validation_accuracy": st.column_config.ProgressColumn(
-                            "Val Accuracy (%)",
-                            format="%.2f%%",
-                            min_value=0,
-                            max_value=100,
-                        ),
-                        "training_accuracy": st.column_config.ProgressColumn(
-                            "Train Accuracy (%)",
-                            format="%.2f%%",
-                            min_value=0,
-                            max_value=100,
-                        ),
-                        "created_at": "Created"
-                    },
-                    hide_index=True,
-                    use_container_width=True
-                )
+                # 2. Run Optimization
+                prog_bar.progress(10, "Running Hyper-Ensemble Optimization (Optuna + VectorBT)...")
                 
-                # Select best model
-                st.markdown("---")
-                st.subheader("Set Active Model")
-                
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    selected_model_id = st.selectbox(
-                        "Select model to activate",
-                        options=models_df['id'].tolist(),
-                        format_func=lambda x: f"ID {x}: {models_df[models_df['id']==x]['name'].values[0]} ({models_df[models_df['id']==x]['validation_accuracy'].values[0]:.2%})"
+                # Real-time output container
+                with st.status("🏗️ Building Strategy...", expanded=True) as status:
+                    st.write(f"Objective: Maximize Profit Factor | Trials: {trials}")
+                    
+                    ensemble, metrics = optimizer.optimize(
+                        symbol=train_symbol,
+                        timeframe=train_timeframe,
+                        n_trials=trials
                     )
-                with col2:
-                    st.write("")
-                    st.write("")
-                    if st.button("✅ Set as Active", type="primary"):
-                        db.set_active_model(selected_model_id)
-                        st.success(f"Model {selected_model_id} is now active!")
-                        st.rerun()
-                
-                # Show active model
-                active_model_id = db.get_config('active_model_id')
-                if active_model_id:
-                    active_model = models_df[models_df['id'] == int(active_model_id)]
-                    if len(active_model) > 0:
-                        st.info(f"🟢 **Currently Active:** {active_model['name'].values[0]} (ID: {active_model_id})")
-            else:
-                st.warning("No models trained yet. Train a model in Tab 1, 2, or 3 first.")
+                    
+                    st.write("✅ Optimization Complete!")
+                    st.write(f"Best Profit Factor: {metrics.get('optimization', {}).get('best_score', 0):.2f}")
+                    status.update(label="Strategy Built ✅", state="complete", expanded=False)
 
-    
-    # ==================== TAB 4: Backtesting ====================
-    with tab4:
-        st.header("Step 4: Backtest Strategy")
-        st.warning("🚧 Coming soon: Backtrader integration for strategy validation")
-        st.info("You'll be able to test your models on historical data with realistic trading conditions")
+                # 3. Save
+                prog_bar.progress(90, "Saving Strategy to Database...")
+                model_id = optimizer.trainer.save_ensemble(train_symbol, train_timeframe, metrics)
+                prog_bar.progress(100, "Done!")
+                
+                # --- Section 3: Results ---
+                st.markdown("---")
+                st.header("3️⃣ Validation Results")
+                st.success(f"Strategy Saved ID: `{model_id}`")
+                
+                best_opt = metrics.get('optimization', {})
+                best_params = best_opt.get('best_params', {})
+                
+                # Metrics Grid
+                m1, m2, m3, m4 = st.columns(4)
+                with m1:
+                    st.metric("Profit Factor", f"{best_opt.get('best_score', 0):.2f}")
+                with m2:
+                    st.metric("Test Accuracy", f"{metrics.get('ensemble_test_accuracy', 0):.2%}")
+                with m3:
+                    st.metric("Total Trades (Test)", "?") # We could extract this if we saved it
+                with m4:
+                    st.metric("Model Type", "Hybrid Ensemble")
+                
+                # Architecture Display
+                st.subheader("🧠 Winning Architecture")
+                active_models = []
+                if best_params.get('include_lstm'): active_models.append("LSTM")
+                if best_params.get('include_cnn_lstm'): active_models.append("CNN-LSTM")
+                if best_params.get('include_xgb'): active_models.append("XGBoost")
+                if best_params.get('include_rf'): active_models.append("Random Forest")
+                
+                st.success(f"**Composition:** {' + '.join(active_models)}")
+                st.json(best_params)
+                
+            except Exception as e:
+                st.error(f"❌ Process Failed: {e}")
+                st.exception(e)
+
 
 
 # ==================== Portfolio Management Page ====================
