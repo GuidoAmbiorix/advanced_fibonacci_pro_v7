@@ -2,6 +2,7 @@
 import optuna
 import pandas as pd
 import numpy as np
+import os
 from typing import Dict, Any, Tuple
 from src.database import DatabaseManager
 from src.training.ensemble_trainer import HybridEnsembleTrainer
@@ -166,8 +167,29 @@ class EnsembleOptimizer:
                 print(f"Trial failed: {e}")
                 return 0.0
 
-        # 3. Create Study with Pruner and SQLite
-        storage_url = "sqlite:///optuna_studies.db"
+        # 3. Create Study with Pruner and Postgres
+        # Use PostgreSQL as requested by user ("Real Production Setup")
+        
+        # Try to get URL from env, or construct it
+        storage_url = os.environ.get('DATABASE_URL')
+        
+        if not storage_url:
+            # Fallback to docker-compose defaults (assuming running locally pointing to mapped port)
+            # Docker service name is 'postgres', mapped to 5433 on host
+            db_user = os.environ.get('POSTGRES_USER', 'cv_agent')
+            db_pass = os.environ.get('POSTGRES_PASSWORD', '123')
+            db_host = os.environ.get('POSTGRES_HOST', 'localhost') # Default to localhost if running outside docker
+            db_port = os.environ.get('POSTGRES_PORT', '5433')      # Default to mapped port 5433
+            db_name = os.environ.get('POSTGRES_DB', 'cv_trading')
+            
+            storage_url = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+            
+        # Fix deprecated scheme if needed
+        if storage_url.startswith("postgres://"):
+            storage_url = storage_url.replace("postgres://", "postgresql://", 1)
+            
+        print(f"🔗 Optuna Storage: {storage_url}")
+            
         study = optuna.create_study(
             direction='maximize', 
             study_name=study_name,
@@ -202,7 +224,8 @@ class EnsembleOptimizer:
         final_metrics['optimization'] = {
             'best_params': best,
             'best_score': study.best_value,
-            'n_trials': n_trials
+            'n_trials': n_trials,
+            'storage': storage_url # Log storage used
         }
         
         return final_ensemble, final_metrics
