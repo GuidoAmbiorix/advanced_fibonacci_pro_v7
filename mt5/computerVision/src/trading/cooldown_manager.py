@@ -77,7 +77,9 @@ class CooldownManager:
                 row = conn.execute(query, (symbol,)).fetchone()
 
                 if row:
-                    cooldown_end = datetime.fromisoformat(row['cooldown_end_time'])
+                    cooldown_end = row['cooldown_end_time']
+                    if isinstance(cooldown_end, str):
+                        cooldown_end = datetime.fromisoformat(cooldown_end)
                     reason = row['reason']
                     remaining = (cooldown_end - datetime.now()).total_seconds() / 60
 
@@ -300,7 +302,9 @@ class CooldownManager:
 
                 cooldowns = []
                 for row in rows:
-                    cooldown_end = datetime.fromisoformat(row['cooldown_end_time'])
+                    cooldown_end = row['cooldown_end_time']
+                    if isinstance(cooldown_end, str):
+                        cooldown_end = datetime.fromisoformat(cooldown_end)
                     remaining = (cooldown_end - datetime.now()).total_seconds() / 60
 
                     cooldowns.append({

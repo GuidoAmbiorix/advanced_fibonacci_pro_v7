@@ -40,7 +40,7 @@ prediction:
 
 # Killzone Settings
 killzones:
-  enabled: true
+  enabled: false
   timezone: "Europe/Athens" # FundingPips uses GMT+2 (EET/EEST)
 
   # Phase 6: Advanced Features
@@ -200,29 +200,30 @@ signal_confirmation:
   confirmation_window_seconds: 180 # 3 minutes (H1 timeframe)
 
   # Minimum confirmation score to execute (0-100)
-  min_confirmation_score: 70
+  min_confirmation_score: 45  # Balanced threshold with new partial credit scoring
 
   # Scoring weights (7 factors, sum to 100)
+  # UPDATED: Boost model_confidence (ML is primary alpha), balanced other factors
   weights:
-    mtf_alignment: 25 # Multi-timeframe trend alignment
-    momentum_confluence: 20 # RSI, MACD, Stochastic
-    volume_confirmation: 15 # Volume supporting move
-    trend_strength: 12 # ADX and DI alignment
-    fibonacci_alignment: 12 # OTE zones, retracements, confluence
-    model_confidence: 8 # ML model prediction confidence
-    smc_confluence: 8 # Order Blocks, FVG, BOS, CHoCH
+    model_confidence: 20 # ML model prediction confidence (BOOSTED - primary signal)
+    mtf_alignment: 20 # Multi-timeframe trend alignment (with partial credit)
+    momentum_confluence: 18 # RSI, MACD, Stochastic (with partial credit)
+    trend_strength: 15 # ADX and DI alignment
+    volume_confirmation: 12 # Volume supporting move
+    fibonacci_alignment: 8 # OTE zones, retracements, confluence
+    smc_confluence: 7 # Order Blocks, FVG, BOS, CHoCH
 
   # Multi-timeframe validation
   mtf_validation:
     enabled: true
-    require_htf_alignment: true # Require higher TF to agree
+    require_htf_alignment: false  # Don't strictly require HTF alignment (partial credit)
     min_htf_count: 2 # Check at least 2 higher timeframes
 
   # Momentum confirmation
   momentum_validation:
     enabled: true
-    require_rsi_alignment: true
-    require_macd_alignment: true
+    require_rsi_alignment: false  # Don't strictly require (partial credit)
+    require_macd_alignment: false  # Don't strictly require (partial credit)
     require_stochastic_alignment: false # Optional
 
   # Volume validation

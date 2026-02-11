@@ -43,14 +43,16 @@ class MTFAnalyzer:
         'W1': 10080,
     }
     
-    def __init__(self, db_manager=None):
+    def __init__(self, db_manager=None, bridge_url: str = None):
         """
         Initialize MTF Analyzer.
-        
+
         Args:
             db_manager: DatabaseManager instance for fetching data
+            bridge_url: MT5 Bridge URL for fetching live data
         """
         self.db = db_manager
+        self.bridge_url = bridge_url or "http://10.0.0.4:5000"
     
     def get_higher_timeframes(self, base_timeframe: str, count: int = 3) -> list:
         """
@@ -221,18 +223,41 @@ class MTFAnalyzer:
         # Analyze each higher timeframe
         for i, htf in enumerate(higher_timeframes):
             # Get data for this timeframe
+            df = pd.DataFrame()
+
             if self.db:
                 query = """
-                    SELECT * FROM market_data 
+                    SELECT * FROM market_data
                     WHERE symbol = %s AND timeframe = %s
                     ORDER BY timestamp DESC
                     LIMIT 200
                 """
                 with self.db.get_connection() as conn:
-                    df = pd.read_sql_query(query, conn, params=(symbol, htf))
-                
-                if len(df) < 50:
-                    continue
+                    cursor = conn.execute(query, (symbol, htf))
+                    rows = cursor.fetchall()
+                    df = pd.DataFrame([dict(row) for row in rows]) if rows else pd.DataFrame()
+
+            # If not enough data in DB, fetch from MT5 bridge
+            if len(df) < 50 and self.bridge_url:
+                try:
+                    import requests
+                    response = requests.get(
+                        f"{self.bridge_url}/bars",
+                        params={'symbol': symbol, 'timeframe': htf, 'count': 200},
+                        timeout=5
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get('bars'):
+                            df = pd.DataFrame(data['bars'])
+                            # Store in database for future use
+                            if self.db and len(df) > 0:
+                                self.db.insert_market_data(symbol, htf, df)
+                except Exception as e:
+                    pass  # Continue without this timeframe
+
+            if len(df) < 50:
+                continue
                 
                 df = df.sort_values('timestamp')
                 
@@ -250,13 +275,34 @@ class MTFAnalyzer:
         
         # Calculate alignment scores
         if len(features) > 0:
-            # Trend alignment: all trends pointing same direction%s
+            # Trend alignment: PARTIAL CREDIT SCORING (not all-or-nothing)
             trend_keys = [k for k in features.keys() if k.endswith('_trend')]
             trends = [features[k] for k in trend_keys]
-            
+
             if len(trends) > 0:
-                # All same sign = aligned
-                features['trend_alignment'] = 1 if all(t == trends[0] for t in trends) else 0
+                # Partial credit: average alignment (0-1 scale)
+                # If all trends same direction: 1.0
+                # If mixed: 0.0-0.6 depending on majority
+                # Example: [1, 1, -1] → 2 bullish, 1 bearish → alignment influenced by majority
+
+                # Count trend directions
+                bullish = sum(1 for t in trends if t > 0)
+                bearish = sum(1 for t in trends if t < 0)
+                neutral = sum(1 for t in trends if t == 0)
+                total = len(trends)
+
+                # Calculate alignment score (0-1)
+                if bullish == total or bearish == total:
+                    # Perfect alignment
+                    features['trend_alignment'] = 1.0
+                elif bullish == 0 and bearish == 0:
+                    # All neutral
+                    features['trend_alignment'] = 0.5
+                else:
+                    # Partial alignment: ratio of majority direction
+                    majority = max(bullish, bearish)
+                    features['trend_alignment'] = majority / total
+
                 features['trend_strength'] = abs(sum(trends)) / len(trends)
             
             # Momentum alignment
@@ -330,7 +376,11 @@ def create_mtf_features_for_training(symbol: str, base_timeframe: str,
         ORDER BY timestamp ASC
     """
     with db_manager.get_connection() as conn:
-        df = pd.read_sql_query(query, conn, params=(symbol, base_timeframe))
+        cursor = conn.execute(query, (symbol, base_timeframe))
+
+        rows = cursor.fetchall()
+
+        df = pd.DataFrame([dict(row) for row in rows]) if rows else pd.DataFrame()
     
     if len(df) == 0:
         return df

@@ -136,13 +136,19 @@ class PredictionService:
         # Get market data (need more bars for TA-Lib indicators)
         bars_needed = 100 if use_talib else 50
         query = """
-            SELECT * FROM market_data 
+            SELECT timestamp, open, high, low, close, tick_volume, spread, real_volume
+            FROM market_data
             WHERE symbol = %s AND timeframe = %s
             ORDER BY timestamp DESC
             LIMIT %s
         """
         with self.db.get_connection() as conn:
-            df = pd.read_sql_query(query, conn, params=(symbol, timeframe, bars_needed))
+            cursor = conn.execute(query, (symbol, timeframe, bars_needed))
+            rows = cursor.fetchall()
+            if rows:
+                df = pd.DataFrame([dict(row) for row in rows])
+            else:
+                df = pd.DataFrame()
         
         if len(df) < 50:
             self.logger.warning(f"Not enough data for {symbol} (got {len(df)} bars)")

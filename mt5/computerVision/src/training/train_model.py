@@ -39,7 +39,11 @@ def train_model(symbol='EURUSD', timeframe='H1', use_talib=True):
         LIMIT 1000
     """
     with db.get_connection() as conn:
-        df = pd.read_sql_query(query, conn, params=(symbol, timeframe))
+        cursor = conn.execute(query, (symbol, timeframe))
+
+        rows = cursor.fetchall()
+
+        df = pd.DataFrame([dict(row) for row in rows]) if rows else pd.DataFrame()
     
     if len(df) < 100:
         print(f"❌ Not enough data for {symbol}. Need at least 100 bars, got {len(df)}")

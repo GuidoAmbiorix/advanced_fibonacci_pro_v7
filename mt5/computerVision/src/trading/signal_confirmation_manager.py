@@ -112,6 +112,7 @@ class SignalConfirmationManager:
                 (prediction_id, symbol, direction, initial_confidence,
                  status, signal_generated_at, confirmation_window_end)
                 VALUES (%s, %s, %s, %s, 'PENDING', %s, %s)
+                RETURNING id
             """
 
             with self.db.get_connection() as conn:
@@ -120,7 +121,7 @@ class SignalConfirmationManager:
                     (prediction_id, symbol, direction, confidence, signal_time, window_end)
                 )
                 conn.commit()
-                signal_id = cursor.lastrowid
+                signal_id = cursor.fetchone()['id']
 
             self.logger.info(f"✅ Signal registered: ID={signal_id}, window ends at {window_end.strftime('%H:%M:%S')}")
 
@@ -210,6 +211,19 @@ class SignalConfirmationManager:
 
             # Convert numpy types to Python native types for JSON serialization
             import psycopg2.extras
+            import numpy as np
+
+            # Ensure ALL numeric values are Python native types (not NumPy)
+            # This prevents "schema 'np' does not exist" errors in PostgreSQL
+            confirmation_score = float(confirmation_score)
+            mtf_alignment = int(mtf_alignment)
+            mtf_score = float(mtf_score)
+            momentum_score = float(momentum_score)
+            volume_score = float(volume_score)
+            trend_score = float(trend_score)
+            fibonacci_score = float(fibonacci_score)
+            smc_score = float(smc_score)
+
             serializable_details = convert_to_serializable(validation_details)
             serializable_fib_details = convert_to_serializable(fibonacci_details)
             serializable_smc_details = convert_to_serializable(smc_details)
@@ -260,7 +274,11 @@ class SignalConfirmationManager:
             for row in rows:
                 signal_id = row['id']
                 status = row['status']
-                window_end = datetime.fromisoformat(row['confirmation_window_end'])
+
+                # Handle datetime (PostgreSQL returns datetime objects, not strings)
+                window_end = row['confirmation_window_end']
+                if isinstance(window_end, str):
+                    window_end = datetime.fromisoformat(window_end)
 
                 # Check if window expired
                 if datetime.now() > window_end:
@@ -347,7 +365,9 @@ class SignalConfirmationManager:
             return False, f"Signal not confirmed (status: {signal['status']})"
 
         # Check if confirmation window still valid
-        window_end = datetime.fromisoformat(signal['confirmation_window_end'])
+        window_end = signal['confirmation_window_end']
+        if isinstance(window_end, str):
+            window_end = datetime.fromisoformat(window_end)
         if datetime.now() > window_end:
             return False, "Confirmation window expired"
 

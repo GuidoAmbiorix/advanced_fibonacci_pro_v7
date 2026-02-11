@@ -284,6 +284,8 @@ class AutoTrader:
         active_portfolio_id = self.db.get_config('active_portfolio_id')
 
         if active_portfolio_id:
+            self.logger.info(f"📁 Portfolio mode: Active portfolio ID = {active_portfolio_id}")
+
             # Portfolio mode: generate predictions for portfolio
             try:
                 self.prediction_service.generate_predictions_for_portfolio(int(active_portfolio_id))
@@ -293,18 +295,39 @@ class AutoTrader:
 
             # Register signals from portfolio allocations
             allocations = self.db.get_allocations(int(active_portfolio_id))
+            self.logger.info(f"📊 Found {len(allocations)} allocation(s) in portfolio")
 
             for alloc in allocations:
                 if alloc['weight'] <= 0:
+                    self.logger.debug(f"Skipping {alloc['symbol']} - weight is 0")
                     continue
 
                 symbol = alloc['symbol']
                 model_id = alloc['model_id']
+                self.logger.info(f"🔍 Processing {symbol} (model_id={model_id}, weight={alloc['weight']})")
 
                 # Get latest prediction
                 prediction = self.db.get_latest_prediction(symbol, model_id=model_id)
 
+                if not prediction:
+                    self.logger.warning(f"⚠️  {symbol}: No prediction found for model_id={model_id}")
+                    continue
+
+                if not self._is_prediction_fresh(prediction):
+                    self.logger.info(f"⏰ {symbol}: Prediction is stale")
+                    continue
+
+                self.logger.info(f"✅ {symbol}: Fresh prediction found - {prediction['prediction_direction']} ({prediction['confidence']:.1%})")
+
                 if prediction and self._is_prediction_fresh(prediction):
+                    # Check killzone before registering signal
+                    is_allowed, reason = self.killzone_manager.is_trading_allowed(symbol=symbol)
+
+                    if not is_allowed:
+                        self.logger.info(f"⏸️  {symbol}: Outside killzone - {reason}")
+                        self.db.log('INFO', 'AUTO_TRADER', f'{symbol}: Signal skipped - {reason}')
+                        continue
+
                     # Check if signal already registered
                     if not self._is_signal_already_registered(prediction['id']):
                         # Get trading timeframe from config
@@ -317,6 +340,7 @@ class AutoTrader:
 
                         if signal_id:
                             self.logger.info(f"📝 Registered signal #{signal_id} for {symbol} {prediction['prediction_direction']}")
+                            self.db.log('INFO', 'AUTO_TRADER', f'Signal registered: {symbol} {prediction["prediction_direction"]} (confidence: {prediction["confidence"]:.1%})')
 
         else:
             # Legacy mode: generate predictions from config symbols
@@ -445,12 +469,25 @@ class AutoTrader:
     def _is_prediction_fresh(self, prediction: dict, max_age_seconds: int = 300) -> bool:
         """Check if prediction is fresh enough to trade."""
         try:
-            pred_time = datetime.fromisoformat(prediction['timestamp'])
+            # Handle both datetime objects (PostgreSQL) and strings (SQLite)
+            pred_time = prediction['timestamp']
+            if isinstance(pred_time, str):
+                pred_time = datetime.fromisoformat(pred_time)
+            elif not isinstance(pred_time, datetime):
+                self.logger.warning(f"Unexpected timestamp type: {type(pred_time)}")
+                return False
+
             # Check if naive (no timezone) and make sure we compare correctly
             # Assuming DB stores UTC or consistent local time
             age_seconds = (datetime.now() - pred_time).total_seconds()
-            return age_seconds < max_age_seconds
-        except Exception:
+            is_fresh = age_seconds < max_age_seconds
+
+            if not is_fresh:
+                self.logger.debug(f"Prediction age: {age_seconds:.1f}s (max: {max_age_seconds}s)")
+
+            return is_fresh
+        except Exception as e:
+            self.logger.error(f"Error checking prediction freshness: {e}")
             return False
     
     def monitor_positions(self):
@@ -477,7 +514,10 @@ class AutoTrader:
                     continue
                 
                 tick_data = tick_response.json()
-                current_price = tick_data['bid'] if position['direction'] == 'SELL' else tick_data['ask']
+                # MT5 positions use 'type': 0=BUY, 1=SELL (not 'direction')
+                position_type = position.get('type', position.get('direction', 0))
+                is_sell = position_type == 1 or position_type == 'SELL'
+                current_price = tick_data['bid'] if is_sell else tick_data['ask']
                 
                 # Get ATR
                 atr = self.exit_manager.get_atr(symbol)

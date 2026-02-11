@@ -214,6 +214,74 @@ def fetch_data():
         'latest_time': df['timestamp'].max().isoformat()
     })
 
+@app.route('/bars', methods=['GET'])
+def get_bars():
+    """
+    Get historical bars for a symbol (GET request with query params).
+
+    Query params:
+        symbol: Symbol name (e.g., EURUSD)
+        timeframe: Timeframe string (e.g., H1, H4, D1, W1)
+        count: Number of bars to fetch (default: 200)
+
+    Returns bars data as JSON array.
+    """
+    if not mt5_connected:
+        return jsonify({'error': 'MT5 not connected'}), 503
+
+    symbol = request.args.get('symbol', 'EURUSD')
+    timeframe_str = request.args.get('timeframe', 'H1')
+    count = int(request.args.get('count', 200))
+
+    # Convert timeframe string to MT5 constant
+    timeframe_map = {
+        'M1': mt5.TIMEFRAME_M1,
+        'M5': mt5.TIMEFRAME_M5,
+        'M15': mt5.TIMEFRAME_M15,
+        'M30': mt5.TIMEFRAME_M30,
+        'H1': mt5.TIMEFRAME_H1,
+        'H4': mt5.TIMEFRAME_H4,
+        'D1': mt5.TIMEFRAME_D1,
+        'W1': mt5.TIMEFRAME_W1,
+    }
+    timeframe = timeframe_map.get(timeframe_str, mt5.TIMEFRAME_H1)
+
+    # Check if symbol exists
+    symbol_info = mt5.symbol_info(symbol)
+    if symbol_info is None:
+        logging.warning(f"Symbol {symbol} not found")
+        return jsonify({'error': f'Symbol {symbol} not found'}), 404
+
+    # Enable symbol if not visible
+    if not symbol_info.visible:
+        logging.info(f"Enabling symbol {symbol}...")
+        if not mt5.symbol_select(symbol, True):
+            logging.error(f"Failed to enable symbol {symbol}")
+            return jsonify({'error': f'Failed to enable symbol {symbol}'}), 400
+
+    # Fetch bars
+    rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, count)
+
+    if rates is None or len(rates) == 0:
+        error = mt5.last_error()
+        logging.error(f"Failed to fetch bars for {symbol} {timeframe_str}: {error}")
+        return jsonify({'error': f'No data available', 'mt5_error': error}), 404
+
+    # Convert to list of dicts
+    df = pd.DataFrame(rates)
+    df['timestamp'] = pd.to_datetime(df['time'], unit='s')
+
+    # Return bars in format expected by MTFAnalyzer
+    bars = df[['timestamp', 'open', 'high', 'low', 'close', 'tick_volume']].to_dict('records')
+
+    # Convert timestamp to ISO format string
+    for bar in bars:
+        bar['timestamp'] = bar['timestamp'].isoformat()
+
+    logging.info(f"Served {len(bars)} bars for {symbol} {timeframe_str}")
+
+    return jsonify({'bars': bars})
+
 @app.route('/trade/open', methods=['POST'])
 def open_trade():
     """
@@ -590,6 +658,86 @@ def get_atr():
         'period': period,
         'atr': atr
     })
+
+@app.route('/indicators/momentum', methods=['GET'])
+def get_momentum():
+    """Calculate momentum indicators (RSI, MACD, Stochastic) for a symbol."""
+    if not mt5_connected:
+        return jsonify({'error': 'MT5 not connected'}), 503
+
+    symbol = request.args.get('symbol', 'EURUSD')
+    timeframe_str = request.args.get('timeframe', 'H1')
+
+    # Map timeframe string to MT5 constant
+    timeframe_map = {
+        'M1': mt5.TIMEFRAME_M1,
+        'M5': mt5.TIMEFRAME_M5,
+        'M15': mt5.TIMEFRAME_M15,
+        'M30': mt5.TIMEFRAME_M30,
+        'H1': mt5.TIMEFRAME_H1,
+        'H4': mt5.TIMEFRAME_H4,
+        'D1': mt5.TIMEFRAME_D1,
+        'W1': mt5.TIMEFRAME_W1,
+    }
+    timeframe = timeframe_map.get(timeframe_str, mt5.TIMEFRAME_H1)
+
+    # Get 100 bars for indicator calculation
+    bars = mt5.copy_rates_from_pos(symbol, timeframe, 0, 100)
+
+    if bars is None or len(bars) < 50:
+        return jsonify({'error': 'Insufficient data'}), 400
+
+    # Convert to numpy arrays
+    import numpy as np
+    close_prices = np.array([bar['close'] for bar in bars], dtype=np.float64)
+    high_prices = np.array([bar['high'] for bar in bars], dtype=np.float64)
+    low_prices = np.array([bar['low'] for bar in bars], dtype=np.float64)
+
+    try:
+        import talib
+
+        # RSI
+        rsi = talib.RSI(close_prices, timeperiod=14)
+        rsi_current = float(rsi[-1]) if len(rsi) > 0 and not np.isnan(rsi[-1]) else 50.0
+
+        # MACD
+        macd, signal, hist = talib.MACD(close_prices, fastperiod=12, slowperiod=26, signalperiod=9)
+        macd_hist = float(hist[-1]) if len(hist) > 0 and not np.isnan(hist[-1]) else 0.0
+
+        # Stochastic
+        stoch_k, stoch_d = talib.STOCH(high_prices, low_prices, close_prices,
+                                        fastk_period=14, slowk_period=3, slowd_period=3)
+        stoch_k_current = float(stoch_k[-1]) if len(stoch_k) > 0 and not np.isnan(stoch_k[-1]) else 50.0
+
+        return jsonify({
+            'symbol': symbol,
+            'timeframe': timeframe_str,
+            'rsi': rsi_current,
+            'macd_hist': macd_hist,
+            'stoch_k': stoch_k_current
+        })
+
+    except ImportError:
+        # Fallback: simple calculations without TA-Lib
+        # Simple RSI approximation
+        changes = np.diff(close_prices)
+        gains = np.where(changes > 0, changes, 0)
+        losses = np.where(changes < 0, -changes, 0)
+        avg_gain = np.mean(gains[-14:]) if len(gains) >= 14 else 0
+        avg_loss = np.mean(losses[-14:]) if len(losses) >= 14 else 0
+        rs = avg_gain / avg_loss if avg_loss != 0 else 0
+        rsi = 100 - (100 / (1 + rs))
+
+        # Simple momentum
+        momentum = close_prices[-1] - close_prices[-10] if len(close_prices) >= 10 else 0
+
+        return jsonify({
+            'symbol': symbol,
+            'timeframe': timeframe_str,
+            'rsi': float(rsi),
+            'macd_hist': float(momentum),
+            'stoch_k': 50.0  # Neutral
+        })
 
 # ==================== Main ====================
 

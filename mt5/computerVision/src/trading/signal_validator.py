@@ -57,7 +57,7 @@ class SignalValidator:
         self.logger = logging.getLogger(__name__)
 
         # Initialize analyzers
-        self.mtf_analyzer = MTFAnalyzer(db_manager)
+        self.mtf_analyzer = MTFAnalyzer(db_manager, bridge_url=bridge_url)
         self.fibonacci_analyzer = FibonacciAnalyzer(db_manager, config)
         self.smc_analyzer = SMCAnalyzer(db_manager, config)
 
@@ -168,6 +168,15 @@ class SignalValidator:
             self.logger.info(f"✅ Signal CONFIRMED: {symbol} {direction} (score: {confirmation_score:.1f}/100)")
         else:
             self.logger.warning(f"❌ Signal REJECTED: {symbol} {direction} (score: {confirmation_score:.1f}/100, needed: {self.min_confirmation_score})")
+            # Log detailed score breakdown
+            self.logger.info(f"  📊 Score Breakdown:")
+            self.logger.info(f"    MTF Alignment: {scores.get('mtf_alignment', 0):.1f}/100")
+            self.logger.info(f"    Momentum: {scores.get('momentum_confluence', 0):.1f}/100")
+            self.logger.info(f"    Volume: {scores.get('volume_confirmation', 0):.1f}/100")
+            self.logger.info(f"    Trend Strength: {scores.get('trend_strength', 0):.1f}/100")
+            self.logger.info(f"    Fibonacci: {scores.get('fibonacci_alignment', 0):.1f}/100")
+            self.logger.info(f"    Model Confidence: {scores.get('model_confidence', 0):.1f}/100")
+            self.logger.info(f"    SMC: {scores.get('smc_confluence', 0):.1f}/100")
 
         return is_valid, confirmation_score, validation_details
 
@@ -189,17 +198,18 @@ class SignalValidator:
             # Check if trade should be taken based on MTF
             should_trade, reason = self.mtf_analyzer.should_trade_with_mtf(mtf_features, direction)
 
-            # Calculate alignment score
-            trend_alignment = mtf_features.get('trend_alignment', 0)
+            # Calculate alignment score (PARTIAL CREDIT SYSTEM)
+            trend_alignment = mtf_features.get('trend_alignment', 0)  # 0-1 scale with partial credit
             trend_strength = mtf_features.get('trend_strength', 0)
             momentum_alignment = mtf_features.get('momentum_alignment', 0)
 
-            # Score components
-            alignment_score = trend_alignment * 40  # 40 points for full alignment
+            # Score components (0-100 scale)
+            # - Trend alignment now gives partial credit (33%, 67%, 100% based on HTF agreement)
+            alignment_score = trend_alignment * 50  # 50 points max for alignment
             strength_score = trend_strength * 30    # 30 points for trend strength
-            momentum_score = (abs(momentum_alignment) * 30) if np.sign(momentum_alignment) == (1 if direction == 'BUY' else -1) else 0
+            momentum_score = (abs(momentum_alignment) * 20) if np.sign(momentum_alignment) == (1 if direction == 'BUY' else -1) else 0
 
-            total_score = alignment_score + strength_score + momentum_score
+            total_score = min(100, alignment_score + strength_score + momentum_score)
 
             details = {
                 'should_trade': should_trade,
@@ -288,7 +298,11 @@ class SignalValidator:
                 LIMIT 100
             """
             with self.db.get_connection() as conn:
-                df = pd.read_sql_query(query, conn, params=(symbol,))
+                cursor = conn.execute(query, (symbol,))
+
+                rows = cursor.fetchall()
+
+                df = pd.DataFrame([dict(row) for row in rows]) if rows else pd.DataFrame()
 
             if len(df) < 50:
                 return True, 50, {'note': 'Insufficient data'}
@@ -340,7 +354,11 @@ class SignalValidator:
                 LIMIT 20
             """
             with self.db.get_connection() as conn:
-                df = pd.read_sql_query(query, conn, params=(symbol,))
+                cursor = conn.execute(query, (symbol,))
+
+                rows = cursor.fetchall()
+
+                df = pd.DataFrame([dict(row) for row in rows]) if rows else pd.DataFrame()
 
             if len(df) < 10:
                 return True, 50, {'note': 'Insufficient volume data'}
@@ -399,7 +417,11 @@ class SignalValidator:
                 LIMIT 50
             """
             with self.db.get_connection() as conn:
-                df = pd.read_sql_query(query, conn, params=(symbol,))
+                cursor = conn.execute(query, (symbol,))
+
+                rows = cursor.fetchall()
+
+                df = pd.DataFrame([dict(row) for row in rows]) if rows else pd.DataFrame()
 
             if len(df) < 30:
                 return True, 50, {'note': 'Insufficient data'}
@@ -473,7 +495,11 @@ class SignalValidator:
                 LIMIT 100
             """
             with self.db.get_connection() as conn:
-                df = pd.read_sql_query(query, conn, params=(symbol,))
+                cursor = conn.execute(query, (symbol,))
+
+                rows = cursor.fetchall()
+
+                df = pd.DataFrame([dict(row) for row in rows]) if rows else pd.DataFrame()
 
             if len(df) < 50:
                 return True, 50, {'note': 'Insufficient data for Fibonacci analysis'}
@@ -525,7 +551,11 @@ class SignalValidator:
                 LIMIT 100
             """
             with self.db.get_connection() as conn:
-                df = pd.read_sql_query(query, conn, params=(symbol,))
+                cursor = conn.execute(query, (symbol,))
+
+                rows = cursor.fetchall()
+
+                df = pd.DataFrame([dict(row) for row in rows]) if rows else pd.DataFrame()
 
             if len(df) < 50:
                 return True, 50, {'note': 'Insufficient data for SMC analysis'}

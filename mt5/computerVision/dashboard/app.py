@@ -101,7 +101,19 @@ if page == "Dashboard":
     
     with col3:
         recent_trades = db.get_trades(limit=10)
-        st.metric("Trades Today", len([t for t in recent_trades if t['close_time'][:10] == str(datetime.now().date())]))
+        today = datetime.now().date()
+        trades_today = []
+        for t in recent_trades:
+            close_time = t['close_time']
+            if hasattr(close_time, 'date'):
+                # datetime object
+                if close_time.date() == today:
+                    trades_today.append(t)
+            else:
+                # string
+                if str(close_time)[:10] == str(today):
+                    trades_today.append(t)
+        st.metric("Trades Today", len(trades_today))
     
     with col4:
         active_model = db.get_active_model()
@@ -122,7 +134,9 @@ if page == "Dashboard":
         LIMIT 10
     """
     with db.get_connection() as conn:
-        predictions_df = pd.read_sql_query(predictions_query, conn)
+        cursor = conn.execute(predictions_query)
+        rows = cursor.fetchall()
+        predictions_df = pd.DataFrame(rows)
     
     if not predictions_df.empty:
         st.dataframe(predictions_df[['timestamp', 'symbol', 'prediction_direction', 'confidence', 'model_name']], 
@@ -253,7 +267,10 @@ elif page == "Live Predictions":
         with col2:
             st.metric("Confidence", f"{predictions['confidence']:.1%}")
         with col3:
-            st.metric("Time", predictions['created_at'][:16])
+            # Format datetime object
+            created_at = predictions['created_at']
+            time_str = created_at.strftime('%Y-%m-%d %H:%M') if hasattr(created_at, 'strftime') else str(created_at)[:16]
+            st.metric("Time", time_str)
         
         # Chart placeholder
         st.info("Prediction chart will be displayed here")
@@ -490,7 +507,9 @@ elif page == "Signal Monitor":
 
     with col3:
         rejected = stats.get('REJECTED', {}).get('count', 0)
-        st.metric("Rejected", rejected, delta=None, delta_color="inverse")
+        expired = stats.get('EXPIRED', {}).get('count', 0)
+        failed = rejected + expired
+        st.metric("Failed (Rejected/Expired)", failed, delta=None, delta_color="inverse")
 
     with col4:
         executed_count = stats.get('EXECUTED', {}).get('count', 0)
@@ -499,7 +518,7 @@ elif page == "Signal Monitor":
     st.markdown("---")
 
     # Tabs for different views
-    tab1, tab2, tab3, tab4 = st.tabs(["🕐 Pending Signals", "✅ Confirmed Signals", "❌ Rejected Signals", "🛡️ Active Cooldowns"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🕐 Pending Signals", "✅ Confirmed Signals", "❌ Rejected & Expired", "🛡️ Active Cooldowns"])
 
     # Tab 1: Pending Signals
     with tab1:
@@ -580,16 +599,21 @@ elif page == "Signal Monitor":
         else:
             st.info("No confirmed signals ready to execute")
 
-    # Tab 3: Rejected Signals
+    # Tab 3: Rejected & Expired Signals
     with tab3:
-        st.subheader("Recently Rejected Signals")
+        st.subheader("Recently Rejected & Expired Signals")
 
+        # Get both rejected and expired signals
         rejected = db.get_recent_signals(hours=24, status='REJECTED')
+        expired = db.get_recent_signals(hours=24, status='EXPIRED')
 
-        if rejected:
-            df = pd.DataFrame(rejected)
+        # Combine them
+        all_failed = rejected + expired
 
-            display_df = df[['symbol', 'direction', 'initial_confidence', 'confirmation_score', 'rejection_reason', 'signal_generated_at']]
+        if all_failed:
+            df = pd.DataFrame(all_failed)
+
+            display_df = df[['symbol', 'direction', 'status', 'initial_confidence', 'confirmation_score', 'rejection_reason', 'signal_generated_at']]
             display_df['initial_confidence'] = display_df['initial_confidence'].apply(lambda x: f"{x*100:.1f}%")
             display_df['confirmation_score'] = display_df['confirmation_score'].apply(lambda x: f"{x:.1f}" if pd.notna(x) else "N/A")
 
@@ -597,7 +621,7 @@ elif page == "Signal Monitor":
 
             # Show common rejection reasons
             st.markdown("---")
-            st.subheader("Common Rejection Reasons")
+            st.subheader("Failure Reasons Distribution")
 
             reasons = df['rejection_reason'].value_counts()
             if not reasons.empty:
@@ -607,7 +631,7 @@ elif page == "Signal Monitor":
                 st.plotly_chart(fig, use_container_width=True)
 
         else:
-            st.info("No rejected signals in the last 24 hours")
+            st.info("No rejected or expired signals in the last 24 hours")
 
     # Tab 4: Active Cooldowns
     with tab4:
@@ -619,7 +643,9 @@ elif page == "Signal Monitor":
             data = []
             for cd in cooldowns:
                 from datetime import datetime
-                cooldown_end = datetime.fromisoformat(cd['cooldown_end_time'])
+                cooldown_end = cd['cooldown_end_time']
+                if isinstance(cooldown_end, str):
+                    cooldown_end = datetime.fromisoformat(cooldown_end)
                 remaining = (cooldown_end - datetime.now()).total_seconds() / 60
 
                 data.append({
