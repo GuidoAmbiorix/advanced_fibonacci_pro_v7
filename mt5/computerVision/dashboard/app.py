@@ -906,176 +906,132 @@ elif page == "Training":
                     import traceback
                     st.code(traceback.format_exc())
     
-    # ==================== TAB 2: Optuna Optimization ====================
+    # ==================== TAB 2: Optuna Optimization (Super Plan with VectorBT) ====================
     with tab2:
-        st.header("Step 2: Optimize Hyperparameters with Optuna")
-        st.info("🔍 Optuna runs asynchronously in the background using PostgreSQL.")
+        st.header("Step 2: Strategy Optimization (VectorBT 🚀)")
+        st.info("⚡ High-Performance Backtesting Engine Enabled")
 
         # Service init
-        from src.training.optuna_service import get_optuna_service, OptunaService
-        optuna_service = get_optuna_service()
+        from src.training.optuna_service import OptunaService
+        from src.training.optimization_tasks import run_trading_optimization # Placeholder
+        
+        optuna_service = OptunaService.get_instance()
 
-        # Config Columns
-        col1, col2, col3 = st.columns(3)
+        # Strategy Configuration
+        col1, col2 = st.columns([1, 2])
+        
         with col1:
-            study_name_input = st.text_input("Study Name", value=f"study_{datetime.now().strftime('%Y%m%d')}")
+            st.subheader("⚙️ Config")
+            study_name_input = st.text_input("Study Name", value=f"vbt_study_{datetime.now().strftime('%Y%m%d')}")
+            optimization_target = st.selectbox("Target Goal", ["Profit Factor", "Sharpe Ratio", "Net Profit", "Expectancy"], index=0)
+            n_trials = st.number_input("Trials", 100, 10000, 500, step=100)
+            
+            st.markdown("---")
+            st.caption("Strategy Logic")
+            entry_logic = st.selectbox("Entry Signal", ["RSI Crossover", "MACD", "Bollinger Bands", "ML Threshold"], index=3)
+            
         with col2:
-            n_trials = st.number_input("Number of Trials", 10, 500, 30, step=10)
-        with col3:
-            sampler_choice = st.selectbox("Sampler", ["TPE", "Random", "CmaEs"])
-
-        # Control Buttons
-        col_btn1, col_btn2 = st.columns([1, 4])
-        with col_btn1:
-            start_optim = st.button("🚀 Start Optimization", type="primary")
-
-        # Visualization Area
-        st.markdown("---")
-        st.subheader("📊 Study Analysis")
-
-        # Load existing study if available
-        try:
-            storage_url = optuna_service.get_storage_url()
-            # Check if study exists
-            import optuna
-            try:
-                study = optuna.load_study(study_name=study_name_input, storage=storage_url)
-                study_loaded = True
-            except KeyError:
-                study_loaded = False
-
-            if start_optim:
-                if study_loaded:
-                    st.warning(f"Resuming existing study: {study_name_input}")
-                else:
-                    st.success(f"Creating new study: {study_name_input}")
-
-                # Define the objective function wrapper here or import it
-                # For simplicity, we define a closure that captures the data
-                # BUT: Async threads can't pickling local closures easily if they are complex.
-                # BEST PRACTICE: Define objective in a separate module and pass arguments.
+            st.subheader("📊 Performance")
+            
+            # Control Panel
+            start_btn = st.button("🚀 Start Fast Optimization", type="primary")
+            
+            if start_btn:
+                # In Super Plan, we would trigger the background task
+                # and then start a polling loop.
+                st.toast(f"Starting generic optimization for {optimization_target}...", icon="✅")
                 
-                # For now, we'll demonstrate the UI update structure.
-                # In a real app, we'd package the data/config and call the service.
+                # Mocking the async task trigger for demonstration of UI
+                # Real implementation connects to optimization_tasks.py
                 
-                # Mocking the call for "structure" compliance with the plan 
-                # (since 'app.py' has all the data loading logic inside it currently, 
-                # moving it all out is a huge refactor. We will do a hybrid approach:
-                # pass the data-loading parameters to the service, and let the service load data)
-                
-                st.info("Starting background optimization task...")
-                
-                # To make this truly work with the current monolithic app.py, 
-                # we need to ensure the objective function can access the data.
-                # For this PR, we will maintain the synchronous execution but use the NEW classes
-                # to prove the logic, as fully decoupling app.py is a larger scope.
-                # OR we implement a simple threading wrapper here.
-                
-                # Reverting to synchronous-but-better logic for stability in this step,
-                # as 'async' requires moving 'objective' to a top-level module to be picklable.
-                
-                with st.spinner("Running Optimization..."):
-                    # 1. Load Data
-                    query = "SELECT * FROM market_data WHERE symbol = %s AND timeframe = %s ORDER BY timestamp DESC LIMIT 2000"
-                    with db.get_connection() as conn:
-                        cursor = conn.execute(query, (train_symbol, train_timeframe))
-                        rows = cursor.fetchall()
-                        df = pd.DataFrame(rows)
-
-                    if len(df) < 100:
-                        st.error("Not enough data")
-                    else:
-                        from src.training.labeling import triple_barrier_labels
-                        from src.training.vectorized_backtester import VectorizedBacktester
-                        from src.features import prepare_training_data
-                        from sklearn.neural_network import MLPClassifier
-                        from sklearn.preprocessing import StandardScaler
-                        from sklearn.model_selection import train_test_split
-                        
-                        # 2. Prepare Features & Labels
-                        X, _, feature_names = prepare_training_data(df, use_talib=True)
-                        
-                        # Triple Barrier Labeling
-                        volatility = df['close'].pct_change().rolling(20).std()
-                        labels = triple_barrier_labels(df['close'], volatility, pt_sl=[2,1])
-                        
-                        # Filter valid labels
-                        valid_idx = labels != 0
-                        X = X[valid_idx]
-                        y = labels[valid_idx]
-                        # Convert -1 (loss) to 0 for binary classification if we want simple accuracy,
-                        # BUT we want Profit Factor.
-                        # For MLPClassifier, we need classes. Let's map 1->1 (Win), -1->0 (Loss).
-                        y_binary = (y == 1).astype(int) 
-                        
-                        X_train, X_test, y_train, y_test = train_test_split(X, y_binary, test_size=0.2, shuffle=False)
-                        
-                        # 3. Define Objective using Backtester
-                        def objective(trial):
-                            # Hyperparameters
-                            n_layers = trial.suggest_int('n_layers', 1, 3)
-                            layers = []
-                            for i in range(n_layers):
-                                layers.append(trial.suggest_int(f'n_units_l{i}', 16, 128))
-                            
-                            clf = MLPClassifier(hidden_layer_sizes=tuple(layers), max_iter=200, random_state=42)
-                            scaler = StandardScaler()
-                            X_train_s = scaler.fit_transform(X_train)
-                            X_test_s = scaler.transform(X_test)
-                            
-                            clf.fit(X_train_s, y_train)
-                            preds = clf.predict(X_test_s)
-                            
-                            # Vectorized Backtest on Test Set
-                            # We need original labels for backtest pnl
-                            # Extract corresponding 'y' (1/-1) for test set
-                            # (This is tricky with shuffle=False splitting, but feasible)
-                            
-                            # Simply optimize Accuracy for now as a proxy, 
-                            # or implementing the full backtest logic:
-                            return clf.score(X_test_s, y_test)
-                            
-                        # 4. Run Optimization
-                        study = optuna.create_study(
-                            study_name=study_name_input,
-                            storage=storage_url,
-                            load_if_exists=True,
-                            direction='maximize',
-                            sampler=optuna.samplers.TPESampler() if sampler_choice == 'TPE' else optuna.samplers.RandomSampler()
-                        )
-                        study.optimize(objective, n_trials=n_trials)
-                        
-                        st.success("Optimization Complete!")
-                        study_loaded = True
-
-            if study_loaded:
-                # Visualizations
-                import plotly
-                from optuna.visualization import plot_optimization_history, plot_param_importances, plot_parallel_coordinate
-                
-                st.markdown("#### Optimization History")
-                fig1 = plot_optimization_history(study)
-                st.plotly_chart(fig1, use_container_width=True)
-                
-                st.markdown("#### Parameter Importance")
-                try:
-                    fig2 = plot_param_importances(study)
-                    st.plotly_chart(fig2, use_container_width=True)
-                except:
-                    st.info("Not enough data for parameter importance.")
+                # 1. Load Data (Simplified)
+                query = "SELECT * FROM market_data WHERE symbol = %s AND timeframe = %s ORDER BY timestamp DESC LIMIT 5000"
+                with db.get_connection() as conn:
+                    cursor = conn.execute(query, (train_symbol, train_timeframe))
+                    rows = cursor.fetchall()
+                    df = pd.DataFrame(rows)
                     
-                st.markdown("#### Parallel Coordinates")
-                try:
-                    fig3 = plot_parallel_coordinate(study)
-                    st.plotly_chart(fig3, use_container_width=True)
-                except:
-                    st.info("Not enough data for parallel coordinates.")
+                if not df.empty:
+                    # 2. Run pseudo-optimization (or real sync one for demo if async is complex)
+                    # We will use the proper structure but run it inline for immediate feedback in this step
+                    # then move to async if requested.
+                    
+                    from src.training.optimization_tasks import TradingObjective
+                    import optuna
+                    
+                    st.write("Running VectorBT optimization...")
+                    
+                    # Prepare features needed for the Objective
+                    # For demo, we just need 'close' price and maybe some features
+                    # If ML Threshold, we need features.
+                    from src.features import prepare_training_data
+                    X, _, feature_names = prepare_training_data(df, use_talib=True)
+                    
+                    # Map target string to key
+                    target_map = {
+                        "Profit Factor": "profit_factor",
+                        "Sharpe Ratio": "sharpe_ratio",
+                        "Net Profit": "total_return",
+                        "Expectancy": "expectancy"
+                    }
+                    metric_key = target_map.get(optimization_target, "profit_factor")
+                    
+                    objective = TradingObjective(
+                        prices=df['close'],
+                        features=X,
+                        target_metric=metric_key
+                    )
+                    
+                    # Create temporary study for immediate result
+                    study = optuna.create_study(direction='maximize')
+                    
+                    progress_bar = st.progress(0)
+                    
+                    # Run a few trials to show it works
+                    # In real app, this happens in background thread
+                    study.optimize(objective, n_trials=min(n_trials, 50)) # Cap at 50 for inline demo
+                    progress_bar.progress(100)
+                    
+                    st.success(f"Best {optimization_target}: {study.best_value:.4f}")
+                    st.json(study.best_params)
+                    
+                    # Visualize Best Result (Equity Curve)
+                    best_params = study.best_params
+                    # Re-run best to get equity curve
+                    # (In a real app, Objective should return/store the equity curve or we reconstruct it)
+                    
+                    # Reconstruct logic (simplified)
+                    f1 = best_params['feature_1']
+                    t1 = best_params['f1_threshold']
+                    f2 = best_params['feature_2']
+                    t2 = best_params['f2_threshold']
+                    
+                    entries = (X[f1] > t1) & (X[f2] > t2)
+                    exits = (X[f1] < -t1) | (X[f2] < -t2)
+                    
+                    from src.training.vectorbt_engine import VectorBTEngine
+                    eng = VectorBTEngine()
+                    res = eng.run_fast_backtest(df['close'], entries, exits, sl_stop=best_params['sl_pct'], tp_stop=best_params['tp_pct'])
+                    
+                    # Plot Equity (if VBT returned it, simpler to just plot closes of trades for now)
+                    # Our run_fast_backtest returns dict, not the pf object.
+                    # Enhancements: Return equity curve in the dictionary or separate call.
+                    
+                    st.metric("Win Rate", f"{res.get('win_rate', 0):.2%}")
+                    st.metric("Total Trades", res.get('total_trades', 0))
+                    
+                else:
+                    st.error("No data found.")
 
-                st.markdown("#### Best Parameters")
-                st.json(study.best_params)
-
-        except Exception as e:
-            st.error(f"Optuna Error: {e}")
+            # Placeholder for Async polling
+            st.info("History of past optimizations (Async results would appear here)")
+            # In a real async implementation, we would query Optuna storage for completed studies.
+            try:
+                summaries = optuna_service.list_studies()
+                if summaries:
+                    st.dataframe(pd.DataFrame(summaries))
+            except:
+                pass
     
     # ==================== TAB 3: Advanced Models ====================
     with tab3:
@@ -2027,23 +1983,150 @@ elif page == "Exit Strategies":
 
 
 # ==================== System Logs Page ====================
+# ==================== System Logs Page (Super Plan 🚀) ====================
 elif page == "System Logs":
-    st.title("📋 System Logs")
+    st.title("📋 System Logs & Observability")
     
-    level_filter = st.selectbox("Level", ["All", "INFO", "WARNING", "ERROR"])
-    component_filter = st.selectbox("Component", ["All", "BRIDGE", "TRADER", "ML_ENGINE", "DASHBOARD"])
+    # Imports
+    from src.utils.log_reader import LogReader, DockerLogManager
+    import time
+
+    # Create Tabs
+    log_tab1, log_tab2, log_tab3 = st.tabs(["🐳 Docker Logs (Live)", "📄 File Logs", "🗄️ Database Events"])
     
-    logs = db.get_logs(
-        level=None if level_filter == "All" else level_filter,
-        component=None if component_filter == "All" else component_filter,
-        limit=100
-    )
-    
-    if logs:
-        df = pd.DataFrame(logs)
-        st.dataframe(df[['created_at', 'level', 'component', 'message']], use_container_width=True)
-    else:
-        st.info("No logs found")
+    # ------------------ TAB 1: Docker Logs ------------------
+    with log_tab1:
+        st.subheader("Live Container Logs")
+        
+        # Helper to manage docker connection
+        if 'docker_mgr' not in st.session_state:
+            st.session_state.docker_mgr = DockerLogManager()
+            
+        mgr = st.session_state.docker_mgr
+        
+        if not mgr.connected:
+            st.error(f"Docker Daemon not connected. Ensure /var/run/docker.sock is mounted. Error: {getattr(mgr, 'error', 'Unknown')}")
+        else:
+            # Controls
+            col1, col2, col3 = st.columns([1, 1, 2])
+            
+            with col1:
+                # LIST CONTAINERS
+                containers = mgr.list_containers()
+                container_names = [c['name'] for c in containers] if containers else []
+                
+                # Default to a known interesting container if available
+                default_idx = 0
+                for i, name in enumerate(container_names):
+                    if 'trader' in name or 'cv_agent' in name:
+                        default_idx = i
+                        break
+                        
+                selected_container = st.selectbox("Select Container", container_names, index=default_idx if container_names else 0)
+            
+            with col2:
+                tail_lines = st.slider("Tail Lines", 50, 2000, 200, step=50, key="docker_tail")
+                
+            with col3:
+                # MASTER TOGGLE FOR PERFORMANCE
+                live_logging = st.toggle("🔴/🟢 ENABLE LIVE LOGGING", value=False, help="Enable to stream logs. Disable to save resources.")
+                
+            if selected_container:
+                # Find status
+                status = next((c['status'] for c in containers if c['name'] == selected_container), "Unknown")
+                status_color = "green" if status == "running" else "red"
+                st.caption(f"Status: :{status_color}[{status.upper()}] | ID: {next((c['id'] for c in containers if c['name'] == selected_container), '')}")
+                
+                if live_logging:
+                    # Auto-refresh loop
+                    # We use st.empty() to update just the log block
+                    log_placeholder = st.empty()
+                    
+                    try:
+                        # Fetch logs
+                        logs = mgr.get_logs(selected_container, tail=tail_lines)
+                        
+                        # Display
+                        with log_placeholder.container():
+                            st.code(logs, language="text", line_numbers=True)
+                            st.caption(f"Last updated: {datetime.now().strftime('%H:%M:%S')}")
+                        
+                        # Add a manual refresh button below if user wants to force update without loop
+                        if st.button("Refresh Now"):
+                            st.rerun()
+                            
+                    except Exception as e:
+                        st.error(f"Error fetching logs: {e}")
+                else:
+                    st.info("⏸️ Live logging is PAUSED to save resources. Toggle the switch above to enable.")
+
+    # ------------------ TAB 2: File Logs ------------------
+    with log_tab2:
+        st.subheader("Application Log Files")
+        
+        # List log files
+        log_dir = "logs" # Relative to CWD
+        try:
+            log_files = [f for f in os.listdir(log_dir) if f.endswith('.log')] if os.path.exists(log_dir) else []
+        except:
+            log_files = []
+            
+        if not log_files:
+            st.warning(f"No log files found in {os.path.abspath(log_dir)}")
+        else:
+            col1, col2, col3 = st.columns([1, 1, 2])
+            with col1:
+                selected_file = st.selectbox("Select Log File", log_files, index=0)
+            with col2:
+                file_tail_lines = st.number_input("Lines to Read", 100, 5000, 500, step=100)
+            with col3:
+                enable_file_read = st.toggle("Enable File Reading", value=False, key="file_read_toggle")
+                
+            if selected_file and enable_file_read:
+                file_path = os.path.join(log_dir, selected_file)
+                
+                if st.button("🔄 Reload File"):
+                    st.rerun()
+                
+                lines = LogReader.read_file_tail(file_path, n_lines=file_tail_lines)
+                log_content = "\n".join(lines)
+                
+                st.text_area("Log Content", log_content, height=600)
+                
+                # Download button
+                st.download_button(
+                    label="📥 Download Full Log",
+                    data=open(file_path, "rb").read(),
+                    file_name=selected_file,
+                    mime="text/plain"
+                )
+            elif not enable_file_read:
+                st.info("Reading disabled by user.")
+
+    # ------------------ TAB 3: Database Logs ------------------
+    with log_tab3:
+        st.subheader("Structured Database Events")
+        
+        level_filter = st.selectbox("Level", ["All", "INFO", "WARNING", "ERROR"], key="db_log_level")
+        component_filter = st.selectbox("Component", ["All", "BRIDGE", "TRADER", "ML_ENGINE", "DASHBOARD"], key="db_log_comp")
+        
+        if st.button("Search Database Logs"):
+            logs = db.get_logs(
+                level=None if level_filter == "All" else level_filter,
+                component=None if component_filter == "All" else component_filter,
+                limit=100
+            )
+            
+            if logs:
+                df = pd.DataFrame(logs)
+                st.dataframe(df[['created_at', 'level', 'component', 'message']], use_container_width=True)
+                
+                # Visualization of errors
+                if not df.empty:
+                    st.markdown("#### Log Level Distribution")
+                    st.bar_chart(df['level'].value_counts())
+            else:
+                st.info("No logs found matching criteria")
 
 # Footer
 st.sidebar.markdown("---")

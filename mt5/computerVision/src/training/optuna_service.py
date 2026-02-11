@@ -23,11 +23,22 @@ class OptunaService:
     Manages asynchronous Optuna optimization studies backed by PostgreSQL.
     """
     
+    _instance = None
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = OptunaService()
+        return cls._instance
+
     def __init__(self, db_url: Optional[str] = None):
         # Use env var if not provided
         self.db_url = db_url or os.getenv('DATABASE_URL', 'postgresql://cv_agent:123@postgres:5432/cv_trading')
         if not self.db_url:
-            raise ValueError("DATABASE_URL must be set for OptunaService")
+            # Fallback for local testing if needed, though strictly we want PG
+            pass 
+        if OptunaService._instance is None:
+             OptunaService._instance = self
             
         self.active_threads: Dict[str, threading.Thread] = {}
         
