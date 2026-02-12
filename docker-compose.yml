@@ -1,8 +1,8 @@
 services:
   # Service for FIRST RUN ONLY - Initializes Wine directory structure for MT5-1
-  mt5-init-1:
+  mt5-init:
     image: gmag11/metatrader5_vnc:latest
-    container_name: mt5-init-1
+    container_name: mt5-init
     profiles: ["init"]
     ports:
       - "3000:3000"
@@ -13,19 +13,19 @@ services:
     volumes:
       - mt5_config_1:/config
     networks:
-      mt5_network:
+      mt5_network_v2:
         ipv4_address: 10.13.13.20
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 3G
         reservations:
-          memory: 2G
+          memory: 512M
 
   # Service for FIRST RUN ONLY - Initializes Wine directory structure for MT5-2
-  mt5-init-2:
+  mt5-init-1:
     image: gmag11/metatrader5_vnc:latest
-    container_name: mt5-init-2
+    container_name: mt5-init-1
     profiles: ["init"]
     ports:
       - "3001:3000"
@@ -36,17 +36,17 @@ services:
     volumes:
       - mt5_config_2:/config
     networks:
-      mt5_network:
+      mt5_network_v2:
         ipv4_address: 10.13.13.21
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 3G
         reservations:
-          memory: 2G
+          memory: 512M
 
   # MT5 Instance 1 - NORMAL OPERATION
-  mt5-1:
+  mt5:
     image: gmag11/metatrader5_vnc:latest
     container_name: mt5-1
     profiles: ["app"]
@@ -63,18 +63,18 @@ services:
         target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
         read_only: false
     networks:
-      mt5_network:
+      mt5_network_v2:
         ipv4_address: 10.13.13.20
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 3G
         reservations:
-          memory: 2G
+          memory: 512M
     restart: unless-stopped
 
   # MT5 Instance 2 - NORMAL OPERATION
-  mt5-2:
+  mt5-1:
     image: gmag11/metatrader5_vnc:latest
     container_name: mt5-2
     profiles: ["app"]
@@ -91,14 +91,14 @@ services:
         target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
         read_only: false
     networks:
-      mt5_network:
+      mt5_network_v2:
         ipv4_address: 10.13.13.21
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 3G
         reservations:
-          memory: 2G
+          memory: 512M
     restart: unless-stopped
 
 volumes:
@@ -106,7 +106,7 @@ volumes:
   mt5_config_2:
 
 networks:
-  mt5_network:
+  mt5_network_v2:
     driver: bridge
     ipam:
       config:
