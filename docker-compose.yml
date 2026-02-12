@@ -1,8 +1,8 @@
 services:
   # Service for FIRST RUN ONLY - Initializes Wine directory structure for MT5-1
-  mt5-init:
+  mt5-init-1:
     image: gmag11/metatrader5_vnc:latest
-    container_name: mt5-init
+    container_name: mt5-init-1
     profiles: ["init"]
     ports:
       - "3000:3000"
@@ -18,14 +18,14 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 8G
         reservations:
-          memory: 1G
+          memory: 2G
 
   # Service for FIRST RUN ONLY - Initializes Wine directory structure for MT5-2
-  mt5-init-1:
+  mt5-init-2:
     image: gmag11/metatrader5_vnc:latest
-    container_name: mt5-init-1
+    container_name: mt5-init-2
     profiles: ["init"]
     ports:
       - "3001:3000"
@@ -41,12 +41,12 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 8G
         reservations:
-          memory: 1G
+          memory: 2G
 
   # MT5 Instance 1 - NORMAL OPERATION
-  mt5:
+  mt5-1:
     image: gmag11/metatrader5_vnc:latest
     container_name: mt5-1
     profiles: ["app"]
@@ -68,13 +68,13 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 8G
         reservations:
-          memory: 1G
+          memory: 2G
     restart: unless-stopped
 
   # MT5 Instance 2 - NORMAL OPERATION
-  mt5-1:
+  mt5-2:
     image: gmag11/metatrader5_vnc:latest
     container_name: mt5-2
     profiles: ["app"]
@@ -96,9 +96,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 8G
         reservations:
-          memory: 1G
+          memory: 2G
     restart: unless-stopped
 
 volumes:
