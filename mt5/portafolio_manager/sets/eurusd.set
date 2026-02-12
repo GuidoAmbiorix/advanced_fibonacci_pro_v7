@@ -52,8 +52,8 @@ InpAddOn2_R=2.8
 InpMaxPositions=1
 
 ; ====== RISK ======
-InpRiskBase=0.30
-InpMaxRisk=0.50
+InpRiskBase=0.20
+InpMaxRisk=0.35
 InpMaxLotsPerTrade=0.5
 InpEnableMarginCheck=true
 
