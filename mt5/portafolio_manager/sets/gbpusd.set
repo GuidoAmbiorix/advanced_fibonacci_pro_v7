@@ -53,9 +53,10 @@ InpAddOn2_R=2.8
 InpMaxPositions=1
 
 ; ====== RISK ======
-InpRiskBase=0.20
-InpMaxRisk=0.35
-InpMaxLotsPerTrade=0.5
+; ====== RISK ======
+InpRiskBase=0.50
+InpMaxRisk=1.0
+InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
@@ -107,8 +108,9 @@ InpNewsMinutesAfter=15
 ; ====== KELLY ======
 InpUseKelly=true
 InpKellyFraction=0.25
-InpDailyMaxDD=3.0
-InpWeeklyMaxDD=6.0
+InpKellyFraction=0.25
+InpDailyMaxDD=4.9
+InpWeeklyMaxDD=8.0
 
 ; ====== LEARNING ======
 InpEnableLearning=true

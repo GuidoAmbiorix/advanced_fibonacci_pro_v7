@@ -4,36 +4,33 @@
 ; Strategy: Conservative multi-symbol portfolio management
 
 ;═══════ PORTFOLIO LIMITS ═══════
-InpMaxPortfolioRisk=2.0
-; Max Total Portfolio Risk (%) - Optimized for $10/trade target
-; With 8 pairs @ 0.20% each, max risk = $100 total (5 positions max)
-; Increased from 1.5% to 2.0% to allow more concurrent positions
+InpMaxPortfolioRisk=4.0
+; Max Total Portfolio Risk (%) - Increased for FundingPips
+; With 10 pairs @ 0.50% each, max risk = ~5.0% total exposure
+; Adjusted to allow 0.5% risk per trade across portfolio
 
-InpMaxSymbolRisk=0.30
-; Max Risk Per Symbol (%) = $15 per pair
-; Allows 6-7 positions max before hitting portfolio limit
-; Reduced from 0.4% to better align with $10 base risk
+InpMaxSymbolRisk=1.0
+; Max Risk Per Symbol (%)
+; Allows room for scaling in if needed, but base risk is 0.5%
+; Coverage for new 0.5% per trade sizing
 
-InpMaxGroupRisk=0.60
+InpMaxGroupRisk=2.0
 ; Max Risk Per Correlation Group (%)
-; Prevents overexposure to USD, JPY, or correlated pairs
-; Reduced from 0.8% to maintain discipline with more concurrent trades
+; Increased to allow multiple pairs in same group to trade (e.g. 4x USD pairs)
 
 ;═══════ DRAWDOWN GOVERNOR ═══════
-InpDD_Normal=3.0
-; DD Level: Normal Trading (%) - Start risk reduction at 3.0%
-; Increased from 2.5% to 3.0% to allow more breathing room with $10 trades
-; Triggers at -$150 drawdown from peak
+InpDD_Normal=3.5
+; DD Level: Normal Trading (%) - Start risk reduction
+; Triggers closer to the daily limit to allow breathing room
 
-InpDD_Reduced=5.0
-; DD Level: Reduced Risk (%) - Heavy reduction at 5%
-; Increased from 4.0% to 5.0% for better tolerance
-; Triggers at -$250 drawdown from peak
+InpDD_Reduced=4.0
+; DD Level: Reduced Risk (%)
+; Strict reduction as we approach daily limit
 
-InpDD_Pause=7.0
-; DD Level: Pause Trading (%) - Emergency stop at 7%
-; Increased from 6.0% to 7.0% (still well before FundingPips 10% daily limit)
-; Triggers at -$350
+InpDD_Pause=4.8
+; DD Level: Pause Trading (%) - HARD STOP
+; MUST be below 5.0% (FundingPips Daily Limit)
+; Stops all new trades at 4.8% drawdown
 
 InpDD_ReducedMult=0.60
 ; Risk Multiplier when DD > Normal
@@ -66,20 +63,17 @@ InpPF_ReducedMult=0.70
 ; More gradual reduction allows recovery
 
 ;═══════ DAILY/WEEKLY LIMITS ═══════
-InpDailyMaxDD=3.0
-; Daily Max Drawdown (%) = $150
-; Increased from 2.5% to 3.0% - FundingPips allows ~5% daily loss
-; Allows 15 losing trades @ $10 before daily stop
+InpDailyMaxDD=4.9
+; Daily Max Drawdown (%)
+; FundingPips Limit is 5.0% - Set to 4.9% for safety
 
-InpWeeklyMaxDD=6.0
-; Weekly Max Drawdown (%) = $300
-; Increased from 5.0% to 6.0% for better tolerance
-; Prevents weekly blowout while allowing normal variance
+InpWeeklyMaxDD=8.0
+; Weekly Max Drawdown (%)
+; Intermediate stop before monthly limit
 
-InpMonthlyMaxDD=10.0
-; Monthly Max Drawdown (%) = $500
-; Increased from 8.0% to 10.0% - matches typical prop firm limits
-; Allows full monthly drawdown if needed for recovery
+InpMonthlyMaxDD=9.5
+; Monthly Max Drawdown (%)
+; FundingPips Limit is 10.0% - Set to 9.5% for safety
 
 ;═══════ CORRELATION GUARD ═══════
 InpUseCorrelationGuard=true

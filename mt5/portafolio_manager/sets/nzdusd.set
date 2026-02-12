@@ -54,11 +54,11 @@ InpAddOn2_R=2.8
 InpMaxPositions=1
 
 ; ====== RISK ======
-InpRiskBase=0.20
-; $10 per trade on $5K account
-InpMaxRisk=0.35
-; Max $17.50 for exceptional setups
-InpMaxLotsPerTrade=0.5
+InpRiskBase=0.50
+; $25 per trade on $5K account
+InpMaxRisk=1.0
+; Max $50 for exceptional setups
+InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
@@ -113,8 +113,9 @@ InpNewsMinutesAfter=15
 ; ====== KELLY ======
 InpUseKelly=true
 InpKellyFraction=0.25
-InpDailyMaxDD=3.0
-InpWeeklyMaxDD=6.0
+InpKellyFraction=0.25
+InpDailyMaxDD=4.9
+InpWeeklyMaxDD=8.0
 
 ; ====== LEARNING ======
 InpEnableLearning=true
