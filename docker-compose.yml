@@ -13,7 +13,7 @@ services:
     volumes:
       - mt5_config_1:/config
     networks:
-      mt5_network_v2:
+      mt5_network:
         ipv4_address: 10.13.13.20
     deploy:
       resources:
@@ -36,7 +36,7 @@ services:
     volumes:
       - mt5_config_2:/config
     networks:
-      mt5_network_v2:
+      mt5_network:
         ipv4_address: 10.13.13.21
     deploy:
       resources:
@@ -63,7 +63,7 @@ services:
         target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
         read_only: false
     networks:
-      mt5_network_v2:
+      mt5_network:
         ipv4_address: 10.13.13.20
     deploy:
       resources:
@@ -91,7 +91,7 @@ services:
         target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
         read_only: false
     networks:
-      mt5_network_v2:
+      mt5_network:
         ipv4_address: 10.13.13.21
     deploy:
       resources:
@@ -106,7 +106,7 @@ volumes:
   mt5_config_2:
 
 networks:
-  mt5_network_v2:
+  mt5_network:
     driver: bridge
     ipam:
       config:
