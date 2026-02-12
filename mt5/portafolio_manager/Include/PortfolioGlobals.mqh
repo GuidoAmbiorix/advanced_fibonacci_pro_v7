@@ -308,4 +308,86 @@ struct PairCorrelation
 // USDJPY/XAUUSD: -0.70 (medium negative)
 // AUDUSD/NZDUSD: +0.90 (high positive)
 
+//+------------------------------------------------------------------+
+//| ATOMIC OPERATIONS (FIX: Prevent race conditions)                  |
+//+------------------------------------------------------------------+
+
+//+------------------------------------------------------------------+
+//| Atomic Add - Thread-safe addition to GlobalVariable               |
+//+------------------------------------------------------------------+
+bool AtomicAdd(string varName, double value, int maxRetries = 3)
+{
+   string lockName = varName + "_LOCK";
+
+   for(int attempt = 0; attempt < maxRetries; attempt++)
+   {
+      // Try to acquire lock (using temp variable with 60-second expiry)
+      if(!GlobalVariableTemp(lockName))
+      {
+         // Lock acquired, perform operation
+         double currentValue = GlobalVariableGet(varName);
+         double newValue = currentValue + value;
+         GlobalVariableSet(varName, newValue);
+
+         // Release lock
+         GlobalVariableDel(lockName);
+         return true;
+      }
+
+      // Lock failed, wait and retry
+      Sleep(100);  // 100ms delay between retries
+   }
+
+   Print("ERROR: AtomicAdd failed after ", maxRetries, " attempts for ", varName);
+   return false;
+}
+
+//+------------------------------------------------------------------+
+//| Atomic Subtract - Thread-safe subtraction from GlobalVariable     |
+//+------------------------------------------------------------------+
+bool AtomicSubtract(string varName, double value, int maxRetries = 3)
+{
+   return AtomicAdd(varName, -value, maxRetries);
+}
+
+//+------------------------------------------------------------------+
+//| Atomic Set with Validation - Thread-safe set with timestamp check |
+//+------------------------------------------------------------------+
+bool AtomicSetWithValidation(string varName, double value, datetime &lastUpdate)
+{
+   string lockName = varName + "_LOCK";
+
+   // Try to acquire lock
+   if(!GlobalVariableTemp(lockName))
+   {
+      // Check if another update happened while waiting
+      datetime currentUpdate = (datetime)GlobalVariableGet(varName + "_TIMESTAMP");
+      if(currentUpdate > lastUpdate)
+      {
+         // Stale update, abort
+         GlobalVariableDel(lockName);
+         return false;
+      }
+
+      // Perform update
+      GlobalVariableSet(varName, value);
+      GlobalVariableSet(varName + "_TIMESTAMP", (double)TimeCurrent());
+      lastUpdate = TimeCurrent();
+
+      // Release lock
+      GlobalVariableDel(lockName);
+      return true;
+   }
+
+   return false;
+}
+
+//+------------------------------------------------------------------+
+//| Check if GlobalVariable is locked                                 |
+//+------------------------------------------------------------------+
+bool IsGlobalVariableLocked(string varName)
+{
+   return GlobalVariableCheck(varName + "_LOCK");
+}
+
 #endif

@@ -17,9 +17,10 @@ InpMaxGroupRisk=0.8
 ; Prevents overexposure to USD, JPY, or correlated pairs
 
 ;═══════ DRAWDOWN GOVERNOR ═══════
-InpDD_Normal=2.0
-; DD Level: Normal Trading (%) - Start risk reduction at 2%
-; Triggers at -$100 drawdown from peak
+InpDD_Normal=2.5
+; DD Level: Normal Trading (%) - Start risk reduction at 2.5%
+; H1: Increased from 2.0% to 2.5% (allow slightly more breathing room)
+; Triggers at -$125 drawdown from peak
 
 InpDD_Reduced=4.0
 ; DD Level: Reduced Risk (%) - Heavy reduction at 4%
@@ -38,9 +39,10 @@ InpRollingTrades=40
 ; Rolling Window (trades) - Larger sample for 8 pairs
 ; ~5 trades per pair for statistical significance
 
-InpPF_Normal=1.6
+InpPF_Normal=1.4
 ; PF Level: Normal Trading
-; Target: Win $1.60 for every $1 lost
+; H1: Reduced from 1.6 to 1.4 (more realistic target after bug fixes)
+; Target: Win $1.40 for every $1 lost
 
 InpPF_Reduced=1.3
 ; PF Level: Reduced Risk

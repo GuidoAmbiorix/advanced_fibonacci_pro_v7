@@ -47,12 +47,23 @@ private:
    double                m_strictMinConfluence;
    double                m_relaxedMinConfluence;
 
+   // FIX: Rolling window tracking (Phase 5 - last 20 trades)
+   double                m_recentResults[20];      // Circular buffer for recent trade results (1=win, 0=loss)
+   int                   m_recentTradeCount;       // Total trades processed
+   int                   m_bufferHead;             // Current position in circular buffer
+   double                m_lastThreshold;          // Last calculated threshold for logging
+
 public:
    CAdaptiveFilterManager() : m_symbol(""), m_patternRecognizer(NULL),
                               m_performanceAnalyzer(NULL),
                               m_adaptationEnabled(false), m_minSampleSize(50),
                               m_baseMinConfluence(5.0), m_strictMinConfluence(6.0),
-                              m_relaxedMinConfluence(4.0) {}
+                              m_relaxedMinConfluence(4.0),
+                              m_recentTradeCount(0), m_bufferHead(0), m_lastThreshold(0)
+   {
+      // FIX: Initialize rolling window buffer (Phase 5)
+      ArrayFill(m_recentResults, 0, 20, 0);
+   }
 
    //+------------------------------------------------------------------+
    //| Initialize Adaptive Filter Manager                               |
@@ -212,9 +223,34 @@ public:
             threshold -= 0.3;  // More lenient in good regimes
       }
 
+      // FIX: Add rolling window performance adjustment (Phase 5)
+      if(m_recentTradeCount >= 10)  // Need at least 10 trades for rolling stats
+      {
+         double rollingWR = GetRollingWinRate();
+
+         // Weight: 60% recent performance, 40% lifetime stats
+         if(rollingWR > 0.60)
+         {
+            // Recent performance is strong → lower threshold (allow more entries)
+            threshold -= 1.0;
+            if(m_recentTradeCount % 20 == 0)
+               Print("✅ ", m_symbol, " - Lowering threshold: Rolling WR ", DoubleToString(rollingWR * 100, 1), "% (good)");
+         }
+         else if(rollingWR < 0.40)
+         {
+            // Recent performance is weak → raise threshold (stricter filtering)
+            threshold += 1.5;
+            if(m_recentTradeCount % 20 == 0)
+               Print("⚠ ", m_symbol, " - Raising threshold: Rolling WR ", DoubleToString(rollingWR * 100, 1), "% (poor)");
+         }
+      }
+
       // Clamp to reasonable range
       if(threshold < 3.5) threshold = 3.5;   // Never too lenient
       if(threshold > 7.0) threshold = 7.0;   // Never too strict
+
+      // Store for logging comparison
+      m_lastThreshold = threshold;
 
       return threshold;
    }
@@ -340,6 +376,42 @@ public:
       m_baseMinConfluence = minConfluence;
       m_strictMinConfluence = minConfluence + 1.0;
       m_relaxedMinConfluence = minConfluence - 1.0;
+   }
+
+   //+------------------------------------------------------------------+
+   //| FIX: Update Recent Performance (Phase 5 - Rolling window)        |
+   //+------------------------------------------------------------------+
+   void UpdateRecentPerformance(double tradeResult)
+   {
+      // Store in circular buffer (1 = win, 0 = loss)
+      m_recentResults[m_bufferHead] = (tradeResult > 0) ? 1.0 : 0.0;
+      m_bufferHead = (m_bufferHead + 1) % 20;  // Circular buffer
+      m_recentTradeCount++;
+
+      // Log threshold changes every 20 trades
+      if(m_recentTradeCount % 20 == 0)
+      {
+         double rollingWR = GetRollingWinRate();
+         Print("📊 ", m_symbol, " - ", m_recentTradeCount, " trades | Rolling WR (20): ",
+               DoubleToString(rollingWR * 100, 1), "%");
+      }
+   }
+
+   //+------------------------------------------------------------------+
+   //| Get Rolling Win Rate (last 20 trades)                            |
+   //+------------------------------------------------------------------+
+   double GetRollingWinRate()
+   {
+      int count = (m_recentTradeCount < 20) ? m_recentTradeCount : 20;
+      if(count == 0) return 0;
+
+      double wins = 0;
+      for(int i = 0; i < count; i++)
+      {
+         wins += m_recentResults[i];
+      }
+
+      return wins / count;
    }
 };
 

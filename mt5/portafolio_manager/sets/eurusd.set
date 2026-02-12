@@ -1,6 +1,6 @@
-; EURUSD - 24h Institutional Flow
-; Core Major - Balanceado
-; Optimized for 24h Operation (No Killzones)
+; EURUSD - H1 Timeframe Institutional Flow
+; Core Major - Balanced
+; Optimized for H1 timeframe (reduced noise, cleaner signals)
 
 ; ====== IDENTITY ======
 InpMagicNumber=100001
@@ -44,7 +44,8 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=11
+InpMinConfluenceEntry=12
+; H1: Increased from 11 to 12 for better quality signals on cleaner timeframe
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
@@ -58,18 +59,28 @@ InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
 InpTPMode=2
-InpFixedTP_R=2.5
-InpMinTP_R=1.0
-InpMaxTP_R=3.5
+; H1: Adaptive TP mode for trend-following
+InpFixedTP_R=3.0
+; H1: Increased from 2.5R to 3.0R for larger moves
+InpMinTP_R=1.5
+; H1: Increased from 1.0R to 1.5R (H1 has bigger moves)
+InpMaxTP_R=5.0
+; H1: Increased from 3.5R to 5.0R to capture full H1 trends
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 InpTrailingMode=1
-InpPartialTP_R=1.2
-InpPartialClosePercent=45.0
+; H1: Aggressive trailing stop for trend-following
+InpPartialTP_R=1.5
+; H1: Increased from 1.2R to 1.5R (take partial earlier on H1 moves)
+InpPartialClosePercent=40.0
+; H1: Reduced from 45% to 40% (keep more running for trends)
 InpBE_Threshold_R=0.8
-InpTrailStart_R=1.0
-InpTrailATR_Mult=0.8
+; H1: Quick BE to protect capital (H1 can reverse fast)
+InpTrailStart_R=0.8
+; H1: START TRAILING EARLIER - reduced from 1.0R to 0.8R to lock profits sooner
+InpTrailATR_Mult=1.0
+; H1: Increased from 0.8 to 1.0 (H1 ATR is larger, need wider trail)
 
 ; ====== SPREAD ======
 InpMaxSpreadPoints=50
@@ -83,7 +94,9 @@ InpSMC_MinFVG_ATR=0.50
 ; ====== MULTI-TIMEFRAME ======
 InpUseMTF=true
 InpHTF=16388
-InpMTF=16385
+; H1 chart uses H4 (16388) for higher timeframe context
+InpMTF=16386
+; H1: Changed from M15 (16385) to H1 (16386) - PRIMARY TIMEFRAME
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
@@ -117,6 +130,7 @@ InpEnableSessionBlacklist=false
 ; ====== PORTFOLIO PROTECTION ======
 InpUseCorrelationFilter=true
 InpDailyMaxLoss_R=3.0
-InpLossCooldownMinutes=45
+InpLossCooldownMinutes=90
+; H1: Increased from 45 to 90 minutes (bug fix - consecutive loss protection)
 InpMaxConsecutiveLosses=2
 InpUseReversalFilter=true

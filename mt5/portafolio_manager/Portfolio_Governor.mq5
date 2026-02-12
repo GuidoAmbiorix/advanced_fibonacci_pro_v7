@@ -66,6 +66,10 @@ CAccountInfo  account;
 double g_peakEquity = 0;
 datetime g_lastUpdate = 0;
 
+// FIX: Transaction logging (Phase 4 - Race condition prevention)
+int g_transactionLogHandle = INVALID_HANDLE;
+string g_transactionLogFile = "";
+
 // Trade history for rolling PF
 double g_tradeResults[];  // Store last N trade results
 int g_tradeCount = 0;
@@ -163,6 +167,15 @@ void OnDeinit(const int reason)
 {
    // Mark governor as inactive
    GlobalVariableSet(GV_GOVERNOR_ACTIVE, 0);
+
+   // FIX: Close transaction log file (Phase 4)
+   if(g_transactionLogHandle != INVALID_HANDLE)
+   {
+      FileClose(g_transactionLogHandle);
+      g_transactionLogHandle = INVALID_HANDLE;
+      Print("Transaction log closed: ", g_transactionLogFile);
+   }
+
    Comment("");
    Print("🧠 Portfolio Governor DEACTIVATED");
 }
@@ -329,6 +342,7 @@ double GetCorrelationAdjustedRisk(string symbol, double requestedRisk)
 
    double adjustedRisk = requestedRisk;
    double maxCorrelation = 0;
+   int highCorrPositions = 0;  // FIX: Count correlated positions (Phase 4)
 
    // Scan existing positions for correlated pairs
    for(int i = PositionsTotal() - 1; i >= 0; i--)
@@ -340,15 +354,27 @@ double GetCorrelationAdjustedRisk(string symbol, double requestedRisk)
 
          double corr = MathAbs(GetSymbolCorrelation(symbol, existingSym));
          if(corr > maxCorrelation) maxCorrelation = corr;
+
+         // FIX: Count positions with correlation > 0.75
+         if(corr >= 0.75) highCorrPositions++;
       }
    }
 
-   // Apply reduction if high correlation exists
+   // FIX: Block 3rd correlated position (Phase 4 enhancement)
+   if(highCorrPositions >= 2 && maxCorrelation >= 0.75)
+   {
+      Print("⛔ CORRELATION GUARD: ", symbol, " BLOCKED - Already holding ", highCorrPositions,
+            " positions with correlation >= 0.75");
+      LogTransaction(symbol, "CORR_BLOCK", GlobalVariableGet(GV_TOTAL_EXPOSURE), GlobalVariableGet(GV_TOTAL_EXPOSURE));
+      return 0;  // Block entry completely
+   }
+
+   // Apply reduction if high correlation exists (but < 2 positions)
    if(maxCorrelation >= InpHighCorrelation)
    {
       adjustedRisk *= InpCorrelationReduction;
-      // Print("Correlation guard: ", symbol, " reduced to ", DoubleToString(adjustedRisk, 2),
-      //       "% (corr=", DoubleToString(maxCorrelation, 2), ")");
+      Print("⚠ Correlation guard: ", symbol, " reduced to ", DoubleToString(adjustedRisk, 2),
+            "% (corr=", DoubleToString(maxCorrelation, 2), ", positions=", highCorrPositions, ")");
    }
 
    return adjustedRisk;
@@ -476,13 +502,21 @@ void CalculatePortfolioMetrics()
       }
    }
    
-   // Update GlobalVariables
+   // FIX: Update GlobalVariables with transaction logging (Phase 4)
+   double oldExposure = GlobalVariableGet(GV_TOTAL_EXPOSURE);
+
    GlobalVariableSet(GV_TOTAL_EXPOSURE, totalExposure);
    GlobalVariableSet(GV_GROUP_USD_RISK, groupRisks[0]);
    GlobalVariableSet(GV_GROUP_JPY_RISK, groupRisks[1]);
    GlobalVariableSet(GV_GROUP_GBP_RISK, groupRisks[2]);
    GlobalVariableSet(GV_GROUP_METALS_RISK, groupRisks[3]);
    GlobalVariableSet(GV_GROUP_INDICES_RISK, groupRisks[4]);
+
+   // Log significant changes (> 0.1% delta)
+   if(MathAbs(totalExposure - oldExposure) > 0.1)
+   {
+      LogTransaction("PORTFOLIO", "UPDATE", oldExposure, totalExposure);
+   }
    
    // Calculate drawdown
    if(equity > g_peakEquity)
@@ -616,6 +650,50 @@ bool CanOpenTrade(string symbol, double requestedRisk, double &approvedRisk)
 
    approvedRisk = scaledRisk;
    return (scaledRisk > 0.05); // Minimum viable risk
+}
+
+//+------------------------------------------------------------------+
+//| FIX: Transaction Logger (Phase 4 - Debug race conditions)         |
+//+------------------------------------------------------------------+
+void LogTransaction(string symbol, string action, double exposureBefore, double exposureAfter)
+{
+   // Create file on first call
+   if(g_transactionLogHandle == INVALID_HANDLE)
+   {
+      MqlDateTime dt;
+      TimeCurrent(dt);
+      g_transactionLogFile = StringFormat("Governor_Transactions_%04d%02d%02d.csv",
+                                          dt.year, dt.mon, dt.day);
+
+      g_transactionLogHandle = FileOpen(g_transactionLogFile,
+                                       FILE_WRITE|FILE_CSV|FILE_COMMON,
+                                       ",");
+
+      if(g_transactionLogHandle != INVALID_HANDLE)
+      {
+         // Write header
+         FileWrite(g_transactionLogHandle,
+                  "Timestamp", "Symbol", "Action", "ExposureBefore",
+                  "ExposureAfter", "Delta", "TotalPositions");
+      }
+   }
+
+   if(g_transactionLogHandle != INVALID_HANDLE)
+   {
+      double delta = exposureAfter - exposureBefore;
+      int totalPositions = PositionsTotal();
+
+      FileWrite(g_transactionLogHandle,
+               TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
+               symbol,
+               action,
+               DoubleToString(exposureBefore, 3),
+               DoubleToString(exposureAfter, 3),
+               DoubleToString(delta, 3),
+               IntegerToString(totalPositions));
+
+      FileFlush(g_transactionLogHandle);
+   }
 }
 
 //+------------------------------------------------------------------+

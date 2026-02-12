@@ -161,13 +161,14 @@ input int               InpMinTradesForLearning = 50;     // Min Trades Before L
 input group "======= ADAPTIVE BEHAVIOR (Advanced) ======="
 input bool              InpEnableAdaptiveRisk = false;    // Enable Adaptive Risk
 input bool              InpEnableAdaptiveExits = false;   // Enable Adaptive Exits
-input bool              InpEnableAdaptiveFilters = false; // Enable Adaptive Filters
+input bool              InpEnableAdaptiveFilters = true;  // FIX: Enable Adaptive Filters (Phase 5)
 
 input group "======= PORTFOLIO PROTECTION ======="
 input bool              InpUseCorrelationFilter = true;   // Enable Correlation Protection
 input double            InpDailyMaxLoss_R = 4.0;          // Daily Max Loss (R) - Circuit Breaker
 input int               InpLossCooldownMinutes = 30;      // Cooldown After Loss (minutes)
 input int               InpMaxConsecutiveLosses = 2;      // Max Consecutive Losses Rule
+input int               InpMaxDailyTrades = 5;            // Max Trades Per Day (prevents overtrading)
 input bool              InpUseReversalFilter = true;      // Enable Reversal Trend Filter
 input int               InpReversalCooldownMinutes = 15;  // Min Time Between Same-Direction Trades
 
@@ -254,6 +255,7 @@ MARKET_REGIME g_currentRegime = REGIME_UNKNOWN;
 // Portfolio Protection Tracking
 double g_dailyLossR = 0;
 int    g_consecutiveLosses = 0;
+int    g_dailyTradesCount = 0;  // FIX: Track daily trades to prevent overtrading
 datetime g_lastResetDate = 0;
 datetime g_lastBuyTime = 0;    // Last BUY trade entry time
 datetime g_lastSellTime = 0;   // Last SELL trade entry time
@@ -272,7 +274,8 @@ ulong g_tradesExecuted = 0;
 struct PositionState {
    ulong ticket;
    bool  partialClosed;
-   double initialRisk;
+   double initialRisk;         // Risk percentage (0.30 = 0.30%)
+   double dollarRisk;          // Actual dollar amount at risk for R-calculation
    ENTRY_QUALITY quality;
 };
 PositionState g_states[];
@@ -600,11 +603,48 @@ void ResetDailyLossIfNewDay()
    {
       if(g_lastResetDate > 0 && g_dailyLossR < 0)
       {
-         Print("📊 Daily Reset: Previous day loss was ", DoubleToString(g_dailyLossR, 2), "R");
+         Print("📊 Daily Reset: Previous day loss was ", DoubleToString(g_dailyLossR, 2), "R | Trades: ", g_dailyTradesCount);
+
+         // FIX: Export daily performance (Phase 7)
+         ExportDailyPerformance(g_dailyTradesCount, g_dailyLossR);
       }
       g_dailyLossR = 0;
       g_consecutiveLosses = 0;
+      g_dailyTradesCount = 0;  // FIX: Reset daily trade counter
       g_lastResetDate = currentDate;
+   }
+}
+
+//+------------------------------------------------------------------+
+//| FIX: Export Daily Performance (Phase 7)                          |
+//+------------------------------------------------------------------+
+void ExportDailyPerformance(int trades, double totalR)
+{
+   MqlDateTime dt;
+   TimeCurrent(dt);
+   string filename = StringFormat("Daily_Performance_%s_%04d%02d%02d.csv",
+                                  _Symbol, dt.year, dt.mon, dt.day);
+
+   int handle = FileOpen(filename, FILE_WRITE|FILE_CSV|FILE_COMMON, ",");
+   if(handle != INVALID_HANDLE)
+   {
+      FileWrite(handle, "Date", "Symbol", "Trades", "TotalR", "AvgR", "WinRate", "MaxDD", "ConfluenceAvg");
+
+      double avgR = (trades > 0) ? totalR / trades : 0;
+      double winRate = killSwitch.GetWinRate();
+      double maxDD = GlobalVariableGet(GV_CURRENT_DD);
+
+      FileWrite(handle,
+               TimeToString(TimeCurrent(), TIME_DATE),
+               _Symbol,
+               IntegerToString(trades),
+               DoubleToString(totalR, 2),
+               DoubleToString(avgR, 2),
+               DoubleToString(winRate * 100, 1),
+               DoubleToString(maxDD, 2),
+               DoubleToString(g_currentConfluence, 2));
+
+      FileClose(handle);
    }
 }
 
@@ -692,10 +732,10 @@ double CalculateTakeProfit(double price, double slDist, int direction,
       else if(quality == EQ_STRONG) tpR *= 1.1;
       else if(quality == EQ_WEAK) tpR *= 0.8;
 
-      // Regime adjustments
-      if(g_currentRegime == REGIME_TREND) tpR *= 1.3;
-      else if(g_currentRegime == REGIME_RANGE) tpR *= 0.85;
-      else if(g_currentRegime == REGIME_VOLATILE) tpR *= 1.1;
+      // Regime adjustments (H1-optimized)
+      if(g_currentRegime == REGIME_TREND) tpR *= 1.5;        // H1: Increased from 1.3 to 1.5 (let H1 trends run)
+      else if(g_currentRegime == REGIME_RANGE) tpR *= 0.70;  // H1: Reduced from 0.85 to 0.70 (tighten range exits)
+      else if(g_currentRegime == REGIME_VOLATILE) tpR *= 1.2; // H1: Increased from 1.1 to 1.2
    }
 
    // Clamp to min/max
@@ -991,10 +1031,27 @@ void OnTick()
 
       if(approvedRisk > 0.05)
       {
-          // STRICTER ENTRY THRESHOLD: M15 ENHANCED SYSTEM
-          // ELITE >= 14.0, STRONG >= 12.0, GOOD >= 10.0
-          // Minimum entry is GOOD (10.0), but with institutional footprint check for scores < 16.0
-          double minEntry = InpMinConfluenceEntry;  // User defined threshold
+          // FIX: Wire up dynamic threshold (Phase 5)
+          double minEntry = InpMinConfluenceEntry;  // Base threshold from .set file
+
+          // Use adaptive threshold if enabled
+          if(InpEnableAdaptiveFilters && adaptiveFilter.IsAdaptationEnabled())
+          {
+             // Create confluence factors for dynamic threshold calculation
+             ENUM_KILLZONE currentKZ = KILLZONE_NONE;
+             ConfluenceFactors thresholdFactors;
+             BuildConfluenceFactors(thresholdFactors, bestDirection, bestScore);
+
+             minEntry = adaptiveFilter.CalculateDynamicThreshold(thresholdFactors, currentKZ, g_currentRegime);
+
+             static datetime lastThresholdLog = 0;
+             if(TimeCurrent() - lastThresholdLog > 3600)  // Log hourly
+             {
+                Print("📊 Dynamic Threshold: ", DoubleToString(minEntry, 2),
+                      " (base: ", DoubleToString(InpMinConfluenceEntry, 2), ")");
+                lastThresholdLog = TimeCurrent();
+             }
+          }
 
           if(buyScore >= minEntry && (InpDirection == 0 || InpDirection == 1))
           {
@@ -1084,6 +1141,30 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
    int dir = (type == ORDER_TYPE_BUY) ? 1 : -1;
    double tp = CalculateTakeProfit(price, slDist, dir, quality, g_ATR);
 
+   // FIX: CONSECUTIVE LOSS PROTECTION - Check immediately before OrderSend
+   if(InpMaxConsecutiveLosses > 0 && g_consecutiveLosses >= InpMaxConsecutiveLosses)
+   {
+      Print("⛔ TRADE BLOCKED: ", g_consecutiveLosses, " consecutive losses reached. Waiting for cooldown or winning trade.");
+
+      // Set GlobalVariable to notify Governor
+      string gvName = "GV_COOLDOWN_" + _Symbol;
+      GlobalVariableSet(gvName, (double)TimeCurrent());
+
+      return false;
+   }
+
+   // FIX: MAX DAILY TRADES PROTECTION - Prevent overtrading
+   if(InpMaxDailyTrades > 0 && g_dailyTradesCount >= InpMaxDailyTrades)
+   {
+      static datetime lastOvertradeWarning = 0;
+      if(TimeCurrent() - lastOvertradeWarning > 3600)  // Log once per hour
+      {
+         Print("⛔ DAILY TRADE LIMIT: ", g_dailyTradesCount, "/", InpMaxDailyTrades, " trades reached. No more trades today.");
+         lastOvertradeWarning = TimeCurrent();
+      }
+      return false;
+   }
+
    // Validate margin availability BEFORE opening position
    if(!CheckMarginRequirement(_Symbol, type, lots))
    {
@@ -1102,12 +1183,16 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       // REGISTER STATE WITH LEARNING MODULE
       learning.RegisterTrade(ticket, slDist, quality);
 
+      // FIX: Increment daily trade counter (overtrading protection)
+      g_dailyTradesCount++;
+
       // Store in local backup state
       int sz = ArraySize(g_states);
       ArrayResize(g_states, sz + 1);
       g_states[sz].ticket = ticket;
       g_states[sz].partialClosed = false;
-      g_states[sz].initialRisk = slDist;
+      g_states[sz].initialRisk = riskPct;                                    // Store risk percentage
+      g_states[sz].dollarRisk = account.Equity() * (riskPct / 100.0);       // Store actual dollar risk for R-calculation
       g_states[sz].quality = quality;
 
       // LOG TO DB MANAGER
@@ -1195,9 +1280,10 @@ void ManagePositions()
              int deals = HistoryDealsTotal();
              for(int d=0; d<deals; d++) profitMoney += HistoryDealGetDouble(HistoryDealGetTicket(d), DEAL_PROFIT);
 
-             // Get trade details for logging
-             double risk = g_states[i].initialRisk;
-             double profitR = (risk > 0) ? profitMoney / (account.Equity() * (g_states[i].initialRisk / 100.0)) : 0;
+             // Calculate R-multiple using actual dollar risk stored at entry
+             // FIX: Use dollarRisk instead of recalculating from current equity (which has changed)
+             double dollarRisk = g_states[i].dollarRisk;
+             double profitR = (dollarRisk > 0) ? profitMoney / dollarRisk : 0;
 
              // Get MFE/MAE from learning engine
              double mfe = 0, mae = 0;
@@ -1258,6 +1344,11 @@ void ManagePositions()
 
              killSwitch.OnTradeClosed(rOutcome);
 
+             // FIX: Update adaptive filter rolling window (Phase 5)
+             if(InpEnableAdaptiveFilters)
+             {
+                adaptiveFilter.UpdateRecentPerformance(profitR);
+             }
 
              // Track Daily Loss for Circuit Breaker
              g_dailyLossR += profitR;
@@ -1267,6 +1358,14 @@ void ManagePositions()
                 g_consecutiveLosses++;           // REVENGE TRADING PROTECTION
                 Print("📉 Loss recorded: ", DoubleToString(profitR, 2), "R | Daily total: ",
                       DoubleToString(g_dailyLossR, 2), "R | Streak: ", g_consecutiveLosses);
+
+                // FIX: Log to database if consecutive loss limit reached
+                if(g_consecutiveLosses >= InpMaxConsecutiveLosses)
+                {
+                   Print("🚨 CONSECUTIVE LOSS LIMIT HIT: ", g_consecutiveLosses, " losses. Next trade will be blocked.");
+                   // Notify Governor
+                   GlobalVariableSet("GV_COOLDOWN_" + _Symbol, (double)TimeCurrent());
+                }
              }
              else
              {
@@ -1311,15 +1410,17 @@ void ManagePositions()
          }
       }
 
-      // Create new state if not found
+      // Create new state if not found (fallback - shouldn't happen if ExecuteTrade worked correctly)
       if(sIdx == -1)
       {
          ArrayResize(g_states, stateCount + 1);
          g_states[stateCount].ticket = ticket;
          g_states[stateCount].partialClosed = false;
-         g_states[stateCount].initialRisk = MathAbs(open - sl);
-         if(g_states[stateCount].initialRisk == 0) g_states[stateCount].initialRisk = _Point * 100;
+         // Can't accurately determine dollar risk retrospectively, estimate using base risk
+         g_states[stateCount].initialRisk = InpRiskBase;
+         g_states[stateCount].dollarRisk = account.Equity() * (InpRiskBase / 100.0);
          g_states[stateCount].quality = EQ_GOOD;
+         Print("Warning: Created fallback position state for ticket ", ticket, " - R-calculations may be approximate");
          sIdx = stateCount;
       }
 
@@ -1387,11 +1488,49 @@ void ManagePositions()
             }
          }
 
-         // 2. Break-Even (using adaptive trigger if not already set)
-         if(profitR >= beTrigger && MathAbs(sl - open) > _Point)
+         // 2. WATERFALL BREAK-EVEN SYSTEM (FIX: Progressive profit locking)
+         // Instead of single BE at beTrigger, implement graduated stops
+         double newSL = sl;
+         bool slModified = false;
+
+         if(profitR >= 3.0)
          {
-            bool better = (pType == POSITION_TYPE_BUY) ? sl < open : (sl > open || sl == 0);
-            if(better) trade.PositionModify(ticket, open, tp);
+            // At 3.0R: Lock in +1.0R profit
+            double lockInR = 1.0;
+            double lockPrice = (pType == POSITION_TYPE_BUY) ? open + (risk * lockInR) : open - (risk * lockInR);
+            bool better = (pType == POSITION_TYPE_BUY) ? (sl < lockPrice - _Point*5) : (sl > lockPrice + _Point*5);
+            if(better)
+            {
+               newSL = lockPrice;
+               slModified = true;
+            }
+         }
+         else if(profitR >= 2.0)
+         {
+            // At 2.0R: Lock in +0.5R profit
+            double lockInR = 0.5;
+            double lockPrice = (pType == POSITION_TYPE_BUY) ? open + (risk * lockInR) : open - (risk * lockInR);
+            bool better = (pType == POSITION_TYPE_BUY) ? (sl < lockPrice - _Point*5) : (sl > lockPrice + _Point*5);
+            if(better)
+            {
+               newSL = lockPrice;
+               slModified = true;
+            }
+         }
+         else if(profitR >= beTrigger)
+         {
+            // At beTrigger (1.2R default from .set): Move to break-even
+            bool better = (pType == POSITION_TYPE_BUY) ? (sl < open - _Point*5) : (sl > open + _Point*5);
+            if(better)
+            {
+               newSL = open;
+               slModified = true;
+            }
+         }
+
+         if(slModified)
+         {
+            trade.PositionModify(ticket, newSL, tp);
          }
 
          // 3. Hybrid Trailing
@@ -1430,8 +1569,9 @@ void OnTrade()
    if(currentTime == lastTradeEventTime) return;
    lastTradeEventTime = currentTime;
 
-   // Check recent history (last 60 seconds)
-   if(!HistorySelect(currentTime - 60, currentTime)) return;
+   // FIX: Expand history window to 24 hours (86400 seconds) to catch all closed trades
+   // Previous 60-second window could miss trades closed during high volatility or session gaps
+   if(!HistorySelect(currentTime - 86400, currentTime)) return;
 
    int dealCount = HistoryDealsTotal();
    for(int i = 0; i < dealCount; i++)
@@ -1449,34 +1589,46 @@ void OnTrade()
        double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
        double rOutcome = (profit > 0) ? 1.0 : -1.0;
 
-       // OPTIMIZATION: Estimate R multiple from profit
-       double equity = account.Equity();
-       if(equity > 0 && InpRiskBase > 0)
+       // FIX: Calculate accurate R-multiple using stored dollarRisk from g_states
+       ENTRY_QUALITY quality = EQ_GOOD;
+       double dollarRisk = 0;
+       bool foundState = false;
+
+       int stateCount = ArraySize(g_states);
+       for(int s = 0; s < stateCount; s++)
        {
-           double profitPct = (profit / equity) * 100.0;
-           rOutcome = profitPct / InpRiskBase;
+          if(g_states[s].ticket == ticket)
+          {
+             dollarRisk = g_states[s].dollarRisk;
+             quality = g_states[s].quality;
+             foundState = true;
+             break;
+          }
+       }
+
+       // Calculate accurate R-multiple if we have the dollar risk
+       if(foundState && dollarRisk > 0)
+       {
+          rOutcome = profit / dollarRisk;
+       }
+       else
+       {
+          // Fallback: Estimate from current equity (less accurate)
+          double equity = account.Equity();
+          if(equity > 0 && InpRiskBase > 0)
+          {
+              double profitPct = (profit / equity) * 100.0;
+              rOutcome = profitPct / InpRiskBase;
+          }
        }
 
        // Update modules (backup in case ManagePositions missed it)
        killSwitch.OnTradeClosed(rOutcome);
        learning.OnTradeClosed(ticket);
 
-       // OPTIMIZATION: Update Kelly sizer
+       // Update Kelly sizer
        if(InpUseKelly)
        {
-          ENTRY_QUALITY quality = EQ_GOOD;
-
-          // Try to find quality from states
-          int stateCount = ArraySize(g_states);
-          for(int s = 0; s < stateCount; s++)
-          {
-             if(g_states[s].ticket == ticket)
-             {
-                quality = g_states[s].quality;
-                break;
-             }
-          }
-
           kellySizer.AddTradeResult(rOutcome, quality);
        }
    }
