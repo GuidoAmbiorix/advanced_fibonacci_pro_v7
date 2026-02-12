@@ -8,6 +8,7 @@ for improved prediction accuracy through ensemble voting.
 import sys
 from pathlib import Path
 import numpy as np
+import pandas as pd
 import pickle
 from typing import List, Dict, Tuple, Any
 from datetime import datetime
@@ -149,9 +150,12 @@ class TensorFlowWrapper(BaseEstimator, ClassifierMixin):
             seq_preds = np.argmax(seq_probs, axis=1)
 
             # Pad predictions for first sequence_length samples
-            # Use the first prediction for padding
+            # Use neutral prediction (class 0) for warm-up period
+            # These should NOT be used for trading - first sequence_length bars are warm-up
             if len(seq_preds) > 0:
-                padding = np.full(self.sequence_length, seq_preds[0])
+                # Use class 0 (no trade) for padding instead of seq_preds[0]
+                # This prevents artificial signals during warm-up period
+                padding = np.zeros(self.sequence_length, dtype=int)
                 return np.concatenate([padding, seq_preds])
             else:
                 # If no sequences, return default predictions
@@ -178,9 +182,12 @@ class TensorFlowWrapper(BaseEstimator, ClassifierMixin):
             seq_probs = self.model.predict(X_seq, verbose=0)
 
             # Pad probabilities for first sequence_length samples
-            # Use the first prediction for padding
+            # Use neutral probabilities [0.5, 0.5] for warm-up period
+            # These should NOT be used for trading - first sequence_length bars are warm-up
             if len(seq_probs) > 0:
-                padding = np.tile(seq_probs[0], (self.sequence_length, 1))
+                # Neutral probabilities to avoid false signals during warm-up
+                neutral_probs = np.array([[0.5, 0.5]])
+                padding = np.tile(neutral_probs, (self.sequence_length, 1))
                 return np.vstack([padding, seq_probs])
             else:
                 # If no sequences, return default probabilities (50/50)
@@ -264,7 +271,7 @@ class HybridEnsembleTrainer:
                 SELECT * FROM market_data
                 WHERE symbol = %s AND timeframe = %s
                 ORDER BY timestamp DESC
-                LIMIT 2000
+                LIMIT 5000
             """
             import pandas as pd
             with self.db.get_connection() as conn:
@@ -275,7 +282,7 @@ class HybridEnsembleTrainer:
             print("📥 Using provided DataFrame...")
         
         # Create features
-        X, y, feature_names = prepare_training_data(df, use_talib=True)
+        X, y, feature_names, df_aligned = prepare_training_data(df, use_talib=True)
         self.feature_names = feature_names
 
         # Validate data size
@@ -292,11 +299,17 @@ class HybridEnsembleTrainer:
         X_scaled = scaler.fit_transform(X)
         self.scaler = scaler
         
-        # Split data
+        # Split data chronologically (CRITICAL: No shuffling for time series!)
         from sklearn.model_selection import train_test_split
         X_train_tab, X_test_tab, y_train, y_test = train_test_split(
             X_scaled, y, test_size=0.2, random_state=42, shuffle=False
         )
+
+        # Verify chronological split (train comes before test)
+        # This assertion ensures no future data leaks into training
+        split_index = len(X_train_tab)
+        assert split_index == int(len(X) * 0.8), "Split index mismatch!"
+        print(f"✅ Chronological split verified: Train={len(X_train_tab)}, Test={len(X_test_tab)}")
 
         # Convert y to numpy array if it's a pandas Series
         y_train_array = y_train.values if hasattr(y_train, 'values') else y_train
@@ -315,9 +328,11 @@ class HybridEnsembleTrainer:
         
         # Train TensorFlow models
         if TENSORFLOW_AVAILABLE:
+            from src.training.tf_models import get_callbacks
+
             if include_lstm:
                 print("\n🔷 Training LSTM model...")
-                from src.training.tf_models import build_lstm_model, get_callbacks
+                from src.training.tf_models import build_lstm_model
                 
                 lstm_model = build_lstm_model(
                     sequence_length=sequence_length,
@@ -327,12 +342,23 @@ class HybridEnsembleTrainer:
                     dropout_rate=0.3,
                     use_attention=True
                 )
-                
+
+                # Class Weight Balancing (Phase 2.3): Improve recall on minority class
+                from sklearn.utils.class_weight import compute_class_weight
+                class_weights = compute_class_weight(
+                    class_weight='balanced',
+                    classes=np.unique(y_train_seq),
+                    y=y_train_seq
+                )
+                class_weight_dict = {i: class_weights[i] for i in range(len(class_weights))}
+                print(f"   ⚖️ Class weights: {class_weight_dict}")
+
                 lstm_model.fit(
                     X_train_seq, y_train_seq,
                     validation_data=(X_val_seq, y_val_seq),
                     epochs=50,
                     batch_size=32,
+                    class_weight=class_weight_dict,
                     callbacks=get_callbacks('models/temp_lstm.keras', patience=10),
                     verbose=0
                 )
@@ -355,12 +381,23 @@ class HybridEnsembleTrainer:
                     dropout_rate=0.3,
                     use_attention=True
                 )
-                
+
+                # Class Weight Balancing (Phase 2.3): Same as LSTM
+                from sklearn.utils.class_weight import compute_class_weight
+                class_weights = compute_class_weight(
+                    class_weight='balanced',
+                    classes=np.unique(y_train_seq),
+                    y=y_train_seq
+                )
+                class_weight_dict = {i: class_weights[i] for i in range(len(class_weights))}
+                print(f"   ⚖️ Class weights: {class_weight_dict}")
+
                 cnn_lstm_model.fit(
                     X_train_seq, y_train_seq,
                     validation_data=(X_val_seq, y_val_seq),
                     epochs=50,
                     batch_size=32,
+                    class_weight=class_weight_dict,
                     callbacks=get_callbacks('models/temp_cnn_lstm.keras', patience=10),
                     verbose=0
                 )
@@ -423,26 +460,35 @@ class HybridEnsembleTrainer:
         print("\n📊 Evaluating ensemble...")
         train_acc = ensemble.score(X_train_tab, y_train)
         test_acc = ensemble.score(X_test_tab, y_test)
-        
+
         # Calculate metrics
         from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-        
+
         y_pred = self.ensemble.predict(X_test_tab)
-        y_pred_proba = self.ensemble.predict_proba(X_test_tab)
-        
+
+        # Calculate individual model scores
+        individual_scores = {}
+        model_names = []
+        for (name, _), est in zip(self.ensemble.estimators, self.ensemble.estimators_):
+            model_names.append(name)
+            individual_scores[name] = est.score(X_test_tab, y_test)
+
         metrics = {
+            'ensemble_train_accuracy': train_acc,
             'ensemble_test_accuracy': accuracy_score(y_test_array, y_pred),
             'ensemble_precision': precision_score(y_test_array, y_pred, zero_division=0),
             'ensemble_recall': recall_score(y_test_array, y_pred, zero_division=0),
             'ensemble_f1': f1_score(y_test_array, y_pred, zero_division=0),
             'n_models': len(self.ensemble.estimators_),
+            'model_names': model_names,
+            'individual_scores': individual_scores,
             # CRITICAL: Return the index where test set starts to align backtest
-            'test_start_index': len(X_train_tab), 
+            'test_start_index': len(X_train_tab),
             'total_samples': len(X)
         }
-        
+
         print(f"✅ Ensemble Trained. Test Acc: {metrics['ensemble_test_accuracy']:.2%}")
-        
+
         return self.ensemble, metrics
     
     def save_ensemble(self, symbol: str, timeframe: str, metrics: Dict) -> int:
@@ -470,7 +516,9 @@ class HybridEnsembleTrainer:
         
         # Phase 7: Handle TF models separately for serialization
         tf_model_paths = {}
-        for name, est in self.ensemble.estimators_:
+        # VotingClassifier.estimators_ is a list of fitted estimators without names
+        # VotingClassifier.estimators is the original list with (name, estimator) tuples
+        for (name, _), est in zip(self.ensemble.estimators, self.ensemble.estimators_):
             if isinstance(est, TensorFlowWrapper):
                 tf_path = model_dir / f"tf_part_{name}_{symbol}_{timeframe}_{timestamp}.keras"
                 est.model.save(str(tf_path))

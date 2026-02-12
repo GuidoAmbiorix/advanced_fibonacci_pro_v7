@@ -787,9 +787,10 @@ elif page == "Training":
             with st.spinner(f"Fetching {fetch_bars} bars for {train_symbol} {train_timeframe}..."):
                 try:
                     # Check DB first
-                    query = "SELECT COUNT(*) FROM market_data WHERE symbol = %s AND timeframe = %s"
+                    query = "SELECT COUNT(*) as count FROM market_data WHERE symbol = %s AND timeframe = %s"
                     with db.get_connection() as conn:
-                        count = conn.execute(query, (train_symbol, train_timeframe)).fetchone()[0]
+                        result = conn.execute(query, (train_symbol, train_timeframe)).fetchone()
+                        count = result['count'] if result else 0
                     
                     if count < fetch_bars:
                          st.warning(f"DB has only {count} bars. Requesting MT5 (if active)...")
@@ -812,9 +813,10 @@ elif page == "Training":
 
     # Check Data Count for context
     try:
-        query = "SELECT COUNT(*) FROM market_data WHERE symbol = %s AND timeframe = %s"
+        query = "SELECT COUNT(*) as count FROM market_data WHERE symbol = %s AND timeframe = %s"
         with db.get_connection() as conn:
-            data_count = conn.execute(query, (train_symbol, train_timeframe)).fetchone()[0]
+            result = conn.execute(query, (train_symbol, train_timeframe)).fetchone()
+            data_count = result['count'] if result else 0
     except:
         data_count = 0
         
@@ -859,11 +861,15 @@ elif page == "Training":
                 # Real-time output container
                 with st.status("🏗️ Building Strategy...", expanded=True) as status:
                     st.write(f"Objective: Maximize Profit Factor | Trials: {trials}")
-                    
+
+                    # Parse voting mode
+                    voting = 'soft' if 'Soft' in voting_mode else 'hard'
+
                     ensemble, metrics = optimizer.optimize(
                         symbol=train_symbol,
                         timeframe=train_timeframe,
-                        n_trials=trials
+                        n_trials=trials,
+                        voting=voting
                     )
                     
                     st.write("✅ Optimization Complete!")
@@ -883,15 +889,26 @@ elif page == "Training":
                 best_opt = metrics.get('optimization', {})
                 best_params = best_opt.get('best_params', {})
                 
-                # Metrics Grid
+                # Trading Performance Metrics
                 m1, m2, m3, m4 = st.columns(4)
                 with m1:
-                    st.metric("Profit Factor", f"{best_opt.get('best_score', 0):.2f}")
+                    st.metric("Profit Factor", f"{best_opt.get('profit_factor', 0):.2f}")
                 with m2:
-                    st.metric("Test Accuracy", f"{metrics.get('ensemble_test_accuracy', 0):.2%}")
+                    st.metric("Win Rate", f"{best_opt.get('win_rate', 0):.1%}")
                 with m3:
-                    st.metric("Total Trades (Test)", "?") # We could extract this if we saved it
+                    st.metric("Max Drawdown", f"{best_opt.get('max_drawdown', 0):.1%}")
                 with m4:
+                    st.metric("Total Trades", int(best_opt.get('total_trades', 0)))
+
+                # Additional metrics row
+                m5, m6, m7, m8 = st.columns(4)
+                with m5:
+                    st.metric("Sharpe Ratio", f"{best_opt.get('sharpe_ratio', 0):.2f}")
+                with m6:
+                    st.metric("Optimization Score", f"{best_opt.get('best_score', 0):.2f}")
+                with m7:
+                    st.metric("Model Accuracy", f"{metrics.get('ensemble_test_accuracy', 0):.1%}")
+                with m8:
                     st.metric("Model Type", "Hybrid Ensemble")
                 
                 # Architecture Display

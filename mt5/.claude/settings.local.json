@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "WebSearch",
+      "Bash(pip install:*)",
+      "Bash(find:*)",
+      "Bash(docker stats:*)",
+      "Bash(python:*)"
+    ]
+  }
+}

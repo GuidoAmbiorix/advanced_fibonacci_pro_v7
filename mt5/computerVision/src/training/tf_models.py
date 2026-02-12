@@ -6,7 +6,7 @@ Implements LSTM, CNN-LSTM, and Transformer models with attention mechanisms.
 
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers, Model
+from tensorflow.keras import layers, Model, regularizers
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint, TensorBoard
 from typing import Tuple, List, Dict
 import numpy as np
@@ -58,9 +58,9 @@ class AttentionLayer(layers.Layer):
 
 def build_lstm_model(sequence_length: int,
                      n_features: int,
-                     lstm_units: List[int] = [128, 64],
-                     dense_units: List[int] = [32, 16],
-                     dropout_rate: float = 0.3,
+                     lstm_units: List[int] = [64, 32],  # Phase 3.4: Reduced from [128, 64]
+                     dense_units: List[int] = [16],     # Phase 3.4: Reduced from [32, 16]
+                     dropout_rate: float = 0.4,         # Phase 3.4: Increased from 0.3
                      use_attention: bool = True,
                      learning_rate: float = 0.001) -> Model:
     """
@@ -80,13 +80,18 @@ def build_lstm_model(sequence_length: int,
     """
     inputs = layers.Input(shape=(sequence_length, n_features), name='input')
     x = inputs
-    
-    # LSTM layers
+
+    # Layer Normalization before LSTM (stabilizes gradients)
+    x = layers.LayerNormalization(name='layer_norm_input')(x)
+
+    # LSTM layers with L2 regularization (Phase 3.4)
     for i, units in enumerate(lstm_units):
         return_sequences = (i < len(lstm_units) - 1) or use_attention
         x = layers.LSTM(
             units,
             return_sequences=return_sequences,
+            kernel_regularizer=regularizers.l2(0.01),
+            recurrent_regularizer=regularizers.l2(0.01),
             name=f'lstm_{i+1}'
         )(x)
         x = layers.BatchNormalization(name=f'bn_lstm_{i+1}')(x)
@@ -122,9 +127,9 @@ def build_cnn_lstm_model(sequence_length: int,
                          cnn_filters: List[int] = [64, 32],
                          kernel_size: int = 3,
                          pool_size: int = 2,
-                         lstm_units: List[int] = [128, 64],
-                         dense_units: List[int] = [32],
-                         dropout_rate: float = 0.3,
+                         lstm_units: List[int] = [64, 32],  # Phase 3.4: Reduced from [128, 64]
+                         dense_units: List[int] = [16],     # Phase 3.4: Reduced from [32]
+                         dropout_rate: float = 0.4,         # Phase 3.4: Increased from 0.3
                          use_attention: bool = True,
                          learning_rate: float = 0.001) -> Model:
     """
@@ -149,7 +154,10 @@ def build_cnn_lstm_model(sequence_length: int,
     """
     inputs = layers.Input(shape=(sequence_length, n_features), name='input')
     x = inputs
-    
+
+    # Layer Normalization before CNN (stabilizes gradients)
+    x = layers.LayerNormalization(name='layer_norm_input')(x)
+
     # CNN layers for pattern extraction
     for i, filters in enumerate(cnn_filters):
         x = layers.Conv1D(
@@ -166,12 +174,14 @@ def build_cnn_lstm_model(sequence_length: int,
         
         x = layers.Dropout(dropout_rate * 0.5, name=f'dropout_conv_{i+1}')(x)
     
-    # LSTM layers for temporal modeling
+    # LSTM layers for temporal modeling with L2 regularization (Phase 3.4)
     for i, units in enumerate(lstm_units):
         return_sequences = (i < len(lstm_units) - 1) or use_attention
         x = layers.LSTM(
             units,
             return_sequences=return_sequences,
+            kernel_regularizer=regularizers.l2(0.01),
+            recurrent_regularizer=regularizers.l2(0.01),
             name=f'lstm_{i+1}'
         )(x)
         x = layers.BatchNormalization(name=f'bn_lstm_{i+1}')(x)

@@ -19,6 +19,7 @@ TA-Lib
 optuna
 xgboost
 lightgbm
+vectorbt
 
 # Deep Learning
 tensorflow>=2.13.0

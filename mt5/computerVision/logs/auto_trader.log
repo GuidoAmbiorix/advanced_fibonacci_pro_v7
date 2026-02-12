@@ -59928,3 +59928,1147 @@ LINE 4:                     confirmation_score = np.float64(36.10567...
 2026-02-11 06:28:52,992 - __main__ - WARNING - ⛔ Cannot execute signal #1087 for USDJPY: Cooldown: Symbol in cooldown (28.3 min remaining)
 2026-02-11 06:28:52,993 - src.trading.cooldown_manager - INFO - ⏳ USDJPY in cooldown: RAPID_SIGNALS (remaining: 28.3 min)
 2026-02-11 06:28:52,993 - __main__ - WARNING - ⛔ Cannot execute signal #1079 for USDJPY: Cooldown: Symbol in cooldown (28.3 min remaining)
+2026-02-11 21:29:00,070 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 21:29:00,071 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 21:29:00,071 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 21:29:00,071 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 21:29:00,072 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 21:29:00,072 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 21:29:00,073 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 21:29:00,073 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 21:29:00,073 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 21:29:00,073 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 21:29:00,073 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 21:29:00,079 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 21:32:57,790 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 21:32:57,790 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 21:32:57,790 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 21:32:57,791 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 21:32:57,791 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 21:32:57,791 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 21:32:57,791 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 21:32:57,791 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 21:32:57,792 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 21:32:57,792 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 21:32:57,792 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 21:32:57,806 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 21:32:59,830 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 21:35:01,924 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 21:35:11,667 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 21:35:11,668 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 21:35:11,668 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 21:35:11,668 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 21:35:11,669 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 21:35:11,669 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 21:35:11,669 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 21:35:11,669 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 21:35:11,670 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 21:35:11,670 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 21:35:11,670 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 21:35:11,675 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 21:35:13,714 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 21:37:10,797 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 21:37:10,798 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 21:37:10,798 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 21:37:10,798 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 21:37:10,798 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 21:37:10,799 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 21:37:10,799 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 21:37:10,799 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 21:37:10,799 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 21:37:10,799 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 21:37:10,800 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 21:37:10,805 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 21:41:14,956 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 21:41:14,956 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 21:41:14,957 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 21:41:14,957 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 21:41:14,957 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 21:41:14,958 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 21:41:14,958 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 21:41:14,958 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 21:41:14,958 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 21:41:14,959 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 21:41:14,959 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 21:41:14,964 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 21:43:11,263 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 21:43:11,264 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 21:43:11,265 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 21:43:11,265 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 21:43:11,265 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 21:43:11,266 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 21:43:11,266 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 21:43:11,266 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 21:43:11,267 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 21:43:11,267 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 21:43:11,267 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 21:43:11,272 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 21:47:43,621 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 21:47:43,622 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 21:47:43,623 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 21:47:43,623 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 21:47:43,624 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 21:47:43,624 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 21:47:43,625 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 21:47:43,625 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 21:47:43,625 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 21:47:43,626 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 21:47:43,626 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 21:47:43,639 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 21:50:25,520 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 21:50:25,521 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 21:50:25,521 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 21:50:25,521 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 21:50:25,522 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 21:50:25,522 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 21:50:25,522 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 21:50:25,523 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 21:50:25,523 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 21:50:25,523 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 21:50:25,524 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 21:50:25,529 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 21:55:25,568 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 21:58:55,653 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 21:58:55,654 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 21:58:55,654 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 21:58:55,656 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 21:58:55,656 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 21:58:55,656 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 21:58:55,657 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 21:58:55,657 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 21:58:55,657 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 21:58:55,658 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 21:58:55,658 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 21:58:55,663 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:06:20,169 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 22:06:20,170 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 22:06:20,170 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 22:06:20,171 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 22:06:20,171 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 22:06:20,171 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 22:06:20,171 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 22:06:20,171 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 22:06:20,172 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 22:06:20,172 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 22:06:20,172 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 22:06:20,180 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:06:22,219 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 22:14:56,240 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 22:14:56,240 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 22:14:56,241 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 22:14:56,241 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 22:14:56,242 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 22:14:56,242 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 22:14:56,242 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 22:14:56,243 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 22:14:56,243 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 22:14:56,243 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 22:14:56,243 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 22:14:56,262 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:14:58,313 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 22:17:54,934 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 22:17:54,935 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 22:17:54,935 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 22:17:54,935 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 22:17:54,936 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 22:17:54,936 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 22:17:54,936 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 22:17:54,936 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 22:17:54,937 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 22:17:54,937 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 22:17:54,937 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 22:17:54,944 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:17:56,992 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 22:20:18,422 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 22:20:18,424 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 22:20:18,424 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 22:20:18,425 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 22:20:18,425 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 22:20:18,425 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 22:20:18,426 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 22:20:18,426 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 22:20:18,426 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 22:20:18,427 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 22:20:18,427 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 22:20:18,434 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:23:50,235 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 22:23:50,236 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 22:23:50,236 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 22:23:50,237 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 22:23:50,237 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 22:23:50,237 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 22:23:50,237 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 22:23:50,238 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 22:23:50,238 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 22:23:50,238 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 22:23:50,238 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 22:23:50,245 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:26:54,303 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 22:26:54,304 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 22:26:54,304 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 22:26:54,305 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 22:26:54,305 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 22:26:54,305 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 22:26:54,306 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 22:26:54,306 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 22:26:54,307 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 22:26:54,307 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 22:26:54,307 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 22:26:54,313 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:31:54,354 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:32:57,412 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 22:32:57,413 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 22:32:57,413 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 22:32:57,413 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 22:32:57,414 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 22:32:57,414 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 22:32:57,414 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 22:32:57,415 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 22:32:57,415 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 22:32:57,415 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 22:32:57,415 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 22:32:57,421 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:37:57,477 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:42:57,516 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:45:57,394 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 22:45:57,394 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 22:45:57,394 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 22:45:57,395 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 22:45:57,395 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 22:45:57,395 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 22:45:57,396 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 22:45:57,396 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 22:45:57,396 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 22:45:57,397 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 22:45:57,397 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 22:45:57,405 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:45:59,459 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 22:51:06,089 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 22:51:06,089 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 22:51:06,090 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 22:51:06,090 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 22:51:06,091 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 22:51:06,092 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 22:51:06,092 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 22:51:06,092 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 22:51:06,093 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 22:51:06,093 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 22:51:06,093 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 22:51:06,100 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 22:51:08,133 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 22:56:08,169 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 23:03:06,267 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 23:03:06,268 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 23:03:06,268 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 23:03:06,268 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 23:03:06,269 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 23:03:06,269 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 23:03:06,269 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 23:03:06,269 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 23:03:06,270 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 23:03:06,270 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 23:03:06,270 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 23:03:06,278 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 23:03:08,307 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 23:08:08,345 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 23:11:17,695 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 23:11:17,696 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 23:11:17,697 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 23:11:17,697 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 23:11:17,697 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 23:11:17,697 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 23:11:17,698 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 23:11:17,699 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 23:11:17,699 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 23:11:17,699 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 23:11:17,700 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 23:11:17,705 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 23:11:19,749 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 23:23:47,836 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 23:23:47,836 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 23:23:47,837 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 23:23:47,837 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 23:23:47,837 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 23:23:47,838 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 23:23:47,838 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 23:23:47,838 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 23:23:47,839 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 23:23:47,839 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 23:23:47,839 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 23:23:47,846 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 23:23:49,877 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 23:34:05,992 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 23:34:05,993 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 23:34:05,993 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 23:34:05,994 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 23:34:05,994 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 23:34:05,994 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 23:34:05,995 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 23:34:05,995 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 23:34:05,995 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 23:34:05,995 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 23:34:05,996 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 23:34:06,002 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 23:34:08,042 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 23:37:26,366 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 23:37:26,366 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 23:37:26,367 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 23:37:26,367 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 23:37:26,367 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 23:37:26,367 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 23:37:26,367 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 23:37:26,368 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 23:37:26,368 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 23:37:26,368 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 23:37:26,368 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 23:37:26,374 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 23:37:28,436 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-11 23:42:28,479 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 23:47:28,515 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 23:52:28,582 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 23:57:35,755 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 23:57:35,755 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 23:57:35,756 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 23:57:35,756 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 23:57:35,756 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 23:57:35,756 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 23:57:35,756 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 23:57:35,757 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 23:57:35,757 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 23:57:35,757 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 23:57:35,757 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 23:57:35,763 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 23:57:37,819 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 00:03:37,579 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 00:03:37,579 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 00:03:37,580 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 00:03:37,580 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 00:03:37,580 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 00:03:37,581 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 00:03:37,581 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 00:03:37,581 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 00:03:37,581 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 00:03:37,581 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 00:03:37,582 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 00:03:37,588 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 00:03:39,643 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 00:08:39,670 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 00:13:39,704 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 00:19:32,957 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 00:19:32,958 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 00:19:32,958 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 00:19:32,958 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 00:19:32,959 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 00:19:32,959 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 00:19:32,959 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 00:19:32,959 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 00:19:32,960 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 00:19:32,960 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 00:19:32,960 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 00:19:32,966 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 00:19:35,011 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 00:24:35,046 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 00:34:45,212 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 00:34:45,213 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 00:34:45,213 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 00:34:45,213 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 00:34:45,214 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 00:34:45,214 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 00:34:45,214 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 00:34:45,214 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 00:34:45,215 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 00:34:45,215 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 00:34:45,215 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 00:34:45,221 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 00:34:47,262 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 00:39:47,290 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 00:44:47,324 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 00:47:00,873 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 00:47:00,874 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 00:47:00,875 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 00:47:00,875 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 00:47:00,876 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 00:47:00,876 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 00:47:00,876 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 00:47:00,876 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 00:47:00,877 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 00:47:00,877 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 00:47:00,877 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 00:47:00,884 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 00:47:02,923 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 00:52:02,963 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 00:57:02,993 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 01:04:40,439 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 01:04:40,439 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 01:04:40,439 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 01:04:40,440 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 01:04:40,440 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 01:04:40,440 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 01:04:40,440 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 01:04:40,441 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 01:04:40,441 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 01:04:40,441 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 01:04:40,441 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 01:04:40,447 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 01:04:42,508 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 01:09:42,549 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 01:13:39,878 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 01:13:39,878 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 01:13:39,879 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 01:13:39,879 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 01:13:39,879 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 01:13:39,879 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 01:13:39,880 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 01:13:39,880 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 01:13:39,880 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 01:13:39,880 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 01:13:39,880 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 01:13:39,889 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 01:13:41,934 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 01:18:41,958 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 01:23:41,995 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 01:28:42,033 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 01:33:42,075 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 01:38:42,115 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 01:48:35,181 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 01:48:35,182 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 01:48:35,183 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 01:48:35,183 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 01:48:35,184 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 01:48:35,184 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 01:48:35,184 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 01:48:35,184 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 01:48:35,185 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 01:48:35,185 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 01:48:35,186 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 01:48:35,191 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 01:48:37,244 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 01:53:46,629 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 01:53:46,630 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 01:53:46,630 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 01:53:46,631 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 01:53:46,631 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 01:53:46,631 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 01:53:46,632 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 01:53:46,632 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 01:53:46,633 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 01:53:46,633 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 01:53:46,633 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 01:53:46,639 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 01:53:48,684 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 01:58:48,705 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:05:00,816 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 02:05:00,817 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 02:05:00,817 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 02:05:00,818 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 02:05:00,818 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 02:05:00,818 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 02:05:00,819 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 02:05:00,819 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 02:05:00,819 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 02:05:00,819 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 02:05:00,820 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 02:05:00,827 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:05:02,874 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 02:10:02,923 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:15:02,969 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:17:07,627 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 02:17:07,628 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 02:17:07,628 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 02:17:07,629 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 02:17:07,629 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 02:17:07,630 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 02:17:07,630 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 02:17:07,630 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 02:17:07,631 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 02:17:07,631 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 02:17:07,632 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 02:17:07,640 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:17:09,678 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 02:22:09,705 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:27:09,767 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:32:09,826 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:37:09,871 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:42:09,903 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:47:09,936 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:52:09,945 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:59:01,181 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 02:59:01,181 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 02:59:01,182 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 02:59:01,183 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 02:59:01,183 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 02:59:01,184 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 02:59:01,184 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 02:59:01,184 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 02:59:01,185 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 02:59:01,185 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 02:59:01,185 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 02:59:01,191 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 02:59:03,232 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 03:03:50,305 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 03:03:50,306 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 03:03:50,306 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 03:03:50,307 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 03:03:50,307 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 03:03:50,308 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 03:03:50,308 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 03:03:50,308 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 03:03:50,308 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 03:03:50,309 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 03:03:50,309 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 03:03:50,315 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 03:03:52,370 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 03:08:52,386 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 03:13:51,895 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 03:13:51,895 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 03:13:51,895 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 03:13:51,896 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 03:13:51,896 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 03:13:51,896 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 03:13:51,896 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 03:13:51,897 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 03:13:51,897 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 03:13:51,897 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 03:13:51,897 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 03:13:51,903 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 03:13:53,934 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 03:16:30,012 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 03:16:30,013 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 03:16:30,013 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 03:16:30,014 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 03:16:30,014 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 03:16:30,014 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 03:16:30,015 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 03:16:30,015 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 03:16:30,016 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 03:16:30,016 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 03:16:30,016 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 03:16:30,022 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 03:16:32,071 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 03:21:32,089 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 03:26:32,114 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 03:31:32,136 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 03:36:32,163 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 03:41:32,186 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 03:46:32,218 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 03:51:32,245 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 03:56:32,269 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 04:01:32,318 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 04:06:32,342 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 04:11:32,368 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 04:16:32,393 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 04:21:32,426 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 04:26:32,454 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 04:31:32,477 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 04:36:32,524 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 04:41:32,551 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 04:46:32,617 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 04:51:32,645 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 04:56:32,675 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 05:01:32,699 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 05:06:32,725 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 05:11:32,749 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 05:16:32,779 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 05:21:32,799 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 05:26:32,820 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 05:31:32,840 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 05:36:32,863 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 05:41:32,885 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 05:46:32,917 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 05:51:32,946 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 05:56:32,974 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 06:01:33,008 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 06:06:33,039 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 06:11:33,060 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 06:16:33,083 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 06:21:33,123 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 06:26:33,141 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 06:31:33,174 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 06:36:33,225 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 06:41:33,247 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 06:46:33,287 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 06:51:33,351 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 06:56:33,395 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 07:01:33,442 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 07:06:33,486 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 07:11:33,521 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 07:16:33,560 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 07:21:33,596 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 07:26:33,636 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 07:31:33,683 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 07:36:33,762 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 07:41:33,837 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 07:46:33,876 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 07:51:33,917 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 07:56:33,965 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 08:01:34,001 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 08:06:34,049 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 08:11:34,080 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 08:16:34,114 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 08:21:34,162 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 08:26:34,216 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 08:31:34,295 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 08:36:34,336 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 08:41:34,396 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 08:46:34,432 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 08:51:34,465 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 08:56:34,498 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 09:01:34,521 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 09:06:34,564 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 09:11:34,606 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 09:16:34,639 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 09:21:34,687 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 09:26:34,743 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 09:31:34,782 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 09:36:34,833 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 09:41:34,879 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 09:46:34,926 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 09:51:34,989 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 09:56:35,043 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 10:01:35,099 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 10:06:35,157 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 10:11:35,212 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 10:16:35,286 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 10:21:35,350 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 10:26:35,400 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 10:31:35,448 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-12 10:33:35,482 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:33:41,239 - matplotlib.font_manager - INFO - generated new fontManager
+2026-02-12 10:33:42,330 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:33:42,330 - src.trading.prediction_service - ERROR - Failed to generate prediction for EURUSD: cannot unpack non-iterable TensorFlowWrapper object
+2026-02-12 10:33:42,332 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:33:42,332 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:33:42,334 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:34:42,353 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:34:42,494 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:34:42,494 - src.trading.prediction_service - ERROR - Failed to generate prediction for EURUSD: cannot unpack non-iterable TensorFlowWrapper object
+2026-02-12 10:34:42,496 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:34:42,496 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:34:42,497 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:35:42,519 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:35:42,621 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:35:42,621 - src.trading.prediction_service - ERROR - Failed to generate prediction for EURUSD: cannot unpack non-iterable TensorFlowWrapper object
+2026-02-12 10:35:42,623 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:35:42,623 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:35:42,624 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:36:42,710 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:36:42,711 - src.trading.prediction_service - ERROR - Failed to generate prediction for EURUSD: cannot unpack non-iterable TensorFlowWrapper object
+2026-02-12 10:36:42,711 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 10:36:42,717 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:36:42,790 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:36:42,790 - src.trading.prediction_service - ERROR - Failed to generate prediction for EURUSD: cannot unpack non-iterable TensorFlowWrapper object
+2026-02-12 10:36:42,792 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:36:42,792 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:36:42,793 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:38:30,547 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 10:38:30,548 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 10:38:30,548 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 10:38:30,548 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 10:38:30,549 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 10:38:30,549 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 10:38:30,549 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 10:38:30,549 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 10:38:30,550 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 10:38:30,550 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 10:38:30,550 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 10:38:33,459 - matplotlib.font_manager - INFO - generated new fontManager
+2026-02-12 10:38:34,196 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:38:34,512 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:38:34,669 - src.trading.prediction_service - ERROR - Failed to generate prediction for EURUSD: cannot access local variable 'batch_outputs' where it is not associated with a value
+2026-02-12 10:38:34,670 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 10:39:34,687 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:39:34,805 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:39:34,959 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:39:35,028 - src.trading.prediction_service - ERROR - Failed to generate prediction for EURUSD: cannot access local variable 'batch_outputs' where it is not associated with a value
+2026-02-12 10:39:35,029 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:39:35,030 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:39:35,031 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:40:35,051 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:40:35,146 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:40:35,289 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:40:35,345 - src.trading.prediction_service - ERROR - Failed to generate prediction for EURUSD: cannot access local variable 'batch_outputs' where it is not associated with a value
+2026-02-12 10:40:35,347 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:40:35,347 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:40:35,348 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:42:14,386 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 10:42:14,387 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 10:42:14,387 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 10:42:14,387 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 10:42:14,388 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 10:42:14,388 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 10:42:14,388 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 10:42:14,389 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 10:42:14,389 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 10:42:14,389 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 10:42:14,389 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 10:42:16,582 - matplotlib.font_manager - INFO - generated new fontManager
+2026-02-12 10:42:17,119 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:42:17,349 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:42:17,380 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:42:17,381 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 10:42:17,388 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:42:17,478 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:42:17,608 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:42:17,633 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:42:17,635 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:42:17,636 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:42:17,639 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:43:17,673 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:43:17,764 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:43:17,898 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:43:17,929 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:43:17,930 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:43:17,930 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:43:17,931 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:44:17,945 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:44:18,048 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:44:18,191 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:44:18,221 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:44:18,223 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:44:18,223 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:44:18,224 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:45:18,245 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:45:18,327 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:45:18,459 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:45:18,486 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:45:18,487 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:45:18,488 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:45:18,488 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:46:18,499 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:46:18,594 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:46:18,737 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:46:18,764 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:46:18,766 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:46:18,767 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:46:18,767 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:47:18,863 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:47:18,996 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:47:19,025 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:47:19,025 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 10:47:19,033 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:47:19,143 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:47:19,280 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:47:19,306 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:47:19,308 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:47:19,308 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:47:19,309 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:48:00,626 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 10:48:00,626 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 10:48:00,627 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 10:48:00,627 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 10:48:00,627 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 10:48:00,627 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 10:48:00,628 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 10:48:00,628 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 10:48:00,628 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 10:48:00,628 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 10:48:00,629 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 10:48:04,026 - matplotlib.font_manager - INFO - generated new fontManager
+2026-02-12 10:48:04,826 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:48:05,060 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:48:05,088 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:48:05,088 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 10:48:05,096 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:48:05,180 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:48:05,315 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:48:05,340 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:48:05,341 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:48:05,341 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:48:05,343 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:49:05,356 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:49:05,466 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:49:05,612 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:49:05,639 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:49:05,641 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:49:05,642 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:49:05,643 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:49:48,820 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 10:49:48,821 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 10:49:48,821 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 10:49:48,822 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 10:49:48,822 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 10:49:48,822 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 10:49:48,823 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 10:49:48,823 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 10:49:48,823 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 10:49:48,824 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 10:49:48,824 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 10:49:52,364 - matplotlib.font_manager - INFO - generated new fontManager
+2026-02-12 10:49:53,296 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:49:53,573 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:49:53,605 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:49:53,607 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 10:49:53,670 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:49:53,766 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:49:53,949 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:49:53,982 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:49:53,983 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:49:53,983 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:49:53,984 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:50:54,003 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:50:54,117 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:50:54,254 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:50:54,283 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:50:54,284 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:50:54,285 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:50:54,285 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:51:54,307 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:51:54,399 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:51:54,530 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:51:54,557 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:51:54,559 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:51:54,559 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:51:54,560 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:52:54,581 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:52:54,672 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:52:54,806 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:52:54,838 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:52:54,839 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:52:54,839 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:52:54,841 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:53:54,859 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:53:54,943 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:53:55,085 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:53:55,112 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:53:55,113 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:53:55,114 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:53:55,114 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:54:38,881 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 10:54:38,881 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 10:54:38,881 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 10:54:38,881 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 10:54:38,882 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 10:54:38,882 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 10:54:38,882 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 10:54:38,882 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 10:54:38,882 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 10:54:38,883 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 10:54:38,883 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 10:54:42,503 - matplotlib.font_manager - INFO - generated new fontManager
+2026-02-12 10:54:43,471 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:54:43,832 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:54:43,839 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 10:54:43,872 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:54:43,874 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 10:54:43,883 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:54:44,006 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:54:44,169 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:54:44,173 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 10:54:44,202 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:54:44,204 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:54:44,205 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:54:44,207 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:55:44,231 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:55:44,339 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:55:44,469 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:55:44,472 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 10:55:44,496 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:55:44,498 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:55:44,498 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:55:44,499 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:56:44,514 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:56:44,605 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:56:44,733 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:56:44,736 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 10:56:44,761 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:56:44,763 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:56:44,763 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:56:44,764 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:57:44,782 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:57:44,861 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:57:44,992 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:57:44,996 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 10:57:45,021 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:57:45,023 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:57:45,024 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:57:45,025 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:58:45,035 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:58:45,116 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:58:45,248 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:58:45,251 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 10:58:45,276 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:58:45,277 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:58:45,278 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:58:45,278 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 10:59:45,362 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:59:45,489 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:59:45,493 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 10:59:45,517 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:59:45,517 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 10:59:45,523 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 10:59:45,604 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 10:59:45,732 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 10:59:45,735 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 10:59:45,759 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 10:59:45,761 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 10:59:45,761 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 10:59:45,761 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:00:45,772 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:00:45,882 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:00:46,018 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:00:46,021 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:00:46,050 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:00:46,052 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:00:46,052 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:00:46,053 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:01:46,065 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:01:46,156 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:01:46,289 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:01:46,294 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:01:46,318 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:01:46,319 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:01:46,319 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:01:46,320 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:03:48,821 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 11:03:48,822 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 11:03:48,822 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 11:03:48,823 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 11:03:48,823 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 11:03:48,823 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 11:03:48,824 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 11:03:48,824 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 11:03:48,824 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 11:03:48,825 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 11:03:48,825 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 11:03:48,850 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:03:52,463 - matplotlib.font_manager - INFO - generated new fontManager
+2026-02-12 11:03:53,280 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:03:53,526 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:03:53,531 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:03:53,557 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:03:53,558 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 11:03:55,613 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 11:04:55,634 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:04:55,635 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:04:55,745 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:04:55,885 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:04:55,888 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:04:55,919 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:04:55,920 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:04:55,920 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:04:55,923 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:06:00,368 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 11:06:00,368 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 11:06:00,369 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 11:06:00,370 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 11:06:00,370 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 11:06:00,370 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 11:06:00,371 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 11:06:00,371 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 11:06:00,372 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 11:06:00,372 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 11:06:00,372 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 11:06:00,390 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:06:04,137 - matplotlib.font_manager - INFO - generated new fontManager
+2026-02-12 11:06:05,008 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:06:05,306 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:06:05,319 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:06:05,347 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:06:05,348 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 11:06:05,355 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:06:05,357 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:06:05,451 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:06:05,597 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:06:05,599 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:06:05,625 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:06:05,627 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:06:05,627 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:06:05,629 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:07:05,652 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:07:05,654 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:07:05,745 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:07:05,886 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:07:05,890 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:07:05,916 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:07:05,918 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:07:05,919 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:07:05,920 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:08:05,932 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:08:05,933 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:08:06,039 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:08:06,189 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:08:06,192 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:08:06,217 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:08:06,218 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:08:06,219 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:08:06,220 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:09:06,233 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:09:06,234 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:09:06,332 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:09:06,480 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:09:06,483 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:09:06,512 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:09:06,514 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:09:06,514 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:09:06,515 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:10:06,534 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:10:06,535 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:10:06,679 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:10:06,827 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:10:06,831 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:10:06,854 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:10:06,856 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:10:06,857 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:10:06,858 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:10:31,708 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 11:10:31,708 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 11:10:31,709 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 11:10:31,709 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 11:10:31,709 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 11:10:31,710 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 11:10:31,710 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 11:10:31,710 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 11:10:31,710 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 11:10:31,711 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 11:10:31,711 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 11:10:31,717 - src.trading.prediction_service - INFO - 🔵 PORTFOLIO PREDICTION START: portfolio_id=1
+2026-02-12 11:10:31,718 - src.trading.prediction_service - INFO - 🔵 Found 1 allocations to process
+2026-02-12 11:10:31,719 - src.trading.prediction_service - INFO - 🔵 CALLING _generate_prediction for EURUSD, model_id=1
+2026-02-12 11:10:31,719 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:10:35,325 - matplotlib.font_manager - INFO - generated new fontManager
+2026-02-12 11:10:36,129 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:10:36,422 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:10:36,426 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:10:36,456 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:10:36,456 - src.trading.prediction_service - INFO - 🔵 COMPLETED _generate_prediction for EURUSD
+2026-02-12 11:10:36,457 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 11:10:36,464 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:10:36,464 - src.trading.prediction_service - INFO - 🔵 PORTFOLIO PREDICTION START: portfolio_id=1
+2026-02-12 11:10:36,465 - src.trading.prediction_service - INFO - 🔵 Found 1 allocations to process
+2026-02-12 11:10:36,465 - src.trading.prediction_service - INFO - 🔵 CALLING _generate_prediction for EURUSD, model_id=1
+2026-02-12 11:10:36,465 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:10:36,552 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:10:36,691 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:10:36,695 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:10:36,719 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:10:36,719 - src.trading.prediction_service - INFO - 🔵 COMPLETED _generate_prediction for EURUSD
+2026-02-12 11:10:36,720 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:10:36,721 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:10:36,722 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:11:36,739 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:11:36,740 - src.trading.prediction_service - INFO - 🔵 PORTFOLIO PREDICTION START: portfolio_id=1
+2026-02-12 11:11:36,741 - src.trading.prediction_service - INFO - 🔵 Found 1 allocations to process
+2026-02-12 11:11:36,741 - src.trading.prediction_service - INFO - 🔵 CALLING _generate_prediction for EURUSD, model_id=1
+2026-02-12 11:11:36,742 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:11:36,831 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:11:36,967 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:11:36,970 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:11:36,997 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:11:36,998 - src.trading.prediction_service - INFO - 🔵 COMPLETED _generate_prediction for EURUSD
+2026-02-12 11:11:36,999 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:11:36,999 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:11:37,000 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:12:37,015 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:12:37,016 - src.trading.prediction_service - INFO - 🔵 PORTFOLIO PREDICTION START: portfolio_id=1
+2026-02-12 11:12:37,018 - src.trading.prediction_service - INFO - 🔵 Found 1 allocations to process
+2026-02-12 11:12:37,018 - src.trading.prediction_service - INFO - 🔵 CALLING _generate_prediction for EURUSD, model_id=1
+2026-02-12 11:12:37,019 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:12:37,136 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:12:37,289 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:12:37,292 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:12:37,320 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:12:37,320 - src.trading.prediction_service - INFO - 🔵 COMPLETED _generate_prediction for EURUSD
+2026-02-12 11:12:37,322 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:12:37,322 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:12:37,323 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:13:37,342 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:13:37,342 - src.trading.prediction_service - INFO - 🔵 PORTFOLIO PREDICTION START: portfolio_id=1
+2026-02-12 11:13:37,343 - src.trading.prediction_service - INFO - 🔵 Found 1 allocations to process
+2026-02-12 11:13:37,344 - src.trading.prediction_service - INFO - 🔵 CALLING _generate_prediction for EURUSD, model_id=1
+2026-02-12 11:13:37,344 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:13:37,431 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:13:37,569 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:13:37,573 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:13:37,598 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:13:37,599 - src.trading.prediction_service - INFO - 🔵 COMPLETED _generate_prediction for EURUSD
+2026-02-12 11:13:37,600 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:13:37,600 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:13:37,601 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:17:51,746 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 11:17:51,746 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 11:17:51,747 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 11:17:51,747 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 11:17:51,748 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 11:17:51,748 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 11:17:51,748 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 11:17:51,749 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 11:17:51,749 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 11:17:51,749 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 11:17:51,750 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 11:17:51,772 - src.trading.prediction_service - INFO - 🔵 PORTFOLIO PREDICTION START: portfolio_id=1
+2026-02-12 11:17:51,774 - src.trading.prediction_service - INFO - 🔵 Found 1 allocations to process
+2026-02-12 11:17:51,774 - src.trading.prediction_service - INFO - 🔵 CALLING _generate_prediction for EURUSD, model_id=1
+2026-02-12 11:17:51,774 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:17:55,708 - matplotlib.font_manager - INFO - generated new fontManager
+2026-02-12 11:17:56,614 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:17:56,846 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:17:56,853 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:17:56,880 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:17:56,880 - src.trading.prediction_service - INFO - 🔵 COMPLETED _generate_prediction for EURUSD
+2026-02-12 11:17:56,881 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 11:17:58,931 - __main__ - ERROR - Error getting account balance: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /status (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 11:17:58,932 - __main__ - WARNING - Could not get account balance
+2026-02-12 11:18:00,980 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by NewConnectionError("HTTPConnection(host='10.0.0.4', port=5000): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-12 11:19:01,012 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:19:01,012 - src.trading.prediction_service - INFO - 🔵 PORTFOLIO PREDICTION START: portfolio_id=1
+2026-02-12 11:19:01,014 - src.trading.prediction_service - INFO - 🔵 Found 1 allocations to process
+2026-02-12 11:19:01,014 - src.trading.prediction_service - INFO - 🔵 CALLING _generate_prediction for EURUSD, model_id=1
+2026-02-12 11:19:01,014 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:19:01,104 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:19:01,244 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:19:01,248 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:19:01,271 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:19:01,272 - src.trading.prediction_service - INFO - 🔵 COMPLETED _generate_prediction for EURUSD
+2026-02-12 11:19:01,273 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:19:01,274 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:19:01,275 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:20:01,287 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:20:01,287 - src.trading.prediction_service - INFO - 🔵 PORTFOLIO PREDICTION START: portfolio_id=1
+2026-02-12 11:20:01,289 - src.trading.prediction_service - INFO - 🔵 Found 1 allocations to process
+2026-02-12 11:20:01,289 - src.trading.prediction_service - INFO - 🔵 CALLING _generate_prediction for EURUSD, model_id=1
+2026-02-12 11:20:01,289 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:20:01,409 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:20:01,610 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:20:01,614 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:20:01,640 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:20:01,640 - src.trading.prediction_service - INFO - 🔵 COMPLETED _generate_prediction for EURUSD
+2026-02-12 11:20:01,641 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:20:01,642 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:20:01,643 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1
+2026-02-12 11:21:08,900 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-12 11:21:08,901 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-12 11:21:08,901 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-12 11:21:08,901 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-12 11:21:08,902 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-12 11:21:08,902 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-12 11:21:08,902 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-12 11:21:08,902 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-12 11:21:08,903 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-12 11:21:08,903 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-12 11:21:08,903 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-12 11:21:08,922 - src.trading.prediction_service - INFO - 🔵 PORTFOLIO PREDICTION START: portfolio_id=1
+2026-02-12 11:21:08,923 - src.trading.prediction_service - INFO - 🔵 Found 1 allocations to process
+2026-02-12 11:21:08,923 - src.trading.prediction_service - INFO - 🔵 CALLING _generate_prediction for EURUSD, model_id=1
+2026-02-12 11:21:08,924 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:21:08,926 - src.trading.prediction_service - INFO - 🔵 Model metadata loaded: path=models/ensemble/hybrid_ensemble_EURUSD_H1_20260212_064847.pkl, timeframe=H1
+2026-02-12 11:21:12,571 - matplotlib.font_manager - INFO - generated new fontManager
+2026-02-12 11:21:13,468 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:21:13,702 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:21:13,708 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:21:13,738 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:21:13,739 - src.trading.prediction_service - INFO - 🔵 COMPLETED _generate_prediction for EURUSD
+2026-02-12 11:21:13,739 - __main__ - INFO - 🔄 Regenerated predictions for portfolio 1
+2026-02-12 11:22:13,762 - __main__ - INFO - 📁 Portfolio mode: Active portfolio ID = 1
+2026-02-12 11:22:13,763 - src.trading.prediction_service - INFO - 🔵 PORTFOLIO PREDICTION START: portfolio_id=1
+2026-02-12 11:22:13,764 - src.trading.prediction_service - INFO - 🔵 Found 1 allocations to process
+2026-02-12 11:22:13,765 - src.trading.prediction_service - INFO - 🔵 CALLING _generate_prediction for EURUSD, model_id=1
+2026-02-12 11:22:13,765 - src.trading.prediction_service - INFO - 🔵 PREDICTION SERVICE v2.0: Generating prediction for EURUSD, model_id=1
+2026-02-12 11:22:13,766 - src.trading.prediction_service - INFO - 🔵 Model metadata loaded: path=models/ensemble/hybrid_ensemble_EURUSD_H1_20260212_064847.pkl, timeframe=H1
+2026-02-12 11:22:13,875 - src.trading.prediction_service - INFO - Loading hybrid ensemble for EURUSD
+2026-02-12 11:22:14,026 - src.trading.prediction_service - INFO - Generating prediction for EURUSD using TA-Lib features
+2026-02-12 11:22:14,030 - src.trading.prediction_service - INFO - 📊 Fetched 100 bars from DB for EURUSD (need 100)
+2026-02-12 11:22:14,056 - src.trading.prediction_service - WARNING - Not enough data for LSTM sequences: need 30, have 12
+2026-02-12 11:22:14,057 - src.trading.prediction_service - INFO - 🔵 COMPLETED _generate_prediction for EURUSD
+2026-02-12 11:22:14,058 - __main__ - INFO - 📊 Found 1 allocation(s) in portfolio
+2026-02-12 11:22:14,058 - __main__ - INFO - 🔍 Processing EURUSD (model_id=1, weight=1.0)
+2026-02-12 11:22:14,060 - __main__ - WARNING - ⚠️  EURUSD: No prediction found for model_id=1

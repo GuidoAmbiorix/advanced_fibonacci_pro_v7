@@ -124,7 +124,7 @@ def optimize_hyperparameters(symbol='EURUSD', timeframe='H1', n_trials=50):
     
     # Prepare training data
     print("\n🔧 Creating features...")
-    X, y, feature_names = prepare_training_data(df, use_talib=True)
+    X, y, feature_names, _ = prepare_training_data(df, use_talib=True)
     
     print(f"✅ Created {len(feature_names)} features")
     print(f"📊 Training data shape: {X.shape}")

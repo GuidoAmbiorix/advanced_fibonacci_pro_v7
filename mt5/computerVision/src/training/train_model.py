@@ -54,7 +54,7 @@ def train_model(symbol='EURUSD', timeframe='H1', use_talib=True):
     
     # Prepare training data with TA-Lib features
     print("\n🔧 Creating features...")
-    X, y, feature_names = prepare_training_data(df, use_talib=use_talib)
+    X, y, feature_names, _ = prepare_training_data(df, use_talib=use_talib)
     
     print(f"✅ Created {len(feature_names)} features:")
     for i, feat in enumerate(feature_names, 1):

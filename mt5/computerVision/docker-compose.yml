@@ -43,6 +43,14 @@ services:
       - BRIDGE_URL=http://10.0.0.4:5000
       - DATABASE_TYPE=postgresql
       - DATABASE_URL=${DATABASE_URL}
+    deploy:
+      resources:
+        limits:
+          cpus: '8'  # Use up to 8 CPU cores
+          memory: 12G  # Use up to 12GB RAM
+        reservations:
+          cpus: '4'  # Reserve at least 4 cores
+          memory: 6G  # Reserve at least 6GB RAM
     restart: unless-stopped
     networks:
       - cv_network

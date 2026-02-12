@@ -96,7 +96,7 @@ class TensorFlowTrainer:
         
         # Prepare features
         print("\n🔧 Creating features...")
-        X, y, feature_names = prepare_training_data(df, use_talib=use_talib)
+        X, y, feature_names, _ = prepare_training_data(df, use_talib=use_talib)
         
         print(f"✅ Created {len(feature_names)} features")
         

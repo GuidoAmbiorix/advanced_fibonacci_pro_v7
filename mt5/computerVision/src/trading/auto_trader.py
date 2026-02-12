@@ -49,9 +49,9 @@ class AutoTrader:
         
         # Initialize components
         self.db = DatabaseManager()
-        self.risk_manager = RiskManager(self.config, self.db)
-        self.prediction_service = PredictionService(self.db)
         self.bridge_url = self.config['bridge']['url']
+        self.risk_manager = RiskManager(self.config, self.db)
+        self.prediction_service = PredictionService(self.db, self.bridge_url)
         self.running = False
         
         # Initialize killzone manager

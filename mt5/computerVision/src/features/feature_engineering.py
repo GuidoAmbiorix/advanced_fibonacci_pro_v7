@@ -236,24 +236,118 @@ def prepare_training_data(df: pd.DataFrame, use_talib: bool = True) -> tuple:
     """
     # Create features
     if use_talib and TALIB_AVAILABLE:
-        df = create_talib_features(df)
+        df = create_talib_features(df, use_advanced=False)  # Disable 150+ features
     else:
         df = create_basic_features(df)
     
-    # Create labels (1 = price goes up, 0 = price goes down)
-    df['future_return'] = df['close'].shift(-1) / df['close'] - 1
-    df['label'] = (df['future_return'] > 0).astype(int)
-    
+    # Create labels using Triple Barrier Method
+    # PHASE 3.2: Extended to 24 bars for full trading day (H1 = 24 hours)
+    # Longer horizon filters noise and improves win rate at cost of trade frequency
+    # Triple Barrier ensures labels represent PROFITABLE trades (after 0.10% fees)
+    from src.training.labeling import triple_barrier_labels
+    import talib
+
+    prediction_horizon = 24  # Was 12 (24 hours = full trading day)
+
+    # Calculate ATR for dynamic barriers
+    atr = talib.ATR(df['high'].values, df['low'].values, df['close'].values, timeperiod=14)
+    atr_series = pd.Series(atr, index=df.index)
+
+    # Triple Barrier BALANCED for realistic profitability (CRITICAL FIX v2)
+    # Previous: pt_sl=[6.0, 3.0] was TOO STRICT → max prob 0.054 → model unconfident
+    # Solution: Use moderate barriers that are achievable but still selective
+    # pt_sl=[3.0, 2.0] means TP at 3x ATR, SL at 2x ATR (1.5:1 reward:risk)
+    # With trailing stops, we can let winners run beyond the 3x ATR target
+    df['label_raw'] = triple_barrier_labels(
+        prices=df['close'],
+        volatility=atr_series,
+        time_horizon_bars=prediction_horizon,
+        pt_sl=[3.0, 2.0],  # TP at 3x ATR, SL at 2x ATR (balanced, achievable)
+        min_ret=0.0002,    # 0.02% minimum (covers fees)
+        vertical_barrier=True
+    )
+
+    # Binary: 1=TP hit (profitable), 0=SL/time barrier (not profitable)
+    df['label'] = (df['label_raw'] == 1).astype(int)
+
+    # Log label distribution
+    label_dist = df['label'].value_counts()
+    total = len(df['label'].dropna())
+    if total > 0:
+        pct_profitable = (label_dist.get(1, 0) / total) * 100
+        pct_unprofitable = (label_dist.get(0, 0) / total) * 100
+        print(f"   📊 Label Distribution: Profitable={pct_profitable:.1f}%, Unprofitable={pct_unprofitable:.1f}%")
+
+    # Feature Selection: Reduce to top 35 features
+    selected_features = None
+    if use_talib and TALIB_AVAILABLE:
+        from src.training.feature_selection import FeatureSelector
+
+        # Get initial feature list
+        initial_features = get_feature_list(use_talib=True, use_advanced=False)
+        initial_features = [f for f in initial_features if f in df.columns]
+
+        # Only run feature selection if we have more than 35 features
+        if len(initial_features) > 35:
+            print(f"🔍 Selecting top 35 features from {len(initial_features)} candidates...")
+
+            # Prepare data for feature selection (drop NaNs temporarily)
+            df_temp = df[initial_features + ['label']].dropna()
+            X_temp = df_temp[initial_features]
+            y_temp = df_temp['label']
+
+            # Select features
+            selector = FeatureSelector(n_estimators=100, random_state=42)
+            selected_features = selector.select_features(X_temp, y_temp, n_features=35)
+
+            print(f"✅ Selected {len(selected_features)} features")
+        else:
+            selected_features = initial_features
+            print(f"✅ Using all {len(selected_features)} features (already < 35)")
+
     # Drop NaN values
+    # IMPORTANT: NaN rows appear at BOTH ends:
+    # - Beginning: Due to lagging indicators (MA, RSI, etc.) requiring warmup
+    # - End: Due to shift(-prediction_horizon) looking forward
+
+    # Track exact NaN locations BEFORE dropping
+    original_len = len(df)
+    nan_mask = df.isnull().any(axis=1)
+
+    # Find first and last valid indices
+    valid_indices = df[~nan_mask].index
+    if len(valid_indices) > 0:
+        first_valid = valid_indices[0]
+        last_valid = valid_indices[-1]
+        nans_at_start = first_valid
+        nans_at_end = original_len - 1 - last_valid
+    else:
+        nans_at_start = 0
+        nans_at_end = 0
+
+    # Drop NaNs
     df = df.dropna()
+
+    # Log precise NaN drop info for alignment verification
+    total_nans = original_len - len(df)
+    print(f"   ✅ NaN Analysis: Original={original_len}, Final={len(df)}")
+    print(f"      - NaNs at START: {nans_at_start} (warmup period)")
+    print(f"      - NaNs at END: {nans_at_end} (prediction horizon={prediction_horizon})")
+    print(f"      - Total dropped: {total_nans}")
     
     # Get feature columns
-    feature_names = get_feature_list(use_talib and TALIB_AVAILABLE)
-    
-    # Filter to only existing columns
-    feature_names = [f for f in feature_names if f in df.columns]
+    if selected_features is not None:
+        # Use selected features from feature selection
+        feature_names = selected_features
+    else:
+        # Fallback to default feature list
+        feature_names = get_feature_list(use_talib and TALIB_AVAILABLE, use_advanced=False)
+        # Filter to only existing columns
+        feature_names = [f for f in feature_names if f in df.columns]
     
     X = df[feature_names]
     y = df['label']
-    
-    return X, y, feature_names
+
+    # CRITICAL: Return the aligned dataframe for proper price alignment
+    # The returned df has NaNs already dropped and aligns perfectly with X and y
+    return X, y, feature_names, df
