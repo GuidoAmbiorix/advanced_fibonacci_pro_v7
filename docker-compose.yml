@@ -38,7 +38,7 @@ services:
       - mt5_config_v2:/config
       # Bind mount your local code
       - type: bind
-        source: ./portafolio_manager
+        source: ./mt5/portafolio_manager
         target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
         read_only: false
     networks:
