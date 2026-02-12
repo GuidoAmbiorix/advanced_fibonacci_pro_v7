@@ -1,0 +1,171 @@
+; USDCHF - H1 Timeframe Institutional Flow
+; Safe Haven Pair - London Session Specialist
+; Optimized for H1 timeframe (reduced noise, cleaner signals)
+; Negative correlation with EUR/USD provides portfolio diversification
+
+; ====== IDENTITY ======
+InpMagicNumber=100009
+
+; ====== DIRECTION ======
+InpDirection=0
+InpBrokerUTCOffset=2
+
+; ====== KILLZONES ======
+InpUseKillzoneFilter=true
+InpEnableAsianKZ=false
+; Low liquidity during Asian session
+InpEnableLondonOpenKZ=true
+; London open (3 AM - 6 AM EST): Peak Swiss banking activity
+InpEnableNYKZ=true
+; NY session: Good liquidity with US economic data
+InpEnableLondonCloseKZ=false
+
+; ====== FIBONACCI ======
+InpSwingLookback=8
+InpFibLevelLow=0.618
+InpFibLevelHigh=0.786
+InpZoneTolerance=0.20
+
+; ====== DISPLACEMENT ======
+InpUseDisplacement=true
+InpDisplacementATR=1.2
+InpDisplacementLookback=3
+
+; ====== RSI ======
+InpRSI_Period=9
+InpRSI_Oversold=35
+InpRSI_Overbought=60
+InpRSI_Momentum=true
+
+; ====== TREND ======
+InpEMA_Period=200
+InpUseTrendFilter=true
+InpEMA_MinSlope=0.08
+; Slightly less trending than EUR/USD
+
+; ====== CHOP FILTER ======
+InpUseChopFilter=true
+InpChopThreshold=0.75
+InpATR_MA_Period=20
+
+; ====== CONFLUENCE ======
+InpMinConfluenceEntry=12
+; H1: Standard threshold for major pairs
+InpEnableAddOns=false
+InpAddOn1_R=1.5
+InpAddOn2_R=2.8
+InpMaxPositions=1
+
+; ====== RISK ======
+InpRiskBase=10.0
+; Aggressive Micro
+InpMaxRisk=20.0
+; Max aggression
+InpMaxLotsPerTrade=5.0
+InpEnableMarginCheck=true
+
+; ====== TAKE PROFIT ======
+InpTPMode=2
+; H1: Adaptive TP mode for trend-following
+InpFixedTP_R=2.8
+; Slightly conservative for CHF (less volatile than EUR)
+InpMinTP_R=1.5
+; H1: Minimum 1.5R for H1 moves
+InpMaxTP_R=4.5
+; H1: CHF tends to have smaller ranges than EUR
+InpTPUseLearnedMFE=true
+
+; ====== EXIT ======
+InpTrailingMode=1
+; H1: Aggressive trailing stop for trend-following
+InpPartialTP_R=1.5
+; H1: Take partial at 1.5R
+InpPartialClosePercent=45.0
+; Take slightly more profit (55% remaining) due to CHF stability
+InpBE_Threshold_R=0.8
+; H1: Quick BE to protect capital
+InpTrailStart_R=0.8
+; H1: START TRAILING EARLIER - lock profits sooner
+InpTrailATR_Mult=0.9
+; Slightly tighter trail for CHF (less volatile)
+
+; ====== SPREAD ======
+InpMaxSpreadPoints=55
+; Slightly wider than EUR/USD
+
+; ====== SMC ======
+InpUseSMC=true
+InpSMC_SwingLookback=12
+InpSMC_MinImpulseATR=2.0
+; Lower impulse requirement for CHF
+InpSMC_MinFVG_ATR=0.50
+
+; ====== MULTI-TIMEFRAME ======
+InpUseMTF=true
+InpHTF=16388
+; H1 chart uses H4 (16388) for higher timeframe context
+InpMTF=16386
+; H1: Primary timeframe (16386)
+InpMTF_EMAPeriod=50
+
+; ====== NEWS FILTER ======
+InpUseNewsFilter=true
+InpNewsMinutesBefore=15
+InpNewsMinutesAfter=15
+; Important for SNB events and Swiss economic data
+
+; ====== KELLY ======
+InpUseKelly=true
+InpKellyFraction=0.25
+InpKellyFraction=0.25
+InpKellyFraction=0.25
+InpDailyMaxDD=30.0
+InpWeeklyMaxDD=60.0
+
+; ====== LEARNING ======
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+InpMinTradesForLearning=50
+
+; ====== ADAPTIVE ======
+InpEnableAdaptiveRisk=true
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
+
+; ====== SESSION GOVERNOR ======
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=10
+InpTradeCooldownMinutes=10
+InpEnableSessionBlacklist=false
+
+; ====== PORTFOLIO PROTECTION ======
+InpUseCorrelationFilter=true
+InpDailyMaxLoss_R=3.0
+InpLossCooldownMinutes=90
+; H1: Increased from 45 to 90 minutes
+InpMaxConsecutiveLosses=2
+; Phase 2 fix: Hard limit at 2 losses
+InpUseReversalFilter=true
+InpReversalCooldownMinutes=30
+
+; ====== KILLSWITCH ======
+InpUseKillSwitch=true
+InpKS_MinTradesForActivation=20
+InpKS_LossStreakThreshold=3
+InpKS_RollingRThreshold=-5.0
+InpKS_WinRateThreshold=0.30
+
+; ====== SESSION TIMES ======
+InpUseCustomSessions=false
+InpAsianStart=0
+InpAsianEnd=9
+InpLondonStart=2
+InpLondonEnd=11
+InpNYStart=8
+InpNYEnd=17
+
+; ====== REVERSAL DETECTION ======
+InpUseReversal=true
+InpReversalATR_Mult=2.5
+InpReversalSwingLookback=20

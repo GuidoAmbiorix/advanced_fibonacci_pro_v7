@@ -1,0 +1,100 @@
+; Portfolio Governor - FundingPips 5K Account Configuration
+; Optimized for 8 pairs: EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, EURJPY, AUDJPY, XAUUSD
+; Account: $5,000 FundingPips
+; Strategy: Conservative multi-symbol portfolio management
+
+;═══════ PORTFOLIO LIMITS ═══════
+InpMaxPortfolioRisk=10.0
+; Max Total Portfolio Risk (%) - Moderate Small Account ($500)
+; Allows multiple 1.5% risk trades simultaneously
+; Controlled growth
+
+InpMaxSymbolRisk=3.0
+; Max Risk Per Symbol (%)
+; Allows 1.5-3.0% risk per trade
+
+InpMaxGroupRisk=5.0
+; Max Risk Per Correlation Group (%)
+; Balanced exposure
+
+;═══════ DRAWDOWN GOVERNOR ═══════
+InpDD_Normal=5.0
+; DD Level: Normal Trading (%)
+; Start reducing risk at 5% drawdown
+
+InpDD_Reduced=8.0
+; DD Level: Reduced Risk (%)
+; Strict reduction at 8%
+
+InpDD_Pause=10.0
+; DD Level: Pause Trading (%)
+; Stop at 10% loss ($50) to preserve capital
+
+InpDD_ReducedMult=0.60
+; Risk Multiplier when DD > Normal
+; Increased from 0.5 to 0.60 (40% reduction instead of 50%)
+; More gradual risk reduction allows recovery
+
+;═══════ ROLLING PF GOVERNOR ═══════
+InpRollingTrades=50
+; Rolling Window (trades) - Larger sample for 8 pairs
+; Increased from 40 to 50 trades (~6-7 trades per pair for better statistics)
+
+InpPF_Normal=1.3
+; PF Level: Normal Trading
+; Reduced from 1.4 to 1.3 (more achievable target)
+; Target: Win $1.30 for every $1 lost (realistic with $10 risk)
+
+InpPF_Reduced=1.15
+; PF Level: Reduced Risk
+; Reduced from 1.3 to 1.15 (earlier warning signal)
+; Warning: Performance degrading, reduce size
+
+InpPF_Pause=0.95
+; PF Level: Pause Trading
+; Reduced from 1.0 to 0.95 (stop before break-even)
+; Stop: Losing money, reassess strategy immediately
+
+InpPF_ReducedMult=0.70
+; Risk Mult when PF < Normal
+; Increased from 0.65 to 0.70 (reduce size by 30% instead of 35%)
+; More gradual reduction allows recovery
+
+;═══════ DAILY/WEEKLY LIMITS ═══════
+InpDailyMaxDD=10.0
+; Daily Max Drawdown (%)
+; Moderate limit for small account
+
+InpWeeklyMaxDD=15.0
+; Weekly Max Drawdown (%)
+
+InpMonthlyMaxDD=20.0
+; Monthly Max Drawdown (%)
+; 20% max drawdown limit
+
+;═══════ CORRELATION GUARD ═══════
+InpUseCorrelationGuard=true
+; Enable Correlation Guard
+; Critical for 8-pair portfolio
+
+InpHighCorrelation=0.70
+; High Correlation Threshold
+; Detects pairs moving together (EURUSD/GBPUSD, AUDUSD/NZDUSD)
+
+InpCorrelationReduction=0.50
+; Size Reduction Factor
+; Cut position size in half for correlated entries
+
+;═══════ MAGIC NUMBER RANGE ═══════
+InpMagicBase=100000
+; Magic Number Base
+; Symbol_Engine instances use 100000-100999
+
+InpMagicRange=999
+; Magic Number Range
+; Covers all 8 Symbol_Engine instances
+
+;═══════ UPDATE FREQUENCY ═══════
+InpUpdateSeconds=5
+; Update Interval (seconds)
+; Balance between responsiveness and CPU usage
