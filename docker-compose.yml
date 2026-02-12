@@ -18,9 +18,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 4G
         reservations:
-          memory: 2G
+          memory: 1G
 
   # Service for FIRST RUN ONLY - Initializes Wine directory structure for MT5-2
   mt5-init-1:
@@ -41,9 +41,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 4G
         reservations:
-          memory: 2G
+          memory: 1G
 
   # MT5 Instance 1 - NORMAL OPERATION
   mt5:
@@ -68,9 +68,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 4G
         reservations:
-          memory: 2G
+          memory: 1G
     restart: unless-stopped
 
   # MT5 Instance 2 - NORMAL OPERATION
@@ -96,9 +96,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 4G
         reservations:
-          memory: 2G
+          memory: 1G
     restart: unless-stopped
 
 volumes:
