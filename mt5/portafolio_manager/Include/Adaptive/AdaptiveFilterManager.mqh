@@ -246,8 +246,11 @@ public:
       }
 
       // Clamp to reasonable range
-      if(threshold < 3.5) threshold = 3.5;   // Never too lenient
-      if(threshold > 7.0) threshold = 7.0;   // Never too strict
+      // FIX: Use dynamic max based on user input to allow higher thresholds (e.g. 12)
+      double maxClamp = MathMax(7.0, m_baseMinConfluence + 3.0);
+      
+      if(threshold < 3.5) threshold = 3.5;         // Never too lenient
+      if(threshold > maxClamp) threshold = maxClamp;   // Respect user's high base setting
 
       // Store for logging comparison
       m_lastThreshold = threshold;
