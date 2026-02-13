@@ -1,37 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python test_system.py:*)",
-      "Bash(pip install:*)",
-      "Bash(timeout 5 docker-compose logs:*)",
-      "Bash(docker exec:*)",
-      "Bash(timeout 30 python:*)",
-      "Bash(dir:*)",
-      "Bash(docker-compose down:*)",
-      "Bash(docker-compose up:*)",
-      "Bash(docker-compose ps:*)",
-      "Bash(python init_database.py:*)",
-      "Bash(python init_db_docker.py:*)",
-      "Bash(start \"Institutional Edge Frontend\" cmd /k start_frontend.bat)",
-      "Bash(python run_backend.py:*)",
-      "Bash(npm run dev:*)",
-      "Bash(timeout 5 sleep:*)",
-      "Bash(start \"Institutional Edge Backend\" cmd /k start_backend.bat)",
-      "Bash(python main.py:*)",
-      "Bash(python -m app.main:*)",
-      "Bash(uvicorn:*)",
-      "Bash(python fix_database.py:*)",
-      "Bash(python add_symbol_type.py:*)",
-      "Bash(npm install:*)",
-      "Bash(tasklist:*)",
-      "Bash(findstr:*)",
-      "Bash(python:*)",
-      "Bash(curl:*)",
-      "Bash(netstat:*)",
-      "Bash(taskkill //F //PID 56040)",
-      "Bash(taskkill //F //PID 47140)"
-    ],
-    "deny": [],
-    "ask": []
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "WebFetch(domain:strategyquant.com)",
+      "Bash(ls:*)",
+      "Bash(\"/c/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:Symbol_Engine.mq5 /log)",
+      "Bash(powershell:*)",
+      "Bash(TZ='UTC' date:*)",
+      "Bash(TZ='America/New_York' date:*)",
+      "Bash(python3:*)",
+      "Bash(git checkout:*)"
+    ]
   }
 }
