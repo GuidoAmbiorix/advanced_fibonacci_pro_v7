@@ -2408,7 +2408,18 @@ void LogHeartbeat()
    heartbeat += "\n";
    
    // 2. Confluence Scores
+   // FIX: Show Dynamic Threshold in Heartbeat
+   double currentThreshold = InpMinConfluenceEntry;
+   if(InpEnableAdaptiveFilters && adaptiveFilter.IsAdaptationEnabled())
+   {
+       ConfluenceFactors factors; // Dummy factors for threshold check
+       factors.regime = g_currentRegime;
+       factors.killzone = KILLZONE_NONE;
+       currentThreshold = adaptiveFilter.CalculateDynamicThreshold(factors, KILLZONE_NONE, g_currentRegime);
+   }
+
    heartbeat += "   Scores: BUY=" + DoubleToString(g_cachedBuyScore, 1) + "/30 | SELL=" + DoubleToString(g_cachedSellScore, 1) + "/30\n";
+   heartbeat += "   Required: " + DoubleToString(currentThreshold, 1) + " (Base: " + DoubleToString(InpMinConfluenceEntry, 1) + ")\n";
    
    // 3. Open Positions
    heartbeat += "   Positions: " + IntegerToString(g_positionCount);
