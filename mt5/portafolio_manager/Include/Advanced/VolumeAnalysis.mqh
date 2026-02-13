@@ -18,54 +18,92 @@ public:
    //+------------------------------------------------------------------+
    //| Get Confluence Score (0-2.5 pts)                                 |
    //+------------------------------------------------------------------+
+   //+------------------------------------------------------------------+
+   //| Get Confluence Score (0-4.0 pts)                                 |
+   //+------------------------------------------------------------------+
    double GetConfluenceScore(int direction)
    {
       double score = 0.0;
+      
+      // 1. INSTITUTIONAL RVOL (Time-Segmented)
+      // Checks if volume is high relative to THIS time of day
+      double rvol = CalculateRVOL(20); // 20-day lookback
+      
+      if(rvol >= 1.5) score += 1.5;    // Active Participation
+      if(rvol >= 3.0) score += 1.0;    // Institutional Ignition (Bonus)
+      
+      // 2. MONEY FLOW PRESSURE (Rapid CMF)
+      // Checks if money is flowing in the direction of the trade
+      // Lookback: 5 candles (Rapid Flow)
+      double flow = CalculateRapidMoneyFlow(5);
+      
+      if(direction == 1 && flow > 0.1) score += 1.5;   // Buying Pressure
+      if(direction == -1 && flow < -0.1) score += 1.5; // Selling Pressure
+      
+      return score; // Max 4.0
+   }
 
-      // Basic VPA: Check if volume supports the move
-      // High volume on up-move = valid buy
-      // High volume on down-move = valid sell
-
-      // FIX: Use _Symbol instead of NULL for better compatibility
-      long volume = iVolume(_Symbol, PERIOD_CURRENT, 0);
-      long prevVolume = iVolume(_Symbol, PERIOD_CURRENT, 1);
-
-      // Calculate Volume MA (20)
-      // FIX: Validate volume data before calculation
-      long volSum = 0;
-      int validBars = 0;
-      for(int i=0; i<20; i++)
+   //+------------------------------------------------------------------+
+   //| Calculate Relative Volume (Time-Segmented)                       |
+   //+------------------------------------------------------------------+
+   double CalculateRVOL(int lookbackDays)
+   {
+      long currentVol = iVolume(_Symbol, PERIOD_CURRENT, 0);
+      if(currentVol <= 0) return 1.0;
+      
+      long volumeSum = 0;
+      int count = 0;
+      
+      datetime currentTime = iTime(_Symbol, PERIOD_CURRENT, 0);
+      
+      // Loop back 'lookbackDays' to find same time of day
+      for(int i = 1; i <= lookbackDays; i++)
       {
-         long v = iVolume(_Symbol, PERIOD_CURRENT, i);
-         if(v > 0)
+         datetime pastTime = currentTime - (i * PeriodSeconds(PERIOD_D1));
+         
+         // Find closest bar to that time
+         int shift = iBarShift(_Symbol, PERIOD_CURRENT, pastTime, false);
+         
+         if(shift > 0)
          {
-            volSum += v;
-            validBars++;
+             volumeSum += iVolume(_Symbol, PERIOD_CURRENT, shift);
+             count++;
          }
       }
-      double volMA = (validBars >= 10) ? (volSum / (double)validBars) : volume;
+      
+      double avgVol = (count > 0) ? (double)volumeSum / count : currentVol;
+      if(avgVol == 0) return 1.0;
+      
+      return (double)currentVol / avgVol;
+   }
 
-      // 1. High Volume Support (+1.0)
-      if(volMA > 0 && volume > volMA * 1.5)
+   //+------------------------------------------------------------------+
+   //| Calculate Rapid Money Flow (Simplified CMF)                      |
+   //+------------------------------------------------------------------+
+   double CalculateRapidMoneyFlow(int lookback)
+   {
+      double flowSum = 0;
+      double volSum = 0;
+      
+      for(int i = 0; i < lookback; i++)
       {
-         score += 1.0;
-      }
-
-      // 2. Rising Volume Trend (+1.0)
-      if(volume > prevVolume && prevVolume > iVolume(_Symbol, PERIOD_CURRENT, 2))
-      {
-         score += 1.0;
+         double high = iHigh(_Symbol, PERIOD_CURRENT, i);
+         double low = iLow(_Symbol, PERIOD_CURRENT, i);
+         double close = iClose(_Symbol, PERIOD_CURRENT, i);
+         long vol = iVolume(_Symbol, PERIOD_CURRENT, i);
+         
+         if(high == low) continue;
+         
+         // Multiplier: ((Close - Low) - (High - Close)) / (High - Low)
+         // 1 = Closed at High (Max Buying)
+         // -1 = Closed at Low (Max Selling)
+         double mult = ((close - low) - (high - close)) / (high - low);
+         
+         flowSum += mult * vol;
+         volSum += vol;
       }
       
-      // 3. Consistent Above-Average Volume (+0.5)
-      // Reward steady volume increases, not climactic spikes
-      // FIX: Add volMA validation
-      if(volMA > 0 && volume > volMA * 1.2 && volume < volMA * 3.0)
-      {
-         score += 0.5;
-      }
-      
-      return MathMin(score, 2.5);
+      return (volSum > 0) ? flowSum / volSum : 0;
    }
 };
 

@@ -1899,8 +1899,8 @@ double CalculateConfluenceScore(int direction)
 
    // ============ 4. ADVANCED CONFIRMATIONS (Max ~5-10 pts) ============
 
-   // Volume Profile - 2.0 pts (Additive)
-   score += volumeAnalysis.GetConfluenceScore(direction) * 2.0; // Scaled 0-1 -> 0-2
+   // Institutional Volume - 4.0 pts (RVOL + Money Flow)
+   score += volumeAnalysis.GetConfluenceScore(direction);
 
    // Multi-Timeframe - 2.0 pts
    if(InpUseMTF)
