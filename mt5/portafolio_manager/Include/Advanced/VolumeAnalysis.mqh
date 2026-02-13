@@ -99,8 +99,8 @@ public:
          // -1 = Closed at Low (Max Selling)
          double mult = ((close - low) - (high - close)) / (high - low);
          
-         flowSum += mult * vol;
-         volSum += vol;
+         flowSum += mult * (double)vol;
+         volSum += (double)vol;
       }
       
       return (volSum > 0) ? flowSum / volSum : 0;
