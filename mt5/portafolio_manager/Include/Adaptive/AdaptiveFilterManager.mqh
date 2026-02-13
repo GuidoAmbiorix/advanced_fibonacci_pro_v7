@@ -401,6 +401,36 @@ public:
    }
 
    //+------------------------------------------------------------------+
+   //| Check if Volatility is Safe for Entry                            |
+   //+------------------------------------------------------------------+
+   bool IsVolatilitySafe(double current_atr, double min_atr_pips, double max_atr_factor, double avg_atr)
+   {
+      double point = SymbolInfoDouble(m_symbol, SYMBOL_POINT);
+      
+      // 1. Check for Dead Market (Too low volatility)
+      if(min_atr_pips > 0)
+      {
+          double minDelta = min_atr_pips * point * 10; // Convert pips to price delta
+          if(current_atr < minDelta)
+          {
+             return false; 
+          }
+      }
+
+      // 2. Check for Extreme Volatility (Crash/Spike risk)
+      if(max_atr_factor > 0 && avg_atr > 0)
+      {
+         if(current_atr > avg_atr * max_atr_factor)
+         {
+            return false;
+         }
+      }
+
+      return true;
+   }
+
+
+   //+------------------------------------------------------------------+
    //| Get Rolling Win Rate (last 20 trades)                            |
    //+------------------------------------------------------------------+
    double GetRollingWinRate()

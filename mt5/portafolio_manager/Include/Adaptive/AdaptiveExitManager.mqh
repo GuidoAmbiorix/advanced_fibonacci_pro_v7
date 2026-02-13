@@ -438,6 +438,63 @@ public:
    }
 
    //+------------------------------------------------------------------+
+   //| Calculate Reference Price for Chandelier Exit                    |
+   //+------------------------------------------------------------------+
+   double CalculateChandelierExit(int period, double atr, int direction, double mult)
+   {
+      // direction: 0 = Buy, 1 = Sell
+      if(direction == 0) // Buy: Hang from Highest High
+      {
+         int highestIndex = iHighest(m_symbol, PERIOD_CURRENT, MODE_HIGH, period, 1);
+         if(highestIndex < 0) return 0.0;
+         double highestHigh = iHigh(m_symbol, PERIOD_CURRENT, highestIndex);
+         return highestHigh - (atr * mult);
+      }
+      else // Sell: Hang from Lowest Low
+      {
+         int lowestIndex = iLowest(m_symbol, PERIOD_CURRENT, MODE_LOW, period, 1);
+         if(lowestIndex < 0) return 0.0;
+         double lowestLow = iLow(m_symbol, PERIOD_CURRENT, lowestIndex);
+         return lowestLow + (atr * mult);
+      }
+   }
+
+   //+------------------------------------------------------------------+
+   //| Calculate Step Trailing Stop                                     |
+   //+------------------------------------------------------------------+
+   double CalculateStepTrail(double current_sl, double proposed_sl, double atr, double stepFactor, int direction)
+   {
+      if(current_sl == 0.0) return proposed_sl;
+
+      double stepSize = atr * stepFactor;
+      
+      if(direction == 0) // Buy: proposed must be higher
+      {
+         if(proposed_sl > current_sl + stepSize) return proposed_sl;
+         return current_sl;
+      }
+      else // Sell: proposed must be lower
+      {
+         if(proposed_sl < current_sl - stepSize) return proposed_sl;
+         return current_sl;
+      }
+   }
+
+   //+------------------------------------------------------------------+
+   //| Calculate Volatility-Based Take Profit                           |
+   //+------------------------------------------------------------------+
+   double CalculateVolatilityTP(double entry_price, double atr, int direction, double multiplier)
+   {
+      double volTP = 0.0;
+      if(direction == 0) // Buy
+         volTP = entry_price + (atr * multiplier);
+      else // Sell
+         volTP = entry_price - (atr * multiplier);
+         
+      return volTP;
+   }
+
+   //+------------------------------------------------------------------+
    //| Enable/Disable Adaptation                                        |
    //+------------------------------------------------------------------+
    void EnableAdaptation(bool enable) { m_adaptationEnabled = enable; }

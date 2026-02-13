@@ -53,7 +53,8 @@ InpMaxPositions=1
 
 ; ====== RISK ======
 ; ====== RISK ======
-InpRiskBase=0.50
+InpRiskBase=1.0
+; $50 Risk (FundingPips)
 InpMaxRisk=1.0
 InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true
@@ -72,6 +73,12 @@ InpTPUseLearnedMFE=true
 ; ====== EXIT ======
 InpTrailingMode=1
 ; H1: Aggressive trailing stop for trend-following
+InpTrailType=1            ; 1=Chandelier
+InpTrailStepATR=0.5       ; Step size (if Type=2)
+InpMinVolatilityPips=5.0  ; Avoid dead zones
+InpMaxVolatilityFactor=3.0; Avoid crashes
+InpVolatilityTP_Mult=3.0  ; Dynamic Target
+InpTPMode=4               ; Use Volatility TP
 InpPartialTP_R=1.5
 ; H1: Increased from 1.2R to 1.5R (take partial earlier on H1 moves)
 InpPartialClosePercent=40.0

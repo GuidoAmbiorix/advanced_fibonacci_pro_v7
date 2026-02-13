@@ -54,7 +54,8 @@ InpMaxPositions=1
 
 ; ====== RISK ======
 ; ====== RISK ======
-InpRiskBase=0.50
+InpRiskBase=1.0
+; $50 Risk (FundingPips)
 InpMaxRisk=1.0
 InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true
@@ -71,6 +72,12 @@ InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 InpTrailingMode=1
+InpTrailType=1            ; 1=Chandelier
+InpTrailStepATR=0.5       ; Step size (if Type=2)
+InpMinVolatilityPips=8.0  ; Avoid dead zones (Volatile Pair)
+InpMaxVolatilityFactor=3.0; Avoid crashes
+InpVolatilityTP_Mult=4.0  ; Dynamic Target (Volatile Pair)
+InpTPMode=4               ; Use Volatility TP
 InpPartialTP_R=1.8
 ; H1: GBPUSD - take partial at 1.8R (volatile, secure some profit)
 InpPartialClosePercent=35.0

@@ -4,13 +4,15 @@
 ; Strategy: Conservative multi-symbol portfolio management
 
 ;═══════ PORTFOLIO LIMITS ═══════
-InpMaxPortfolioRisk=4.0
-; Max Total Portfolio Risk (%) - Increased for FundingPips
+InpMaxPortfolioRisk=5.0
+; Max Total Portfolio Risk (%) - Increased for FundingPips ($50 per trade)
+; With 1% risk per trade, cap at 5.0% to stay within daily limit (hard cap)
 ; With 10 pairs @ 0.50% each, max risk = ~5.0% total exposure
 ; Adjusted to allow 0.5% risk per trade across portfolio
 
-InpMaxSymbolRisk=1.0
+InpMaxSymbolRisk=1.5
 ; Max Risk Per Symbol (%)
+; Increased to 1.5% to allow for 1.0% base risk + scaling
 ; Allows room for scaling in if needed, but base risk is 0.5%
 ; Coverage for new 0.5% per trade sizing
 

@@ -53,7 +53,8 @@ InpMaxPositions=1
 
 ; ====== RISK ======
 ; ====== RISK ======
-InpRiskBase=0.50
+InpRiskBase=1.0
+; $50 Risk (FundingPips)
 InpMaxRisk=1.0
 InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true
@@ -67,6 +68,12 @@ InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 InpTrailingMode=1
+InpTrailType=1            ; 1=Chandelier
+InpTrailStepATR=0.5       ; Step size (if Type=2)
+InpMinVolatilityPips=8.0  ; Avoid dead zones (Volatile Cross)
+InpMaxVolatilityFactor=3.0; Avoid crashes
+InpVolatilityTP_Mult=4.0  ; Dynamic Target (High Volatility)
+InpTPMode=4               ; Use Volatility TP
 InpPartialTP_R=1.5
 InpPartialClosePercent=45.0
 InpBE_Threshold_R=0.8

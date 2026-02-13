@@ -57,6 +57,12 @@ CPatternMemory      patternMemory;
 //| INPUT PARAMETERS                                                  |
 //+------------------------------------------------------------------+
 input group "======= IDENTITY ======="
+enum ENUM_TRAIL_TYPE
+{
+   TRAIL_R_BASED,    // R-Multiple Based
+   TRAIL_CHANDELIER, // Chandelier Exit
+   TRAIL_STEP        // Step Trailing
+};
 input int               InpMagicNumber = 100001;          // Magic Number (unique per symbol)
 input bool              InpEnableMobileAlerts = true;     // Enable Mobile Push Notifications
 
@@ -107,7 +113,7 @@ input double            InpMaxLotsPerTrade = 0.5;        // Max Lots Per Trade
 input bool              InpEnableMarginCheck = true;     // Validate Margin Before Opening
 
 input group "======= TAKE PROFIT ======="
-input int               InpTPMode = 2;                    // 0=None, 1=Fixed, 2=Adaptive, 3=Hybrid
+input int               InpTPMode = 2;                    // 0=None, 1=Fixed, 2=Adaptive, 3=Hybrid, 4=Volatility
 input double            InpFixedTP_R = 3.0;               // Fixed TP (R-multiple)
 input double            InpMinTP_R = 1.5;                 // Minimum TP (R-multiple)
 input double            InpMaxTP_R = 5.0;                 // Maximum TP (R-multiple)
@@ -115,6 +121,12 @@ input bool              InpTPUseLearnedMFE = true;        // Use Learned MFE for
 
 input group "======= EXIT ======="
 input int               InpTrailingMode = 1;              // 0=Off, 1=Runner, 2=Full
+input ENUM_TRAIL_TYPE   InpTrailType = TRAIL_CHANDELIER;  // Trail Type
+input double            InpTrailStepATR = 0.5;            // Step Trail (ATR)
+input group "======= VOLATILITY FILTER ======="
+input double            InpMinVolatilityPips = 5.0;       // Min Volatility (Pips)
+input double            InpMaxVolatilityFactor = 3.0;     // Max Volatility (Factor of Avg)
+input double            InpVolatilityTP_Mult = 3.0;       // Volatility TP Multiplier (ATR)
 input double            InpPartialTP_R = 1.5;
 input double            InpPartialClosePercent = 40.0;
 input double            InpBE_Threshold_R = 1.8;
@@ -700,6 +712,16 @@ double CalculateTakeProfit(double price, double slDist, int direction,
    {
       tpR = InpFixedTP_R;
    }
+   // MODE 4: Volatility Based
+   else if(InpTPMode == 4)
+   {
+      // Calculate Volatility Target (e.g. 3x ATR)
+      // Convert to R-multiple relative to SL distance
+      if(atr > 0 && slDist > 0)
+         tpR = (atr * InpVolatilityTP_Mult) / slDist;
+      else
+         tpR = InpFixedTP_R; // Fallback
+   }
    // MODE 2 & 3: Adaptive TP
    else if(InpTPMode == 2 || InpTPMode == 3)
    {
@@ -912,6 +934,18 @@ void OnTick()
          Print("⏸️ Too close to EMA 200: ", DoubleToString(emaDistance / _Point, 0),
                " pips (min: ", DoubleToString(minDistance / _Point, 0), " pips)");
          lastEMAWarning = TimeCurrent();
+      }
+      return;
+   }
+
+   // FIX: Volatility Safety Check
+   if(InpEnableAdaptiveFilters && !adaptiveFilter.IsVolatilitySafe(g_ATR, InpMinVolatilityPips, InpMaxVolatilityFactor, g_ATR_MA))
+   {
+      static datetime lastVolWarning = 0;
+      if(TimeCurrent() - lastVolWarning > 300)
+      {
+         Print("⛔ VOLATILITY UNSAFE: ATR=", DoubleToString(g_ATR, 5), " (Dead or Extreme) - Trading Paused");
+         lastVolWarning = TimeCurrent();
       }
       return;
    }
@@ -1547,10 +1581,32 @@ void ManagePositions()
                double atrDist = ab[0] * mult;
                double td = MathMax(atrDist, learnedTrail);
 
-               double newSL = (pType == POSITION_TYPE_BUY) ? curr - td : curr + td;
+               double newSL = sl; // Default to current
+               
+               if(InpTrailType == TRAIL_CHANDELIER)
+               {
+                  // Calculate Chandelier Exit Price
+                  double ce = adaptiveExit.CalculateChandelierExit(20, ab[0], (pType == POSITION_TYPE_BUY ? 0 : 1), mult);
+                  if(ce != 0.0) newSL = ce;
+               }
+               else if(InpTrailType == TRAIL_STEP) 
+               {
+                  // Calculate Step Trail
+                  double proposed = (pType == POSITION_TYPE_BUY) ? curr - td : curr + td;
+                  newSL = adaptiveExit.CalculateStepTrail(sl, proposed, ab[0], InpTrailStepATR, (pType == POSITION_TYPE_BUY ? 0 : 1));
+               }
+               else // TRAIL_R_BASED (Standard)
+               {
+                   newSL = (pType == POSITION_TYPE_BUY) ? curr - td : curr + td;
+               }
+
+               // Modify if better
                if((pType == POSITION_TYPE_BUY && newSL > sl && newSL < curr) ||
                   (pType == POSITION_TYPE_SELL && (newSL < sl || sl == 0) && newSL > curr))
-                  trade.PositionModify(ticket, newSL, tp);
+               {
+                  if(newSL != sl) // Optimization: Only modify if changed
+                     trade.PositionModify(ticket, newSL, tp);
+               }
             }
          }
       }
@@ -1734,116 +1790,110 @@ double CalculateConfluenceScore(int direction)
 
    // DEBUG: Print indicator values
    static datetime lastDebug = 0;
-   if(TimeCurrent() - lastDebug > 300) // Print every 5 minutes
+   if(TimeCurrent() - lastDebug > 300) 
    {
       Print("DEBUG Indicators: EMA=", g_EMA, " ATR=", g_ATR, " RSI=", g_RSI, " Price=", currentPrice);
       lastDebug = TimeCurrent();
    }
 
-   // ============ 1. CORE SMC & PRICE ACTION (~7.0 pts) ============
+   // ============ 1. CORE SMC & PRICE ACTION (Max ~10.0 pts) ============
 
-   // Trend (EMA 200 + Slope) - 2.5 points (Boosted from 1.0)
+   // A. Trend (EMA 200 + Slope) - 3.0 points 
    double emaSlope = g_EMA - g_EMA_Prev;
-   bool slopeStrong = MathAbs(emaSlope) >= (g_ATR * InpEMA_MinSlope);
+   bool slopeAligned = (direction == 1 && emaSlope > 0) || (direction == -1 && emaSlope < 0);
+   bool priceAligned = (direction == 1 && currentPrice > g_EMA) || (direction == -1 && currentPrice < g_EMA);
    
-   // 1. Price Alignment (1.5 pts)
-   if(direction == 1 && currentPrice > g_EMA) score += 1.5;
-   if(direction == -1 && currentPrice < g_EMA) score += 1.5;
-   
-   // 2. Slope Alignment (1.0 pt)
-   if(direction == 1 && emaSlope > 0) score += 1.0;
-   if(direction == -1 && emaSlope < 0) score += 1.0;
+   if(priceAligned) score += 1.5;
+   if(slopeAligned) score += 1.5;
 
-   // Market Structure - 1.0 point
+   // B. Structure (Bos/Choch) - 3.0 points
    // M15 Adaptation: Check for valid structure
    int highestBar = iHighest(_Symbol, PERIOD_CURRENT, MODE_HIGH, InpSwingLookback, 1);
    int lowestBar = iLowest(_Symbol, PERIOD_CURRENT, MODE_LOW, InpSwingLookback, 1);
-   
-   // Structure Strength Check (M15)
    double structRange = 0;
    if(highestBar >= 0 && lowestBar >= 0) 
       structRange = iHigh(_Symbol, PERIOD_CURRENT, highestBar) - iLow(_Symbol, PERIOD_CURRENT, lowestBar);
    
-   bool validStructure = (structRange >= g_ATR * 2.0); // Keep 2.0 ATR filter
+   bool validStructure = (structRange >= g_ATR * 2.0); 
    
-   if(direction == 1 && lowestBar < highestBar && validStructure) score += 2.0;
-   if(direction == -1 && highestBar < lowestBar && validStructure) score += 2.0;
+   if(direction == 1 && lowestBar < highestBar && validStructure) score += 3.0; // Boosted
+   if(direction == -1 && highestBar < lowestBar && validStructure) score += 3.0; // Boosted
 
-   // RSI Extremes (Regime Aware) - 1.0 point
+   // C. RSI Extremes - 2.0 points
+   bool rsiValid = false;
    if(g_currentRegime == REGIME_TREND)
    {
       // In trend, look for pullbacks
-      if(direction == 1 && g_RSI < 50 && g_RSI > 30) score += 1.5;
-      if(direction == -1 && g_RSI > 50 && g_RSI < 70) score += 1.5;
+      if(direction == 1 && g_RSI < 60 && g_RSI > 40) rsiValid = true; // Wider pullback zone
+      if(direction == -1 && g_RSI > 40 && g_RSI < 60) rsiValid = true;
    }
    else
    {
       // In range, look for extremes
-      if(direction == 1 && g_RSI <= InpRSI_Oversold) score += 1.5;
-      if(direction == -1 && g_RSI >= InpRSI_Overbought) score += 1.5;
+      if(direction == 1 && g_RSI <= InpRSI_Oversold) rsiValid = true;
+      if(direction == -1 && g_RSI >= InpRSI_Overbought) rsiValid = true;
    }
+   if(rsiValid) score += 2.0;
 
-   // RSI Momentum - 1.0 point
+   // D. Displacement - 2.0 points
+   if(CheckDisplacement(direction)) score += 2.0;
+
+
+   // ============ 2. MOMENTUM & VOLATILITY (Max ~5.0 pts) ============
+   
+   // RSI Momentum - 1.5 points
    if(InpRSI_Momentum)
    {
-      if(direction == 1 && g_RSI > g_RSI_Prev) score += 1.0;
-      if(direction == -1 && g_RSI < g_RSI_Prev) score += 1.0;
+      if(direction == 1 && g_RSI > g_RSI_Prev) score += 1.5;
+      if(direction == -1 && g_RSI < g_RSI_Prev) score += 1.5;
    }
 
-   // Displacement - 1.5 point
-   if(CheckDisplacement(direction)) score += 1.5;
-
-   // Volatility - 1.5 pts
-   // FIX: Validate both ATR and ATR_MA before division
+   // Volatility Ratio - 2.0 points
    double atrRatio = 1.0;
-   if(g_ATR > 0 && g_ATR_MA > 0)
-      atrRatio = g_ATR / g_ATR_MA;
-   if(atrRatio >= 0.8 && atrRatio <= 1.3) score += 1.5;
+   if(g_ATR > 0 && g_ATR_MA > 0) atrRatio = g_ATR / g_ATR_MA;
+   // Expanded window for M15: 0.7 to 1.5
+   if(atrRatio >= 0.7 && atrRatio <= 1.5) score += 2.0;
 
-   // Chop Filter - 1.0 pt
-   if(!CheckChopFilter()) {
-      score += 1.0;
-   }
+   // Chop Filter (Cleanliness) - 1.5 pts
+   if(!CheckChopFilter()) score += 1.5;
 
-   // ============ 2. INSTITUTIONAL CONCEPTS (~7.0 pts) ============
+
+   // ============ 3. INSTITUTIONAL & SMC ADD-ONS (Max ~10.0 pts) ============
    
    if(InpUseSMC)
    {
-       // Basic SMC
-       score += smcStructure.GetConfluenceScore(direction);  // ~1.0
-       score += smcOrderBlocks.GetConfluenceScore(direction) * 1.5; // ~2.25 (Boosted multiplier)
-       score += smcFVG.GetConfluenceScore(direction);         // ~1.0
-       score += smcLiquidity.GetConfluenceScore(direction) * 1.5;   // ~2.25 (Boosted multiplier)
+       // Order Blocks - 2.5 pts
+       score += smcOrderBlocks.GetConfluenceScore(direction) * 2.5; 
        
-       // Advanced ICT
-       // Breaker Blocks (~2.0) - Fix: Pass ATR
-       score += breakerBlocks.GetBreakerScore(direction, g_ATR) * 4.0; // Scale 0.5 -> 2.0
+       // Liquidity Sweeps - 2.5 pts
+       score += smcLiquidity.GetConfluenceScore(direction) * 2.5;
        
-       // Macro Windows (~1.5)
-       score += macroWindows.GetMacroScore() * 3.0; // Scale 0.5 -> 1.5
+       // FVG - 2.0 pts
+       score += smcFVG.GetConfluenceScore(direction) * 2.0;
        
-       // Power of 3 (~2.0) - Fix: Pass ATR
-       score += powerOf3.GetPhaseScore(g_ATR) * 4.0; // Scale 0.5 -> 2.0
+       // Advanced ICT Concepts
+       score += breakerBlocks.GetBreakerScore(direction, g_ATR) * 3.0; 
+       score += powerOf3.GetPhaseScore(g_ATR) * 3.0; 
    }
 
-   // ============ 3. ADVANCED CONFLUENCE (~16.0 pts) ============
 
-   // Volume Profile (~2.5 pts)
-   score += volumeAnalysis.GetConfluenceScore(direction);
+   // ============ 4. ADVANCED CONFIRMATIONS (Max ~5-10 pts) ============
 
-   // Multi-Timeframe (~2.0 pts)
+   // Volume Profile - 2.0 pts (Additive)
+   score += volumeAnalysis.GetConfluenceScore(direction) * 2.0; // Scaled 0-1 -> 0-2
+
+   // Multi-Timeframe - 2.0 pts
    if(InpUseMTF)
       score += mtfAnalysis.GetConfluenceScore(direction);
 
-   // Divergence (~1.5 pts)
-   // FIX: Pass hRSI handle + cache result to avoid duplicate calculation
+   // Divergence - 2.0 pts
    double divergenceScore = divergence.GetDivergenceScore(direction, hRSI);
-   score += divergenceScore;
+   score += divergenceScore * 2.0; // Scale 0-1 -> 0-2
 
-   // Wyckoff (~1.5 pts) - Fix: Pass ATR
-   score += wyckoff.GetWyckoffScore(direction, g_ATR) * 3.0; // Scale 0.5 -> 1.5
+   // Wyckoff - 2.0 pts
+   score += wyckoff.GetWyckoffScore(direction, g_ATR) * 2.0; 
 
-   // Fib Zone (~1.5 pts)
+   // Fib Zone - 2.0 pts
    if(highestBar >= 0 && lowestBar >= 0)
    {
       double swingHigh = iHigh(_Symbol, PERIOD_CURRENT, highestBar);
@@ -1866,7 +1916,7 @@ double CalculateConfluenceScore(int direction)
             double f786 = swingLow + (range * InpFibLevelHigh);
             if(currentPrice >= f618 - tolerance && currentPrice <= f786 + tolerance) inZone = true;
          }
-         if(inZone) score += 1.5;
+         if(inZone) score += 2.0;
       }
    }
    
@@ -1884,31 +1934,24 @@ double CalculateConfluenceScore(int direction)
 
        if(emaAlignment)
        {
-           // M15 Specific: Trend reversals are common but risky.
-           // Penalize heavily if no divergence
-           // FIX: Use cached divergenceScore to avoid duplicate calculation
+           // Apply soft penalty only if NO divergence/reversal signals
            if(divergenceScore < 0.5)
            {
-               score -= 2.0; // Reduced penalty (was 5.0)
-               // FIX: Floor cap to prevent negative scores
+               score -= 2.0; 
                if(score < 0) score = 0;
            }
        }
    }
 
-   // Context Multipliers
-   // FIX: Removed volatile regime multiplier - was applied too late and caused
-   // borderline scores (10-12) to fail entry threshold unexpectedly
-
    // DEBUG: Print final score
    static datetime lastScoreDebug = 0;
-   if(TimeCurrent() - lastScoreDebug > 300) // Print every 5 minutes
+   if(TimeCurrent() - lastScoreDebug > 300) 
    {
       Print("DEBUG Score [", (direction == 1 ? "BUY" : "SELL"), "]: ", DoubleToString(score, 2), "/30");
       lastScoreDebug = TimeCurrent();
    }
 
-   return score;  // Max possible: ~30 points
+   return score;  // Max possible: ~30-35 points
 }
 
 double GetTotalProfitR()
@@ -2234,6 +2277,7 @@ void UpdateDashboard()
    if(InpTPMode == 1) tpMode = "Fixed " + DoubleToString(InpFixedTP_R, 1) + "R";
    else if(InpTPMode == 2) tpMode = "Adaptive (MFE-based)";
    else if(InpTPMode == 3) tpMode = "Hybrid (Adaptive+Trail)";
+   else if(InpTPMode == 4) tpMode = "Volatility (" + DoubleToString(InpVolatilityTP_Mult, 1) + "x ATR)";
 
    txt += "TP Mode: " + tpMode + "\n";
 
