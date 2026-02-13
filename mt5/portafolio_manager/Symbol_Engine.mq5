@@ -190,6 +190,8 @@ input bool              InpEnableAsianKZ = false;         // Enable Asian Killzo
 input bool              InpEnableLondonOpenKZ = true;     // Enable London Open Killzone
 input bool              InpEnableNYKZ = true;             // Enable NY Killzone
 input bool              InpEnableLondonCloseKZ = false;   // Enable London Close Killzone
+input bool              InpNotifyKillzoneOpen = true;     // Notify on Killzone Open
+
 
 input group "======= SESSION GOVERNOR ======="
 input bool              InpUseSessionGovernor = true;     // Enable Session Governor
@@ -265,6 +267,7 @@ datetime g_lastLossTime = 0;
 MARKET_REGIME g_currentRegime = REGIME_UNKNOWN;
 
 // Portfolio Protection Tracking
+ENUM_KILLZONE g_lastKillzoneState = KILLZONE_NONE;
 double g_dailyLossR = 0;
 int    g_consecutiveLosses = 0;
 int    g_dailyTradesCount = 0;  // FIX: Track daily trades to prevent overtrading
@@ -788,6 +791,23 @@ void OnTick()
    {
       LogHeartbeat();
       g_lastHeartbeat = TimeCurrent();
+   }
+
+   // --- KILLZONE NOTIFICATION ---
+   if(InpNotifyKillzoneOpen)
+   {
+      ENUM_KILLZONE currentKZ = GetActiveKillzone();
+      if(currentKZ != g_lastKillzoneState)
+      {
+         // Only notify on OPEN (state change to non-NONE), not close
+         if(currentKZ != KILLZONE_NONE)
+         {
+             string msg = "🟢 KILLZONE OPEN: " + KillzoneToString(currentKZ) + " on " + _Symbol;
+             if(InpEnableMobileAlerts) SendNotification(msg);
+             Print(msg);
+         }
+         g_lastKillzoneState = currentKZ;
+      }
    }
 
    g_tickCount++;  // Performance monitoring
@@ -2483,9 +2503,12 @@ void LogHeartbeat()
 //+------------------------------------------------------------------+
 //| Check Killzone Time                                               |
 //+------------------------------------------------------------------+
-bool CheckKillzone()
+//+------------------------------------------------------------------+
+//| Get Active Killzone                                               |
+//+------------------------------------------------------------------+
+ENUM_KILLZONE GetActiveKillzone()
 {
-   if(!InpUseKillzoneFilter) return true;
+   if(!InpUseKillzoneFilter) return KILLZONE_NONE;
 
    datetime utcTime = TimeCurrent() - (InpBrokerUTCOffset * 3600);
    MqlDateTime utcDt;
@@ -2495,28 +2518,24 @@ bool CheckKillzone()
    int estHour = (utcDt.hour - 5 + 24) % 24;
 
    // 1. Asian Session (20:00 - 00:00 EST)
-   if(InpEnableAsianKZ)
-   {
-      if(estHour >= 20 || estHour < 0) return true;
-   }
+   if(InpEnableAsianKZ && (estHour >= 20 || estHour < 0)) return KILLZONE_ASIAN;
 
    // 2. London Open (02:00 - 05:00 EST)
-   if(InpEnableLondonOpenKZ)
-   {
-      if(estHour >= 2 && estHour < 5) return true;
-   }
+   if(InpEnableLondonOpenKZ && (estHour >= 2 && estHour < 5)) return KILLZONE_LONDON_OPEN;
 
    // 3. NY Open (07:00 - 10:00 EST)
-   if(InpEnableNYKZ)
-   {
-      if(estHour >= 7 && estHour < 10) return true;
-   }
+   if(InpEnableNYKZ && (estHour >= 7 && estHour < 10)) return KILLZONE_NY;
 
    // 4. London Close (10:00 - 12:00 EST)
-   if(InpEnableLondonCloseKZ)
-   {
-      if(estHour >= 10 && estHour < 12) return true;
-   }
+   if(InpEnableLondonCloseKZ && (estHour >= 10 && estHour < 12)) return KILLZONE_LONDON_CLOSE;
 
-   return false;
+   return KILLZONE_NONE;
+}
+
+//+------------------------------------------------------------------+
+//| Check Killzone Time (Wrapper)                                     |
+//+------------------------------------------------------------------+
+bool CheckKillzone()
+{
+   return GetActiveKillzone() != KILLZONE_NONE;
 }
