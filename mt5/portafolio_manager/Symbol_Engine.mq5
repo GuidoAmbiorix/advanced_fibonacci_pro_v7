@@ -152,6 +152,17 @@ input double            InpKellyFraction = 0.5;           // Kelly Fraction (0.5
 input double            InpDailyMaxDD = 3.0;              // Daily Max Drawdown %
 input double            InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown %
 
+input group "======= PROFIT TARGETS (Universal) ======="
+input double            InpDailyProfitTarget = 0.0;       // Daily Profit Target ($) - 0=Disabled
+input double            InpTotalProfitTarget = 0.0;       // Total Profit Target ($) - 0=Disabled
+input bool              InpUseDailyProfitLimit = false;   // Enable Daily Profit Limit
+input bool              InpUseTotalProfitLimit = false;   // Enable Total Profit Limit
+input bool              InpPauseOnProfitTarget = false;   // Pause Trading When Target Hit
+
+input group "======= TRADING DAYS TRACKING (Universal) ======="
+input int               InpMinTradingDays = 0;            // Min Trading Days (0=Disabled, Tracking Only)
+input bool              InpEnforceTradingDays = false;    // Enforce Minimum (false=Warn Only)
+
 input group "======= LEARNING & ADAPTATION ======="
 input bool              InpEnableLearning = true;         // Enable Learning System
 input bool              InpLogTradesToFile = true;        // Log Trades to CSV
@@ -257,6 +268,15 @@ int    g_consecutiveLosses = 0;
 datetime g_lastResetDate = 0;
 datetime g_lastBuyTime = 0;    // Last BUY trade entry time
 datetime g_lastSellTime = 0;   // Last SELL trade entry time
+
+// Profit Target Tracking (Phase 6.1 - Universal Account Compliance)
+double   g_dailyProfit = 0.0;        // Daily profit in dollars
+double   g_totalProfit = 0.0;        // Total cumulative profit in dollars
+datetime g_profitResetDate = 0;      // Last profit reset date
+
+// Trading Days Tracking (Phase 6.2 - Universal Account Compliance)
+int      g_tradingDaysCount = 0;     // Number of trading days
+datetime g_lastTradeDate = 0;        // Last trade date (for day increment)
 
 // OPTIMIZATION: Cache confluence scores to avoid recalculation
 double g_cachedBuyScore = 0;
@@ -508,6 +528,19 @@ int OnInit()
    }
    Print("===========================================");
 
+   // Phase 6.2: Load Trading Days Counter from GlobalVariable
+   string gvTradingDays = "GV_TRADING_DAYS_" + _Symbol;
+   if(GlobalVariableCheck(gvTradingDays))
+   {
+      g_tradingDaysCount = (int)GlobalVariableGet(gvTradingDays);
+      Print("  📅 Trading Days: ", g_tradingDaysCount, " days loaded from history");
+   }
+   else
+   {
+      g_tradingDaysCount = 0;
+      Print("  📅 Trading Days: Starting fresh (0 days)");
+   }
+
    return INIT_SUCCEEDED;
 }
 
@@ -598,13 +631,28 @@ void ResetDailyLossIfNewDay()
 
    if(currentDate != g_lastResetDate)
    {
-      if(g_lastResetDate > 0 && g_dailyLossR < 0)
+      if(g_lastResetDate > 0)
       {
-         Print("📊 Daily Reset: Previous day loss was ", DoubleToString(g_dailyLossR, 2), "R");
+         if(g_dailyLossR < 0)
+         {
+            Print("📊 Daily Reset: Previous day loss was ", DoubleToString(g_dailyLossR, 2), "R");
+         }
+
+         // Phase 6.1: Report daily profit if enabled
+         if(InpUseDailyProfitLimit && InpDailyProfitTarget > 0)
+         {
+            Print("💰 Daily Profit Reset: Previous day profit was $", DoubleToString(g_dailyProfit, 2),
+                  " / $", DoubleToString(InpDailyProfitTarget, 2), " target");
+         }
       }
+
       g_dailyLossR = 0;
       g_consecutiveLosses = 0;
       g_lastResetDate = currentDate;
+
+      // Phase 6.1: Reset daily profit counter
+      g_dailyProfit = 0.0;
+      g_profitResetDate = currentDate;
    }
 }
 
@@ -803,6 +851,55 @@ void OnTick()
          lastWarning = TimeCurrent();
       }
       return;
+   }
+
+   // --- PHASE 6.1: PROFIT TARGET TRACKING (Universal Account Compliance) ---
+   if(InpUseDailyProfitLimit && InpDailyProfitTarget > 0 && g_dailyProfit >= InpDailyProfitTarget)
+   {
+      static datetime lastProfitWarning = 0;
+      if(TimeCurrent() - lastProfitWarning > 300)  // Print warning every 5 minutes
+      {
+         Print("✅ DAILY PROFIT TARGET REACHED: $", DoubleToString(g_dailyProfit, 2),
+               " / $", DoubleToString(InpDailyProfitTarget, 2));
+
+         if(InpPauseOnProfitTarget)
+         {
+            Print("⏸️ Trading PAUSED for today (InpPauseOnProfitTarget=true)");
+         }
+         else
+         {
+            Print("⚠️ WARNING: Trading continues despite hitting target (InpPauseOnProfitTarget=false)");
+         }
+
+         lastProfitWarning = TimeCurrent();
+      }
+
+      if(InpPauseOnProfitTarget)
+         return;  // Hard stop: No new trades today
+   }
+
+   if(InpUseTotalProfitLimit && InpTotalProfitTarget > 0 && g_totalProfit >= InpTotalProfitTarget)
+   {
+      static datetime lastTotalProfitWarning = 0;
+      if(TimeCurrent() - lastTotalProfitWarning > 300)  // Print warning every 5 minutes
+      {
+         Print("🎯 TOTAL PROFIT TARGET REACHED: $", DoubleToString(g_totalProfit, 2),
+               " / $", DoubleToString(InpTotalProfitTarget, 2));
+
+         if(InpPauseOnProfitTarget)
+         {
+            Print("⏸️ Trading PAUSED permanently (InpPauseOnProfitTarget=true)");
+         }
+         else
+         {
+            Print("⚠️ WARNING: Trading continues despite hitting total target (InpPauseOnProfitTarget=false)");
+         }
+
+         lastTotalProfitWarning = TimeCurrent();
+      }
+
+      if(InpPauseOnProfitTarget)
+         return;  // Hard stop: Account target achieved
    }
 
    // --- PORTFOLIO PROTECTION: CORRELATION FILTER ---
@@ -1455,6 +1552,34 @@ void OnTrade()
        {
            double profitPct = (profit / equity) * 100.0;
            rOutcome = profitPct / InpRiskBase;
+       }
+
+       // Phase 6.1: Update profit counters (BEFORE module updates to capture all trades)
+       g_dailyProfit += profit;   // Add to daily profit (can be negative for losses)
+       g_totalProfit += profit;   // Add to total cumulative profit
+
+       // Phase 6.2: Update trading days counter (increment on first trade of new day)
+       MqlDateTime closeDt;
+       TimeToStruct(HistoryDealGetInteger(ticket, DEAL_TIME), closeDt);
+       datetime tradeDate = StringToTime(StringFormat("%04d.%02d.%02d", closeDt.year, closeDt.mon, closeDt.day));
+
+       if(tradeDate != g_lastTradeDate)
+       {
+          g_tradingDaysCount++;
+          g_lastTradeDate = tradeDate;
+
+          // Save to GlobalVariable for persistence
+          string gvTradingDays = "GV_TRADING_DAYS_" + _Symbol;
+          GlobalVariableSet(gvTradingDays, g_tradingDaysCount);
+
+          if(InpMinTradingDays > 0)
+          {
+             Print("📅 Trading Day #", g_tradingDaysCount, " / ", InpMinTradingDays, " required");
+          }
+          else
+          {
+             Print("📅 Trading Day #", g_tradingDaysCount, " (tracking only)");
+          }
        }
 
        // Update modules (backup in case ManagePositions missed it)
@@ -2284,28 +2409,29 @@ bool CheckKillzone()
    MqlDateTime utcDt;
    TimeToStruct(utcTime, utcDt);
 
-   // EST Calculation (Standard UTC-5)
-   int estHour = (utcDt.hour - 5 + 24) % 24;
+   // AST Calculation (Atlantic Standard Time UTC-4 for Dominican Republic)
+   // Changed from EST (UTC-5) to AST (UTC-4) to match Dominican Republic timezone
+   int estHour = (utcDt.hour - 4 + 24) % 24;
 
-   // 1. Asian Session (20:00 - 00:00 EST)
+   // 1. Asian Session (20:00 - 00:00 AST / 8PM-12AM Dominican Republic)
    if(InpEnableAsianKZ)
    {
       if(estHour >= 20 || estHour < 0) return true;
    }
 
-   // 2. London Open (02:00 - 05:00 EST)
+   // 2. London Open (02:00 - 05:00 AST / 2AM-5AM Dominican Republic)
    if(InpEnableLondonOpenKZ)
    {
       if(estHour >= 2 && estHour < 5) return true;
    }
 
-   // 3. NY Open (07:00 - 10:00 EST)
+   // 3. NY Open (07:00 - 10:00 AST / 7AM-10AM Dominican Republic)
    if(InpEnableNYKZ)
    {
       if(estHour >= 7 && estHour < 10) return true;
    }
 
-   // 4. London Close (10:00 - 12:00 EST)
+   // 4. London Close (10:00 - 12:00 AST / 10AM-12PM Dominican Republic)
    if(InpEnableLondonCloseKZ)
    {
       if(estHour >= 10 && estHour < 12) return true;
