@@ -125,7 +125,7 @@ InpTradeCooldownMinutes=10
 InpEnableSessionBlacklist=false
 
 ; ====== PORTFOLIO PROTECTION ======
-InpUseCorrelationFilter=true
+InpUseCorrelationFilter=false
 InpDailyMaxLoss_R=3.0
 InpLossCooldownMinutes=90
 InpMaxConsecutiveLosses=2

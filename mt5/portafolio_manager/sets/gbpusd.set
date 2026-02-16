@@ -137,7 +137,7 @@ InpTradeCooldownMinutes=10
 InpEnableSessionBlacklist=false
 
 ; ====== PORTFOLIO PROTECTION ======
-InpUseCorrelationFilter=true
+InpUseCorrelationFilter=false
 InpDailyMaxLoss_R=3.0
 InpLossCooldownMinutes=90
 ; H1: Increased from 45 to 90 minutes (bug fix - consecutive loss protection)

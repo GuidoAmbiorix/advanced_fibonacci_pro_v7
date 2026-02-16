@@ -1,5 +1,5 @@
 ; Portfolio Governor - FundingPips 5K Account Configuration
-; Optimized for 8 pairs: EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, EURJPY, AUDJPY, XAUUSD
+; Optimized for 10 pairs: EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, EURJPY, AUDJPY, NZDUSD, USDCHF, GBPJPY
 ; Account: $5,000 FundingPips
 ; Strategy: Conservative multi-symbol portfolio management
 
@@ -7,8 +7,8 @@
 InpMaxPortfolioRisk=5.0
 ; Max Total Portfolio Risk (%) - Increased for FundingPips ($50 per trade)
 ; With 1% risk per trade, cap at 5.0% to stay within daily limit (hard cap)
-; With 10 pairs @ 0.50% each, max risk = ~5.0% total exposure
-; Adjusted to allow 0.5% risk per trade across portfolio
+; With 10 pairs @ 1.0% each, this prevents opening > 5 trades simultaneously
+; Adjusted to allow 5 simultaneous trades max (though Group Risk will limit this further)
 
 InpMaxSymbolRisk=1.5
 ; Max Risk Per Symbol (%)
@@ -78,7 +78,7 @@ InpMonthlyMaxDD=9.5
 ; FundingPips Limit is 10.0% - Set to 9.5% for safety
 
 ;═══════ CORRELATION GUARD ═══════
-InpUseCorrelationGuard=true
+InpUseCorrelationGuard=false
 ; Enable Correlation Guard
 ; Critical for 8-pair portfolio
 
