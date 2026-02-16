@@ -326,6 +326,30 @@ public:
    }
 
    //+------------------------------------------------------------------+
+   //| 🪙 METALS: Get metals-specific session score (0-10 scale)        |
+   //+------------------------------------------------------------------+
+   double GetMetalsSessionScore()
+   {
+      // Check if this is a metals symbol
+      string sym = m_symbol;
+      StringToUpper(sym);
+
+      if(StringFind(sym, "XAU") < 0 && StringFind(sym, "GOLD") < 0)
+         return GetConfluenceScore() * 20.0;  // Not metals, convert standard score to 0-10 scale
+
+      // Metals-specific scoring based on XAUUSD volatility/volume patterns
+      switch(m_currentSession)
+      {
+         case SESSION_LONDON_NY_OVERLAP:  return 10.0;  // PRIME: 13:00-16:00 GMT - Peak volume
+         case SESSION_NEW_YORK:           return 8.0;   // GOOD: US session active
+         case SESSION_LONDON:             return 7.0;   // GOOD: European session
+         case SESSION_ASIAN_LONDON_OVERLAP: return 5.0; // FAIR: Transition period
+         case SESSION_ASIAN:              return 2.0;   // POOR: Low liquidity, avoid
+         default:                         return 0.0;   // Unknown/None
+      }
+   }
+
+   //+------------------------------------------------------------------+
    //| Getters                                                           |
    //+------------------------------------------------------------------+
    ENUM_TRADING_SESSION GetCurrentSession() { return m_currentSession; }

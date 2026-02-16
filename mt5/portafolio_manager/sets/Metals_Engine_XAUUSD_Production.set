@@ -1,0 +1,162 @@
+; 🪙 XAUUSD - H1 Timeframe Metals Optimized
+; Metals Engine - XAUUSD Specialized Configuration
+; Session-aware + Spread filtering + News protection
+
+; ====== IDENTITY ======
+InpMagicNumber=100011
+InpEnableMobileAlerts=true
+
+; ====== DIRECTION ======
+InpDirection=0
+InpBrokerUTCOffset=2
+
+; ====== KILLZONES ======
+InpUseKillzoneFilter=true
+InpEnableAsianKZ=false
+; Metals: Disable Asian session (low liquidity, high spread)
+InpEnableLondonOpenKZ=true
+; Metals: Prime London-NY overlap is optimal
+InpEnableNYKZ=true
+; Metals: US session active
+InpEnableLondonCloseKZ=false
+InpNotifyKillzoneOpen=true
+
+; ====== FIBONACCI ======
+InpSwingLookback=20
+InpFibLevelLow=0.618
+InpFibLevelHigh=0.786
+InpZoneTolerance=0.25
+
+; ====== DISPLACEMENT ======
+InpUseDisplacement=true
+InpDisplacementATR=1.2
+InpDisplacementLookback=5
+
+; ====== RSI ======
+InpRSI_Period=14
+InpRSI_Oversold=45
+InpRSI_Overbought=55
+InpRSI_Momentum=true
+
+; ====== TREND ======
+InpEMA_Period=200
+InpUseTrendFilter=true
+InpEMA_MinSlope=0.1
+
+; ====== CHOP FILTER ======
+InpUseChopFilter=true
+InpChopThreshold=0.75
+InpATR_MA_Period=20
+
+; ====== CONFLUENCE ======
+InpMinConfluenceEntry=13
+; Metals: Set to 13 for production
+InpEnableAddOns=true
+InpAddOn1_R=1.5
+InpAddOn2_R=2.5
+InpMaxPositions=3
+
+; ====== RISK (Before Governor Scaling) ======
+InpRiskBase=0.10
+; FundingPips format: 0.10 = $5 risk per trade (0.1% of $5K)
+InpRiskAddOn1=0.05
+InpRiskAddOn2=0.05
+InpMaxRisk=0.20
+; FundingPips format: 0.20 = $10 max risk (0.2% of $5K)
+InpMaxLotsPerTrade=0.1
+; $5K account: Max 0.1 lots for XAUUSD
+InpEnableMarginCheck=true
+
+; ====== TAKE PROFIT ======
+InpTPMode=2
+; Adaptive TP mode
+InpFixedTP_R=3.0
+InpMinTP_R=1.5
+InpMaxTP_R=5.0
+InpTPUseLearnedMFE=true
+
+; ====== EXIT ======
+InpTrailingMode=1
+; Runner mode
+InpTrailType=1
+; Chandelier Exit
+InpTrailStepATR=0.5
+InpMinVolatilityPips=5.0
+InpMaxVolatilityFactor=3.0
+InpVolatilityTP_Mult=3.0
+InpPartialTP_R=1.5
+InpPartialClosePercent=40.0
+InpBE_Threshold_R=1.8
+InpTrailStart_R=2.0
+InpTrailATR_Mult=1.2
+
+; ====== SPREAD ======
+InpMaxSpreadPoints=50
+InpMetals_MaxSpreadUSD=1.0
+; Metals: Session-dependent spread filter (max 1.0 USD in prime time)
+
+; ====== SMC - SMART MONEY CONCEPTS ======
+InpUseSMC=true
+InpSMC_SwingLookback=20
+InpSMC_MinImpulseATR=2.0
+InpSMC_MinFVG_ATR=0.5
+
+; ====== MULTI-TIMEFRAME ======
+InpUseMTF=true
+InpHTF=16388
+; H4
+InpMTF=16385
+; H1
+InpMTF_EMAPeriod=50
+
+; ====== NEWS FILTER ======
+InpUseNewsFilter=true
+InpNewsMinutesBefore=60
+; Metals: 1-hour blackout before news (increased from 30 min)
+InpNewsMinutesAfter=60
+; Metals: 1-hour blackout after news (increased from 30 min)
+
+; ====== VOLATILITY SPIKE PROTECTION ======
+InpEnableVolatilityFilter=true
+InpVolatilityThreshold=3.0
+; 3x ATR spike detection
+InpVolatilitySpikeCooldown=15
+; 15-minute cooldown after spike
+
+; ====== KELLY POSITION SIZING ======
+InpUseKelly=true
+InpKellyFraction=0.5
+; Half-Kelly for safety
+InpDailyMaxDD=3.0
+; Daily max drawdown 3%
+InpWeeklyMaxDD=6.0
+; Weekly max drawdown 6%
+
+; ====== LEARNING & ADAPTATION ======
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+; 180 days of history
+InpMinTradesForLearning=50
+
+; ====== ADAPTIVE BEHAVIOR ======
+InpEnableAdaptiveRisk=false
+InpEnableAdaptiveExits=false
+InpEnableAdaptiveFilters=false
+; Temporarily disabled for testing
+
+; ====== PORTFOLIO PROTECTION ======
+InpUseCorrelationFilter=true
+InpDailyMaxLoss_R=4.0
+; Circuit breaker at -4R daily loss
+InpLossCooldownMinutes=30
+InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=5
+; Max 5 trades per day (prevent overtrading)
+InpUseReversalFilter=true
+InpReversalCooldownMinutes=15
+
+; ====== SESSION GOVERNOR ======
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=3
+InpTradeCooldownMinutes=30

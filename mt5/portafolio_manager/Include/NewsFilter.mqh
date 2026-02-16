@@ -260,8 +260,19 @@ public:
       for(int i = 0; i < ArraySize(m_upcomingEvents); i++)
       {
          datetime eventTime = m_upcomingEvents[i].time;
-         datetime windowStart = eventTime - m_minutesBefore * 60;
-         datetime windowEnd = eventTime + m_minutesAfter * 60;
+         int minutesBefore = m_minutesBefore;
+         int minutesAfter = m_minutesAfter;
+
+         // 🪙 METALS: Extend blackout window for gold-critical events
+         if(IsGoldRelevantEvent(m_upcomingEvents[i].name))
+         {
+            // Double the blackout window for gold-relevant events
+            minutesBefore = m_minutesBefore * 2;
+            minutesAfter = m_minutesAfter * 2;
+         }
+
+         datetime windowStart = eventTime - minutesBefore * 60;
+         datetime windowEnd = eventTime + minutesAfter * 60;
 
          if(now >= windowStart && now <= windowEnd)
          {
@@ -269,7 +280,8 @@ public:
             m_windowStart = windowStart;
             m_windowEnd = windowEnd;
             m_currentEventName = m_upcomingEvents[i].currency + ": " +
-                                 m_upcomingEvents[i].name;
+                                 m_upcomingEvents[i].name +
+                                 (IsGoldRelevantEvent(m_upcomingEvents[i].name) ? " 🪙" : "");
 
             // High impact gets priority
             if(m_upcomingEvents[i].impact == NEWS_HIGH)
@@ -467,6 +479,30 @@ public:
    //+------------------------------------------------------------------+
    bool IsInNewsWindow() { return m_inNewsWindow; }
    string GetCurrentEventName() { return m_currentEventName; }
+
+   //+------------------------------------------------------------------+
+   //| 🪙 METALS: Check if event is gold-relevant (high impact for XAUUSD) |
+   //+------------------------------------------------------------------+
+   bool IsGoldRelevantEvent(string eventName)
+   {
+      string name = eventName;
+      StringToUpper(name);
+
+      // Core gold-moving events (extend blackout window)
+      if(StringFind(name, "CPI") >= 0) return true;
+      if(StringFind(name, "NFP") >= 0) return true;
+      if(StringFind(name, "NONFARM") >= 0) return true;
+      if(StringFind(name, "FOMC") >= 0) return true;
+      if(StringFind(name, "INTEREST RATE") >= 0) return true;
+      if(StringFind(name, "FED") >= 0 && StringFind(name, "DECISION") >= 0) return true;
+      if(StringFind(name, "FED") >= 0 && StringFind(name, "MINUTES") >= 0) return true;
+      if(StringFind(name, "GDP") >= 0) return true;
+      if(StringFind(name, "UNEMPLOYMENT") >= 0) return true;
+      if(StringFind(name, "INFLATION") >= 0) return true;
+      if(StringFind(name, "PCE") >= 0) return true;  // Personal Consumption Expenditures
+
+      return false;
+   }
 
    //+------------------------------------------------------------------+
    //| Get string representation                                         |
