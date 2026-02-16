@@ -1,24 +1,19 @@
-; Portfolio Governor - FundingPips 5K Account Configuration
-; Optimized for 10 pairs: EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, EURJPY, AUDJPY, NZDUSD, USDCHF, GBPJPY
+; Optimized for 3 pairs: EURUSD, GBPUSD, USDJPY
 ; Account: $5,000 FundingPips
-; Strategy: Conservative multi-symbol portfolio management
+; Strategy: Aggressive London/NY Session Focus
 
 ;═══════ PORTFOLIO LIMITS ═══════
 InpMaxPortfolioRisk=5.0
-; Max Total Portfolio Risk (%) - Increased for FundingPips ($50 per trade)
-; With 1% risk per trade, cap at 5.0% to stay within daily limit (hard cap)
-; With 10 pairs @ 1.0% each, this prevents opening > 5 trades simultaneously
-; Adjusted to allow 5 simultaneous trades max (though Group Risk will limit this further)
+; Max Total Portfolio Risk (%) - FundingPips Hard Cap
+; Allows up to 5 simultaneous trades at 1% risk
 
-InpMaxSymbolRisk=1.5
+InpMaxSymbolRisk=2.0
 ; Max Risk Per Symbol (%)
-; Increased to 1.5% to allow for 1.0% base risk + scaling
-; Allows room for scaling in if needed, but base risk is 0.5%
-; Coverage for new 0.5% per trade sizing
+; Increased to 2.0% to allow scaling (e.g., initial entry + 1 add-on)
 
-InpMaxGroupRisk=2.0
+InpMaxGroupRisk=3.0
 ; Max Risk Per Correlation Group (%)
-; Increased to allow multiple pairs in same group to trade (e.g. 4x USD pairs)
+; Increased to 3.0% to allow USD pairs to trade freely (e.g. EURUSD + GBPUSD + USDJPY)
 
 ;═══════ DRAWDOWN GOVERNOR ═══════
 InpDD_Normal=3.5
@@ -40,9 +35,9 @@ InpDD_ReducedMult=0.60
 ; More gradual risk reduction allows recovery
 
 ;═══════ ROLLING PF GOVERNOR ═══════
-InpRollingTrades=50
-; Rolling Window (trades) - Larger sample for 8 pairs
-; Increased from 40 to 50 trades (~6-7 trades per pair for better statistics)
+InpRollingTrades=20
+; Rolling Window (trades) - Adjusted for 3 pairs
+; Reduced from 50 to 20 for faster adaptation to current market conditions
 
 InpPF_Normal=1.3
 ; PF Level: Normal Trading
@@ -80,7 +75,7 @@ InpMonthlyMaxDD=9.5
 ;═══════ CORRELATION GUARD ═══════
 InpUseCorrelationGuard=false
 ; Enable Correlation Guard
-; Critical for 8-pair portfolio
+; DISABLED for 3-pair elite portfolio (we want all 3 to trade)
 
 InpHighCorrelation=0.70
 ; High Correlation Threshold
@@ -97,7 +92,7 @@ InpMagicBase=100000
 
 InpMagicRange=999
 ; Magic Number Range
-; Covers all 8 Symbol_Engine instances
+; Covers all Symbol_Engine instances
 
 ;═══════ UPDATE FREQUENCY ═══════
 InpUpdateSeconds=5
