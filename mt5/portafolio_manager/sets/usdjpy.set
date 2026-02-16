@@ -11,8 +11,8 @@ InpBrokerUTCOffset=2
 
 ; ====== KILLZONES ======
 InpUseKillzoneFilter=true
-InpEnableAsianKZ=true
-InpEnableLondonOpenKZ=false
+InpEnableAsianKZ=false
+InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
 
