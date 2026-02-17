@@ -157,7 +157,7 @@ int OnInit()
    if(!dashboardCanvas.Init("GovDashboard", 20, 20, 500, 400))
       Print("Failed to create dashboard canvas");
       
-   Print("  PORTFOLIO GOVERNOR v2.0 ACTIVATED");
+   Print("  PORTFOLIO GOVERNOR v2.0 V2 DASHBOARD READY");
    Print("===============================================================");
    Print("  Max Portfolio Risk: ", InpMaxPortfolioRisk, "%");
    Print("  Max Symbol Risk: ", InpMaxSymbolRisk, "%");

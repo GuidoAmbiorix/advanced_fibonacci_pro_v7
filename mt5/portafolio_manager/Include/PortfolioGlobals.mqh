@@ -23,6 +23,8 @@
 // Format: PG_Score_[Symbol] -> e.g. PG_Score_EURUSD = 28.5
 // Format: PG_Rank_[Symbol]  -> e.g. PG_Rank_EURUSD = 1 (1st place)
 #define GV_SCORE_PREFIX          "PG_Score_"
+#define GV_REQ_PREFIX            "PG_Req_"
+#define GV_DIR_PREFIX            "PG_Dir_"
 #define GV_RANK_PREFIX           "PG_Rank_"
 
 // Correlation Group Risk Limits
