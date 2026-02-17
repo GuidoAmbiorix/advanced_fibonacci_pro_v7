@@ -118,6 +118,34 @@ string GetGroupGVKey(ENUM_CORR_GROUP group)
 }
 
 //+------------------------------------------------------------------+
+//| SEMANTIC CORRELATION LOGIC (Dynamic Draft)                        |
+//+------------------------------------------------------------------+
+#define CORR_FACTOR_HIGH         0.25  // 25% Penalty
+#define CORR_FACTOR_MED          0.15  // 15% Penalty
+#define CORR_FACTOR_LOW          0.05  // 5% Penalty
+
+double GetSemanticCorrelation(string symA, string symB)
+{
+   ENUM_CORR_GROUP gA = GetCorrelationGroup(symA);
+   ENUM_CORR_GROUP gB = GetCorrelationGroup(symB);
+   
+   if(gA == gB) return CORR_FACTOR_HIGH; // Same group = High Risk
+   
+   // Specific Inter-Group Rules
+   if((gA == GROUP_USD && gB == GROUP_JPY)  || (gA == GROUP_JPY && gB == GROUP_USD)) return CORR_FACTOR_MED; // USDJPY vs Majors
+   if((gA == GROUP_METALS && gB == GROUP_USD) || (gA == GROUP_USD && gB == GROUP_METALS)) return CORR_FACTOR_MED; // Gold vs USD
+   if((gA == GROUP_METALS && gB == GROUP_JPY) || (gA == GROUP_JPY && gB == GROUP_METALS)) return CORR_FACTOR_MED; // Gold vs JPY
+   
+   // Crosses (Simple Logic for now, checking string)
+   bool isCrossA = (gA == GROUP_OTHER && (StringFind(symA, "JPY")>0 || StringFind(symA, "GBP")>0));
+   bool isCrossB = (gB == GROUP_OTHER && (StringFind(symB, "JPY")>0 || StringFind(symB, "GBP")>0));
+   
+   if(isCrossA || isCrossB) return CORR_FACTOR_MED;
+
+   return CORR_FACTOR_LOW; // Default
+}
+
+//+------------------------------------------------------------------+
 //| PERMISSION REQUEST STRUCTURE                                      |
 //+------------------------------------------------------------------+
 struct TradeRequest

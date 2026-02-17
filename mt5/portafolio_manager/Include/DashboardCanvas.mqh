@@ -86,7 +86,14 @@ public:
       {
          string rankStr = IntegerToString(ranks[i].rank);
          string symStr  = ranks[i].symbol;
+         
+         // Score Display: "22.5" or "22.5 (18.0)"
          string scoreStr = DoubleToString(ranks[i].score, 1);
+         if(ranks[i].score - ranks[i].adjScore > 0.1)
+         {
+            scoreStr += " (" + DoubleToString(ranks[i].adjScore, 1) + ")";
+         }
+         
          string reqStr   = DoubleToString(ranks[i].reqScore, 1);
          
          // Timer Logic

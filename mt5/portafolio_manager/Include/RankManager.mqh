@@ -15,6 +15,7 @@ struct SymbolRank
 {
    string symbol;
    double score;
+   double adjScore; // Penalized Score
    double reqScore;
    double direction; // 1.0 = Buy, -1.0 = Sell
    long   timeRemaining; // Seconds to next bar
@@ -56,6 +57,10 @@ public:
          {
             // Extract Symbol Name (e.g. PG_Score_EURUSD -> EURUSD)
             string symbol = StringSubstr(gvName, StringLen(GV_SCORE_PREFIX));
+            
+            // GHOST SYMBOL GUARD: Only add if complete data exists
+            if(!GlobalVariableCheck(GV_REQ_PREFIX + symbol)) continue;
+            if(!GlobalVariableCheck(GV_DIR_PREFIX + symbol)) continue;
             
             // Add to list
             m_symbolCount++;
@@ -106,14 +111,97 @@ public:
          m_ranks[i].isKZOpen = kz;
       }
 
-      // 2. Sort Bubble Sort (Simple for small N < 50)
-      // Descending Order (High Score First)
-      for(int i=0; i<m_symbolCount-1; i++)
+      // 3. DYNAMIC DRAFT SYSTEM (Risk Allocator Model - Optimized)
+      // Init adjScore with raw score first
+      for(int i=0; i<m_symbolCount; i++) {
+         m_ranks[i].adjScore = m_ranks[i].score;
+         m_ranks[i].rank = 99; // Default low rank
+      }
+
+      // Working arrays
+      bool isPicked[];
+      ArrayResize(isPicked, m_symbolCount);
+      ArrayInitialize(isPicked, false);
+      
+      int maxSlots = 3;
+      
+      // The Draft Loop
+      for(int round=1; round<=maxSlots; round++)
       {
-         for(int j=0; j<m_symbolCount-i-1; j++)
+         int bestIdx = -1;
+         double maxScore = -999.0;
+         
+         // Find best remaining ADJ SCORE (Must be Actionable)
+         for(int i=0; i<m_symbolCount; i++)
          {
-            if(m_ranks[j].score < m_ranks[j+1].score)
+            // KILLZONE INTEGRATION: Only draft symbols that are actually open
+            if(!m_ranks[i].isKZOpen) continue; 
+            
+            if(!isPicked[i] && m_ranks[i].adjScore > maxScore)
             {
+               maxScore = m_ranks[i].adjScore;
+               bestIdx = i;
+            }
+         }
+         
+         // QUALITY CONTROL:
+         if(bestIdx == -1) break; 
+         if(m_ranks[bestIdx].adjScore < m_ranks[bestIdx].reqScore) break; 
+         
+         // Pick Winner
+         isPicked[bestIdx] = true;
+         m_ranks[bestIdx].rank = round;
+         
+         // Apply Risk Penalty to remaining
+         string winnerSym = m_ranks[bestIdx].symbol;
+         double winnerDir = m_ranks[bestIdx].direction;
+         
+         for(int i=0; i<m_symbolCount; i++)
+         {
+            if(!isPicked[i])
+            {
+               double factor = GetSemanticCorrelation(winnerSym, m_ranks[i].symbol);
+               
+               // DIRECTIONAL SENSITIVITY:
+               // If directions are opposite (Buy vs Sell), reduce penalty by 50%
+               if(winnerDir != 0 && m_ranks[i].direction != 0 && winnerDir != m_ranks[i].direction)
+               {
+                  factor *= 0.5; // Hedge logic
+               }
+               
+               // ANTIFRAGILE CLAMP: Prevents bugs if factor logic ever returns out-of-range
+               if(factor < 0.0) factor = 0.0;
+               if(factor > 1.0) factor = 1.0;
+               
+               // MULTIPLICATIVE PENALTY:
+               // Cleaner math: Score * (1 - Factor)
+               m_ranks[i].adjScore *= (1.0 - factor);
+               
+               if(m_ranks[i].adjScore < 0.0) m_ranks[i].adjScore = 0.0; // Safety Floor
+            }
+         }
+      }
+      
+      // Assign remaining ranks (Queue)
+      int nextRank = maxSlots + 1;
+      
+      for(int i=0; i<m_symbolCount; i++)
+      {
+         if(isPicked[i]) continue;
+         
+         // Rank based on AdjScore compared to other unpicked
+         int better = 0;
+         for(int j=0; j<m_symbolCount; j++)
+         {
+            if(!isPicked[j] && m_ranks[j].adjScore > m_ranks[i].adjScore) better++;
+         }
+         m_ranks[i].rank = nextRank + better;
+      }
+      
+      // Final Sort by Rank for Display Consistency
+      for(int i=0; i<m_symbolCount-1; i++) {
+         for(int j=0; j<m_symbolCount-i-1; j++) {
+            if(m_ranks[j].rank > m_ranks[j+1].rank) {
                SymbolRank temp = m_ranks[j];
                m_ranks[j] = m_ranks[j+1];
                m_ranks[j+1] = temp;
@@ -121,12 +209,9 @@ public:
          }
       }
 
-      // 3. Assign Ranks and Publish
+      // 4. Publish Ranks (No Overwrite)
       for(int i=0; i<m_symbolCount; i++)
       {
-         m_ranks[i].rank = i + 1; // 1-based rank (1st, 2nd, 3rd...)
-         
-         // Publish Rank to GV
          string rankKey = GV_RANK_PREFIX + m_ranks[i].symbol;
          GlobalVariableSet(rankKey, (double)m_ranks[i].rank);
       }
