@@ -15,8 +15,10 @@
 #include <Trade\AccountInfo.mqh>
 #include "Include\PortfolioGlobals.mqh"
 #include "Include\GovernorAllocator.mqh"
+#include "Include\RankManager.mqh"
 
 CGovernorAllocator allocator;
+CRankManager       rankManager;
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
@@ -147,6 +149,15 @@ int OnInit()
    GlobalVariableSet(GV_WEEKLY_START_EQUITY, g_weeklyStartEquity);
 
    Print("===============================================================");
+   // Initialize Rank Manager with observed symbols
+   // TODO: Make this dynamic or input-based in future
+   rankManager.AddSymbol("EURUSD");
+   rankManager.AddSymbol("GBPUSD");
+   rankManager.AddSymbol("XAUUSD");
+   rankManager.AddSymbol("USDJPY");
+   rankManager.AddSymbol("US30");
+   rankManager.AddSymbol("NAS100");
+   
    Print("  PORTFOLIO GOVERNOR v2.0 ACTIVATED");
    Print("===============================================================");
    Print("  Max Portfolio Risk: ", InpMaxPortfolioRisk, "%");
@@ -209,7 +220,10 @@ void OnTick()
    // 5. Update dashboard
    UpdateDashboard();
 
-   // 6. Publish update timestamp
+   // 6. Update Ranks (Ranking System)
+   rankManager.UpdateRanks();
+
+   // 7. Publish update timestamp
    GlobalVariableSet(GV_LAST_UPDATE, (double)TimeCurrent());
 }
 
@@ -741,6 +755,10 @@ void UpdateDashboard()
    text += "-----------------------------------------------\n";
    text += "Exposure: " + DoubleToString(exposure, 2) + "% / " + DoubleToString(InpMaxPortfolioRisk, 1) + "%\n";
    text += "Risk Mult: " + DoubleToString(riskMult * 100, 0) + "%\n";
+   
+   // ADD: Ranking Table
+   text += rankManager.GetRankingTable(5);
+
    text += "Corr Guard: " + (InpUseCorrelationGuard ? "ON" : "OFF") + "\n";
    text += "-----------------------------------------------\n";
    text += "GROUP EXPOSURE:\n";

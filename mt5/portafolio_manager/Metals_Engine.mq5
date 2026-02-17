@@ -820,12 +820,7 @@ double CalculateTakeProfit(double price, double slDist, int direction,
 //+------------------------------------------------------------------+
 void OnTick()
 {
-   // Heartbeat Logger (Every 60 Seconds)
-   if(TimeCurrent() - g_lastHeartbeat >= 60)
-   {
-      LogHeartbeat();
-      g_lastHeartbeat = TimeCurrent();
-   }
+
 
    // --- GOVERNOR EXECUTION GUARD ---
    // Check if Portfolio Governor has disabled trading (Daily Profit Target, Max DD, etc.)
@@ -901,6 +896,11 @@ void OnTick()
       g_cachedBuyScore = CalculateConfluenceScore(1);
       g_cachedSellScore = CalculateConfluenceScore(-1);
       g_lastScoreCalcTime = currentBarTime;
+
+      // --- RANKING SYSTEM: PUBLISH SCORE ---
+      // Publish the higher of the two scores to represent the symbol's "Potential"
+      double maxScore = (g_cachedBuyScore > g_cachedSellScore) ? g_cachedBuyScore : g_cachedSellScore;
+      GlobalVariableSet(GV_SCORE_PREFIX + _Symbol, maxScore);
    }
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---
@@ -1134,6 +1134,24 @@ void OnTick()
 
           // Max Trades Check (Simple Session Reset logic required or daily limit)
           // For now, using simple daily limit as proxy or relying on Allocator
+      }
+
+      // --- RANKING GUARD (Top 3 Only) ---
+      // Check if this symbol is ranked high enough to trade
+      // Defaulting to Top 3 if not specified
+      double myRank = 999;
+      if(GlobalVariableCheck(GV_RANK_PREFIX + _Symbol))
+         myRank = GlobalVariableGet(GV_RANK_PREFIX + _Symbol);
+      
+      if(myRank > 3) 
+      {
+         static datetime lastRankLog = 0;
+         if(TimeCurrent() - lastRankLog > 60) // Log every minute if blocked
+         {
+            Print("⏸️ RANKING WAIT: ", _Symbol, " Rank #", (int)myRank, " (Only Top 3 trade)");
+            lastRankLog = TimeCurrent();
+         }
+         return; // Wait for better rank
       }
 
       // --- KILLZONES ---
@@ -2699,48 +2717,7 @@ void UpdateDashboard()
    Comment(txt);
 }
 //+------------------------------------------------------------------+
-//+------------------------------------------------------------------+
-//| Log Heartbeat                                                     |
-//+------------------------------------------------------------------+
-void LogHeartbeat()
-{
-   string heartbeat = "💓 HB: " + _Symbol + " | " + TimeToString(TimeCurrent(), TIME_SECONDS) + "\n";
-   
-   // 1. Logic Active Status
-   bool tradingAllowed = true;
-   
-   heartbeat += "   Status: " + (tradingAllowed ? "ACTIVE ✅" : "IDLE zzz") + " | Regime: " + IntegerToString((int)g_currentRegime);
-   if(InpUseKillzoneFilter) heartbeat += " | KZ: " + (CheckKillzone() ? "OPEN" : "CLOSED");
-   heartbeat += "\n";
-   
-   // 2. Confluence Scores
-   // FIX: Show Dynamic Threshold in Heartbeat
-   double currentThreshold = InpMinConfluenceEntry;
-   if(InpEnableAdaptiveFilters && adaptiveFilter.IsAdaptationEnabled())
-   {
-       ConfluenceFactors factors; // Dummy factors for threshold check
-       factors.regime = g_currentRegime;
-       factors.killzone = KILLZONE_NONE;
-       currentThreshold = adaptiveFilter.CalculateDynamicThreshold(factors, KILLZONE_NONE, g_currentRegime);
-   }
 
-   heartbeat += "   Scores: BUY=" + DoubleToString(g_cachedBuyScore, 1) + "/30 | SELL=" + DoubleToString(g_cachedSellScore, 1) + "/30\n";
-   heartbeat += "   Required: " + DoubleToString(currentThreshold, 1) + " (Base: " + DoubleToString(InpMinConfluenceEntry, 1) + ")\n";
-   
-   // 3. Open Positions
-   heartbeat += "   Positions: " + IntegerToString(g_positionCount);
-   if(g_positionCount > 0)
-   {
-      heartbeat += " (";
-      for(int i=0; i<ArraySize(g_states); i++)
-      {
-         heartbeat += "#" + IntegerToString(g_states[i].ticket) + " ";
-      }
-      heartbeat += ")";
-   }
-   
-   Print(heartbeat);
-}
 
 //+------------------------------------------------------------------+
 //| Check Killzone Time                                               |
