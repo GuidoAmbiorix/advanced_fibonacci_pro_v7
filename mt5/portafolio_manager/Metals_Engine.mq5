@@ -827,6 +827,19 @@ void OnTick()
       g_lastHeartbeat = TimeCurrent();
    }
 
+   // --- GOVERNOR EXECUTION GUARD ---
+   // Check if Portfolio Governor has disabled trading (Daily Profit Target, Max DD, etc.)
+   if(GlobalVariableCheck(GV_TRADING_ENABLED) && GlobalVariableGet(GV_TRADING_ENABLED) == 0)
+   {
+      static datetime lastGovernorLog = 0;
+      if(TimeCurrent() - lastGovernorLog > 300)
+      {
+         Print("⛔ ENGINE PAUSED: Portfolio Governor has disabled trading (Daily Target or Max DD reached)");
+         lastGovernorLog = TimeCurrent();
+      }
+      return;
+   }
+   
    // --- KILLZONE NOTIFICATION ---
    if(InpNotifyKillzoneOpen)
    {
