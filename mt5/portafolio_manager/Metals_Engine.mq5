@@ -905,6 +905,10 @@ void OnTick()
       GlobalVariableSet(GV_SCORE_PREFIX + _Symbol, maxScore);
       GlobalVariableSet(GV_REQ_PREFIX + _Symbol, InpMinConfluenceEntry);
       GlobalVariableSet(GV_DIR_PREFIX + _Symbol, direction);
+      
+      // Timer Data
+      GlobalVariableSet(GV_BAROPEN_PREFIX + _Symbol, (double)currentBarTime);
+      GlobalVariableSet(GV_PERIOD_PREFIX + _Symbol, (double)PeriodSeconds(InpMTF));
    }
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---

@@ -154,7 +154,7 @@ int OnInit()
    // Initialize Rank Manager: Auto-Discovery is now active (no manual AddSymbol needed)
    
    // Initialize Dashboard Canvas
-   if(!dashboardCanvas.Init("GovDashboard", 20, 20, 500, 400))
+   if(!dashboardCanvas.Init("GovDashboard", 20, 20, 550, 400))
       Print("Failed to create dashboard canvas");
       
    Print("  PORTFOLIO GOVERNOR v2.0 V2 DASHBOARD READY");

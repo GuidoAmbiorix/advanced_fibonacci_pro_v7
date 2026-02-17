@@ -17,6 +17,7 @@ struct SymbolRank
    double score;
    double reqScore;
    double direction; // 1.0 = Buy, -1.0 = Sell
+   long   timeRemaining; // Seconds to next bar
    int    rank;
 };
 
@@ -83,11 +84,23 @@ public:
          double score = GlobalVariableGet(GV_SCORE_PREFIX + sym);
          double req   = GlobalVariableGet(GV_REQ_PREFIX + sym);
          double dir   = GlobalVariableGet(GV_DIR_PREFIX + sym);
+         
+         // Timer Calc
+         datetime open = (datetime)GlobalVariableGet(GV_BAROPEN_PREFIX + sym);
+         long period   = (long)GlobalVariableGet(GV_PERIOD_PREFIX + sym);
+         long rem      = 0;
+         
+         if(open > 0 && period > 0)
+         {
+            rem = (open + period) - TimeCurrent();
+            if(rem < 0) rem = 0; // Should trigger new bar soon
+         }
             
          m_ranks[i].symbol = sym;
          m_ranks[i].score = score;
          m_ranks[i].reqScore = req;
          m_ranks[i].direction = dir;
+         m_ranks[i].timeRemaining = rem;
       }
 
       // 2. Sort Bubble Sort (Simple for small N < 50)

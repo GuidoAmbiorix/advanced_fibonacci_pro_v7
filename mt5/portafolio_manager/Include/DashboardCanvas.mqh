@@ -29,7 +29,7 @@ private:
    uint      m_colHeader;
 
 public:
-   CDashboardCanvas() : m_dashWidth(500), m_dashHeight(350), m_fontSize(10), m_rowHeight(20)
+   CDashboardCanvas() : m_dashWidth(550), m_dashHeight(350), m_fontSize(10), m_rowHeight(20)
    {
       m_colBg     = ColorToARGB(clrBlack, 220); // Semi-transparent black
       m_colText   = ColorToARGB(clrWhite);
@@ -75,7 +75,7 @@ public:
       // 4. Draw Ranking Table Header
       int y = 70;
       FillRectangle(0, y, m_dashWidth, y+20, m_colHeader);
-      TextOut(10, y+3, "#   Symbol     Score   Req    Dir   Status", m_colText);
+      TextOut(10, y+3, "#   Symbol     Score   Req    Dir   Time    Status", m_colText);
       y += 25;
       
       // 5. Draw Ranks
@@ -88,6 +88,13 @@ public:
          string symStr  = ranks[i].symbol;
          string scoreStr = DoubleToString(ranks[i].score, 1);
          string reqStr   = DoubleToString(ranks[i].reqScore, 1);
+         
+         // Timer Logic
+         long rem = ranks[i].timeRemaining;
+         string timeStr = StringFormat("%02d:%02d", rem/60, rem%60);
+         uint timeCol = m_colText;
+         if(rem < 60) timeCol = m_colYellow;
+         if(rem < 10) timeCol = m_colRed;
          
          // Direction Icon
          string dirStr = (ranks[i].direction > 0) ? "UP" : "DN"; // Fallback text
@@ -112,7 +119,8 @@ public:
          TextOut(120, y, scoreStr, scoreCol);
          TextOut(180, y, reqStr, m_colText);
          TextOut(240, y, dirStr, dirColor);
-         TextOut(290, y, statusStr, statusCol);
+         TextOut(290, y, timeStr, timeCol);
+         TextOut(350, y, statusStr, statusCol);
          
          y += m_rowHeight;
       }
