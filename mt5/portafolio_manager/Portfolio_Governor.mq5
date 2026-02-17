@@ -26,7 +26,6 @@ input group "═══════ PORTFOLIO LIMITS ═══════"
 input double InpMaxPortfolioRisk = 2.0;        // Max Total Portfolio Risk (%)
 input double InpMaxSymbolRisk = 0.6;           // Max Risk Per Symbol (%)
 input double InpMaxGroupRisk = 1.0;            // Max Risk Per Correlation Group (%)
-input double InpDailyTargetProfit = 1.0;       // Daily Profit Target (%) - Pauses trading when hit
 
 input group "═══════ DRAWDOWN GOVERNOR ═══════"
 input double InpDD_Normal = 3.0;               // DD Level: Normal Trading (%)
@@ -85,7 +84,6 @@ datetime g_lastMonthCheck = 0;
 bool g_dailyLimitHit = false;
 bool g_weeklyLimitHit = false;
 bool g_monthlyLimitHit = false;
-bool g_dailyTargetHit = false;
 
 // Correlation matrix (pre-defined known correlations)
 struct SymbolCorrelation
@@ -106,53 +104,7 @@ SymbolCorrelation g_correlations[] = {
    {"XAUUSD", "DXY", -0.80}
 };
 
-//+------------------------------------------------------------------+
-//| Calculate realized profit for the current day from history        |
-//+------------------------------------------------------------------+
-double CalculateDailyProfitFromHistory()
-{
-   double dailyRealizedProfit = 0;
-   
-   // Get start of day time
-   MqlDateTime dt;
-   TimeCurrent(dt);
-   dt.hour = 0;
-   dt.min = 0;
-   dt.sec = 0;
-   datetime startOfDay = StructToTime(dt);
-   
-   // Select history for today
-   if(HistorySelect(startOfDay, TimeCurrent()))
-   {
-      int deals = HistoryDealsTotal();
-      for(int i = 0; i < deals; i++)
-      {
-         ulong ticket = HistoryDealGetTicket(i);
-         if(ticket > 0)
-         {
-            long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
-            
-            // Only count exits (Realized P&L)
-            if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_INOUT)
-            {
-               long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
-               
-               // Check if it belongs to our portfolio
-               if(magic >= InpMagicBase && magic <= InpMagicBase + InpMagicRange)
-               {
-                  double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
-                  double swap = HistoryDealGetDouble(ticket, DEAL_SWAP);
-                  double comm = HistoryDealGetDouble(ticket, DEAL_COMMISSION);
-                  
-                  dailyRealizedProfit += (profit + swap + comm);
-               }
-            }
-         }
-      }
-   }
-   
-   return dailyRealizedProfit;
-}
+
 
 //+------------------------------------------------------------------+
 //| Expert initialization                                             |
@@ -277,10 +229,9 @@ void CheckPeriodReset()
    {
       g_dailyStartEquity = account.Equity();
       g_dailyLimitHit = false;
-      g_dailyTargetHit = false;
       g_lastDayCheck = TimeCurrent();
       GlobalVariableSet(GV_DAILY_START_EQUITY, g_dailyStartEquity);
-      Print("New trading day - Daily DD & Target reset. Start Equity: ", g_dailyStartEquity);
+      Print("New trading day - Daily DD reset. Start Equity: ", g_dailyStartEquity);
    }
 
    // New week check (Monday)
@@ -309,23 +260,6 @@ void CheckPeriodReset()
 void CalculatePeriodDrawdowns()
 {
    double currentEquity = account.Equity();
-
-   // Daily Profit Target Check
-   if(g_dailyStartEquity > 0)
-   {
-      // FIX: Use robust calculation (History + Floating)
-      double realizedDaily = CalculateDailyProfitFromHistory();
-      double floatingPL = account.Profit();
-      double totalDailyProfit = realizedDaily + floatingPL;
-      
-      double dailyProfitPct = (totalDailyProfit / g_dailyStartEquity) * 100.0;
-      
-      if(InpDailyTargetProfit > 0 && dailyProfitPct >= InpDailyTargetProfit && !g_dailyTargetHit)
-      {
-         g_dailyTargetHit = true;
-         Print("🎯 DAILY PROFIT TARGET HIT: ", DoubleToString(dailyProfitPct, 2), "% >= ", InpDailyTargetProfit, "% - Trading PAUSED for today");
-      }
-   }
 
    // Daily DD
    double dailyDD = 0;
@@ -668,12 +602,7 @@ void UpdateTradingStatus()
       reason = "Monthly DD limit hit";
    }
 
-   // Pause on daily profit target
-   if(g_dailyTargetHit)
-   {
-      enabled = false;
-      reason = "Daily Profit Target Hit (" + DoubleToString(InpDailyTargetProfit, 1) + "%)";
-   }
+
 
    if(!enabled && reason != "")
       Print("Trading PAUSED: ", reason);
@@ -789,7 +718,6 @@ void UpdateDashboard()
    if(g_dailyLimitHit) status = "DAILY LIMIT";
    else if(g_weeklyLimitHit) status = "WEEKLY LIMIT";
    else if(g_monthlyLimitHit) status = "MONTHLY LIMIT";
-   else if(g_dailyTargetHit) status = "DAILY TARGET 🎯";
 
    string ddColor = (dd < InpDD_Normal) ? "[OK]" : ((dd < InpDD_Pause) ? "[WARN]" : "[CRIT]");
    string pfColor = (pf >= InpPF_Normal) ? "[OK]" : ((pf >= InpPF_Pause) ? "[WARN]" : "[CRIT]");
@@ -808,24 +736,8 @@ void UpdateDashboard()
    text += "PERIOD DRAWDOWNS:\n";
    
    text += "PERIOD DRAWDOWNS:\n";
-   
-   // Calculate Daily Profit (Realized + Floating)
-   double realizedDaily = CalculateDailyProfitFromHistory();
-   double floatingPL = account.Profit(); // Current open positions P&L
-   
-   // FIX: Daily profit is Realized Today + Floating P&L (Equity change relative to day start is less reliable on restarts)
-   double totalDailyProfit = realizedDaily + floatingPL;
-   double dailyProfitPct = 0;
-   if(g_dailyStartEquity > 0) dailyProfitPct = (totalDailyProfit / g_dailyStartEquity) * 100.0;
-   
-   string profitColor = (dailyProfitPct >= InpDailyTargetProfit) ? "[TARGET Hit]" : (dailyProfitPct > 0 ? "[PROFIT]" : "");
-
-   text += dailyColor + " Daily DD: " + DoubleToString(dailyDD, 2) + "% / " + DoubleToString(InpDailyMaxDD, 1) + "%\n";
-   if(InpDailyTargetProfit > 0)
-   {
-      text += profitColor + " Daily Profit: " + DoubleToString(dailyProfitPct, 2) + "% / " + DoubleToString(InpDailyTargetProfit, 1) + "% 🎯\n";
-   }
-   text += weeklyColor + " Weekly DD: " + DoubleToString(weeklyDD, 2) + "% / " + DoubleToString(InpWeeklyMaxDD, 1) + "%\n";
+   text += dailyColor + " Daily: " + DoubleToString(dailyDD, 2) + "% / " + DoubleToString(InpDailyMaxDD, 1) + "%\n";
+   text += weeklyColor + " Weekly: " + DoubleToString(weeklyDD, 2) + "% / " + DoubleToString(InpWeeklyMaxDD, 1) + "%\n";
    text += "-----------------------------------------------\n";
    text += "Exposure: " + DoubleToString(exposure, 2) + "% / " + DoubleToString(InpMaxPortfolioRisk, 1) + "%\n";
    text += "Risk Mult: " + DoubleToString(riskMult * 100, 0) + "%\n";
