@@ -51,14 +51,31 @@ public:
       // Check cooldown
       if(TimeCurrent() < m_disabledUntil) return false;
 
-      // Check hard lock
-      if(m_hardLock) return false;
+      // Hard lock: auto-reset daily in backtest, permanent in live
+      if(m_hardLock)
+      {
+         if(MQLInfoInteger(MQL_TESTER))
+         {
+            // In backtest: reset hard lock after 24h so other days can be tested
+            if(TimeCurrent() >= m_disabledUntil + 86400)
+            {
+               m_hardLock = false;
+               m_rollingR = 0;
+               Print("🔄 KillSwitch: Daily reset (backtest mode)");
+            }
+            else
+               return false;
+         }
+         else
+            return false;  // Live: hard lock is permanent until manual reset
+      }
 
       // Check rolling R threshold
       if(m_rollingR < -3.0)
       {
          m_hardLock = true;
-         Print("💀 KillSwitch: Rolling R below -3.0. Hard lock engaged.");
+         m_disabledUntil = TimeCurrent();
+         Print("💀 KillSwitch: Rolling R=", DoubleToString(m_rollingR, 2), " below -3.0. Hard lock engaged.");
          return false;
       }
 

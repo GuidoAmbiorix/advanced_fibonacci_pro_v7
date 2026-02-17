@@ -26,6 +26,7 @@ input group "═══════ PORTFOLIO LIMITS ═══════"
 input double InpMaxPortfolioRisk = 2.0;        // Max Total Portfolio Risk (%)
 input double InpMaxSymbolRisk = 0.6;           // Max Risk Per Symbol (%)
 input double InpMaxGroupRisk = 1.0;            // Max Risk Per Correlation Group (%)
+input double InpDailyTargetProfit = 1.0;       // Daily Profit Target (%) - Pauses trading when hit
 
 input group "═══════ DRAWDOWN GOVERNOR ═══════"
 input double InpDD_Normal = 3.0;               // DD Level: Normal Trading (%)
@@ -84,6 +85,7 @@ datetime g_lastMonthCheck = 0;
 bool g_dailyLimitHit = false;
 bool g_weeklyLimitHit = false;
 bool g_monthlyLimitHit = false;
+bool g_dailyTargetHit = false;
 
 // Correlation matrix (pre-defined known correlations)
 struct SymbolCorrelation
@@ -227,9 +229,10 @@ void CheckPeriodReset()
    {
       g_dailyStartEquity = account.Equity();
       g_dailyLimitHit = false;
+      g_dailyTargetHit = false;
       g_lastDayCheck = TimeCurrent();
       GlobalVariableSet(GV_DAILY_START_EQUITY, g_dailyStartEquity);
-      Print("New trading day - Daily DD reset. Start Equity: ", g_dailyStartEquity);
+      Print("New trading day - Daily DD & Target reset. Start Equity: ", g_dailyStartEquity);
    }
 
    // New week check (Monday)
@@ -600,6 +603,13 @@ void UpdateTradingStatus()
       reason = "Monthly DD limit hit";
    }
 
+   // Pause on daily profit target
+   if(g_dailyTargetHit)
+   {
+      enabled = false;
+      reason = "Daily Profit Target Hit (" + DoubleToString(InpDailyTargetProfit, 1) + "%)";
+   }
+
    if(!enabled && reason != "")
       Print("Trading PAUSED: ", reason);
 
@@ -714,6 +724,7 @@ void UpdateDashboard()
    if(g_dailyLimitHit) status = "DAILY LIMIT";
    else if(g_weeklyLimitHit) status = "WEEKLY LIMIT";
    else if(g_monthlyLimitHit) status = "MONTHLY LIMIT";
+   else if(g_dailyTargetHit) status = "DAILY TARGET 🎯";
 
    string ddColor = (dd < InpDD_Normal) ? "[OK]" : ((dd < InpDD_Pause) ? "[WARN]" : "[CRIT]");
    string pfColor = (pf >= InpPF_Normal) ? "[OK]" : ((pf >= InpPF_Pause) ? "[WARN]" : "[CRIT]");

@@ -53,6 +53,9 @@ CPatternMemory      patternMemory;
 #include "Include\Advanced\Divergence.mqh"
 #include "Include\Advanced\Inst_Concepts.mqh"
 
+// Visual Debugging
+#include "Include\VisualDebug.mqh"
+
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
 //+------------------------------------------------------------------+
@@ -197,6 +200,9 @@ input group "======= SESSION GOVERNOR ======="
 input bool              InpUseSessionGovernor = true;     // Enable Session Governor
 input int               InpMaxTradesPerSession = 3;       // Max Trades Per Session
 input int               InpTradeCooldownMinutes = 30;     // Cooldown Between Trades
+
+input group "======= VISUAL DEBUGGING ======="
+input bool              InpEnableVisualLevels = true;     // Draw Trade Levels on Chart
 
 //+------------------------------------------------------------------+
 //| GLOBALS                                                           |
@@ -818,6 +824,9 @@ void OnTick()
    if(g_positionCount == 0) ResetTradeState();
 
    ManagePositions();
+   
+   // Update visual debugging lines
+   UpdateAllPositionVisuals();
 
    // OPTIMIZATION: Update dashboard less frequently (every 5 seconds instead of every tick)
    static datetime lastDashboardUpdate = 0;
@@ -859,7 +868,8 @@ void OnTick()
       static datetime lastKillWarning = 0;
       if(TimeCurrent() - lastKillWarning > 300)
       {
-         Print("⛔ Kill Switch DISABLED - Trading stopped");
+         Print("⛔ BLOCKED: Kill Switch - ", killSwitch.GetStatus(),
+               " | RollingR: ", DoubleToString(killSwitch.GetRollingR(), 2));
          lastKillWarning = TimeCurrent();
       }
       return;

@@ -820,12 +820,12 @@ double CalculateTakeProfit(double price, double slDist, int direction,
 //+------------------------------------------------------------------+
 void OnTick()
 {
-   // Heartbeat Logger (Every 60 Seconds) - DISABLED for cleaner logs
-   // if(TimeCurrent() - g_lastHeartbeat >= 60)
-   // {
-   //    LogHeartbeat();
-   //    g_lastHeartbeat = TimeCurrent();
-   // }
+   // Heartbeat Logger (Every 60 Seconds)
+   if(TimeCurrent() - g_lastHeartbeat >= 60)
+   {
+      LogHeartbeat();
+      g_lastHeartbeat = TimeCurrent();
+   }
 
    // --- KILLZONE NOTIFICATION ---
    if(InpNotifyKillzoneOpen)
@@ -902,7 +902,8 @@ void OnTick()
       static datetime lastKillWarning = 0;
       if(TimeCurrent() - lastKillWarning > 300)
       {
-         Print("⛔ BLOCKED: Kill Switch DISABLED - Trading stopped");
+         Print("⛔ BLOCKED: Kill Switch - ", killSwitch.GetStatus(),
+               " | RollingR: ", DoubleToString(killSwitch.GetRollingR(), 2));
          lastKillWarning = TimeCurrent();
       }
       return;
@@ -2250,6 +2251,9 @@ bool CheckSpread()
 //+------------------------------------------------------------------+
 bool IsSpreadAcceptable()
 {
+   // Disable spread filter during backtesting (unreliable spread data)
+   if(MQLInfoInteger(MQL_TESTER)) return true;
+
    // Check if this is a metals symbol
    string sym = _Symbol;
    StringToUpper(sym);
@@ -2757,4 +2761,50 @@ ENUM_KILLZONE GetActiveKillzone()
 bool CheckKillzone()
 {
    return GetActiveKillzone() != KILLZONE_NONE;
+}
+
+//+------------------------------------------------------------------+
+//| Log Heartbeat                                                     |
+//+------------------------------------------------------------------+
+void LogHeartbeat()
+{
+   string heartbeat = "💓 HB: " + _Symbol + " | " + TimeToString(TimeCurrent(), TIME_SECONDS) + "\n";
+   
+   // 1. Logic Active Status
+   bool tradingAllowed = true;
+   // Check basic filters
+   if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) tradingAllowed = false;
+   if(InpUseKelly && !kellySizer.IsTradingAllowed()) tradingAllowed = false;
+   
+   heartbeat += "   Status: " + (tradingAllowed ? "ACTIVE ✅" : "WAITING ⏳") + " | Regime: " + IntegerToString((int)g_currentRegime);
+   if(InpUseKillzoneFilter) heartbeat += " | KZ: " + (CheckKillzone() ? "OPEN" : "CLOSED");
+   heartbeat += " | Gov: " + (allocator.IsGovernorActive() ? "ON" : "OFF");
+   heartbeat += "\n";
+   
+   // 2. Confluence Scores
+   double currentThreshold = InpMinConfluenceEntry;
+   if(InpEnableAdaptiveFilters && adaptiveFilter.IsAdaptationEnabled())
+   {
+       ConfluenceFactors factors; 
+       factors.regime = g_currentRegime;
+       factors.killzone = KILLZONE_NONE;
+       currentThreshold = adaptiveFilter.CalculateDynamicThreshold(factors, KILLZONE_NONE, g_currentRegime);
+   }
+
+   heartbeat += "   Scores: BUY=" + DoubleToString(g_cachedBuyScore, 1) + "/30 | SELL=" + DoubleToString(g_cachedSellScore, 1) + "/30\n";
+   heartbeat += "   Required: " + DoubleToString(currentThreshold, 1) + " (Base: " + DoubleToString(InpMinConfluenceEntry, 1) + ")\n";
+   
+   // 3. Open Positions
+   heartbeat += "   Positions: " + IntegerToString(g_positionCount);
+   if(g_positionCount > 0)
+   {
+      heartbeat += " (";
+      for(int i=0; i<ArraySize(g_states); i++)
+      {
+         heartbeat += "#" + IntegerToString(g_states[i].ticket) + " ";
+      }
+      heartbeat += ")";
+   }
+   
+   Print(heartbeat);
 }

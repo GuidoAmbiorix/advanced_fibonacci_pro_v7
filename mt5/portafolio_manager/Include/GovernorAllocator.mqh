@@ -66,7 +66,15 @@ public:
    // 3. Request Risk (The Contract Implementation)
    double RequestRisk(GovernorRequest &req)
    {
-      if(!IsGovernorActive()) return req.baseRisk; // Standalone mode
+      if(!IsGovernorActive())
+      {
+         // Standalone mode: simulate Governor score scaling so backtest is representative
+         double score = CalculateSymbolScore(req);
+         double scaledRisk = req.baseRisk * score;
+         // Still apply the hard cap
+         if(scaledRisk > 2.0) scaledRisk = 2.0;
+         return scaledRisk;
+      }
       
       // 1. Calculate Score first? Or assume req.baseRisk IS the requested score-adjusted risk?
       // Architecture says: Symbol calculates score, then asks.

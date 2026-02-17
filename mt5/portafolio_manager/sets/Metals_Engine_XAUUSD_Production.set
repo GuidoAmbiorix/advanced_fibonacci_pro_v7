@@ -57,14 +57,14 @@ InpAddOn2_R=2.5
 InpMaxPositions=3
 
 ; ====== RISK (Before Governor Scaling) ======
-InpRiskBase=0.10
-; FundingPips format: 0.10 = $5 risk per trade (0.1% of $5K)
-InpRiskAddOn1=0.05
-InpRiskAddOn2=0.05
-InpMaxRisk=0.20
-; FundingPips format: 0.20 = $10 max risk (0.2% of $5K)
-InpMaxLotsPerTrade=0.1
-; $5K account: Max 0.1 lots for XAUUSD
+InpRiskBase=0.50
+; FundingPips: 0.50 = $25 risk per trade (0.5% of $5K)
+InpRiskAddOn1=0.25
+InpRiskAddOn2=0.15
+InpMaxRisk=0.75
+; FundingPips: 0.75 = $37.50 max risk (0.75% of $5K)
+InpMaxLotsPerTrade=0.03
+; $5K account: Hard cap 0.03 lots (~$5-15 risk depending on ATR)
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
@@ -84,8 +84,10 @@ InpTrailStepATR=0.5
 InpMinVolatilityPips=5.0
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
-InpPartialTP_R=1.5
-InpPartialClosePercent=40.0
+InpPartialTP_R=2.0
+; Partial close at 2R (was 1.5R - let it run more)
+InpPartialClosePercent=30.0
+; Close only 30% (was 40% - keep more position open)
 InpBE_Threshold_R=1.8
 InpTrailStart_R=2.0
 InpTrailATR_Mult=1.2
