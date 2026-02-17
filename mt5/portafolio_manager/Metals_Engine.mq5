@@ -2763,48 +2763,4 @@ bool CheckKillzone()
    return GetActiveKillzone() != KILLZONE_NONE;
 }
 
-//+------------------------------------------------------------------+
-//| Log Heartbeat                                                     |
-//+------------------------------------------------------------------+
-void LogHeartbeat()
-{
-   string heartbeat = "💓 HB: " + _Symbol + " | " + TimeToString(TimeCurrent(), TIME_SECONDS) + "\n";
-   
-   // 1. Logic Active Status
-   bool tradingAllowed = true;
-   // Check basic filters
-   if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) tradingAllowed = false;
-   if(InpUseKelly && !kellySizer.IsTradingAllowed()) tradingAllowed = false;
-   
-   heartbeat += "   Status: " + (tradingAllowed ? "ACTIVE ✅" : "WAITING ⏳") + " | Regime: " + IntegerToString((int)g_currentRegime);
-   if(InpUseKillzoneFilter) heartbeat += " | KZ: " + (CheckKillzone() ? "OPEN" : "CLOSED");
-   heartbeat += " | Gov: " + (allocator.IsGovernorActive() ? "ON" : "OFF");
-   heartbeat += "\n";
-   
-   // 2. Confluence Scores
-   double currentThreshold = InpMinConfluenceEntry;
-   if(InpEnableAdaptiveFilters && adaptiveFilter.IsAdaptationEnabled())
-   {
-       ConfluenceFactors factors; 
-       factors.regime = g_currentRegime;
-       factors.killzone = KILLZONE_NONE;
-       currentThreshold = adaptiveFilter.CalculateDynamicThreshold(factors, KILLZONE_NONE, g_currentRegime);
-   }
 
-   heartbeat += "   Scores: BUY=" + DoubleToString(g_cachedBuyScore, 1) + "/30 | SELL=" + DoubleToString(g_cachedSellScore, 1) + "/30\n";
-   heartbeat += "   Required: " + DoubleToString(currentThreshold, 1) + " (Base: " + DoubleToString(InpMinConfluenceEntry, 1) + ")\n";
-   
-   // 3. Open Positions
-   heartbeat += "   Positions: " + IntegerToString(g_positionCount);
-   if(g_positionCount > 0)
-   {
-      heartbeat += " (";
-      for(int i=0; i<ArraySize(g_states); i++)
-      {
-         heartbeat += "#" + IntegerToString(g_states[i].ticket) + " ";
-      }
-      heartbeat += ")";
-   }
-   
-   Print(heartbeat);
-}
