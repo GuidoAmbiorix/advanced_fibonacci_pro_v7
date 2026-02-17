@@ -139,6 +139,17 @@ public:
       }
       return text;
    }
+
+   //+------------------------------------------------------------------+
+   //| Get Raw Ranks (for Canvas)                                        |
+   //+------------------------------------------------------------------+
+   int GetRanks(SymbolRank &outRanks[])
+   {
+      int count = ArraySize(m_ranks);
+      ArrayResize(outRanks, count);
+      for(int i=0; i<count; i++) outRanks[i] = m_ranks[i];
+      return count;
+   }
 };
 
 #endif

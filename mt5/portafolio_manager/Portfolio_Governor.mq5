@@ -721,7 +721,7 @@ void UpdateDashboard()
    double pf = GlobalVariableGet(GV_ROLLING_PF);
    
    // Render Graphic Dashboard
-   dashboardCanvas.Update(rankManager, account.Equity(), dd, pf);
+   dashboardCanvas.Render(rankManager, account.Equity(), dd, pf);
    
    // Clear old comments to avoid overlap ghosting
    Comment("");
