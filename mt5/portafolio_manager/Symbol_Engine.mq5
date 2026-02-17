@@ -864,6 +864,10 @@ void OnTick()
       // Timer Data
       GlobalVariableSet(GV_BAROPEN_PREFIX + _Symbol, (double)currentBarTime);
       GlobalVariableSet(GV_PERIOD_PREFIX + _Symbol, (double)PeriodSeconds(InpMTF));
+      
+      // Killzone Status
+      bool isKZOpen = !InpUseKillzoneFilter || CheckKillzone();
+      GlobalVariableSet(GV_KZ_PREFIX + _Symbol, isKZOpen ? 1.0 : 0.0);
    }
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---

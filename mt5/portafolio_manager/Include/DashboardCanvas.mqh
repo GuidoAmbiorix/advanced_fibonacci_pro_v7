@@ -103,13 +103,15 @@ public:
          // Status Logic
          bool isHighEnough = (ranks[i].score >= ranks[i].reqScore);
          bool isRanked     = (ranks[i].rank <= 3);
+         bool isKZ         = ranks[i].isKZOpen;
          
          string statusStr = "WAIT";
          uint statusCol   = m_colYellow;
          
-         if(isHighEnough && isRanked) { statusStr = "ACTIVE"; statusCol = m_colGreen; }
-         else if(!isHighEnough)       { statusStr = "LOW SCORE"; statusCol = ColorToARGB(clrGray); }
-         else if(!isRanked)           { statusStr = "RANK QUEUE"; statusCol = m_colYellow; }
+         if(isHighEnough && isRanked && isKZ) { statusStr = "ACTIVE"; statusCol = m_colGreen; }
+         else if(!isKZ)                       { statusStr = "KZ WAIT"; statusCol = ColorToARGB(clrOrange); }
+         else if(!isHighEnough)               { statusStr = "LOW SCORE"; statusCol = ColorToARGB(clrGray); }
+         else if(!isRanked)                   { statusStr = "RANK QUEUE"; statusCol = m_colYellow; }
 
          // Columns
          TextOut(10, y, rankStr, m_colText);

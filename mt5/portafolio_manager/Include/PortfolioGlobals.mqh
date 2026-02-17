@@ -27,6 +27,7 @@
 #define GV_DIR_PREFIX            "PG_Dir_"
 #define GV_BAROPEN_PREFIX        "PG_Open_"        // Last Bar Open Time (datetime)
 #define GV_PERIOD_PREFIX         "PG_Per_"         // Timeframe Period (seconds)
+#define GV_KZ_PREFIX             "PG_KZ_"          // Killzone Status (1=Open, 0=Closed)
 #define GV_RANK_PREFIX           "PG_Rank_"
 
 // Correlation Group Risk Limits

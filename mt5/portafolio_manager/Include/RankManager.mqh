@@ -18,6 +18,7 @@ struct SymbolRank
    double reqScore;
    double direction; // 1.0 = Buy, -1.0 = Sell
    long   timeRemaining; // Seconds to next bar
+   bool   isKZOpen;      // Killzone active?
    int    rank;
 };
 
@@ -84,6 +85,7 @@ public:
          double score = GlobalVariableGet(GV_SCORE_PREFIX + sym);
          double req   = GlobalVariableGet(GV_REQ_PREFIX + sym);
          double dir   = GlobalVariableGet(GV_DIR_PREFIX + sym);
+         bool   kz    = (GlobalVariableGet(GV_KZ_PREFIX + sym) != 0.0);
          
          // Timer Calc
          datetime open = (datetime)GlobalVariableGet(GV_BAROPEN_PREFIX + sym);
@@ -101,6 +103,7 @@ public:
          m_ranks[i].reqScore = req;
          m_ranks[i].direction = dir;
          m_ranks[i].timeRemaining = rem;
+         m_ranks[i].isKZOpen = kz;
       }
 
       // 2. Sort Bubble Sort (Simple for small N < 50)
