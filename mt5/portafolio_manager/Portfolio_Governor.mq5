@@ -741,8 +741,18 @@ void UpdateDashboard()
    text += pfColor + " Rolling PF: " + DoubleToString(pf, 2) + " (Last " + IntegerToString(MathMin(g_tradeCount, InpRollingTrades)) + " trades)\n";
    text += "-----------------------------------------------\n";
    text += "PERIOD DRAWDOWNS:\n";
-   text += dailyColor + " Daily: " + DoubleToString(dailyDD, 2) + "% / " + DoubleToString(InpDailyMaxDD, 1) + "%\n";
-   text += weeklyColor + " Weekly: " + DoubleToString(weeklyDD, 2) + "% / " + DoubleToString(InpWeeklyMaxDD, 1) + "%\n";
+   
+   // Calculate Daily Profit for display
+   double dailyProfit = 0;
+   if(g_dailyStartEquity > 0) dailyProfit = ((account.Equity() - g_dailyStartEquity) / g_dailyStartEquity) * 100.0;
+   string profitColor = (dailyProfit >= InpDailyTargetProfit) ? "[TARGET Hit]" : (dailyProfit > 0 ? "[PROFIT]" : "");
+
+   text += dailyColor + " Daily DD: " + DoubleToString(dailyDD, 2) + "% / " + DoubleToString(InpDailyMaxDD, 1) + "%\n";
+   if(InpDailyTargetProfit > 0)
+   {
+      text += profitColor + " Daily Profit: " + DoubleToString(dailyProfit, 2) + "% / " + DoubleToString(InpDailyTargetProfit, 1) + "% 🎯\n";
+   }
+   text += weeklyColor + " Weekly DD: " + DoubleToString(weeklyDD, 2) + "% / " + DoubleToString(InpWeeklyMaxDD, 1) + "%\n";
    text += "-----------------------------------------------\n";
    text += "Exposure: " + DoubleToString(exposure, 2) + "% / " + DoubleToString(InpMaxPortfolioRisk, 1) + "%\n";
    text += "Risk Mult: " + DoubleToString(riskMult * 100, 0) + "%\n";
