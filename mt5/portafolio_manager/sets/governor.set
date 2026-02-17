@@ -1,6 +1,6 @@
-; Optimized for 3 pairs: EURUSD, GBPUSD, USDJPY
+; Optimized for 6 assets: EURUSD, GBPUSD, USDJPY, XAUUSD, GBPJPY, USTEC
 ; Account: $5,000 FundingPips
-; Strategy: Aggressive London/NY Session Focus
+; Strategy: Dynamic Draft Portfolio with Correlation Guard
 
 ;═══════ PORTFOLIO LIMITS ═══════
 InpMaxPortfolioRisk=5.0
@@ -11,9 +11,9 @@ InpMaxSymbolRisk=2.0
 ; Max Risk Per Symbol (%)
 ; Increased to 2.0% to allow scaling (e.g., initial entry + 1 add-on)
 
-InpMaxGroupRisk=3.0
+InpMaxGroupRisk=3.5
 ; Max Risk Per Correlation Group (%)
-; Increased to 3.0% to allow USD pairs to trade freely (e.g. EURUSD + GBPUSD + USDJPY)
+; Increased to 3.5% for 6-asset portfolio (Governor Draft handles per-group limits)
 
 ;═══════ DRAWDOWN GOVERNOR ═══════
 InpDD_Normal=3.5
@@ -73,13 +73,13 @@ InpMonthlyMaxDD=9.5
 ; FundingPips Limit is 10.0% - Set to 9.5% for safety
 
 ;═══════ CORRELATION GUARD ═══════
-InpUseCorrelationGuard=false
+InpUseCorrelationGuard=true
 ; Enable Correlation Guard
-; DISABLED for 3-pair elite portfolio (we want all 3 to trade)
+; ENABLED: Dynamic Draft System manages 6-asset correlation ranking
 
 InpHighCorrelation=0.70
 ; High Correlation Threshold
-; Detects pairs moving together (EURUSD/GBPUSD, AUDUSD/NZDUSD)
+; Detects pairs moving together (EURUSD/GBPUSD, XAUUSD/USDJPY)
 
 InpCorrelationReduction=0.50
 ; Size Reduction Factor
