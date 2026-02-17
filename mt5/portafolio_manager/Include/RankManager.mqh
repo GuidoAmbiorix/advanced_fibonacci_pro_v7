@@ -33,19 +33,34 @@ public:
    CRankManager() : m_symbolCount(0) {}
 
    //+------------------------------------------------------------------+
-   //| Add symbol to watch list                                          |
+   //| Discover Active Symbols (Auto-Discovery)                          |
    //+------------------------------------------------------------------+
-   void AddSymbol(string symbol)
+   void DiscoverSymbols()
    {
-      // Check duplicate
-      for(int i=0; i<m_symbolCount; i++)
-         if(m_symbols[i] == symbol) return;
-
-      m_symbolCount++;
-      ArrayResize(m_symbols, m_symbolCount);
-      ArrayResize(m_ranks, m_symbolCount);
+      // We don't clear the list immediately to avoid flickering
+      // But we will rebuild it based on active GVs on every pass (or every N seconds)
       
-      m_symbols[m_symbolCount-1] = symbol;
+      int totalGV = GlobalVariablesTotal();
+      m_symbolCount = 0; // Reset count for rebuild
+      
+      for(int i=0; i<totalGV; i++)
+      {
+         string gvName = GlobalVariableName(i);
+         
+         // Look for keys starting with PG_Score_
+         if(StringFind(gvName, GV_SCORE_PREFIX) == 0)
+         {
+            // Extract Symbol Name (e.g. PG_Score_EURUSD -> EURUSD)
+            string symbol = StringSubstr(gvName, StringLen(GV_SCORE_PREFIX));
+            
+            // Add to list
+            m_symbolCount++;
+            ArrayResize(m_symbols, m_symbolCount);
+            ArrayResize(m_ranks, m_symbolCount);
+            
+            m_symbols[m_symbolCount-1] = symbol;
+         }
+      }
    }
 
    //+------------------------------------------------------------------+
@@ -53,9 +68,12 @@ public:
    //+------------------------------------------------------------------+
    void UpdateRanks()
    {
+      // 1. Discover Symbols first
+      DiscoverSymbols();
+   
       if(m_symbolCount == 0) return;
 
-      // 1. Read Scores from Global Variables
+      // 2. Read Scores from Global Variables
       for(int i=0; i<m_symbolCount; i++)
       {
          string sym = m_symbols[i];

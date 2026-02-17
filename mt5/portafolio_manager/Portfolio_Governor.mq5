@@ -16,9 +16,11 @@
 #include "Include\PortfolioGlobals.mqh"
 #include "Include\GovernorAllocator.mqh"
 #include "Include\RankManager.mqh"
+#include "Include\DashboardCanvas.mqh"
 
 CGovernorAllocator allocator;
 CRankManager       rankManager;
+CDashboardCanvas   dashboardCanvas;
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
@@ -149,15 +151,12 @@ int OnInit()
    GlobalVariableSet(GV_WEEKLY_START_EQUITY, g_weeklyStartEquity);
 
    Print("===============================================================");
-   // Initialize Rank Manager with observed symbols
-   // TODO: Make this dynamic or input-based in future
-   rankManager.AddSymbol("EURUSD");
-   rankManager.AddSymbol("GBPUSD");
-   rankManager.AddSymbol("XAUUSD");
-   rankManager.AddSymbol("USDJPY");
-   rankManager.AddSymbol("US30");
-   rankManager.AddSymbol("NAS100");
+   // Initialize Rank Manager: Auto-Discovery is now active (no manual AddSymbol needed)
    
+   // Initialize Dashboard Canvas
+   if(!dashboardCanvas.Init("GovDashboard", 20, 20, 350, 400))
+      Print("Failed to create dashboard canvas");
+      
    Print("  PORTFOLIO GOVERNOR v2.0 ACTIVATED");
    Print("===============================================================");
    Print("  Max Portfolio Risk: ", InpMaxPortfolioRisk, "%");
@@ -716,59 +715,15 @@ void LogTransaction(string symbol, string action, double exposureBefore, double 
 
 //+------------------------------------------------------------------+
 //| Dashboard                                                         |
-//+------------------------------------------------------------------+
 void UpdateDashboard()
 {
    double dd = GlobalVariableGet(GV_CURRENT_DD);
    double pf = GlobalVariableGet(GV_ROLLING_PF);
-   double exposure = GlobalVariableGet(GV_TOTAL_EXPOSURE);
-   double riskMult = GlobalVariableGet(GV_RISK_MULTIPLIER);
-   bool enabled = GlobalVariableGet(GV_TRADING_ENABLED) == 1;
-
-   double dailyDD = GlobalVariableGet(GV_DAILY_DD);
-   double weeklyDD = GlobalVariableGet(GV_WEEKLY_DD);
-
-   string status = enabled ? "ACTIVE" : "PAUSED";
-   if(g_dailyLimitHit) status = "DAILY LIMIT";
-   else if(g_weeklyLimitHit) status = "WEEKLY LIMIT";
-   else if(g_monthlyLimitHit) status = "MONTHLY LIMIT";
-
-   string ddColor = (dd < InpDD_Normal) ? "[OK]" : ((dd < InpDD_Pause) ? "[WARN]" : "[CRIT]");
-   string pfColor = (pf >= InpPF_Normal) ? "[OK]" : ((pf >= InpPF_Pause) ? "[WARN]" : "[CRIT]");
-   string dailyColor = (dailyDD < InpDailyMaxDD * 0.5) ? "[OK]" : ((dailyDD < InpDailyMaxDD) ? "[WARN]" : "[CRIT]");
-   string weeklyColor = (weeklyDD < InpWeeklyMaxDD * 0.5) ? "[OK]" : ((weeklyDD < InpWeeklyMaxDD) ? "[WARN]" : "[CRIT]");
-
-   string text = "===============================================\n";
-   text += "  PORTFOLIO GOVERNOR v2.0\n";
-   text += "===============================================\n";
-   text += "Status: " + status + "\n";
-   text += "-----------------------------------------------\n";
-   text += "Equity: $" + DoubleToString(account.Equity(), 2) + "\n";
-   text += ddColor + " Portfolio DD: " + DoubleToString(dd, 2) + "% (Pause: " + DoubleToString(InpDD_Pause, 1) + "%)\n";
-   text += pfColor + " Rolling PF: " + DoubleToString(pf, 2) + " (Last " + IntegerToString(MathMin(g_tradeCount, InpRollingTrades)) + " trades)\n";
-   text += "-----------------------------------------------\n";
-   text += "PERIOD DRAWDOWNS:\n";
    
-   text += "PERIOD DRAWDOWNS:\n";
-   text += dailyColor + " Daily: " + DoubleToString(dailyDD, 2) + "% / " + DoubleToString(InpDailyMaxDD, 1) + "%\n";
-   text += weeklyColor + " Weekly: " + DoubleToString(weeklyDD, 2) + "% / " + DoubleToString(InpWeeklyMaxDD, 1) + "%\n";
-   text += "-----------------------------------------------\n";
-   text += "Exposure: " + DoubleToString(exposure, 2) + "% / " + DoubleToString(InpMaxPortfolioRisk, 1) + "%\n";
-   text += "Risk Mult: " + DoubleToString(riskMult * 100, 0) + "%\n";
+   // Render Graphic Dashboard
+   dashboardCanvas.Update(rankManager, account.Equity(), dd, pf);
    
-   // ADD: Ranking Table
-   text += rankManager.GetRankingTable(5);
-
-   text += "Corr Guard: " + (InpUseCorrelationGuard ? "ON" : "OFF") + "\n";
-   text += "-----------------------------------------------\n";
-   text += "GROUP EXPOSURE:\n";
-   text += "  USD: " + DoubleToString(GlobalVariableGet(GV_GROUP_USD_RISK), 2) + "%\n";
-   text += "  JPY: " + DoubleToString(GlobalVariableGet(GV_GROUP_JPY_RISK), 2) + "%\n";
-   text += "  GBP: " + DoubleToString(GlobalVariableGet(GV_GROUP_GBP_RISK), 2) + "%\n";
-   text += "  Metals: " + DoubleToString(GlobalVariableGet(GV_GROUP_METALS_RISK), 2) + "%\n";
-   text += "  Indices: " + DoubleToString(GlobalVariableGet(GV_GROUP_INDICES_RISK), 2) + "%\n";
-   text += "===============================================\n";
-
-   Comment(text);
+   // Clear old comments to avoid overlap ghosting
+   Comment("");
 }
 //+------------------------------------------------------------------+
