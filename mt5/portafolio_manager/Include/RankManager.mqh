@@ -15,6 +15,8 @@ struct SymbolRank
 {
    string symbol;
    double score;
+   double reqScore;
+   double direction; // 1.0 = Buy, -1.0 = Sell
    int    rank;
 };
 
@@ -77,14 +79,15 @@ public:
       for(int i=0; i<m_symbolCount; i++)
       {
          string sym = m_symbols[i];
-         string scoreKey = GV_SCORE_PREFIX + sym;
          
-         double score = 0;
-         if(GlobalVariableCheck(scoreKey))
-            score = GlobalVariableGet(scoreKey);
+         double score = GlobalVariableGet(GV_SCORE_PREFIX + sym);
+         double req   = GlobalVariableGet(GV_REQ_PREFIX + sym);
+         double dir   = GlobalVariableGet(GV_DIR_PREFIX + sym);
             
          m_ranks[i].symbol = sym;
          m_ranks[i].score = score;
+         m_ranks[i].reqScore = req;
+         m_ranks[i].direction = dir;
       }
 
       // 2. Sort Bubble Sort (Simple for small N < 50)

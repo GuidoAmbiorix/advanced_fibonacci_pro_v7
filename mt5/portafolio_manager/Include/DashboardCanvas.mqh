@@ -29,7 +29,7 @@ private:
    uint      m_colHeader;
 
 public:
-   CDashboardCanvas() : m_dashWidth(400), m_dashHeight(300), m_fontSize(10), m_rowHeight(20)
+   CDashboardCanvas() : m_dashWidth(500), m_dashHeight(350), m_fontSize(10), m_rowHeight(20)
    {
       m_colBg     = ColorToARGB(clrBlack, 220); // Semi-transparent black
       m_colText   = ColorToARGB(clrWhite);
@@ -75,26 +75,44 @@ public:
       // 4. Draw Ranking Table Header
       int y = 70;
       FillRectangle(0, y, m_dashWidth, y+20, m_colHeader);
-      TextOut(10, y+3, "#   Symbol     Score   Status", m_colText);
+      TextOut(10, y+3, "#   Symbol     Score   Req    Dir   Status", m_colText);
       y += 25;
       
       // 5. Draw Ranks
       SymbolRank ranks[];
       int count = manager.GetRanks(ranks);
       
-      for(int i=0; i<MathMin(count, 10); i++)
+      for(int i=0; i<MathMin(count, 12); i++)
       {
          string rankStr = IntegerToString(ranks[i].rank);
          string symStr  = ranks[i].symbol;
          string scoreStr = DoubleToString(ranks[i].score, 1);
-         bool isActive = (ranks[i].rank <= 3);
-         string statusStr = isActive ? "ACTIVE" : "WAIT";
-         uint statusCol = isActive ? m_colGreen : m_colYellow;
+         string reqStr   = DoubleToString(ranks[i].reqScore, 1);
          
+         // Direction Icon
+         string dirStr = (ranks[i].direction > 0) ? "UP" : "DN"; // Fallback text
+         uint dirColor = (ranks[i].direction > 0) ? m_colGreen : m_colRed;
+         
+         // Status Logic
+         bool isHighEnough = (ranks[i].score >= ranks[i].reqScore);
+         bool isRanked     = (ranks[i].rank <= 3);
+         
+         string statusStr = "WAIT";
+         uint statusCol   = m_colYellow;
+         
+         if(isHighEnough && isRanked) { statusStr = "ACTIVE"; statusCol = m_colGreen; }
+         else if(!isHighEnough)       { statusStr = "LOW SCORE"; statusCol = ColorToARGB(clrGray); }
+         else if(!isRanked)           { statusStr = "RANK QUEUE"; statusCol = m_colYellow; }
+
+         // Columns
          TextOut(10, y, rankStr, m_colText);
          TextOut(40, y, symStr, m_colText);
-         TextOut(120, y, scoreStr, m_colText);
-         TextOut(190, y, statusStr, statusCol);
+         
+         uint scoreCol = isHighEnough ? m_colGreen : ColorToARGB(clrGray);
+         TextOut(120, y, scoreStr, scoreCol);
+         TextOut(180, y, reqStr, m_colText);
+         TextOut(240, y, dirStr, dirColor);
+         TextOut(290, y, statusStr, statusCol);
          
          y += m_rowHeight;
       }

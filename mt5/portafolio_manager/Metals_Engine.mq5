@@ -900,7 +900,11 @@ void OnTick()
       // --- RANKING SYSTEM: PUBLISH SCORE ---
       // Publish the higher of the two scores to represent the symbol's "Potential"
       double maxScore = (g_cachedBuyScore > g_cachedSellScore) ? g_cachedBuyScore : g_cachedSellScore;
+      double direction = (g_cachedBuyScore > g_cachedSellScore) ? 1.0 : -1.0;
+      
       GlobalVariableSet(GV_SCORE_PREFIX + _Symbol, maxScore);
+      GlobalVariableSet(GV_REQ_PREFIX + _Symbol, InpMinConfluenceEntry);
+      GlobalVariableSet(GV_DIR_PREFIX + _Symbol, direction);
    }
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---
