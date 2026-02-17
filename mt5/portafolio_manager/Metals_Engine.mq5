@@ -864,8 +864,6 @@ void OnTick()
    g_positionCount = CountPositions();
    if(g_positionCount == 0) ResetTradeState();
 
-   ManagePositions();
-
    // OPTIMIZATION: Update dashboard less frequently (every 5 seconds instead of every tick)
    static datetime lastDashboardUpdate = 0;
    if(TimeCurrent() - lastDashboardUpdate >= 5)
@@ -874,10 +872,18 @@ void OnTick()
       lastDashboardUpdate = TimeCurrent();
    }
 
+   // --- CRITICAL: MANAGING POSITIONS ---
+   // User requested logic to wait for new bar for stability.
+   // However, trailing stops usually need tick data.
+   // For now, adhering to user request for stability to stop immediate closures.
    if(!IsNewBar()) return;
 
    g_barCount++;  // Performance monitoring
 
+   // Manage existing positions (Trailing, TP, BreakEven)
+   ManagePositions();
+
+   // Update Indicators & Modules
    if(!UpdateIndicators()) return;
 
    // --- UPDATE ALL MODULES ON NEW BAR ---
