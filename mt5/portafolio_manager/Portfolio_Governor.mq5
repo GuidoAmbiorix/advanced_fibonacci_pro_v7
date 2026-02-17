@@ -106,8 +106,53 @@ SymbolCorrelation g_correlations[] = {
    {"XAUUSD", "DXY", -0.80}
 };
 
-// Forward Declaration
-double CalculateDailyProfitFromHistory();
+//+------------------------------------------------------------------+
+//| Calculate realized profit for the current day from history        |
+//+------------------------------------------------------------------+
+double CalculateDailyProfitFromHistory()
+{
+   double dailyRealizedProfit = 0;
+   
+   // Get start of day time
+   MqlDateTime dt;
+   TimeCurrent(dt);
+   dt.hour = 0;
+   dt.min = 0;
+   dt.sec = 0;
+   datetime startOfDay = StructToTime(dt);
+   
+   // Select history for today
+   if(HistorySelect(startOfDay, TimeCurrent()))
+   {
+      int deals = HistoryDealsTotal();
+      for(int i = 0; i < deals; i++)
+      {
+         ulong ticket = HistoryDealGetTicket(i);
+         if(ticket > 0)
+         {
+            long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
+            
+            // Only count exits (Realized P&L)
+            if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_INOUT)
+            {
+               long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
+               
+               // Check if it belongs to our portfolio
+               if(magic >= InpMagicBase && magic <= InpMagicBase + InpMagicRange)
+               {
+                  double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+                  double swap = HistoryDealGetDouble(ticket, DEAL_SWAP);
+                  double comm = HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+                  
+                  dailyRealizedProfit += (profit + swap + comm);
+               }
+            }
+         }
+      }
+   }
+   
+   return dailyRealizedProfit;
+}
 
 //+------------------------------------------------------------------+
 //| Expert initialization                                             |
