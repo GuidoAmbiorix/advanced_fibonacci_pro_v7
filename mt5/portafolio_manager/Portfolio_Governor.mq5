@@ -106,6 +106,9 @@ SymbolCorrelation g_correlations[] = {
    {"XAUUSD", "DXY", -0.80}
 };
 
+// Forward Declaration
+double CalculateDailyProfitFromHistory();
+
 //+------------------------------------------------------------------+
 //| Expert initialization                                             |
 //+------------------------------------------------------------------+
