@@ -2274,7 +2274,7 @@ bool IsSpreadAcceptable()
       return true;  // Not metals, skip this filter
 
    double currentSpread = SymbolInfoInteger(_Symbol, SYMBOL_SPREAD) * _Point;
-   double currentSpreadUSD = currentSpread * 100;  // XAUUSD: 100 oz/lot
+   double currentSpreadUSD = currentSpread;  // Price difference in USD (e.g. 0.30)
 
    // Determine current session using GMT time
    datetime utcTime = TimeCurrent() - (InpBrokerUTCOffset * 3600);
