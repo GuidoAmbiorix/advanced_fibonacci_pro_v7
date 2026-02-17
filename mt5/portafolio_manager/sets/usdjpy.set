@@ -125,8 +125,11 @@ InpTradeCooldownMinutes=10
 InpEnableSessionBlacklist=false
 
 ; ====== PORTFOLIO PROTECTION ======
-InpUseCorrelationFilter=false
+InpUseCorrelationFilter=true
+; Governor Draft System handles correlation ranking
 InpDailyMaxLoss_R=3.0
 InpLossCooldownMinutes=90
 InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=5
+; Max 5 trades per day (prevent overtrading)
 InpUseReversalFilter=true

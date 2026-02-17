@@ -112,14 +112,35 @@ InpNewsMinutesBefore=15
 InpNewsMinutesAfter=5
 ; Indices react fast to news
 
+; ====== KELLY ======
+InpUseKelly=true
+InpKellyFraction=0.25
+InpDailyMaxDD=4.9
+InpWeeklyMaxDD=8.0
+
+; ====== LEARNING ======
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+InpMinTradesForLearning=50
+
 ; ====== ADAPTIVE ======
 InpEnableAdaptiveRisk=true
 InpEnableAdaptiveExits=true
 InpEnableAdaptiveFilters=true
 
-; ====== PORTFOLIO ======
-InpUseCorrelationFilter=false
+; ====== SESSION GOVERNOR ======
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=10
+InpTradeCooldownMinutes=10
+InpEnableSessionBlacklist=false
+
+; ====== PORTFOLIO PROTECTION ======
+InpUseCorrelationFilter=true
+; Governor Draft System handles correlation ranking
 InpDailyMaxLoss_R=3.0
 InpLossCooldownMinutes=60
 InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=5
+; Max 5 trades per day (prevent overtrading)
 InpUseReversalFilter=true
