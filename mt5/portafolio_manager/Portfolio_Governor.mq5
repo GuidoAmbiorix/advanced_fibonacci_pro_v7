@@ -262,6 +262,23 @@ void CalculatePeriodDrawdowns()
 {
    double currentEquity = account.Equity();
 
+   // Daily Profit Target Check
+   if(g_dailyStartEquity > 0)
+   {
+      // FIX: Use robust calculation (History + Floating)
+      double realizedDaily = CalculateDailyProfitFromHistory();
+      double floatingPL = account.Profit();
+      double totalDailyProfit = realizedDaily + floatingPL;
+      
+      double dailyProfitPct = (totalDailyProfit / g_dailyStartEquity) * 100.0;
+      
+      if(InpDailyTargetProfit > 0 && dailyProfitPct >= InpDailyTargetProfit && !g_dailyTargetHit)
+      {
+         g_dailyTargetHit = true;
+         Print("🎯 DAILY PROFIT TARGET HIT: ", DoubleToString(dailyProfitPct, 2), "% >= ", InpDailyTargetProfit, "% - Trading PAUSED for today");
+      }
+   }
+
    // Daily DD
    double dailyDD = 0;
    if(g_dailyStartEquity > 0)
@@ -742,15 +759,23 @@ void UpdateDashboard()
    text += "-----------------------------------------------\n";
    text += "PERIOD DRAWDOWNS:\n";
    
-   // Calculate Daily Profit for display
-   double dailyProfit = 0;
-   if(g_dailyStartEquity > 0) dailyProfit = ((account.Equity() - g_dailyStartEquity) / g_dailyStartEquity) * 100.0;
-   string profitColor = (dailyProfit >= InpDailyTargetProfit) ? "[TARGET Hit]" : (dailyProfit > 0 ? "[PROFIT]" : "");
+   text += "PERIOD DRAWDOWNS:\n";
+   
+   // Calculate Daily Profit (Realized + Floating)
+   double realizedDaily = CalculateDailyProfitFromHistory();
+   double floatingPL = account.Profit(); // Current open positions P&L
+   
+   // FIX: Daily profit is Realized Today + Floating P&L (Equity change relative to day start is less reliable on restarts)
+   double totalDailyProfit = realizedDaily + floatingPL;
+   double dailyProfitPct = 0;
+   if(g_dailyStartEquity > 0) dailyProfitPct = (totalDailyProfit / g_dailyStartEquity) * 100.0;
+   
+   string profitColor = (dailyProfitPct >= InpDailyTargetProfit) ? "[TARGET Hit]" : (dailyProfitPct > 0 ? "[PROFIT]" : "");
 
    text += dailyColor + " Daily DD: " + DoubleToString(dailyDD, 2) + "% / " + DoubleToString(InpDailyMaxDD, 1) + "%\n";
    if(InpDailyTargetProfit > 0)
    {
-      text += profitColor + " Daily Profit: " + DoubleToString(dailyProfit, 2) + "% / " + DoubleToString(InpDailyTargetProfit, 1) + "% 🎯\n";
+      text += profitColor + " Daily Profit: " + DoubleToString(dailyProfitPct, 2) + "% / " + DoubleToString(InpDailyTargetProfit, 1) + "% 🎯\n";
    }
    text += weeklyColor + " Weekly DD: " + DoubleToString(weeklyDD, 2) + "% / " + DoubleToString(InpWeeklyMaxDD, 1) + "%\n";
    text += "-----------------------------------------------\n";
