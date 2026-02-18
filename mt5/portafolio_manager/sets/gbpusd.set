@@ -82,10 +82,10 @@ InpPartialTP_R=1.8
 ; H1: GBPUSD - take partial at 1.8R (volatile, secure some profit)
 InpPartialClosePercent=35.0
 ; H1: Reduced to 35% (keep 65% running for big GBPUSD trends)
-InpBE_Threshold_R=1.0
-; H1: Slightly higher BE for GBPUSD volatility
-InpTrailStart_R=0.8
-; H1: START TRAILING EARLY at 0.8R to lock profits
+InpBE_Threshold_R=0.6
+; H1: Faster BE to protect profit (Lock + Let It Run)
+InpTrailStart_R=0.7
+; H1: Trail earlier to lock profits sooner
 InpTrailATR_Mult=1.2
 ; H1: Wider trail for GBPUSD (1.2x ATR due to volatility)
 

@@ -76,7 +76,7 @@ InpVolatilityTP_Mult=3.5  ; Dynamic Target
 InpTPMode=4               ; Use Volatility TP
 InpPartialTP_R=1.5
 InpPartialClosePercent=45.0
-InpBE_Threshold_R=0.8
+InpBE_Threshold_R=0.6
 InpTrailStart_R=0.8
 InpTrailATR_Mult=1.0
 

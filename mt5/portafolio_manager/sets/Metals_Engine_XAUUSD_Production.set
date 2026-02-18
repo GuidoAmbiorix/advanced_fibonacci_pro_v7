@@ -84,12 +84,14 @@ InpTrailStepATR=0.5
 InpMinVolatilityPips=5.0
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
-InpPartialTP_R=2.0
-; Partial close at 2R (was 1.5R - let it run more)
+InpPartialTP_R=1.5
+; Partial close at 1.5R (Lock + Let It Run: secure profit earlier)
 InpPartialClosePercent=30.0
-; Close only 30% (was 40% - keep more position open)
-InpBE_Threshold_R=1.8
-InpTrailStart_R=2.0
+; Close only 30% (keep more position open for runners)
+InpBE_Threshold_R=1.0
+; Faster BE for profit protection (was 1.8R - way too late)
+InpTrailStart_R=1.2
+; Trail from 1.2R (was 2.0R - protect gains sooner)
 InpTrailATR_Mult=1.2
 
 ; ====== SPREAD ======

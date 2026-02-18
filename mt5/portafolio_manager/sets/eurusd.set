@@ -83,10 +83,10 @@ InpPartialTP_R=1.5
 ; H1: Increased from 1.2R to 1.5R (take partial earlier on H1 moves)
 InpPartialClosePercent=40.0
 ; H1: Reduced from 45% to 40% (keep more running for trends)
-InpBE_Threshold_R=0.8
-; H1: Quick BE to protect capital (H1 can reverse fast)
-InpTrailStart_R=0.8
-; H1: START TRAILING EARLIER - reduced from 1.0R to 0.8R to lock profits sooner
+InpBE_Threshold_R=0.6
+; H1: Faster BE to protect profit (Lock + Let It Run)
+InpTrailStart_R=0.7
+; H1: Trail earlier to lock profits sooner
 InpTrailATR_Mult=1.0
 ; H1: Increased from 0.8 to 1.0 (H1 ATR is larger, need wider trail)
 

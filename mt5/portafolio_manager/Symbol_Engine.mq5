@@ -1596,50 +1596,68 @@ void ManagePositions()
             }
          }
 
-         // 2. WATERFALL BREAK-EVEN SYSTEM (FIX: Progressive profit locking)
-         // Instead of single BE at beTrigger, implement graduated stops
-         double newSL = sl;
-         bool slModified = false;
+          // 2. WATERFALL BREAK-EVEN SYSTEM (Progressive profit locking)
+          // Lock + Let It Run: protect profit at every level, let the runner fly
+          double newSL = sl;
+          bool slModified = false;
+          string lockLevel = "";
 
-         if(profitR >= 3.0)
-         {
-            // At 3.0R: Lock in +1.0R profit
-            double lockInR = 1.0;
-            double lockPrice = (pType == POSITION_TYPE_BUY) ? open + (risk * lockInR) : open - (risk * lockInR);
-            bool better = (pType == POSITION_TYPE_BUY) ? (sl < lockPrice - _Point*5) : (sl > lockPrice + _Point*5);
-            if(better)
-            {
-               newSL = lockPrice;
-               slModified = true;
-            }
-         }
-         else if(profitR >= 2.0)
-         {
-            // At 2.0R: Lock in +0.5R profit
-            double lockInR = 0.5;
-            double lockPrice = (pType == POSITION_TYPE_BUY) ? open + (risk * lockInR) : open - (risk * lockInR);
-            bool better = (pType == POSITION_TYPE_BUY) ? (sl < lockPrice - _Point*5) : (sl > lockPrice + _Point*5);
-            if(better)
-            {
-               newSL = lockPrice;
-               slModified = true;
-            }
-         }
-         else if(profitR >= beTrigger)
-         {
-            // At beTrigger (1.2R default from .set): Move to break-even
-            bool better = (pType == POSITION_TYPE_BUY) ? (sl < open - _Point*5) : (sl > open + _Point*5);
-            if(better)
-            {
-               newSL = open;
-               slModified = true;
-            }
-         }
+          if(profitR >= 3.0)
+          {
+             // At 3.0R: Lock in +1.5R profit
+             double lockInR = 1.5;
+             double lockPrice = (pType == POSITION_TYPE_BUY) ? open + (risk * lockInR) : open - (risk * lockInR);
+             bool better = (pType == POSITION_TYPE_BUY) ? (sl < lockPrice - _Point*5) : (sl > lockPrice + _Point*5);
+             if(better)
+             {
+                newSL = lockPrice;
+                slModified = true;
+                lockLevel = "3.0R→Lock+1.5R";
+             }
+          }
+          else if(profitR >= 2.0)
+          {
+             // At 2.0R: Lock in +1.0R profit
+             double lockInR = 1.0;
+             double lockPrice = (pType == POSITION_TYPE_BUY) ? open + (risk * lockInR) : open - (risk * lockInR);
+             bool better = (pType == POSITION_TYPE_BUY) ? (sl < lockPrice - _Point*5) : (sl > lockPrice + _Point*5);
+             if(better)
+             {
+                newSL = lockPrice;
+                slModified = true;
+                lockLevel = "2.0R→Lock+1.0R";
+             }
+          }
+          else if(profitR >= 1.0)
+          {
+             // At 1.0R: Lock in +0.25R profit (never give back ALL profit)
+             double lockInR = 0.25;
+             double lockPrice = (pType == POSITION_TYPE_BUY) ? open + (risk * lockInR) : open - (risk * lockInR);
+             bool better = (pType == POSITION_TYPE_BUY) ? (sl < lockPrice - _Point*5) : (sl > lockPrice + _Point*5);
+             if(better)
+             {
+                newSL = lockPrice;
+                slModified = true;
+                lockLevel = "1.0R→Lock+0.25R";
+             }
+          }
+          else if(profitR >= beTrigger)
+          {
+             // At beTrigger: Move to break-even (entry price)
+             bool better = (pType == POSITION_TYPE_BUY) ? (sl < open - _Point*5) : (sl > open + _Point*5);
+             if(better)
+             {
+                newSL = open;
+                slModified = true;
+                lockLevel = "BE→Entry";
+             }
+          }
 
-         if(slModified)
-         {
-            trade.PositionModify(ticket, newSL, tp);
-         }
+          if(slModified)
+          {
+             if(trade.PositionModify(ticket, newSL, tp))
+                Print("🔒 Waterfall [", lockLevel, "]: SL→", DoubleToString(newSL, _Digits), " | ProfitR=", DoubleToString(profitR, 2));
+          }
 
          // 3. Hybrid Trailing
          if(profitR >= trailStart)
