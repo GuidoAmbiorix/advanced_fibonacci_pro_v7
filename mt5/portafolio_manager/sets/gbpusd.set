@@ -83,11 +83,14 @@ InpPartialTP_R=1.8
 InpPartialClosePercent=35.0
 ; H1: Reduced to 35% (keep 65% running for big GBPUSD trends)
 InpBE_Threshold_R=0.6
-; H1: Faster BE to protect profit (Lock + Let It Run)
-InpTrailStart_R=0.7
-; H1: Trail earlier to lock profits sooner
-InpTrailATR_Mult=1.2
-; H1: Wider trail for GBPUSD (1.2x ATR due to volatility)
+; Dynamic trail activates at 0.6R
+InpTrailStart_R=0.6
+InpTrailATR_Mult=1.6
+; GBPUSD: Slightly wider (more volatile than EURUSD)
+InpTrailDecayRate=0.25
+; Slower decay - GBPUSD needs more room
+InpTrailMinMult=0.50
+InpTrailRegimeAware=true
 
 ; ====== SPREAD ======
 InpMaxSpreadPoints=80

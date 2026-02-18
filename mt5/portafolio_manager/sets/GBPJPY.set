@@ -83,10 +83,15 @@ InpPartialTP_R=2.0
 InpPartialClosePercent=30.0
 ; Leave 70% running
 InpBE_Threshold_R=0.8
-; Faster BE for profit protection (Lock + Let It Run)
-InpTrailStart_R=1.0
-InpTrailATR_Mult=1.5
-; Wide trailing stop
+; GBPJPY: Slightly later activation (needs room)
+InpTrailStart_R=0.8
+InpTrailATR_Mult=1.8
+; GBPJPY: Wide base (most volatile forex pair)
+InpTrailDecayRate=0.20
+; Slow decay - let GBPJPY trends run
+InpTrailMinMult=0.60
+; Higher floor (volatile pair needs buffer)
+InpTrailRegimeAware=true
 
 ; ====== SPREAD ======
 InpMaxSpreadPoints=80

@@ -84,11 +84,16 @@ InpPartialTP_R=1.5
 InpPartialClosePercent=40.0
 ; H1: Reduced from 45% to 40% (keep more running for trends)
 InpBE_Threshold_R=0.6
-; H1: Faster BE to protect profit (Lock + Let It Run)
-InpTrailStart_R=0.7
-; H1: Trail earlier to lock profits sooner
-InpTrailATR_Mult=1.0
-; H1: Increased from 0.8 to 1.0 (H1 ATR is larger, need wider trail)
+; Dynamic trail activates at 0.6R (early protection)
+InpTrailStart_R=0.6
+InpTrailATR_Mult=1.5
+; EURUSD: Balanced base multiplier
+InpTrailDecayRate=0.30
+; Moderate decay - tightens steadily as profit grows
+InpTrailMinMult=0.50
+; Floor: never tighter than 0.5x ATR
+InpTrailRegimeAware=true
+; Widen in trends, tighten in ranges
 
 ; ====== SPREAD ======
 InpMaxSpreadPoints=50

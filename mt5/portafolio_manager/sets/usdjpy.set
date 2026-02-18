@@ -77,8 +77,13 @@ InpTPMode=4               ; Use Volatility TP
 InpPartialTP_R=1.5
 InpPartialClosePercent=45.0
 InpBE_Threshold_R=0.6
-InpTrailStart_R=0.8
-InpTrailATR_Mult=1.0
+InpTrailStart_R=0.6
+InpTrailATR_Mult=1.4
+; USDJPY: Tighter (trending pair, cleaner moves)
+InpTrailDecayRate=0.30
+InpTrailMinMult=0.45
+; Slightly tighter floor for trending pair
+InpTrailRegimeAware=true
 
 ; ====== SPREAD ======
 InpMaxSpreadPoints=50

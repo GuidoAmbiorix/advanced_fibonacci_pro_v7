@@ -89,10 +89,15 @@ InpPartialTP_R=1.5
 InpPartialClosePercent=30.0
 ; Close only 30% (keep more position open for runners)
 InpBE_Threshold_R=1.0
-; Faster BE for profit protection (was 1.8R - way too late)
-InpTrailStart_R=1.2
-; Trail from 1.2R (was 2.0R - protect gains sooner)
-InpTrailATR_Mult=1.2
+; XAUUSD: Activate at 1.0R (gold needs more room early)
+InpTrailStart_R=1.0
+InpTrailATR_Mult=2.0
+; XAUUSD: Very wide base (ATR=$8-15, massive swings)
+InpTrailDecayRate=0.15
+; Very slow decay - let gold runners run far
+InpTrailMinMult=0.60
+; Higher floor (gold spikes need buffer)
+InpTrailRegimeAware=true
 
 ; ====== SPREAD ======
 InpMaxSpreadPoints=50

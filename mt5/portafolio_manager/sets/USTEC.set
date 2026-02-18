@@ -85,9 +85,13 @@ InpPartialTP_R=1.0
 InpPartialClosePercent=50.0
 ; Secure the bag
 InpBE_Threshold_R=0.5
-; Aggressive BE
-InpTrailStart_R=1.0
-InpTrailATR_Mult=0.8
+; Aggressive BE for index
+InpTrailStart_R=0.5
+InpTrailATR_Mult=1.6
+; USTEC: Moderate-wide (index swings are large)
+InpTrailDecayRate=0.25
+InpTrailMinMult=0.50
+InpTrailRegimeAware=true
 ; Tight trail
 
 ; ====== SPREAD ======

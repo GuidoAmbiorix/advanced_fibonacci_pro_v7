@@ -132,9 +132,12 @@ input double            InpMaxVolatilityFactor = 3.0;     // Max Volatility (Fac
 input double            InpVolatilityTP_Mult = 3.0;       // Volatility TP Multiplier (ATR)
 input double            InpPartialTP_R = 1.5;
 input double            InpPartialClosePercent = 40.0;
-input double            InpBE_Threshold_R = 1.8;
-input double            InpTrailStart_R = 2.0;
-input double            InpTrailATR_Mult = 1.2;
+input double            InpBE_Threshold_R = 0.6;         // Min profit to activate dynamic trail (R)
+input double            InpTrailStart_R = 0.6;            // Trail activation (same as BE for dynamic)
+input double            InpTrailATR_Mult = 1.5;           // Base ATR multiplier (decays with profit)
+input double            InpTrailDecayRate = 0.30;         // Multiplier decay rate (0.1=slow, 0.5=fast)
+input double            InpTrailMinMult = 0.50;           // Minimum ATR multiplier (floor)
+input bool              InpTrailRegimeAware = true;       // Widen trail in trends, tighten in ranges
 
 input group "======= SPREAD ======="
 input int               InpMaxSpreadPoints = 50;
@@ -1249,6 +1252,20 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
    int dir = (type == ORDER_TYPE_BUY) ? 1 : -1;
    double tp = CalculateTakeProfit(price, slDist, dir, quality, g_ATR);
 
+   // RUNNER MODE: Override Hard TP to allow extended runs
+   // If Runner Mode (1) is active, we don't want the broker to close EVERYTHING at FixedTP.
+   // Instead, we push the Hard TP to MaxTP (safety net) and let the Dynamic Trail handle the exit.
+   if(InpTrailingMode == 1)
+   {
+       double runnerTP_R = MathMax(InpMaxTP_R, 10.0); // Ensure at least 10R room
+       double runnerDist = slDist * runnerTP_R;
+       tp = (type == ORDER_TYPE_BUY) ? price + runnerDist : price - runnerDist;
+       tp = NormalizeDouble(tp, (int)symbolInfo.Digits());
+       
+       // Log only if verbose debugging is needed, otherwise silent override
+       // Print("🏃 RUNNER MODE: Hard TP extended to ", DoubleToString(runnerTP_R,1), "R");
+   }
+
    // FIX: CONSECUTIVE LOSS PROTECTION - Check immediately before OrderSend
    if(InpMaxConsecutiveLosses > 0 && g_consecutiveLosses >= InpMaxConsecutiveLosses)
    {
@@ -1596,111 +1613,86 @@ void ManagePositions()
             }
          }
 
-          // 2. WATERFALL BREAK-EVEN SYSTEM (Progressive profit locking)
-          // Lock + Let It Run: protect profit at every level, let the runner fly
-          double newSL = sl;
-          bool slModified = false;
-          string lockLevel = "";
-
-          if(profitR >= 3.0)
+          // 2. DYNAMIC ATR TRAILING SYSTEM (replaces hardcoded waterfall)
+          // Multiplier decays exponentially as profitR grows:
+          //   mult = base * e^(-decayRate * profitR), floored at minMult
+          // Regime-aware: wider in trends, tighter in ranges
+          // Merges with Chandelier: takes the most protective SL of both
+          if(profitR >= InpBE_Threshold_R)
           {
-             // At 3.0R: Lock in +1.5R profit
-             double lockInR = 1.5;
-             double lockPrice = (pType == POSITION_TYPE_BUY) ? open + (risk * lockInR) : open - (risk * lockInR);
-             bool better = (pType == POSITION_TYPE_BUY) ? (sl < lockPrice - _Point*5) : (sl > lockPrice + _Point*5);
-             if(better)
+             double ab[1];
+             if(CopyBuffer(hATR, 0, 0, 1, ab) == 1 && ab[0] > 0)
              {
-                newSL = lockPrice;
-                slModified = true;
-                lockLevel = "3.0R→Lock+1.5R";
+                double atrVal = ab[0];
+
+                // --- DYNAMIC FLOOR ---
+                // Step 1: Exponential decay multiplier (tightens as profit grows)
+                double dynMult = InpTrailATR_Mult * MathExp(-InpTrailDecayRate * profitR);
+                dynMult = MathMax(dynMult, InpTrailMinMult);
+
+                // Step 2: Quality adjustment
+                if(quality == EQ_WEAK)  dynMult *= 0.8; // tighter for weak setups
+                if(quality == EQ_ELITE) dynMult *= 1.2; // wider for elite (let runners run)
+
+                // Step 3: Regime-aware adjustment
+                if(InpTrailRegimeAware)
+                {
+                   if(g_currentRegime == REGIME_TREND)      dynMult *= 1.4;
+                   else if(g_currentRegime == REGIME_RANGE)  dynMult *= 0.7;
+                   // VOLATILE: keep as-is (high ATR already gives room)
+                }
+
+                // Step 4: Dynamic floor price (trail behind current price)
+                double dynFloor = (pType == POSITION_TYPE_BUY)
+                                  ? curr - (atrVal * dynMult)
+                                  : curr + (atrVal * dynMult);
+
+                // --- CHANDELIER EXIT ---
+                double chandelierSL = 0;
+                if(InpTrailType == TRAIL_CHANDELIER)
+                {
+                   double learnedTrail = learning.GetLearnedTrail(atrVal);
+                   double baseMult = MathMax(dynMult, learnedTrail / atrVal);
+                   chandelierSL = adaptiveExit.CalculateChandelierExit(20, atrVal,
+                                  (pType == POSITION_TYPE_BUY ? 0 : 1), baseMult);
+                }
+                else if(InpTrailType == TRAIL_STEP)
+                {
+                   double td = atrVal * dynMult;
+                   double proposed = (pType == POSITION_TYPE_BUY) ? curr - td : curr + td;
+                   chandelierSL = adaptiveExit.CalculateStepTrail(sl, proposed, atrVal,
+                                  InpTrailStepATR, (pType == POSITION_TYPE_BUY ? 0 : 1));
+                }
+                else // TRAIL_R_BASED
+                {
+                   double td = atrVal * dynMult;
+                   chandelierSL = (pType == POSITION_TYPE_BUY) ? curr - td : curr + td;
+                }
+
+                // --- MERGE: Take the most protective SL of both ---
+                double bestSL;
+                if(pType == POSITION_TYPE_BUY)
+                   bestSL = (chandelierSL > 0) ? MathMax(dynFloor, chandelierSL) : dynFloor;
+                else
+                   bestSL = (chandelierSL > 0) ? MathMin(dynFloor, chandelierSL) : dynFloor;
+
+                // --- APPLY: Only move SL in favorable direction ---
+                bool slBetter = (pType == POSITION_TYPE_BUY)
+                                ? (bestSL > sl + _Point*5 && bestSL < curr)
+                                : ((bestSL < sl - _Point*5 || sl == 0) && bestSL > curr);
+
+                if(slBetter)
+                {
+                   if(trade.PositionModify(ticket, bestSL, tp))
+                      Print("DynTrail: mult=", DoubleToString(dynMult,2),
+                            " floor=", DoubleToString(dynFloor,_Digits),
+                            " ce=", DoubleToString(chandelierSL,_Digits),
+                            " best=", DoubleToString(bestSL,_Digits),
+                            " R=", DoubleToString(profitR,2));
+                }
              }
           }
-          else if(profitR >= 2.0)
-          {
-             // At 2.0R: Lock in +1.0R profit
-             double lockInR = 1.0;
-             double lockPrice = (pType == POSITION_TYPE_BUY) ? open + (risk * lockInR) : open - (risk * lockInR);
-             bool better = (pType == POSITION_TYPE_BUY) ? (sl < lockPrice - _Point*5) : (sl > lockPrice + _Point*5);
-             if(better)
-             {
-                newSL = lockPrice;
-                slModified = true;
-                lockLevel = "2.0R→Lock+1.0R";
-             }
-          }
-          else if(profitR >= 1.0)
-          {
-             // At 1.0R: Lock in +0.25R profit (never give back ALL profit)
-             double lockInR = 0.25;
-             double lockPrice = (pType == POSITION_TYPE_BUY) ? open + (risk * lockInR) : open - (risk * lockInR);
-             bool better = (pType == POSITION_TYPE_BUY) ? (sl < lockPrice - _Point*5) : (sl > lockPrice + _Point*5);
-             if(better)
-             {
-                newSL = lockPrice;
-                slModified = true;
-                lockLevel = "1.0R→Lock+0.25R";
-             }
-          }
-          else if(profitR >= beTrigger)
-          {
-             // At beTrigger: Move to break-even (entry price)
-             bool better = (pType == POSITION_TYPE_BUY) ? (sl < open - _Point*5) : (sl > open + _Point*5);
-             if(better)
-             {
-                newSL = open;
-                slModified = true;
-                lockLevel = "BE→Entry";
-             }
-          }
 
-          if(slModified)
-          {
-             if(trade.PositionModify(ticket, newSL, tp))
-                Print("🔒 Waterfall [", lockLevel, "]: SL→", DoubleToString(newSL, _Digits), " | ProfitR=", DoubleToString(profitR, 2));
-          }
-
-         // 3. Hybrid Trailing
-         if(profitR >= trailStart)
-         {
-            double ab[1];
-            if(CopyBuffer(hATR, 0, 0, 1, ab) == 1)
-            {
-               double mult = InpTrailATR_Mult;
-               if(quality == EQ_WEAK) mult *= 0.7;
-               if(quality == EQ_ELITE) mult *= 1.5;
-
-               double learnedTrail = learning.GetLearnedTrail(ab[0]);
-               double atrDist = ab[0] * mult;
-               double td = MathMax(atrDist, learnedTrail);
-
-               double newSL = sl; // Default to current
-               
-               if(InpTrailType == TRAIL_CHANDELIER)
-               {
-                  // Calculate Chandelier Exit Price
-                  double ce = adaptiveExit.CalculateChandelierExit(20, ab[0], (pType == POSITION_TYPE_BUY ? 0 : 1), mult);
-                  if(ce != 0.0) newSL = ce;
-               }
-               else if(InpTrailType == TRAIL_STEP) 
-               {
-                  // Calculate Step Trail
-                  double proposed = (pType == POSITION_TYPE_BUY) ? curr - td : curr + td;
-                  newSL = adaptiveExit.CalculateStepTrail(sl, proposed, ab[0], InpTrailStepATR, (pType == POSITION_TYPE_BUY ? 0 : 1));
-               }
-               else // TRAIL_R_BASED (Standard)
-               {
-                   newSL = (pType == POSITION_TYPE_BUY) ? curr - td : curr + td;
-               }
-
-               // Modify if better
-               if((pType == POSITION_TYPE_BUY && newSL > sl && newSL < curr) ||
-                  (pType == POSITION_TYPE_SELL && (newSL < sl || sl == 0) && newSL > curr))
-               {
-                  if(newSL != sl) // Optimization: Only modify if changed
-                     trade.PositionModify(ticket, newSL, tp);
-               }
-            }
-         }
       }
    }
 }
