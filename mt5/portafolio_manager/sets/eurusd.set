@@ -1,6 +1,6 @@
 ; EURUSD - H1 Timeframe Institutional Flow
-; Core Major - Balanced
-; Optimized for H1 timeframe (reduced noise, cleaner signals)
+; Chameleon Multi-Strategy System - Core Major Pair
+; Optimized for H1 timeframe with adaptive phase detection
 
 ; ====== IDENTITY ======
 InpMagicNumber=100001
@@ -9,14 +9,68 @@ InpMagicNumber=100001
 InpDirection=0
 InpBrokerUTCOffset=2
 
+; ====== CHAMELEON MULTI-STRATEGY SYSTEM ======
+InpEnableChameleon=true
+; Enable the Chameleon adaptive multi-strategy system
+InpEnableSniper=true
+; Sniper Strategy: Trending markets (ADX>25, positive autocorrelation)
+InpEnableRubberBand=true
+; Rubber Band Strategy: Ranging markets (ADX<20, mean reversion)
+InpEnableBreakout=true
+; Breakout Strategy: Volatile markets (BBW expansion, breakouts)
+InpAutoSwitchStrategy=true
+; Automatically switch strategies based on detected market phase
+InpUseLegacyMode=false
+; Use legacy confluence-based mode (false = Chameleon mode)
+
+; ====== MARKET PHASE ANALYZER ======
+InpLookbackPeriod=50
+; Autocorrelation calculation window (50 bars for H1)
+InpTrendThreshold=0.2
+; Lag-1 autocorrelation threshold for trend detection
+InpADXPeriod=14
+; ADX period for trend strength measurement
+InpADXTrendLevel=25.0
+; ADX > 25 = Trending market
+InpADXRangeLevel=20.0
+; ADX < 20 = Ranging market
+InpBBPeriod=20
+; Bollinger Bands period for volatility
+InpBBDeviation=2.0
+; Bollinger Bands standard deviation
+InpBBExpansionPercentile=90
+; BBW percentile threshold for volatile phase (90th percentile)
+InpMinVolume=100
+; Minimum volume to avoid dormant phase
+InpSwingLookback=50
+; Bars to analyze for Fibonacci swing structure
+
+; ====== FIBONACCI GOLDEN POCKET ======
+InpZigZagDepth=12
+; ZigZag depth for swing detection
+InpZigZagDeviation=5
+; ZigZag deviation parameter
+InpZigZagBackstep=3
+; ZigZag backstep parameter
+InpMaxSwingAge=100
+; Maximum age of swing in bars (discard stale swings)
+InpUseGoldenPocket618=true
+; Use 61.8-78.6% zone (true) vs 50-61.8% (false)
+InpDetectFakeouts=true
+; Enable 127.2% extension detection for fakeouts
+InpMinSwingSize=50
+; Minimum swing size in pips (filter noise)
+
 ; ====== KILLZONES ======
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
+; EURUSD: Strong London open moves
 InpEnableNYKZ=true
+; EURUSD: NY session volatility
 InpEnableLondonCloseKZ=false
 
-; ====== FIBONACCI ======
+; ====== FIBONACCI (LEGACY - Still used by strategies) ======
 InpSwingLookback=8
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
@@ -30,6 +84,7 @@ InpDisplacementLookback=3
 ; ====== RSI ======
 InpRSI_Period=9
 InpRSI_Oversold=35
+; Rubber Band strategy uses inverted RSI logic
 InpRSI_Overbought=60
 InpRSI_Momentum=true
 
@@ -44,59 +99,54 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=15
-; H1: Increased from 11 to 12 for better quality signals on cleaner timeframe
+InpMinConfluenceEntry=12
+; Sniper default: 12.0/30 for trending markets
+; Rubber Band: 10.0/30 for ranging markets
+; Breakout: 14.0/30 for volatile markets
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
 InpMaxPositions=1
 
 ; ====== RISK ======
-; ====== RISK ======
 InpRiskBase=0.5
-; $50 Risk (FundingPips)
+; Base risk per trade (0.5% of balance)
 InpMaxRisk=1.0
 InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
 InpTPMode=2
-; H1: Adaptive TP mode for trend-following
+; Adaptive TP mode (strategy-specific)
 InpFixedTP_R=3.0
-; H1: Increased from 2.5R to 3.0R for larger moves
 InpMinTP_R=1.5
-; H1: Increased from 1.0R to 1.5R (H1 has bigger moves)
 InpMaxTP_R=5.0
-; H1: Increased from 3.5R to 5.0R to capture full H1 trends
+; Breakout strategy uses 2.618R extensions
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 InpTrailingMode=1
-; H1: Aggressive trailing stop for trend-following
-InpTrailType=1            ; 1=Chandelier
-InpTrailStepATR=0.5       ; Step size (if Type=2)
-InpMinVolatilityPips=5.0  ; Avoid dead zones
-InpMaxVolatilityFactor=3.0; Avoid crashes
-InpVolatilityTP_Mult=3.0  ; Dynamic Target
-InpTPMode=4               ; Use Volatility TP
+; Chandelier trailing stop
+InpTrailType=1
+InpTrailStepATR=0.5
+InpMinVolatilityPips=5.0
+InpMaxVolatilityFactor=3.0
+InpVolatilityTP_Mult=3.0
 InpPartialTP_R=1.5
-; H1: Increased from 1.2R to 1.5R (take partial earlier on H1 moves)
+; Take 40% partial at 1.5R
 InpPartialClosePercent=40.0
-; H1: Reduced from 45% to 40% (keep more running for trends)
 InpBE_Threshold_R=0.6
-; Dynamic trail activates at 0.6R (early protection)
+; Move to breakeven at 0.6R
 InpTrailStart_R=0.6
 InpTrailATR_Mult=1.5
-; EURUSD: Balanced base multiplier
 InpTrailDecayRate=0.30
-; Moderate decay - tightens steadily as profit grows
 InpTrailMinMult=0.50
-; Floor: never tighter than 0.5x ATR
 InpTrailRegimeAware=true
-; Widen in trends, tighten in ranges
+; Adaptive trailing based on market phase
 
 ; ====== SPREAD ======
 InpMaxSpreadPoints=50
+; Maximum 5.0 pips spread for EURUSD
 
 ; ====== SMC ======
 InpUseSMC=true
@@ -107,9 +157,9 @@ InpSMC_MinFVG_ATR=0.50
 ; ====== MULTI-TIMEFRAME ======
 InpUseMTF=true
 InpHTF=16388
-; H1 chart uses H4 (16388) for higher timeframe context
+; H4 for higher timeframe context
 InpMTF=16386
-; H1: Changed from M15 (16385) to H1 (16386) - PRIMARY TIMEFRAME
+; H1 primary timeframe
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
@@ -119,7 +169,6 @@ InpNewsMinutesAfter=15
 
 ; ====== KELLY ======
 InpUseKelly=true
-InpKellyFraction=0.25
 InpKellyFraction=0.25
 InpDailyMaxDD=4.9
 InpWeeklyMaxDD=8.0
@@ -135,7 +184,7 @@ InpEnableAdaptiveRisk=true
 InpEnableAdaptiveExits=true
 InpEnableAdaptiveFilters=true
 
-; ====== SESSION GOVERNOR (DISABLED FOR 24h) ======
+; ====== SESSION GOVERNOR ======
 InpUseSessionGovernor=true
 InpMaxTradesPerSession=10
 InpTradeCooldownMinutes=10
@@ -143,11 +192,15 @@ InpEnableSessionBlacklist=false
 
 ; ====== PORTFOLIO PROTECTION ======
 InpUseCorrelationFilter=true
-; Governor Draft System handles correlation ranking
 InpDailyMaxLoss_R=3.0
 InpLossCooldownMinutes=90
-; H1: Increased from 45 to 90 minutes (bug fix - consecutive loss protection)
 InpMaxConsecutiveLosses=2
 InpMaxDailyTrades=5
-; Max 5 trades per day (prevent overtrading)
 InpUseReversalFilter=true
+
+; ====== STRATEGY PERFORMANCE TRACKING ======
+; Automatically tracks per-strategy metrics
+; Auto-disables underperforming strategies:
+; - Win rate < 40% after 20+ trades
+; - Profit factor < 1.0 after 30+ trades
+; - Net profit < -$500 after 25+ trades

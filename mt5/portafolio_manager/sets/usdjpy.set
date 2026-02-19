@@ -1,6 +1,6 @@
-; USDJPY - 24h Institutional Flow
-; Core Major - Asian Engine
-; Optimized for 24h Operation (No Killzones)
+; USDJPY - H1 Timeframe Asian Engine
+; Chameleon Multi-Strategy System - 24/7 Liquid Major
+; Optimized for H1 with strong Asian session activity
 
 ; ====== IDENTITY ======
 InpMagicNumber=100003
@@ -9,19 +9,53 @@ InpMagicNumber=100003
 InpDirection=0
 InpBrokerUTCOffset=2
 
+; ====== CHAMELEON MULTI-STRATEGY SYSTEM ======
+InpEnableChameleon=true
+InpEnableSniper=true
+; Sniper excellent for USDJPY trends
+InpEnableRubberBand=true
+; Rubber Band for range-bound periods
+InpEnableBreakout=true
+; Breakout for BoJ intervention spikes
+InpAutoSwitchStrategy=true
+InpUseLegacyMode=false
+
+; ====== MARKET PHASE ANALYZER ======
+InpLookbackPeriod=50
+InpTrendThreshold=0.2
+InpADXPeriod=14
+InpADXTrendLevel=25.0
+InpADXRangeLevel=20.0
+InpBBPeriod=20
+InpBBDeviation=2.0
+InpBBExpansionPercentile=90
+; Standard percentile (USDJPY moderate volatility)
+InpMinVolume=100
+InpSwingLookback=50
+
+; ====== FIBONACCI GOLDEN POCKET ======
+InpZigZagDepth=12
+InpZigZagDeviation=5
+InpZigZagBackstep=3
+InpMaxSwingAge=100
+InpUseGoldenPocket618=true
+InpDetectFakeouts=true
+InpMinSwingSize=60
+; 60 pips minimum for USDJPY
+
 ; ====== KILLZONES ======
 InpUseKillzoneFilter=true
-InpEnableAsianKZ=false
+InpEnableAsianKZ=true
+; USDJPY: Strong Asian session participation
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
 
-; ====== FIBONACCI ======
-; ====== FIBONACCI ======
+; ====== FIBONACCI (LEGACY) ======
 InpSwingLookback=8
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.25
+InpZoneTolerance=0.20
 
 ; ====== DISPLACEMENT ======
 InpUseDisplacement=true
@@ -30,7 +64,9 @@ InpDisplacementLookback=3
 
 ; ====== RSI ======
 InpRSI_Period=14
+; Longer RSI for USDJPY smoothness
 InpRSI_Oversold=40
+; Moderate levels
 InpRSI_Overbought=60
 InpRSI_Momentum=true
 
@@ -45,17 +81,18 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=15
-; H1: Increased from 11 to 12 for better quality signals on cleaner timeframe
+InpMinConfluenceEntry=12
+; Sniper: 12.0/30 (standard)
+; Rubber Band: 10.0/30
+; Breakout: 14.0/30
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
 InpMaxPositions=1
 
 ; ====== RISK ======
-; ====== RISK ======
 InpRiskBase=0.5
-; $50 Risk (FundingPips)
+; Standard 0.5% risk
 InpMaxRisk=1.0
 InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true
@@ -69,30 +106,28 @@ InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 InpTrailingMode=1
-InpTrailType=1            ; 1=Chandelier
-InpTrailStepATR=0.5       ; Step size (if Type=2)
-InpMinVolatilityPips=5.0  ; Avoid dead zones
-InpMaxVolatilityFactor=3.0; Avoid crashes
-InpVolatilityTP_Mult=3.5  ; Dynamic Target
-InpTPMode=4               ; Use Volatility TP
+InpTrailType=1
+InpTrailStepATR=0.5
+InpMinVolatilityPips=6.0
+InpMaxVolatilityFactor=3.0
+InpVolatilityTP_Mult=3.0
 InpPartialTP_R=1.5
-InpPartialClosePercent=45.0
+InpPartialClosePercent=40.0
 InpBE_Threshold_R=0.6
 InpTrailStart_R=0.6
-InpTrailATR_Mult=1.4
-; USDJPY: Tighter (trending pair, cleaner moves)
+InpTrailATR_Mult=1.5
 InpTrailDecayRate=0.30
-InpTrailMinMult=0.45
-; Slightly tighter floor for trending pair
+InpTrailMinMult=0.50
 InpTrailRegimeAware=true
 
 ; ====== SPREAD ======
-InpMaxSpreadPoints=50
+InpMaxSpreadPoints=60
+; 6.0 pips max (USDJPY typically tight)
 
 ; ====== SMC ======
 InpUseSMC=true
 InpSMC_SwingLookback=12
-InpSMC_MinImpulseATR=2.0
+InpSMC_MinImpulseATR=2.2
 InpSMC_MinFVG_ATR=0.50
 
 ; ====== MULTI-TIMEFRAME ======
@@ -109,7 +144,6 @@ InpNewsMinutesAfter=15
 ; ====== KELLY ======
 InpUseKelly=true
 InpKellyFraction=0.25
-InpKellyFraction=0.25
 InpDailyMaxDD=4.9
 InpWeeklyMaxDD=8.0
 
@@ -124,7 +158,7 @@ InpEnableAdaptiveRisk=true
 InpEnableAdaptiveExits=true
 InpEnableAdaptiveFilters=true
 
-; ====== SESSION GOVERNOR (DISABLED FOR 24h) ======
+; ====== SESSION GOVERNOR ======
 InpUseSessionGovernor=true
 InpMaxTradesPerSession=10
 InpTradeCooldownMinutes=10
@@ -132,10 +166,8 @@ InpEnableSessionBlacklist=false
 
 ; ====== PORTFOLIO PROTECTION ======
 InpUseCorrelationFilter=true
-; Governor Draft System handles correlation ranking
 InpDailyMaxLoss_R=3.0
 InpLossCooldownMinutes=90
 InpMaxConsecutiveLosses=2
 InpMaxDailyTrades=5
-; Max 5 trades per day (prevent overtrading)
 InpUseReversalFilter=true

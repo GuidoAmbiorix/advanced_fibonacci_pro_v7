@@ -1,125 +1,174 @@
 ; GBPJPY - H1 Timeframe "The Beast"
-; High Volatility Specialist
-; Optimized for wide swings and strong momentum
+; Chameleon Multi-Strategy System - Ultra High Volatility
+; Optimized for extreme swings and momentum
 
 ; ====== IDENTITY ======
 InpMagicNumber=100004
+
+; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
+
+; ====== CHAMELEON MULTI-STRATEGY SYSTEM ======
+InpEnableChameleon=true
+InpEnableSniper=true
+; Sniper for strong GBPJPY trends
+InpEnableRubberBand=true
+; Rubber Band for consolidation after spikes
+InpEnableBreakout=true
+; Breakout IDEAL for GBPJPY volatility explosions
+InpAutoSwitchStrategy=true
+InpUseLegacyMode=false
+
+; ====== MARKET PHASE ANALYZER ======
+InpLookbackPeriod=50
+InpTrendThreshold=0.2
+InpADXPeriod=14
+InpADXTrendLevel=25.0
+InpADXRangeLevel=20.0
+InpBBPeriod=20
+InpBBDeviation=2.5
+; Higher deviation for GBPJPY volatility
+InpBBExpansionPercentile=80
+; Lower threshold (volatile frequently)
+InpMinVolume=150
+; Higher minimum volume
+InpSwingLookback=50
+
+; ====== FIBONACCI GOLDEN POCKET ======
+InpZigZagDepth=20
+; Much larger depth for GBPJPY
+InpZigZagDeviation=10
+; High deviation to filter extreme noise
+InpZigZagBackstep=3
+InpMaxSwingAge=100
+InpUseGoldenPocket618=true
+InpDetectFakeouts=true
+InpMinSwingSize=120
+; 120 pips minimum (GBPJPY mega swings)
 
 ; ====== KILLZONES ======
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=true
-; GBPJPY moves in Asia too (Tokyo)
+; GBPJPY: Both London and Tokyo active
 InpEnableLondonOpenKZ=true
+; Explosive London opens
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=true
+; GBPJPY moves during close too
 
-; ====== FIBONACCI (Wider Tolerance) ======
+; ====== FIBONACCI (LEGACY) ======
 InpSwingLookback=10
-; Increased lookback for major swing points
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.30
-; Wider tolerance for volatile wicks
+; Wide tolerance for volatility
 
 ; ====== DISPLACEMENT ======
 InpUseDisplacement=true
-InpDisplacementATR=1.5
-; Higher threshold for valid breakout
+InpDisplacementATR=1.8
+; Much higher ATR multiplier
 InpDisplacementLookback=3
 
 ; ====== RSI ======
-InpRSI_Period=14
-; Slower RSI to filter noise
-InpRSI_Oversold=30
+InpRSI_Period=9
+InpRSI_Oversold=25
+; Very tight (extreme moves)
 InpRSI_Overbought=70
 InpRSI_Momentum=true
 
 ; ====== TREND ======
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.15
-; Steeper slope required
+InpEMA_MinSlope=0.20
+; Much higher slope requirement
 
 ; ====== CHOP FILTER ======
 InpUseChopFilter=true
-InpChopThreshold=0.60
-; Strict chop filter, GJ chops hard
-InpATR_MA_Period=14
+InpChopThreshold=0.65
+; Lower (GBPJPY rarely chops)
+InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=15
-; H1: Increased from 11 to 12 for better quality signals on cleaner timeframe
+InpMinConfluenceEntry=14
+; Sniper: 14.0/30 (higher for GBPJPY)
+; Rubber Band: 12.0/30
+; Breakout: 15.0/30
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
 InpMaxPositions=1
 
 ; ====== RISK ======
-InpRiskBase=0.5
-; $50 Risk (FundingPips)
-InpMaxRisk=1.0
-InpMaxLotsPerTrade=5.0
+InpRiskBase=0.3
+; Much lower risk (0.3%) - extreme volatility
+InpMaxRisk=0.6
+; Capped at 0.6%
+InpMaxLotsPerTrade=3.0
 InpEnableMarginCheck=true
 
-; ====== TAKE PROFIT (Aggressive Targets) ======
+; ====== TAKE PROFIT ======
 InpTPMode=2
 InpFixedTP_R=4.0
-; Aiming for 4R runs
-InpMinTP_R=2.0
+; Very high fixed TP (GBPJPY runs far)
+InpMinTP_R=2.5
+; High minimum
 InpMaxTP_R=8.0
+; Can capture mega trends
 InpTPUseLearnedMFE=true
 
-; ====== EXIT (Wide Trailing) ======
+; ====== EXIT ======
 InpTrailingMode=1
 InpTrailType=1
 InpTrailStepATR=0.5
-InpMinVolatilityPips=10.0
+InpMinVolatilityPips=12.0
+; Very high minimum
 InpMaxVolatilityFactor=4.0
-InpVolatilityTP_Mult=4.0
-InpPartialTP_R=2.0
-; Take partials later
+InpVolatilityTP_Mult=3.5
+InpPartialTP_R=2.5
+; Much later partial
 InpPartialClosePercent=30.0
-; Leave 70% running
-InpBE_Threshold_R=0.8
-; GBPJPY: Slightly later activation (needs room)
-InpTrailStart_R=0.8
-InpTrailATR_Mult=1.8
-; GBPJPY: Wide base (most volatile forex pair)
+; Keep 70% running
+InpBE_Threshold_R=1.0
+; Much later breakeven
+InpTrailStart_R=1.0
+InpTrailATR_Mult=2.5
+; Very wide trailing
 InpTrailDecayRate=0.20
-; Slow decay - let GBPJPY trends run
-InpTrailMinMult=0.60
-; Higher floor (volatile pair needs buffer)
+; Very slow decay
+InpTrailMinMult=1.0
+; High floor
 InpTrailRegimeAware=true
 
 ; ====== SPREAD ======
-InpMaxSpreadPoints=80
-; Higher spread tolerance for Cross
+InpMaxSpreadPoints=120
+; 12.0 pips max (GBPJPY can spike wide)
 
 ; ====== SMC ======
 InpUseSMC=true
-InpSMC_SwingLookback=12
-InpSMC_MinImpulseATR=2.5
-InpSMC_MinFVG_ATR=1.0
+InpSMC_SwingLookback=18
+InpSMC_MinImpulseATR=3.0
+; Very high impulse requirement
+InpSMC_MinFVG_ATR=0.80
 
-; ====== MTF ======
+; ====== MULTI-TIMEFRAME ======
 InpUseMTF=true
 InpHTF=16388
 InpMTF=16386
 InpMTF_EMAPeriod=50
 
-; ====== NEWS ======
+; ====== NEWS FILTER ======
 InpUseNewsFilter=true
 InpNewsMinutesBefore=30
+; Very wide buffer (GBPJPY news moves)
 InpNewsMinutesAfter=30
-; Longer avoidance window
 
 ; ====== KELLY ======
 InpUseKelly=true
-InpKellyFraction=0.25
-InpDailyMaxDD=4.9
-InpWeeklyMaxDD=8.0
+InpKellyFraction=0.15
+; Very conservative
+InpDailyMaxDD=3.5
+InpWeeklyMaxDD=6.0
 
 ; ====== LEARNING ======
 InpEnableLearning=true
@@ -134,16 +183,19 @@ InpEnableAdaptiveFilters=true
 
 ; ====== SESSION GOVERNOR ======
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=10
-InpTradeCooldownMinutes=10
+InpMaxTradesPerSession=6
+; Very few trades (volatility)
+InpTradeCooldownMinutes=20
+; Long cooldown
 InpEnableSessionBlacklist=false
 
 ; ====== PORTFOLIO PROTECTION ======
 InpUseCorrelationFilter=true
-; Governor Draft System handles correlation ranking
-InpDailyMaxLoss_R=3.0
-InpLossCooldownMinutes=120
+InpDailyMaxLoss_R=2.0
+; Very tight daily loss limit
+InpLossCooldownMinutes=180
+; 3 hour cooldown after losses
 InpMaxConsecutiveLosses=2
-InpMaxDailyTrades=5
-; Max 5 trades per day (prevent overtrading)
+InpMaxDailyTrades=3
+; Max 3 trades per day (prevent overtrading)
 InpUseReversalFilter=true

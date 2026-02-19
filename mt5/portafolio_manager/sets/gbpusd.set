@@ -1,6 +1,6 @@
-; GBPUSD - H1 Timeframe Institutional Flow
-; Core Major - Volatile
-; Optimized for H1 timeframe (reduced noise, cleaner signals)
+; GBPUSD - H1 Timeframe Cable Volatility
+; Chameleon Multi-Strategy System - High Volatility Major
+; Optimized for H1 timeframe with adaptive phase detection
 
 ; ====== IDENTITY ======
 InpMagicNumber=100002
@@ -9,118 +9,163 @@ InpMagicNumber=100002
 InpDirection=0
 InpBrokerUTCOffset=2
 
+; ====== CHAMELEON MULTI-STRATEGY SYSTEM ======
+InpEnableChameleon=true
+InpEnableSniper=true
+; Sniper works well on GBPUSD trends
+InpEnableRubberBand=true
+; Rubber Band for GBPUSD consolidations
+InpEnableBreakout=true
+; Breakout excellent for GBPUSD volatility spikes
+InpAutoSwitchStrategy=true
+InpUseLegacyMode=false
+
+; ====== MARKET PHASE ANALYZER ======
+InpLookbackPeriod=50
+InpTrendThreshold=0.2
+InpADXPeriod=14
+InpADXTrendLevel=25.0
+InpADXRangeLevel=20.0
+InpBBPeriod=20
+InpBBDeviation=2.0
+InpBBExpansionPercentile=85
+; Lower percentile (85) - GBPUSD volatile more often
+InpMinVolume=120
+; Higher minimum volume for GBPUSD
+InpSwingLookback=50
+
+; ====== FIBONACCI GOLDEN POCKET ======
+InpZigZagDepth=15
+; Larger depth for GBPUSD volatility
+InpZigZagDeviation=8
+; Higher deviation to filter noise
+InpZigZagBackstep=3
+InpMaxSwingAge=100
+InpUseGoldenPocket618=true
+InpDetectFakeouts=true
+InpMinSwingSize=80
+; 80 pips minimum (GBPUSD has bigger swings)
+
 ; ====== KILLZONES ======
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
+; GBPUSD: Explosive London opens
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
 
-; ====== FIBONACCI ======
-; ====== FIBONACCI ======
-InpSwingLookback=8
+; ====== FIBONACCI (LEGACY) ======
+InpSwingLookback=10
+; Larger lookback for GBPUSD
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.25
+; Wider tolerance for volatility
 
 ; ====== DISPLACEMENT ======
 InpUseDisplacement=true
 InpDisplacementATR=1.5
+; Higher ATR multiplier for GBPUSD
 InpDisplacementLookback=3
 
 ; ====== RSI ======
 InpRSI_Period=9
-InpRSI_Oversold=35
-InpRSI_Overbought=60
+InpRSI_Oversold=30
+; Tighter levels for GBPUSD
+InpRSI_Overbought=65
 InpRSI_Momentum=true
 
 ; ====== TREND ======
 InpEMA_Period=200
 InpUseTrendFilter=true
 InpEMA_MinSlope=0.15
+; Higher slope requirement
 
 ; ====== CHOP FILTER ======
 InpUseChopFilter=true
-InpChopThreshold=0.75
+InpChopThreshold=0.70
+; Slightly lower (GBPUSD chops less)
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=15
-; H1: Increased to 13 for GBPUSD (more volatile, needs stricter filter)
+InpMinConfluenceEntry=13
+; Sniper: 13.0/30 (slightly higher for GBPUSD volatility)
+; Rubber Band: 11.0/30
+; Breakout: 14.0/30
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
 InpMaxPositions=1
 
 ; ====== RISK ======
-; ====== RISK ======
-InpRiskBase=0.35
-; $50 Risk (FundingPips)
-InpMaxRisk=1.0
-InpMaxLotsPerTrade=5.0
+InpRiskBase=0.4
+; Slightly lower risk (0.4%) due to volatility
+InpMaxRisk=0.8
+InpMaxLotsPerTrade=4.0
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
 InpTPMode=2
 InpFixedTP_R=3.5
-; H1: GBPUSD moves bigger - increased from 2.5R to 3.5R
+; Higher fixed TP for GBPUSD moves
 InpMinTP_R=2.0
-; H1: Increased from 1.0R to 2.0R (GBPUSD volatile, need min 2R)
+; Higher minimum
 InpMaxTP_R=6.0
-; H1: Increased from 3.5R to 6.0R (GBPUSD can trend hard on H1)
+; Can ride larger trends
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 InpTrailingMode=1
-InpTrailType=1            ; 1=Chandelier
-InpTrailStepATR=0.5       ; Step size (if Type=2)
-InpMinVolatilityPips=8.0  ; Avoid dead zones (Volatile Pair)
-InpMaxVolatilityFactor=3.0; Avoid crashes
-InpVolatilityTP_Mult=4.0  ; Dynamic Target (Volatile Pair)
-InpTPMode=4               ; Use Volatility TP
-InpPartialTP_R=1.8
-; H1: GBPUSD - take partial at 1.8R (volatile, secure some profit)
+InpTrailType=1
+InpTrailStepATR=0.5
+InpMinVolatilityPips=8.0
+; Higher minimum for GBPUSD
+InpMaxVolatilityFactor=3.5
+InpVolatilityTP_Mult=3.0
+InpPartialTP_R=2.0
+; Take partial later (bigger moves)
 InpPartialClosePercent=35.0
-; H1: Reduced to 35% (keep 65% running for big GBPUSD trends)
-InpBE_Threshold_R=0.6
-; Dynamic trail activates at 0.6R
-InpTrailStart_R=0.6
-InpTrailATR_Mult=1.6
-; GBPUSD: Slightly wider (more volatile than EURUSD)
+; Keep more running
+InpBE_Threshold_R=0.8
+; Later breakeven
+InpTrailStart_R=0.8
+InpTrailATR_Mult=2.0
+; Wider trailing for volatility
 InpTrailDecayRate=0.25
-; Slower decay - GBPUSD needs more room
-InpTrailMinMult=0.50
+; Slower decay
+InpTrailMinMult=0.75
+; Higher floor
 InpTrailRegimeAware=true
 
 ; ====== SPREAD ======
 InpMaxSpreadPoints=80
-; H1: Increased from 60 to 80 (avoid rejected entries during volatility)
+; 8.0 pips max spread (GBPUSD can be wider)
 
 ; ====== SMC ======
 InpUseSMC=true
-InpSMC_SwingLookback=12
+InpSMC_SwingLookback=15
 InpSMC_MinImpulseATR=2.5
-InpSMC_MinFVG_ATR=0.50
+; Higher impulse requirement
+InpSMC_MinFVG_ATR=0.60
 
 ; ====== MULTI-TIMEFRAME ======
 InpUseMTF=true
 InpHTF=16388
-; H1 chart uses H4 (16388) for higher timeframe context
 InpMTF=16386
-; H1: Changed from M15 (16385) to H1 (16386) - PRIMARY TIMEFRAME
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
 InpUseNewsFilter=true
-InpNewsMinutesBefore=15
-InpNewsMinutesAfter=15
+InpNewsMinutesBefore=20
+; Wider buffer for GBPUSD news
+InpNewsMinutesAfter=20
 
 ; ====== KELLY ======
 InpUseKelly=true
-InpKellyFraction=0.25
-InpKellyFraction=0.25
-InpDailyMaxDD=4.9
-InpWeeklyMaxDD=8.0
+InpKellyFraction=0.20
+; More conservative for volatility
+InpDailyMaxDD=4.5
+InpWeeklyMaxDD=7.5
 
 ; ====== LEARNING ======
 InpEnableLearning=true
@@ -133,19 +178,21 @@ InpEnableAdaptiveRisk=true
 InpEnableAdaptiveExits=true
 InpEnableAdaptiveFilters=true
 
-; ====== SESSION GOVERNOR (DISABLED FOR 24h) ======
+; ====== SESSION GOVERNOR ======
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=10
-InpTradeCooldownMinutes=10
+InpMaxTradesPerSession=8
+; Fewer trades (volatility)
+InpTradeCooldownMinutes=15
+; Longer cooldown
 InpEnableSessionBlacklist=false
 
 ; ====== PORTFOLIO PROTECTION ======
 InpUseCorrelationFilter=true
-; Governor Draft System handles correlation ranking
-InpDailyMaxLoss_R=3.0
-InpLossCooldownMinutes=90
-; H1: Increased from 45 to 90 minutes (bug fix - consecutive loss protection)
+InpDailyMaxLoss_R=2.5
+; Tighter stop on daily loss
+InpLossCooldownMinutes=120
+; Longer cooldown after losses
 InpMaxConsecutiveLosses=2
-InpMaxDailyTrades=5
-; Max 5 trades per day (prevent overtrading)
+InpMaxDailyTrades=4
+; Max 4 trades per day
 InpUseReversalFilter=true
