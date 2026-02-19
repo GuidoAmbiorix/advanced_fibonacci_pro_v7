@@ -45,7 +45,7 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=13
+InpMinConfluenceEntry=15
 ; H1: Increased to 13 for GBPUSD (more volatile, needs stricter filter)
 InpEnableAddOns=false
 InpAddOn1_R=1.5

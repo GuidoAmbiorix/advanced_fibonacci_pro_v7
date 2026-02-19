@@ -49,7 +49,7 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=15
+InpMinConfluenceEntry=16
 ; Metals: Set to 13 for production
 InpEnableAddOns=true
 InpAddOn1_R=1.5

@@ -49,7 +49,7 @@ InpChopThreshold=0.60
 InpATR_MA_Period=14
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=13
+InpMinConfluenceEntry=15
 ; High bar for entry (Quality over Quantity)
 InpEnableAddOns=true
 ; Add-ons allowed for trend riding
