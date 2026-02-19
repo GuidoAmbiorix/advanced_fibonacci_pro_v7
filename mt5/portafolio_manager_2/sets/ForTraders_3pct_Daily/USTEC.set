@@ -1,0 +1,150 @@
+; USTEC (Nasdaq 100) - H1 Timeframe
+; US Session Momentum Specialist
+; Pure Trend Following during NY Hours
+
+; ====== IDENTITY ======
+InpMagicNumber=100005
+InpDirection=0
+InpBrokerUTCOffset=2
+
+; ====== KILLZONES (NY ONLY) ======
+InpUseKillzoneFilter=true
+InpEnableAsianKZ=false
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=true
+; CRITICAL: Only trade US Session
+InpEnableLondonCloseKZ=true
+; Late session moves allowed
+
+; ====== FIBONACCI ======
+InpSwingLookback=8
+InpFibLevelLow=0.50
+; Indices retrace less (shallow pullbacks)
+InpFibLevelHigh=0.618
+InpZoneTolerance=0.15
+
+; ====== DISPLACEMENT ======
+InpUseDisplacement=true
+InpDisplacementATR=1.0
+InpDisplacementLookback=2
+; Fast reaction
+
+; ====== RSI ======
+InpRSI_Period=14
+InpRSI_Oversold=40
+InpRSI_Overbought=60
+; Tighter range for strong trends
+InpRSI_Momentum=true
+
+; ====== TREND ======
+InpEMA_Period=100
+; Faster trend detection (100 EMA)
+InpUseTrendFilter=true
+InpEMA_MinSlope=0.20
+; High slope required
+
+; ====== CHOP FILTER ======
+InpUseChopFilter=true
+InpChopThreshold=0.80
+; Indices trend hard or chop hard
+InpATR_MA_Period=14
+
+; ====== CONFLUENCE ======
+InpMinConfluenceEntry=14
+; Very High Quality Only
+InpEnableAddOns=true
+InpAddOn1_R=1.0
+InpAddOn2_R=2.0
+InpMaxPositions=3
+; Pyramid into strong trends
+
+; ====== RISK ======
+InpRiskBase=0.6
+InpMaxRisk=1.0
+InpMaxLotsPerTrade=50.0
+; Indices use different lot sizing, check broker
+InpEnableMarginCheck=true
+
+; ====== TAKE PROFIT ======
+InpTPMode=2
+InpFixedTP_R=3.0
+InpMinTP_R=1.0
+InpMaxTP_R=10.0
+; Catch the "Runner"
+InpTPUseLearnedMFE=true
+
+; ====== EXIT (Tight Trailing) ======
+InpTrailingMode=1
+InpTrailType=1
+InpTrailStepATR=0.3
+InpMinVolatilityPips=20.0
+InpMaxVolatilityFactor=5.0
+InpVolatilityTP_Mult=5.0
+InpPartialTP_R=1.0
+; Bank profit fast
+InpPartialClosePercent=50.0
+; Secure the bag
+InpBE_Threshold_R=0.5
+; Aggressive BE for index
+InpTrailStart_R=0.5
+InpTrailATR_Mult=1.6
+; USTEC: Moderate-wide (index swings are large)
+InpTrailDecayRate=0.25
+InpTrailMinMult=0.50
+InpTrailRegimeAware=true
+; Tight trail
+
+; ====== SPREAD ======
+InpMaxSpreadPoints=200
+; Nasdaq spread is higher in points
+
+; ====== SMC ======
+InpUseSMC=true
+InpSMC_SwingLookback=10
+InpSMC_MinImpulseATR=3.0
+InpSMC_MinFVG_ATR=1.0
+
+; ====== MTF ======
+InpUseMTF=true
+InpHTF=16388
+InpMTF=16386
+InpMTF_EMAPeriod=50
+
+; ====== NEWS ======
+InpUseNewsFilter=true
+InpNewsMinutesBefore=15
+InpNewsMinutesAfter=5
+; Indices react fast to news
+
+; ====== KELLY ======
+InpUseKelly=true
+InpKellyFraction=0.25
+InpDailyMaxDD=2.9
+InpWeeklyMaxDD=4.0
+
+; ====== LEARNING ======
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+InpMinTradesForLearning=50
+
+; ====== ADAPTIVE ======
+InpEnableAdaptiveRisk=true
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
+
+; ====== SESSION GOVERNOR ======
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=10
+InpTradeCooldownMinutes=10
+InpEnableSessionBlacklist=false
+
+; ====== PORTFOLIO PROTECTION ======
+InpUseCorrelationFilter=true
+; Governor Draft System handles correlation ranking
+InpDailyMaxLoss_R=2.0
+InpLossCooldownMinutes=60
+InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=5
+; Max 5 trades per day (prevent overtrading)
+InpUseReversalFilter=true
