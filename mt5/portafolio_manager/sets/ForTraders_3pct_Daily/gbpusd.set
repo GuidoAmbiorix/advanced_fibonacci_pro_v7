@@ -54,7 +54,7 @@ InpMaxPositions=1
 
 ; ====== RISK ======
 ; ====== RISK ======
-InpRiskBase=0.35
+InpRiskBase=0.5
 ; $50 Risk (FundingPips)
 InpMaxRisk=1.0
 InpMaxLotsPerTrade=5.0
