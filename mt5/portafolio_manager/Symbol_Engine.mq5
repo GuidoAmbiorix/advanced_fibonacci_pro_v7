@@ -102,6 +102,7 @@ input int               InpATR_MA_Period = 20;
 
 input group "======= CONFLUENCE ======="
 input int               InpMinConfluenceEntry = 4;
+input double            InpDominanceThreshold = 2.0;      // Signal Dominance Threshold
 input bool              InpEnableAddOns = true;
 input double            InpAddOn1_R = 1.5;
 input double            InpAddOn2_R = 2.5;
@@ -855,6 +856,22 @@ void OnTick()
       g_cachedBuyScore = CalculateConfluenceScore(1);
       g_cachedSellScore = CalculateConfluenceScore(-1);
       g_lastScoreCalcTime = currentBarTime;
+
+      // --- SIGNAL DOMINANCE FILTER ---
+      if(InpDominanceThreshold > 0)
+      {
+         double delta = MathAbs(g_cachedBuyScore - g_cachedSellScore);
+         if(delta < InpDominanceThreshold)
+         {
+            if(g_cachedBuyScore > InpMinConfluenceEntry || g_cachedSellScore > InpMinConfluenceEntry)
+            {
+               Print("⚠️ DOMINANCE FILTER: Blocked Signal. Buy=", DoubleToString(g_cachedBuyScore,1),
+                     " Sell=", DoubleToString(g_cachedSellScore,1), " Delta=", DoubleToString(delta,1), " < ", InpDominanceThreshold);
+            }
+            g_cachedBuyScore = 0;
+            g_cachedSellScore = 0;
+         }
+      }
 
       // --- RANKING SYSTEM: PUBLISH SCORE ---
       double maxScore = (g_cachedBuyScore > g_cachedSellScore) ? g_cachedBuyScore : g_cachedSellScore;

@@ -16,11 +16,11 @@
 #include "Include\PortfolioGlobals.mqh"
 #include "Include\GovernorAllocator.mqh"
 #include "Include\RankManager.mqh"
-#include "Include\DashboardCanvas.mqh"
+// #include "Include\DashboardCanvas.mqh" // DISABLED FOR LITE MODE
 
 CGovernorAllocator allocator;
 CRankManager       rankManager;
-CDashboardCanvas   dashboardCanvas;
+// CDashboardCanvas   dashboardCanvas; // DISABLED FOR LITE MODE
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
@@ -154,10 +154,10 @@ int OnInit()
    // Initialize Rank Manager: Auto-Discovery is now active (no manual AddSymbol needed)
    
    // Initialize Dashboard Canvas
-   if(!dashboardCanvas.Init("GovDashboard", 20, 20, 550, 400))
-      Print("Failed to create dashboard canvas");
+   // if(!dashboardCanvas.Init("GovDashboard", 20, 20, 550, 400))
+   //    Print("Failed to create dashboard canvas");
       
-   Print("  PORTFOLIO GOVERNOR v2.0 V2 DASHBOARD READY");
+   Print("  PORTFOLIO GOVERNOR v2.0 V2 DASHBOARD (LITE MODE) READY");
    Print("===============================================================");
    Print("  Max Portfolio Risk: ", InpMaxPortfolioRisk, "%");
    Print("  Max Symbol Risk: ", InpMaxSymbolRisk, "%");
@@ -720,10 +720,12 @@ void UpdateDashboard()
    double dd = GlobalVariableGet(GV_CURRENT_DD);
    double pf = GlobalVariableGet(GV_ROLLING_PF);
    
-   // Render Graphic Dashboard
-   dashboardCanvas.Render(rankManager, account.Equity(), dd, pf);
+   // --- LITE DASHBOARD (HEARTBEAT) ---
+   string text = "🧠 GOVERNOR ONLINE | " + TimeToString(TimeCurrent(), TIME_SECONDS) + "\n";
+   text += "DD: " + DoubleToString(dd, 2) + "% | PF: " + DoubleToString(pf, 2) + "\n";
+   text += "--------------------------------------\n";
+   text += rankManager.GetRankingTable(5); // Show Top 5
    
-   // Clear old comments to avoid overlap ghosting
-   Comment("");
+   Comment(text);
 }
 //+------------------------------------------------------------------+

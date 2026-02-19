@@ -45,7 +45,7 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=12
+InpMinConfluenceEntry=14
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
