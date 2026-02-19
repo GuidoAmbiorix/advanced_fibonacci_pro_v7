@@ -58,7 +58,8 @@ InpAddOn2_R=4.0
 InpMaxPositions=2
 
 ; ====== RISK ======
-InpRiskBase=0.6
+InpRiskBase=0.35
+; $50 Risk (FundingPips)
 InpMaxRisk=1.0
 InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true

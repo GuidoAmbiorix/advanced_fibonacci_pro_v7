@@ -57,11 +57,11 @@ InpAddOn2_R=2.5
 InpMaxPositions=3
 
 ; ====== RISK (Before Governor Scaling) ======
-InpRiskBase=0.50
+InpRiskBase=0.30
 ; FundingPips: 0.50 = $25 risk per trade (0.5% of $5K)
 InpRiskAddOn1=0.25
 InpRiskAddOn2=0.15
-InpMaxRisk=0.75
+InpMaxRisk=0.60
 ; FundingPips: 0.75 = $37.50 max risk (0.75% of $5K)
 InpMaxLotsPerTrade=0.03
 ; $5K account: Hard cap 0.03 lots (~$5-15 risk depending on ATR)

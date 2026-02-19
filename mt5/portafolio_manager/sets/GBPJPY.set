@@ -50,15 +50,15 @@ InpATR_MA_Period=14
 
 ; ====== CONFLUENCE ======
 InpMinConfluenceEntry=15
-; High bar for entry (Quality over Quantity)
-InpEnableAddOns=true
-; Add-ons allowed for trend riding
-InpAddOn1_R=2.0
-InpAddOn2_R=4.0
-InpMaxPositions=2
+; H1: Increased from 11 to 12 for better quality signals on cleaner timeframe
+InpEnableAddOns=false
+InpAddOn1_R=1.5
+InpAddOn2_R=2.8
+InpMaxPositions=1
 
 ; ====== RISK ======
-InpRiskBase=1.0
+InpRiskBase=0.5
+; $50 Risk (FundingPips)
 InpMaxRisk=1.0
 InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true

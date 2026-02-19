@@ -46,6 +46,7 @@ InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
 InpMinConfluenceEntry=15
+; H1: Increased from 11 to 12 for better quality signals on cleaner timeframe
 InpEnableAddOns=false
 InpAddOn1_R=1.5
 InpAddOn2_R=2.8
@@ -53,7 +54,7 @@ InpMaxPositions=1
 
 ; ====== RISK ======
 ; ====== RISK ======
-InpRiskBase=1.0
+InpRiskBase=0.5
 ; $50 Risk (FundingPips)
 InpMaxRisk=1.0
 InpMaxLotsPerTrade=5.0
