@@ -435,6 +435,25 @@ public:
 
       return false;
    }
+
+   //+------------------------------------------------------------------+
+   //| Additional methods for custom indicator                          |
+   //+------------------------------------------------------------------+
+   ENUM_SESSION_QUALITY GetSessionQuality() { return m_currentQuality; }
+
+   double GetMetalsConfluenceBonus()
+   {
+      // Return score based on session quality for metals
+      if(m_currentQuality == SQ_PRIME) return 3.0;
+      if(m_currentQuality == SQ_GOOD) return 2.0;
+      if(m_currentQuality == SQ_FAIR) return 1.0;
+      return 0.0;
+   }
+
+   void Deinit()
+   {
+      // No cleanup needed for this module
+   }
 };
 
 #endif

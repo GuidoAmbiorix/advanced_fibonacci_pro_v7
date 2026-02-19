@@ -443,6 +443,41 @@ public:
 
       return "MTF: " + biasStr + " (" + DoubleToString(m_alignmentScore, 0) + "%)";
    }
+
+   //+------------------------------------------------------------------+
+   //| Getter methods for custom indicator                              |
+   //+------------------------------------------------------------------+
+   double GetHTFBias()
+   {
+      // Return numeric bias: positive = bullish, negative = bearish
+      if(m_currentBias == BIAS_STRONG_BULLISH) return 4.0;
+      if(m_currentBias == BIAS_BULLISH) return 2.0;
+      if(m_currentBias == BIAS_STRONG_BEARISH) return -4.0;
+      if(m_currentBias == BIAS_BEARISH) return -2.0;
+      return 0.0;
+   }
+
+   double GetMTFBias()
+   {
+      // Return MTF bias based on price/EMA relationship
+      double bias = 0.0;
+      if(m_mtfAnalysis.priceAboveEMA) bias += 2.0;
+      else bias -= 2.0;
+      if(m_mtfAnalysis.emaSlope > 0) bias += 1.0;
+      else if(m_mtfAnalysis.emaSlope < 0) bias -= 1.0;
+      return bias;
+   }
+
+   double GetLTFBias()
+   {
+      // Return LTF bias based on price/EMA relationship
+      double bias = 0.0;
+      if(m_ltfAnalysis.priceAboveEMA) bias += 2.0;
+      else bias -= 2.0;
+      if(m_ltfAnalysis.emaSlope > 0) bias += 1.0;
+      else if(m_ltfAnalysis.emaSlope < 0) bias -= 1.0;
+      return bias;
+   }
 };
 
 #endif

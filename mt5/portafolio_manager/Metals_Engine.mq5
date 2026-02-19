@@ -22,15 +22,17 @@
 #include "Include\GovernorAllocator.mqh"
 
 // Smart Money Concepts Modules
-#include "Include\SMC_StructureBreak.mqh"
-#include "Include\SMC_OrderBlocks.mqh"
-#include "Include\SMC_FairValueGap.mqh"
-#include "Include\SMC_LiquiditySweep.mqh"
+// PHASE 1: Moved to custom indicators
+// #include "Include\SMC_StructureBreak.mqh"
+// #include "Include\SMC_OrderBlocks.mqh"
+// #include "Include\SMC_FairValueGap.mqh"
+// #include "Include\SMC_LiquiditySweep.mqh"
 
 // Multi-Timeframe and Filters
-#include "Include\MTF_Confluence.mqh"
+// PHASE 2: MTF and Session moved to custom indicators
+// #include "Include\MTF_Confluence.mqh"
 #include "Include\NewsFilter.mqh"
-#include "Include\SessionOptimizer.mqh"  // 🪙 METALS: Session scoring
+// #include "Include\SessionOptimizer.mqh"  // 🪙 METALS: Session scoring
 #include "Include\KellyPositionSizer.mqh"
 
 // Learning & Memory Modules
@@ -50,9 +52,10 @@ CPatternMemory      patternMemory;
 #include "Include\Adaptive\AdaptiveFilterManager.mqh"
 
 // ADVANCED CONFLUENCE MODULES (M15 ENHANCED)
-#include "Include\Advanced\VolumeAnalysis.mqh"
-#include "Include\Advanced\Divergence.mqh"
-#include "Include\Advanced\Inst_Concepts.mqh"
+// PHASE 1&2: Advanced modules moved to custom indicators
+// #include "Include\Advanced\VolumeAnalysis.mqh"
+// #include "Include\Advanced\Divergence.mqh"
+// #include "Include\Advanced\Inst_Concepts.mqh"
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
@@ -203,6 +206,7 @@ input group "======= SESSION GOVERNOR ======="
 input bool              InpUseSessionGovernor = true;     // Enable Session Governor
 input int               InpMaxTradesPerSession = 3;       // Max Trades Per Session
 input int               InpTradeCooldownMinutes = 30;     // Cooldown Between Trades
+input bool              InpUseSessionOptimizer = true;    // 🪙 METALS: Use Session Optimizer
 
 //+------------------------------------------------------------------+
 //| GLOBALS                                                           |
@@ -214,32 +218,49 @@ CSymbolInfo    symbolInfo;
 
 // MODULE OBJECTS
 CFailSafe         failSafe;
-CMarketRegime     regime;
+// PHASE 4: Market Regime moved to custom indicator
+// CMarketRegime     regime;
 CKillSwitch       killSwitch;
 CLearningEngine   learning;
 CGovernorAllocator allocator;
 
 // ADVANCED MODULE OBJECTS
-CVolumeAnalysis   volumeAnalysis;
-CDivergence       divergence;
-CBreakerBlocks    breakerBlocks;
-CMacroWindows     macroWindows;
-CPowerOf3         powerOf3;
-CWyckoff          wyckoff;
+// PHASE 1&2: Advanced modules moved to custom indicators
+// CVolumeAnalysis   volumeAnalysis;
+// CDivergence       divergence;
+// CBreakerBlocks    breakerBlocks;
+// CMacroWindows     macroWindows;
+// CPowerOf3         powerOf3;
+// CWyckoff          wyckoff;
 
 // Forward Declaration
 double CalculateConfluenceScore(int direction);
 
-// SMC MODULE OBJECTS
-CSMCStructureBreak  smcStructure;
-CSMCOrderBlocks     smcOrderBlocks;
-CSMCFairValueGap    smcFVG;
-CSMCLiquiditySweep  smcLiquidity;
+// PHASE 1: SMC MODULE OBJECTS - Replaced with custom indicators
+// CSMCStructureBreak  smcStructure;
+// CSMCOrderBlocks     smcOrderBlocks;
+// CSMCFairValueGap    smcFVG;
+// CSMCLiquiditySweep  smcLiquidity;
+
+// PHASE 1 & 2: Custom Indicator Handles
+int hSMC_Confluence = INVALID_HANDLE;       // SMC Confluence Indicator
+int hVolume_Confluence = INVALID_HANDLE;    // Volume Confluence Indicator
+int hMTF_Confluence = INVALID_HANDLE;       // MTF Confluence Indicator
+int hICT_Advanced = INVALID_HANDLE;         // ICT Advanced Indicator
+int hDivergence = INVALID_HANDLE;           // Divergence Indicator
+int hSession_Optimizer = INVALID_HANDLE;    // 🪙 Session Optimizer (Metals)
+
+// PHASE 4: Additional Custom Indicator Handles
+int hKillzone_Detector = INVALID_HANDLE;    // Killzone Detector Indicator
+int hNews_Filter = INVALID_HANDLE;          // News Filter Indicator
+int hMarket_Regime = INVALID_HANDLE;        // Market Regime Indicator
 
 // ADVANCED FILTER OBJECTS
-CMTFConfluence      mtfAnalysis;
-CNewsFilter         newsFilter;
-CSessionOptimizer   sessionOptimizer;  // 🪙 METALS: Session scoring
+// PHASE 2: MTF and Session moved to custom indicators
+// CMTFConfluence      mtfAnalysis;
+// PHASE 4: News Filter moved to custom indicator
+// CNewsFilter         newsFilter;
+// CSessionOptimizer   sessionOptimizer;  // 🪙 METALS: Session scoring
 CKellyPositionSizer kellySizer;
 
 // LEARNING & MEMORY OBJECTS
@@ -354,43 +375,130 @@ int OnInit()
       }
    }
 
-   // Initialize SMC Modules
+   // PHASE 1: Initialize Custom Indicators instead of SMC Modules
    if(InpUseSMC)
    {
-      if(!smcStructure.Init(_Symbol, PERIOD_CURRENT, InpSMC_SwingLookback))
-         Print("Warning: SMC Structure module init failed");
+      hSMC_Confluence = iCustom(_Symbol, PERIOD_CURRENT,
+         "Indicators\\SMC_Confluence",
+         InpSMC_SwingLookback,     // InpSwingLookback
+         InpSMC_MinImpulseATR,     // InpMinImpulseATR
+         InpSMC_MinFVG_ATR,        // InpMinFVG_ATR
+         5,                        // InpMaxOrderBlocks
+         10);                      // InpMaxFVGs
 
-      if(!smcOrderBlocks.Init(_Symbol, PERIOD_CURRENT, 50, 5, InpSMC_MinImpulseATR))
-         Print("Warning: SMC Order Blocks module init failed");
+      if(hSMC_Confluence == INVALID_HANDLE)
+      {
+         Print("ERROR: Failed to create SMC_Confluence indicator");
+         return INIT_FAILED;
+      }
 
-      if(!smcFVG.Init(_Symbol, PERIOD_CURRENT, 50, 10, InpSMC_MinFVG_ATR))
-         Print("Warning: SMC FVG module init failed");
+      // Wait for indicator to be ready
+      if(!WaitForIndicator(hSMC_Confluence, 3))
+      {
+         Print("ERROR: SMC_Confluence indicator failed to initialize");
+         return INIT_FAILED;
+      }
 
-      if(!smcLiquidity.Init(_Symbol, PERIOD_CURRENT, InpSMC_SwingLookback))
-         Print("Warning: SMC Liquidity module init failed");
+      Print("✓ SMC_Confluence indicator initialized");
    }
 
-   // Initialize MTF Analysis
+   // PHASE 1: Initialize Volume Confluence Indicator
+   hVolume_Confluence = iCustom(_Symbol, PERIOD_CURRENT,
+      "Indicators\\Volume_Confluence",
+      20,    // InpRVOL_Lookback
+      5);    // InpMF_Period
+
+   if(hVolume_Confluence == INVALID_HANDLE)
+   {
+      Print("ERROR: Failed to create Volume_Confluence indicator");
+      return INIT_FAILED;
+   }
+
+   if(!WaitForIndicator(hVolume_Confluence, 3))
+   {
+      Print("ERROR: Volume_Confluence indicator failed to initialize");
+      return INIT_FAILED;
+   }
+
+   Print("✓ Volume_Confluence indicator initialized");
+
+   // PHASE 2: Initialize MTF Confluence Indicator
    if(InpUseMTF)
    {
-      if(!mtfAnalysis.Init(_Symbol, InpHTF, InpMTF, PERIOD_CURRENT, InpMTF_EMAPeriod))
-         Print("Warning: MTF Confluence module init failed");
+      hMTF_Confluence = iCustom(_Symbol, PERIOD_CURRENT,
+         "Indicators\\MTF_Confluence",
+         InpHTF, InpMTF, PERIOD_CURRENT, InpMTF_EMAPeriod, 14);
+
+      if(hMTF_Confluence == INVALID_HANDLE || !WaitForIndicator(hMTF_Confluence, 3))
+         Print("Warning: MTF_Confluence indicator failed to load");
+      else
+         Print("✓ MTF_Confluence indicator initialized");
    }
 
-   // Initialize News Filter
+   // PHASE 2: Initialize ICT Advanced Indicator
+   if(InpUseSMC)
+   {
+      hICT_Advanced = iCustom(_Symbol, PERIOD_CURRENT, "Indicators\\ICT_Advanced");
+
+      if(hICT_Advanced == INVALID_HANDLE || !WaitForIndicator(hICT_Advanced, 3))
+         Print("Warning: ICT_Advanced indicator failed to load");
+      else
+         Print("✓ ICT_Advanced indicator initialized");
+   }
+
+   // PHASE 2: Initialize Divergence Indicator
+   hDivergence = iCustom(_Symbol, PERIOD_CURRENT, "Indicators\\Divergence", InpRSI_Period, 10);
+
+   if(hDivergence == INVALID_HANDLE || !WaitForIndicator(hDivergence, 3))
+      Print("Warning: Divergence indicator failed to load");
+   else
+      Print("✓ Divergence indicator initialized");
+
+   // PHASE 2: 🪙 METALS: Initialize Session Optimizer Indicator
+   if(InpUseSessionOptimizer)
+   {
+      hSession_Optimizer = iCustom(_Symbol, PERIOD_CURRENT,
+         "Indicators\\Session_Optimizer", InpBrokerUTCOffset);
+
+      if(hSession_Optimizer == INVALID_HANDLE || !WaitForIndicator(hSession_Optimizer, 3))
+         Print("Warning: Session_Optimizer indicator failed to load");
+      else
+         Print("✓ 🪙 Session_Optimizer indicator initialized for ", _Symbol);
+   }
+
+   // PHASE 4: Initialize Killzone Detector Indicator
+   hKillzone_Detector = iCustom(_Symbol, PERIOD_CURRENT,
+      "Indicators\\Killzone_Detector",
+      InpBrokerUTCOffset, InpEnableAsianKZ, InpEnableLondonOpenKZ,
+      InpEnableNYKZ, InpEnableLondonCloseKZ);
+
+   if(hKillzone_Detector == INVALID_HANDLE)
+      Print("Warning: Killzone_Detector indicator failed to load");
+   else
+      Print("✓ Killzone_Detector indicator initialized");
+
+   // PHASE 4: Initialize News Filter Indicator
    if(InpUseNewsFilter)
    {
-      newsFilter.Init(_Symbol, InpNewsMinutesBefore, InpNewsMinutesAfter, true);
+      hNews_Filter = iCustom(_Symbol, PERIOD_CURRENT,
+         "Indicators\\News_Filter",
+         InpNewsMinutesBefore, InpNewsMinutesAfter, true,
+         InpEnableVolatilityFilter, InpVolatilityThreshold, InpVolatilitySpikeCooldown);
 
-      // Configure Volatility Spike Detection
-      newsFilter.EnableVolatilityFilter(InpEnableVolatilityFilter);
-      newsFilter.SetVolatilityThreshold(InpVolatilityThreshold);
-      newsFilter.SetVolatilityCooldown(InpVolatilitySpikeCooldown);
+      if(hNews_Filter == INVALID_HANDLE)
+         Print("Warning: News_Filter indicator failed to load");
+      else
+         Print("✓ News_Filter indicator initialized");
    }
 
-   // 🪙 METALS: Initialize Session Optimizer
-   sessionOptimizer.Init(_Symbol, InpBrokerUTCOffset);
-   Print("🪙 METALS: Session Optimizer initialized for ", _Symbol);
+   // PHASE 4: Initialize Market Regime Indicator
+   hMarket_Regime = iCustom(_Symbol, PERIOD_CURRENT,
+      "Indicators\\Market_Regime", 14, 50);
+
+   if(hMarket_Regime == INVALID_HANDLE)
+      Print("Warning: Market_Regime indicator failed to load");
+   else
+      Print("✓ Market_Regime indicator initialized");
 
    // Initialize Kelly Position Sizer
    if(InpUseKelly)
@@ -575,17 +683,18 @@ void OnDeinit(const int reason)
    if(hEMA50 != INVALID_HANDLE) IndicatorRelease(hEMA50);
    if(hEMA100 != INVALID_HANDLE) IndicatorRelease(hEMA100);
 
-   // Cleanup SMC modules
-   if(InpUseSMC)
-   {
-      smcStructure.Deinit();
-      smcOrderBlocks.Deinit();
-      smcFVG.Deinit();
-      smcLiquidity.Deinit();
-   }
+   // PHASE 1 & 2: Release custom indicator handles
+   if(hSMC_Confluence != INVALID_HANDLE) IndicatorRelease(hSMC_Confluence);
+   if(hVolume_Confluence != INVALID_HANDLE) IndicatorRelease(hVolume_Confluence);
+   if(hMTF_Confluence != INVALID_HANDLE) IndicatorRelease(hMTF_Confluence);
+   if(hICT_Advanced != INVALID_HANDLE) IndicatorRelease(hICT_Advanced);
+   if(hDivergence != INVALID_HANDLE) IndicatorRelease(hDivergence);
+   if(hSession_Optimizer != INVALID_HANDLE) IndicatorRelease(hSession_Optimizer);
 
-   // Cleanup MTF
-   if(InpUseMTF) mtfAnalysis.Deinit();
+   // PHASE 4: Release custom indicator handles
+   if(hKillzone_Detector != INVALID_HANDLE) IndicatorRelease(hKillzone_Detector);
+   if(hNews_Filter != INVALID_HANDLE) IndicatorRelease(hNews_Filter);
+   if(hMarket_Regime != INVALID_HANDLE) IndicatorRelease(hMarket_Regime);
 
    // Save learning data before exit
    if(InpEnableLearning)
@@ -619,6 +728,23 @@ bool IsNewBar()
    {
       lastBarTime = currentBarTime;
       return true;
+   }
+   return false;
+}
+
+//+------------------------------------------------------------------+
+//| PHASE 1: Helper function to wait for indicator initialization   |
+//+------------------------------------------------------------------+
+bool WaitForIndicator(int handle, int attempts = 3)
+{
+   if(handle == INVALID_HANDLE) return false;
+
+   for(int i = 0; i < attempts; i++)
+   {
+      double buf[1];
+      if(CopyBuffer(handle, 0, 0, 1, buf) > 0)
+         return true;
+      Sleep(100);
    }
    return false;
 }
@@ -889,7 +1015,19 @@ void OnTick()
    UpdateModules();
 
    // --- MODULE: MARKET REGIME ---
-   g_currentRegime = regime.Detect(g_ATR, g_ATR_MA, g_EMA, g_EMA_Prev);
+   // PHASE 4: Get regime from Market_Regime indicator
+   if(hMarket_Regime != INVALID_HANDLE)
+   {
+      double regimeBuf[1];
+      if(CopyBuffer(hMarket_Regime, 0, 0, 1, regimeBuf) > 0)
+         g_currentRegime = (MARKET_REGIME)regimeBuf[0];
+      else
+         g_currentRegime = REGIME_UNKNOWN;
+   }
+   else
+   {
+      g_currentRegime = REGIME_UNKNOWN;
+   }
    // g_currentRegime check moved down to allow score calculation for visibility
 
    // OPTIMIZATION: Calculate confluence once per bar (expensive operation)
@@ -961,16 +1099,26 @@ void OnTick()
    }
 
    // --- MODULE: NEWS FILTER ---
-   if(InpUseNewsFilter && !newsFilter.IsTradingAllowed())
+   // PHASE 4: Check trading allowed from News_Filter indicator (Buffer 4)
+   if(InpUseNewsFilter && hNews_Filter != INVALID_HANDLE)
    {
-      static datetime lastNewsLog = 0;
-      if(TimeCurrent() - lastNewsLog > 300)
+      double tradingAllowedBuf[1], newsEventBuf[1], volSpikeBuf[1];
+      if(CopyBuffer(hNews_Filter, 4, 0, 1, tradingAllowedBuf) > 0 &&
+         CopyBuffer(hNews_Filter, 0, 0, 1, newsEventBuf) > 0 &&
+         CopyBuffer(hNews_Filter, 3, 0, 1, volSpikeBuf) > 0)
       {
-         string newsStatus = newsFilter.IsInNewsWindow() ? ("News window: " + newsFilter.GetCurrentEventName()) : "Volatility spike detected";
-         Print("🚫 BLOCKED: News Filter - ", newsStatus);
-         lastNewsLog = TimeCurrent();
+         if(tradingAllowedBuf[0] == 0.0)
+         {
+            static datetime lastNewsLog = 0;
+            if(TimeCurrent() - lastNewsLog > 300)
+            {
+               string newsStatus = (newsEventBuf[0] == 1.0) ? "News event active" : "Volatility spike detected";
+               Print("🚫 BLOCKED: News Filter - ", newsStatus);
+               lastNewsLog = TimeCurrent();
+            }
+            return;
+         }
       }
-      return;
    }
 
    // --- MODULE: KELLY POSITION SIZER (DD LIMITS) ---
@@ -1138,10 +1286,19 @@ void OnTick()
    // MTF Bias Penalty (if trading against HTF)
    if(InpUseMTF)
    {
-      if(!mtfAnalysis.IsDirectionAligned(1) && mtfAnalysis.GetBias() != BIAS_NEUTRAL)
-         buyScore -= 1.5;
-      if(!mtfAnalysis.IsDirectionAligned(-1) && mtfAnalysis.GetBias() != BIAS_NEUTRAL)
-         sellScore -= 1.5;
+      // Get alignment score from MTF_Confluence indicator (Buffer 3: 0-100%)
+      double alignBuf[1];
+      if(CopyBuffer(hMTF_Confluence, 3, 1, 1, alignBuf) > 0)
+      {
+         double alignment = alignBuf[0];
+
+         // If alignment < 50% (trading against HTF), apply penalty
+         if(alignment < 0.5)
+         {
+            buyScore -= 1.5;
+            sellScore -= 1.5;
+         }
+      }
    }
 
    // ENTRY
@@ -1240,7 +1397,17 @@ void OnTick()
          baseRisk = kellySizer.GetRiskForQuality(quality);
 
          // Apply additional multipliers
-         double newsMultiplier = InpUseNewsFilter ? newsFilter.GetNewsRiskMultiplier() : 1.0;
+         double newsMultiplier = 1.0;
+         if(InpUseNewsFilter && hNews_Filter != INVALID_HANDLE)
+         {
+            double tradingAllowedBuf[1], minToNewsBuf[1];
+            if(CopyBuffer(hNews_Filter, 4, 0, 1, tradingAllowedBuf) > 0 &&
+               CopyBuffer(hNews_Filter, 1, 0, 1, minToNewsBuf) > 0)
+            {
+               if(tradingAllowedBuf[0] == 0.0) newsMultiplier = 0.0;  // In news window
+               else if(minToNewsBuf[0] <= InpNewsMinutesBefore * 2) newsMultiplier = 0.5;
+            }
+         }
          double killzoneMultiplier = 1.0;
          double regimeMultiplier = (g_currentRegime == REGIME_TREND) ? 1.0 : 0.8;
 
@@ -1962,20 +2129,13 @@ void CheckAddOnOpportunity()
 //+------------------------------------------------------------------+
 void UpdateModules()
 {
-   // OPTIMIZATION: Update SMC modules only if enabled
-   if(InpUseSMC)
-   {
-      smcStructure.Update();
-      smcOrderBlocks.Update();
-      smcFVG.Update();
-      smcLiquidity.Update();
-   }
+   // PHASE 1 & 2: All modules now handled by custom indicators
+   // No manual updates needed - indicators update automatically
 
-   // OPTIMIZATION: Update MTF analysis only if enabled
-   if(InpUseMTF) mtfAnalysis.Update();
+   // PHASE 4: News filter now handled by News_Filter indicator
+   // if(InpUseNewsFilter) newsFilter.Update();  // Commented out - handled by indicator
 
    // OPTIMIZATION: Update filters only if enabled
-   if(InpUseNewsFilter) newsFilter.Update();
    if(InpUseKelly) kellySizer.Update();
 
 }
@@ -2084,36 +2244,77 @@ double CalculateConfluenceScore(int direction)
    
    if(InpUseSMC)
    {
-       // Order Blocks - 2.5 pts
-       score += smcOrderBlocks.GetConfluenceScore(direction) * 2.5; 
-       
-       // Liquidity Sweeps - 2.5 pts
-       score += smcLiquidity.GetConfluenceScore(direction) * 2.5;
-       
-       // FVG - 2.0 pts
-       score += smcFVG.GetConfluenceScore(direction) * 2.0;
-       
-       // Advanced ICT Concepts
-       score += breakerBlocks.GetBreakerScore(direction, g_ATR) * 3.0; 
-       score += powerOf3.GetPhaseScore(g_ATR) * 3.0; 
+       // PHASE 1: Use custom SMC_Confluence indicator
+       // Combined score from all 4 SMC modules in one call
+       double smcBuf[1];
+       if(CopyBuffer(hSMC_Confluence, 4, 1, 1, smcBuf) > 0)  // Buffer 4 = Combined Score
+       {
+           // The indicator returns positive for bullish, negative for bearish
+           double smcScore = smcBuf[0];
+
+           // Apply the score based on direction alignment
+           if((direction == 1 && smcScore > 0) || (direction == -1 && smcScore < 0))
+           {
+               score += MathAbs(smcScore);  // Max ~5.5 pts (1.5+1.5+1.0+1.5)
+           }
+       }
+
+       // PHASE 2: Advanced ICT Concepts from custom indicator
+       double ictBuf[1];
+       if(CopyBuffer(hICT_Advanced, 3, 0, 1, ictBuf) > 0)  // Buffer 3 = Combined Score
+       {
+           double ictScore = ictBuf[0];
+           // Apply score based on direction alignment
+           if((direction == 1 && ictScore > 0) || (direction == -1 && ictScore < 0))
+           {
+               score += MathAbs(ictScore);  // Max ~6.0 pts
+           }
+       }
    }
 
 
    // ============ 4. ADVANCED CONFIRMATIONS (Max ~5-10 pts) ============
 
-   // Institutional Volume - 4.0 pts (RVOL + Money Flow)
-   score += volumeAnalysis.GetConfluenceScore(direction);
+   // PHASE 1: Institutional Volume - 4.0 pts (RVOL + Money Flow) from custom indicator
+   double volBuf[1];
+   int volBufferIdx = (direction == 1) ? 2 : 3;  // Buffer 2 = Buy Score, Buffer 3 = Sell Score
+   if(CopyBuffer(hVolume_Confluence, volBufferIdx, 0, 1, volBuf) > 0)
+   {
+       score += volBuf[0];  // Max 4.0 pts
+   }
 
-   // Multi-Timeframe - 2.0 pts
-   if(InpUseMTF)
-      score += mtfAnalysis.GetConfluenceScore(direction);
+   // PHASE 2: Multi-Timeframe - 2.0 pts from custom indicator
+   if(InpUseMTF && hMTF_Confluence != INVALID_HANDLE)
+   {
+       double mtfBuf[1];
+       int mtfBufferIdx = (direction == 1) ? 4 : 5;  // Buffer 4 = Buy Score, Buffer 5 = Sell Score
+       if(CopyBuffer(hMTF_Confluence, mtfBufferIdx, 0, 1, mtfBuf) > 0)
+       {
+           score += mtfBuf[0];  // Max 2.0 pts
+       }
+   }
 
-   // Divergence - 2.0 pts
-   double divergenceScore = divergence.GetDivergenceScore(direction, hRSI);
-   score += divergenceScore * 2.0; // Scale 0-1 -> 0-2
+   // PHASE 2: Divergence - 2.0 pts from custom indicator
+   double divBuf[1];
+   if(CopyBuffer(hDivergence, 2, 0, 1, divBuf) > 0)  // Buffer 2 = Combined Score
+   {
+       double divergenceScore = divBuf[0];
+       // Score is positive for bullish div, negative for bearish
+       if((direction == 1 && divergenceScore > 0) || (direction == -1 && divergenceScore < 0))
+       {
+           score += MathAbs(divergenceScore) * 2.0;  // Scale and apply
+       }
+   }
 
-   // Wyckoff - 2.0 pts
-   score += wyckoff.GetWyckoffScore(direction, g_ATR) * 2.0; 
+   // PHASE 2: 🪙 METALS: Session Bonus - 2.5-3.0 pts from custom indicator
+   if(InpUseSessionOptimizer && hSession_Optimizer != INVALID_HANDLE)
+   {
+       double sessBuf[1];
+       if(CopyBuffer(hSession_Optimizer, 2, 0, 1, sessBuf) > 0)  // Buffer 2 = Metals Score
+       {
+           score += sessBuf[0];  // Max 3.0 pts
+       }
+   } 
 
    // Fib Zone - 2.0 pts
    if(highestBar >= 0 && lowestBar >= 0)
@@ -2157,40 +2358,24 @@ double CalculateConfluenceScore(int direction)
        if(emaAlignment)
        {
            // Apply soft penalty only if NO divergence/reversal signals
+           // Get divergence score from Divergence indicator (Buffer 2: Combined Score 0-2.0)
+           double divBuf[1];
+           double divergenceScore = 0.0;
+           if(CopyBuffer(hDivergence, 2, 1, 1, divBuf) > 0)
+              divergenceScore = MathAbs(divBuf[0]);
+
            if(divergenceScore < 0.5)
            {
-               score -= 2.0; 
+               score -= 2.0;
                if(score < 0) score = 0;
            }
        }
    }
 
    // ============ 4. 🪙 METALS: SESSION SCORING (Max ~3.0 pts) ============
-
-   // Check if this is a metals symbol (XAUUSD, GOLD, etc.)
-   string sym = _Symbol;
-   StringToUpper(sym);
-   if(StringFind(sym, "XAU") >= 0 || StringFind(sym, "GOLD") >= 0)
-   {
-      sessionOptimizer.Update();  // Update session detection
-      double sessionScore = sessionOptimizer.GetMetalsSessionScore();  // 0-10 scale
-      double sessionPoints = (sessionScore / 10.0) * 2.5;  // Convert to 0-2.5 points
-      score += sessionPoints;
-
-      // Extra bonus for prime time (London-NY overlap)
-      if(sessionOptimizer.IsPrimeTime())
-         score += 0.5;
-
-      // Log session contribution
-      static datetime lastSessionDebug = 0;
-      if(TimeCurrent() - lastSessionDebug > 300)
-      {
-         Print("🪙 METALS Session [", sessionOptimizer.GetSessionName(), "]: +",
-               DoubleToString(sessionPoints, 2), " pts",
-               (sessionOptimizer.IsPrimeTime() ? " +0.5 PRIME BONUS" : ""));
-         lastSessionDebug = TimeCurrent();
-      }
-   }
+   // NOTE: Session scoring is now handled by Session_Optimizer custom indicator
+   // See lines 2231-2237 where hSession_Optimizer is used
+   // This old sessionOptimizer object code is no longer needed
 
    // DEBUG: Print final score
    static datetime lastScoreDebug = 0;
@@ -2535,7 +2720,17 @@ void UpdateDashboard()
    string tradingStatus = IsTradingEnabled() ? "ACTIVE" : "BLOCKED";
 
    // Check for blocks
-   if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) tradingStatus = "NEWS BLOCKED";
+   if(InpUseNewsFilter && hNews_Filter != INVALID_HANDLE)
+   {
+      double tradingAllowedBuf[1], newsEventBuf[1], volSpikeBuf[1];
+      if(CopyBuffer(hNews_Filter, 4, 0, 1, tradingAllowedBuf) > 0 &&
+         CopyBuffer(hNews_Filter, 0, 0, 1, newsEventBuf) > 0 &&
+         CopyBuffer(hNews_Filter, 3, 0, 1, volSpikeBuf) > 0)
+      {
+         if(newsEventBuf[0] == 1.0) tradingStatus = "NEWS BLOCKED";
+         else if(volSpikeBuf[0] == 1.0) tradingStatus = "VOLATILITY SPIKE";
+      }
+   }
    if(InpUseKelly && !kellySizer.IsTradingAllowed()) tradingStatus = "DD LIMIT";
    if(InpUseKillzoneFilter && !CheckKillzone()) tradingStatus = "KILLZONE CLOSED";
 
@@ -2566,22 +2761,51 @@ void UpdateDashboard()
 
 
    // News info
-   if(InpUseNewsFilter)
-      txt += newsFilter.ToString() + "\n";
+   if(InpUseNewsFilter && hNews_Filter != INVALID_HANDLE)
+   {
+      double newsEventBuf[1], minToNewsBuf[1], volSpikeBuf[1];
+      if(CopyBuffer(hNews_Filter, 0, 0, 1, newsEventBuf) > 0 &&
+         CopyBuffer(hNews_Filter, 1, 0, 1, minToNewsBuf) > 0 &&
+         CopyBuffer(hNews_Filter, 3, 0, 1, volSpikeBuf) > 0)
+      {
+         if(volSpikeBuf[0] == 1.0)
+            txt += "NEWS: VOLATILITY SPIKE!\n";
+         else if(newsEventBuf[0] == 1.0)
+            txt += "NEWS: BLOCKED (Event active)\n";
+         else if(minToNewsBuf[0] < 999999)
+            txt += "NEWS: OK (Next: " + IntegerToString((int)minToNewsBuf[0]) + "m)\n";
+         else
+            txt += "NEWS: CLEAR\n";
+      }
+   }
 
    txt += "-------------------------------------------\n";
 
    // SMC Status
    if(InpUseSMC)
    {
-      txt += "STRUCTURE: " + smcStructure.StructureToString() + "\n";
-      txt += smcOrderBlocks.ToString() + " | " + smcFVG.ToString() + "\n";
-      txt += smcLiquidity.ToString() + "\n";
+      // PHASE 1: Display SMC scores from custom indicator
+      double smcBuf[1];
+      if(CopyBuffer(hSMC_Confluence, 4, 1, 1, smcBuf) > 0)
+         txt += "SMC Score: " + DoubleToString(smcBuf[0], 2) + " (Structure+OB+FVG+Liq)\n";
    }
 
    // MTF Status
    if(InpUseMTF)
-      txt += mtfAnalysis.ToString() + "\n";
+   {
+      // Get MTF data from indicator
+      double htfBuf[1], mtfBuf[1], ltfBuf[1], alignBuf[1];
+      if(CopyBuffer(hMTF_Confluence, 0, 1, 1, htfBuf) > 0 &&
+         CopyBuffer(hMTF_Confluence, 1, 1, 1, mtfBuf) > 0 &&
+         CopyBuffer(hMTF_Confluence, 2, 1, 1, ltfBuf) > 0 &&
+         CopyBuffer(hMTF_Confluence, 3, 1, 1, alignBuf) > 0)
+      {
+         txt += "MTF: HTF=" + DoubleToString(htfBuf[0], 1) +
+                " MTF=" + DoubleToString(mtfBuf[0], 1) +
+                " LTF=" + DoubleToString(ltfBuf[0], 1) +
+                " Align=" + DoubleToString(alignBuf[0]*100, 0) + "%\n";
+      }
+   }
 
    txt += "-------------------------------------------\n";
    txt += "BUY Score: " + DoubleToString(buyS, 1) + "/30\n";
@@ -2760,40 +2984,37 @@ void UpdateDashboard()
 //| Check Killzone Time                                               |
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
-//| Get Active Killzone                                               |
+//| Get Active Killzone (PHASE 4: Now uses Killzone_Detector)        |
 //+------------------------------------------------------------------+
 ENUM_KILLZONE GetActiveKillzone()
 {
    if(!InpUseKillzoneFilter) return KILLZONE_NONE;
 
-   datetime utcTime = TimeCurrent() - (InpBrokerUTCOffset * 3600);
-   MqlDateTime utcDt;
-   TimeToStruct(utcTime, utcDt);
-
-   // EST Calculation (Standard UTC-5)
-   int estHour = (utcDt.hour - 5 + 24) % 24;
-
-   // 1. Asian Session (20:00 - 00:00 EST)
-   if(InpEnableAsianKZ && (estHour >= 20 || estHour < 0)) return KILLZONE_ASIAN;
-
-   // 2. London Open (02:00 - 05:00 EST)
-   if(InpEnableLondonOpenKZ && (estHour >= 2 && estHour < 5)) return KILLZONE_LONDON_OPEN;
-
-   // 3. NY Open (07:00 - 10:00 EST)
-   if(InpEnableNYKZ && (estHour >= 7 && estHour < 10)) return KILLZONE_NY;
-
-   // 4. London Close (10:00 - 12:00 EST)
-   if(InpEnableLondonCloseKZ && (estHour >= 10 && estHour < 12)) return KILLZONE_LONDON_CLOSE;
+   if(hKillzone_Detector != INVALID_HANDLE)
+   {
+      double kzBuf[1];
+      if(CopyBuffer(hKillzone_Detector, 0, 0, 1, kzBuf) > 0)
+         return (ENUM_KILLZONE)kzBuf[0];
+   }
 
    return KILLZONE_NONE;
 }
 
 //+------------------------------------------------------------------+
-//| Check Killzone Time (Wrapper)                                     |
+//| Check Killzone Time (PHASE 4: Now uses Killzone_Detector)        |
 //+------------------------------------------------------------------+
 bool CheckKillzone()
 {
-   return GetActiveKillzone() != KILLZONE_NONE;
+   if(!InpUseKillzoneFilter) return true;
+
+   if(hKillzone_Detector != INVALID_HANDLE)
+   {
+      double activeBuf[1];
+      if(CopyBuffer(hKillzone_Detector, 1, 0, 1, activeBuf) > 0)
+         return (activeBuf[0] == 1.0);
+   }
+
+   return false;
 }
 
 

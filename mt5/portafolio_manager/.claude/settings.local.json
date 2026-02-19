@@ -3,7 +3,13 @@
     "allow": [
       "WebFetch(domain:github.com)",
       "WebSearch",
-      "WebFetch(domain:strategyquant.com)"
+      "WebFetch(domain:strategyquant.com)",
+      "WebFetch(domain:www.mql5.com)",
+      "Bash(cd:*)",
+      "Bash(\"/c/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:Indicators/SMC_Confluence.mq5 /log)",
+      "Bash(where:*)",
+      "Bash(chmod:*)",
+      "Bash(./setup_mt5.sh:*)"
     ]
   }
 }
