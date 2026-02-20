@@ -213,6 +213,26 @@ int OnCalculate(const int rates_total,
    MARKET_PHASE phase = DetectPhase(tick_volume[currentBar], bbwPercentile, adx, autocorr, priceLocation);
    BufferMarketPhase[currentBar] = (double)phase;
 
+   //--- DEBUG: Log phase calculations every 30 minutes
+   static datetime lastDebugLog = 0;
+   static MARKET_PHASE lastLoggedPhase = PHASE_UNDEFINED;
+
+   if(TimeCurrent() - lastDebugLog > 1800 || phase != lastLoggedPhase)  // Every 30 min or on phase change
+   {
+      string phaseNames[] = {"DORMANT", "TRENDING", "RANGING", "VOLATILE", "UNDEFINED"};
+      Print("=== MARKET PHASE ANALYSIS ===");
+      Print("  Phase: ", phaseNames[phase]);
+      Print("  Volume: ", tick_volume[currentBar], " (Min: ", InpMinVolume, ")");
+      Print("  ADX: ", DoubleToString(adx, 1), " (Trend>", InpADXTrendLevel, ", Range<", InpADXRangeLevel, ")");
+      Print("  Autocorr: ", DoubleToString(autocorr, 3), " (Threshold: ", InpTrendThreshold, ")");
+      Print("  BBW%: ", DoubleToString(bbwPercentile, 1), " (Volatile>", InpBBExpansionPercentile, ")");
+      Print("  Price Location: ", DoubleToString(priceLocation, 1), "%");
+      Print("=============================");
+
+      lastDebugLog = TimeCurrent();
+      lastLoggedPhase = phase;
+   }
+
    //--- 8. Calculate Trend Strength (Normalized Autocorrelation)
    double trendStrength = MathMin(100.0, MathAbs(autocorr) / InpTrendThreshold * 100.0);
    BufferTrendStrength[currentBar] = trendStrength;
@@ -307,14 +327,28 @@ MARKET_PHASE DetectPhase(long currentVolume, double bbwPercentile, double adx,
       return PHASE_VOLATILE;
 
    // Priority 3: Check Trend Strength
+   // Strong trend: ADX > 25 with autocorrelation confirmation
    if(adx > InpADXTrendLevel && MathAbs(autocorr) > InpTrendThreshold)
       return PHASE_TRENDING;
 
+   // Moderate trend: ADX > 22 (even without strong autocorr)
+   if(adx > 22.0)
+      return PHASE_TRENDING;
+
    // Priority 4: Check Range Conditions
+   // Clear range: ADX < 20 and price in middle
    if(adx < InpADXRangeLevel && priceLocation > 10 && priceLocation < 90)
       return PHASE_RANGING;
 
-   // Default: Undefined transition state
+   // Weak trend zone (ADX 20-22): Default to ranging if price is contained
+   if(adx <= 22.0 && priceLocation > 10 && priceLocation < 90)
+      return PHASE_RANGING;
+
+   // If price at extremes (breakout zones), treat as trending
+   if(priceLocation <= 10 || priceLocation >= 90)
+      return PHASE_TRENDING;
+
+   // Default: Should rarely hit this now
    return PHASE_UNDEFINED;
 }
 
