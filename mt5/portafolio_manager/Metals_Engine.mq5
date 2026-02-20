@@ -1335,7 +1335,7 @@ void OnTick()
       GlobalVariableSet(GV_SCORE_PREFIX + _Symbol, bestScore);
       GlobalVariableSet(GV_REQ_PREFIX + _Symbol, InpMinConfluenceEntry);
       GlobalVariableSet(GV_DIR_PREFIX + _Symbol, (double)direction);
-      GlobalVariableSet(GV_KZ_PREFIX + _Symbol, killzoneDetector.IsKillzoneActive() ? 1.0 : 0.0);
+      GlobalVariableSet(GV_KZ_PREFIX + _Symbol, CheckKillzone() ? 1.0 : 0.0);
       GlobalVariableSet(GV_BAROPEN_PREFIX + _Symbol, (double)iTime(_Symbol, PERIOD_CURRENT, 0));
       GlobalVariableSet(GV_PERIOD_PREFIX + _Symbol, (double)PeriodSeconds(PERIOD_CURRENT));
 
