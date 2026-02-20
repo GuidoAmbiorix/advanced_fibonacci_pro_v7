@@ -40,8 +40,8 @@ InpBBDeviation=2.0
 ; Bollinger Bands standard deviation
 InpBBExpansionPercentile=90
 ; BBW percentile threshold for volatile phase (90th percentile)
-InpMinVolume=100
-; Minimum volume to avoid dormant phase
+InpMinVolume=40
+; Minimum volume (H1 optimized - catches Asian session)
 InpSwingLookback=50
 ; Bars to analyze for Fibonacci swing structure
 

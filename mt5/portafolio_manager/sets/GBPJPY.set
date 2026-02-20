@@ -31,8 +31,8 @@ InpBBDeviation=2.5
 ; Higher deviation for GBPJPY volatility
 InpBBExpansionPercentile=80
 ; Lower threshold (volatile frequently)
-InpMinVolume=150
-; Higher minimum volume
+InpMinVolume=40
+; Minimum volume (H1 optimized - cross pair)
 InpSwingLookback=50
 
 ; ====== FIBONACCI GOLDEN POCKET ======

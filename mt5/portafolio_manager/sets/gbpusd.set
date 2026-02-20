@@ -30,8 +30,8 @@ InpBBPeriod=20
 InpBBDeviation=2.0
 InpBBExpansionPercentile=85
 ; Lower percentile (85) - GBPUSD volatile more often
-InpMinVolume=120
-; Higher minimum volume for GBPUSD
+InpMinVolume=35
+; Minimum volume (H1 optimized - London pair)
 InpSwingLookback=50
 
 ; ====== FIBONACCI GOLDEN POCKET ======

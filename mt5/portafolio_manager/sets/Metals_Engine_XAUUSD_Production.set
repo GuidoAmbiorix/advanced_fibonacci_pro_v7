@@ -31,8 +31,8 @@ InpBBPeriod=20
 InpBBDeviation=2.0
 InpBBExpansionPercentile=88
 ; Lower for XAUUSD (frequent volatility spikes)
-InpMinVolume=150
-; Higher minimum for XAUUSD
+InpMinVolume=50
+; Minimum volume (H1 optimized - Gold active hours)
 InpSwingLookback=50
 
 ; ====== FIBONACCI GOLDEN POCKET ======

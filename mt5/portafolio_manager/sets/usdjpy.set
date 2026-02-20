@@ -30,7 +30,8 @@ InpBBPeriod=20
 InpBBDeviation=2.0
 InpBBExpansionPercentile=90
 ; Standard percentile (USDJPY moderate volatility)
-InpMinVolume=100
+InpMinVolume=45
+; Minimum volume (H1 optimized - Tokyo/Asian active)
 InpSwingLookback=50
 
 ; ====== FIBONACCI GOLDEN POCKET ======
