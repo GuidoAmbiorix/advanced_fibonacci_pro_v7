@@ -2612,8 +2612,16 @@ void UpdateDashboard()
    // Chameleon Strategy Info
    if(InpEnableChameleon && !InpUseLegacyMode)
    {
-      string strategyNames[] = {"Legacy", "Sniper", "RubberBand", "Breakout"};
-      txt += "CHAMELEON: " + strategyNames[g_activeStrategy] + "\n";
+      string strategyNames[] = {"Standby", "Sniper", "RubberBand", "Breakout"};
+      string phaseNames[] = {"DORMANT", "TRENDING", "RANGING", "VOLATILE", "UNDEFINED"};
+
+      // Read current phase from global variable
+      int currentPhase = 4; // UNDEFINED
+      if(GlobalVariableCheck(GV_PHASE_PREFIX + _Symbol))
+         currentPhase = (int)GlobalVariableGet(GV_PHASE_PREFIX + _Symbol);
+
+      txt += "CHAMELEON: " + strategyNames[g_activeStrategy];
+      txt += " | Phase: " + phaseNames[currentPhase] + "\n";
 
       // Show strategy performance
       if(g_activeStrategy > 0)
