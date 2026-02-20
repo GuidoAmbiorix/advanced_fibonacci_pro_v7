@@ -12,7 +12,8 @@
       "Bash(./setup_mt5.sh:*)",
       "Bash(\"C:\\\\Program Files\\\\MetaTrader 5\\\\metaeditor64.exe\" /compile:Symbol_Engine.mq5 /log)",
       "Bash(\"/c/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:\"Metals_Engine.mq5\" /log)",
-      "Bash(\"C:\\\\Program Files\\\\MetaTrader 5\\\\metaeditor64.exe\" /compile:\"Indicators\\\\Market_Phase_Analyzer.mq5\" /log)"
+      "Bash(\"C:\\\\Program Files\\\\MetaTrader 5\\\\metaeditor64.exe\" /compile:\"Indicators\\\\Market_Phase_Analyzer.mq5\" /log)",
+      "Bash(\"C:\\\\Program Files\\\\MetaTrader 5\\\\metaeditor64.exe\" /compile:\"Metals_Engine.mq5\" /log)"
     ]
   }
 }

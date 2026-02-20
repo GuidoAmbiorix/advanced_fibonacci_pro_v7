@@ -66,13 +66,13 @@ public:
    virtual ~CBaseStrategy() {}
 
    //--- Initialization
-   virtual bool Init(int hMarketPhase, int hFibGolden, int hSMC, int hVolume, int hMTF, int hRSIHandle) {
-      m_handleMarketPhase = hMarketPhase;
-      m_handleFibGolden = hFibGolden;
-      m_handleSMC = hSMC;
-      m_handleVolume = hVolume;
-      m_handleMTF = hMTF;
-      m_handleRSI = hRSIHandle;
+   virtual bool Init(int marketPhaseHandle, int fibGoldenHandle, int smcHandle, int volumeHandle, int mtfHandle, int rsiHandle) {
+      m_handleMarketPhase = marketPhaseHandle;
+      m_handleFibGolden = fibGoldenHandle;
+      m_handleSMC = smcHandle;
+      m_handleVolume = volumeHandle;
+      m_handleMTF = mtfHandle;
+      m_handleRSI = rsiHandle;
 
       if(m_handleMarketPhase == INVALID_HANDLE || m_handleFibGolden == INVALID_HANDLE) {
          Print("[", m_strategyName, "] ERROR: Invalid indicator handles");
