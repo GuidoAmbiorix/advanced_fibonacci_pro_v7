@@ -35,6 +35,11 @@ struct OrderBlock
    bool         respected;     // Did price react at this level?
    double       impulseStrength; // Strength of the following impulse (in ATR)
    int          touchCount;    // How many times price has touched this zone
+
+   // PHASE 4: Enhanced OB tracking
+   double       strengthScore;  // Composite strength (0-100)
+   int          ageInBars;      // Age of OB in bars
+   bool         isBreaker;      // Converted to breaker block
 };
 
 //+------------------------------------------------------------------+
@@ -371,31 +376,43 @@ public:
    }
 
    //+------------------------------------------------------------------+
-   //| Cleanup old/mitigated OBs                                         |
+   //| PHASE 1: Cleanup old/mitigated OBs - Optimized swap-and-pop      |
    //+------------------------------------------------------------------+
    void CleanupOBs()
    {
-      // Remove mitigated bullish OBs
-      for(int i = ArraySize(m_bullishOBs) - 1; i >= 0; i--)
+      // Remove mitigated bullish OBs using swap-and-pop pattern (O(n) instead of O(n²))
+      int writeIdx = 0;
+      int size = ArraySize(m_bullishOBs);
+
+      for(int readIdx = 0; readIdx < size; readIdx++)
       {
-         if(m_bullishOBs[i].mitigated)
+         if(!m_bullishOBs[readIdx].mitigated)
          {
-            for(int j = i; j < ArraySize(m_bullishOBs) - 1; j++)
-               m_bullishOBs[j] = m_bullishOBs[j+1];
-            ArrayResize(m_bullishOBs, ArraySize(m_bullishOBs) - 1);
+            if(writeIdx != readIdx)
+               m_bullishOBs[writeIdx] = m_bullishOBs[readIdx];
+            writeIdx++;
          }
       }
 
-      // Remove mitigated bearish OBs
-      for(int i = ArraySize(m_bearishOBs) - 1; i >= 0; i--)
+      if(writeIdx < size)
+         ArrayResize(m_bullishOBs, writeIdx);
+
+      // Remove mitigated bearish OBs using swap-and-pop pattern
+      writeIdx = 0;
+      size = ArraySize(m_bearishOBs);
+
+      for(int readIdx = 0; readIdx < size; readIdx++)
       {
-         if(m_bearishOBs[i].mitigated)
+         if(!m_bearishOBs[readIdx].mitigated)
          {
-            for(int j = i; j < ArraySize(m_bearishOBs) - 1; j++)
-               m_bearishOBs[j] = m_bearishOBs[j+1];
-            ArrayResize(m_bearishOBs, ArraySize(m_bearishOBs) - 1);
+            if(writeIdx != readIdx)
+               m_bearishOBs[writeIdx] = m_bearishOBs[readIdx];
+            writeIdx++;
          }
       }
+
+      if(writeIdx < size)
+         ArrayResize(m_bearishOBs, writeIdx);
    }
 
    //+------------------------------------------------------------------+
@@ -542,6 +559,109 @@ public:
    //+------------------------------------------------------------------+
    int GetActiveBullishOBCount() { return ArraySize(m_bullishOBs); }
    int GetActiveBearishOBCount() { return ArraySize(m_bearishOBs); }
+
+   //+------------------------------------------------------------------+
+   //| PHASE 4: Calculate OB strength score                              |
+   //+------------------------------------------------------------------+
+   double CalculateOBStrength(OrderBlock &ob)
+   {
+      double score = 0;
+
+      // 1. Impulse strength (0-40 points)
+      double impulsePoints = MathMin(ob.impulseStrength * 10, 40);
+      score += impulsePoints;
+
+      // 2. Touch count factor (0-20 points)
+      // First touch = 20, second = 15, third+ = 10
+      double touchPoints = 20;
+      if(ob.touchCount == 2) touchPoints = 15;
+      else if(ob.touchCount >= 3) touchPoints = 10;
+      score += touchPoints;
+
+      // 3. Freshness factor (0-20 points)
+      // Fresh OBs (< 10 bars) = 20, aging reduces score
+      int currentBar = 0; // Bar 0
+      ob.ageInBars = currentBar - ob.barIndex;
+      if(ob.ageInBars < 0) ob.ageInBars = 0;
+
+      double freshnessPoints = 20;
+      if(ob.ageInBars > 10) freshnessPoints = 20 - ((ob.ageInBars - 10) * 0.5);
+      if(freshnessPoints < 0) freshnessPoints = 0;
+      score += freshnessPoints;
+
+      // 4. Respect factor (0-20 points)
+      if(ob.respected) score += 20;
+
+      return MathMin(score, 100); // Cap at 100
+   }
+
+   //+------------------------------------------------------------------+
+   //| PHASE 4: Get sorted OBs by strength                               |
+   //+------------------------------------------------------------------+
+   int GetStrongestOBs(int direction, OrderBlock &outOBs[], int maxCount = 3)
+   {
+      // Update strength scores
+      if(direction == 1)
+      {
+         for(int i = 0; i < ArraySize(m_bullishOBs); i++)
+         {
+            if(!m_bullishOBs[i].mitigated)
+               m_bullishOBs[i].strengthScore = CalculateOBStrength(m_bullishOBs[i]);
+         }
+
+         // Sort by strength (bubble sort - simple for small arrays)
+         for(int i = 0; i < ArraySize(m_bullishOBs) - 1; i++)
+         {
+            for(int j = 0; j < ArraySize(m_bullishOBs) - i - 1; j++)
+            {
+               if(m_bullishOBs[j].strengthScore < m_bullishOBs[j+1].strengthScore)
+               {
+                  OrderBlock temp = m_bullishOBs[j];
+                  m_bullishOBs[j] = m_bullishOBs[j+1];
+                  m_bullishOBs[j+1] = temp;
+               }
+            }
+         }
+
+         // Copy top N to output
+         int count = MathMin(ArraySize(m_bullishOBs), maxCount);
+         ArrayResize(outOBs, count);
+         for(int i = 0; i < count; i++)
+            outOBs[i] = m_bullishOBs[i];
+
+         return count;
+      }
+      else
+      {
+         for(int i = 0; i < ArraySize(m_bearishOBs); i++)
+         {
+            if(!m_bearishOBs[i].mitigated)
+               m_bearishOBs[i].strengthScore = CalculateOBStrength(m_bearishOBs[i]);
+         }
+
+         // Sort by strength
+         for(int i = 0; i < ArraySize(m_bearishOBs) - 1; i++)
+         {
+            for(int j = 0; j < ArraySize(m_bearishOBs) - i - 1; j++)
+            {
+               if(m_bearishOBs[j].strengthScore < m_bearishOBs[j+1].strengthScore)
+               {
+                  OrderBlock temp = m_bearishOBs[j];
+                  m_bearishOBs[j] = m_bearishOBs[j+1];
+                  m_bearishOBs[j+1] = temp;
+               }
+            }
+         }
+
+         // Copy top N to output
+         int count = MathMin(ArraySize(m_bearishOBs), maxCount);
+         ArrayResize(outOBs, count);
+         for(int i = 0; i < count; i++)
+            outOBs[i] = m_bearishOBs[i];
+
+         return count;
+      }
+   }
 
    //+------------------------------------------------------------------+
    //| Get string representation                                         |

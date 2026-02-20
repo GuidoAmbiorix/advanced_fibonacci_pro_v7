@@ -45,6 +45,12 @@ struct FairValueGap
    ENUM_FVG_STATUS status;        // Current status
    double          fillPercent;   // How much has been filled (0-100)
    double          consequentEncroachment; // CE level (50% of FVG)
+
+   // PHASE 4: Enhanced FVG tracking
+   double          fillRate;      // Rate of fill (pips/bar)
+   int             barsToFill;    // How many bars it took to fill
+   double          reactionStrength; // Price reaction when tested
+   bool            isOptimal;     // Is optimal entry FVG (filled to CE)
 };
 
 //+------------------------------------------------------------------+

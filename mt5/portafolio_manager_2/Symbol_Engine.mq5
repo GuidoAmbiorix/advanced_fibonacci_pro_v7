@@ -290,6 +290,25 @@ double g_cachedBuyScore = 0;
 double g_cachedSellScore = 0;
 datetime g_lastScoreCalcTime = 0;
 
+// PHASE 1: Indicator buffer caching (once per bar)
+double g_cachedSMCScore_Buy = 0;
+double g_cachedSMCScore_Sell = 0;
+double g_cachedMTFScore_Buy = 0;
+double g_cachedMTFScore_Sell = 0;
+double g_cachedVolumeScore_Buy = 0;
+double g_cachedVolumeScore_Sell = 0;
+double g_cachedDivergenceScore_Buy = 0;
+double g_cachedDivergenceScore_Sell = 0;
+datetime g_lastIndicatorCacheTime = 0;
+
+// PHASE 1: GlobalVariable batch caching
+struct GVCache {
+   double rankMultiplier;
+   double scoreValue;
+   datetime lastUpdate;
+};
+GVCache g_gvCache;
+
 // OPTIMIZATION: Performance monitoring
 ulong g_tickCount = 0;
 ulong g_barCount = 0;
@@ -1837,6 +1856,65 @@ void CheckAddOnOpportunity()
 }
 
 //+------------------------------------------------------------------+
+//| PHASE 1: Update all indicators once per bar with caching          |
+//+------------------------------------------------------------------+
+void UpdateAllIndicators()
+{
+   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
+
+   // Only update if new bar or cache is stale
+   if(currentBarTime == g_lastIndicatorCacheTime) return;
+
+   g_lastIndicatorCacheTime = currentBarTime;
+
+   // Cache SMC scores
+   if(InpUseSMC)
+   {
+      g_cachedSMCScore_Buy = 0;
+      g_cachedSMCScore_Sell = 0;
+
+      // Structure breaks
+      double structScore = smcStructure.GetConfluenceScore(1);
+      g_cachedSMCScore_Buy += structScore;
+      structScore = smcStructure.GetConfluenceScore(-1);
+      g_cachedSMCScore_Sell += structScore;
+
+      // Order blocks
+      double obScore = smcOrderBlocks.GetConfluenceScore(1);
+      g_cachedSMCScore_Buy += obScore;
+      obScore = smcOrderBlocks.GetConfluenceScore(-1);
+      g_cachedSMCScore_Sell += obScore;
+
+      // Fair Value Gaps
+      double fvgScore = smcFVG.GetConfluenceScore(1);
+      g_cachedSMCScore_Buy += fvgScore;
+      fvgScore = smcFVG.GetConfluenceScore(-1);
+      g_cachedSMCScore_Sell += fvgScore;
+
+      // Liquidity sweeps
+      double liqScore = smcLiquidity.GetConfluenceScore(1);
+      g_cachedSMCScore_Buy += liqScore;
+      liqScore = smcLiquidity.GetConfluenceScore(-1);
+      g_cachedSMCScore_Sell += liqScore;
+   }
+
+   // Cache MTF scores
+   if(InpUseMTF)
+   {
+      g_cachedMTFScore_Buy = mtfAnalysis.GetConfluenceScore(1);
+      g_cachedMTFScore_Sell = mtfAnalysis.GetConfluenceScore(-1);
+   }
+
+   // Cache Volume scores
+   g_cachedVolumeScore_Buy = volumeAnalysis.GetConfluenceScore(1);
+   g_cachedVolumeScore_Sell = volumeAnalysis.GetConfluenceScore(-1);
+
+   // Cache Divergence scores
+   g_cachedDivergenceScore_Buy = divergence.GetDivergenceScore(1, hRSI);
+   g_cachedDivergenceScore_Sell = divergence.GetDivergenceScore(-1, hRSI);
+}
+
+//+------------------------------------------------------------------+
 //| Update all SMC and filter modules                                 |
 //+------------------------------------------------------------------+
 void UpdateModules()
@@ -1857,6 +1935,8 @@ void UpdateModules()
    if(InpUseNewsFilter) newsFilter.Update();
    if(InpUseKelly) kellySizer.Update();
 
+   // PHASE 1: Update all indicator caches once per bar
+   UpdateAllIndicators();
 }
 
 //+------------------------------------------------------------------+
@@ -1889,23 +1969,29 @@ double CalculateConfluenceScore(int direction)
    double score = 0;
    double currentPrice = symbolInfo.Bid();
 
+   // PHASE 3: Get regime-adaptive weights
+   double weights[];
+   regime.GetAdaptiveWeights(g_currentRegime, weights);
+
    // DEBUG: Print indicator values
    static datetime lastDebug = 0;
-   if(TimeCurrent() - lastDebug > 300) 
+   if(TimeCurrent() - lastDebug > 300)
    {
       Print("DEBUG Indicators: EMA=", g_EMA, " ATR=", g_ATR, " RSI=", g_RSI, " Price=", currentPrice);
+      Print("DEBUG Regime Weights: Trend=", weights[0], " Struct=", weights[1], " PA=", weights[2],
+            " Vol=", weights[3], " MTF=", weights[4]);
       lastDebug = TimeCurrent();
    }
 
    // ============ 1. CORE SMC & PRICE ACTION (Max ~10.0 pts) ============
 
-   // A. Trend (EMA 200 + Slope) - 3.0 points 
+   // A. Trend (EMA 200 + Slope) - 3.0 points (PHASE 3: regime-weighted)
    double emaSlope = g_EMA - g_EMA_Prev;
    bool slopeAligned = (direction == 1 && emaSlope > 0) || (direction == -1 && emaSlope < 0);
    bool priceAligned = (direction == 1 && currentPrice > g_EMA) || (direction == -1 && currentPrice < g_EMA);
-   
-   if(priceAligned) score += 1.5;
-   if(slopeAligned) score += 1.5;
+
+   if(priceAligned) score += 1.5 * weights[0]; // Apply trend weight
+   if(slopeAligned) score += 1.5 * weights[0]; // Apply trend weight
 
    // B. Structure (Bos/Choch) - 3.0 points
    // M15 Adaptation: Check for valid structure
@@ -1917,8 +2003,8 @@ double CalculateConfluenceScore(int direction)
    
    bool validStructure = (structRange >= g_ATR * 2.0); 
    
-   if(direction == 1 && lowestBar < highestBar && validStructure) score += 3.0; // Boosted
-   if(direction == -1 && highestBar < lowestBar && validStructure) score += 3.0; // Boosted
+   if(direction == 1 && lowestBar < highestBar && validStructure) score += 3.0 * weights[1]; // PHASE 3: structure weight
+   if(direction == -1 && highestBar < lowestBar && validStructure) score += 3.0 * weights[1]; // PHASE 3: structure weight
 
    // C. RSI Extremes - 2.0 points
    bool rsiValid = false;
@@ -1980,12 +2066,12 @@ double CalculateConfluenceScore(int direction)
 
    // ============ 4. ADVANCED CONFIRMATIONS (Max ~5-10 pts) ============
 
-   // Institutional Volume - 4.0 pts (RVOL + Money Flow)
-   score += volumeAnalysis.GetConfluenceScore(direction);
+   // Institutional Volume - 4.0 pts (RVOL + Money Flow) - PHASE 3: volume weight
+   score += volumeAnalysis.GetConfluenceScore(direction) * weights[3];
 
-   // Multi-Timeframe - 2.0 pts
+   // Multi-Timeframe - 2.0 pts - PHASE 3: MTF weight
    if(InpUseMTF)
-      score += mtfAnalysis.GetConfluenceScore(direction);
+      score += mtfAnalysis.GetConfluenceScore(direction) * weights[4];
 
    // Divergence - 2.0 pts
    double divergenceScore = divergence.GetDivergenceScore(direction, hRSI);
@@ -2044,15 +2130,50 @@ double CalculateConfluenceScore(int direction)
        }
    }
 
+   // PHASE 3: Confluence clustering bonus
+   // Check if multiple factors align in same price zone (within 0.5 ATR)
+   double clusterZone = g_ATR * 0.5;
+   int factorsInCluster = 0;
+
+   // Track key price levels
+   double obTop = 0, obBottom = 0;
+   bool hasOB = smcOrderBlocks.IsInOrderBlock(direction, obTop, obBottom);
+
+   double fvgTop = 0, fvgBottom = 0;
+   bool hasFVG = smcFVG.IsInFVG(direction, fvgTop, fvgBottom);
+
+   // Check if multiple factors cluster around current price
+   if(hasOB && MathAbs(currentPrice - obBottom) < clusterZone) factorsInCluster++;
+   if(hasFVG && MathAbs(currentPrice - fvgBottom) < clusterZone) factorsInCluster++;
+
+   // Check if Fib level is near current price
+   if(highestBar >= 0 && lowestBar >= 0)
+   {
+      double swingHigh = iHigh(_Symbol, PERIOD_CURRENT, highestBar);
+      double swingLow = iLow(_Symbol, PERIOD_CURRENT, lowestBar);
+      double range = swingHigh - swingLow;
+
+      if(range >= g_ATR * 1.5)
+      {
+         double fibLevel = (direction == 1) ? (swingHigh - range * 0.618) : (swingLow + range * 0.618);
+         if(MathAbs(currentPrice - fibLevel) < clusterZone) factorsInCluster++;
+      }
+   }
+
+   // Award clustering bonus
+   if(factorsInCluster >= 2) score += 1.0; // 2+ factors aligned
+   if(factorsInCluster >= 3) score += 1.5; // 3+ factors aligned (strong cluster)
+
    // DEBUG: Print final score
    static datetime lastScoreDebug = 0;
-   if(TimeCurrent() - lastScoreDebug > 300) 
+   if(TimeCurrent() - lastScoreDebug > 300)
    {
-      Print("DEBUG Score [", (direction == 1 ? "BUY" : "SELL"), "]: ", DoubleToString(score, 2), "/30");
+      Print("DEBUG Score [", (direction == 1 ? "BUY" : "SELL"), "]: ", DoubleToString(score, 2), "/30",
+            " | Cluster factors: ", factorsInCluster);
       lastScoreDebug = TimeCurrent();
    }
 
-   return score;  // Max possible: ~30-35 points
+   return score;  // Max possible: ~30-37 points (with clustering bonus)
 }
 
 double GetTotalProfitR()

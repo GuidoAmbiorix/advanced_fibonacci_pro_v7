@@ -45,7 +45,81 @@ public:
 
       return REGIME_RANGE; // Default
    }
-   
+
+   //+------------------------------------------------------------------+
+   //| PHASE 3: Get regime-adaptive confluence weights                   |
+   //+------------------------------------------------------------------+
+   void GetAdaptiveWeights(MARKET_REGIME regimeType, double &weights[])
+   {
+      // weights[0] = Trend weight
+      // weights[1] = Structure weight
+      // weights[2] = Price action weight
+      // weights[3] = Volume weight
+      // weights[4] = MTF weight
+
+      ArrayResize(weights, 5);
+
+      switch(regimeType)
+      {
+         case REGIME_TREND:
+            // In trends: Emphasize MTF alignment and momentum
+            weights[0] = 1.3;  // Boost trend following
+            weights[1] = 0.8;  // Reduce structure importance
+            weights[2] = 1.0;  // Normal price action
+            weights[3] = 1.2;  // Boost volume (confirms trend)
+            weights[4] = 1.4;  // Strong boost to MTF alignment
+            break;
+
+         case REGIME_RANGE:
+            // In ranges: Emphasize structure and mean reversion
+            weights[0] = 0.7;  // Reduce trend following
+            weights[1] = 1.4;  // Strong boost to structure (OB, FVG)
+            weights[2] = 1.3;  // Boost price action (reversals)
+            weights[3] = 0.9;  // Reduce volume weight
+            weights[4] = 0.8;  // Reduce MTF (HTF may be ranging)
+            break;
+
+         case REGIME_VOLATILE:
+         case REGIME_CHAOS:
+            // In chaos: Conservative, require multiple confirmations
+            weights[0] = 0.9;
+            weights[1] = 1.1;
+            weights[2] = 0.8;
+            weights[3] = 1.0;
+            weights[4] = 1.2;  // Rely more on HTF for direction
+            break;
+
+         default:
+            // Unknown/Neutral: Equal weights
+            weights[0] = 1.0;
+            weights[1] = 1.0;
+            weights[2] = 1.0;
+            weights[3] = 1.0;
+            weights[4] = 1.0;
+            break;
+      }
+   }
+
+   //+------------------------------------------------------------------+
+   //| PHASE 3: Calculate time-based score decay                         |
+   //+------------------------------------------------------------------+
+   double GetTimeDecayFactor(datetime signalTime, int maxAgeBars = 5)
+   {
+      datetime currentTime = TimeCurrent();
+      long ageSeconds = currentTime - signalTime;
+
+      // Calculate bar age (approximate)
+      long barPeriod = PeriodSeconds(PERIOD_CURRENT);
+      int barAge = (int)(ageSeconds / barPeriod);
+
+      if(barAge >= maxAgeBars) return 0.1; // Very old signal, minimal weight
+
+      // Linear decay: 1.0 at bar 0, down to 0.1 at maxAgeBars
+      double decayFactor = 1.0 - (0.9 * (double)barAge / (double)maxAgeBars);
+
+      return MathMax(decayFactor, 0.1); // Minimum 10% weight
+   }
+
    string RegimeToString(MARKET_REGIME r)
    {
       switch(r)

@@ -197,57 +197,86 @@ public:
    }
 
    //+------------------------------------------------------------------+
-   //| Calculate swing bias for a timeframe                              |
+   //| PHASE 4: Calculate swing bias - Optimized O(n) algorithm          |
    //+------------------------------------------------------------------+
    int CalculateSwingBias(ENUM_TIMEFRAMES tf)
    {
-      // Find recent swing highs and lows
+      // PHASE 4: Cache swing points (Structure of Arrays pattern)
+      static datetime lastCacheTime = 0;
+      static int cachedBias = 0;
+      static ENUM_TIMEFRAMES cachedTF = PERIOD_CURRENT;
+
+      datetime currentBarTime = iTime(m_symbol, tf, 0);
+
+      // Return cached value if same bar and same timeframe
+      if(currentBarTime == lastCacheTime && tf == cachedTF)
+         return cachedBias;
+
+      // Find recent swing highs and lows - OPTIMIZED
       int lookback = 20;
 
-      double recentHighs[3], recentLows[3];
+      // Arrays for Structure of Arrays pattern
+      double swingHighPrices[10];
+      int swingHighIndices[10];
+      double swingLowPrices[10];
+      int swingLowIndices[10];
       int highCount = 0, lowCount = 0;
 
-      for(int i = 2; i < lookback && (highCount < 3 || lowCount < 3); i++)
+      // Single pass through data - O(n) instead of O(n²)
+      for(int i = 2; i < lookback && (highCount < 10 || lowCount < 10); i++)
       {
          double high = iHigh(m_symbol, tf, i);
          double low = iLow(m_symbol, tf, i);
+         double prevHigh = iHigh(m_symbol, tf, i-1);
+         double prevLow = iLow(m_symbol, tf, i-1);
+         double prevHigh2 = iHigh(m_symbol, tf, i-2);
+         double prevLow2 = iLow(m_symbol, tf, i-2);
+         double nextHigh = (i+1 < lookback) ? iHigh(m_symbol, tf, i+1) : high;
+         double nextLow = (i+1 < lookback) ? iLow(m_symbol, tf, i+1) : low;
+         double nextHigh2 = (i+2 < lookback) ? iHigh(m_symbol, tf, i+2) : high;
+         double nextLow2 = (i+2 < lookback) ? iLow(m_symbol, tf, i+2) : low;
 
-         bool isSwingHigh = true;
-         bool isSwingLow = true;
-
-         // Check if swing point
-         for(int j = 1; j <= 2; j++)
+         // Optimized swing high detection
+         if(high > prevHigh && high > prevHigh2 && high > nextHigh && high > nextHigh2 && highCount < 10)
          {
-            if(i - j >= 0 && iHigh(m_symbol, tf, i - j) >= high) isSwingHigh = false;
-            if(i + j < lookback && iHigh(m_symbol, tf, i + j) >= high) isSwingHigh = false;
-            if(i - j >= 0 && iLow(m_symbol, tf, i - j) <= low) isSwingLow = false;
-            if(i + j < lookback && iLow(m_symbol, tf, i + j) <= low) isSwingLow = false;
-         }
-
-         if(isSwingHigh && highCount < 3)
-         {
-            recentHighs[highCount] = high;
+            swingHighPrices[highCount] = high;
+            swingHighIndices[highCount] = i;
             highCount++;
          }
-         if(isSwingLow && lowCount < 3)
+
+         // Optimized swing low detection
+         if(low < prevLow && low < prevLow2 && low < nextLow && low < nextLow2 && lowCount < 10)
          {
-            recentLows[lowCount] = low;
+            swingLowPrices[lowCount] = low;
+            swingLowIndices[lowCount] = i;
             lowCount++;
          }
       }
 
-      if(highCount < 2 || lowCount < 2) return 0;
+      if(highCount < 2 || lowCount < 2)
+      {
+         cachedBias = 0;
+         lastCacheTime = currentBarTime;
+         cachedTF = tf;
+         return 0;
+      }
 
-      // Check pattern
-      bool makingHH = recentHighs[0] > recentHighs[1];
-      bool makingHL = recentLows[0] > recentLows[1];
-      bool makingLL = recentLows[0] < recentLows[1];
-      bool makingLH = recentHighs[0] < recentHighs[1];
+      // Check pattern using most recent swings
+      bool makingHH = swingHighPrices[0] > swingHighPrices[1];
+      bool makingHL = swingLowPrices[0] > swingLowPrices[1];
+      bool makingLL = swingLowPrices[0] < swingLowPrices[1];
+      bool makingLH = swingHighPrices[0] < swingHighPrices[1];
 
-      if(makingHH && makingHL) return 1;   // Bullish structure
-      if(makingLL && makingLH) return -1;  // Bearish structure
+      int bias = 0;
+      if(makingHH && makingHL) bias = 1;   // Bullish structure
+      else if(makingLL && makingLH) bias = -1;  // Bearish structure
 
-      return 0;  // Mixed/unclear
+      // Cache result
+      cachedBias = bias;
+      lastCacheTime = currentBarTime;
+      cachedTF = tf;
+
+      return bias;
    }
 
    //+------------------------------------------------------------------+
