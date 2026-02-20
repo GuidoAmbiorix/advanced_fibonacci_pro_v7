@@ -221,15 +221,17 @@ private:
       }
 
       // Write version
-      int version = 1;
+      int version = 2;
       FileWriteInteger(fileHandle, version);
 
       // Write averages
       FileWriteDouble(fileHandle, m_avgMFE);
       FileWriteDouble(fileHandle, m_avgMAE);
 
-      // Write symbol
-      FileWriteString(fileHandle, m_symbol);
+      // Write symbol length then symbol (avoids timestamp bytes bleeding into string read)
+      int symLen = StringLen(m_symbol);
+      FileWriteInteger(fileHandle, symLen);
+      FileWriteString(fileHandle, m_symbol, symLen);
 
       // Write timestamp
       FileWriteLong(fileHandle, TimeCurrent());
@@ -260,7 +262,7 @@ private:
       // Read version
       int version = FileReadInteger(fileHandle);
 
-      if(version != 1)
+      if(version != 2)
       {
          Print("Learning WARNING: Unsupported file version");
          FileClose(fileHandle);
@@ -271,8 +273,9 @@ private:
       m_avgMFE = FileReadDouble(fileHandle);
       m_avgMAE = FileReadDouble(fileHandle);
 
-      // Read symbol (verify it matches)
-      string savedSymbol = FileReadString(fileHandle);
+      // Read symbol length then symbol
+      int symLen = FileReadInteger(fileHandle);
+      string savedSymbol = FileReadString(fileHandle, symLen);
       if(savedSymbol != m_symbol)
       {
          Print("Learning WARNING: Symbol mismatch (saved:", savedSymbol, " current:", m_symbol, ")");

@@ -1,0 +1,354 @@
+2026-02-11 11:08:26,156 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:08:26,157 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:08:26,157 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:08:26,157 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:08:26,158 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:08:26,158 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:08:26,159 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:08:26,159 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:08:26,160 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:08:26,160 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:08:26,160 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:08:28,140 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:08:28,141 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:08:28,141 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:08:28,141 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:08:28,141 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:08:28,141 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:08:28,141 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:08:28,141 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:08:28,141 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:08:28,141 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:08:28,141 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:08:29,957 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:08:29,957 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:08:29,958 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:08:29,958 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:08:29,958 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:08:29,958 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:08:29,958 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:08:29,958 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:08:29,958 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:08:29,958 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:08:29,958 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:08:32,098 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:08:32,099 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:08:32,100 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:08:32,100 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:08:32,100 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:08:32,101 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:08:32,101 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:08:32,101 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:08:32,101 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:08:32,101 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:08:32,101 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:08:34,581 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:08:34,581 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:08:34,581 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:08:34,581 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:08:34,582 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:08:34,582 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:08:34,582 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:08:34,582 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:08:34,582 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:08:34,582 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:08:34,582 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:08:38,085 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:08:38,085 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:08:38,085 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:08:38,085 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:08:38,086 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:08:38,086 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:08:38,086 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:08:38,086 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:08:38,086 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:08:38,086 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:08:38,086 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:08:42,851 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:08:42,852 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:08:42,853 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:08:42,853 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:08:42,853 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:08:42,853 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:08:42,853 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:08:42,853 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:08:42,853 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:08:42,853 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:08:42,854 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:08:50,812 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:08:50,812 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:08:50,813 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:08:50,813 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:08:50,813 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:08:50,813 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:08:50,813 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:08:50,813 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:08:50,813 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:08:50,813 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:08:50,813 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:09:05,153 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:09:05,153 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:09:05,153 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:09:05,153 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:09:05,153 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:09:05,153 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:09:05,153 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:09:05,153 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:09:05,153 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:09:05,153 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:09:05,153 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:09:32,437 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:09:32,437 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:09:32,437 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:09:32,438 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:09:32,438 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:09:32,438 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:09:32,438 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:09:32,439 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:09:32,439 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:09:32,439 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:09:32,439 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:10:25,349 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:10:25,350 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:10:25,350 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:10:25,350 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:10:25,350 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:10:25,350 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:10:25,350 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:10:25,351 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:10:25,351 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:10:25,351 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:10:25,351 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:11:26,711 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:11:26,712 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:11:26,712 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:11:26,712 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:11:26,712 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:11:26,712 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:11:26,712 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:11:26,712 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:11:26,712 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:11:26,712 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:11:26,712 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:12:28,332 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:12:28,333 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:12:28,334 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:12:28,335 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:12:28,335 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:12:28,335 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:12:28,335 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:12:28,335 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:12:28,335 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:12:28,335 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:12:28,335 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:13:30,022 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:13:30,023 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:13:30,023 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:13:30,023 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:13:30,023 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:13:30,023 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:13:30,023 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:13:30,024 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:13:30,024 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:13:30,024 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:13:30,024 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:14:31,579 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:14:31,579 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:14:31,580 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:14:31,580 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:14:31,580 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:14:31,580 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:14:31,580 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:14:31,580 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:14:31,580 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:14:31,580 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:14:31,580 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:15:33,362 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:15:33,363 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:15:33,363 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:15:33,364 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:15:33,364 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:15:33,364 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:15:33,364 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:15:33,364 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:15:33,364 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:15:33,364 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:15:33,364 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:15:33,377 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 11:15:38,388 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f9cafb90550>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:16:43,428 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f9cafb94950>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:17:13,128 - src.trading.killzone_manager - INFO - Killzone filtering disabled
+2026-02-11 11:17:13,139 - src.trading.exit_manager - INFO - Exit strategies initialized
+2026-02-11 11:17:13,140 - src.trading.cooldown_manager - INFO - 🛡️ Cooldown Manager initialized (enabled: True)
+2026-02-11 11:17:13,140 - src.trading.signal_confirmation_manager - INFO - 📋 Signal Confirmation Manager initialized (window: 180s)
+2026-02-11 11:17:13,140 - __main__ - INFO - 🚀 Auto-Trader initialized with Signal Confirmation System
+2026-02-11 11:17:13,140 - __main__ - INFO -   ├─ Killzone Management: ✓
+2026-02-11 11:17:13,140 - __main__ - INFO -   ├─ Exit Strategies: ✓
+2026-02-11 11:17:13,140 - __main__ - INFO -   ├─ Signal Confirmation: ✓
+2026-02-11 11:17:13,140 - __main__ - INFO -   ├─ Cooldown System: ✓
+2026-02-11 11:17:13,140 - __main__ - INFO -   └─ Prediction interval: 300s
+2026-02-11 11:17:13,140 - __main__ - INFO - 🚀 Auto-Trader started with Signal Confirmation System
+2026-02-11 11:17:13,193 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 11:17:18,227 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0b707dd0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:18:23,269 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02139fd0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:19:28,426 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0218c150>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:20:33,455 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c08e31b50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:21:38,508 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0218c550>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:22:38,524 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 11:22:43,540 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0218e550>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:23:48,555 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02140610>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:24:53,581 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02198650>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:25:58,620 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219aad0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:27:03,697 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02140610>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:28:03,705 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 11:28:08,713 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0217f4d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:29:13,733 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0218e910>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:30:18,773 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02139350>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:31:23,802 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219b750>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:32:28,846 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219d950>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:33:28,860 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 11:33:33,869 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0218fe10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:34:38,883 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0213b2d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:35:43,908 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02193f50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:36:48,926 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02141f90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:37:53,949 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219e4d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:38:53,957 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 11:38:58,963 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021a4910>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:40:04,008 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219be10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:41:09,107 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02142f50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:42:14,127 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02138290>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:43:19,160 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0218e950>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:44:19,179 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 11:44:24,187 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021a56d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:45:29,220 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021a7b10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:46:34,241 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02193d10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:47:39,264 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219d8d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:48:44,289 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219d250>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:49:44,299 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 11:49:49,308 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219a090>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:50:54,345 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219a1d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:51:59,363 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0218e9d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:53:04,389 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219bbd0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:54:09,408 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02141090>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:55:09,424 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 11:55:14,442 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219cd90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:56:19,491 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02193ad0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:57:24,507 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0218c6d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:58:29,527 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0213bd90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 11:59:34,543 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219d410>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:00:34,556 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 12:00:39,565 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219d750>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:01:44,584 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02143a10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:02:49,611 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219bdd0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:03:54,641 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0213add0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:04:59,695 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021a4810>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:05:59,708 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 12:06:04,721 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219bb10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:07:09,737 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02143a50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:08:14,780 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219d5d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:09:19,807 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219e490>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:10:24,935 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021b0dd0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:11:25,153 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 12:11:30,166 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021b2d10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:12:35,208 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0b7b48d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:13:40,236 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219c350>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:14:45,268 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02141f90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:15:50,293 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219ba90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:16:50,306 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 12:16:55,315 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021b3590>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:18:00,344 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021c9610>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:19:05,367 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219a590>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:20:10,401 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021428d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:21:15,437 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219c710>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:22:15,449 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 12:22:20,461 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0213b790>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:23:25,475 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021c9fd0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:24:30,499 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d00d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:25:35,519 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0213ac90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:26:40,552 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219fa10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:27:40,561 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 12:27:45,577 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02140f10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:28:50,601 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021cb310>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:29:55,620 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d0850>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:31:00,654 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d29d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:32:05,669 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021433d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:33:05,678 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 12:33:10,687 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219a750>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:34:15,707 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219cd90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:35:20,743 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02139990>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:36:25,806 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d32d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:37:30,838 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d5450>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:38:30,850 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 12:38:35,859 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0213ab90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:39:40,890 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219fd10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:40:45,910 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02199c50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:41:50,935 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d3290>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:42:55,967 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d5b50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:43:55,977 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 12:44:00,993 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d7c50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:45:06,023 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d3250>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:46:11,056 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219b6d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:47:16,079 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219c590>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:48:21,119 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0213bbd0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:49:21,136 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 12:49:26,147 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021e0350>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:50:31,159 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021e24d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:51:36,195 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021c9dd0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:52:41,241 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219df50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:53:46,271 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219af90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:54:46,284 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 12:54:51,313 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d2c50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:55:56,342 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021e2c90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:57:01,360 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021e8d90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:58:06,404 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d0ad0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 12:59:11,434 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02142390>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:00:11,453 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 13:00:16,466 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219c550>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:01:21,514 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0213bbd0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:02:26,558 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0219a590>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:03:31,589 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021eb510>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:04:36,615 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021e3550>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:05:36,629 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 13:05:41,644 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021e17d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:06:46,672 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d7150>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:07:51,694 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d5350>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:08:56,717 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d1d90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:10:01,735 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c24ea0a90>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:11:01,759 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 13:11:06,774 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d27d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:12:11,791 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d5510>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:13:16,814 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d56d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:14:21,837 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021e2910>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:15:26,855 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021cb2d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:16:26,876 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 13:16:31,888 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021c9950>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:17:36,928 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021e2050>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:18:41,984 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c126b3a50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:19:47,022 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d6350>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:20:52,046 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d3d10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:21:52,058 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 13:21:57,072 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0217fa10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:23:02,109 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021b1410>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:24:07,141 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d0710>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:25:12,167 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d7510>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:26:17,209 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021c8a50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:27:17,221 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 13:27:22,229 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021e2350>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:28:27,249 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021b26d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:29:32,278 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021a5150>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:30:37,302 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021e0e50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:31:42,347 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d4890>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:32:42,357 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 13:32:47,366 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d4390>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:33:52,397 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021b2c50>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:34:57,426 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c0213bbd0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:36:02,445 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02138050>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:37:07,468 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021b1750>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:38:07,479 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 13:38:12,495 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d3010>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:39:17,517 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021d4b10>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:40:22,552 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021e27d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:41:27,568 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021932d0>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:42:32,596 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c02199690>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
+2026-02-11 13:43:32,608 - __main__ - WARNING - ⚠️ Legacy mode: prediction regeneration not fully implemented for EURUSD
+2026-02-11 13:43:37,617 - __main__ - ERROR - Error monitoring positions: HTTPConnectionPool(host='10.0.0.4', port=5000): Max retries exceeded with url: /positions (Caused by ConnectTimeoutError(<HTTPConnection(host='10.0.0.4', port=5000) at 0x7f8c021e1490>, 'Connection to 10.0.0.4 timed out. (connect timeout=5)'))
