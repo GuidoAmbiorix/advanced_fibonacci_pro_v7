@@ -931,22 +931,22 @@ double GetSymbolEdgeFactor()
 //+------------------------------------------------------------------+
 void SelectStrategy()
 {
+   // ALWAYS read market phase from indicator (for Governor dashboard)
+   double phaseBuf[1];
+   MARKET_PHASE currentPhase = PHASE_UNDEFINED;
+
+   if(CopyBuffer(hMarketPhase, 0, 0, 1, phaseBuf) > 0) {
+      currentPhase = (MARKET_PHASE)((int)phaseBuf[0]);
+   }
+
+   // Store phase in GlobalVariable for Governor (even in legacy mode)
+   GlobalVariableSet(GV_PHASE_PREFIX + _Symbol, (double)currentPhase);
+
+   // If legacy mode, don't switch strategies
    if(!InpEnableChameleon || InpUseLegacyMode) {
       g_activeStrategy = 0;  // Legacy mode
       return;
    }
-
-   // Read market phase from indicator
-   double phaseBuf[1];
-   if(CopyBuffer(hMarketPhase, 0, 0, 1, phaseBuf) <= 0) {
-      g_activeStrategy = 0;  // Fallback to legacy
-      return;
-   }
-
-   MARKET_PHASE currentPhase = (MARKET_PHASE)((int)phaseBuf[0]);
-
-   // Store phase in GlobalVariable for Governor
-   GlobalVariableSet(GV_PHASE_PREFIX + _Symbol, (double)currentPhase);
 
    // Don't trade in dormant phase
    if(currentPhase == PHASE_DORMANT) {
