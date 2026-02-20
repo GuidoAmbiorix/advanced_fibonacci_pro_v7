@@ -739,8 +739,8 @@ int OnInit()
       }
 
       // Set GlobalVariables for Chameleon dashboard
-      GlobalVariableSet("GV_CHAMELEON_ENABLED_" + _Symbol, 1.0);
-      GlobalVariableSet("GV_CHAMELEON_STRATEGY_" + _Symbol, 0.0);  // Start with Legacy
+      GlobalVariableSet(GV_CHAMELEON_ENABLED + _Symbol, 1.0);
+      GlobalVariableSet(GV_STRATEGY_PREFIX + _Symbol, 0.0);  // Start with Legacy
 
       Print("===========================================");
    }
@@ -934,6 +934,9 @@ void SelectStrategy()
 
    MARKET_PHASE currentPhase = (MARKET_PHASE)((int)phaseBuf[0]);
 
+   // Store phase in GlobalVariable for Governor
+   GlobalVariableSet(GV_PHASE_PREFIX + _Symbol, (double)currentPhase);
+
    // Don't trade in dormant phase
    if(currentPhase == PHASE_DORMANT) {
       g_activeStrategy = 0;
@@ -982,7 +985,7 @@ void SelectStrategy()
             strategyNames[g_activeStrategy], " (Phase: ", phaseNames[(int)currentPhase], ")");
 
       // Update GlobalVariable for dashboard
-      GlobalVariableSet("GV_CHAMELEON_STRATEGY_" + _Symbol, (double)g_activeStrategy);
+      GlobalVariableSet(GV_STRATEGY_PREFIX + _Symbol, (double)g_activeStrategy);
    }
 }
 

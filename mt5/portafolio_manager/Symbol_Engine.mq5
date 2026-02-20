@@ -591,8 +591,8 @@ int OnInit()
       }
 
       // Set GlobalVariables for dashboard
-      GlobalVariableSet("GV_CHAMELEON_ACTIVE_" + _Symbol, 1.0);
-      GlobalVariableSet("GV_CHAMELEON_STRATEGY_" + _Symbol, 0.0);
+      GlobalVariableSet("GV_CHAMELEON_ENABLED" + _Symbol, 1.0);
+      GlobalVariableSet("GV_STRATEGY_PREFIX" + _Symbol, 0.0);
 
       Print("  Auto-Switch: ", InpAutoSwitchStrategy ? "ENABLED" : "DISABLED");
       Print("===========================================");
@@ -600,7 +600,7 @@ int OnInit()
    else if(InpUseLegacyMode || !InpEnableChameleon)
    {
       Print("  Mode: LEGACY CONFLUENCE (Chameleon disabled)");
-      GlobalVariableSet("GV_CHAMELEON_ACTIVE_" + _Symbol, 0.0);
+      GlobalVariableSet("GV_CHAMELEON_ENABLED" + _Symbol, 0.0);
    }
 
    // OPTIMIZATION: Validate all critical modules initialized
@@ -961,6 +961,9 @@ void SelectStrategy()
 
    MARKET_PHASE currentPhase = (MARKET_PHASE)((int)phaseBuf[0]);
 
+   // Store phase in GlobalVariable for Governor
+   GlobalVariableSet(GV_PHASE_PREFIX + _Symbol, (double)currentPhase);
+
    // Don't trade in dormant phase
    if(currentPhase == PHASE_DORMANT) {
       g_activeStrategy = 0;
@@ -1009,7 +1012,7 @@ void SelectStrategy()
             strategyNames[g_activeStrategy], " (Phase: ", phaseNames[(int)currentPhase], ")");
 
       // Update GlobalVariable for dashboard
-      GlobalVariableSet("GV_CHAMELEON_STRATEGY_" + _Symbol, (double)g_activeStrategy);
+      GlobalVariableSet(GV_STRATEGY_PREFIX + _Symbol, (double)g_activeStrategy);
    }
 }
 
