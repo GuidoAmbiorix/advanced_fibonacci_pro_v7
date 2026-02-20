@@ -1,5 +1,5 @@
-; 🪙 XAUUSD - H1 Timeframe Metals Optimized
-; Metals Engine - XAUUSD Specialized Configuration
+; 🪙 XAUUSD - H1 Timeframe Metals Chameleon
+; Metals Engine - XAUUSD Multi-Strategy Configuration
 ; Session-aware + Spread filtering + News protection
 
 ; ====== IDENTITY ======
@@ -10,19 +10,67 @@ InpEnableMobileAlerts=true
 InpDirection=0
 InpBrokerUTCOffset=2
 
+; ====== CHAMELEON MULTI-STRATEGY SYSTEM ======
+InpEnableChameleon=true
+InpEnableSniper=true
+; Sniper for XAUUSD directional trends
+InpEnableRubberBand=true
+; Rubber Band for consolidation zones
+InpEnableBreakout=true
+; Breakout for Fed/CPI/NFP events
+InpAutoSwitchStrategy=true
+InpUseLegacyMode=false
+
+; ====== MARKET PHASE ANALYZER ======
+InpLookbackPeriod=50
+InpTrendThreshold=0.2
+InpADXPeriod=14
+InpADXTrendLevel=25.0
+InpADXRangeLevel=20.0
+InpBBPeriod=20
+InpBBDeviation=2.0
+InpBBExpansionPercentile=88
+; Lower for XAUUSD (frequent volatility spikes)
+InpMinVolume=150
+; Higher minimum for XAUUSD
+InpSwingLookback=50
+
+; ====== FIBONACCI GOLDEN POCKET ======
+InpZigZagDepth=18
+; Larger depth for XAUUSD swings
+InpZigZagDeviation=7
+InpZigZagBackstep=3
+InpMaxSwingAge=100
+InpUseGoldenPocket618=true
+InpDetectFakeouts=true
+InpMinSwingSize=200
+; 200 pips ($20) minimum for XAUUSD
+
+; ====== SESSION OPTIMIZER (METALS SPECIFIC) ======
+InpUseSessionOptimizer=true
+; Enable session quality scoring for metals
+InpOptimalSession=2
+; London-NY overlap (best liquidity)
+InpAvoidAsianSession=true
+; Skip Asian session (wide spreads)
+InpAvoidLondonClose=false
+InpSessionScoreMin=2
+; Require Good or Excellent session quality
+
 ; ====== KILLZONES ======
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
-; Metals: Disable Asian session (low liquidity, high spread)
+; XAUUSD: Avoid Asian session (low liquidity, high spread)
 InpEnableLondonOpenKZ=true
-; Metals: Prime London-NY overlap is optimal
+; XAUUSD: Prime London-NY overlap
 InpEnableNYKZ=true
-; Metals: US session active
+; XAUUSD: US session active
 InpEnableLondonCloseKZ=false
 InpNotifyKillzoneOpen=true
 
-; ====== FIBONACCI ======
+; ====== FIBONACCI (LEGACY) ======
 InpSwingLookback=20
+; Larger lookback for XAUUSD
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.25
@@ -35,137 +83,129 @@ InpDisplacementLookback=5
 ; ====== RSI ======
 InpRSI_Period=14
 InpRSI_Oversold=45
+; Tight ranges (XAUUSD strong momentum)
 InpRSI_Overbought=55
 InpRSI_Momentum=true
 
 ; ====== TREND ======
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.1
+InpEMA_MinSlope=0.10
 
 ; ====== CHOP FILTER ======
 InpUseChopFilter=true
-InpChopThreshold=0.75
+InpChopThreshold=0.70
+; Lower for XAUUSD (less choppy than forex)
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=16
-; Metals: Set to 13 for production
-InpEnableAddOns=true
+InpMinConfluenceEntry=14
+; Sniper: 14.0/30 + Session Score (2.5) = 16.5/30
+; Rubber Band: 12.0/30 + Session = 14.5/30
+; Breakout: 15.0/30 + Session = 17.5/30
+InpEnableAddOns=false
 InpAddOn1_R=1.5
-InpAddOn2_R=2.5
-InpMaxPositions=3
+InpAddOn2_R=2.8
+InpMaxPositions=1
 
-; ====== RISK (Before Governor Scaling) ======
-InpRiskBase=0.30
-; FundingPips: 0.50 = $25 risk per trade (0.5% of $5K)
-InpRiskAddOn1=0.25
-InpRiskAddOn2=0.15
-InpMaxRisk=0.60
-; FundingPips: 0.75 = $37.50 max risk (0.75% of $5K)
-InpMaxLotsPerTrade=0.03
-; $5K account: Hard cap 0.03 lots (~$5-15 risk depending on ATR)
+; ====== RISK ======
+InpRiskBase=0.3
+; Lower risk for XAUUSD volatility (0.3%)
+InpMaxRisk=0.6
+InpMaxLotsPerTrade=2.0
+; Lower lot limit for XAUUSD
 InpEnableMarginCheck=true
 
 ; ====== TAKE PROFIT ======
 InpTPMode=2
-; Adaptive TP mode
-InpFixedTP_R=3.0
-InpMinTP_R=1.5
-InpMaxTP_R=5.0
+InpFixedTP_R=4.0
+; Higher TP for XAUUSD big moves
+InpMinTP_R=2.0
+InpMaxTP_R=7.0
+; Can capture major trends
 InpTPUseLearnedMFE=true
 
 ; ====== EXIT ======
 InpTrailingMode=1
-; Runner mode
 InpTrailType=1
-; Chandelier Exit
 InpTrailStepATR=0.5
-InpMinVolatilityPips=5.0
-InpMaxVolatilityFactor=3.0
-InpVolatilityTP_Mult=3.0
-InpPartialTP_R=1.5
-; Partial close at 1.5R (Lock + Let It Run: secure profit earlier)
-InpPartialClosePercent=30.0
-; Close only 30% (keep more position open for runners)
-InpBE_Threshold_R=1.0
-; XAUUSD: Activate at 1.0R (gold needs more room early)
-InpTrailStart_R=1.0
+InpMinVolatilityPips=20.0
+; 20 pips ($2) minimum for XAUUSD
+InpMaxVolatilityFactor=3.5
+InpVolatilityTP_Mult=3.5
+InpPartialTP_R=2.0
+; Later partial for XAUUSD
+InpPartialClosePercent=35.0
+InpBE_Threshold_R=0.8
+; Later breakeven
+InpTrailStart_R=0.8
 InpTrailATR_Mult=2.0
-; XAUUSD: Very wide base (ATR=$8-15, massive swings)
-InpTrailDecayRate=0.15
-; Very slow decay - let gold runners run far
-InpTrailMinMult=0.60
-; Higher floor (gold spikes need buffer)
+; Wider trailing
+InpTrailDecayRate=0.25
+InpTrailMinMult=0.75
 InpTrailRegimeAware=true
 
 ; ====== SPREAD ======
-InpMaxSpreadPoints=50
-InpMetals_MaxSpreadUSD=1.0
-; Metals: Session-dependent spread filter (max 1.0 USD in prime time)
+InpMaxSpreadPoints=500
+; 50 pips ($5) max spread for XAUUSD
+InpAvoidHighSpreadSessions=true
+; Skip entries during high spread
 
-; ====== SMC - SMART MONEY CONCEPTS ======
+; ====== SMC ======
 InpUseSMC=true
-InpSMC_SwingLookback=20
-InpSMC_MinImpulseATR=2.0
-InpSMC_MinFVG_ATR=0.5
+InpSMC_SwingLookback=15
+InpSMC_MinImpulseATR=2.5
+InpSMC_MinFVG_ATR=0.60
 
 ; ====== MULTI-TIMEFRAME ======
 InpUseMTF=true
 InpHTF=16388
-; H4
-InpMTF=16385
-; H1
+; H4 for XAUUSD macro view
+InpMTF=16386
+; H1 primary
 InpMTF_EMAPeriod=50
 
 ; ====== NEWS FILTER ======
 InpUseNewsFilter=true
-InpNewsMinutesBefore=60
-; Metals: 1-hour blackout before news (increased from 30 min)
-InpNewsMinutesAfter=60
-; Metals: 1-hour blackout after news (increased from 30 min)
+InpNewsMinutesBefore=30
+; Wide buffer for XAUUSD (Fed, CPI, NFP)
+InpNewsMinutesAfter=30
+InpAvoidHighImpactNews=true
 
-; ====== VOLATILITY SPIKE PROTECTION ======
-InpEnableVolatilityFilter=true
-InpVolatilityThreshold=3.0
-; 3x ATR spike detection
-InpVolatilitySpikeCooldown=15
-; 15-minute cooldown after spike
-
-; ====== KELLY POSITION SIZING ======
+; ====== KELLY ======
 InpUseKelly=true
-InpKellyFraction=0.5
-; Half-Kelly for safety
-InpDailyMaxDD=3.0
-; Daily max drawdown 3%
+InpKellyFraction=0.20
+; Conservative for XAUUSD
+InpDailyMaxDD=3.5
 InpWeeklyMaxDD=6.0
-; Weekly max drawdown 6%
 
-; ====== LEARNING & ADAPTATION ======
+; ====== LEARNING ======
 InpEnableLearning=true
 InpLogTradesToFile=true
 InpLearningHistory=180
-; 180 days of history
 InpMinTradesForLearning=50
 
-; ====== ADAPTIVE BEHAVIOR ======
-InpEnableAdaptiveRisk=false
-InpEnableAdaptiveExits=false
-InpEnableAdaptiveFilters=false
-; Temporarily disabled for testing
-
-; ====== PORTFOLIO PROTECTION ======
-InpUseCorrelationFilter=true
-InpDailyMaxLoss_R=4.0
-; Circuit breaker at -4R daily loss
-InpLossCooldownMinutes=30
-InpMaxConsecutiveLosses=2
-InpMaxDailyTrades=5
-; Max 5 trades per day (prevent overtrading)
-InpUseReversalFilter=true
-InpReversalCooldownMinutes=15
+; ====== ADAPTIVE ======
+InpEnableAdaptiveRisk=true
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
 
 ; ====== SESSION GOVERNOR ======
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=3
-InpTradeCooldownMinutes=30
+InpMaxTradesPerSession=6
+; Limit trades per session
+InpTradeCooldownMinutes=15
+InpEnableSessionBlacklist=true
+; Block poor-performing sessions
+
+; ====== PORTFOLIO PROTECTION ======
+InpUseCorrelationFilter=false
+; XAUUSD uncorrelated with forex
+InpDailyMaxLoss_R=2.5
+; Tight daily loss limit
+InpLossCooldownMinutes=120
+; 2 hour cooldown
+InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=4
+; Max 4 trades per day
+InpUseReversalFilter=true

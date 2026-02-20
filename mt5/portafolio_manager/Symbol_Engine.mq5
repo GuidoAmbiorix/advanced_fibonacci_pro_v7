@@ -56,6 +56,13 @@ CPatternMemory      patternMemory;
 // Visual Debugging
 #include "Include\VisualDebug.mqh"
 
+// Chameleon Multi-Strategy System
+#include "Include\Strategies\BaseStrategy.mqh"
+#include "Include\Strategies\SniperStrategy.mqh"
+#include "Include\Strategies\RubberBandStrategy.mqh"
+#include "Include\Strategies\BreakoutStrategy.mqh"
+#include "Include\Strategy_Performance_Tracker.mqh"
+
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
 //+------------------------------------------------------------------+
@@ -72,6 +79,35 @@ input bool              InpEnableMobileAlerts = true;     // Enable Mobile Push 
 input group "======= DIRECTION ======="
 input int               InpDirection = 0;                 // 0=Both, 1=Buy, 2=Sell
 input int               InpBrokerUTCOffset = 2;           // Broker Offset from UTC (e.g. 2 for EET)
+
+input group "======= CHAMELEON MULTI-STRATEGY SYSTEM ======="
+input bool              InpEnableChameleon = false;       // Enable Chameleon System
+input bool              InpEnableSniper = true;           // Enable Sniper Strategy
+input bool              InpEnableRubberBand = true;       // Enable Rubber Band Strategy
+input bool              InpEnableBreakout = true;         // Enable Breakout Strategy
+input bool              InpAutoSwitchStrategy = true;     // Auto-Switch Based on Phase
+input bool              InpUseLegacyMode = true;          // Use Legacy Confluence Mode
+
+input group "======= MARKET PHASE ANALYZER ======="
+input int               InpLookbackPeriod = 50;           // Autocorrelation Lookback
+input double            InpTrendThreshold = 0.2;          // Autocorrelation Threshold
+input int               InpADXPeriod = 14;                // ADX Period
+input double            InpADXTrendLevel = 25.0;          // ADX Trend Level
+input double            InpADXRangeLevel = 20.0;          // ADX Range Level
+input int               InpBBPeriod = 20;                 // BB Period
+input double            InpBBDeviation = 2.0;             // BB Deviation
+input int               InpBBExpansionPercentile = 90;    // BB Expansion Percentile
+input int               InpMinVolume = 100;               // Minimum Volume
+input int               InpSwingLookbackPhase = 50;       // Phase Swing Lookback
+
+input group "======= FIBONACCI GOLDEN POCKET ======="
+input int               InpZigZagDepth = 12;              // ZigZag Depth
+input int               InpZigZagDeviation = 5;           // ZigZag Deviation
+input int               InpZigZagBackstep = 3;            // ZigZag Backstep
+input int               InpMaxSwingAge = 100;             // Max Swing Age
+input bool              InpUseGoldenPocket618 = true;     // Use 61.8-78.6% Zone
+input bool              InpDetectFakeouts = true;         // Detect Fakeouts
+input int               InpMinSwingSize = 50;             // Min Swing Size (pips)
 
 input group "======= FIBONACCI ======="
 input int               InpSwingLookback = 20;
@@ -251,6 +287,15 @@ CPatternRecognizer  patternRecognizer;
 CAdaptiveRiskManager   adaptiveRisk;
 CAdaptiveExitManager   adaptiveExit;
 CAdaptiveFilterManager adaptiveFilter;
+
+// CHAMELEON MULTI-STRATEGY OBJECTS
+int hMarketPhase = INVALID_HANDLE;
+int hFibGolden = INVALID_HANDLE;
+CSniperStrategy sniperStrategy;
+CRubberBandStrategy rubberBandStrategy;
+CBreakoutStrategy breakoutStrategy;
+CStrategyTracker strategyTracker;
+int g_activeStrategy = 0;  // 0=Legacy, 1=Sniper, 2=RubberBand, 3=Breakout
 
 int hRSI, hATR, hEMA;
 int hEMA50, hEMA100;   // Reversal filter EMAs
@@ -463,6 +508,101 @@ int OnInit()
          Print("Warning: Adaptive Filter Manager initialization failed");
    }
 
+   // Initialize Chameleon Multi-Strategy System
+   if(InpEnableChameleon && !InpUseLegacyMode)
+   {
+      Print("===========================================");
+      Print("  CHAMELEON MULTI-STRATEGY SYSTEM");
+      Print("===========================================");
+
+      // Initialize Market Phase Analyzer indicator
+      hMarketPhase = iCustom(_Symbol, PERIOD_CURRENT, "Market_Phase_Analyzer",
+                             InpLookbackPeriod,
+                             InpTrendThreshold,
+                             InpADXPeriod,
+                             InpADXTrendLevel,
+                             InpADXRangeLevel,
+                             InpBBPeriod,
+                             InpBBDeviation,
+                             InpBBExpansionPercentile,
+                             InpMinVolume,
+                             InpSwingLookbackPhase);
+
+      if(hMarketPhase == INVALID_HANDLE)
+      {
+         Print("ERROR: Failed to initialize Market_Phase_Analyzer indicator");
+         return INIT_FAILED;
+      }
+      Print("  Market Phase Analyzer: ACTIVE");
+
+      // Initialize Fibonacci Golden Pocket indicator
+      hFibGolden = iCustom(_Symbol, PERIOD_CURRENT, "Fibonacci_GoldenPocket",
+                          InpZigZagDepth,
+                          InpZigZagDeviation,
+                          InpZigZagBackstep,
+                          InpMaxSwingAge,
+                          InpUseGoldenPocket618,
+                          InpDetectFakeouts,
+                          InpMinSwingSize);
+
+      if(hFibGolden == INVALID_HANDLE)
+      {
+         Print("ERROR: Failed to initialize Fibonacci_GoldenPocket indicator");
+         return INIT_FAILED;
+      }
+      Print("  Fibonacci Golden Pocket: ACTIVE");
+
+      // Initialize strategy objects
+      if(!sniperStrategy.Init(hMarketPhase, hFibGolden, INVALID_HANDLE, INVALID_HANDLE, INVALID_HANDLE, hRSI))
+      {
+         Print("ERROR: Failed to initialize Sniper strategy");
+         return INIT_FAILED;
+      }
+      sniperStrategy.SetMagicNumber(InpMagicNumber);
+      sniperStrategy.SetMinConfluence(12.0);
+      Print("  Sniper Strategy: ", InpEnableSniper ? "ENABLED" : "DISABLED");
+
+      if(!rubberBandStrategy.Init(hMarketPhase, hFibGolden, INVALID_HANDLE, INVALID_HANDLE, INVALID_HANDLE, hRSI))
+      {
+         Print("ERROR: Failed to initialize Rubber Band strategy");
+         return INIT_FAILED;
+      }
+      rubberBandStrategy.SetMagicNumber(InpMagicNumber);
+      rubberBandStrategy.SetMinConfluence(10.0);
+      Print("  Rubber Band Strategy: ", InpEnableRubberBand ? "ENABLED" : "DISABLED");
+
+      if(!breakoutStrategy.Init(hMarketPhase, hFibGolden, INVALID_HANDLE, INVALID_HANDLE, INVALID_HANDLE, hRSI))
+      {
+         Print("ERROR: Failed to initialize Breakout strategy");
+         return INIT_FAILED;
+      }
+      breakoutStrategy.SetMagicNumber(InpMagicNumber);
+      breakoutStrategy.SetMinConfluence(14.0);
+      Print("  Breakout Strategy: ", InpEnableBreakout ? "ENABLED" : "DISABLED");
+
+      // Initialize strategy performance tracker
+      if(!strategyTracker.Init(_Symbol))
+      {
+         Print("WARNING: Strategy Performance Tracker initialization failed");
+      }
+      else
+      {
+         Print("  Strategy Performance Tracker: ACTIVE");
+      }
+
+      // Set GlobalVariables for dashboard
+      GlobalVariableSet("GV_CHAMELEON_ACTIVE_" + _Symbol, 1.0);
+      GlobalVariableSet("GV_CHAMELEON_STRATEGY_" + _Symbol, 0.0);
+
+      Print("  Auto-Switch: ", InpAutoSwitchStrategy ? "ENABLED" : "DISABLED");
+      Print("===========================================");
+   }
+   else if(InpUseLegacyMode || !InpEnableChameleon)
+   {
+      Print("  Mode: LEGACY CONFLUENCE (Chameleon disabled)");
+      GlobalVariableSet("GV_CHAMELEON_ACTIVE_" + _Symbol, 0.0);
+   }
+
    // OPTIMIZATION: Validate all critical modules initialized
    int initErrors = 0;
    if(hRSI == INVALID_HANDLE) { Print("ERROR: RSI handle invalid"); initErrors++; }
@@ -505,6 +645,17 @@ int OnInit()
    Print("    Add-Ons: DISABLED (Performance)");
    Print("-------------------------------------------");
 
+   if(InpEnableChameleon && !InpUseLegacyMode)
+   {
+      Print("  CHAMELEON MULTI-STRATEGY:");
+      Print("    Mode: ACTIVE");
+      Print("    Auto-Switch: ", InpAutoSwitchStrategy ? "ON" : "OFF");
+      Print("    Strategies: Sniper=", InpEnableSniper ? "ON" : "OFF",
+            " | RubberBand=", InpEnableRubberBand ? "ON" : "OFF",
+            " | Breakout=", InpEnableBreakout ? "ON" : "OFF");
+      Print("-------------------------------------------");
+   }
+
    if(InpEnableLearning)
    {
       Print("  LEARNING SYSTEM:");
@@ -537,6 +688,10 @@ int OnInit()
 
 void OnDeinit(const int reason)
 {
+   // Release Chameleon indicators
+   if(hMarketPhase != INVALID_HANDLE) IndicatorRelease(hMarketPhase);
+   if(hFibGolden != INVALID_HANDLE) IndicatorRelease(hFibGolden);
+
    if(hRSI != INVALID_HANDLE) IndicatorRelease(hRSI);
    if(hATR != INVALID_HANDLE) IndicatorRelease(hATR);
    if(hEMA != INVALID_HANDLE) IndicatorRelease(hEMA);
@@ -788,6 +943,77 @@ double CalculateTakeProfit(double price, double slDist, int direction,
 }
 
 //+------------------------------------------------------------------+
+//| Select Active Strategy Based on Market Phase                     |
+//+------------------------------------------------------------------+
+void SelectStrategy()
+{
+   if(!InpEnableChameleon || InpUseLegacyMode) {
+      g_activeStrategy = 0;  // Legacy mode
+      return;
+   }
+
+   // Read market phase from indicator
+   double phaseBuf[1];
+   if(CopyBuffer(hMarketPhase, 0, 0, 1, phaseBuf) <= 0) {
+      g_activeStrategy = 0;  // Fallback to legacy
+      return;
+   }
+
+   MARKET_PHASE currentPhase = (MARKET_PHASE)((int)phaseBuf[0]);
+
+   // Don't trade in dormant phase
+   if(currentPhase == PHASE_DORMANT) {
+      g_activeStrategy = 0;
+      static datetime lastDormantWarning = 0;
+      if(TimeCurrent() - lastDormantWarning > 1800) {  // Log every 30 minutes
+         Print("Market Phase: DORMANT - No trading");
+         lastDormantWarning = TimeCurrent();
+      }
+      return;
+   }
+
+   // Select strategy based on phase
+   int previousStrategy = g_activeStrategy;
+
+   if(currentPhase == PHASE_TRENDING && InpEnableSniper) {
+      if(!strategyTracker.ShouldDisableStrategy(1)) {
+         g_activeStrategy = 1;  // Sniper
+      } else {
+         g_activeStrategy = 0;  // Disabled, use legacy
+      }
+   }
+   else if(currentPhase == PHASE_RANGING && InpEnableRubberBand) {
+      if(!strategyTracker.ShouldDisableStrategy(2)) {
+         g_activeStrategy = 2;  // Rubber Band
+      } else {
+         g_activeStrategy = 0;  // Disabled, use legacy
+      }
+   }
+   else if(currentPhase == PHASE_VOLATILE && InpEnableBreakout) {
+      if(!strategyTracker.ShouldDisableStrategy(3)) {
+         g_activeStrategy = 3;  // Breakout
+      } else {
+         g_activeStrategy = 0;  // Disabled, use legacy
+      }
+   }
+   else {
+      g_activeStrategy = 0;  // Fallback to legacy
+   }
+
+   // Log strategy switches
+   if(previousStrategy != g_activeStrategy) {
+      string strategyNames[] = {"Legacy", "Sniper", "RubberBand", "Breakout"};
+      string phaseNames[] = {"DORMANT", "TRENDING", "RANGING", "VOLATILE", "UNDEFINED"};
+
+      Print("STRATEGY SWITCH: ", strategyNames[previousStrategy], " -> ",
+            strategyNames[g_activeStrategy], " (Phase: ", phaseNames[(int)currentPhase], ")");
+
+      // Update GlobalVariable for dashboard
+      GlobalVariableSet("GV_CHAMELEON_STRATEGY_" + _Symbol, (double)g_activeStrategy);
+   }
+}
+
+//+------------------------------------------------------------------+
 //| Main Tick                                                         |
 //+------------------------------------------------------------------+
 void OnTick()
@@ -845,6 +1071,12 @@ void OnTick()
    // --- UPDATE ALL MODULES ON NEW BAR ---
    UpdateModules();
 
+   // --- MODULE: CHAMELEON STRATEGY SELECTION ---
+   if(InpEnableChameleon && !InpUseLegacyMode)
+   {
+      SelectStrategy();
+   }
+
    // --- MODULE: MARKET REGIME ---
    g_currentRegime = regime.Detect(g_ATR, g_ATR_MA, g_EMA, g_EMA_Prev);
    // g_currentRegime check moved down to allow score calculation for visibility
@@ -854,8 +1086,56 @@ void OnTick()
    datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
    if(currentBarTime != g_lastScoreCalcTime)
    {
-      g_cachedBuyScore = CalculateConfluenceScore(1);
-      g_cachedSellScore = CalculateConfluenceScore(-1);
+      // Use Chameleon strategy scoring if active, otherwise use legacy
+      if(g_activeStrategy > 0)
+      {
+         // Chameleon mode: Use strategy-specific scoring
+         switch(g_activeStrategy)
+         {
+            case 1:  // Sniper
+               if(sniperStrategy.CheckEntry(1))
+                  g_cachedBuyScore = sniperStrategy.GetConfluenceScore(1);
+               else
+                  g_cachedBuyScore = 0;
+
+               if(sniperStrategy.CheckEntry(-1))
+                  g_cachedSellScore = sniperStrategy.GetConfluenceScore(-1);
+               else
+                  g_cachedSellScore = 0;
+               break;
+
+            case 2:  // Rubber Band
+               if(rubberBandStrategy.CheckEntry(1))
+                  g_cachedBuyScore = rubberBandStrategy.GetConfluenceScore(1);
+               else
+                  g_cachedBuyScore = 0;
+
+               if(rubberBandStrategy.CheckEntry(-1))
+                  g_cachedSellScore = rubberBandStrategy.GetConfluenceScore(-1);
+               else
+                  g_cachedSellScore = 0;
+               break;
+
+            case 3:  // Breakout
+               if(breakoutStrategy.CheckEntry(1))
+                  g_cachedBuyScore = breakoutStrategy.GetConfluenceScore(1);
+               else
+                  g_cachedBuyScore = 0;
+
+               if(breakoutStrategy.CheckEntry(-1))
+                  g_cachedSellScore = breakoutStrategy.GetConfluenceScore(-1);
+               else
+                  g_cachedSellScore = 0;
+               break;
+         }
+      }
+      else
+      {
+         // Legacy mode: Use traditional confluence scoring
+         g_cachedBuyScore = CalculateConfluenceScore(1);
+         g_cachedSellScore = CalculateConfluenceScore(-1);
+      }
+
       g_lastScoreCalcTime = currentBarTime;
    }
 
@@ -1717,6 +1997,12 @@ void OnTrade()
        {
           kellySizer.AddTradeResult(rOutcome, quality);
        }
+
+       // Update Chameleon strategy performance tracker
+       if(InpEnableChameleon && !InpUseLegacyMode && g_activeStrategy > 0)
+       {
+          strategyTracker.OnTradeClose(g_activeStrategy, profit, dollarRisk, MathAbs(profit));
+       }
    }
 }
 
@@ -2297,6 +2583,22 @@ void UpdateDashboard()
       txt += mtfAnalysis.ToString() + "\n";
 
    txt += "-------------------------------------------\n";
+
+   // Chameleon Strategy Info
+   if(InpEnableChameleon && !InpUseLegacyMode)
+   {
+      string strategyNames[] = {"Legacy", "Sniper", "RubberBand", "Breakout"};
+      txt += "CHAMELEON: " + strategyNames[g_activeStrategy] + "\n";
+
+      // Show strategy performance
+      if(g_activeStrategy > 0)
+      {
+         txt += strategyTracker.GetDashboardText();
+      }
+
+      txt += "-------------------------------------------\n";
+   }
+
    txt += "BUY Score: " + DoubleToString(buyS, 1) + "/30\n";
    txt += "SELL Score: " + DoubleToString(sellS, 1) + "/30\n";
    txt += "Entry Min: " + DoubleToString(InpMinConfluenceEntry, 1) + "/30 (Good) | " + DoubleToString(InpMinConfluenceEntry + 2.0, 1) + " (Strong) | " + DoubleToString(InpMinConfluenceEntry + 4.0, 1) + " (Elite)\n";

@@ -10,21 +10,19 @@
 #property indicator_buffers 4
 #property indicator_plots   0  // Data only, no visual plots
 
-//--- Include Volume Analysis module (using relative path)
-#include "../Include/Advanced/VolumeAnalysis.mqh"
-
 //--- Input parameters
 input int InpRVOL_Lookback = 20;              // RVOL Lookback Days
 input int InpMF_Period = 5;                   // Money Flow Period
+input double InpRVOL_High = 1.5;              // RVOL High Threshold
+input double InpRVOL_Low = 0.7;               // RVOL Low Threshold
+input double InpMF_High = 0.3;                // Money Flow High Threshold
+input double InpMF_Low = -0.3;                // Money Flow Low Threshold
 
 //--- Indicator buffers
 double BufferRVOL[];           // Buffer 0: RVOL Value (ratio)
 double BufferMoneyFlow[];      // Buffer 1: Money Flow Index (-1 to +1)
 double BufferBuyScore[];       // Buffer 2: Buy Score (0-4.0)
 double BufferSellScore[];      // Buffer 3: Sell Score (0-4.0)
-
-//--- Volume analysis instance
-CVolumeAnalysis g_volumeAnalysis;
 
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
@@ -92,9 +90,31 @@ int OnCalculate(const int rates_total,
    double moneyFlow = CalculateRapidMoneyFlow(InpMF_Period);
    BufferMoneyFlow[currentBar] = moneyFlow;
 
-   //--- Calculate scores
-   double buyScore = g_volumeAnalysis.GetConfluenceScore(1);
-   double sellScore = g_volumeAnalysis.GetConfluenceScore(-1);
+   //--- Calculate scores based on RVOL and Money Flow
+   double buyScore = 0.0;
+   double sellScore = 0.0;
+
+   // RVOL scoring (0-2.0 points)
+   if(rvol >= InpRVOL_High) {
+      buyScore += 2.0;
+      sellScore += 2.0;  // High volume benefits both directions
+   } else if(rvol >= 1.0) {
+      buyScore += 1.0;
+      sellScore += 1.0;
+   }
+
+   // Money Flow scoring (0-2.0 points)
+   if(moneyFlow >= InpMF_High) {
+      buyScore += 2.0;   // Strong buying pressure
+   } else if(moneyFlow > 0) {
+      buyScore += 1.0;
+   }
+
+   if(moneyFlow <= InpMF_Low) {
+      sellScore += 2.0;  // Strong selling pressure
+   } else if(moneyFlow < 0) {
+      sellScore += 1.0;
+   }
 
    BufferBuyScore[currentBar] = buyScore;
    BufferSellScore[currentBar] = sellScore;

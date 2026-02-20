@@ -719,13 +719,77 @@ void UpdateDashboard()
 {
    double dd = GlobalVariableGet(GV_CURRENT_DD);
    double pf = GlobalVariableGet(GV_ROLLING_PF);
-   
-   // --- LITE DASHBOARD (HEARTBEAT) ---
-   string text = "🧠 GOVERNOR ONLINE | " + TimeToString(TimeCurrent(), TIME_SECONDS) + "\n";
+
+   // --- CHAMELEON MULTI-STRATEGY DASHBOARD ---
+   string text = "🧠 GOVERNOR + CHAMELEON | " + TimeToString(TimeCurrent(), TIME_SECONDS) + "\n";
    text += "DD: " + DoubleToString(dd, 2) + "% | PF: " + DoubleToString(pf, 2) + "\n";
-   text += "--------------------------------------\n";
+   text += "===============================================\n";
+
+   // Get ranking data
    text += rankManager.GetRankingTable(5); // Show Top 5
-   
+
+   // Add Chameleon system status
+   text += "===============================================\n";
+   text += " CHAMELEON STATUS\n";
+   text += "===============================================\n";
+   text += GetChameleonStatus();
+
    Comment(text);
+}
+
+//+------------------------------------------------------------------+
+//| Get Chameleon System Status                                       |
+//+------------------------------------------------------------------+
+string GetChameleonStatus()
+{
+   string text = "";
+
+   // Get all symbols from ranking
+   SymbolRank ranks[];
+   int symbolCount = rankManager.GetRanks(ranks);
+
+   if(symbolCount == 0) {
+      return " No active symbols\n";
+   }
+
+   // Header
+   text += " Symbol    | Phase     | Strategy  | Stats\n";
+   text += "-----------------------------------------------\n";
+
+   // Show status for each symbol
+   for(int i = 0; i < MathMin(symbolCount, 8); i++) {
+      string symbol = ranks[i].symbol;
+
+      // Check if Chameleon is enabled for this symbol
+      if(!IsChameleonEnabled(symbol)) {
+         text += StringFormat(" %-9s | LEGACY MODE (Chameleon disabled)\n", symbol);
+         continue;
+      }
+
+      // Get market phase and active strategy
+      int phase = GetSymbolPhase(symbol);
+      int strategy = GetSymbolStrategy(symbol);
+
+      string phaseStr = PhaseToString(phase);
+      string stratStr = StrategyToString(strategy);
+
+      // Get strategy performance (for active strategy)
+      string stats = "N/A";
+      if(strategy > 0) {
+         int trades = GetStrategyTrades(symbol, strategy);
+         if(trades > 0) {
+            double wr = GetStrategyWinRate(symbol, strategy);
+            double pfactor = GetStrategyProfitFactor(symbol, strategy);
+            stats = StringFormat("%dT %.0f%% PF%.1f", trades, wr, pfactor);
+         } else {
+            stats = "No trades";
+         }
+      }
+
+      text += StringFormat(" %-9s | %-9s | %-8s | %s\n",
+                          symbol, phaseStr, stratStr, stats);
+   }
+
+   return text;
 }
 //+------------------------------------------------------------------+

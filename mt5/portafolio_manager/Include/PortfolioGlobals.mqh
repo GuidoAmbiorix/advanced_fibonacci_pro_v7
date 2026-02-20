@@ -58,6 +58,19 @@
 // Market Regime
 #define GV_MARKET_REGIME         "PG_MarketRegime"         // Current market regime
 
+// CHAMELEON MULTI-STRATEGY SYSTEM
+// Format: PG_Phase_[Symbol] -> Market Phase (0-4: DORMANT, TRENDING, RANGING, VOLATILE, UNDEFINED)
+// Format: PG_Strategy_[Symbol] -> Active Strategy (0-3: None, Sniper, RubberBand, Breakout)
+// Format: PG_StratWR_[Symbol]_[Strategy] -> Strategy Win Rate (%)
+// Format: PG_StratPF_[Symbol]_[Strategy] -> Strategy Profit Factor
+// Format: PG_StratTrades_[Symbol]_[Strategy] -> Strategy Total Trades
+#define GV_PHASE_PREFIX          "PG_Phase_"
+#define GV_STRATEGY_PREFIX       "PG_Strategy_"
+#define GV_STRAT_WR_PREFIX       "PG_StratWR_"
+#define GV_STRAT_PF_PREFIX       "PG_StratPF_"
+#define GV_STRAT_TRADES_PREFIX   "PG_StratTrades_"
+#define GV_CHAMELEON_ENABLED     "PG_ChameleonEnabled_"    // Format: PG_ChameleonEnabled_[Symbol]
+
 // Correlation Matrix
 #define GV_CORR_EUR_GBP          "PG_CorrEURGBP"           // EUR/GBP correlation
 #define GV_CORR_USD_JPY          "PG_CorrUSDJPY"           // USD/JPY correlation
@@ -428,6 +441,97 @@ bool AtomicSetWithValidation(string varName, double value, datetime &lastUpdate)
 bool IsGlobalVariableLocked(string varName)
 {
    return GlobalVariableCheck(varName + "_LOCK");
+}
+
+//+------------------------------------------------------------------+
+//| CHAMELEON SYSTEM HELPERS                                          |
+//+------------------------------------------------------------------+
+
+//+------------------------------------------------------------------+
+//| Get Market Phase for Symbol                                       |
+//+------------------------------------------------------------------+
+int GetSymbolPhase(string symbol)
+{
+   string gvKey = GV_PHASE_PREFIX + symbol;
+   if(!GlobalVariableCheck(gvKey)) return 4; // PHASE_UNDEFINED
+   return (int)GlobalVariableGet(gvKey);
+}
+
+//+------------------------------------------------------------------+
+//| Get Active Strategy for Symbol                                    |
+//+------------------------------------------------------------------+
+int GetSymbolStrategy(string symbol)
+{
+   string gvKey = GV_STRATEGY_PREFIX + symbol;
+   if(!GlobalVariableCheck(gvKey)) return 0; // No strategy
+   return (int)GlobalVariableGet(gvKey);
+}
+
+//+------------------------------------------------------------------+
+//| Get Strategy Win Rate                                             |
+//+------------------------------------------------------------------+
+double GetStrategyWinRate(string symbol, int strategy)
+{
+   string gvKey = GV_STRAT_WR_PREFIX + symbol + "_" + IntegerToString(strategy);
+   if(!GlobalVariableCheck(gvKey)) return 0.0;
+   return GlobalVariableGet(gvKey);
+}
+
+//+------------------------------------------------------------------+
+//| Get Strategy Profit Factor                                        |
+//+------------------------------------------------------------------+
+double GetStrategyProfitFactor(string symbol, int strategy)
+{
+   string gvKey = GV_STRAT_PF_PREFIX + symbol + "_" + IntegerToString(strategy);
+   if(!GlobalVariableCheck(gvKey)) return 0.0;
+   return GlobalVariableGet(gvKey);
+}
+
+//+------------------------------------------------------------------+
+//| Get Strategy Total Trades                                         |
+//+------------------------------------------------------------------+
+int GetStrategyTrades(string symbol, int strategy)
+{
+   string gvKey = GV_STRAT_TRADES_PREFIX + symbol + "_" + IntegerToString(strategy);
+   if(!GlobalVariableCheck(gvKey)) return 0;
+   return (int)GlobalVariableGet(gvKey);
+}
+
+//+------------------------------------------------------------------+
+//| Check if Chameleon Enabled for Symbol                             |
+//+------------------------------------------------------------------+
+bool IsChameleonEnabled(string symbol)
+{
+   string gvKey = GV_CHAMELEON_ENABLED + symbol;
+   if(!GlobalVariableCheck(gvKey)) return false;
+   return (GlobalVariableGet(gvKey) == 1.0);
+}
+
+//+------------------------------------------------------------------+
+//| Convert Phase Number to String                                    |
+//+------------------------------------------------------------------+
+string PhaseToString(int phase)
+{
+   switch(phase) {
+      case 0: return "DORMANT";
+      case 1: return "TRENDING";
+      case 2: return "RANGING";
+      case 3: return "VOLATILE";
+      default: return "UNDEFINED";
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Convert Strategy Number to String                                 |
+//+------------------------------------------------------------------+
+string StrategyToString(int strategy)
+{
+   switch(strategy) {
+      case 1: return "SNIPER";
+      case 2: return "RUBBER";
+      case 3: return "BREAKOUT";
+      default: return "NONE";
+   }
 }
 
 #endif
