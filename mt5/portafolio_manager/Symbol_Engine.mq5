@@ -962,8 +962,18 @@ void SelectStrategy()
    double phaseBuf[1];
    MARKET_PHASE currentPhase = PHASE_UNDEFINED;
 
-   if(CopyBuffer(hMarketPhase, 0, 0, 1, phaseBuf) > 0) {
+   int copied = CopyBuffer(hMarketPhase, 0, 0, 1, phaseBuf);
+   if(copied > 0) {
       currentPhase = (MARKET_PHASE)((int)phaseBuf[0]);
+   }
+   else {
+      // Debug: Why is CopyBuffer failing?
+      static datetime lastDebug = 0;
+      if(TimeCurrent() - lastDebug > 60) {
+         Print("WARNING: Market_Phase_Analyzer CopyBuffer failed. Copied: ", copied,
+               " | Handle valid: ", (hMarketPhase != INVALID_HANDLE));
+         lastDebug = TimeCurrent();
+      }
    }
 
    // Store phase in GlobalVariable for Governor (even in legacy mode)
