@@ -10,7 +10,8 @@
       "Bash(TZ='UTC' date:*)",
       "Bash(TZ='America/New_York' date:*)",
       "Bash(python3:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git push:*)"
     ]
   }
 }
