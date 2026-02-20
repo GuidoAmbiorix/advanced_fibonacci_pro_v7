@@ -1,0 +1,165 @@
+═══════════════════════════════════════════════════════════════════
+  PORTFOLIO MANAGER - MAGIC NUMBER REFERENCE
+═══════════════════════════════════════════════════════════════════
+
+Account: $5,000 FundingPips
+Risk Per Trade: $10 (0.20%)
+Timeframe: H1 (All Pairs)
+
+───────────────────────────────────────────────────────────────────
+  MAGIC NUMBER ASSIGNMENTS
+───────────────────────────────────────────────────────────────────
+
+100001  EUR/USD  (European/US Dollar)     - London/NY Specialist
+100002  GBP/USD  (British Pound/US)       - London/NY Specialist
+100003  USD/JPY  (US Dollar/Yen)          - Asian/NY Specialist
+100004  AUD/USD  (Australian Dollar/US)   - Asian Specialist
+100005  USD/CAD  (US Dollar/Canadian)     - NY Specialist
+100006  AUD/JPY  (Australian/Yen)         - Asian Specialist
+100007  EUR/JPY  (Euro/Yen)               - London/Asian Cross
+100008  NZD/USD  (New Zealand/US)         - Asian Specialist [NEW]
+100009  USD/CHF  (US Dollar/Swiss Franc)  - London Specialist [NEW]
+100010  GBP/JPY  (British Pound/Yen)      - London Specialist [NEW]
+
+───────────────────────────────────────────────────────────────────
+  KILLZONE COVERAGE
+───────────────────────────────────────────────────────────────────
+
+ASIAN SESSION (8 PM - 12 AM EST / 1 AM - 5 AM GMT)
+  Primary:   100003 (USD/JPY), 100004 (AUD/USD), 100008 (NZD/USD)
+  Secondary: 100006 (AUD/JPY), 100007 (EUR/JPY)
+
+LONDON SESSION (3 AM - 8 AM EST / 8 AM - 1 PM GMT)
+  Primary:   100001 (EUR/USD), 100002 (GBP/USD), 100009 (USD/CHF)
+  Secondary: 100010 (GBP/JPY), 100007 (EUR/JPY), 100005 (USD/CAD)
+
+NY SESSION (8 AM - 5 PM EST / 1 PM - 10 PM GMT)
+  Primary:   100001 (EUR/USD), 100002 (GBP/USD), 100003 (USD/JPY)
+  Secondary: 100005 (USD/CAD), 100009 (USD/CHF), 100004 (AUD/USD)
+
+OVERLAP (8 AM - 12 PM EST / 1 PM - 5 PM GMT) ⭐ GOLDEN HOURS
+  All pairs active - Highest institutional participation
+
+───────────────────────────────────────────────────────────────────
+  CHART SETUP INSTRUCTIONS
+───────────────────────────────────────────────────────────────────
+
+1. Open 11 charts in MetaTrader 5:
+
+   Chart 1:  EUR/USD H1  → Load Symbol_Engine.ex5 → Load eurusd.set
+   Chart 2:  GBP/USD H1  → Load Symbol_Engine.ex5 → Load gbpusd.set
+   Chart 3:  USD/JPY H1  → Load Symbol_Engine.ex5 → Load usdjpy.set
+   Chart 4:  AUD/USD H1  → Load Symbol_Engine.ex5 → Load audusd.set
+   Chart 5:  USD/CAD H1  → Load Symbol_Engine.ex5 → Load usdcad.set
+   Chart 6:  AUD/JPY H1  → Load Symbol_Engine.ex5 → Load audjpy.set
+   Chart 7:  EUR/JPY H1  → Load Symbol_Engine.ex5 → Load eurjpy.set
+   Chart 8:  NZD/USD H1  → Load Symbol_Engine.ex5 → Load nzdusd.set
+   Chart 9:  USD/CHF H1  → Load Symbol_Engine.ex5 → Load usdchf.set
+   Chart 10: GBP/JPY H1  → Load Symbol_Engine.ex5 → Load gbpjpy.set
+
+   Chart 11: EUR/USD H1  → Load Portfolio_Governor.ex5 → Load governor.set
+             (or any chart - only ONE Governor instance needed)
+
+2. Verify all charts show H1 timeframe (NOT M15!)
+
+3. Check Expert tab in terminal:
+   - Should see 10 Symbol_Engine instances + 1 Portfolio_Governor
+   - Magic numbers 100001-100010 visible
+
+4. Check Tools → Global Variables:
+   - GV_PORTFOLIO_RISK (should start at 0.00)
+   - GV_PORTFOLIO_SYMBOLS (should start at 0)
+   - GV_EURUSD_RISK, GV_GBPUSD_RISK, etc.
+
+───────────────────────────────────────────────────────────────────
+  CORRELATION GROUPS (For Reference)
+───────────────────────────────────────────────────────────────────
+
+High Positive Correlation (Move Together):
+  • EUR/USD + GBP/USD       (~0.80)  ← Max 2 positions
+  • AUD/USD + NZD/USD       (~0.90)  ← Max 2 positions
+  • EUR/JPY + GBP/JPY       (~0.75)  ← Max 2 positions
+  • AUD/JPY + NZD/JPY       (~0.85)  ← Max 2 positions
+
+High Negative Correlation (Move Opposite):
+  • EUR/USD + USD/CHF       (~-0.90) ← Natural hedge
+  • GBP/USD + USD/CHF       (~-0.80) ← Natural hedge
+
+Portfolio Governor blocks 3rd position when correlation > 0.75
+
+───────────────────────────────────────────────────────────────────
+  FILE LOCATIONS
+───────────────────────────────────────────────────────────────────
+
+Configuration Files:
+  sets/eurusd.set    (Magic 100001)
+  sets/gbpusd.set    (Magic 100002)
+  sets/usdjpy.set    (Magic 100003)
+  sets/audusd.set    (Magic 100004)
+  sets/usdcad.set    (Magic 100005)
+  sets/audjpy.set    (Magic 100006)
+  sets/eurjpy.set    (Magic 100007)
+  sets/nzdusd.set    (Magic 100008) ← NEW
+  sets/usdchf.set    (Magic 100009) ← NEW
+  sets/gbpjpy.set    (Magic 100010) ← NEW
+  sets/governor.set  (Portfolio Governor)
+
+Compiled EAs:
+  Symbol_Engine.ex5         (Attach to each of 10 pairs)
+  Portfolio_Governor.ex5    (Attach to ONE chart only)
+
+Logs & Reports:
+  Files/Governor_Transactions_{Date}.csv  (Portfolio activity)
+  Files/Daily_Performance_{Symbol}_{Date}.csv  (Per-pair stats)
+  Expert Tab in MT5 Terminal  (Real-time logs)
+
+───────────────────────────────────────────────────────────────────
+  DELETED FILES
+───────────────────────────────────────────────────────────────────
+
+❌ xauusd.set (Gold - Removed)
+   Reason: Not a currency pair, different market characteristics
+
+───────────────────────────────────────────────────────────────────
+  QUICK VERIFICATION COMMANDS
+───────────────────────────────────────────────────────────────────
+
+Check if all 10 .set files exist:
+  ls sets/*.set | wc -l
+  (Should show 11 = 10 pairs + 1 governor)
+
+List magic numbers:
+  grep InpMagicNumber sets/*.set | grep -v governor
+  (Should show 100001 through 100010)
+
+Check risk settings:
+  grep InpRiskBase sets/*.set | grep -v governor
+  (All should show 0.20)
+
+───────────────────────────────────────────────────────────────────
+  SUPPORT DOCUMENTATION
+───────────────────────────────────────────────────────────────────
+
+📄 IMPLEMENTATION_COMPLETE.md
+   → Full details of all 7 phases implemented
+   → Testing checklist and success criteria
+
+📄 RISK_CONFIGURATION_$10_PER_TRADE.md
+   → Risk settings explanation
+   → Governor limits and multipliers
+
+📄 10_PAIR_PORTFOLIO_24-7_CONFIGURATION.md
+   → Killzone coverage analysis
+   → Correlation matrix
+   → Session-specific strategies
+
+📄 MAGIC_NUMBERS_REFERENCE.txt
+   → This file
+
+───────────────────────────────────────────────────────────────────
+
+Configuration Date: 2026-02-12
+Status: Ready for Strategy Tester
+Next Step: Backtest all 10 pairs (6 months H1)
+
+═══════════════════════════════════════════════════════════════════
