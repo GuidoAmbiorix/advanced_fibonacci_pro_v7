@@ -213,6 +213,26 @@ int OnCalculate(const int rates_total,
    MARKET_PHASE phase = DetectPhase(tick_volume[currentBar], bbwPercentile, adx, autocorr, priceLocation);
    BufferMarketPhase[currentBar] = (double)phase;
 
+   //--- DEBUG: Log phase calculations every 30 minutes
+   static datetime lastDebugLog = 0;
+   static MARKET_PHASE lastLoggedPhase = PHASE_UNDEFINED;
+
+   if(TimeCurrent() - lastDebugLog > 1800 || phase != lastLoggedPhase)  // Every 30 min or on phase change
+   {
+      string phaseNames[] = {"DORMANT", "TRENDING", "RANGING", "VOLATILE", "UNDEFINED"};
+      Print("=== MARKET PHASE ANALYSIS ===");
+      Print("  Phase: ", phaseNames[phase]);
+      Print("  Volume: ", tick_volume[currentBar], " (Min: ", InpMinVolume, ")");
+      Print("  ADX: ", DoubleToString(adx, 1), " (Trend>", InpADXTrendLevel, ", Range<", InpADXRangeLevel, ")");
+      Print("  Autocorr: ", DoubleToString(autocorr, 3), " (Threshold: ", InpTrendThreshold, ")");
+      Print("  BBW%: ", DoubleToString(bbwPercentile, 1), " (Volatile>", InpBBExpansionPercentile, ")");
+      Print("  Price Location: ", DoubleToString(priceLocation, 1), "%");
+      Print("=============================");
+
+      lastDebugLog = TimeCurrent();
+      lastLoggedPhase = phase;
+   }
+
    //--- 8. Calculate Trend Strength (Normalized Autocorrelation)
    double trendStrength = MathMin(100.0, MathAbs(autocorr) / InpTrendThreshold * 100.0);
    BufferTrendStrength[currentBar] = trendStrength;
