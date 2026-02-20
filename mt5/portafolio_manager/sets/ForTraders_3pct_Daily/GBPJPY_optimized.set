@@ -1,0 +1,169 @@
+; GBPJPY - H1 Timeframe "The Beast"
+; ForTraders Server Configuration
+; Optimized for 3% Daily / 5% Max Drawdown Challenge
+; High Volatility Specialist
+
+; ====== BROKER NOTES ======
+; ForTraders Server: FTTrading-Server
+; Run Spread_Diagnostics_ForTraders.mq5 to verify broker digit format
+; Current setting assumes 5-digit broker (10 points = 1 pip)
+
+; ====== IDENTITY ======
+InpMagicNumber=100004
+InpDirection=0
+InpBrokerUTCOffset=2
+
+; ====== KILLZONES ======
+InpUseKillzoneFilter=true
+InpEnableAsianKZ=true
+; GBPJPY moves in Asia too (Tokyo)
+InpEnableLondonOpenKZ=true
+InpEnableNYKZ=true
+InpEnableLondonCloseKZ=true
+
+; ====== FIBONACCI (Wider Tolerance) ======
+InpSwingLookback=10
+; Increased lookback for major swing points
+InpFibLevelLow=0.618
+InpFibLevelHigh=0.786
+InpZoneTolerance=0.30
+; Wider tolerance for volatile wicks
+
+; ====== DISPLACEMENT ======
+InpUseDisplacement=true
+InpDisplacementATR=1.5
+; Higher threshold for valid breakout
+InpDisplacementLookback=3
+
+; ====== RSI ======
+InpRSI_Period=14
+; Slower RSI to filter noise
+InpRSI_Oversold=30
+InpRSI_Overbought=70
+InpRSI_Momentum=true
+
+; ====== TREND ======
+InpEMA_Period=200
+InpUseTrendFilter=true
+InpEMA_MinSlope=0.15
+; Steeper slope required
+
+; ====== CHOP FILTER ======
+InpUseChopFilter=true
+InpChopThreshold=0.60
+; Strict chop filter, GJ chops hard
+InpATR_MA_Period=14
+
+; ====== CONFLUENCE ======
+InpMinConfluenceEntry=18
+; ULTRA STRICT: Increased to 18 for GBPJPY
+; Most volatile pair - need highest quality signals only
+InpEnableAddOns=false
+InpAddOn1_R=1.5
+InpAddOn2_R=2.8
+InpMaxPositions=1
+
+; ====== RISK ======
+InpRiskBase=0.25
+; MINIMAL: 0.25% per trade (was 0.5%)
+; GBPJPY is most volatile forex pair
+; Use smallest position size to control risk
+; Allows ~11 losses before hitting 2.9% daily limit
+InpMaxRisk=1.0
+InpMaxLotsPerTrade=5.0
+InpEnableMarginCheck=true
+
+; ====== TAKE PROFIT (Aggressive Targets) ======
+InpTPMode=2
+InpFixedTP_R=4.0
+; Aiming for 4R runs
+InpMinTP_R=2.0
+InpMaxTP_R=8.0
+InpTPUseLearnedMFE=true
+
+; ====== EXIT (Wide Trailing) ======
+InpTrailingMode=1
+InpTrailType=1
+InpTrailStepATR=0.5
+InpMinVolatilityPips=10.0
+InpMaxVolatilityFactor=4.0
+InpVolatilityTP_Mult=4.0
+InpPartialTP_R=2.0
+; Take partials later
+InpPartialClosePercent=30.0
+; Leave 70% running
+InpBE_Threshold_R=0.8
+; GBPJPY: Slightly later activation (needs room)
+InpTrailStart_R=0.8
+InpTrailATR_Mult=1.8
+; GBPJPY: Wide base (most volatile forex pair)
+InpTrailDecayRate=0.20
+; Slow decay - let GBPJPY trends run
+InpTrailMinMult=0.60
+; Higher floor (volatile pair needs buffer)
+InpTrailRegimeAware=true
+
+; ====== SPREAD ======
+InpMaxSpreadPoints=45
+; CRITICAL SETTING - Verify with Spread_Diagnostics_ForTraders.mq5!
+;
+; 5-DIGIT BROKER: 45 points = 4.5 pips (OPTIMAL for GBPJPY)
+; 3-DIGIT BROKER: 45 points = 45 pips (TOO HIGH - change to 4-5)
+;
+; ForTraders typical spreads:
+;   - GBPJPY: 1.5-4.0 pips during active sessions
+;   - Set to 4.5 pips max (GBPJPY can widen significantly)
+;   - Cross pairs have higher spreads than majors
+
+; ====== SMC ======
+InpUseSMC=true
+InpSMC_SwingLookback=12
+InpSMC_MinImpulseATR=2.5
+InpSMC_MinFVG_ATR=1.0
+
+; ====== MTF ======
+InpUseMTF=true
+InpHTF=16388
+InpMTF=16386
+InpMTF_EMAPeriod=50
+
+; ====== NEWS ======
+InpUseNewsFilter=true
+InpNewsMinutesBefore=30
+InpNewsMinutesAfter=30
+; Longer avoidance window (GBP and JPY news)
+
+; ====== KELLY ======
+InpUseKelly=true
+InpKellyFraction=0.25
+InpDailyMaxDD=2.9
+; ForTraders daily limit is 3.0%
+InpWeeklyMaxDD=4.0
+
+; ====== LEARNING ======
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+InpMinTradesForLearning=50
+
+; ====== ADAPTIVE ======
+InpEnableAdaptiveRisk=true
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
+
+; ====== SESSION GOVERNOR ======
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=10
+InpTradeCooldownMinutes=10
+InpEnableSessionBlacklist=false
+
+; ====== PORTFOLIO PROTECTION ======
+InpUseCorrelationFilter=true
+InpDailyMaxLoss_R=2.0
+; Max 2R daily loss per symbol
+; 0.25% × 2R = 0.5% max from GBPJPY
+InpLossCooldownMinutes=120
+; Longer cooldown for volatile pair
+InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=5
+InpUseReversalFilter=true

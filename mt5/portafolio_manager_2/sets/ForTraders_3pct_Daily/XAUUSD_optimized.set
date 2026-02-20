@@ -1,0 +1,198 @@
+; XAUUSD - H1 Timeframe Metals Optimized
+; ForTraders Server Configuration
+; Optimized for 3% Daily / 5% Max Drawdown Challenge
+; Metals Engine - XAUUSD Specialized
+
+; ====== BROKER NOTES ======
+; ForTraders Server: FTTrading-Server
+; Run Spread_Diagnostics_ForTraders.mq5 to verify broker digit format
+;
+; XAUUSD SPREAD NOTES:
+; - 5-digit broker: 250 points = $2.50 spread (25 cents)
+; - 3-digit broker: 250 points = $250 spread (IMPOSSIBLE - change to 25-30)
+;
+; Gold spreads are measured in CENTS, not pips!
+; Typical ForTraders gold spread: $0.15-$0.30 (15-30 cents)
+
+; ====== IDENTITY ======
+InpMagicNumber=100011
+InpEnableMobileAlerts=true
+
+; ====== DIRECTION ======
+InpDirection=0
+InpBrokerUTCOffset=2
+
+; ====== KILLZONES ======
+InpUseKillzoneFilter=true
+InpEnableAsianKZ=false
+; Metals: Disable Asian session (low liquidity, high spread)
+InpEnableLondonOpenKZ=true
+; Metals: Prime London-NY overlap is optimal
+InpEnableNYKZ=true
+; Metals: US session active
+InpEnableLondonCloseKZ=false
+InpNotifyKillzoneOpen=true
+
+; ====== FIBONACCI ======
+InpSwingLookback=20
+InpFibLevelLow=0.618
+InpFibLevelHigh=0.786
+InpZoneTolerance=0.25
+
+; ====== DISPLACEMENT ======
+InpUseDisplacement=true
+InpDisplacementATR=1.2
+InpDisplacementLookback=5
+
+; ====== RSI ======
+InpRSI_Period=14
+InpRSI_Oversold=45
+InpRSI_Overbought=55
+InpRSI_Momentum=true
+
+; ====== TREND ======
+InpEMA_Period=200
+InpUseTrendFilter=true
+InpEMA_MinSlope=0.1
+
+; ====== CHOP FILTER ======
+InpUseChopFilter=true
+InpChopThreshold=0.75
+InpATR_MA_Period=20
+
+; ====== CONFLUENCE ======
+InpMinConfluenceEntry=17
+; STRICT: Increased to 17 for production
+; Gold requires high-quality signals only
+InpEnableAddOns=false
+; DISABLED for 3% challenge - single position only
+InpAddOn1_R=1.5
+InpAddOn2_R=2.5
+InpMaxPositions=1
+; STRICT: Only 1 position (no add-ons for tight DD limits)
+
+; ====== RISK (Before Governor Scaling) ======
+InpRiskBase=0.30
+; CONSERVATIVE: 0.30% per trade (was 0.50%)
+; Gold has larger ATR swings - use smaller % risk
+InpRiskAddOn1=0.25
+InpRiskAddOn2=0.15
+InpMaxRisk=0.60
+; Max 0.6% (disabled with MaxPositions=1)
+InpMaxLotsPerTrade=0.03
+; Hard cap for small accounts
+InpEnableMarginCheck=true
+
+; ====== TAKE PROFIT ======
+InpTPMode=2
+; Adaptive TP mode
+InpFixedTP_R=3.0
+InpMinTP_R=1.5
+InpMaxTP_R=5.0
+InpTPUseLearnedMFE=true
+
+; ====== EXIT ======
+InpTrailingMode=1
+; Runner mode
+InpTrailType=1
+; Chandelier Exit
+InpTrailStepATR=0.5
+InpMinVolatilityPips=5.0
+InpMaxVolatilityFactor=3.0
+InpVolatilityTP_Mult=3.0
+InpPartialTP_R=1.5
+; Partial close at 1.5R (Lock + Let It Run)
+InpPartialClosePercent=30.0
+; Close only 30% (keep more position open for runners)
+InpBE_Threshold_R=1.0
+; XAUUSD: Activate at 1.0R (gold needs more room early)
+InpTrailStart_R=1.0
+InpTrailATR_Mult=2.0
+; XAUUSD: Very wide base (ATR=$8-15, massive swings)
+InpTrailDecayRate=0.15
+; Very slow decay - let gold runners run far
+InpTrailMinMult=0.60
+; Higher floor (gold spikes need buffer)
+InpTrailRegimeAware=true
+
+; ====== SPREAD ======
+InpMaxSpreadPoints=250
+; CRITICAL SETTING - Verify with Spread_Diagnostics_ForTraders.mq5!
+;
+; 5-DIGIT BROKER: 250 points = 25 cents (OPTIMAL for XAUUSD)
+; 3-DIGIT BROKER: 250 points = $250 (IMPOSSIBLE - change to 25-30)
+;
+; ForTraders typical gold spreads:
+;   - XAUUSD: $0.15-$0.30 (15-30 cents) during London/NY
+;   - Set to 25 cents max (allows some spread widening)
+;   - Blocks trades during high spread periods (Asian session, news)
+;
+InpMetals_MaxSpreadUSD=0.30
+; Metals: Alternative spread filter in USD (max $0.30 in prime time)
+
+; ====== SMC - SMART MONEY CONCEPTS ======
+InpUseSMC=true
+InpSMC_SwingLookback=20
+InpSMC_MinImpulseATR=2.0
+InpSMC_MinFVG_ATR=0.5
+
+; ====== MULTI-TIMEFRAME ======
+InpUseMTF=true
+InpHTF=16388
+; H4
+InpMTF=16385
+; H1
+InpMTF_EMAPeriod=50
+
+; ====== NEWS FILTER ======
+InpUseNewsFilter=true
+InpNewsMinutesBefore=60
+; Metals: 1-hour blackout before news
+InpNewsMinutesAfter=60
+; Metals: 1-hour blackout after news
+
+; ====== VOLATILITY SPIKE PROTECTION ======
+InpEnableVolatilityFilter=true
+InpVolatilityThreshold=3.0
+; 3x ATR spike detection
+InpVolatilitySpikeCooldown=15
+; 15-minute cooldown after spike
+
+; ====== KELLY POSITION SIZING ======
+InpUseKelly=true
+InpKellyFraction=0.5
+; Half-Kelly for safety
+InpDailyMaxDD=2.9
+; CRITICAL: ForTraders daily limit is 3.0%
+InpWeeklyMaxDD=4.0
+; Conservative weekly limit
+
+; ====== LEARNING & ADAPTATION ======
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+; 180 days of history
+InpMinTradesForLearning=50
+
+; ====== ADAPTIVE BEHAVIOR ======
+InpEnableAdaptiveRisk=true
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
+
+; ====== PORTFOLIO PROTECTION ======
+InpUseCorrelationFilter=true
+InpDailyMaxLoss_R=2.0
+; STRICT: Max 2R daily loss from XAUUSD
+; 0.30% × 2R = 0.6% max daily loss from gold
+InpLossCooldownMinutes=30
+InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=5
+; Max 5 trades per day (prevent overtrading)
+InpUseReversalFilter=true
+InpReversalCooldownMinutes=15
+
+; ====== SESSION GOVERNOR ======
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=3
+; Reduced from 10 to 3 for gold (quality over quantity)
+InpTradeCooldownMinutes=30

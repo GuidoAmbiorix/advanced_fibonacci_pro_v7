@@ -1,0 +1,180 @@
+; EURUSD - H1 Timeframe Institutional Flow
+; ForTraders Server Configuration
+; Optimized for 3% Daily / 5% Max Drawdown Challenge
+; Core Major - Balanced
+
+; ====== BROKER NOTES ======
+; ForTraders Server: FTTrading-Server
+; SPREAD CONFIGURATION: Verify broker digit format first!
+;
+; Run Script: Scripts/Spread_Diagnostics_ForTraders.mq5
+; This will tell you if you have:
+;   - 5-digit broker (10 points = 1 pip): Use InpMaxSpreadPoints=20-30
+;   - 3-digit broker (1 point = 1 pip):   Use InpMaxSpreadPoints=2-3
+;
+; Current setting assumes 5-digit broker (most common)
+
+; ====== IDENTITY ======
+InpMagicNumber=100001
+
+; ====== DIRECTION ======
+InpDirection=0
+InpBrokerUTCOffset=2
+
+; ====== KILLZONES ======
+InpUseKillzoneFilter=true
+InpEnableAsianKZ=false
+InpEnableLondonOpenKZ=true
+InpEnableNYKZ=true
+InpEnableLondonCloseKZ=false
+
+; ====== FIBONACCI ======
+InpSwingLookback=8
+InpFibLevelLow=0.618
+InpFibLevelHigh=0.786
+InpZoneTolerance=0.20
+
+; ====== DISPLACEMENT ======
+InpUseDisplacement=true
+InpDisplacementATR=1.2
+InpDisplacementLookback=3
+
+; ====== RSI ======
+InpRSI_Period=9
+InpRSI_Oversold=35
+InpRSI_Overbought=60
+InpRSI_Momentum=true
+
+; ====== TREND ======
+InpEMA_Period=200
+InpUseTrendFilter=true
+InpEMA_MinSlope=0.10
+
+; ====== CHOP FILTER ======
+InpUseChopFilter=true
+InpChopThreshold=0.75
+InpATR_MA_Period=20
+
+; ====== CONFLUENCE ======
+InpMinConfluenceEntry=16
+; STRICT: Increased from 14 to 16 for ultra-high quality signals
+; Tighter drawdown limits require better win rate
+InpEnableAddOns=false
+InpAddOn1_R=1.5
+InpAddOn2_R=2.8
+InpMaxPositions=1
+
+; ====== RISK ======
+; ForTraders 3% Daily Challenge Configuration
+InpRiskBase=0.35
+; Conservative: 0.35% per trade (was 0.5%)
+; Allows ~8 losses before hitting 2.9% daily limit
+; With Governor scaling: 0.35% × 0.5 = 0.175% when DD > 2.0%
+InpMaxRisk=1.0
+InpMaxLotsPerTrade=5.0
+InpEnableMarginCheck=true
+
+; ====== TAKE PROFIT ======
+InpTPMode=2
+; Adaptive TP mode for trend-following
+InpFixedTP_R=3.0
+InpMinTP_R=1.5
+InpMaxTP_R=5.0
+InpTPUseLearnedMFE=true
+
+; ====== EXIT ======
+InpTrailingMode=1
+; Aggressive trailing stop for trend-following
+InpTrailType=1            ; 1=Chandelier
+InpTrailStepATR=0.5       ; Step size (if Type=2)
+InpMinVolatilityPips=5.0  ; Avoid dead zones
+InpMaxVolatilityFactor=3.0; Avoid crashes
+InpVolatilityTP_Mult=3.0  ; Dynamic Target
+InpTPMode=4               ; Use Volatility TP
+InpPartialTP_R=1.5
+; Take partial earlier on H1 moves
+InpPartialClosePercent=40.0
+; Keep more running for trends
+InpBE_Threshold_R=0.6
+; Dynamic trail activates at 0.6R (early protection)
+InpTrailStart_R=0.6
+InpTrailATR_Mult=1.5
+; EURUSD: Balanced base multiplier
+InpTrailDecayRate=0.30
+; Moderate decay - tightens steadily as profit grows
+InpTrailMinMult=0.50
+; Floor: never tighter than 0.5x ATR
+InpTrailRegimeAware=true
+; Widen in trends, tighten in ranges
+
+; ====== SPREAD ======
+InpMaxSpreadPoints=25
+; CRITICAL SETTING - Verify with Spread_Diagnostics_ForTraders.mq5!
+;
+; 5-DIGIT BROKER: 25 points = 2.5 pips (OPTIMAL for EURUSD)
+; 3-DIGIT BROKER: 25 points = 25 pips (TOO HIGH - change to 2-3)
+;
+; ForTraders typical spreads:
+;   - EURUSD: 0.6-2.0 pips during London/NY
+;   - Set to 2.5 pips max to allow some spread widening
+;   - Blocks trades during high spread periods (news, rollover)
+
+; ====== SMC ======
+InpUseSMC=true
+InpSMC_SwingLookback=12
+InpSMC_MinImpulseATR=2.2
+InpSMC_MinFVG_ATR=0.50
+
+; ====== MULTI-TIMEFRAME ======
+InpUseMTF=true
+InpHTF=16388
+; H1 chart uses H4 (16388) for higher timeframe context
+InpMTF=16386
+; H1: PRIMARY TIMEFRAME
+InpMTF_EMAPeriod=50
+
+; ====== NEWS FILTER ======
+InpUseNewsFilter=true
+InpNewsMinutesBefore=15
+InpNewsMinutesAfter=15
+
+; ====== KELLY ======
+InpUseKelly=true
+InpKellyFraction=0.25
+InpDailyMaxDD=2.9
+; CRITICAL: ForTraders daily limit is 3.0%
+; Set to 2.9% for safety buffer
+InpWeeklyMaxDD=4.0
+; Conservative weekly limit (5% max challenge)
+
+; ====== LEARNING ======
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+InpMinTradesForLearning=50
+
+; ====== ADAPTIVE ======
+InpEnableAdaptiveRisk=true
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
+
+; ====== SESSION GOVERNOR ======
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=10
+InpTradeCooldownMinutes=10
+InpEnableSessionBlacklist=false
+
+; ====== PORTFOLIO PROTECTION ======
+InpUseCorrelationFilter=true
+; Governor Draft System handles correlation ranking
+InpDailyMaxLoss_R=2.0
+; STRICT: Max 2R daily loss (was 3.0R)
+; With 0.35% risk: 2R × 0.35% = 0.7% max daily loss from this pair
+; Prevents single pair from consuming drawdown budget
+InpLossCooldownMinutes=90
+; 90-minute cooldown after consecutive losses
+InpMaxConsecutiveLosses=2
+; Stop after 2 consecutive losses
+InpMaxDailyTrades=5
+; Max 5 trades per day (prevent overtrading)
+InpUseReversalFilter=true
