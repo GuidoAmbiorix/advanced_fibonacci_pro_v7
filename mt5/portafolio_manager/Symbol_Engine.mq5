@@ -591,8 +591,8 @@ int OnInit()
       }
 
       // Set GlobalVariables for dashboard
-      GlobalVariableSet("GV_CHAMELEON_ENABLED" + _Symbol, 1.0);
-      GlobalVariableSet("GV_STRATEGY_PREFIX" + _Symbol, 0.0);
+      GlobalVariableSet(GV_CHAMELEON_ENABLED + _Symbol, 1.0);
+      GlobalVariableSet(GV_STRATEGY_PREFIX + _Symbol, 0.0);
 
       Print("  Auto-Switch: ", InpAutoSwitchStrategy ? "ENABLED" : "DISABLED");
       Print("===========================================");
@@ -600,7 +600,7 @@ int OnInit()
    else if(InpUseLegacyMode || !InpEnableChameleon)
    {
       Print("  Mode: LEGACY CONFLUENCE (Chameleon disabled)");
-      GlobalVariableSet("GV_CHAMELEON_ENABLED" + _Symbol, 0.0);
+      GlobalVariableSet(GV_CHAMELEON_ENABLED + _Symbol, 0.0);
    }
 
    // OPTIMIZATION: Validate all critical modules initialized
@@ -716,6 +716,17 @@ void OnDeinit(const int reason)
       learning.Deinit();
       patternMemory.Deinit();
    }
+
+   // Cleanup global variables for this symbol
+   GlobalVariableDel(GV_CHAMELEON_ENABLED + _Symbol);
+   GlobalVariableDel(GV_STRATEGY_PREFIX + _Symbol);
+   GlobalVariableDel(GV_PHASE_PREFIX + _Symbol);
+   GlobalVariableDel(GV_SCORE_PREFIX + _Symbol);
+   GlobalVariableDel(GV_REQ_PREFIX + _Symbol);
+   GlobalVariableDel(GV_DIR_PREFIX + _Symbol);
+   GlobalVariableDel(GV_KZ_PREFIX + _Symbol);
+   GlobalVariableDel(GV_BAROPEN_PREFIX + _Symbol);
+   GlobalVariableDel(GV_PERIOD_PREFIX + _Symbol);
 
    Comment("");
 }
@@ -1140,6 +1151,17 @@ void OnTick()
       }
 
       g_lastScoreCalcTime = currentBarTime;
+
+      // Publish scores to global variables for Governor ranking
+      double bestScore = MathMax(g_cachedBuyScore, g_cachedSellScore);
+      int direction = (g_cachedBuyScore > g_cachedSellScore) ? 1 : -1;
+
+      GlobalVariableSet(GV_SCORE_PREFIX + _Symbol, bestScore);
+      GlobalVariableSet(GV_REQ_PREFIX + _Symbol, InpMinConfluenceEntry);
+      GlobalVariableSet(GV_DIR_PREFIX + _Symbol, (double)direction);
+      GlobalVariableSet(GV_KZ_PREFIX + _Symbol, killzoneDetector.IsKillzoneActive() ? 1.0 : 0.0);
+      GlobalVariableSet(GV_BAROPEN_PREFIX + _Symbol, (double)iTime(_Symbol, PERIOD_CURRENT, 0));
+      GlobalVariableSet(GV_PERIOD_PREFIX + _Symbol, (double)PeriodSeconds(PERIOD_CURRENT));
    }
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---

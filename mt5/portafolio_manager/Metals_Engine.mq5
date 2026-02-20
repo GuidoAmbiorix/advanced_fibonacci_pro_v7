@@ -849,6 +849,17 @@ void OnDeinit(const int reason)
       patternMemory.Deinit();
    }
 
+   // Cleanup global variables for this symbol
+   GlobalVariableDel(GV_CHAMELEON_ENABLED + _Symbol);
+   GlobalVariableDel(GV_STRATEGY_PREFIX + _Symbol);
+   GlobalVariableDel(GV_PHASE_PREFIX + _Symbol);
+   GlobalVariableDel(GV_SCORE_PREFIX + _Symbol);
+   GlobalVariableDel(GV_REQ_PREFIX + _Symbol);
+   GlobalVariableDel(GV_DIR_PREFIX + _Symbol);
+   GlobalVariableDel(GV_KZ_PREFIX + _Symbol);
+   GlobalVariableDel(GV_BAROPEN_PREFIX + _Symbol);
+   GlobalVariableDel(GV_PERIOD_PREFIX + _Symbol);
+
    Comment("");
 }
 
@@ -1316,6 +1327,17 @@ void OnTick()
          g_cachedSellScore = CalculateConfluenceScore(-1);
       }
       g_lastScoreCalcTime = currentBarTime;
+
+      // Publish scores to global variables for Governor ranking
+      double bestScore = MathMax(g_cachedBuyScore, g_cachedSellScore);
+      int direction = (g_cachedBuyScore > g_cachedSellScore) ? 1 : -1;
+
+      GlobalVariableSet(GV_SCORE_PREFIX + _Symbol, bestScore);
+      GlobalVariableSet(GV_REQ_PREFIX + _Symbol, InpMinConfluenceEntry);
+      GlobalVariableSet(GV_DIR_PREFIX + _Symbol, (double)direction);
+      GlobalVariableSet(GV_KZ_PREFIX + _Symbol, killzoneDetector.IsKillzoneActive() ? 1.0 : 0.0);
+      GlobalVariableSet(GV_BAROPEN_PREFIX + _Symbol, (double)iTime(_Symbol, PERIOD_CURRENT, 0));
+      GlobalVariableSet(GV_PERIOD_PREFIX + _Symbol, (double)PeriodSeconds(PERIOD_CURRENT));
 
       // --- SIGNAL DOMINANCE FILTER ---
       if(InpDominanceThreshold > 0)
