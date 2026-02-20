@@ -168,7 +168,8 @@ int OnCalculate(const int rates_total,
    ArraySetAsSeries(tick_volume, true);
 
    //--- Get ZigZag values
-   double zigzagBuf[200];
+   double zigzagBuf[];
+   ArrayResize(zigzagBuf, 200);
    ArraySetAsSeries(zigzagBuf, true);
    int copied = CopyBuffer(g_hZigZag, 0, 0, 200, zigzagBuf);
    if(copied <= 0) return 0;
@@ -211,13 +212,13 @@ int OnCalculate(const int rates_total,
 
    //--- Calculate swing strength (based on range and volume)
    double avgVolume = CalculateAverageVolume(tick_volume, 20);
-   double maxVolume = 0;
+   long maxVolume = 0;
    for(int i = MathMin(g_swingHighBar, g_swingLowBar); i <= MathMax(g_swingHighBar, g_swingLowBar); i++)
    {
       if(tick_volume[i] > maxVolume) maxVolume = tick_volume[i];
    }
 
-   double volumeStrength = (avgVolume > 0) ? MathMin(100.0, maxVolume / avgVolume * 50.0) : 50.0;
+   double volumeStrength = (avgVolume > 0) ? MathMin(100.0, (double)maxVolume / avgVolume * 50.0) : 50.0;
    double rangeStrength = MathMin(100.0, swingSizePips / InpMinSwingSize * 50.0);
    double swingStrength = (volumeStrength + rangeStrength) / 2.0;
    BufferSwingStrength[currentBar] = swingStrength;
