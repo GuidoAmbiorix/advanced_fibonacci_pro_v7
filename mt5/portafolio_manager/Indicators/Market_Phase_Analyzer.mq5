@@ -327,14 +327,28 @@ MARKET_PHASE DetectPhase(long currentVolume, double bbwPercentile, double adx,
       return PHASE_VOLATILE;
 
    // Priority 3: Check Trend Strength
+   // Strong trend: ADX > 25 with autocorrelation confirmation
    if(adx > InpADXTrendLevel && MathAbs(autocorr) > InpTrendThreshold)
       return PHASE_TRENDING;
 
+   // Moderate trend: ADX > 22 (even without strong autocorr)
+   if(adx > 22.0)
+      return PHASE_TRENDING;
+
    // Priority 4: Check Range Conditions
+   // Clear range: ADX < 20 and price in middle
    if(adx < InpADXRangeLevel && priceLocation > 10 && priceLocation < 90)
       return PHASE_RANGING;
 
-   // Default: Undefined transition state
+   // Weak trend zone (ADX 20-22): Default to ranging if price is contained
+   if(adx <= 22.0 && priceLocation > 10 && priceLocation < 90)
+      return PHASE_RANGING;
+
+   // If price at extremes (breakout zones), treat as trending
+   if(priceLocation <= 10 || priceLocation >= 90)
+      return PHASE_TRENDING;
+
+   // Default: Should rarely hit this now
    return PHASE_UNDEFINED;
 }
 
