@@ -45,7 +45,7 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=15
+InpMinConfluenceEntry=14
 ; H1: Increased to 13 for GBPUSD (more volatile, needs stricter filter)
 InpEnableAddOns=false
 InpAddOn1_R=1.5
@@ -54,7 +54,7 @@ InpMaxPositions=1
 
 ; ====== RISK ======
 ; ====== RISK ======
-InpRiskBase=0.5
+InpRiskBase=0.35
 ; $50 Risk (FundingPips)
 InpMaxRisk=1.0
 InpMaxLotsPerTrade=5.0

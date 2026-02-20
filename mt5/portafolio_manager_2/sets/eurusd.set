@@ -44,7 +44,7 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=15
+InpMinConfluenceEntry=14
 ; H1: Increased from 11 to 12 for better quality signals on cleaner timeframe
 InpEnableAddOns=false
 InpAddOn1_R=1.5
