@@ -11,7 +11,12 @@
       "Bash(TZ='America/New_York' date:*)",
       "Bash(python3:*)",
       "Bash(git checkout:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(\"C:/Program Files/MetaTrader 5/MetaEditor64.exe\" /compile:\"Symbol_Engine.mq5\" /log:\"Symbol_Engine_compile.log\")",
+      "Bash(echo:*)",
+      "Bash(\"C:/Program Files/MetaTrader 5/MetaEditor64.exe\" /compile:\"Metals_Engine.mq5\" /log:\"Metals_Engine_compile.log\")",
+      "Bash(\"C:/Program Files/MetaTrader 5/MetaEditor64.exe\" /compile:\"Metals_Engine.mq5\" /log:\"Metals_Engine_compile2.log\")",
+      "Bash(\"C:/Program Files/MetaTrader 5/MetaEditor64.exe\" /compile:\"Portfolio_Governor.mq5\" /log:\"Portfolio_Governor_compile.log\")"
     ]
   }
 }

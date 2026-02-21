@@ -700,8 +700,8 @@ int OnInit()
       }
       Print("  Fibonacci Golden Pocket: ACTIVE");
 
-      // Initialize strategy objects (with Session_Optimizer handle for Metals)
-      if(!sniperStrategy.Init(hMarketPhase, hFibGolden, INVALID_HANDLE, INVALID_HANDLE, hSession_Optimizer, hRSI))
+      // Initialize strategy objects (with proper indicator handles)
+      if(!sniperStrategy.Init(hMarketPhase, hFibGolden, hSMC_Confluence, hVolume_Confluence, hMTF_Confluence, hRSI))
       {
          Print("ERROR: Failed to initialize Sniper strategy");
          return INIT_FAILED;
@@ -710,7 +710,7 @@ int OnInit()
       sniperStrategy.SetMinConfluence(14.0);  // XAUUSD: Higher threshold
       Print("  Sniper Strategy: ", InpEnableSniper ? "ENABLED" : "DISABLED");
 
-      if(!rubberBandStrategy.Init(hMarketPhase, hFibGolden, INVALID_HANDLE, INVALID_HANDLE, hSession_Optimizer, hRSI))
+      if(!rubberBandStrategy.Init(hMarketPhase, hFibGolden, hSMC_Confluence, hVolume_Confluence, hMTF_Confluence, hRSI))
       {
          Print("ERROR: Failed to initialize Rubber Band strategy");
          return INIT_FAILED;
@@ -719,7 +719,7 @@ int OnInit()
       rubberBandStrategy.SetMinConfluence(12.0);  // XAUUSD: Higher threshold
       Print("  Rubber Band Strategy: ", InpEnableRubberBand ? "ENABLED" : "DISABLED");
 
-      if(!breakoutStrategy.Init(hMarketPhase, hFibGolden, INVALID_HANDLE, INVALID_HANDLE, hSession_Optimizer, hRSI))
+      if(!breakoutStrategy.Init(hMarketPhase, hFibGolden, hSMC_Confluence, hVolume_Confluence, hMTF_Confluence, hRSI))
       {
          Print("ERROR: Failed to initialize Breakout strategy");
          return INIT_FAILED;
@@ -1358,7 +1358,7 @@ void OnTick()
       // --- RANKING SYSTEM: PUBLISH SCORE ---
       // Publish the higher of the two scores to represent the symbol's "Potential"
       double maxScore = (g_cachedBuyScore > g_cachedSellScore) ? g_cachedBuyScore : g_cachedSellScore;
-      double direction = (g_cachedBuyScore > g_cachedSellScore) ? 1.0 : -1.0;
+      direction = (g_cachedBuyScore > g_cachedSellScore) ? 1 : -1;
       
       GlobalVariableSet(GV_SCORE_PREFIX + _Symbol, maxScore);
       GlobalVariableSet(GV_REQ_PREFIX + _Symbol, InpMinConfluenceEntry);
