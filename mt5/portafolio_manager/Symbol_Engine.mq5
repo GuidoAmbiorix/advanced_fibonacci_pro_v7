@@ -1157,7 +1157,9 @@ void OnTick()
       {
          ENUM_KILLZONE currentKZ = KILLZONE_NONE;
          // Use REAL factors from last CalculateConfluenceScore() call
-         ConfluenceFactors &factors = (bestDirection == 1) ? g_lastBuyFactors : g_lastSellFactors;
+         ConfluenceFactors factors;
+         if(bestDirection == 1) factors = g_lastBuyFactors;
+         else factors = g_lastSellFactors;
 
          // Check if should skip trade based on poor context
          if(adaptiveRisk.ShouldSkipTrade(currentKZ, g_currentRegime))
@@ -1192,7 +1194,9 @@ void OnTick()
            {
               // Use REAL factors from last CalculateConfluenceScore() call
               ENUM_KILLZONE currentKZ = KILLZONE_NONE;
-              ConfluenceFactors &thresholdFactors = (bestDirection == 1) ? g_lastBuyFactors : g_lastSellFactors;
+               ConfluenceFactors thresholdFactors;
+               if(bestDirection == 1) thresholdFactors = g_lastBuyFactors;
+               else thresholdFactors = g_lastSellFactors;
 
 
              minEntry = adaptiveFilter.CalculateDynamicThreshold(thresholdFactors, currentKZ, g_currentRegime);
@@ -2181,7 +2185,9 @@ double CalculateConfluenceScore(int direction)
 
    // Populate REAL ConfluenceFactors for AdaptiveFilter and PatternRecognizer
    // These are the actual computed values, not score-based proxies
-   ConfluenceFactors &outFactors = (direction == 1) ? g_lastBuyFactors : g_lastSellFactors;
+   ConfluenceFactors outFactors;
+   if(direction == 1) outFactors = g_lastBuyFactors;
+   else outFactors = g_lastSellFactors;
    outFactors.trendAligned   = priceAligned || slopeAligned;
    outFactors.structureBreak = validStructure;
    outFactors.fibZone        = false;  // Will be set by Fib Zone block above - approximated here
