@@ -1127,14 +1127,15 @@ void OnTick()
 
    // Apply adaptive filter (pattern bonus/penalty)
    if(InpEnableLearning && InpEnableAdaptiveFilters && performanceAnalyzer.IsLearningActive())
+   {
       // Use REAL factors captured during CalculateConfluenceScore() (not score proxies)
       double buyBonus = adaptiveFilter.GetAdjustedConfluence(buyScore, g_lastBuyFactors) - buyScore;
       buyScore += buyBonus;
 
       double sellBonus = adaptiveFilter.GetAdjustedConfluence(sellScore, g_lastSellFactors) - sellScore;
       sellScore += sellBonus;
-   }
 
+   }
    // Bias Penalty
    if(g_bias == 1) sellScore -= 1.0;
    if(g_bias == -1) buyScore -= 1.0;
@@ -2033,7 +2034,6 @@ double CalculateConfluenceScore(int direction)
    double score = 0;
    double currentPrice = symbolInfo.Bid();
 
-   }
 
    // ============ 1. CORE SMC & PRICE ACTION (Max ~10.0 pts) ============
 
@@ -2198,11 +2198,6 @@ double CalculateConfluenceScore(int direction)
       if(sessionOptimizer.IsPrimeTime())
          score += 0.5;
 
-      // Log session contribution
-      }
-   }
-
-   // DEBUG: Print final score
    }
    // Populate REAL ConfluenceFactors for AdaptiveFilter and PatternRecognizer
    ConfluenceFactors &outFactors = (direction == 1) ? g_lastBuyFactors : g_lastSellFactors;
