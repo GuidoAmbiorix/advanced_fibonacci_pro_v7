@@ -57,19 +57,23 @@ private:
    datetime        m_lastWeekCheck;
    bool            m_dailyLimitHit;
    bool            m_weeklyLimitHit;
+   double          m_dailyTargetPct;    // Daily profit target % (0=disabled)
+   bool            m_dailyTargetHit;   // True when daily profit target reached
 
 public:
    CKellyPositionSizer() : m_rollingWindow(30), m_tradeCount(0),
                            m_baseRisk(0.5), m_minRisk(0.25), m_maxRisk(1.0),
                            m_kellyFraction(0.5), m_dailyMaxDD(3.0), m_weeklyMaxDD(6.0),
-                           m_dailyLimitHit(false), m_weeklyLimitHit(false) {}
+                           m_dailyLimitHit(false), m_weeklyLimitHit(false),
+                           m_dailyTargetPct(0.0), m_dailyTargetHit(false) {}
 
    //+------------------------------------------------------------------+
    //| Initialize                                                        |
    //+------------------------------------------------------------------+
    bool Init(double baseRisk = 0.5, double minRisk = 0.25, double maxRisk = 1.0,
              double kellyFraction = 0.5, int rollingWindow = 30,
-             double dailyMaxDD = 3.0, double weeklyMaxDD = 6.0)
+             double dailyMaxDD = 3.0, double weeklyMaxDD = 6.0,
+             double dailyTargetPct = 0.0)
    {
       m_baseRisk = baseRisk;
       m_minRisk = minRisk;
@@ -78,6 +82,8 @@ public:
       m_rollingWindow = rollingWindow;
       m_dailyMaxDD = dailyMaxDD;
       m_weeklyMaxDD = weeklyMaxDD;
+      m_dailyTargetPct = dailyTargetPct;
+      m_dailyTargetHit = false;
 
       ArrayResize(m_tradeHistory, 0);
       m_tradeCount = 0;
@@ -266,6 +272,7 @@ public:
       {
          m_dailyStartEquity = AccountInfoDouble(ACCOUNT_EQUITY);
          m_dailyLimitHit = false;
+         m_dailyTargetHit = false;  // Reset target on new day
          m_lastDayCheck = TimeCurrent();
       }
 
@@ -291,6 +298,15 @@ public:
          double dailyDD = ((m_dailyStartEquity - currentEquity) / m_dailyStartEquity) * 100.0;
          if(dailyDD >= m_dailyMaxDD)
             m_dailyLimitHit = true;
+
+         // Daily profit target check
+         double dailyProfit = ((currentEquity - m_dailyStartEquity) / m_dailyStartEquity) * 100.0;
+         if(m_dailyTargetPct > 0 && dailyProfit >= m_dailyTargetPct && !m_dailyTargetHit)
+         {
+            m_dailyTargetHit = true;
+            Print("✅ KELLY: Daily profit target reached: +", DoubleToString(dailyProfit, 2),
+                  "% >= ", m_dailyTargetPct, "% - No more entries today");
+         }
       }
 
       // Weekly DD check
@@ -307,7 +323,7 @@ public:
    //+------------------------------------------------------------------+
    bool IsTradingAllowed()
    {
-      return (!m_dailyLimitHit && !m_weeklyLimitHit);
+      return (!m_dailyLimitHit && !m_weeklyLimitHit && !m_dailyTargetHit);
    }
 
    //+------------------------------------------------------------------+
@@ -351,6 +367,8 @@ public:
    int GetTradeCount() { return m_tradeCount; }
    bool IsDailyLimitHit() { return m_dailyLimitHit; }
    bool IsWeeklyLimitHit() { return m_weeklyLimitHit; }
+   bool IsDailyTargetHit() { return m_dailyTargetHit; }
+   double GetDailyTargetPct() { return m_dailyTargetPct; }
 
    //+------------------------------------------------------------------+
    //| Get string representation                                         |
@@ -360,6 +378,7 @@ public:
       string limitStr = "";
       if(m_dailyLimitHit) limitStr = " [DAILY LIMIT]";
       else if(m_weeklyLimitHit) limitStr = " [WEEKLY LIMIT]";
+      else if(m_dailyTargetHit) limitStr = " [DAILY TARGET ✅]";
 
       return "KELLY: WR=" + DoubleToString(m_winRate * 100, 1) + "% " +
              "R:R=" + DoubleToString(m_rewardRiskRatio, 2) + " " +

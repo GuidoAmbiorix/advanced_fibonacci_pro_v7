@@ -48,6 +48,7 @@ input group "═══════ DAILY/WEEKLY LIMITS ═══════"
 input double InpDailyMaxDD = 3.0;              // Daily Max Drawdown (%)
 input double InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown (%)
 input double InpMonthlyMaxDD = 10.0;           // Monthly Max Drawdown (%)
+input double InpDailyTarget = 0.0;             // Daily Profit Target (%, 0=disabled)
 
 input group "═══════ CORRELATION GUARD ═══════"
 input bool   InpUseCorrelationGuard = true;    // Enable Correlation Guard
@@ -88,6 +89,7 @@ datetime g_lastMonthCheck = 0;
 bool g_dailyLimitHit = false;
 bool g_weeklyLimitHit = false;
 bool g_monthlyLimitHit = false;
+bool g_dailyTargetHit = false;
 
 // Correlation matrix (pre-defined known correlations)
 struct SymbolCorrelation
@@ -149,6 +151,8 @@ int OnInit()
    GlobalVariableSet(GV_WEEKLY_DD, 0);
    GlobalVariableSet(GV_DAILY_START_EQUITY, g_dailyStartEquity);
    GlobalVariableSet(GV_WEEKLY_START_EQUITY, g_weeklyStartEquity);
+   GlobalVariableSet(GV_DAILY_PROFIT, 0);
+   GlobalVariableSet(GV_DAILY_TARGET_HIT, 0);
 
    Print("===============================================================");
    // Initialize Rank Manager: Auto-Discovery is now active (no manual AddSymbol needed)
@@ -242,9 +246,12 @@ void CheckPeriodReset()
    {
       g_dailyStartEquity = account.Equity();
       g_dailyLimitHit = false;
+      g_dailyTargetHit = false;
+      GlobalVariableSet(GV_DAILY_TARGET_HIT, 0);
+      GlobalVariableSet(GV_DAILY_PROFIT, 0);
       g_lastDayCheck = TimeCurrent();
       GlobalVariableSet(GV_DAILY_START_EQUITY, g_dailyStartEquity);
-      Print("New trading day - Daily DD reset. Start Equity: ", g_dailyStartEquity);
+      Print("New trading day - Daily reset. Start Equity: ", g_dailyStartEquity);
    }
 
    // New week check (Monday)
@@ -285,6 +292,18 @@ void CalculatePeriodDrawdowns()
       {
          g_dailyLimitHit = true;
          Print("DAILY DD LIMIT HIT: ", DoubleToString(dailyDD, 2), "% >= ", InpDailyMaxDD, "%");
+      }
+
+      // Daily profit tracking and target check
+      double dailyProfit = ((currentEquity - g_dailyStartEquity) / g_dailyStartEquity) * 100.0;
+      GlobalVariableSet(GV_DAILY_PROFIT, dailyProfit);
+
+      if(InpDailyTarget > 0 && dailyProfit >= InpDailyTarget && !g_dailyTargetHit)
+      {
+         g_dailyTargetHit = true;
+         GlobalVariableSet(GV_DAILY_TARGET_HIT, 1);
+         Print("DAILY TARGET HIT: +", DoubleToString(dailyProfit, 2), "% >= ", InpDailyTarget,
+               "% - Trading paused for today!");
       }
    }
 
@@ -613,6 +632,13 @@ void UpdateTradingStatus()
    {
       enabled = false;
       reason = "Monthly DD limit hit";
+   }
+
+   // Pause when daily profit target is hit (lock in gains)
+   if(g_dailyTargetHit)
+   {
+      enabled = false;
+      reason = "Daily profit target hit (gains locked)";
    }
 
 

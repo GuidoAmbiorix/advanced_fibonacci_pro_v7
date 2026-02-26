@@ -170,6 +170,7 @@ input bool              InpUseKelly = true;               // Enable Kelly Sizing
 input double            InpKellyFraction = 0.5;           // Kelly Fraction (0.5=Half Kelly)
 input double            InpDailyMaxDD = 3.0;              // Daily Max Drawdown %
 input double            InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown %
+input double            InpDailyTarget = 0.0;             // Daily Profit Target % (0=disabled)
 
 input group "======= LEARNING & ADAPTATION ======="
 input bool              InpEnableLearning = true;         // Enable Learning System
@@ -434,7 +435,7 @@ int OnInit()
          Print("Large account ($", DoubleToString(equity, 2), ") - using maxRisk: ", maxRiskAdjusted, "%");
       }
 
-      kellySizer.Init(InpRiskBase, 0.25, maxRiskAdjusted, InpKellyFraction, 30, InpDailyMaxDD, InpWeeklyMaxDD);
+      kellySizer.Init(InpRiskBase, 0.25, maxRiskAdjusted, InpKellyFraction, 30, InpDailyMaxDD, InpWeeklyMaxDD, InpDailyTarget);
    }
 
    // Initialize Database Manager (replaces Trade Journal)
@@ -929,7 +930,7 @@ void OnTick()
    if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) return;
 
 
-   // --- MODULE: KELLY POSITION SIZER (DD LIMITS) ---
+   // --- MODULE: KELLY POSITION SIZER (DD + DAILY TARGET LIMITS) ---
    if(InpUseKelly && !kellySizer.IsTradingAllowed()) return;
 
 

@@ -42,6 +42,8 @@
 #define GV_WEEKLY_DD             "PG_WeeklyDD"             // This week's drawdown %
 #define GV_DAILY_START_EQUITY    "PG_DailyStartEquity"     // Equity at day start
 #define GV_WEEKLY_START_EQUITY   "PG_WeeklyStartEquity"    // Equity at week start
+#define GV_DAILY_PROFIT          "PG_DailyProfit"          // Today's profit %
+#define GV_DAILY_TARGET_HIT      "PG_DailyTargetHit"       // 1 = daily profit target reached today
 
 // Session Status (Legacy - kept for backwards compatibility)
 #define GV_CURRENT_SESSION       "PG_CurrentSession"       // Current trading session (legacy)
@@ -230,6 +232,26 @@ double GetWeeklyDD()
    if(!IsGovernorActive()) return 0;
    if(!GlobalVariableCheck(GV_WEEKLY_DD)) return 0;
    return GlobalVariableGet(GV_WEEKLY_DD);
+}
+
+//+------------------------------------------------------------------+
+//| GET DAILY PROFIT %                                                |
+//+------------------------------------------------------------------+
+double GetDailyProfit()
+{
+   if(!IsGovernorActive()) return 0;
+   if(!GlobalVariableCheck(GV_DAILY_PROFIT)) return 0;
+   return GlobalVariableGet(GV_DAILY_PROFIT);
+}
+
+//+------------------------------------------------------------------+
+//| CHECK IF DAILY PROFIT TARGET WAS HIT                             |
+//+------------------------------------------------------------------+
+bool IsDailyTargetHit()
+{
+   if(!IsGovernorActive()) return false;
+   if(!GlobalVariableCheck(GV_DAILY_TARGET_HIT)) return false;
+   return GlobalVariableGet(GV_DAILY_TARGET_HIT) == 1;
 }
 
 //+------------------------------------------------------------------+

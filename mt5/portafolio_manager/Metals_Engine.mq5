@@ -169,6 +169,7 @@ input bool              InpUseKelly = true;               // Enable Kelly Sizing
 input double            InpKellyFraction = 0.5;           // Kelly Fraction (0.5=Half Kelly)
 input double            InpDailyMaxDD = 3.0;              // Daily Max Drawdown %
 input double            InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown %
+input double            InpDailyTarget = 0.0;             // Daily Profit Target % (0=disabled)
 
 input group "======= LEARNING & ADAPTATION ======="
 input bool              InpEnableLearning = true;         // Enable Learning System
@@ -443,7 +444,7 @@ int OnInit()
          }
       }
 
-      kellySizer.Init(InpRiskBase, 0.25, maxRiskAdjusted, InpKellyFraction, 30, InpDailyMaxDD, InpWeeklyMaxDD);
+      kellySizer.Init(InpRiskBase, 0.25, maxRiskAdjusted, InpKellyFraction, 30, InpDailyMaxDD, InpWeeklyMaxDD, InpDailyTarget);
    }
 
    // Initialize Database Manager (replaces Trade Journal)
@@ -973,13 +974,13 @@ void OnTick()
       return;
    }
 
-   // --- MODULE: KELLY POSITION SIZER (DD LIMITS) ---
+   // --- MODULE: KELLY POSITION SIZER (DD + DAILY TARGET LIMITS) ---
    if(InpUseKelly && !kellySizer.IsTradingAllowed())
    {
       static datetime lastKellyLog = 0;
       if(TimeCurrent() - lastKellyLog > 300)
       {
-         Print("🚫 BLOCKED: Kelly Sizer - Drawdown limits exceeded");
+         Print("BLOCKED: Kelly Sizer - Drawdown or daily profit target limits hit");
          lastKellyLog = TimeCurrent();
       }
       return;
