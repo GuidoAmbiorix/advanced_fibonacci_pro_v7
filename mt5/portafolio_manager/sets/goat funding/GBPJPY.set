@@ -4,6 +4,7 @@
 
 ; ====== IDENTITY ======
 InpMagicNumber=100004
+InpEnableMobileAlerts=true
 InpDirection=0
 InpBrokerUTCOffset=2
 
@@ -137,7 +138,6 @@ InpEnableAdaptiveFilters=true
 InpUseSessionGovernor=true
 InpMaxTradesPerSession=10
 InpTradeCooldownMinutes=10
-InpEnableSessionBlacklist=false
 
 ; ====== PORTFOLIO PROTECTION ======
 InpUseCorrelationFilter=true

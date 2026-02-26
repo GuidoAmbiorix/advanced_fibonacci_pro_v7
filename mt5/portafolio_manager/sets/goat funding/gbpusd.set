@@ -17,7 +17,6 @@ InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
 
 ; ====== FIBONACCI ======
-; ====== FIBONACCI ======
 InpSwingLookback=8
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
@@ -53,9 +52,8 @@ InpAddOn2_R=2.8
 InpMaxPositions=1
 
 ; ====== RISK ======
-; ====== RISK ======
-InpRiskBase=0.35
-; $50 Risk (FundingPips)
+InpRiskBase=0.5
+; 0.5% base risk on $2500 account
 InpMaxRisk=1.0
 InpMaxLotsPerTrade=0.03
 InpEnableMarginCheck=true
@@ -117,7 +115,6 @@ InpNewsMinutesAfter=15
 
 ; ====== KELLY ======
 InpUseKelly=true
-InpKellyFraction=0.25
 InpKellyFraction=0.25
 InpDailyMaxDD=0.8
 InpWeeklyMaxDD=1.5

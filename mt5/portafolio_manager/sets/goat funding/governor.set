@@ -1,6 +1,7 @@
-; Optimized for 6 assets: EURUSD, GBPUSD, USDJPY, XAUUSD, GBPJPY, USTEC
-; Account: $5,000 FundingPips
+; Portfolio Governor - Goat Funded Trading Instant Pro
+; Account: $2,500 - 5 Symbols: EURUSD, GBPUSD, USDJPY, XAUUSD, GBPJPY
 ; Strategy: Dynamic Draft Portfolio with Correlation Guard
+; Daily Target: $10 (0.4%) | Daily Limit: $20 (0.8%) | Monthly Max DD: 3.5%
 
 ;═══════ PORTFOLIO LIMITS ═══════
 InpMaxPortfolioRisk=1.5
