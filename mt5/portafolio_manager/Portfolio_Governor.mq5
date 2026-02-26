@@ -747,7 +747,7 @@ void UpdateDashboard()
    string text = "🧠 GOVERNOR ONLINE | " + TimeToString(TimeCurrent(), TIME_SECONDS) + "\n";
    text += "DD: " + DoubleToString(dd, 2) + "% | PF: " + DoubleToString(pf, 2) + "\n";
    text += "--------------------------------------\n";
-   text += rankManager.GetRankingTable(5); // Show Top 5
+   text += rankManager.GetRankingTable(10); // Show Top 10
    
    Comment(text);
 }

@@ -50,7 +50,7 @@ private:
 
 public:
    CRankManager() : m_symbolCount(0), m_hysteresisThreshold(0.5),
-                    m_hysteresisCooldown(3), m_minSlots(2), m_maxSlots(4) {}
+                    m_hysteresisCooldown(3), m_minSlots(2), m_maxSlots(10) {}
 
    //+------------------------------------------------------------------+
    //| Discover Active Symbols (Auto-Discovery)                          |
