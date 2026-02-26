@@ -1,4 +1,4 @@
-; Portfolio Governor - Goat Funded Trading Instant Pro
+﻿; Portfolio Governor - Goat Funded Trading Instant Pro
 ; Account: $2,500 - 5 Symbols: EURUSD, GBPUSD, USDJPY, XAUUSD, GBPJPY
 ; Strategy: Dynamic Draft Portfolio with Correlation Guard
 ; Daily Target: $10 (0.4%) | Daily Limit: $20 (0.8%) | Monthly Max DD: 3.5%
@@ -50,7 +50,7 @@ InpPF_ReducedMult=0.60
 ; Cut risk significantly on performance degradation.
 
 ;═══════ DAILY/WEEKLY LIMITS ═══════
-InpDailyTarget=0.4
+InpDailyTarget=0.0
 ; $10 daily target.
 InpDailyMaxDD=0.8
 ; $20 max limit for daily drawdown.

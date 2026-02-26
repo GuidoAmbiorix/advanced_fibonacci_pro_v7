@@ -1,4 +1,4 @@
-; 🪙 XAUUSD - H1 Timeframe Metals Optimized
+﻿; 🪙 XAUUSD - H1 Timeframe Metals Optimized
 ; Metals Engine - XAUUSD Specialized Configuration
 ; Session-aware + Spread filtering + News protection
 
@@ -157,7 +157,7 @@ InpEnableAdaptiveFilters=false
 ; Temporarily disabled for testing
 
 ; ====== PORTFOLIO PROTECTION ======
-InpUseCorrelationFilter=true
+InpUseCorrelationFilter=false
 InpDailyMaxLoss_R=4.0
 ; Circuit breaker at -4R daily loss
 InpLossCooldownMinutes=30

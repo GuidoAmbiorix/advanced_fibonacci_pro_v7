@@ -1,9 +1,9 @@
-; GBPJPY - H1 Timeframe "The Beast"
+﻿; GBPJPY - H1 Timeframe "The Beast"
 ; High Volatility Specialist
 ; Optimized for wide swings and strong momentum
 
 ; ====== IDENTITY ======
-InpMagicNumber=100004
+InpMagicNumber=400004
 InpEnableMobileAlerts=true
 InpDirection=0
 InpBrokerUTCOffset=2
@@ -17,7 +17,7 @@ InpEnableNYKZ=true
 InpEnableLondonCloseKZ=true
 
 ; ====== FIBONACCI (Wider Tolerance) ======
-InpSwingLookback=10
+InpSwingLookback=30
 ; Increased lookback for major swing points
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
@@ -50,7 +50,7 @@ InpChopThreshold=0.60
 InpATR_MA_Period=14
 
 ; ====== CONFLUENCE ======
-InpMinConfluenceEntry=14
+InpMinConfluenceEntry=11.0
 ; H1: Increased from 11 to 12 for better quality signals on cleaner timeframe
 InpEnableAddOns=false
 InpAddOn1_R=1.5
@@ -86,9 +86,9 @@ InpPartialClosePercent=50.0
 InpBE_Threshold_R=0.8
 ; GBPJPY: Slightly later activation (needs room)
 InpTrailStart_R=0.8
-InpTrailATR_Mult=1.8
+InpTrailATR_Mult=3.5
 ; GBPJPY: Wide base (most volatile forex pair)
-InpTrailDecayRate=0.20
+InpTrailDecayRate=0.10
 ; Slow decay - let GBPJPY trends run
 InpTrailMinMult=0.60
 ; Higher floor (volatile pair needs buffer)
@@ -140,7 +140,7 @@ InpMaxTradesPerSession=10
 InpTradeCooldownMinutes=10
 
 ; ====== PORTFOLIO PROTECTION ======
-InpUseCorrelationFilter=true
+InpUseCorrelationFilter=false
 ; Governor Draft System handles correlation ranking
 InpDailyMaxLoss_R=3.0
 InpLossCooldownMinutes=120

@@ -1,4 +1,4 @@
-; EURUSD - H1 Timeframe Institutional Flow
+﻿; EURUSD - H1 Timeframe Institutional Flow
 ; Core Major - Balanced
 ; Optimized for H1 timeframe (reduced noise, cleaner signals)
 
@@ -141,7 +141,7 @@ InpTradeCooldownMinutes=10
 InpEnableSessionBlacklist=false
 
 ; ====== PORTFOLIO PROTECTION ======
-InpUseCorrelationFilter=true
+InpUseCorrelationFilter=false
 ; Governor Draft System handles correlation ranking
 InpDailyMaxLoss_R=3.0
 InpLossCooldownMinutes=90
