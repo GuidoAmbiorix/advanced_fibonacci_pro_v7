@@ -850,6 +850,9 @@ void OnTick()
    g_positionCount = CountPositions();
    if(g_positionCount == 0) ResetTradeState();
 
+   // --- GOVERNOR EMERGENCY CLOSE GUARD ---
+   if(IsDailyTargetHit()) return; // Stop trailing/managing while Governor closes positions
+
    ManagePositions();
    
    // Update visual debugging lines

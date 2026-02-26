@@ -90,6 +90,7 @@ bool g_dailyLimitHit = false;
 bool g_weeklyLimitHit = false;
 bool g_monthlyLimitHit = false;
 bool g_dailyTargetHit = false;
+bool g_dailyTargetPositionsClosed = false;
 
 // Correlation matrix (pre-defined known correlations)
 struct SymbolCorrelation
@@ -247,6 +248,7 @@ void CheckPeriodReset()
       g_dailyStartEquity = account.Equity();
       g_dailyLimitHit = false;
       g_dailyTargetHit = false;
+      g_dailyTargetPositionsClosed = false;
       GlobalVariableSet(GV_DAILY_TARGET_HIT, 0);
       GlobalVariableSet(GV_DAILY_PROFIT, 0);
       g_lastDayCheck = TimeCurrent();
@@ -304,6 +306,12 @@ void CalculatePeriodDrawdowns()
          GlobalVariableSet(GV_DAILY_TARGET_HIT, 1);
          Print("DAILY TARGET HIT: +", DoubleToString(dailyProfit, 2), "% >= ", InpDailyTarget,
                "% - Trading paused for today!");
+               
+         if(!g_dailyTargetPositionsClosed)
+         {
+            CloseAllPositions("Daily Profit Target Reached!");
+            g_dailyTargetPositionsClosed = true;
+         }
       }
    }
 
@@ -331,6 +339,35 @@ void CalculatePeriodDrawdowns()
          Print("MONTHLY DD LIMIT HIT: ", DoubleToString(monthlyDD, 2), "% >= ", InpMonthlyMaxDD, "%");
       }
    }
+}
+
+//+------------------------------------------------------------------+
+//| Emergency Close All Positions                                     |
+//+------------------------------------------------------------------+
+void CloseAllPositions(string reason)
+{
+   CTrade trade;
+   int total = PositionsTotal();
+   int closedCount = 0;
+   for(int i = total - 1; i >= 0; i--)
+   {
+      if(position.SelectByIndex(i))
+      {
+         long magic = position.Magic();
+         if(magic >= InpMagicBase && magic <= InpMagicBase + InpMagicRange)
+         {
+            if(trade.PositionClose(position.Ticket()))
+            {
+               closedCount++;
+            }
+            else
+            {
+               Print("Failed to close position ", position.Ticket(), " Error: ", GetLastError());
+            }
+         }
+      }
+   }
+   Print("EMERGENCY CLOSE ALL EXECUTED. Reason: ", reason, " | Closed: ", closedCount, " positions.");
 }
 
 //+------------------------------------------------------------------+

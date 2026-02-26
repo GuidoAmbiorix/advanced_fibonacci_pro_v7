@@ -887,6 +887,9 @@ void OnTick()
 
    g_barCount++;  // Performance monitoring
 
+   // --- GOVERNOR EMERGENCY CLOSE GUARD ---
+   if(IsDailyTargetHit()) return; // Stop trailing/managing while Governor closes positions
+
    // Manage existing positions (Trailing, TP, BreakEven)
    ManagePositions();
 
