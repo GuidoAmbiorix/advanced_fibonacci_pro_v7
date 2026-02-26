@@ -1260,7 +1260,9 @@ void OnTick()
       {
          ENUM_KILLZONE currentKZ = KILLZONE_NONE;
          // Use REAL factors from last CalculateConfluenceScore() call
-         ConfluenceFactors &factors = (bestDirection == 1) ? g_lastBuyFactors : g_lastSellFactors;
+         ConfluenceFactors factors;
+         if(bestDirection == 1) factors = g_lastBuyFactors;
+         else factors = g_lastSellFactors;
 
          // Check if should skip trade based on poor context
          if(adaptiveRisk.ShouldSkipTrade(currentKZ, g_currentRegime))
@@ -1296,7 +1298,9 @@ void OnTick()
              // Create confluence factors for dynamic threshold calculation
              ENUM_KILLZONE currentKZ = KILLZONE_NONE;
               // Use REAL factors from last CalculateConfluenceScore() call
-              ConfluenceFactors &thresholdFactors = (bestDirection == 1) ? g_lastBuyFactors : g_lastSellFactors;
+              ConfluenceFactors thresholdFactors;
+              if(bestDirection == 1) thresholdFactors = g_lastBuyFactors;
+              else thresholdFactors = g_lastSellFactors;
 
              minEntry = adaptiveFilter.CalculateDynamicThreshold(thresholdFactors, currentKZ, g_currentRegime);
 
@@ -2200,13 +2204,15 @@ double CalculateConfluenceScore(int direction)
 
    }
    // Populate REAL ConfluenceFactors for AdaptiveFilter and PatternRecognizer
-   ConfluenceFactors &outFactors = (direction == 1) ? g_lastBuyFactors : g_lastSellFactors;
+   ConfluenceFactors outFactors;
+   if(direction == 1) outFactors = g_lastBuyFactors;
+   else outFactors = g_lastSellFactors;
    outFactors.trendAligned   = priceAligned || slopeAligned;
    outFactors.structureBreak = validStructure;
    outFactors.fibZone        = false;
    outFactors.rsiMomentum    = rsiValid || (InpRSI_Momentum && ((direction==1 && g_RSI > g_RSI_Prev) || (direction==-1 && g_RSI < g_RSI_Prev)));
-   outFactors.orderBlock     = hasOB;
-   outFactors.fvg            = hasFVG;
+   outFactors.orderBlock     = InpUseSMC && smcOrderBlocks.GetConfluenceScore(direction) > 0;
+   outFactors.fvg            = InpUseSMC && smcFVG.GetConfluenceScore(direction) > 0;
    outFactors.liquiditySweep = InpUseSMC && smcLiquidity.GetConfluenceScore(direction) > 0;
    outFactors.killzoneActive = false;
    outFactors.mtfAligned     = InpUseMTF && mtfAnalysis.GetConfluenceScore(direction) > 0;
@@ -2268,8 +2274,6 @@ bool UpdateIndicators()
    g_EMA_Prev = bufEMA[0];
    g_EMA = bufEMA[1];
 
-   // DEBUG: Print updated values
-   }
 
    // Update reversal filter EMAs
    if(InpUseReversalFilter)
