@@ -1,4 +1,4 @@
-//+------------------------------------------------------------------+
+﻿//+------------------------------------------------------------------+
 //|                                            Symbol_Engine.mq5     |
 //|          Symbol Engine - Requests Permission from Governor       |
 //|             Confluence Ladder + Portfolio Integration            |
@@ -325,6 +325,14 @@ struct PositionState {
 };
 PositionState g_states[];
 
+// REAL confluence factors captured during CalculateConfluenceScore()
+// Used by AdaptiveFilterManager and PatternRecognizer instead of score proxies
+ConfluenceFactors g_lastBuyFactors;
+ConfluenceFactors g_lastSellFactors;
+
+// OnTrade dedup: track tickets already processed by ManagePositions
+ulong g_processedOnTrade[];
+
 //+------------------------------------------------------------------+
 //| Init                                                              |
 //+------------------------------------------------------------------+
@@ -373,7 +381,7 @@ int OnInit()
       }
       else
       {
-         Print("✓ Learning engine initialized with persistence");
+         Print("âœ“ Learning engine initialized with persistence");
       }
    }
 
@@ -503,24 +511,24 @@ int OnInit()
    string govStatus = allocator.IsGovernorActive() ? "Connected" : "Standalone";
 
    Print("===========================================");
-   Print("  ✅ SYMBOL ENGINE v2.0: ", _Symbol);
+   Print("  âœ… SYMBOL ENGINE v2.0: ", _Symbol);
    Print("===========================================");
    Print("  Magic: ", InpMagicNumber);
    Print("  Governor: ", govStatus);
    Print("-------------------------------------------");
    Print("  CORE MODULES:");
-   Print("    SMC Analysis: ", InpUseSMC ? "✓ ON" : "✗ OFF");
-   Print("    MTF Confluence: ", InpUseMTF ? "✓ ON" : "✗ OFF");
-   Print("    News Filter: ", InpUseNewsFilter ? "✓ ON" : "✗ OFF");
+   Print("    SMC Analysis: ", InpUseSMC ? "âœ“ ON" : "âœ— OFF");
+   Print("    MTF Confluence: ", InpUseMTF ? "âœ“ ON" : "âœ— OFF");
+   Print("    News Filter: ", InpUseNewsFilter ? "âœ“ ON" : "âœ— OFF");
    if(InpUseNewsFilter && InpEnableVolatilityFilter)
-      Print("      ⚡ Flash Crash Protection: ✓ ON (Threshold: ", InpVolatilityThreshold, "x)");
-   Print("    Kelly Sizing: ", InpUseKelly ? "✓ ON" : "✗ OFF");
+      Print("      âš¡ Flash Crash Protection: âœ“ ON (Threshold: ", InpVolatilityThreshold, "x)");
+   Print("    Kelly Sizing: ", InpUseKelly ? "âœ“ ON" : "âœ— OFF");
    Print("-------------------------------------------");
    Print("  PORTFOLIO PROTECTION:");
-   Print("    Correlation Filter: ", InpUseCorrelationFilter ? "✓ ON" : "✗ OFF");
+   Print("    Correlation Filter: ", InpUseCorrelationFilter ? "âœ“ ON" : "âœ— OFF");
    Print("    Daily Circuit Breaker: ", InpDailyMaxLoss_R, "R");
    Print("    Loss Cooldown: ", InpLossCooldownMinutes, " minutes");
-   Print("    Reversal Filter: ", InpUseReversalFilter ? "✓ ON (EMA50/100 momentum)" : "✗ OFF");
+   Print("    Reversal Filter: ", InpUseReversalFilter ? "âœ“ ON (EMA50/100 momentum)" : "âœ— OFF");
    Print("    Same-Direction Cooldown: ", InpReversalCooldownMinutes, " minutes");
    Print("-------------------------------------------");
    Print("  RISK PARAMETERS:");
@@ -532,14 +540,14 @@ int OnInit()
    if(InpEnableLearning)
    {
       Print("  LEARNING SYSTEM:");
-      Print("    Learning Engine: ✓ ACTIVE");
+      Print("    Learning Engine: âœ“ ACTIVE");
       if(InpLogTradesToFile)
-         Print("    Trade Journal: ✓ ACTIVE (", InpLearningHistory, " days)");
+         Print("    Trade Journal: âœ“ ACTIVE (", InpLearningHistory, " days)");
       Print("    Performance Analyzer: ", performanceAnalyzer.GetTradeCount(), " trades loaded");
       Print("    Pattern Memory: ", patternMemory.GetPatternCount(), " patterns");
-      Print("    Adaptive Risk: ", InpEnableAdaptiveRisk ? "✓ ON" : "✗ OFF");
-      Print("    Adaptive Exits: ", InpEnableAdaptiveExits ? "✓ ON" : "✗ OFF");
-      Print("    Adaptive Filters: ", InpEnableAdaptiveFilters ? "✓ ON" : "✗ OFF");
+      Print("    Adaptive Risk: ", InpEnableAdaptiveRisk ? "âœ“ ON" : "âœ— OFF");
+      Print("    Adaptive Exits: ", InpEnableAdaptiveExits ? "âœ“ ON" : "âœ— OFF");
+      Print("    Adaptive Filters: ", InpEnableAdaptiveFilters ? "âœ“ ON" : "âœ— OFF");
       Print("-------------------------------------------");
    }
    Print("===========================================");
@@ -552,7 +560,7 @@ int OnInit()
    }
    else
    {
-      Print("  ✓ Indicators initialized: RSI=", DoubleToString(g_RSI, 2), " ATR=", DoubleToString(g_ATR, 5), " EMA=", DoubleToString(g_EMA, 5));
+      Print("  âœ“ Indicators initialized: RSI=", DoubleToString(g_RSI, 2), " ATR=", DoubleToString(g_ATR, 5), " EMA=", DoubleToString(g_EMA, 5));
    }
    Print("===========================================");
 
@@ -648,7 +656,7 @@ void ResetDailyLossIfNewDay()
    {
       if(g_lastResetDate > 0 && g_dailyLossR < 0)
       {
-         Print("📊 Daily Reset: Previous day loss was ", DoubleToString(g_dailyLossR, 2), "R | Trades: ", g_dailyTradesCount);
+         Print("ðŸ“Š Daily Reset: Previous day loss was ", DoubleToString(g_dailyLossR, 2), "R | Trades: ", g_dailyTradesCount);
 
          // FIX: Export daily performance (Phase 7)
          ExportDailyPerformance(g_dailyTradesCount, g_dailyLossR);
@@ -720,7 +728,7 @@ bool CanTradeSymbol(string symbol)
          // Block if same correlation group (USD, GBP, JPY, METALS, INDICES)
          if(myGroup == posGroup && myGroup != GROUP_OTHER)
          {
-            Print("🚫 CORRELATION: Cannot trade ", symbol, " (", EnumToString(myGroup),
+            Print("ðŸš« CORRELATION: Cannot trade ", symbol, " (", EnumToString(myGroup),
                   ") - Already trading ", posSymbol, " (", EnumToString(posGroup), ")");
             return false;
          }
@@ -827,7 +835,7 @@ void OnTick()
          // Only notify on OPEN (state change to non-NONE), not close
          if(currentKZ != KILLZONE_NONE)
          {
-             string msg = "🟢 KILLZONE OPEN: " + KillzoneToString(currentKZ) + " on " + _Symbol;
+             string msg = "ðŸŸ¢ KILLZONE OPEN: " + KillzoneToString(currentKZ) + " on " + _Symbol;
              if(InpEnableMobileAlerts) SendNotification(msg);
              Print(msg);
          }
@@ -885,7 +893,7 @@ void OnTick()
          {
             if(g_cachedBuyScore > InpMinConfluenceEntry || g_cachedSellScore > InpMinConfluenceEntry)
             {
-               Print("⚠️ DOMINANCE FILTER: Blocked Signal. Buy=", DoubleToString(g_cachedBuyScore,1),
+               Print("âš ï¸ DOMINANCE FILTER: Blocked Signal. Buy=", DoubleToString(g_cachedBuyScore,1),
                      " Sell=", DoubleToString(g_cachedSellScore,1), " Delta=", DoubleToString(delta,1), " < ", InpDominanceThreshold);
             }
             g_cachedBuyScore = 0;
@@ -919,7 +927,7 @@ void OnTick()
       static datetime lastKillWarning = 0;
       if(TimeCurrent() - lastKillWarning > 300)
       {
-         Print("⛔ BLOCKED: Kill Switch - ", killSwitch.GetStatus(),
+         Print("â›” BLOCKED: Kill Switch - ", killSwitch.GetStatus(),
                " | RollingR: ", DoubleToString(killSwitch.GetRollingR(), 2));
          lastKillWarning = TimeCurrent();
       }
@@ -941,7 +949,7 @@ void OnTick()
       static datetime lastWarning = 0;
       if(TimeCurrent() - lastWarning > 300)  // Print warning every 5 minutes
       {
-         Print("⛔ DAILY LOSS LIMIT REACHED: ", DoubleToString(g_dailyLossR, 2), "R / ",
+         Print("â›” DAILY LOSS LIMIT REACHED: ", DoubleToString(g_dailyLossR, 2), "R / ",
                DoubleToString(-InpDailyMaxLoss_R, 1), "R - Trading STOPPED for today");
          lastWarning = TimeCurrent();
       }
@@ -954,7 +962,7 @@ void OnTick()
       static datetime lastCorrWarning = 0;
       if(TimeCurrent() - lastCorrWarning > 300)
       {
-         Print("⚠️ CORRELATION BLOCK: Cannot trade ", _Symbol, " - Correlated pair already active");
+         Print("âš ï¸ CORRELATION BLOCK: Cannot trade ", _Symbol, " - Correlated pair already active");
          lastCorrWarning = TimeCurrent();
       }
       return;
@@ -969,7 +977,7 @@ void OnTick()
           static datetime lastKZLog = 0;
           if(TimeCurrent() - lastKZLog > 300)
           {
-             Print("🚫 BLOCKED: Outside Killzone - Current time not in enabled killzones");
+             Print("ðŸš« BLOCKED: Outside Killzone - Current time not in enabled killzones");
              lastKZLog = TimeCurrent();
           }
           return;
@@ -988,7 +996,7 @@ void OnTick()
       static datetime lastRankLog = 0;
       if(TimeCurrent() - lastRankLog > 60) // Log every minute if blocked
       {
-         Print("⏸️ RANKING WAIT: ", _Symbol, " Rank #", (int)myRank, " (Only Top 3 trade)");
+         Print("â¸ï¸ RANKING WAIT: ", _Symbol, " Rank #", (int)myRank, " (Only Top 3 trade)");
          lastRankLog = TimeCurrent();
       }
       return; // Wait for better rank
@@ -1010,7 +1018,7 @@ void OnTick()
       static datetime lastStreakWarning = 0;
       if(TimeCurrent() - lastStreakWarning > 300)
       {
-         Print("⛔ MAX LOSS STREAK: ", g_consecutiveLosses, " consecutive losses - Trading STOPPED for today (or until manual reset)");
+         Print("â›” MAX LOSS STREAK: ", g_consecutiveLosses, " consecutive losses - Trading STOPPED for today (or until manual reset)");
          lastStreakWarning = TimeCurrent();
       }
       return;
@@ -1031,7 +1039,7 @@ void OnTick()
       static datetime lastRSIWarning = 0;
       if(TimeCurrent() - lastRSIWarning > 300)
       {
-         Print("⏸️ RSI in dead zone: ", DoubleToString(g_RSI, 1), " (48-52) - waiting for momentum");
+         Print("â¸ï¸ RSI in dead zone: ", DoubleToString(g_RSI, 1), " (48-52) - waiting for momentum");
          lastRSIWarning = TimeCurrent();
       }
       return;
@@ -1045,7 +1053,7 @@ void OnTick()
       static datetime lastEMAWarning = 0;
       if(TimeCurrent() - lastEMAWarning > 300)
       {
-         Print("⏸️ Too close to EMA 200: ", DoubleToString(emaDistance / _Point, 0),
+         Print("â¸ï¸ Too close to EMA 200: ", DoubleToString(emaDistance / _Point, 0),
                " pips (min: ", DoubleToString(minDistance / _Point, 0), " pips)");
          lastEMAWarning = TimeCurrent();
       }
@@ -1058,7 +1066,7 @@ void OnTick()
       static datetime lastVolWarning = 0;
       if(TimeCurrent() - lastVolWarning > 300)
       {
-         Print("⛔ VOLATILITY UNSAFE: ATR=", DoubleToString(g_ATR, 5), " (Dead or Extreme) - Trading Paused");
+         Print("â›” VOLATILITY UNSAFE: ATR=", DoubleToString(g_ATR, 5), " (Dead or Extreme) - Trading Paused");
          lastVolWarning = TimeCurrent();
       }
       return;
@@ -1073,14 +1081,11 @@ void OnTick()
    // Apply adaptive filter (pattern bonus/penalty)
    if(InpEnableLearning && InpEnableAdaptiveFilters && performanceAnalyzer.IsLearningActive())
    {
-      ConfluenceFactors buyFactors;
-      BuildConfluenceFactors(buyFactors, 1, buyScore);
-      double buyBonus = adaptiveFilter.GetAdjustedConfluence(buyScore, buyFactors) - buyScore;
+      // Use REAL factors captured during CalculateConfluenceScore() (not score proxies)
+      double buyBonus = adaptiveFilter.GetAdjustedConfluence(buyScore, g_lastBuyFactors) - buyScore;
       buyScore += buyBonus;
 
-      ConfluenceFactors sellFactors;
-      BuildConfluenceFactors(sellFactors, -1, sellScore);
-      double sellBonus = adaptiveFilter.GetAdjustedConfluence(sellScore, sellFactors) - sellScore;
+      double sellBonus = adaptiveFilter.GetAdjustedConfluence(sellScore, g_lastSellFactors) - sellScore;
       sellScore += sellBonus;
    }
 
@@ -1151,8 +1156,8 @@ void OnTick()
       if(InpEnableLearning && InpEnableAdaptiveRisk && adaptiveRisk.IsAdaptationEnabled())
       {
          ENUM_KILLZONE currentKZ = KILLZONE_NONE;
-         ConfluenceFactors factors;
-         BuildConfluenceFactors(factors, bestDirection, bestScore);
+         // Use REAL factors from last CalculateConfluenceScore() call
+         ConfluenceFactors &factors = (bestDirection == 1) ? g_lastBuyFactors : g_lastSellFactors;
 
          // Check if should skip trade based on poor context
          if(adaptiveRisk.ShouldSkipTrade(currentKZ, g_currentRegime))
@@ -1184,18 +1189,18 @@ void OnTick()
 
           // Use adaptive threshold if enabled
           if(InpEnableAdaptiveFilters && adaptiveFilter.IsAdaptationEnabled())
-          {
-             // Create confluence factors for dynamic threshold calculation
-             ENUM_KILLZONE currentKZ = KILLZONE_NONE;
-             ConfluenceFactors thresholdFactors;
-             BuildConfluenceFactors(thresholdFactors, bestDirection, bestScore);
+           {
+              // Use REAL factors from last CalculateConfluenceScore() call
+              ENUM_KILLZONE currentKZ = KILLZONE_NONE;
+              ConfluenceFactors &thresholdFactors = (bestDirection == 1) ? g_lastBuyFactors : g_lastSellFactors;
+
 
              minEntry = adaptiveFilter.CalculateDynamicThreshold(thresholdFactors, currentKZ, g_currentRegime);
 
              static datetime lastThresholdLog = 0;
              if(TimeCurrent() - lastThresholdLog > 3600)  // Log hourly
              {
-                Print("📊 Dynamic Threshold: ", DoubleToString(minEntry, 2),
+                Print("ðŸ“Š Dynamic Threshold: ", DoubleToString(minEntry, 2),
                       " (base: ", DoubleToString(InpMinConfluenceEntry, 2), ")");
                 lastThresholdLog = TimeCurrent();
              }
@@ -1215,7 +1220,7 @@ void OnTick()
                    if(TimeCurrent() - lastCooldownWarning > 60)
                    {
                       int remainingSec = requiredCooldown - secondsSince;
-                      Print("⏸️ SAME-DIRECTION COOLDOWN: BUY blocked - ",
+                      Print("â¸ï¸ SAME-DIRECTION COOLDOWN: BUY blocked - ",
                             IntegerToString(remainingSec / 60), "m ", IntegerToString(remainingSec % 60), "s remaining");
                       lastCooldownWarning = TimeCurrent();
                    }
@@ -1241,7 +1246,7 @@ void OnTick()
                    if(TimeCurrent() - lastCooldownWarning > 60)
                    {
                       int remainingSec = requiredCooldown - secondsSince;
-                      Print("⏸️ SAME-DIRECTION COOLDOWN: SELL blocked - ",
+                      Print("â¸ï¸ SAME-DIRECTION COOLDOWN: SELL blocked - ",
                             IntegerToString(remainingSec / 60), "m ", IntegerToString(remainingSec % 60), "s remaining");
                       lastCooldownWarning = TimeCurrent();
                    }
@@ -1300,13 +1305,13 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
        tp = NormalizeDouble(tp, (int)symbolInfo.Digits());
        
        // Log only if verbose debugging is needed, otherwise silent override
-       // Print("🏃 RUNNER MODE: Hard TP extended to ", DoubleToString(runnerTP_R,1), "R");
+       // Print("ðŸƒ RUNNER MODE: Hard TP extended to ", DoubleToString(runnerTP_R,1), "R");
    }
 
    // FIX: CONSECUTIVE LOSS PROTECTION - Check immediately before OrderSend
    if(InpMaxConsecutiveLosses > 0 && g_consecutiveLosses >= InpMaxConsecutiveLosses)
    {
-      Print("⛔ TRADE BLOCKED: ", g_consecutiveLosses, " consecutive losses reached. Waiting for cooldown or winning trade.");
+      Print("â›” TRADE BLOCKED: ", g_consecutiveLosses, " consecutive losses reached. Waiting for cooldown or winning trade.");
 
       // Set GlobalVariable to notify Governor
       string gvName = "GV_COOLDOWN_" + _Symbol;
@@ -1321,7 +1326,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       static datetime lastOvertradeWarning = 0;
       if(TimeCurrent() - lastOvertradeWarning > 3600)  // Log once per hour
       {
-         Print("⛔ DAILY TRADE LIMIT: ", g_dailyTradesCount, "/", InpMaxDailyTrades, " trades reached. No more trades today.");
+         Print("â›” DAILY TRADE LIMIT: ", g_dailyTradesCount, "/", InpMaxDailyTrades, " trades reached. No more trades today.");
          lastOvertradeWarning = TimeCurrent();
       }
       return false;
@@ -1386,7 +1391,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
          " No TP";
 
       Print("===========================================");
-      Print("✅ TRADE OPENED");
+      Print("âœ… TRADE OPENED");
       Print("  Ticket: #", ticket);
       Print("  Type: ", EnumToString(type));
       Print("  Price: ", DoubleToString(price, (int)symbolInfo.Digits()));
@@ -1409,7 +1414,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
        // SEND MOBILE NOTIFICATION
        if(InpEnableMobileAlerts)
        {
-          string notifyText = "🚀 TRADE OPENED: " + _Symbol + "\n" +
+          string notifyText = "ðŸš€ TRADE OPENED: " + _Symbol + "\n" +
                               EnumToString(type) + " " + DoubleToString(lots, 2) + " Lots\n" +
                               "Price: " + DoubleToString(price, (int)symbolInfo.Digits()) + "\n" +
                               "Score: " + DoubleToString(g_currentConfluence, 1) + "/30";
@@ -1518,25 +1523,35 @@ void ManagePositions()
              {
                 g_lastLossTime = TimeCurrent();  // Track last loss time for cooldown
                 g_consecutiveLosses++;           // REVENGE TRADING PROTECTION
-                Print("📉 Loss recorded: ", DoubleToString(profitR, 2), "R | Daily total: ",
+                Print("ðŸ“‰ Loss recorded: ", DoubleToString(profitR, 2), "R | Daily total: ",
                       DoubleToString(g_dailyLossR, 2), "R | Streak: ", g_consecutiveLosses);
 
                 // FIX: Log to database if consecutive loss limit reached
                 if(g_consecutiveLosses >= InpMaxConsecutiveLosses)
                 {
-                   Print("🚨 CONSECUTIVE LOSS LIMIT HIT: ", g_consecutiveLosses, " losses. Next trade will be blocked.");
+                   Print("ðŸš¨ CONSECUTIVE LOSS LIMIT HIT: ", g_consecutiveLosses, " losses. Next trade will be blocked.");
                    // Notify Governor
                    GlobalVariableSet("GV_COOLDOWN_" + _Symbol, (double)TimeCurrent());
                 }
              }
              else
              {
-                if(g_consecutiveLosses > 0) Print("✅ Win breaks losing streak of ", g_consecutiveLosses);
+                if(g_consecutiveLosses > 0) Print("âœ… Win breaks losing streak of ", g_consecutiveLosses);
                 g_consecutiveLosses = 0;         // Reset on win
              }
          }
 
          g_lastCloseTime = TimeCurrent();
+
+          // Record ticket so OnTrade() won't double-call modules
+          int pSz = ArraySize(g_processedOnTrade);
+          ArrayResize(g_processedOnTrade, pSz + 1);
+          g_processedOnTrade[pSz] = ticket;
+          if(pSz > 100)  // Cap rolling window
+          {
+             for(int k = 0; k < pSz; k++) g_processedOnTrade[k] = g_processedOnTrade[k+1];
+             ArrayResize(g_processedOnTrade, pSz);
+          }
          for(int j=i; j<ArraySize(g_states)-1; j++) g_states[j] = g_states[j+1];
          ArrayResize(g_states, ArraySize(g_states)-1);
       }
@@ -1798,6 +1813,15 @@ void OnTrade()
               rOutcome = profitPct / InpRiskBase;
           }
        }
+        // Dedup guard: skip if ManagePositions already handled this ticket
+        bool alreadyHandled = false;
+        int pCount = ArraySize(g_processedOnTrade);
+        for(int p = 0; p < pCount; p++)
+        {
+           if(g_processedOnTrade[p] == ticket) { alreadyHandled = true; break; }
+        }
+        if(alreadyHandled) continue;
+
 
        // Update modules (backup in case ManagePositions missed it)
        killSwitch.OnTradeClosed(rOutcome);
@@ -1973,16 +1997,6 @@ double CalculateConfluenceScore(int direction)
    // PHASE 3: Get regime-adaptive weights
    double weights[];
    regime.GetAdaptiveWeights(g_currentRegime, weights);
-
-   // DEBUG: Print indicator values
-   static datetime lastDebug = 0;
-   if(TimeCurrent() - lastDebug > 300)
-   {
-      Print("DEBUG Indicators: EMA=", g_EMA, " ATR=", g_ATR, " RSI=", g_RSI, " Price=", currentPrice);
-      Print("DEBUG Regime Weights: Trend=", weights[0], " Struct=", weights[1], " PA=", weights[2],
-            " Vol=", weights[3], " MTF=", weights[4]);
-      lastDebug = TimeCurrent();
-   }
 
    // ============ 1. CORE SMC & PRICE ACTION (Max ~10.0 pts) ============
 
@@ -2165,14 +2179,21 @@ double CalculateConfluenceScore(int direction)
    if(factorsInCluster >= 2) score += 1.0; // 2+ factors aligned
    if(factorsInCluster >= 3) score += 1.5; // 3+ factors aligned (strong cluster)
 
-   // DEBUG: Print final score
-   static datetime lastScoreDebug = 0;
-   if(TimeCurrent() - lastScoreDebug > 300)
-   {
-      Print("DEBUG Score [", (direction == 1 ? "BUY" : "SELL"), "]: ", DoubleToString(score, 2), "/30",
-            " | Cluster factors: ", factorsInCluster);
-      lastScoreDebug = TimeCurrent();
-   }
+   // Populate REAL ConfluenceFactors for AdaptiveFilter and PatternRecognizer
+   // These are the actual computed values, not score-based proxies
+   ConfluenceFactors &outFactors = (direction == 1) ? g_lastBuyFactors : g_lastSellFactors;
+   outFactors.trendAligned   = priceAligned || slopeAligned;
+   outFactors.structureBreak = validStructure;
+   outFactors.fibZone        = false;  // Will be set by Fib Zone block above - approximated here
+   outFactors.rsiMomentum    = rsiValid || (InpRSI_Momentum && ((direction==1 && g_RSI > g_RSI_Prev) || (direction==-1 && g_RSI < g_RSI_Prev)));
+   outFactors.orderBlock     = hasOB;
+   outFactors.fvg            = hasFVG;
+   outFactors.liquiditySweep = InpUseSMC && smcLiquidity.GetConfluenceScore(direction) > 0;
+   outFactors.killzoneActive = false;  // Set by killzone check upstream
+   outFactors.mtfAligned     = InpUseMTF && mtfAnalysis.GetConfluenceScore(direction) > 0;
+   outFactors.killzone       = KILLZONE_NONE;
+   outFactors.regime         = g_currentRegime;
+   outFactors.confluenceScore = score;
 
    return score;  // Max possible: ~30-37 points (with clustering bonus)
 }
@@ -2227,14 +2248,6 @@ bool UpdateIndicators()
    g_EMA_Prev = bufEMA[0];
    g_EMA = bufEMA[1];
 
-   // DEBUG: Print updated values
-   static datetime lastIndicatorDebug = 0;
-   if(TimeCurrent() - lastIndicatorDebug > 300) // Print every 5 minutes
-   {
-      Print("DEBUG UpdateIndicators: RSI=", g_RSI, " ATR=", g_ATR, " EMA=", g_EMA);
-      lastIndicatorDebug = TimeCurrent();
-   }
-
    // Update reversal filter EMAs
    if(InpUseReversalFilter)
    {
@@ -2285,7 +2298,7 @@ bool CheckSpread()
       static datetime lastSpreadWarning = 0;
       if(TimeCurrent() - lastSpreadWarning > 60)
       {
-         Print("⚠️ Spread too wide: ", lastSpread, " > ", InpMaxSpreadPoints, " points");
+         Print("âš ï¸ Spread too wide: ", lastSpread, " > ", InpMaxSpreadPoints, " points");
          lastSpreadWarning = TimeCurrent();
       }
       return false;
@@ -2362,7 +2375,7 @@ double CalculateLotSize(double slDist, double riskPct)
    // Additional safety limit
    if(lots > InpMaxLotsPerTrade)
    {
-      Print("⚠️ Lots capped: ", DoubleToString(lots, 3), " → ", DoubleToString(InpMaxLotsPerTrade, 2));
+      Print("âš ï¸ Lots capped: ", DoubleToString(lots, 3), " â†’ ", DoubleToString(InpMaxLotsPerTrade, 2));
       lots = InpMaxLotsPerTrade;
    }
 

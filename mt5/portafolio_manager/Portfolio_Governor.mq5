@@ -640,9 +640,6 @@ void UpdateTradingStatus()
       enabled = false;
       reason = "Daily profit target hit (gains locked)";
    }
-
-
-
    if(!enabled && reason != "")
       Print("Trading PAUSED: ", reason);
 

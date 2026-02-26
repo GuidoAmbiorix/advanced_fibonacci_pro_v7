@@ -1,4 +1,4 @@
-//+------------------------------------------------------------------+
+﻿//+------------------------------------------------------------------+
 //|                                            Metals_Engine.mq5     |
 //|          🪙 Metals Engine: XAUUSD-Optimized Trading              |
 //|             Confluence Ladder + Portfolio Integration            |
@@ -302,6 +302,13 @@ struct PositionState {
    ENTRY_QUALITY quality;
 };
 PositionState g_states[];
+
+// REAL confluence factors captured during CalculateConfluenceScore()
+ConfluenceFactors g_lastBuyFactors;
+ConfluenceFactors g_lastSellFactors;
+
+// OnTrade dedup: track tickets already processed by ManagePositions
+ulong g_processedOnTrade[];
 
 //+------------------------------------------------------------------+
 //| Init                                                              |
@@ -1120,15 +1127,11 @@ void OnTick()
 
    // Apply adaptive filter (pattern bonus/penalty)
    if(InpEnableLearning && InpEnableAdaptiveFilters && performanceAnalyzer.IsLearningActive())
-   {
-      ConfluenceFactors buyFactors;
-      BuildConfluenceFactors(buyFactors, 1, buyScore);
-      double buyBonus = adaptiveFilter.GetAdjustedConfluence(buyScore, buyFactors) - buyScore;
+      // Use REAL factors captured during CalculateConfluenceScore() (not score proxies)
+      double buyBonus = adaptiveFilter.GetAdjustedConfluence(buyScore, g_lastBuyFactors) - buyScore;
       buyScore += buyBonus;
 
-      ConfluenceFactors sellFactors;
-      BuildConfluenceFactors(sellFactors, -1, sellScore);
-      double sellBonus = adaptiveFilter.GetAdjustedConfluence(sellScore, sellFactors) - sellScore;
+      double sellBonus = adaptiveFilter.GetAdjustedConfluence(sellScore, g_lastSellFactors) - sellScore;
       sellScore += sellBonus;
    }
 
@@ -1255,8 +1258,8 @@ void OnTick()
       if(InpEnableLearning && InpEnableAdaptiveRisk && adaptiveRisk.IsAdaptationEnabled())
       {
          ENUM_KILLZONE currentKZ = KILLZONE_NONE;
-         ConfluenceFactors factors;
-         BuildConfluenceFactors(factors, bestDirection, bestScore);
+         // Use REAL factors from last CalculateConfluenceScore() call
+         ConfluenceFactors &factors = (bestDirection == 1) ? g_lastBuyFactors : g_lastSellFactors;
 
          // Check if should skip trade based on poor context
          if(adaptiveRisk.ShouldSkipTrade(currentKZ, g_currentRegime))
@@ -1291,8 +1294,8 @@ void OnTick()
           {
              // Create confluence factors for dynamic threshold calculation
              ENUM_KILLZONE currentKZ = KILLZONE_NONE;
-             ConfluenceFactors thresholdFactors;
-             BuildConfluenceFactors(thresholdFactors, bestDirection, bestScore);
+              // Use REAL factors from last CalculateConfluenceScore() call
+              ConfluenceFactors &thresholdFactors = (bestDirection == 1) ? g_lastBuyFactors : g_lastSellFactors;
 
              minEntry = adaptiveFilter.CalculateDynamicThreshold(thresholdFactors, currentKZ, g_currentRegime);
 
@@ -1639,6 +1642,16 @@ void ManagePositions()
          }
 
          g_lastCloseTime = TimeCurrent();
+
+          // Record ticket so OnTrade() won't double-call modules
+          int pSz = ArraySize(g_processedOnTrade);
+          ArrayResize(g_processedOnTrade, pSz + 1);
+          g_processedOnTrade[pSz] = ticket;
+          if(pSz > 100)
+          {
+             for(int k = 0; k < pSz; k++) g_processedOnTrade[k] = g_processedOnTrade[k+1];
+             ArrayResize(g_processedOnTrade, pSz);
+          }
          for(int j=i; j<ArraySize(g_states)-1; j++) g_states[j] = g_states[j+1];
          ArrayResize(g_states, ArraySize(g_states)-1);
       }
@@ -1900,6 +1913,15 @@ void OnTrade()
               rOutcome = profitPct / InpRiskBase;
           }
        }
+        // Dedup guard: skip if ManagePositions already handled this ticket
+        bool alreadyHandled = false;
+        int pCount = ArraySize(g_processedOnTrade);
+        for(int p = 0; p < pCount; p++)
+        {
+           if(g_processedOnTrade[p] == ticket) { alreadyHandled = true; break; }
+        }
+        if(alreadyHandled) continue;
+
 
        // Update modules (backup in case ManagePositions missed it)
        killSwitch.OnTradeClosed(rOutcome);
@@ -2011,12 +2033,6 @@ double CalculateConfluenceScore(int direction)
    double score = 0;
    double currentPrice = symbolInfo.Bid();
 
-   // DEBUG: Print indicator values
-   static datetime lastDebug = 0;
-   if(TimeCurrent() - lastDebug > 300) 
-   {
-      Print("DEBUG Indicators: EMA=", g_EMA, " ATR=", g_ATR, " RSI=", g_RSI, " Price=", currentPrice);
-      lastDebug = TimeCurrent();
    }
 
    // ============ 1. CORE SMC & PRICE ACTION (Max ~10.0 pts) ============
@@ -2183,23 +2199,26 @@ double CalculateConfluenceScore(int direction)
          score += 0.5;
 
       // Log session contribution
-      static datetime lastSessionDebug = 0;
-      if(TimeCurrent() - lastSessionDebug > 300)
-      {
-         Print("🪙 METALS Session [", sessionOptimizer.GetSessionName(), "]: +",
-               DoubleToString(sessionPoints, 2), " pts",
-               (sessionOptimizer.IsPrimeTime() ? " +0.5 PRIME BONUS" : ""));
-         lastSessionDebug = TimeCurrent();
       }
    }
 
    // DEBUG: Print final score
-   static datetime lastScoreDebug = 0;
-   if(TimeCurrent() - lastScoreDebug > 300)
-   {
-      Print("DEBUG Score [", (direction == 1 ? "BUY" : "SELL"), "]: ", DoubleToString(score, 2), "/30");
-      lastScoreDebug = TimeCurrent();
    }
+   // Populate REAL ConfluenceFactors for AdaptiveFilter and PatternRecognizer
+   ConfluenceFactors &outFactors = (direction == 1) ? g_lastBuyFactors : g_lastSellFactors;
+   outFactors.trendAligned   = priceAligned || slopeAligned;
+   outFactors.structureBreak = validStructure;
+   outFactors.fibZone        = false;
+   outFactors.rsiMomentum    = rsiValid || (InpRSI_Momentum && ((direction==1 && g_RSI > g_RSI_Prev) || (direction==-1 && g_RSI < g_RSI_Prev)));
+   outFactors.orderBlock     = hasOB;
+   outFactors.fvg            = hasFVG;
+   outFactors.liquiditySweep = InpUseSMC && smcLiquidity.GetConfluenceScore(direction) > 0;
+   outFactors.killzoneActive = false;
+   outFactors.mtfAligned     = InpUseMTF && mtfAnalysis.GetConfluenceScore(direction) > 0;
+   outFactors.killzone       = KILLZONE_NONE;
+   outFactors.regime         = g_currentRegime;
+   outFactors.confluenceScore = score;
+
 
    return score;  // Max possible: ~30-35 points (38 with metals session bonus)
 }
@@ -2255,11 +2274,6 @@ bool UpdateIndicators()
    g_EMA = bufEMA[1];
 
    // DEBUG: Print updated values
-   static datetime lastIndicatorDebug = 0;
-   if(TimeCurrent() - lastIndicatorDebug > 300) // Print every 5 minutes
-   {
-      Print("DEBUG UpdateIndicators: RSI=", g_RSI, " ATR=", g_ATR, " EMA=", g_EMA);
-      lastIndicatorDebug = TimeCurrent();
    }
 
    // Update reversal filter EMAs
