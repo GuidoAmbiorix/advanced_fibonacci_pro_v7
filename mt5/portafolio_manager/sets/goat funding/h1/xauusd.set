@@ -1,7 +1,7 @@
 
-; USDJPY - H1 Timeframe
+; XAUUSD - H1 Timeframe
 ; Goat Funding - 4% Max Loss Optimized
-InpMagicNumber=100003
+InpMagicNumber=100005
 InpDirection=0
 InpBrokerUTCOffset=2
 InpUseKillzoneFilter=true

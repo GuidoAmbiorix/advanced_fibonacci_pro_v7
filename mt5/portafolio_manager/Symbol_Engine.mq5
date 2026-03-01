@@ -151,8 +151,8 @@ input double            InpSMC_MinFVG_ATR = 0.5;          // Min FVG Size (ATR m
 
 input group "======= MULTI-TIMEFRAME ======="
 input bool              InpUseMTF = true;                 // Enable MTF Analysis
-input ENUM_TIMEFRAMES   InpHTF = PERIOD_H4;               // Higher Timeframe
-input ENUM_TIMEFRAMES   InpMTF = PERIOD_H1;               // Medium Timeframe
+input ENUM_TIMEFRAMES   InpHTF = PERIOD_H1;               // Higher Timeframe
+input ENUM_TIMEFRAMES   InpMTF = PERIOD_M15;              // Medium Timeframe
 input int               InpMTF_EMAPeriod = 50;            // MTF EMA Period
 
 input group "======= NEWS FILTER ======="
@@ -1290,6 +1290,29 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
 
    double stopsLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
    if(slDist < stopsLevel + 10 * _Point) slDist = stopsLevel + 10 * _Point;
+
+   // --- GUARANTEED MAX RISK CAP ---
+   // Check if the minimum lot size creates a dollar risk larger than our allowed Risk%
+   double equity = account.Equity();
+   if(equity <= 0) equity = account.Balance();
+   double maxRiskDollar = equity * (riskPct / 100.0);
+   
+   double tv = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
+   double ts = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+   double minL = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   
+   if (tv > 0 && ts > 0)
+   {
+       double minLotRiskDollar = (slDist / ts) * tv * minL;
+       
+       if (minLotRiskDollar > maxRiskDollar && maxRiskDollar > 0)
+       {
+          slDist = (maxRiskDollar / (minL * tv)) * ts;
+          if(slDist < stopsLevel + 10 * _Point) slDist = stopsLevel + 10 * _Point;
+          Print("⚠️ RISK CAP APPLIED: SL reduced to mathematically enforce ", DoubleToString(riskPct, 2), "% risk limit.");
+       }
+   }
+   // --------------------------------
 
    double sl = (type == ORDER_TYPE_BUY) ? price - slDist : price + slDist;
    sl = NormalizeDouble(sl, (int)symbolInfo.Digits());
