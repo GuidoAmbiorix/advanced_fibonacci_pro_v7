@@ -2,10 +2,10 @@
 ; GBPCAD - M15 Timeframe
 ; Goat Funding - $80 Max DD | $10 Risk/trade
 ; High momentum London Open — less algo-traded = more edge
-InpMagicNumber=150008
+InpMagicNumber=100108
 InpDirection=0
 InpBrokerUTCOffset=2
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
@@ -27,7 +27,7 @@ InpEMA_MinSlope=0.10
 InpUseChopFilter=true
 InpChopThreshold=0.75
 InpATR_MA_Period=20
-InpMinConfluenceEntry=14
+InpMinConfluenceEntry=16
 InpEnableAddOns=false
 InpMaxPositions=1
 InpRiskBase=0.50

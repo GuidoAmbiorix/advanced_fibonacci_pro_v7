@@ -3,7 +3,9 @@
     "allow": [
       "WebFetch(domain:github.com)",
       "WebSearch",
-      "WebFetch(domain:strategyquant.com)"
+      "WebFetch(domain:strategyquant.com)",
+      "Bash(python -m json.tool)",
+      "mcp__mql5-dev__search_mql5_docs"
     ]
   }
 }

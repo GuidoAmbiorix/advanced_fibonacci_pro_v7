@@ -92,8 +92,13 @@ public:
    //+------------------------------------------------------------------+
    void UpdateRanks()
    {
-      // 1. Discover Symbols first
-      DiscoverSymbols();
+      // 1. Discover Symbols — rate-limited to once per 60 s to avoid O(n) GV scan every tick
+      static datetime lastDiscover = 0;
+      if(TimeCurrent() - lastDiscover >= 60 || m_symbolCount == 0)
+      {
+         DiscoverSymbols();
+         lastDiscover = TimeCurrent();
+      }
 
       if(m_symbolCount == 0) return;
 
@@ -195,9 +200,24 @@ public:
          if(bestIdx == -1) break; 
          if(m_ranks[bestIdx].adjScore < m_ranks[bestIdx].reqScore) break; 
          
-         // Pick Winner
+         // Pick Winner — apply hysteresis to prevent rank flip-flopping
          isPicked[bestIdx] = true;
-         m_ranks[bestIdx].rank = round;
+         int prevRank = 99;
+         for(int j=0; j<ArraySize(m_prevRanks); j++)
+         {
+            if(m_prevRanks[j].symbol == m_ranks[bestIdx].symbol)
+            {
+               prevRank = m_prevRanks[j].rank;
+               break;
+            }
+         }
+         if(prevRank < 99 && !ShouldChangeRank(prevRank, round, m_ranks[bestIdx].symbol))
+            m_ranks[bestIdx].rank = prevRank; // Hysteresis: keep previous rank
+         else
+         {
+            m_ranks[bestIdx].rank = round;
+            m_ranks[bestIdx].lastRankChange = TimeCurrent();
+         }
          
          // Apply Risk Penalty to remaining
          string winnerSym = m_ranks[bestIdx].symbol;

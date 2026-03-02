@@ -319,9 +319,11 @@ ulong g_tradesExecuted = 0;
 struct PositionState {
    ulong ticket;
    bool  partialClosed;
-   double initialRisk;         // Risk percentage (0.30 = 0.30%)
-   double dollarRisk;          // Actual dollar amount at risk for R-calculation
+   double initialRisk;              // Risk percentage (0.30 = 0.30%)
+   double dollarRisk;               // Actual dollar amount at risk for R-calculation
+   double initialSLDist;            // SL distance in price units at entry — used for profitR (not current trailed SL)
    ENTRY_QUALITY quality;
+   ConfluenceFactors entryFactors;  // Factors captured at entry bar — used for pattern learning at exit (not current bar)
 };
 PositionState g_states[];
 
@@ -507,6 +509,11 @@ int OnInit()
       return INIT_FAILED;
    }
 
+   // Restore consecutive loss counter from persistent GV (survives EA restarts)
+   g_consecutiveLosses = (int)GlobalVariableGet("PG_ConsecLoss_" + _Symbol);
+   if(g_consecutiveLosses > 0)
+      Print("Restored g_consecutiveLosses=", g_consecutiveLosses, " from GlobalVariable");
+
    // Check if Governor is running
    string govStatus = allocator.IsGovernorActive() ? "Connected" : "Standalone";
 
@@ -654,16 +661,15 @@ void ResetDailyLossIfNewDay()
 
    if(currentDate != g_lastResetDate)
    {
-      if(g_lastResetDate > 0 && g_dailyLossR < 0)
+      if(g_lastResetDate > 0)
       {
-         Print("ðŸ“Š Daily Reset: Previous day loss was ", DoubleToString(g_dailyLossR, 2), "R | Trades: ", g_dailyTradesCount);
-
-         // FIX: Export daily performance (Phase 7)
+         Print(“ðŸ”Š Daily Reset: Day R=”, DoubleToString(g_dailyLossR, 2), “ | Trades: “, g_dailyTradesCount);
          ExportDailyPerformance(g_dailyTradesCount, g_dailyLossR);
       }
       g_dailyLossR = 0;
       g_consecutiveLosses = 0;
-      g_dailyTradesCount = 0;  // FIX: Reset daily trade counter
+      GlobalVariableSet(“PG_ConsecLoss_” + _Symbol, 0);
+      g_dailyTradesCount = 0;
       g_lastResetDate = currentDate;
    }
 }
@@ -717,8 +723,8 @@ bool CanTradeSymbol(string symbol)
 
       long posMagic = position.Magic();
 
-      // Only check positions from same EA family (100000-100099 magic range)
-      if(posMagic >= 100000 && posMagic < 100100)
+      // Only check positions from same EA family (Governor range: 100000-100999; H1=100001-100008, M15=100101-100108)
+      if(posMagic >= 100000 && posMagic <= 100999)
       {
          string posSymbol = position.Symbol();
          if(posSymbol == symbol) continue;  // Same symbol is OK
@@ -919,6 +925,9 @@ void OnTick()
       // Killzone Status
       bool isKZOpen = !InpUseKillzoneFilter || CheckKillzone();
       GlobalVariableSet(GV_KZ_PREFIX + _Symbol, isKZOpen ? 1.0 : 0.0);
+
+      // ATR publish — required by RankManager for volatility-normalized adjScore
+      GlobalVariableSet("PG_ATR_" + _Symbol, g_ATR);
    }
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---
@@ -1307,9 +1316,10 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
        
        if (minLotRiskDollar > maxRiskDollar && maxRiskDollar > 0)
        {
-          slDist = (maxRiskDollar / (minL * tv)) * ts;
-          if(slDist < stopsLevel + 10 * _Point) slDist = stopsLevel + 10 * _Point;
-          Print("⚠️ RISK CAP APPLIED: SL reduced to mathematically enforce ", DoubleToString(riskPct, 2), "% risk limit.");
+          // Reject trade: minimum lot would exceed allowed risk — do NOT tighten SL (creates unrealistic stops)
+          Print("⚠️ TRADE REJECTED: min lot risk $", DoubleToString(minLotRiskDollar, 2),
+                " > max allowed $", DoubleToString(maxRiskDollar, 2), " on ", _Symbol, ". Account too small for this SL.");
+          return false;
        }
    }
    // --------------------------------
@@ -1390,7 +1400,9 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       g_states[sz].partialClosed = false;
       g_states[sz].initialRisk = riskPct;                                    // Store risk percentage
       g_states[sz].dollarRisk = account.Equity() * (riskPct / 100.0);       // Store actual dollar risk for R-calculation
+      g_states[sz].initialSLDist = slDist;                                   // Store SL distance at entry for profitR (not current trailed SL)
       g_states[sz].quality = quality;
+      g_states[sz].entryFactors = (type == ORDER_TYPE_BUY) ? g_lastBuyFactors : g_lastSellFactors; // Capture entry-bar factors for pattern learning
 
       // LOG TO DB MANAGER
       if(InpEnableLearning && InpLogTradesToFile)
@@ -1489,7 +1501,22 @@ void ManagePositions()
              // LOG EXIT TO DB MANAGER
              if(InpEnableLearning && InpLogTradesToFile)
              {
-                string exitReason = (profitMoney > 0) ? "TP" : "SL";
+                // Determine exit reason from DEAL_REASON (authoritative), not profit sign (unreliable)
+                string exitReason = "UNKNOWN";
+                for(int d = 0; d < HistoryDealsTotal(); d++)
+                {
+                   ulong dTick = HistoryDealGetTicket(d);
+                   ENUM_DEAL_ENTRY dEntry = (ENUM_DEAL_ENTRY)HistoryDealGetInteger(dTick, DEAL_ENTRY);
+                   if(dEntry == DEAL_ENTRY_OUT || dEntry == DEAL_ENTRY_INOUT)
+                   {
+                      ENUM_DEAL_REASON dReason = (ENUM_DEAL_REASON)HistoryDealGetInteger(dTick, DEAL_REASON);
+                      if(dReason == DEAL_REASON_SL)          exitReason = "SL";
+                      else if(dReason == DEAL_REASON_TP)     exitReason = "TP";
+                      else if(dReason == DEAL_REASON_EXPERT) exitReason = "EA";
+                      else                                   exitReason = "MANUAL";
+                      break;
+                   }
+                }
                 if(g_states[i].partialClosed) exitReason += "_PARTIAL";
                 
                 dbManager.LogTradeExit(
@@ -1510,25 +1537,8 @@ void ManagePositions()
                 exitCtx.profitR = profitR;
                 // ... (rest used below)
 
-                // Update Pattern Database
-                // Note: We reconstruct a simplified ConfluenceFactors from available data
-                // Future enhancement: Store full factors at entry time
-                ConfluenceFactors factors;
-                factors.killzone = exitCtx.exitType == "TP" ? KILLZONE_LONDON_OPEN : KILLZONE_NONE;  // Placeholder
-                factors.regime = g_currentRegime;
-                factors.confluenceScore = g_currentConfluence;
-                // Individual factors would need to be captured at entry for full accuracy
-                // For now, we estimate based on score
-                factors.trendAligned = (g_currentConfluence >= 1.0);
-                factors.structureBreak = (g_currentConfluence >= 2.0);
-                factors.fibZone = (g_currentConfluence >= 3.0);
-                factors.rsiMomentum = (g_currentConfluence >= 4.0);
-                factors.orderBlock = (g_currentConfluence >= 5.0);
-                factors.fvg = (g_currentConfluence >= 6.0);
-                factors.liquiditySweep = (g_currentConfluence >= 7.0);
-                factors.killzoneActive = false;
-                factors.mtfAligned = (g_currentConfluence >= 8.0);
-
+                // Update Pattern Database — use factors captured at ENTRY bar, not current bar
+                ConfluenceFactors factors = g_states[i].entryFactors;
                 patternRecognizer.UpdatePatternDatabase(factors, profitR);
              }
 
@@ -1553,21 +1563,21 @@ void ManagePositions()
              {
                 g_lastLossTime = TimeCurrent();  // Track last loss time for cooldown
                 g_consecutiveLosses++;           // REVENGE TRADING PROTECTION
-                Print("ðŸ“‰ Loss recorded: ", DoubleToString(profitR, 2), "R | Daily total: ",
-                      DoubleToString(g_dailyLossR, 2), "R | Streak: ", g_consecutiveLosses);
+                GlobalVariableSet(“PG_ConsecLoss_” + _Symbol, g_consecutiveLosses); // Persist across restarts
+                Print(“ðŸ”‰ Loss recorded: “, DoubleToString(profitR, 2), “R | Daily total: “,
+                      DoubleToString(g_dailyLossR, 2), “R | Streak: “, g_consecutiveLosses);
 
-                // FIX: Log to database if consecutive loss limit reached
                 if(g_consecutiveLosses >= InpMaxConsecutiveLosses)
                 {
-                   Print("ðŸš¨ CONSECUTIVE LOSS LIMIT HIT: ", g_consecutiveLosses, " losses. Next trade will be blocked.");
-                   // Notify Governor
-                   GlobalVariableSet("GV_COOLDOWN_" + _Symbol, (double)TimeCurrent());
+                   Print(“ðŸš¨ CONSECUTIVE LOSS LIMIT HIT: “, g_consecutiveLosses, “ losses. Next trade will be blocked.”);
+                   GlobalVariableSet(“GV_COOLDOWN_” + _Symbol, (double)TimeCurrent());
                 }
              }
              else
              {
-                if(g_consecutiveLosses > 0) Print("âœ… Win breaks losing streak of ", g_consecutiveLosses);
-                g_consecutiveLosses = 0;         // Reset on win
+                if(g_consecutiveLosses > 0) Print(“âœ… Win breaks losing streak of “, g_consecutiveLosses);
+                g_consecutiveLosses = 0;
+                GlobalVariableSet(“PG_ConsecLoss_” + _Symbol, 0); // Persist reset across restarts
              }
          }
 
@@ -1635,10 +1645,10 @@ void ManagePositions()
       if(risk <= 0) risk = _Point * 100;
 
       double rawProfit = (pType == POSITION_TYPE_BUY) ? (curr - open) : (open - curr);
-      // FIX: profitR must be price-distance / SL-distance (both in price units)
-      // Previously divided by initialRisk (a % like 0.25), giving ~0.04 always → partial/trail never fired
-      double slDist = (sl > 0) ? MathAbs(open - sl) : 0;
-      if(slDist <= _Point) slDist = risk;  // fallback to old behaviour if SL is missing
+      // Use initialSLDist stored at entry — immune to trail movement; prevents premature partial/trail activation
+      double slDist = (g_states[sIdx].initialSLDist > _Point) ? g_states[sIdx].initialSLDist
+                    : (sl > 0)                                  ? MathAbs(open - sl)
+                                                                : risk;
       double profitR = (slDist > _Point) ? rawProfit / slDist : 0;
 
       ENTRY_QUALITY quality = g_states[sIdx].quality;

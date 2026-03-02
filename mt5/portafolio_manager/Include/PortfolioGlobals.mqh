@@ -384,7 +384,8 @@ bool AtomicAdd(string varName, double value, int maxRetries = 3)
    for(int attempt = 0; attempt < maxRetries; attempt++)
    {
       // Try to acquire lock (using temp variable with 60-second expiry)
-      if(!GlobalVariableTemp(lockName))
+      // GlobalVariableTemp returns true when CREATED (lock acquired), false if already exists
+      if(GlobalVariableTemp(lockName))
       {
          // Lock acquired, perform operation
          double currentValue = GlobalVariableGet(varName);

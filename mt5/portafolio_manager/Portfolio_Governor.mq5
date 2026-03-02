@@ -135,7 +135,9 @@ int OnInit()
    GlobalVariableSet(GV_GROUP_METALS_RISK, 0);
    GlobalVariableSet(GV_GROUP_INDICES_RISK, 0);
    
-   g_peakEquity = account.Equity();
+   // Restore peak equity from persistent GV on restart; only initialize from current equity if no prior peak recorded
+   double savedPeak = GlobalVariableGet(GV_PEAK_EQUITY);
+   g_peakEquity = (savedPeak > 0) ? savedPeak : account.Equity();
    ArrayResize(g_tradeResults, InpRollingTrades);
    ArrayInitialize(g_tradeResults, 0);
 
@@ -457,14 +459,16 @@ double GetCorrelationAdjustedRisk(string symbol, double requestedRisk)
 void OnTrade()
 {
    // Check for newly closed trades
-   static int lastHistoryCount = 0;
+   // Use GlobalVariable to persist count across EA restarts, preventing history re-processing
+   string gvHistoryKey = "PG_LastHistoryCount";
+   int lastHistoryCount = (int)GlobalVariableGet(gvHistoryKey);
    int currentCount = HistoryDealsTotal();
-   
+
    if(currentCount > lastHistoryCount)
    {
       // Process new closed trades
       HistorySelect(0, TimeCurrent());
-      
+
       for(int i = lastHistoryCount; i < currentCount; i++)
       {
          ulong ticket = HistoryDealGetTicket(i);
@@ -484,7 +488,7 @@ void OnTrade()
             }
          }
       }
-      lastHistoryCount = currentCount;
+      GlobalVariableSet(gvHistoryKey, currentCount);
    }
 }
 
@@ -677,8 +681,16 @@ void UpdateTradingStatus()
       enabled = false;
       reason = "Daily profit target hit (gains locked)";
    }
-   if(!enabled && reason != "")
-      Print("Trading PAUSED: ", reason);
+   // Only log on state change to avoid spam every timer tick
+   static bool lastEnabled = true;
+   if(enabled != lastEnabled)
+   {
+      if(!enabled)
+         Print("Trading PAUSED: ", reason);
+      else
+         Print("Trading RESUMED");
+      lastEnabled = enabled;
+   }
 
    GlobalVariableSet(GV_TRADING_ENABLED, enabled ? 1 : 0);
 }
