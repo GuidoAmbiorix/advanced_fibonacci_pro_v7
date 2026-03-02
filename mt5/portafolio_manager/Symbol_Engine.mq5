@@ -663,7 +663,7 @@ void ResetDailyLossIfNewDay()
    {
       if(g_lastResetDate > 0)
       {
-         Print(“ðŸ”Š Daily Reset: Day R=”, DoubleToString(g_dailyLossR, 2), “ | Trades: “, g_dailyTradesCount);
+         Print(“[DAILY] Reset: Day R=”, DoubleToString(g_dailyLossR, 2), “ | Trades: “, g_dailyTradesCount);
          ExportDailyPerformance(g_dailyTradesCount, g_dailyLossR);
       }
       g_dailyLossR = 0;
@@ -1564,18 +1564,18 @@ void ManagePositions()
                 g_lastLossTime = TimeCurrent();  // Track last loss time for cooldown
                 g_consecutiveLosses++;           // REVENGE TRADING PROTECTION
                 GlobalVariableSet(“PG_ConsecLoss_” + _Symbol, g_consecutiveLosses); // Persist across restarts
-                Print(“ðŸ”‰ Loss recorded: “, DoubleToString(profitR, 2), “R | Daily total: “,
+                Print(“[LOSS] Loss recorded: “, DoubleToString(profitR, 2), “R | Daily total: “,
                       DoubleToString(g_dailyLossR, 2), “R | Streak: “, g_consecutiveLosses);
 
                 if(g_consecutiveLosses >= InpMaxConsecutiveLosses)
                 {
-                   Print(“ðŸš¨ CONSECUTIVE LOSS LIMIT HIT: “, g_consecutiveLosses, “ losses. Next trade will be blocked.”);
+                   Print(“[WARNING] CONSECUTIVE LOSS LIMIT HIT: “, g_consecutiveLosses, “ losses. Next trade will be blocked.”);
                    GlobalVariableSet(“GV_COOLDOWN_” + _Symbol, (double)TimeCurrent());
                 }
              }
              else
              {
-                if(g_consecutiveLosses > 0) Print(“âœ… Win breaks losing streak of “, g_consecutiveLosses);
+                if(g_consecutiveLosses > 0) Print(“[WIN] Win breaks losing streak of “, g_consecutiveLosses);
                 g_consecutiveLosses = 0;
                 GlobalVariableSet(“PG_ConsecLoss_” + _Symbol, 0); // Persist reset across restarts
              }
