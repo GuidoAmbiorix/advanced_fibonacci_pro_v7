@@ -5,7 +5,10 @@
       "WebSearch",
       "WebFetch(domain:strategyquant.com)",
       "Bash(python -m json.tool)",
-      "mcp__mql5-dev__search_mql5_docs"
+      "mcp__mql5-dev__search_mql5_docs",
+      "Bash(python3:*)",
+      "Bash(powershell:*)",
+      "Bash(del:*)"
     ]
   }
 }

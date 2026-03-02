@@ -1,4 +1,4 @@
-﻿//+------------------------------------------------------------------+
+﻿﻿//+------------------------------------------------------------------+
 //|                                            Symbol_Engine.mq5     |
 //|          Symbol Engine - Requests Permission from Governor       |
 //|             Confluence Ladder + Portfolio Integration            |
@@ -383,7 +383,7 @@ int OnInit()
       }
       else
       {
-         Print("âœ“ Learning engine initialized with persistence");
+         Print("âœ" Learning engine initialized with persistence");
       }
    }
 
@@ -524,18 +524,18 @@ int OnInit()
    Print("  Governor: ", govStatus);
    Print("-------------------------------------------");
    Print("  CORE MODULES:");
-   Print("    SMC Analysis: ", InpUseSMC ? "âœ“ ON" : "âœ— OFF");
-   Print("    MTF Confluence: ", InpUseMTF ? "âœ“ ON" : "âœ— OFF");
-   Print("    News Filter: ", InpUseNewsFilter ? "âœ“ ON" : "âœ— OFF");
+   Print("    SMC Analysis: ", InpUseSMC ? "âœ" ON" : "âœ— OFF");
+   Print("    MTF Confluence: ", InpUseMTF ? "âœ" ON" : "âœ— OFF");
+   Print("    News Filter: ", InpUseNewsFilter ? "âœ" ON" : "âœ— OFF");
    if(InpUseNewsFilter && InpEnableVolatilityFilter)
-      Print("      âš¡ Flash Crash Protection: âœ“ ON (Threshold: ", InpVolatilityThreshold, "x)");
-   Print("    Kelly Sizing: ", InpUseKelly ? "âœ“ ON" : "âœ— OFF");
+      Print("      âš¡ Flash Crash Protection: âœ" ON (Threshold: ", InpVolatilityThreshold, "x)");
+   Print("    Kelly Sizing: ", InpUseKelly ? "âœ" ON" : "âœ— OFF");
    Print("-------------------------------------------");
    Print("  PORTFOLIO PROTECTION:");
-   Print("    Correlation Filter: ", InpUseCorrelationFilter ? "âœ“ ON" : "âœ— OFF");
+   Print("    Correlation Filter: ", InpUseCorrelationFilter ? "âœ" ON" : "âœ— OFF");
    Print("    Daily Circuit Breaker: ", InpDailyMaxLoss_R, "R");
    Print("    Loss Cooldown: ", InpLossCooldownMinutes, " minutes");
-   Print("    Reversal Filter: ", InpUseReversalFilter ? "âœ“ ON (EMA50/100 momentum)" : "âœ— OFF");
+   Print("    Reversal Filter: ", InpUseReversalFilter ? "âœ" ON (EMA50/100 momentum)" : "âœ— OFF");
    Print("    Same-Direction Cooldown: ", InpReversalCooldownMinutes, " minutes");
    Print("-------------------------------------------");
    Print("  RISK PARAMETERS:");
@@ -547,14 +547,14 @@ int OnInit()
    if(InpEnableLearning)
    {
       Print("  LEARNING SYSTEM:");
-      Print("    Learning Engine: âœ“ ACTIVE");
+      Print("    Learning Engine: âœ" ACTIVE");
       if(InpLogTradesToFile)
-         Print("    Trade Journal: âœ“ ACTIVE (", InpLearningHistory, " days)");
+         Print("    Trade Journal: âœ" ACTIVE (", InpLearningHistory, " days)");
       Print("    Performance Analyzer: ", performanceAnalyzer.GetTradeCount(), " trades loaded");
       Print("    Pattern Memory: ", patternMemory.GetPatternCount(), " patterns");
-      Print("    Adaptive Risk: ", InpEnableAdaptiveRisk ? "âœ“ ON" : "âœ— OFF");
-      Print("    Adaptive Exits: ", InpEnableAdaptiveExits ? "âœ“ ON" : "âœ— OFF");
-      Print("    Adaptive Filters: ", InpEnableAdaptiveFilters ? "âœ“ ON" : "âœ— OFF");
+      Print("    Adaptive Risk: ", InpEnableAdaptiveRisk ? "âœ" ON" : "âœ— OFF");
+      Print("    Adaptive Exits: ", InpEnableAdaptiveExits ? "âœ" ON" : "âœ— OFF");
+      Print("    Adaptive Filters: ", InpEnableAdaptiveFilters ? "âœ" ON" : "âœ— OFF");
       Print("-------------------------------------------");
    }
    Print("===========================================");
@@ -567,7 +567,7 @@ int OnInit()
    }
    else
    {
-      Print("  âœ“ Indicators initialized: RSI=", DoubleToString(g_RSI, 2), " ATR=", DoubleToString(g_ATR, 5), " EMA=", DoubleToString(g_EMA, 5));
+      Print("  âœ" Indicators initialized: RSI=", DoubleToString(g_RSI, 2), " ATR=", DoubleToString(g_ATR, 5), " EMA=", DoubleToString(g_EMA, 5));
    }
    Print("===========================================");
 
@@ -663,12 +663,12 @@ void ResetDailyLossIfNewDay()
    {
       if(g_lastResetDate > 0)
       {
-         Print(“[DAILY] Reset: Day R=”, DoubleToString(g_dailyLossR, 2), “ | Trades: “, g_dailyTradesCount);
+         Print("[DAILY] Reset: Day R=", DoubleToString(g_dailyLossR, 2), " | Trades: ", g_dailyTradesCount);
          ExportDailyPerformance(g_dailyTradesCount, g_dailyLossR);
       }
       g_dailyLossR = 0;
       g_consecutiveLosses = 0;
-      GlobalVariableSet(“PG_ConsecLoss_” + _Symbol, 0);
+      GlobalVariableSet("PG_ConsecLoss_" + _Symbol, 0);
       g_dailyTradesCount = 0;
       g_lastResetDate = currentDate;
    }
@@ -939,7 +939,7 @@ void OnTick()
       static datetime lastKillWarning = 0;
       if(TimeCurrent() - lastKillWarning > 300)
       {
-         Print("â›” BLOCKED: Kill Switch - ", killSwitch.GetStatus(),
+         Print("â›" BLOCKED: Kill Switch - ", killSwitch.GetStatus(),
                " | RollingR: ", DoubleToString(killSwitch.GetRollingR(), 2));
          lastKillWarning = TimeCurrent();
       }
@@ -961,7 +961,7 @@ void OnTick()
       static datetime lastWarning = 0;
       if(TimeCurrent() - lastWarning > 300)  // Print warning every 5 minutes
       {
-         Print("â›” DAILY LOSS LIMIT REACHED: ", DoubleToString(g_dailyLossR, 2), "R / ",
+         Print("â›" DAILY LOSS LIMIT REACHED: ", DoubleToString(g_dailyLossR, 2), "R / ",
                DoubleToString(-InpDailyMaxLoss_R, 1), "R - Trading STOPPED for today");
          lastWarning = TimeCurrent();
       }
@@ -1030,7 +1030,7 @@ void OnTick()
       static datetime lastStreakWarning = 0;
       if(TimeCurrent() - lastStreakWarning > 300)
       {
-         Print("â›” MAX LOSS STREAK: ", g_consecutiveLosses, " consecutive losses - Trading STOPPED for today (or until manual reset)");
+         Print("â›" MAX LOSS STREAK: ", g_consecutiveLosses, " consecutive losses - Trading STOPPED for today (or until manual reset)");
          lastStreakWarning = TimeCurrent();
       }
       return;
@@ -1078,7 +1078,7 @@ void OnTick()
       static datetime lastVolWarning = 0;
       if(TimeCurrent() - lastVolWarning > 300)
       {
-         Print("â›” VOLATILITY UNSAFE: ATR=", DoubleToString(g_ATR, 5), " (Dead or Extreme) - Trading Paused");
+         Print("â›" VOLATILITY UNSAFE: ATR=", DoubleToString(g_ATR, 5), " (Dead or Extreme) - Trading Paused");
          lastVolWarning = TimeCurrent();
       }
       return;
@@ -1216,7 +1216,7 @@ void OnTick()
              static datetime lastThresholdLog = 0;
              if(TimeCurrent() - lastThresholdLog > 3600)  // Log hourly
              {
-                Print("ðŸ“Š Dynamic Threshold: ", DoubleToString(minEntry, 2),
+                Print("ðŸ"Š Dynamic Threshold: ", DoubleToString(minEntry, 2),
                       " (base: ", DoubleToString(InpMinConfluenceEntry, 2), ")");
                 lastThresholdLog = TimeCurrent();
              }
@@ -1351,7 +1351,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
    // FIX: CONSECUTIVE LOSS PROTECTION - Check immediately before OrderSend
    if(InpMaxConsecutiveLosses > 0 && g_consecutiveLosses >= InpMaxConsecutiveLosses)
    {
-      Print("â›” TRADE BLOCKED: ", g_consecutiveLosses, " consecutive losses reached. Waiting for cooldown or winning trade.");
+      Print("â›" TRADE BLOCKED: ", g_consecutiveLosses, " consecutive losses reached. Waiting for cooldown or winning trade.");
 
       // Set GlobalVariable to notify Governor
       string gvName = "GV_COOLDOWN_" + _Symbol;
@@ -1366,7 +1366,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       static datetime lastOvertradeWarning = 0;
       if(TimeCurrent() - lastOvertradeWarning > 3600)  // Log once per hour
       {
-         Print("â›” DAILY TRADE LIMIT: ", g_dailyTradesCount, "/", InpMaxDailyTrades, " trades reached. No more trades today.");
+         Print("â›" DAILY TRADE LIMIT: ", g_dailyTradesCount, "/", InpMaxDailyTrades, " trades reached. No more trades today.");
          lastOvertradeWarning = TimeCurrent();
       }
       return false;
@@ -1563,21 +1563,21 @@ void ManagePositions()
              {
                 g_lastLossTime = TimeCurrent();  // Track last loss time for cooldown
                 g_consecutiveLosses++;           // REVENGE TRADING PROTECTION
-                GlobalVariableSet(“PG_ConsecLoss_” + _Symbol, g_consecutiveLosses); // Persist across restarts
-                Print(“[LOSS] Loss recorded: “, DoubleToString(profitR, 2), “R | Daily total: “,
-                      DoubleToString(g_dailyLossR, 2), “R | Streak: “, g_consecutiveLosses);
+                GlobalVariableSet("PG_ConsecLoss_" + _Symbol, g_consecutiveLosses); // Persist across restarts
+                Print("[LOSS] Loss recorded: ", DoubleToString(profitR, 2), "R | Daily total: ",
+                      DoubleToString(g_dailyLossR, 2), "R | Streak: ", g_consecutiveLosses);
 
                 if(g_consecutiveLosses >= InpMaxConsecutiveLosses)
                 {
-                   Print(“[WARNING] CONSECUTIVE LOSS LIMIT HIT: “, g_consecutiveLosses, “ losses. Next trade will be blocked.”);
-                   GlobalVariableSet(“GV_COOLDOWN_” + _Symbol, (double)TimeCurrent());
+                   Print("[WARNING] CONSECUTIVE LOSS LIMIT HIT: ", g_consecutiveLosses, " losses. Next trade will be blocked.");
+                   GlobalVariableSet("GV_COOLDOWN_" + _Symbol, (double)TimeCurrent());
                 }
              }
              else
              {
-                if(g_consecutiveLosses > 0) Print(“[WIN] Win breaks losing streak of “, g_consecutiveLosses);
+                if(g_consecutiveLosses > 0) Print("[WIN] Win breaks losing streak of ", g_consecutiveLosses);
                 g_consecutiveLosses = 0;
-                GlobalVariableSet(“PG_ConsecLoss_” + _Symbol, 0); // Persist reset across restarts
+                GlobalVariableSet("PG_ConsecLoss_" + _Symbol, 0); // Persist reset across restarts
              }
          }
 
