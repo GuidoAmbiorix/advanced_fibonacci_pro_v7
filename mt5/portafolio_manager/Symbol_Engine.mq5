@@ -1631,11 +1631,15 @@ void ManagePositions()
          sIdx = stateCount;
       }
 
-      double risk = g_states[sIdx].initialRisk;
+      double risk = g_states[sIdx].initialRisk;  // kept for AdaptiveExitManager call below
       if(risk <= 0) risk = _Point * 100;
 
       double rawProfit = (pType == POSITION_TYPE_BUY) ? (curr - open) : (open - curr);
-      double profitR = rawProfit / risk;
+      // FIX: profitR must be price-distance / SL-distance (both in price units)
+      // Previously divided by initialRisk (a % like 0.25), giving ~0.04 always → partial/trail never fired
+      double slDist = (sl > 0) ? MathAbs(open - sl) : 0;
+      if(slDist <= _Point) slDist = risk;  // fallback to old behaviour if SL is missing
+      double profitR = (slDist > _Point) ? rawProfit / slDist : 0;
 
       ENTRY_QUALITY quality = g_states[sIdx].quality;
 
