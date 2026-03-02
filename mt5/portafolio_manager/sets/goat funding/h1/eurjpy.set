@@ -1,7 +1,8 @@
 
-; GBPUSD - H1 Timeframe
-; Goat Funding - 4% Max Loss Optimized
-InpMagicNumber=100002
+; EURJPY - H1 Timeframe
+; Goat Funding - $80 Max DD | $10 Risk/trade
+; Best for H1 swing trends (EUR + JPY divergence, strong daily ranges)
+InpMagicNumber=100008
 InpDirection=0
 InpBrokerUTCOffset=2
 InpUseKillzoneFilter=true
@@ -9,12 +10,12 @@ InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
-InpSwingLookback=8
+InpSwingLookback=10
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.20
+InpZoneTolerance=0.25
 InpUseDisplacement=true
-InpDisplacementATR=1.2
+InpDisplacementATR=1.5
 InpDisplacementLookback=3
 InpRSI_Period=9
 InpRSI_Oversold=35
@@ -36,23 +37,23 @@ InpEnableMarginCheck=true
 InpTPMode=2
 InpFixedTP_R=3.0
 InpMinTP_R=1.5
-InpMaxTP_R=6.0
+InpMaxTP_R=8.0
 InpTPUseLearnedMFE=true
 InpTrailingMode=1
 InpTrailType=1
 InpTrailStepATR=0.5
-InpMinVolatilityPips=5.0
-InpMaxVolatilityFactor=3.0
+InpMinVolatilityPips=6.0
+InpMaxVolatilityFactor=3.5
 InpVolatilityTP_Mult=3.0
 InpPartialTP_R=2.0
 InpPartialClosePercent=50.0
 InpBE_Threshold_R=1.0
 InpTrailStart_R=1.0
 InpTrailATR_Mult=2.5
-InpTrailDecayRate=0.15
-InpTrailMinMult=0.50
+InpTrailDecayRate=0.12
+InpTrailMinMult=0.40
 InpTrailRegimeAware=true
-InpMaxSpreadPoints=50
+InpMaxSpreadPoints=40
 InpUseSMC=true
 InpSMC_SwingLookback=20
 InpSMC_MinImpulseATR=2.0
@@ -64,7 +65,7 @@ InpUseNewsFilter=true
 InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=3.0
+InpVolatilityThreshold=3.5
 InpVolatilitySpikeCooldown=15
 InpUseKelly=true
 InpKellyFraction=0.80

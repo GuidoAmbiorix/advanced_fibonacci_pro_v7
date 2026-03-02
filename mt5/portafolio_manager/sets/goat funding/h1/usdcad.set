@@ -1,7 +1,7 @@
 
-; GBPUSD - H1 Timeframe
-; Goat Funding - 4% Max Loss Optimized
-InpMagicNumber=100002
+; USDCAD - H1 Timeframe
+; Goat Funding - $80 Max DD | $10 Risk/trade
+InpMagicNumber=100007
 InpDirection=0
 InpBrokerUTCOffset=2
 InpUseKillzoneFilter=true
@@ -41,7 +41,7 @@ InpTPUseLearnedMFE=true
 InpTrailingMode=1
 InpTrailType=1
 InpTrailStepATR=0.5
-InpMinVolatilityPips=5.0
+InpMinVolatilityPips=4.0
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 InpPartialTP_R=2.0
@@ -52,7 +52,7 @@ InpTrailATR_Mult=2.5
 InpTrailDecayRate=0.15
 InpTrailMinMult=0.50
 InpTrailRegimeAware=true
-InpMaxSpreadPoints=50
+InpMaxSpreadPoints=35
 InpUseSMC=true
 InpSMC_SwingLookback=20
 InpSMC_MinImpulseATR=2.0

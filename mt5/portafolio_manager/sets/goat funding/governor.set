@@ -1,7 +1,7 @@
 ﻿; Portfolio Governor - Goat Funded Trading Instant Pro
-; Account: $2,500 - 5 Symbols: EURUSD, GBPUSD, USDJPY, XAUUSD, GBPJPY
+; Account: $2,500 - 7 Symbols Forex (sin XAUUSD)
 ; Strategy: Dynamic Draft Portfolio with Correlation Guard
-; Daily Target: $10 (0.4%) | Daily Limit: $20 (0.8%) | Monthly Max DD: 3.5%
+; Risk: $10/trade | Max DD: $80 total | Sin daily DD limit
 
 ;═══════ PORTFOLIO LIMITS ═══════
 InpMaxPortfolioRisk=1.5
@@ -17,17 +17,17 @@ InpMaxGroupRisk=1.5
 ; Adjusted for the tight daily restrictions.
 
 ;═══════ DRAWDOWN GOVERNOR ═══════
-InpDD_Normal=0.4
+InpDD_Normal=0.8
 ; DD Level: Normal Trading (%)
-; Start risk reduction at $10 drawdown to save the $20 daily limit.
+; Reducir riesgo al llegar a $20 DD (2 trades perdedores)
 
-InpDD_Reduced=0.6
+InpDD_Reduced=1.4
 ; DD Level: Reduced Risk (%)
-; Immediate drastic scale back before hitting daily max.
+; $35 → cortar riesgo al 50% aún dentro del buffer seguro
 
-InpDD_Pause=1.4
+InpDD_Pause=2.4
 ; DD Level: Pause Trading (%) - HARD STOP
-; Ensure portfolio stops well before hitting max weekly to save 1.5%.
+; $60 → para bien antes del límite de $80
 
 InpDD_ReducedMult=0.50
 ; Risk Multiplier
@@ -55,12 +55,11 @@ InpDailyTarget=0.0
 InpDailyMaxDD=0.8
 ; $20 max limit for daily drawdown.
 
-InpWeeklyMaxDD=1.5
-; Weekly Max Drawdown (%)
+InpWeeklyMaxDD=2.5
+; Weekly Max Drawdown (%) = $62.50
 
-InpMonthlyMaxDD=3.5
-; Monthly Max Drawdown (%)
-; Safe stop far before the 4% hard prop firm threshold.
+InpMonthlyMaxDD=3.0
+; Monthly Max Drawdown (%) = $75 → bajo el límite de $80 del broker
 
 ;═══════ CORRELATION GUARD ═══════
 InpUseCorrelationGuard=true
