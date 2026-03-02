@@ -8,7 +8,8 @@
       "mcp__mql5-dev__search_mql5_docs",
       "Bash(python3:*)",
       "Bash(powershell:*)",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Bash(powershell.exe:*)"
     ]
   }
 }
