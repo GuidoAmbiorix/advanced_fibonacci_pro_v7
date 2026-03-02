@@ -103,6 +103,15 @@ public:
       if(m_symbolCount == 0) return;
 
       // 2. Read Scores from Global Variables with PHASE 2 enhancements
+
+      // Fix #1: Compute pool ATR average for relative normalization
+      double atrSum = 0; int atrCount = 0;
+      for(int i=0; i<m_symbolCount; i++) {
+         double a = GlobalVariableGet("PG_ATR_" + m_symbols[i]);
+         if(a > 0) { atrSum += a; atrCount++; }
+      }
+      double atrAvg = (atrCount > 0) ? atrSum / atrCount : 1.0;
+
       for(int i=0; i<m_symbolCount; i++)
       {
          string sym = m_symbols[i];
@@ -130,19 +139,13 @@ public:
          m_ranks[i].timeRemaining = rem;
          m_ranks[i].isKZOpen = kz;
 
-         // PHASE 2: Calculate volatility-normalized score
+         // Fix #1: Volatility-normalized score — relative to pool ATR average
          double atr = GlobalVariableGet("PG_ATR_" + sym);
-         if(atr <= 0) atr = 1.0; // Fallback
-         m_ranks[i].volatilityNormScore = score / atr * 100.0; // Normalize to pips
+         double atrRatio = MathMax(0.5, MathMin(1.5, (atr > 0 ? atr / atrAvg : 1.0)));
+         m_ranks[i].volatilityNormScore = score * atrRatio;
 
-         // PHASE 2: Calculate time-weighted score (boost near bar close)
-         double timeWeight = 1.0;
-         if(period > 0 && rem > 0)
-         {
-            double barProgress = 1.0 - ((double)rem / (double)period);
-            timeWeight = 1.0 + (barProgress * 0.3); // Up to 30% boost near bar close
-         }
-         m_ranks[i].timeWeightedScore = score * timeWeight;
+         // Bonus: timeWeightedScore simplified — kept for display, not used in adjScore
+         m_ranks[i].timeWeightedScore = score;
 
          // PHASE 2: Calculate momentum (score improvement from previous rank)
          m_ranks[i].momentumFactor = 0;
@@ -159,16 +162,32 @@ public:
       }
 
       // 3. DYNAMIC DRAFT SYSTEM (Risk Allocator Model - Optimized)
-      // PHASE 2: Calculate dynamic slot count based on market conditions
       int maxSlots = CalculateDynamicSlots();
+      // Fix #4b: Publish active slots so Symbol_Engine can read them
+      GlobalVariableSet("PG_ActiveSlots", (double)maxSlots);
 
-      // Init adjScore with enhanced scoring
+      // Fix #2: adjScore with multiplicative regime/momentum/quality factors
       for(int i=0; i<m_symbolCount; i++) {
-         // PHASE 2: Use volatility-normalized + time-weighted score
-         m_ranks[i].adjScore = (m_ranks[i].volatilityNormScore * 0.6) +
-                               (m_ranks[i].timeWeightedScore * 0.3) +
-                               (m_ranks[i].momentumFactor * 0.1);
+         string sym2 = m_ranks[i].symbol;
 
+         // Regime multiplier (REGIME_TREND=0 boost, REGIME_CHAOS=3 penalty)
+         double regime = GlobalVariableGet("PG_Regime_" + sym2);
+         double regimeMult = (regime == 0.0) ? 1.15
+                          : (regime == 3.0) ? 0.75
+                                            : 1.0;
+
+         // Momentum multiplier
+         double momentumMult = 1.0;
+         if(m_ranks[i].momentumFactor >  2.0) momentumMult = 1.10;
+         if(m_ranks[i].momentumFactor < -2.0) momentumMult = 0.90;
+
+         // Quality multiplier (3=ELITE, 2=STRONG, 1=GOOD)
+         double quality = GlobalVariableGet("PG_Quality_" + sym2);
+         double qualityMult = (quality >= 3.0) ? 1.20
+                            : (quality >= 2.0) ? 1.10
+                                               : 1.0;
+
+         m_ranks[i].adjScore = m_ranks[i].volatilityNormScore * regimeMult * momentumMult * qualityMult;
          m_ranks[i].rank = 99; // Default low rank
       }
 
@@ -330,43 +349,26 @@ public:
    //+------------------------------------------------------------------+
    int CalculateDynamicSlots()
    {
-      // Analyze market conditions across all symbols
+      // Fix #4: Slot count based on portfolio regime and signal quality
       int strongSignals = 0;
-      double avgVolatility = 0;
-      int validSymbols = 0;
+      int trendingSymbols = 0;
+      int choppySymbols = 0;
 
-      for(int i=0; i<m_symbolCount; i++)
-      {
-         if(m_ranks[i].score >= m_ranks[i].reqScore)
-            strongSignals++;
-
-         double atr = GlobalVariableGet("PG_ATR_" + m_ranks[i].symbol);
-         if(atr > 0)
-         {
-            avgVolatility += atr;
-            validSymbols++;
-         }
+      for(int i=0; i<m_symbolCount; i++) {
+         if(m_ranks[i].score >= m_ranks[i].reqScore) strongSignals++;
+         double regime = GlobalVariableGet("PG_Regime_" + m_ranks[i].symbol);
+         if(regime == 0.0) trendingSymbols++;   // REGIME_TREND
+         if(regime == 3.0) choppySymbols++;     // REGIME_CHAOS
       }
 
-      if(validSymbols > 0)
-         avgVolatility /= validSymbols;
+      int slots = m_minSlots;
 
-      // Determine slot count based on conditions
-      int slots = m_minSlots; // Start with minimum
+      if(strongSignals >= 4) slots++;           // +1 if 4+ valid signals
+      if(trendingSymbols >= 3) slots++;         // +1 if 3+ symbols trending
+      if(choppySymbols > trendingSymbols) slots--; // -1 if dominantly choppy
+      if(strongSignals >= 8) slots++;           // +1 extra if very active market
 
-      // Add slots if we have multiple strong signals
-      if(strongSignals >= 4) slots++;
-      if(strongSignals >= 6) slots++;
-
-      // Reduce slots in high volatility (focus on quality)
-      // Increase slots in normal volatility (diversify)
-      // This requires storing baseline volatility - simplified for now
-
-      // Clamp to min/max
-      if(slots < m_minSlots) slots = m_minSlots;
-      if(slots > m_maxSlots) slots = m_maxSlots;
-
-      return slots;
+      return MathMax(m_minSlots, MathMin(m_maxSlots, slots));
    }
 
    //+------------------------------------------------------------------+

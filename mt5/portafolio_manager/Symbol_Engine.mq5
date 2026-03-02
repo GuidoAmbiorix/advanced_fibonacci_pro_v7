@@ -928,6 +928,15 @@ void OnTick()
 
       // ATR publish — required by RankManager for volatility-normalized adjScore
       GlobalVariableSet("PG_ATR_" + _Symbol, g_ATR);
+
+      // Fix #3: Publish regime and signal quality for RankManager multipliers
+      GlobalVariableSet("PG_Regime_" + _Symbol, (double)g_currentRegime);
+      double bestQuality = 0;
+      if(g_cachedBuyScore >= g_cachedSellScore && g_cachedBuyScore >= InpMinConfluenceEntry)
+         bestQuality = (g_cachedBuyScore >= 22) ? 3.0 : (g_cachedBuyScore >= 18) ? 2.0 : 1.0;
+      else if(g_cachedSellScore > g_cachedBuyScore && g_cachedSellScore >= InpMinConfluenceEntry)
+         bestQuality = (g_cachedSellScore >= 22) ? 3.0 : (g_cachedSellScore >= 18) ? 2.0 : 1.0;
+      GlobalVariableSet("PG_Quality_" + _Symbol, bestQuality);
    }
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---
@@ -996,22 +1005,24 @@ void OnTick()
        }
    }
 
-   // --- RANKING GUARD (Top 3 Only) ---
-   // Check if this symbol is ranked high enough to trade
-   // Defaulting to Top 3 if not specified
+   // --- RANKING GUARD (Dynamic Slots) ---
    double myRank = 999;
    if(GlobalVariableCheck(GV_RANK_PREFIX + _Symbol))
       myRank = GlobalVariableGet(GV_RANK_PREFIX + _Symbol);
+
+   // Fix #5: Read active slots published by RankManager (conservative default = 3)
+   double activeSlots = GlobalVariableGet("PG_ActiveSlots");
+   int maxRankAllowed = (activeSlots >= 2) ? (int)activeSlots : 3;
    
-   if(myRank > 3) 
+   if(myRank > maxRankAllowed)
    {
       static datetime lastRankLog = 0;
-      if(TimeCurrent() - lastRankLog > 60) // Log every minute if blocked
+      if(TimeCurrent() - lastRankLog > 60)
       {
-         Print("â¸ï¸ RANKING WAIT: ", _Symbol, " Rank #", (int)myRank, " (Only Top 3 trade)");
+         Print("[RANK] Waiting: ", _Symbol, " rank #", (int)myRank, " / ", maxRankAllowed, " active slots");
          lastRankLog = TimeCurrent();
       }
-      return; // Wait for better rank
+      return;
    }
    // --- PORTFOLIO PROTECTION: LOSS COOLDOWN ---
    if(InpLossCooldownMinutes > 0 && g_lastLossTime > 0)
