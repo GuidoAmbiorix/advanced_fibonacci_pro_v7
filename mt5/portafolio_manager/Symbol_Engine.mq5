@@ -1,4 +1,4 @@
-﻿﻿//+------------------------------------------------------------------+
+﻿//+------------------------------------------------------------------+
 //|                                            Symbol_Engine.mq5     |
 //|          Symbol Engine - Requests Permission from Governor       |
 //|             Confluence Ladder + Portfolio Integration            |
