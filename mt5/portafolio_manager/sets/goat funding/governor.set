@@ -66,7 +66,7 @@ InpUseCorrelationGuard=true
 ; Enable Correlation Guard
 ; ENABLED: Dynamic Draft System manages 6-asset correlation ranking
 
-InpHighCorrelation=0.70
+InpHighCorrelation=0.85
 ; High Correlation Threshold
 ; Detects pairs moving together (EURUSD/GBPUSD, XAUUSD/USDJPY)
 
