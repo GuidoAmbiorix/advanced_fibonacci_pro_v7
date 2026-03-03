@@ -9,7 +9,8 @@
       "Bash(python3:*)",
       "Bash(powershell:*)",
       "Bash(del:*)",
-      "Bash(powershell.exe:*)"
+      "Bash(powershell.exe:*)",
+      "WebFetch(domain:www.mql5.com)"
     ]
   }
 }

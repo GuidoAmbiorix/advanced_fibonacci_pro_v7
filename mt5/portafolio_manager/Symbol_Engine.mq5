@@ -139,6 +139,7 @@ input double            InpTrailATR_Mult = 1.5;           // Base ATR multiplier
 input double            InpTrailDecayRate = 0.30;         // Multiplier decay rate (0.1=slow, 0.5=fast)
 input double            InpTrailMinMult = 0.50;           // Minimum ATR multiplier (floor)
 input bool              InpTrailRegimeAware = true;       // Widen trail in trends, tighten in ranges
+input double            InpTrailMinBufferATR = 0.30;       // Min buffer from price (ATR fraction)
 
 input group "======= SPREAD ======="
 input int               InpMaxSpreadPoints = 50;
@@ -1783,10 +1784,14 @@ void ManagePositions()
                 else
                    bestSL = (chandelierSL > 0) ? MathMin(dynFloor, chandelierSL) : dynFloor;
 
-                // --- APPLY: Only move SL in favorable direction ---
+                // --- MINIMUM BUFFER: broker stop level vs ATR noise floor ---
+                double stopsLevel = (double)SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+                double minBuffer  = MathMax(stopsLevel, atrVal * InpTrailMinBufferATR);
+
+                // --- APPLY: Only move SL in favorable direction with safe distance ---
                 bool slBetter = (pType == POSITION_TYPE_BUY)
-                                ? (bestSL > sl + _Point*5 && bestSL < curr)
-                                : ((bestSL < sl - _Point*5 || sl == 0) && bestSL > curr);
+                                ? (bestSL > sl + _Point*5 && bestSL < curr - minBuffer)
+                                : ((bestSL < sl - _Point*5 || sl == 0) && bestSL > curr + minBuffer);
 
                 if(slBetter)
                 {

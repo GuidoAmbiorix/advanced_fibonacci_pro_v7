@@ -52,6 +52,7 @@ InpTrailStart_R=0.5
 InpTrailATR_Mult=1.2
 InpTrailDecayRate=0.25
 InpTrailMinMult=0.50
+InpTrailMinBufferATR=0.30
 InpTrailRegimeAware=true
 InpMaxSpreadPoints=60
 InpUseSMC=true
