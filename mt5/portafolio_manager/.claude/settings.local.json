@@ -9,7 +9,13 @@
       "Bash(python3:*)",
       "Bash(powershell:*)",
       "Bash(del:*)",
-      "Bash(powershell.exe:*)"
+      "Bash(powershell.exe:*)",
+      "mcp__mql5-dev__compile_mql5",
+      "Bash(\"C:\\\\Program Files\\\\MetaTrader 5\\\\metaeditor64.exe\" /compile:\"Universal_Engine.mq5\" /log)",
+      "Bash(\"/c/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:\"Multi_Symbol_Engine.mq5\" /log)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(ls:*)",
+      "Bash(\"/c/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:Multi_Symbol_Engine.mq5 /log)"
     ]
   }
 }
