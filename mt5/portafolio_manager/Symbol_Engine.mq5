@@ -938,6 +938,13 @@ void OnTick()
       else if(g_cachedSellScore > g_cachedBuyScore && g_cachedSellScore >= InpMinConfluenceEntry)
          bestQuality = (g_cachedSellScore >= 22) ? 3.0 : (g_cachedSellScore >= 18) ? 2.0 : 1.0;
       GlobalVariableSet("PG_Quality_" + _Symbol, bestQuality);
+
+      // --- SCAN LOG: visibility into regime and signal strength each bar ---
+      string regimeStr = regime.RegimeToString(g_currentRegime);
+      Print("[SCAN] ", _Symbol, " | ", regimeStr,
+            " | Buy=", DoubleToString(g_cachedBuyScore, 1),
+            " Sell=", DoubleToString(g_cachedSellScore, 1),
+            " | Need=", InpMinConfluenceEntry);
    }
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---
