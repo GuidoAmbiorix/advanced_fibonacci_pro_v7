@@ -361,12 +361,8 @@ public:
          if(regime == 3.0) choppySymbols++;     // REGIME_CHAOS
       }
 
-      int slots = m_minSlots;
-
-      if(strongSignals >= 4) slots++;           // +1 if 4+ valid signals
-      if(trendingSymbols >= 3) slots++;         // +1 if 3+ symbols trending
-      if(choppySymbols > trendingSymbols) slots--; // -1 if dominantly choppy
-      if(strongSignals >= 8) slots++;           // +1 extra if very active market
+      // Slots = number of symbols with qualifying signals (direct, no artificial cap)
+      int slots = MathMax(m_minSlots, strongSignals);
 
       return MathMax(m_minSlots, MathMin(m_maxSlots, slots));
    }
