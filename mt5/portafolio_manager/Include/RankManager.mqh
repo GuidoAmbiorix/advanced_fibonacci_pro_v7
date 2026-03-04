@@ -215,9 +215,9 @@ public:
             }
          }
          
-         // QUALITY CONTROL:
-         if(bestIdx == -1) break; 
-         if(m_ranks[bestIdx].adjScore < m_ranks[bestIdx].reqScore) break; 
+         // QUALITY CONTROL: use raw score (regime already blocks CHAOS in Symbol_Engine line 1055)
+         if(bestIdx == -1) break;
+         if(m_ranks[bestIdx].score < m_ranks[bestIdx].reqScore) break;
          
          // Pick Winner — apply hysteresis to prevent rank flip-flopping
          isPicked[bestIdx] = true;
