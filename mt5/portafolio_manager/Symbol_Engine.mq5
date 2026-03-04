@@ -1055,7 +1055,7 @@ void OnTick()
    if(g_currentRegime == REGIME_CHAOS) return;
 
    // PRE-ENTRY FILTERS (Quick Exits for Performance)
-   if(!CheckSpread()) return;
+   if(!CheckSpread(true)) return;
 
    // OPTIMIZATION: RSI Compression Filter (avoid choppy middle zone)
    if(g_RSI > 48 && g_RSI < 52)
@@ -2340,7 +2340,7 @@ bool CheckChopFilter()
    return (g_ATR >= g_ATR_MA * InpChopThreshold);
 }
 
-bool CheckSpread()
+bool CheckSpread(bool isEntry = false)
 {
    if(InpMaxSpreadPoints <= 0) return true;
 
@@ -2348,8 +2348,8 @@ bool CheckSpread()
    static int lastSpread = 0;
    static datetime lastSpreadCheck = 0;
 
-   // Update spread every 5 seconds (spreads don't change that fast)
-   if(TimeCurrent() - lastSpreadCheck >= 5)
+   // Update spread every 5 seconds (spreads don't change that fast), or immediately if it's an entry
+   if(isEntry || TimeCurrent() - lastSpreadCheck >= 5)
    {
       lastSpread = (int)symbolInfo.Spread();
       lastSpreadCheck = TimeCurrent();
