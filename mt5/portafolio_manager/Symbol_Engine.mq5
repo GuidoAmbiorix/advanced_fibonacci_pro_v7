@@ -209,6 +209,7 @@ input int               InpTradeCooldownMinutes = 30;     // Cooldown Between Tr
 
 input group "======= VISUAL DEBUGGING ======="
 input bool              InpEnableVisualLevels = true;     // Draw Trade Levels on Chart
+input int               InpTickThrottleSeconds = 60;      // Performance: Tick Throttle (seconds)
 
 //+------------------------------------------------------------------+
 //| GLOBALS                                                           |
@@ -263,7 +264,6 @@ int hEMA50, hEMA100;   // Reversal filter EMAs
 double g_RSI, g_RSI_Prev, g_ATR, g_EMA, g_EMA_Prev, g_ATR_MA;
 double g_EMA50, g_EMA50_Prev, g_EMA100, g_EMA100_Prev;
 
-datetime lastBarTime = 0;
 
 int g_entryDirection = 0;
 double g_currentConfluence = 0;
@@ -620,16 +620,6 @@ void ResetTradeState()
    }
 }
 
-bool IsNewBar()
-{
-   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
-   if(currentBarTime != lastBarTime)
-   {
-      lastBarTime = currentBarTime;
-      return true;
-   }
-   return false;
-}
 
 // ... (rest of OnTick logic)
 
@@ -873,9 +863,21 @@ void OnTick()
       lastDashboardUpdate = TimeCurrent();
    }
 
-   // if(!IsNewBar()) return; // Modificado: entrar en cualquier tick
+   // --- PERFORMANCE THROTTLE ---
+   static datetime lastHeavyUpdate = 0;
+   datetime now = TimeCurrent();
+   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
 
-   g_barCount++;  // Performance monitoring
+   if(now - lastHeavyUpdate < InpTickThrottleSeconds) return;
+   lastHeavyUpdate = now;
+
+   // Simple bar count update without external function
+   static datetime prevBarTime = 0;
+   if(currentBarTime != prevBarTime)
+   {
+      g_barCount++;
+      prevBarTime = currentBarTime;
+   }
 
    if(!UpdateIndicators()) return;
 
@@ -886,16 +888,13 @@ void OnTick()
    g_currentRegime = regime.Detect(g_ATR, g_ATR_MA, g_EMA, g_EMA_Prev);
    // g_currentRegime check moved down to allow score calculation for visibility
 
-   // OPTIMIZATION: Calculate confluence once per bar (expensive operation)
-   // Moved here to ensure visibility in logs even if trading is blocked
-   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
-   if(currentBarTime != g_lastScoreCalcTime)
-   {
-      g_cachedBuyScore = CalculateConfluenceScore(1);
-      g_cachedSellScore = CalculateConfluenceScore(-1);
-      g_lastScoreCalcTime = currentBarTime;
+   // --- THROTTLED CONFLUENCE CALCULATION ---
+   // Recalculate confluence scores based on throttle (not just on new bar)
+   g_cachedBuyScore = CalculateConfluenceScore(1);
+   g_cachedSellScore = CalculateConfluenceScore(-1);
+   g_lastScoreCalcTime = now;
 
-      // --- SIGNAL DOMINANCE FILTER ---
+   // --- SIGNAL DOMINANCE FILTER ---
       if(InpDominanceThreshold > 0)
       {
          double delta = MathAbs(g_cachedBuyScore - g_cachedSellScore);
@@ -939,13 +938,12 @@ void OnTick()
          bestQuality = (g_cachedSellScore >= 22) ? 3.0 : (g_cachedSellScore >= 18) ? 2.0 : 1.0;
       GlobalVariableSet("PG_Quality_" + _Symbol, bestQuality);
 
-      // --- SCAN LOG: visibility into regime and signal strength each bar ---
+      // --- SCAN LOG: visibility into regime and signal strength ---
       string regimeStr = regime.RegimeToString(g_currentRegime);
       Print("[SCAN] ", _Symbol, " | ", regimeStr,
             " | Buy=", DoubleToString(g_cachedBuyScore, 1),
             " Sell=", DoubleToString(g_cachedSellScore, 1),
             " | Need=", InpMinConfluenceEntry);
-   }
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---
    if(!failSafe.IsExecutionSafe()) return;
@@ -1952,12 +1950,8 @@ void CheckAddOnOpportunity()
 //+------------------------------------------------------------------+
 void UpdateAllIndicators()
 {
-   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
-
-   // Only update if new bar or cache is stale
-   if(currentBarTime == g_lastIndicatorCacheTime) return;
-
-   g_lastIndicatorCacheTime = currentBarTime;
+   // Removed bar-based caching to allow throttled mid-bar updates
+   g_lastIndicatorCacheTime = TimeCurrent();
 
    // Cache SMC scores
    if(InpUseSMC)
