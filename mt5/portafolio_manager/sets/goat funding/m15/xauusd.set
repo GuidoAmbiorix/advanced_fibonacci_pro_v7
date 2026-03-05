@@ -4,7 +4,7 @@
 InpMagicNumber=100105
 InpDirection=0
 InpBrokerUTCOffset=2
-InpUseKillzoneFilter=false
+InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true

@@ -4,7 +4,7 @@
 InpMagicNumber=100107
 InpDirection=0
 InpBrokerUTCOffset=2
-InpUseKillzoneFilter=false
+InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
@@ -53,7 +53,7 @@ InpTrailDecayRate=0.3
 InpTrailMinMult=0.50
 InpTrailMinBufferATR=0.30
 InpTrailRegimeAware=true
-InpMaxSpreadPoints=35
+InpMaxSpreadPoints=30
 InpUseSMC=true
 InpSMC_SwingLookback=20
 InpSMC_MinImpulseATR=2.0
