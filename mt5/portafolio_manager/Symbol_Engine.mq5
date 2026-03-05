@@ -873,7 +873,7 @@ void OnTick()
       lastDashboardUpdate = TimeCurrent();
    }
 
-   if(!IsNewBar()) return;
+   // if(!IsNewBar()) return; // Modificado: entrar en cualquier tick
 
    g_barCount++;  // Performance monitoring
 
