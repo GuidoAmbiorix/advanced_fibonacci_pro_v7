@@ -1,20 +1,20 @@
 
 ; GBPJPY - H1 Timeframe
-; Goat Funding - 4% Max Loss Optimized
+; Goat Funding - $80 Max DD | $20 Risk/trade | No ATR Buffer
 InpMagicNumber=100004
 InpDirection=0
 InpBrokerUTCOffset=2
 InpUseKillzoneFilter=false
 InpEnableAsianKZ=false
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=false
 InpEnableLondonCloseKZ=false
 InpSwingLookback=8
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.20
-InpUseDisplacement=true
-InpDisplacementATR=1.2
+InpUseDisplacement=false
+InpDisplacementATR=0.0
 InpDisplacementLookback=3
 InpRSI_Period=9
 InpRSI_Oversold=35
@@ -29,8 +29,8 @@ InpATR_MA_Period=20
 InpMinConfluenceEntry=16
 InpEnableAddOns=false
 InpMaxPositions=1
-InpRiskBase=0.50
-InpMaxRisk=1.0
+InpRiskBase=0.80
+InpMaxRisk=0.80
 InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true
 InpTPMode=2
@@ -67,7 +67,7 @@ InpEnableVolatilityFilter=true
 InpVolatilityThreshold=3.0
 InpVolatilitySpikeCooldown=15
 InpUseKelly=true
-InpKellyFraction=0.80
+InpKellyFraction=1.0
 InpDailyMaxDD=2.0
 InpWeeklyMaxDD=4.0
 InpDailyTarget=0.0

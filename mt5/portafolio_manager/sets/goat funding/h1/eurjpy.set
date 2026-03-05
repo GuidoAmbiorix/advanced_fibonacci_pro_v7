@@ -1,21 +1,21 @@
 
 ; EURJPY - H1 Timeframe
-; Goat Funding - $80 Max DD | $10 Risk/trade
+; Goat Funding - $80 Max DD | $20 Risk/trade | No ATR Buffer
 ; Best for H1 swing trends (EUR + JPY divergence, strong daily ranges)
 InpMagicNumber=100008
 InpDirection=0
 InpBrokerUTCOffset=2
 InpUseKillzoneFilter=false
 InpEnableAsianKZ=false
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=false
 InpEnableLondonCloseKZ=false
 InpSwingLookback=10
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.25
-InpUseDisplacement=true
-InpDisplacementATR=1.5
+InpUseDisplacement=false
+InpDisplacementATR=0.0
 InpDisplacementLookback=3
 InpRSI_Period=9
 InpRSI_Oversold=35
@@ -30,8 +30,8 @@ InpATR_MA_Period=20
 InpMinConfluenceEntry=16
 InpEnableAddOns=false
 InpMaxPositions=1
-InpRiskBase=0.50
-InpMaxRisk=1.0
+InpRiskBase=0.80
+InpMaxRisk=0.80
 InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true
 InpTPMode=2
@@ -68,7 +68,7 @@ InpEnableVolatilityFilter=true
 InpVolatilityThreshold=3.5
 InpVolatilitySpikeCooldown=15
 InpUseKelly=true
-InpKellyFraction=0.80
+InpKellyFraction=1.0
 InpDailyMaxDD=2.0
 InpWeeklyMaxDD=4.0
 InpDailyTarget=0.0

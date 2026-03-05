@@ -1,29 +1,29 @@
 ﻿; Portfolio Governor - Goat Funded Trading Instant Pro
 ; Account: $2,500 - 7 Symbols Forex (sin XAUUSD)
 ; Strategy: Dynamic Draft Portfolio with Correlation Guard
-; Risk: $10/trade | Max DD: $80 total | Sin daily DD limit
+; Risk: $20/trade | Max DD: $80 total | Sin daily DD limit
 
 ;═══════ PORTFOLIO LIMITS ═══════
-InpMaxPortfolioRisk=1.5
+InpMaxPortfolioRisk=1.6
 ; Max Total Portfolio Risk (%)
-; Strict limit scaling down portfolio size for safety.
+; Permite hasta 2 trades de $20 simultáneos (1.6% × $2500 = $40).
 
-InpMaxSymbolRisk=1.0
+InpMaxSymbolRisk=0.8
 ; Max Risk Per Symbol (%)
-; Reduced for smaller lot configurations.
+; Exactamente 1 trade de $20 por símbolo (0.8% × $2500 = $20).
 
-InpMaxGroupRisk=1.5
+InpMaxGroupRisk=1.6
 ; Max Risk Per Correlation Group (%)
-; Adjusted for the tight daily restrictions.
+; Máximo 2 trades correlacionados de $20 = $40.
 
 ;═══════ DRAWDOWN GOVERNOR ═══════
-InpDD_Normal=0.8
+InpDD_Normal=1.0
 ; DD Level: Normal Trading (%)
-; Reducir riesgo al llegar a $20 DD (2 trades perdedores)
+; Reducir riesgo al llegar a $25 DD (~1.25 trades de $20)
 
-InpDD_Reduced=1.4
+InpDD_Reduced=1.6
 ; DD Level: Reduced Risk (%)
-; $35 → cortar riesgo al 50% aún dentro del buffer seguro
+; $40 → cortar riesgo al 50% (2 trades perdedores de $20)
 
 InpDD_Pause=2.4
 ; DD Level: Pause Trading (%) - HARD STOP
@@ -52,8 +52,8 @@ InpPF_ReducedMult=0.60
 ;═══════ DAILY/WEEKLY LIMITS ═══════
 InpDailyTarget=0.0
 ; $10 daily target.
-InpDailyMaxDD=0.8
-; $20 max limit for daily drawdown.
+InpDailyMaxDD=1.0
+; $25 max limit for daily drawdown (1 trade de riesgo completo).
 
 InpWeeklyMaxDD=2.5
 ; Weekly Max Drawdown (%) = $62.50
