@@ -208,6 +208,9 @@ int OnInit()
    ZeroMemory(g_dashCache);
    g_dashCache.forceUpdate = true;
 
+   // Set up timer for updates even when market is closed (every 5 seconds)
+   EventSetTimer(InpUpdateSeconds);
+
    Print("===============================================================");
    // Initialize Rank Manager: Auto-Discovery is now active (no manual AddSymbol needed)
 
@@ -225,6 +228,7 @@ int OnInit()
    Print("  Daily Max DD: ", InpDailyMaxDD, "%");
    Print("  Weekly Max DD: ", InpWeeklyMaxDD, "%");
    Print("  Correlation Guard: ", InpUseCorrelationGuard ? "ON" : "OFF");
+   Print("  Timer Update: Every ", InpUpdateSeconds, " seconds (works when market closed)");
    Print("===============================================================");
 
    return INIT_SUCCEEDED;
@@ -235,6 +239,9 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
+   // Kill timer
+   EventKillTimer();
+
    // Mark governor as inactive
    GlobalVariableSet(GV_GOVERNOR_ACTIVE, 0);
 
@@ -257,6 +264,22 @@ void OnDeinit(const int reason)
 //| Expert tick function                                              |
 //+------------------------------------------------------------------+
 void OnTick()
+{
+   ProcessGovernorUpdate();
+}
+
+//+------------------------------------------------------------------+
+//| Timer function (works even when market is closed)                |
+//+------------------------------------------------------------------+
+void OnTimer()
+{
+   ProcessGovernorUpdate();
+}
+
+//+------------------------------------------------------------------+
+//| Main Governor Update Logic (shared by OnTick and OnTimer)        |
+//+------------------------------------------------------------------+
+void ProcessGovernorUpdate()
 {
    // Throttle updates
    if(TimeCurrent() - g_lastUpdate < InpUpdateSeconds) return;
@@ -1097,6 +1120,40 @@ void LogTransaction(string symbol, string action, double exposureBefore, double 
 }
 
 //+------------------------------------------------------------------+
+//| Helper: Check if Market is Open                                  |
+//+------------------------------------------------------------------+
+bool IsMarketOpen()
+{
+   // Check the primary symbol (chart symbol) for market status
+   string symbol = Symbol();
+
+   // Method 1: Check if symbol has active quotes
+   datetime lastQuoteTime = (datetime)SymbolInfoInteger(symbol, SYMBOL_TIME);
+   if(lastQuoteTime > 0 && (TimeCurrent() - lastQuoteTime) < 120) // Quote within last 2 minutes
+      return true;
+
+   // Method 2: Check day of week
+   MqlDateTime dt;
+   TimeToStruct(TimeCurrent(), dt);
+
+   // Definitely closed on Saturday
+   if(dt.day_of_week == 6) return false;
+
+   // Sunday - check if late enough (market opens ~22:00-23:00 GMT Sunday)
+   if(dt.day_of_week == 0)
+   {
+      if(dt.hour < 21) return false; // Before 21:00 on Sunday
+      return true; // After 21:00 Sunday - likely open
+   }
+
+   // Friday - check if too late (market closes ~21:00-22:00 GMT Friday)
+   if(dt.day_of_week == 5 && dt.hour >= 22) return false;
+
+   // Monday-Thursday and early Friday = open
+   return true;
+}
+
+//+------------------------------------------------------------------+
 //| Helper: Count Trading Days (with 0.5%+ profit each)              |
 //+------------------------------------------------------------------+
 int CountTradingDays()
@@ -1268,8 +1325,15 @@ void CreateVisualDashboard(double dd, double pf, double exposure, double riskMul
    color statusColor = tradingEnabled ? clrLimeGreen : clrOrangeRed;
    string statusText = tradingEnabled ? "● ONLINE" : "● PAUSED";
    CreateLabel("GovHeader", x+10, y, "🧠 GOAT INSTANT PRO $2500", clrGold, 11, true);
-   CreateLabel("GovStatus", x+350, y, statusText, statusColor, 10, true);
-   CreateLabel("GovTime", x+490, y, TimeToString(TimeCurrent(), TIME_SECONDS), textColor, 8, false);
+   CreateLabel("GovStatus", x+320, y, statusText, statusColor, 10, true);
+
+   // Market status indicator
+   bool isMarketOpen = IsMarketOpen();
+   color marketColor = isMarketOpen ? clrLimeGreen : clrGray;
+   string marketText = isMarketOpen ? "📈 OPEN" : "🔒 CLOSED";
+   CreateLabel("GovMarket", x+430, y, marketText, marketColor, 9, false);
+
+   CreateLabel("GovTime", x+520, y, TimeToString(TimeCurrent(), TIME_SECONDS), textColor, 8, false);
 
    y += lineHeight + sectionGap;
    CreateSeparator("GovSep1", x+10, y, 600, clrDimGray);
