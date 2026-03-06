@@ -66,7 +66,7 @@ input group "═══════ CONSISTENCY RULE ═══════"
 input bool   InpEnableConsistencyRule = true;  // Enable prop-firm Consistency Rule
 input double InpConsistencyMaxPct    = 20.0;   // Max Best-Day % of Total Profit
 input double InpConsistencyWarnPct   = 85.0;   // Warning threshold (% of max, default 85)
-input double InpConsistencyMinUSD    = 130.0;  // Min total profit ($) before rule activates
+input double InpConsistencyMinUSD    = 150.0;  // Min total profit ($) before rule activates
 input bool   InpConsistencyClose     = true;   // Proactively close positions when limit approached
 
 //+------------------------------------------------------------------+
@@ -1073,6 +1073,14 @@ void UpdateDashboard()
    // --- LITE DASHBOARD (HEARTBEAT) ---
    string text = "🧠 GOVERNOR ONLINE | " + TimeToString(TimeCurrent(), TIME_SECONDS) + "\n";
    text += "DD: " + DoubleToString(dd, 2) + "% | PF: " + DoubleToString(pf, 2) + "\n";
+
+   // Daily Target Display
+   if(InpDailyTarget > 0)
+   {
+      double targetAmount = account.Balance() * (InpDailyTarget / 100.0);
+      string targetStatus = g_dailyTargetHit ? "✅ LOCKED" : "⏳ ACTIVE";
+      text += "🎯 DAILY TARGET: $" + DoubleToString(targetAmount, 2) + " (" + DoubleToString(InpDailyTarget, 2) + "%) [" + targetStatus + "]\n";
+   }
 
    // Consistency Rule display
    if(InpEnableConsistencyRule)
