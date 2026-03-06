@@ -1291,23 +1291,33 @@ void UpdateDashboard()
 
    double dailyProfit = GlobalVariableGet(GV_DAILY_PROFIT);
 
-   // Performance: Check if update needed (dirty flag system)
-   bool needsUpdate = g_dashCache.forceUpdate ||
-                      MathAbs(g_dashCache.lastDD - dd) > 0.01 ||
-                      MathAbs(g_dashCache.lastPF - pf) > 0.01 ||
-                      MathAbs(g_dashCache.lastExposure - exposure) > 0.01 ||
-                      MathAbs(g_dashCache.lastRiskMult - riskMult) > 0.001 ||
-                      g_dashCache.lastTradingEnabled != tradingEnabled ||
-                      MathAbs(g_dashCache.lastConsistencyRatio - cRatio) > 0.1 ||
-                      g_dashCache.lastConsistencyBlocked != cBlocked ||
-                      MathAbs(g_dashCache.lastDailyProfit - dailyProfit) > 0.01 ||
-                      g_dashCache.lastDailyTarget != g_dailyTargetHit ||
-                      g_dashCache.positionsCount != currentPositions ||
-                      (TimeCurrent() - g_dashCache.lastUpdateTime) > 10;
+   // Performance: Check if FULL update needed (dirty flag system)
+   bool needsFullUpdate = g_dashCache.forceUpdate ||
+                          MathAbs(g_dashCache.lastDD - dd) > 0.01 ||
+                          MathAbs(g_dashCache.lastPF - pf) > 0.01 ||
+                          MathAbs(g_dashCache.lastExposure - exposure) > 0.01 ||
+                          MathAbs(g_dashCache.lastRiskMult - riskMult) > 0.001 ||
+                          g_dashCache.lastTradingEnabled != tradingEnabled ||
+                          MathAbs(g_dashCache.lastConsistencyRatio - cRatio) > 0.1 ||
+                          g_dashCache.lastConsistencyBlocked != cBlocked ||
+                          MathAbs(g_dashCache.lastDailyProfit - dailyProfit) > 0.01 ||
+                          g_dashCache.lastDailyTarget != g_dailyTargetHit ||
+                          g_dashCache.positionsCount != currentPositions;
 
-   if(!needsUpdate) return; // Skip rendering if nothing changed
+   // Always update time/status at minimum every update interval (no caching for header)
+   bool timeUpdate = (TimeCurrent() - g_dashCache.lastUpdateTime) >= InpUpdateSeconds;
 
-   // Update cache
+   if(!needsFullUpdate && !timeUpdate) return; // Skip if nothing changed
+
+   // If only time update, just refresh header (performance optimization)
+   if(timeUpdate && !needsFullUpdate)
+   {
+      UpdateDashboardHeader(tradingEnabled);
+      g_dashCache.lastUpdateTime = TimeCurrent();
+      return;
+   }
+
+   // Update cache for full update
    g_dashCache.lastDD = dd;
    g_dashCache.lastPF = pf;
    g_dashCache.lastExposure = exposure;
@@ -1321,9 +1331,34 @@ void UpdateDashboard()
    g_dashCache.positionsCount = currentPositions;
    g_dashCache.forceUpdate = false;
 
-   // Create visual dashboard with graphical objects
+   // Create visual dashboard with graphical objects (full redraw)
    CreateVisualDashboard(dd, pf, exposure, riskMult, tradingEnabled,
                          cRatio, cBestDay, cTotal, cBlocked, dailyProfit);
+}
+
+//+------------------------------------------------------------------+
+//| Update Only Dashboard Header (Time/Status) - Fast Update         |
+//+------------------------------------------------------------------+
+void UpdateDashboardHeader(bool tradingEnabled)
+{
+   int x = 15, y = 35;
+   color textColor = clrWhiteSmoke;
+
+   // Update status
+   color statusColor = tradingEnabled ? clrLimeGreen : clrOrangeRed;
+   string statusText = tradingEnabled ? "● ONLINE" : "● PAUSED";
+   CreateLabel("GovStatus", x+320, y, statusText, statusColor, 10, true);
+
+   // Update market status
+   bool isMarketOpen = IsMarketOpen();
+   color marketColor = isMarketOpen ? clrLimeGreen : clrGray;
+   string marketText = isMarketOpen ? "📈 OPEN" : "🔒 CLOSED";
+   CreateLabel("GovMarket", x+430, y, marketText, marketColor, 9, false);
+
+   // Update time (this is what makes the clock tick!)
+   CreateLabel("GovTime", x+520, y, TimeToString(TimeCurrent(), TIME_SECONDS), textColor, 8, false);
+
+   ChartRedraw();
 }
 
 //+------------------------------------------------------------------+
