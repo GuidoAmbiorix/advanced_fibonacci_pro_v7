@@ -108,6 +108,9 @@ struct DailyPnL
 };
 DailyPnL g_last5Days[5];
 
+// Market status tracking
+datetime g_lastTickReceived = 0;
+
 // Trade history for rolling PF
 double g_tradeResults[];  // Store last N trade results
 int g_tradeCount = 0;
@@ -265,6 +268,9 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
+   // Register tick received (for market status detection)
+   g_lastTickReceived = TimeCurrent();
+
    ProcessGovernorUpdate();
 }
 
@@ -1120,37 +1126,53 @@ void LogTransaction(string symbol, string action, double exposureBefore, double 
 }
 
 //+------------------------------------------------------------------+
-//| Helper: Check if Market is Open                                  |
+//| Helper: Check if Market is Open (Reliable Tick Detection)        |
 //+------------------------------------------------------------------+
 bool IsMarketOpen()
 {
-   // Check the primary symbol (chart symbol) for market status
-   string symbol = Symbol();
+   datetime currentTime = TimeCurrent();
 
-   // Method 1: Check if symbol has active quotes
-   datetime lastQuoteTime = (datetime)SymbolInfoInteger(symbol, SYMBOL_TIME);
-   if(lastQuoteTime > 0 && (TimeCurrent() - lastQuoteTime) < 120) // Quote within last 2 minutes
-      return true;
-
-   // Method 2: Check day of week
-   MqlDateTime dt;
-   TimeToStruct(TimeCurrent(), dt);
-
-   // Definitely closed on Saturday
-   if(dt.day_of_week == 6) return false;
-
-   // Sunday - check if late enough (market opens ~22:00-23:00 GMT Sunday)
-   if(dt.day_of_week == 0)
+   // Method 1: Check if we received ticks recently (< 2 minutes)
+   if(g_lastTickReceived > 0)
    {
-      if(dt.hour < 21) return false; // Before 21:00 on Sunday
-      return true; // After 21:00 Sunday - likely open
+      long secondsSinceLastTick = currentTime - g_lastTickReceived;
+
+      if(secondsSinceLastTick < 120) // Ticks within last 2 minutes
+         return true;
+      else if(secondsSinceLastTick < 300) // 2-5 minutes: uncertain, check day
+      {
+         MqlDateTime dt;
+         TimeToStruct(currentTime, dt);
+
+         // Saturday = definitely closed
+         if(dt.day_of_week == 6) return false;
+
+         // Benefit of doubt during week
+         if(dt.day_of_week >= 1 && dt.day_of_week <= 5) return true;
+
+         return false;
+      }
+      else // > 5 minutes without ticks = closed
+      {
+         return false;
+      }
    }
 
-   // Friday - check if too late (market closes ~21:00-22:00 GMT Friday)
-   if(dt.day_of_week == 5 && dt.hour >= 22) return false;
+   // Method 2: Fallback - check symbol quote time
+   string symbol = Symbol();
+   datetime symbolTime = (datetime)SymbolInfoInteger(symbol, SYMBOL_TIME);
 
-   // Monday-Thursday and early Friday = open
-   return true;
+   if(symbolTime > 0 && (currentTime - symbolTime) < 120)
+      return true;
+
+   // Method 3: Last resort - day check
+   MqlDateTime dt;
+   TimeToStruct(currentTime, dt);
+
+   if(dt.day_of_week == 6) return false; // Saturday
+   if(dt.day_of_week == 0) return false; // Sunday (unless late)
+
+   return false; // Default to closed if uncertain
 }
 
 //+------------------------------------------------------------------+
