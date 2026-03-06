@@ -206,6 +206,8 @@ input group "======= SESSION GOVERNOR ======="
 input bool              InpUseSessionGovernor = true;     // Enable Session Governor
 input int               InpMaxTradesPerSession = 3;       // Max Trades Per Session
 input int               InpTradeCooldownMinutes = 30;     // Cooldown Between Trades
+input bool              InpCloseIntradayProfits = true;   // Close Profitable Trades at EOD (H1 Intraday)
+input int               InpEndOfDayHour = 22;             // EOD Hour (Broker Time, typically 22:00 or 23:00)
 
 input group "======= VISUAL DEBUGGING ======="
 input bool              InpEnableVisualLevels = true;     // Draw Trade Levels on Chart
@@ -849,6 +851,32 @@ void OnTick()
 
    // --- GOVERNOR EMERGENCY CLOSE GUARD ---
    if(IsDailyTargetHit()) return; // Stop trailing/managing while Governor closes positions
+
+   // --- EOD INTRADAY CLOSE GUARD ---
+   if(InpCloseIntradayProfits && g_positionCount > 0)
+   {
+      MqlDateTime dt;
+      TimeCurrent(dt);
+      if(dt.hour >= InpEndOfDayHour)
+      {
+         bool closedAny = false;
+         for(int i = PositionsTotal() - 1; i >= 0; i--)
+         {
+            if(position.SelectByIndex(i) && position.Symbol() == _Symbol && position.Magic() == InpMagicNumber)
+            {
+               if(position.Profit() > 0) // Only close if in profit to avoid locking in unnecessary losses
+               {
+                  if(trade.PositionClose(position.Ticket()))
+                  {
+                     Print("[EOD CLOSE] Intraday profit secured for ", _Symbol, " at hour ", dt.hour);
+                     closedAny = true;
+                  }
+               }
+            }
+         }
+         if(closedAny) g_positionCount = CountPositions();
+      }
+   }
 
    ManagePositions();
    

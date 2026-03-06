@@ -4,28 +4,28 @@
 ; Risk: $20/trade | Max DD: $80 total | Sin daily DD limit
 
 ;═══════ PORTFOLIO LIMITS ═══════
-InpMaxPortfolioRisk=1.6
+InpMaxPortfolioRisk=20.0
 ; Max Total Portfolio Risk (%)
-; Permite hasta 2 trades de $20 simultáneos (1.6% × $2500 = $40).
+; Permite un riesgo de hasta 20% en el portfolio.
 
-InpMaxSymbolRisk=0.8
+InpMaxSymbolRisk=5.0
 ; Max Risk Per Symbol (%)
-; Exactamente 1 trade de $20 por símbolo (0.8% × $2500 = $20).
+; Maximo riesgo permitido por simbolo (hasta 5%).
 
-InpMaxGroupRisk=1.6
+InpMaxGroupRisk=10.0
 ; Max Risk Per Correlation Group (%)
 ; Máximo 2 trades correlacionados de $20 = $40.
 
 ;═══════ DRAWDOWN GOVERNOR ═══════
-InpDD_Normal=1.0
+InpDD_Normal=10.0
 ; DD Level: Normal Trading (%)
-; Reducir riesgo al llegar a $25 DD (~1.25 trades de $20)
+; Reducir riesgo al llegar a la mitad del DD max.
 
-InpDD_Reduced=1.6
+InpDD_Reduced=15.0
 ; DD Level: Reduced Risk (%)
-; $40 → cortar riesgo al 50% (2 trades perdedores de $20)
+; Cortar riesgo cuando se acerque al limite.
 
-InpDD_Pause=2.4
+InpDD_Pause=20.0
 ; DD Level: Pause Trading (%) - HARD STOP
 ; $60 → para bien antes del límite de $80
 
@@ -52,14 +52,14 @@ InpPF_ReducedMult=0.60
 ;═══════ DAILY/WEEKLY LIMITS ═══════
 InpDailyTarget=0.0
 ; $10 daily target.
-InpDailyMaxDD=1.0
-; $25 max limit for daily drawdown (1 trade de riesgo completo).
+InpDailyMaxDD=20.0
+; Límite de DD Diario.
 
-InpWeeklyMaxDD=2.5
-; Weekly Max Drawdown (%) = $62.50
+InpWeeklyMaxDD=20.0
+; Weekly Max Drawdown (%)
 
-InpMonthlyMaxDD=3.0
-; Monthly Max Drawdown (%) = $75 → bajo el límite de $80 del broker
+InpMonthlyMaxDD=20.0
+; Monthly Max Drawdown (%)
 
 ;═══════ CORRELATION GUARD ═══════
 InpUseCorrelationGuard=true

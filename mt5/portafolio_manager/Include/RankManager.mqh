@@ -50,7 +50,7 @@ private:
 
 public:
    CRankManager() : m_symbolCount(0), m_hysteresisThreshold(0.5),
-                    m_hysteresisCooldown(3), m_minSlots(2), m_maxSlots(10) {}
+                    m_hysteresisCooldown(1), m_minSlots(2), m_maxSlots(10) {}
 
    //+------------------------------------------------------------------+
    //| Discover Active Symbols (Auto-Discovery)                          |
@@ -178,8 +178,8 @@ public:
 
          // Momentum multiplier
          double momentumMult = 1.0;
-         if(m_ranks[i].momentumFactor >  2.0) momentumMult = 1.10;
-         if(m_ranks[i].momentumFactor < -2.0) momentumMult = 0.90;
+         if(m_ranks[i].momentumFactor >  2.0) momentumMult = 1.25;
+         if(m_ranks[i].momentumFactor < -2.0) momentumMult = 0.85;
 
          // Quality multiplier (3=ELITE, 2=STRONG, 1=GOOD)
          double quality = GlobalVariableGet("PG_Quality_" + sym2);

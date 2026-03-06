@@ -1,4 +1,4 @@
-
+﻿
 ; GBPUSD - H1 Timeframe
 ; Goat Funding - $80 Max DD | $20 Risk/trade | No ATR Buffer
 InpMagicNumber=100002
@@ -68,8 +68,8 @@ InpVolatilityThreshold=3.0
 InpVolatilitySpikeCooldown=15
 InpUseKelly=true
 InpKellyFraction=1.0
-InpDailyMaxDD=2.0
-InpWeeklyMaxDD=4.0
+InpDailyMaxDD=20.0
+InpWeeklyMaxDD=20.0
 InpDailyTarget=0.0
 InpEnableLearning=true
 InpLogTradesToFile=true
@@ -79,7 +79,7 @@ InpEnableAdaptiveRisk=false
 InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=true
 InpUseCorrelationFilter=true
-InpDailyMaxLoss_R=4.0
+InpDailyMaxLoss_R=20.0
 InpLossCooldownMinutes=30
 InpMaxConsecutiveLosses=2
 InpMaxDailyTrades=5
