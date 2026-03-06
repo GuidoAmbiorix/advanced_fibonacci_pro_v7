@@ -345,6 +345,92 @@ public:
    }
 
    //+------------------------------------------------------------------+
+   //| Get Symbol Data at Specific Rank (for Dashboard)                 |
+   //| Returns: "Symbol|Profit|WinRate|Trades|PF" or "" if not found    |
+   //+------------------------------------------------------------------+
+   string GetSymbolAtRank(int rankIndex)
+   {
+      if(rankIndex >= m_symbolCount || rankIndex < 0) return "";
+
+      string sym = m_ranks[rankIndex].symbol;
+
+      // Get profit, winrate, trades, PF from history
+      double profit = 0;
+      int wins = 0, losses = 0;
+
+      // Scan last 7 days of history for this symbol
+      datetime weekAgo = TimeCurrent() - 7 * 24 * 3600;
+      HistorySelect(weekAgo, TimeCurrent());
+      int total = HistoryDealsTotal();
+
+      for(int i = 0; i < total; i++)
+      {
+         ulong ticket = HistoryDealGetTicket(i);
+         if(ticket == 0) continue;
+
+         string dealSym = HistoryDealGetString(ticket, DEAL_SYMBOL);
+
+         // Match symbol (handle .pro suffix)
+         if(StringFind(dealSym, sym) < 0) continue;
+
+         long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
+         long dealType = HistoryDealGetInteger(ticket, DEAL_TYPE);
+
+         if(dealType != DEAL_TYPE_BUY && dealType != DEAL_TYPE_SELL) continue;
+         if(entry != DEAL_ENTRY_OUT && entry != DEAL_ENTRY_INOUT) continue;
+
+         double pnl = HistoryDealGetDouble(ticket, DEAL_PROFIT)
+                    + HistoryDealGetDouble(ticket, DEAL_SWAP)
+                    + HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+
+         profit += pnl;
+
+         if(pnl > 0)
+            wins++;
+         else if(pnl < 0)
+            losses++;
+      }
+
+      int totalTrades = wins + losses;
+      double winRate = totalTrades > 0 ? (double)wins / totalTrades * 100.0 : 0;
+
+      // Calculate PF from wins/losses
+      double grossProfit = 0, grossLoss = 0;
+      HistorySelect(weekAgo, TimeCurrent());
+      for(int i = 0; i < total; i++)
+      {
+         ulong ticket = HistoryDealGetTicket(i);
+         if(ticket == 0) continue;
+
+         string dealSym = HistoryDealGetString(ticket, DEAL_SYMBOL);
+         if(StringFind(dealSym, sym) < 0) continue;
+
+         long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
+         long dealType = HistoryDealGetInteger(ticket, DEAL_TYPE);
+
+         if(dealType != DEAL_TYPE_BUY && dealType != DEAL_TYPE_SELL) continue;
+         if(entry != DEAL_ENTRY_OUT && entry != DEAL_ENTRY_INOUT) continue;
+
+         double pnl = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+
+         if(pnl > 0)
+            grossProfit += pnl;
+         else if(pnl < 0)
+            grossLoss += MathAbs(pnl);
+      }
+
+      double pf = grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? 2.0 : 0);
+
+      // Clean symbol name
+      string cleanSym = sym;
+      StringReplace(cleanSym, ".pro", "");
+      StringReplace(cleanSym, ".PRO", "");
+
+      // Format: "Symbol|Profit|WinRate|Trades|PF"
+      return StringFormat("%s|%.0f|%.0f|%d|%.2f", cleanSym, profit, winRate, totalTrades, pf);
+   }
+
+   //+------------------------------------------------------------------+
    //| PHASE 2: Calculate dynamic slot allocation                        |
    //+------------------------------------------------------------------+
    int CalculateDynamicSlots()

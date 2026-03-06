@@ -32,9 +32,9 @@ input double InpMaxSymbolRisk = 0.6;           // Max Risk Per Symbol (%)
 input double InpMaxGroupRisk = 2.0;            // Max Risk Per Correlation Group (%)
 
 input group "═══════ DRAWDOWN GOVERNOR ═══════"
-input double InpDD_Normal = 3.0;               // DD Level: Normal Trading (%)
-input double InpDD_Reduced = 5.0;              // DD Level: Reduced Risk (%)
-input double InpDD_Pause = 8.0;                // DD Level: Pause Trading (%)
+input double InpDD_Normal = 1.5;               // DD Level: Normal Trading (%)
+input double InpDD_Reduced = 2.5;              // DD Level: Reduced Risk (%)
+input double InpDD_Pause = 3.5;                // DD Level: Pause Trading (%) [GOAT: Max 4%]
 input double InpDD_ReducedMult = 0.5;          // Risk Multiplier when DD > Normal
 
 input group "═══════ ROLLING PF GOVERNOR ═══════"
@@ -45,10 +45,10 @@ input double InpPF_Pause = 1.0;                // PF Level: Pause Trading
 input double InpPF_ReducedMult = 0.7;          // Risk Mult when PF < Normal
 
 input group "═══════ DAILY/WEEKLY LIMITS ═══════"
-input double InpDailyMaxDD = 3.0;              // Daily Max Drawdown (%)
-input double InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown (%)
-input double InpMonthlyMaxDD = 10.0;           // Monthly Max Drawdown (%)
-input double InpDailyTarget = 1.0;             // Daily Profit Target (%, 0=disabled)
+input double InpDailyMaxDD = 2.5;              // Daily Max Drawdown (%) [GOAT: No daily limit, but be safe]
+input double InpWeeklyMaxDD = 3.5;             // Weekly Max Drawdown (%) [GOAT: 4% trailing total]
+input double InpMonthlyMaxDD = 4.0;            // Monthly Max Drawdown (%) [GOAT: 4% trailing max]
+input double InpDailyTarget = 1.0;             // Daily Profit Target (%, 0=disabled) [1%=$25 on $2500]
 
 input group "═══════ CORRELATION GUARD ═══════"
 input bool   InpUseCorrelationGuard = true;    // Enable Correlation Guard
@@ -62,11 +62,11 @@ input int    InpMagicRange = 999;              // Magic Number Range (Base to Ba
 input group "═══════ UPDATE FREQUENCY ═══════"
 input int    InpUpdateSeconds = 5;             // Update Interval (seconds)
 
-input group "═══════ CONSISTENCY RULE ═══════"
+input group "═══════ CONSISTENCY RULE (GOAT INSTANT PRO) ═══════"
 input bool   InpEnableConsistencyRule = true;  // Enable prop-firm Consistency Rule
-input double InpConsistencyMaxPct    = 20.0;   // Max Best-Day % of Total Profit
-input double InpConsistencyWarnPct   = 85.0;   // Warning threshold (% of max, default 85)
-input double InpConsistencyMinUSD    = 150.0;  // Min total profit ($) before rule activates
+input double InpConsistencyMaxPct    = 20.0;   // Max Best-Day % of Total Profit [GOAT: 20%]
+input double InpConsistencyWarnPct   = 85.0;   // Warning threshold (% of max) [17% triggers warning]
+input double InpConsistencyMinUSD    = 125.0;  // Min total profit ($) before rule activates [~5% of $2500]
 input bool   InpConsistencyClose     = true;   // Proactively close positions when limit approached
 
 //+------------------------------------------------------------------+
@@ -99,6 +99,14 @@ struct DashboardCache
    bool forceUpdate;
 };
 DashboardCache g_dashCache;
+
+// Consistency tracking - Last 5 days history
+struct DailyPnL
+{
+   datetime date;
+   double profit;
+};
+DailyPnL g_last5Days[5];
 
 // Trade history for rolling PF
 double g_tradeResults[];  // Store last N trade results
@@ -1089,6 +1097,97 @@ void LogTransaction(string symbol, string action, double exposureBefore, double 
 }
 
 //+------------------------------------------------------------------+
+//| Helper: Count Trading Days (with 0.5%+ profit each)              |
+//+------------------------------------------------------------------+
+int CountTradingDays()
+{
+   MqlDateTime now;
+   TimeToStruct(TimeCurrent(), now);
+   datetime todayStart = StringToTime(StringFormat("%04d.%02d.%02d", now.year, now.mon, now.day));
+   datetime twoWeeksAgo = todayStart - 14 * 24 * 3600;
+
+   HistorySelect(twoWeeksAgo, TimeCurrent());
+   int total = HistoryDealsTotal();
+
+   // Track profit per day
+   double dayProfits[14];
+   ArrayInitialize(dayProfits, 0);
+
+   for(int i = 0; i < total; i++)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket == 0) continue;
+
+      long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
+      long dealType = HistoryDealGetInteger(ticket, DEAL_TYPE);
+
+      if(dealType != DEAL_TYPE_BUY && dealType != DEAL_TYPE_SELL) continue;
+      if(entry != DEAL_ENTRY_OUT && entry != DEAL_ENTRY_INOUT) continue;
+
+      datetime dealTime = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
+      double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT)
+                    + HistoryDealGetDouble(ticket, DEAL_SWAP)
+                    + HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+
+      // Calculate day index (0-13)
+      int dayIndex = (int)((dealTime - twoWeeksAgo) / (24 * 3600));
+      if(dayIndex >= 0 && dayIndex < 14)
+         dayProfits[dayIndex] += profit;
+   }
+
+   // Count days with 0.5%+ profit
+   int count = 0;
+   double threshold = account.Balance() * 0.005; // 0.5%
+
+   for(int i = 0; i < 14; i++)
+   {
+      if(dayProfits[i] >= threshold)
+         count++;
+   }
+
+   return count;
+}
+
+//+------------------------------------------------------------------+
+//| Helper: Get Today's Win Rate                                     |
+//+------------------------------------------------------------------+
+void GetTodayWinRate(int &wins, int &losses)
+{
+   wins = 0;
+   losses = 0;
+
+   MqlDateTime now;
+   TimeToStruct(TimeCurrent(), now);
+   datetime todayStart = StringToTime(StringFormat("%04d.%02d.%02d", now.year, now.mon, now.day));
+
+   HistorySelect(todayStart, TimeCurrent());
+   int total = HistoryDealsTotal();
+
+   for(int i = 0; i < total; i++)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket == 0) continue;
+
+      long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
+      long dealType = HistoryDealGetInteger(ticket, DEAL_TYPE);
+      long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
+
+      // Filter by magic number range
+      if(magic < InpMagicBase || magic > InpMagicBase + InpMagicRange) continue;
+
+      if(dealType != DEAL_TYPE_BUY && dealType != DEAL_TYPE_SELL) continue;
+      if(entry != DEAL_ENTRY_OUT && entry != DEAL_ENTRY_INOUT) continue;
+
+      double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+
+      if(profit > 0)
+         wins++;
+      else if(profit < 0)
+         losses++;
+   }
+}
+
+//+------------------------------------------------------------------+
 //| Dashboard - Enhanced Visual & Performance Optimized              |
 //+------------------------------------------------------------------+
 void UpdateDashboard()
@@ -1156,208 +1255,318 @@ void CreateVisualDashboard(double dd, double pf, double exposure, double riskMul
                           double cTotal, bool cBlocked, double dailyProfit)
 {
    int x = 15, y = 25;
-   int lineHeight = 20;
-   int sectionGap = 10;
+   int lineHeight = 18;
+   int sectionGap = 8;
    color bgColor = C'20,20,30';
    color textColor = clrWhiteSmoke;
 
-   // Main Panel Background
-   CreateRectLabel("GovBG", x, y, 600, 480, bgColor, clrNONE, 1, 0);
+   // Main Panel Background - Enlarged for more content
+   CreateRectLabel("GovBG", x, y, 620, 650, bgColor, clrNONE, 1, 0);
 
    // Header Section
    y += 10;
    color statusColor = tradingEnabled ? clrLimeGreen : clrOrangeRed;
    string statusText = tradingEnabled ? "● ONLINE" : "● PAUSED";
-   CreateLabel("GovHeader", x+10, y, "🧠 PORTFOLIO GOVERNOR v2.0", clrGold, 12, true);
-   CreateLabel("GovStatus", x+380, y, statusText, statusColor, 11, true);
-   CreateLabel("GovTime", x+490, y, TimeToString(TimeCurrent(), TIME_SECONDS), textColor, 9, false);
+   CreateLabel("GovHeader", x+10, y, "🧠 GOAT INSTANT PRO $2500", clrGold, 11, true);
+   CreateLabel("GovStatus", x+350, y, statusText, statusColor, 10, true);
+   CreateLabel("GovTime", x+490, y, TimeToString(TimeCurrent(), TIME_SECONDS), textColor, 8, false);
 
    y += lineHeight + sectionGap;
-   CreateSeparator("GovSep1", x+10, y, 580, clrDimGray);
+   CreateSeparator("GovSep1", x+10, y, 600, clrDimGray);
 
-   // Main Metrics Section
+   // ═══════════════════════════════════════════════════════════════
+   // SECTION 1: CONSISTENCY RULE (GOAT 20%) - PRIORITY #1
+   // ═══════════════════════════════════════════════════════════════
    y += sectionGap + 5;
-   CreateLabel("GovMetricsTitle", x+10, y, "📊 CORE METRICS", clrCornflowerBlue, 10, true);
+   CreateLabel("GovConsistTitle", x+10, y, "⚖️ CONSISTENCY RULE (20% MAX)", clrGold, 10, true);
+
+   string cStatus = "";
+   color cStatusColor = clrGray;
+
+   if(g_consistencyTotal < InpConsistencyMinUSD)
+   {
+      cStatus = "⏳ BUILDING";
+      cStatusColor = clrGray;
+   }
+   else if(cBlocked)
+   {
+      cStatus = "🔴 BLOCKED";
+      cStatusColor = clrRed;
+   }
+   else if(cRatio >= InpConsistencyMaxPct * InpConsistencyWarnPct / 100.0)
+   {
+      cStatus = "⚠️ WARNING";
+      cStatusColor = clrOrange;
+   }
+   else
+   {
+      cStatus = "✅ HEALTHY";
+      cStatusColor = clrLimeGreen;
+   }
+
+   CreateLabel("GovConsistStatus", x+420, y, cStatus, cStatusColor, 10, true);
 
    y += lineHeight;
-   // Drawdown with color coding
-   color ddColor = dd < InpDD_Normal ? clrLimeGreen :
-                   dd < InpDD_Reduced ? clrYellow :
-                   dd < InpDD_Pause ? clrOrange : clrRed;
-   CreateLabel("GovDDLabel", x+20, y, "Drawdown:", textColor, 9, false);
-   CreateLabel("GovDDValue", x+150, y, DoubleToString(dd, 2) + "%", ddColor, 10, true);
-   CreateProgressBar("GovDDBar", x+250, y-2, 150, 14, dd, InpDD_Pause, ddColor, bgColor);
-   CreateLabel("GovDDLimit", x+410, y, "Limit: " + DoubleToString(InpDD_Pause, 1) + "%", clrGray, 8, false);
+   CreateLabel("GovConsistRatioLabel", x+20, y, "Best/Total:", textColor, 9, false);
+   color ratioColor = cRatio < InpConsistencyMaxPct*0.5 ? clrLimeGreen :
+                     cRatio < InpConsistencyMaxPct*0.85 ? clrYellow : clrOrange;
+   CreateLabel("GovConsistRatioValue", x+120, y, DoubleToString(cRatio, 1) + "%", ratioColor, 11, true);
+   CreateProgressBar("GovConsistBar", x+200, y-2, 200, 14, cRatio, InpConsistencyMaxPct, ratioColor, bgColor);
+   CreateLabel("GovConsistLimit", x+410, y, "/" + DoubleToString(InpConsistencyMaxPct, 0) + "%", clrGray, 9, false);
 
    y += lineHeight;
-   // Profit Factor with color coding
-   color pfColor = pf >= InpPF_Normal ? clrLimeGreen :
-                   pf >= InpPF_Reduced ? clrYellow :
-                   pf >= InpPF_Pause ? clrOrange : clrRed;
-   CreateLabel("GovPFLabel", x+20, y, "Profit Factor:", textColor, 9, false);
-   CreateLabel("GovPFValue", x+150, y, DoubleToString(pf, 2), pfColor, 10, true);
-   string pfTarget = "Target: >" + DoubleToString(InpPF_Normal, 1);
-   CreateLabel("GovPFTarget", x+250, y, pfTarget, clrGray, 8, false);
-   CreateLabel("GovPFTrades", x+410, y, "Trades: " + IntegerToString(g_tradeCount), clrGray, 8, false);
+   CreateLabel("GovConsistBestLabel", x+20, y, "Best Day:", textColor, 8, false);
+   CreateLabel("GovConsistBestValue", x+120, y, "$" + DoubleToString(cBestDay, 2), clrGold, 9, true);
+   CreateLabel("GovConsistTotalLabel", x+250, y, "Total Profit:", textColor, 8, false);
+   CreateLabel("GovConsistTotalValue", x+350, y, "$" + DoubleToString(cTotal, 2), clrCornflowerBlue, 9, true);
 
-   y += lineHeight;
-   // Portfolio Exposure with progress bar
-   color exposureColor = exposure < InpMaxPortfolioRisk*0.6 ? clrLimeGreen :
-                        exposure < InpMaxPortfolioRisk*0.85 ? clrYellow : clrOrange;
-   CreateLabel("GovExpLabel", x+20, y, "Portfolio Risk:", textColor, 9, false);
-   CreateLabel("GovExpValue", x+150, y, DoubleToString(exposure, 2) + "%", exposureColor, 10, true);
-   CreateProgressBar("GovExpBar", x+250, y-2, 150, 14, exposure, InpMaxPortfolioRisk, exposureColor, bgColor);
-   CreateLabel("GovExpLimit", x+410, y, "Max: " + DoubleToString(InpMaxPortfolioRisk, 1) + "%", clrGray, 8, false);
+   // Safe trading limit calculation
+   if(g_consistencyTotal >= InpConsistencyMinUSD && cBestDay > 0)
+   {
+      y += lineHeight;
+      double maxSafeToday = (cTotal + cBestDay) * 0.199 - cTotal; // Can't exceed 19.9%
+      if(maxSafeToday < 0) maxSafeToday = 0;
 
+      color safeColor = maxSafeToday > 50 ? clrLimeGreen :
+                       maxSafeToday > 20 ? clrYellow : clrOrange;
+      CreateLabel("GovConsistSafeLabel", x+20, y, "💰 Safe to Win Today:", clrCyan, 9, true);
+      CreateLabel("GovConsistSafeValue", x+180, y, "$" + DoubleToString(maxSafeToday, 2), safeColor, 10, true);
+      CreateLabel("GovConsistSafeInfo", x+280, y, "(without violating 20%)", clrGray, 7, false);
+   }
+
+   // Missing profit calculation
+   double targetRatio = (InpConsistencyMaxPct - 0.1) / 100.0;
+   if(cRatio > targetRatio * 100.0 && cBestDay > 0 && g_consistencyTotal >= InpConsistencyMinUSD)
+   {
+      double requiredTotal = cBestDay / targetRatio;
+      double missing = requiredTotal - cTotal;
+      if(missing > 0)
+      {
+         y += lineHeight;
+         CreateLabel("GovConsistMissingLabel", x+20, y, "📊 Missing for Payout:", clrYellow, 9, true);
+         CreateLabel("GovConsistMissingValue", x+180, y, "$" + DoubleToString(missing, 2), clrYellow, 10, true);
+         int daysNeeded = (int)MathCeil(missing / 25.0); // Assuming $25/day average
+         CreateLabel("GovConsistDays", x+280, y, "~" + IntegerToString(daysNeeded) + " days @ $25/day", clrGray, 7, false);
+      }
+   }
+
+   // Trading days counter (Goat requires 3 minimum)
+   int tradingDaysThisCycle = CountTradingDays();
    y += lineHeight;
-   // Risk Multiplier
-   color multColor = riskMult >= 1.0 ? clrLimeGreen :
-                    riskMult >= 0.7 ? clrYellow : clrOrange;
-   CreateLabel("GovMultLabel", x+20, y, "Risk Multiplier:", textColor, 9, false);
-   CreateLabel("GovMultValue", x+150, y, DoubleToString(riskMult, 2) + "x", multColor, 10, true);
-   int multPct = (int)(riskMult * 100);
-   CreateProgressBar("GovMultBar", x+250, y-2, 150, 14, multPct, 100, multColor, bgColor);
-   CreateLabel("GovMultInfo", x+410, y, "Positions: " + IntegerToString(PositionsTotal()), clrGray, 8, false);
+   color daysColor = tradingDaysThisCycle >= 3 ? clrLimeGreen : clrOrange;
+   CreateLabel("GovTradingDaysLabel", x+20, y, "Trading Days:", textColor, 8, false);
+   CreateLabel("GovTradingDaysValue", x+120, y, IntegerToString(tradingDaysThisCycle) + "/3", daysColor, 9, true);
+   CreateLabel("GovTradingDaysInfo", x+180, y, "(min 3 for payout @ 0.5%+ each)", clrGray, 7, false);
 
    y += lineHeight + sectionGap;
-   CreateSeparator("GovSep2", x+10, y, 580, clrDimGray);
+   CreateSeparator("GovSep2", x+10, y, 600, clrDimGray);
 
-   // Daily Performance Section
+   // ═══════════════════════════════════════════════════════════════
+   // SECTION 2: DAILY PERFORMANCE - PRIORITY #2
+   // ═══════════════════════════════════════════════════════════════
    y += sectionGap + 5;
-   CreateLabel("GovDailyTitle", x+10, y, "📅 DAILY PERFORMANCE", clrCornflowerBlue, 10, true);
+   CreateLabel("GovDailyTitle", x+10, y, "📅 TODAY'S PERFORMANCE", clrCornflowerBlue, 10, true);
 
    y += lineHeight;
+   double dailyProfitUSD = account.Balance() * (dailyProfit / 100.0);
    color dailyColor = dailyProfit > 0 ? clrLimeGreen : dailyProfit < 0 ? clrRed : clrGray;
-   CreateLabel("GovDailyLabel", x+20, y, "Daily P&L:", textColor, 9, false);
-   CreateLabel("GovDailyValue", x+150, y, DoubleToString(dailyProfit, 2) + "%", dailyColor, 10, true);
+   CreateLabel("GovDailyLabel", x+20, y, "P&L Today:", textColor, 9, false);
+   CreateLabel("GovDailyValueUSD", x+110, y, "$" + DoubleToString(dailyProfitUSD, 2), dailyColor, 11, true);
+   CreateLabel("GovDailyValuePct", x+200, y, "(" + DoubleToString(dailyProfit, 2) + "%)", dailyColor, 9, false);
 
    if(InpDailyTarget > 0)
    {
       double targetPct = (dailyProfit / InpDailyTarget) * 100;
       targetPct = MathMax(0, MathMin(targetPct, 100));
       color targetColor = g_dailyTargetHit ? clrLimeGreen : clrCornflowerBlue;
-      CreateProgressBar("GovTargetBar", x+250, y-2, 150, 14, targetPct, 100, targetColor, bgColor);
-      string targetStatus = g_dailyTargetHit ? "✅ ACHIEVED" : DoubleToString(InpDailyTarget, 1) + "% Goal";
-      CreateLabel("GovTargetStatus", x+410, y, targetStatus, targetColor, 8, true);
+      CreateProgressBar("GovTargetBar", x+320, y-2, 150, 14, targetPct, 100, targetColor, bgColor);
+      string targetStatus = g_dailyTargetHit ? "✅ TARGET HIT" : "$" + DoubleToString(account.Balance() * InpDailyTarget / 100.0, 0) + " goal";
+      CreateLabel("GovTargetStatus", x+480, y, targetStatus, targetColor, 8, true);
    }
 
+   // Live Win Rate Today
    y += lineHeight;
-   double dailyDD = GlobalVariableGet(GV_DAILY_DD);
-   color dailyDDColor = dailyDD < InpDailyMaxDD*0.5 ? clrLimeGreen :
-                       dailyDD < InpDailyMaxDD*0.8 ? clrYellow : clrOrange;
-   CreateLabel("GovDailyDDLabel", x+20, y, "Daily DD:", textColor, 9, false);
-   CreateLabel("GovDailyDDValue", x+150, y, DoubleToString(dailyDD, 2) + "%", dailyDDColor, 10, true);
-   CreateProgressBar("GovDailyDDBar", x+250, y-2, 150, 14, dailyDD, InpDailyMaxDD, dailyDDColor, bgColor);
-   CreateLabel("GovDailyDDLimit", x+410, y, "Limit: " + DoubleToString(InpDailyMaxDD, 1) + "%", clrGray, 8, false);
+   int todayWins = 0, todayLosses = 0;
+   GetTodayWinRate(todayWins, todayLosses);
+   int totalToday = todayWins + todayLosses;
+   double winRateToday = totalToday > 0 ? (double)todayWins / totalToday * 100.0 : 0;
+   color wrColor = winRateToday >= 60 ? clrLimeGreen :
+                  winRateToday >= 45 ? clrYellow : clrOrange;
+   CreateLabel("GovWinRateLabel", x+20, y, "Win Rate:", textColor, 8, false);
+   CreateLabel("GovWinRateValue", x+110, y, DoubleToString(winRateToday, 0) + "%", wrColor, 9, true);
+   CreateLabel("GovWinRateBreakdown", x+180, y, "(" + IntegerToString(todayWins) + "W / " + IntegerToString(todayLosses) + "L)", clrGray, 8, false);
 
+   // Drawdown monitoring
    y += lineHeight;
-   double weeklyDD = GlobalVariableGet(GV_WEEKLY_DD);
-   color weeklyDDColor = weeklyDD < InpWeeklyMaxDD*0.5 ? clrLimeGreen :
-                        weeklyDD < InpWeeklyMaxDD*0.8 ? clrYellow : clrOrange;
-   CreateLabel("GovWeeklyDDLabel", x+20, y, "Weekly DD:", textColor, 9, false);
-   CreateLabel("GovWeeklyDDValue", x+150, y, DoubleToString(weeklyDD, 2) + "%", weeklyDDColor, 10, true);
-   CreateProgressBar("GovWeeklyDDBar", x+250, y-2, 150, 14, weeklyDD, InpWeeklyMaxDD, weeklyDDColor, bgColor);
-   CreateLabel("GovWeeklyDDLimit", x+410, y, "Limit: " + DoubleToString(InpWeeklyMaxDD, 1) + "%", clrGray, 8, false);
+   color ddColor = dd < InpDD_Normal ? clrLimeGreen :
+                   dd < InpDD_Reduced ? clrYellow :
+                   dd < InpDD_Pause ? clrOrange : clrRed;
+   CreateLabel("GovDDLabel", x+20, y, "Drawdown:", textColor, 8, false);
+   CreateLabel("GovDDValue", x+110, y, DoubleToString(dd, 2) + "%", ddColor, 9, true);
+   CreateProgressBar("GovDDBar", x+180, y-2, 150, 14, dd, InpDD_Pause, ddColor, bgColor);
+   CreateLabel("GovDDLimit", x+340, y, "Max: " + DoubleToString(InpDD_Pause, 1) + "% (GOAT: 4%)", clrGray, 7, false);
 
-   // Consistency Rule Section
-   if(InpEnableConsistencyRule)
+   y += lineHeight + sectionGap;
+   CreateSeparator("GovSep3", x+10, y, 600, clrDimGray);
+
+   // ═══════════════════════════════════════════════════════════════
+   // SECTION 3: ACTIVE TRADINGS - PRIORITY #3
+   // ═══════════════════════════════════════════════════════════════
+   y += sectionGap + 5;
+   int activePositions = PositionsTotal();
+   CreateLabel("GovActiveTitle", x+10, y, "📈 ACTIVE POSITIONS (" + IntegerToString(activePositions) + ")", clrCornflowerBlue, 10, true);
+
+   if(activePositions == 0)
    {
-      y += lineHeight + sectionGap;
-      CreateSeparator("GovSep3", x+10, y, 580, clrDimGray);
-
-      y += sectionGap + 5;
-      CreateLabel("GovConsistTitle", x+10, y, "⚖️ CONSISTENCY RULE (Prop Firm)", clrCornflowerBlue, 10, true);
-
       y += lineHeight;
-      string cStatus = "";
-      color cStatusColor = clrGray;
+      CreateLabel("GovNoPositions", x+20, y, "No open positions", clrGray, 9, false);
+   }
+   else
+   {
+      // Show up to 5 positions
+      int displayCount = MathMin(activePositions, 5);
+      double totalFloating = 0;
 
-      if(g_consistencyTotal < InpConsistencyMinUSD)
+      for(int i = 0; i < displayCount; i++)
       {
-         cStatus = "⏳ INACTIVE (Below $" + DoubleToString(InpConsistencyMinUSD, 0) + ")";
-         cStatusColor = clrGray;
-      }
-      else if(cBlocked)
-      {
-         cStatus = "🔴 BLOCKED";
-         cStatusColor = clrRed;
-      }
-      else if(cRatio >= InpConsistencyMaxPct * InpConsistencyWarnPct / 100.0)
-      {
-         cStatus = "⚠️ WARNING";
-         cStatusColor = clrOrange;
-      }
-      else
-      {
-         cStatus = "✅ HEALTHY";
-         cStatusColor = clrLimeGreen;
-      }
-
-      CreateLabel("GovConsistStatus", x+350, y, cStatus, cStatusColor, 10, true);
-
-      y += lineHeight;
-      CreateLabel("GovConsistBestLabel", x+20, y, "Best Day:", textColor, 9, false);
-      CreateLabel("GovConsistBestValue", x+150, y, "$" + DoubleToString(cBestDay, 2), clrGold, 9, true);
-      CreateLabel("GovConsistTotalLabel", x+310, y, "Total:", textColor, 9, false);
-      CreateLabel("GovConsistTotalValue", x+400, y, "$" + DoubleToString(cTotal, 2), clrCornflowerBlue, 9, true);
-
-      y += lineHeight;
-      CreateLabel("GovConsistRatioLabel", x+20, y, "Best/Total Ratio:", textColor, 9, false);
-      color ratioColor = cRatio < InpConsistencyMaxPct*0.5 ? clrLimeGreen :
-                        cRatio < InpConsistencyMaxPct*0.85 ? clrYellow : clrOrange;
-      CreateLabel("GovConsistRatioValue", x+150, y, DoubleToString(cRatio, 1) + "%", ratioColor, 10, true);
-      CreateProgressBar("GovConsistBar", x+250, y-2, 150, 14, cRatio, InpConsistencyMaxPct, ratioColor, bgColor);
-      CreateLabel("GovConsistLimit", x+410, y, "Max: " + DoubleToString(InpConsistencyMaxPct, 1) + "%", clrGray, 8, false);
-
-      // Missing profit calculation
-      double targetRatio = (InpConsistencyMaxPct - 0.1) / 100.0;
-      if(cRatio > targetRatio * 100.0 && cBestDay > 0 && g_consistencyTotal >= InpConsistencyMinUSD)
-      {
-         double requiredTotal = cBestDay / targetRatio;
-         double missing = requiredTotal - cTotal;
-         if(missing > 0)
+         if(position.SelectByIndex(i))
          {
             y += lineHeight;
-            CreateLabel("GovConsistMissingLabel", x+20, y, "💰 Missing for Payout:", clrYellow, 9, true);
-            CreateLabel("GovConsistMissingValue", x+200, y, "$" + DoubleToString(missing, 2), clrYellow, 10, true);
-            CreateLabel("GovConsistGoal", x+350, y, "Goal: $" + DoubleToString(requiredTotal, 2), clrGray, 8, false);
+            string symbol = position.Symbol();
+            string direction = position.Type() == POSITION_TYPE_BUY ? "BUY" : "SELL";
+            double floating = position.Profit() + position.Swap();
+            totalFloating += floating;
+            color floatColor = floating > 0 ? clrLimeGreen : floating < 0 ? clrRed : clrGray;
+
+            // Clean symbol name
+            string cleanSym = symbol;
+            StringReplace(cleanSym, ".pro", "");
+            StringReplace(cleanSym, ".PRO", "");
+
+            CreateLabel("GovPos" + IntegerToString(i) + "Sym", x+20, y, cleanSym, textColor, 8, false);
+            CreateLabel("GovPos" + IntegerToString(i) + "Dir", x+110, y, direction,
+                       direction == "BUY" ? clrDodgerBlue : clrOrange, 8, true);
+            CreateLabel("GovPos" + IntegerToString(i) + "Float", x+170, y,
+                       DoubleToString(floating, 2), floatColor, 9, true);
+
+            // Duration
+            datetime openTime = position.Time();
+            int durationMinutes = (int)((TimeCurrent() - openTime) / 60);
+            int hours = durationMinutes / 60;
+            int mins = durationMinutes % 60;
+            string duration = IntegerToString(hours) + "h " + IntegerToString(mins) + "m";
+            CreateLabel("GovPos" + IntegerToString(i) + "Dur", x+260, y, duration, clrGray, 7, false);
+
+            // Volume
+            CreateLabel("GovPos" + IntegerToString(i) + "Vol", x+340, y,
+                       DoubleToString(position.Volume(), 2) + " lot", clrGray, 7, false);
          }
+      }
+
+      if(activePositions > 5)
+      {
+         y += lineHeight;
+         CreateLabel("GovPosMore", x+20, y, "... +" + IntegerToString(activePositions - 5) + " more positions", clrGray, 7, false);
+      }
+
+      // Total Floating Summary
+      y += lineHeight + 3;
+      CreateSeparator("GovPosSep", x+20, y, 560, clrDimGray);
+      y += 8;
+      color totalFloatColor = totalFloating > 0 ? clrLimeGreen : totalFloating < 0 ? clrRed : clrGray;
+      CreateLabel("GovFloatTotalLabel", x+20, y, "Total Floating P&L:", textColor, 9, true);
+      CreateLabel("GovFloatTotalValue", x+170, y, "$" + DoubleToString(totalFloating, 2), totalFloatColor, 10, true);
+
+      // Exposure
+      CreateLabel("GovExpLabel", x+320, y, "Risk Exposure:", textColor, 8, false);
+      CreateLabel("GovExpValue", x+420, y, DoubleToString(exposure, 2) + "%", clrCornflowerBlue, 9, true);
+   }
+
+   y += lineHeight + sectionGap;
+   CreateSeparator("GovSep4", x+10, y, 600, clrDimGray);
+
+   // ═══════════════════════════════════════════════════════════════
+   // SECTION 4: TOP PERFORMERS (RANKING) - PRIORITY #4
+   // ═══════════════════════════════════════════════════════════════
+   y += sectionGap + 5;
+   CreateLabel("GovRankTitle", x+10, y, "🏆 TOP PERFORMERS", clrCornflowerBlue, 10, true);
+
+   // Get ranking data
+   string medals[3] = {"🥇", "🥈", "🥉"};
+   color rankColors[3] = {clrGold, clrSilver, C'205,127,50'};
+
+   y += lineHeight - 2;
+   CreateLabel("GovRankHeader1", x+20, y, "SYMBOL", clrGray, 7, false);
+   CreateLabel("GovRankHeader2", x+120, y, "PROFIT", clrGray, 7, false);
+   CreateLabel("GovRankHeader3", x+210, y, "WIN%", clrGray, 7, false);
+   CreateLabel("GovRankHeader4", x+280, y, "TRADES", clrGray, 7, false);
+   CreateLabel("GovRankHeader5", x+360, y, "PF", clrGray, 7, false);
+
+   // Display top 3 with medals
+   for(int rank = 0; rank < 3; rank++)
+   {
+      string symData = rankManager.GetSymbolAtRank(rank);
+      if(symData == "") break;
+
+      y += lineHeight;
+
+      // Parse symbol data: "Symbol|Profit|WinRate|Trades|PF"
+      string parts[];
+      int split = StringSplit(symData, '|', parts);
+      if(split >= 5)
+      {
+         string sym = parts[0];
+         double profit = StringToDouble(parts[1]);
+         double winRate = StringToDouble(parts[2]);
+         int trades = (int)StringToInteger(parts[3]);
+         double pf = StringToDouble(parts[4]);
+
+         color profitColor = profit > 0 ? clrLimeGreen : profit < 0 ? clrRed : clrGray;
+
+         CreateLabel("GovRank" + IntegerToString(rank) + "Medal", x+20, y, medals[rank], rankColors[rank], 10, false);
+         CreateLabel("GovRank" + IntegerToString(rank) + "Sym", x+40, y, sym, textColor, 9, true);
+         CreateLabel("GovRank" + IntegerToString(rank) + "Profit", x+120, y, "$" + DoubleToString(profit, 0), profitColor, 9, true);
+
+         color wrColor = winRate >= 60 ? clrLimeGreen : winRate >= 45 ? clrYellow : clrOrange;
+         CreateLabel("GovRank" + IntegerToString(rank) + "WR", x+210, y, DoubleToString(winRate, 0) + "%", wrColor, 8, false);
+         CreateLabel("GovRank" + IntegerToString(rank) + "Trades", x+280, y, IntegerToString(trades), clrGray, 8, false);
+
+         color pfColor = pf >= 2.0 ? clrLimeGreen : pf >= 1.5 ? clrYellow : clrOrange;
+         CreateLabel("GovRank" + IntegerToString(rank) + "PF", x+360, y, DoubleToString(pf, 2), pfColor, 8, false);
       }
    }
 
-   // Group Risk Section
+   // Portfolio-level stats
    y += lineHeight + sectionGap;
-   CreateSeparator("GovSep4", x+10, y, 580, clrDimGray);
+   CreateSeparator("GovSep5", x+10, y, 600, clrDimGray);
 
    y += sectionGap + 5;
-   CreateLabel("GovGroupTitle", x+10, y, "🌍 CORRELATION GROUPS", clrCornflowerBlue, 10, true);
+   CreateLabel("GovPortfolioTitle", x+10, y, "📊 PORTFOLIO HEALTH", clrCornflowerBlue, 10, true);
 
+   y += lineHeight;
+   color pfColor = pf >= InpPF_Normal ? clrLimeGreen :
+                   pf >= InpPF_Reduced ? clrYellow : clrOrange;
+   CreateLabel("GovPFLabel", x+20, y, "Profit Factor:", textColor, 8, false);
+   CreateLabel("GovPFValue", x+130, y, DoubleToString(pf, 2), pfColor, 9, true);
+   CreateLabel("GovPFTrades", x+200, y, "(" + IntegerToString(g_tradeCount) + " trades)", clrGray, 7, false);
+
+   color multColor = riskMult >= 1.0 ? clrLimeGreen :
+                    riskMult >= 0.7 ? clrYellow : clrOrange;
+   CreateLabel("GovMultLabel", x+320, y, "Risk Mult:", textColor, 8, false);
+   CreateLabel("GovMultValue", x+420, y, DoubleToString(riskMult, 2) + "x", multColor, 9, true);
+
+   // Correlation Groups Summary
    y += lineHeight;
    double usdRisk = GlobalVariableGet(GV_GROUP_USD_RISK);
-   CreateGroupRiskLine("USD", x+20, y, usdRisk, InpMaxGroupRisk, textColor, bgColor);
-
-   y += lineHeight;
    double jpyRisk = GlobalVariableGet(GV_GROUP_JPY_RISK);
-   CreateGroupRiskLine("JPY", x+20, y, jpyRisk, InpMaxGroupRisk, textColor, bgColor);
-
-   y += lineHeight;
    double gbpRisk = GlobalVariableGet(GV_GROUP_GBP_RISK);
-   CreateGroupRiskLine("GBP", x+20, y, gbpRisk, InpMaxGroupRisk, textColor, bgColor);
-
-   y += lineHeight;
    double metalsRisk = GlobalVariableGet(GV_GROUP_METALS_RISK);
-   CreateGroupRiskLine("XAU", x+20, y, metalsRisk, InpMaxGroupRisk, textColor, bgColor);
 
-   // Footer - Top 5 Rankings
-   y += lineHeight + sectionGap;
-   CreateSeparator("GovSep5", x+10, y, 580, clrDimGray);
-
-   y += sectionGap + 5;
-   CreateLabel("GovRankTitle", x+10, y, "🏆 TOP SYMBOLS", clrCornflowerBlue, 10, true);
-
-   y += lineHeight - 5;
-   string rankTable = rankManager.GetRankingTable(5);
-   CreateLabel("GovRankTable", x+20, y, rankTable, textColor, 8, false);
+   CreateLabel("GovGroupLabel", x+20, y, "Groups:", textColor, 8, false);
+   CreateLabel("GovGroupUSD", x+90, y, "USD:" + DoubleToString(usdRisk, 1) + "%", clrGray, 7, false);
+   CreateLabel("GovGroupJPY", x+170, y, "JPY:" + DoubleToString(jpyRisk, 1) + "%", clrGray, 7, false);
+   CreateLabel("GovGroupGBP", x+250, y, "GBP:" + DoubleToString(gbpRisk, 1) + "%", clrGray, 7, false);
+   CreateLabel("GovGroupXAU", x+330, y, "XAU:" + DoubleToString(metalsRisk, 1) + "%", clrGray, 7, false);
 
    ChartRedraw();
 }
