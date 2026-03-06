@@ -27,9 +27,9 @@ CRankManager       rankManager;
 //+------------------------------------------------------------------+
 
 input group "═══════ PORTFOLIO LIMITS ═══════"
-input double InpMaxPortfolioRisk = 2.0;        // Max Total Portfolio Risk (%)
+input double InpMaxPortfolioRisk = 3.0;        // Max Total Portfolio Risk (%)
 input double InpMaxSymbolRisk = 0.6;           // Max Risk Per Symbol (%)
-input double InpMaxGroupRisk = 1.0;            // Max Risk Per Correlation Group (%)
+input double InpMaxGroupRisk = 2.0;            // Max Risk Per Correlation Group (%)
 
 input group "═══════ DRAWDOWN GOVERNOR ═══════"
 input double InpDD_Normal = 3.0;               // DD Level: Normal Trading (%)
@@ -48,7 +48,7 @@ input group "═══════ DAILY/WEEKLY LIMITS ═══════"
 input double InpDailyMaxDD = 3.0;              // Daily Max Drawdown (%)
 input double InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown (%)
 input double InpMonthlyMaxDD = 10.0;           // Monthly Max Drawdown (%)
-input double InpDailyTarget = 0.0;             // Daily Profit Target (%, 0=disabled)
+input double InpDailyTarget = 1.0;             // Daily Profit Target (%, 0=disabled)
 
 input group "═══════ CORRELATION GUARD ═══════"
 input bool   InpUseCorrelationGuard = true;    // Enable Correlation Guard
@@ -66,7 +66,7 @@ input group "═══════ CONSISTENCY RULE ═══════"
 input bool   InpEnableConsistencyRule = true;  // Enable prop-firm Consistency Rule
 input double InpConsistencyMaxPct    = 20.0;   // Max Best-Day % of Total Profit
 input double InpConsistencyWarnPct   = 85.0;   // Warning threshold (% of max, default 85)
-input double InpConsistencyMinUSD    = 10.0;   // Min total profit ($) before rule activates
+input double InpConsistencyMinUSD    = 130.0;  // Min total profit ($) before rule activates
 input bool   InpConsistencyClose     = true;   // Proactively close positions when limit approached
 
 //+------------------------------------------------------------------+
