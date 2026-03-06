@@ -824,9 +824,20 @@ void CalculateConsistencyMetrics()
    GlobalVariableSet(GV_CONSISTENCY_RATIO,    ratio);
    GlobalVariableSet(GV_CONSISTENCY_BLOCKED,  g_consistencyBlocked ? 1 : 0);
 
+   static bool s_skippedLogged = false;
    if(g_consistencyTotal < InpConsistencyMinUSD)
-      Print("[CONSISTENCY] Skipped: Total profit below minimum ($",
-            DoubleToString(g_consistencyTotal, 2), " < $", DoubleToString(InpConsistencyMinUSD, 2), ")");
+   {
+      if(!s_skippedLogged)
+      {
+         Print("[CONSISTENCY] Skipped: Total profit below minimum ($",
+               DoubleToString(g_consistencyTotal, 2), " < $", DoubleToString(InpConsistencyMinUSD, 2), ")");
+         s_skippedLogged = true;
+      }
+   }
+   else
+   {
+      s_skippedLogged = false; // Reset if we pass the minimum
+   }
 }
 
 //+------------------------------------------------------------------+
@@ -1078,6 +1089,17 @@ void UpdateDashboard()
       text += "CONSIST: BestDay=$" + DoubleToString(cBestDay, 2) +
               " | Total=$" + DoubleToString(cTotal, 2) +
               " | " + DoubleToString(cRatio, 1) + "% [" + cStatus + "]\n";
+      
+      // Compute missing profit for payout if blocked or warning
+      double targetRatio = (InpConsistencyMaxPct - 0.1) / 100.0; // 19.9%
+      if(cRatio > targetRatio * 100.0 && cBestDay > 0)
+      {
+         double requiredTotal = cBestDay / targetRatio;
+         double missing = requiredTotal - cTotal;
+         if(missing > 0)
+            text += "➔ Faltante para Retirar: $" + DoubleToString(missing, 2) + 
+                    " (Meta: $" + DoubleToString(requiredTotal, 2) + ")\n";
+      }
    }
 
    text += "--------------------------------------\n";
