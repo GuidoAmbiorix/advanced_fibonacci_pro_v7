@@ -511,15 +511,23 @@ void OnTrade()
             long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
             long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
             
-            // Check if it's our trade and an exit
+            // Check if it's our trade and an exit for Portfolio metrics
             if(magic >= InpMagicBase && magic <= InpMagicBase + InpMagicRange)
             {
                if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_INOUT)
                {
                   double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
                   AddTradeResult(profit);
+               }
+            }
 
-                  // --- Consistency Rule: incremental update ---
+            // --- Consistency Rule: incremental update ---
+            // Consistency rule applies to the ENTIRE ACCOUNT (all magic numbers)
+            if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_INOUT)
+            {
+               long dealType = HistoryDealGetInteger(ticket, DEAL_TYPE);
+               if(dealType == DEAL_TYPE_BUY || dealType == DEAL_TYPE_SELL)
+               {
                   // Check if this deal closed TODAY
                   datetime dealTime = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
                   MqlDateTime dealDT, nowDT;
@@ -535,7 +543,6 @@ void OnTrade()
                      g_consistencyTodayReal += fullPnL;
 
                      // Invalidate cache so next Governor tick re-runs CalculateConsistencyMetrics
-                     // and CheckConsistencyProactiveClose gets fresh data immediately
                      g_consistencyScanned = false;
 
                      Print("[CONSISTENCY] Trade closed today. TodayReal updated: $",
@@ -693,6 +700,9 @@ void UpdateRiskMultiplier()
 //+------------------------------------------------------------------+
 //| Sum floating P&L of all managed open positions                    |
 //+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| Sum floating P&L of ALL open positions in the account             |
+//+------------------------------------------------------------------+
 double GetTotalOpenFloating()
 {
    double total = 0;
@@ -700,9 +710,9 @@ double GetTotalOpenFloating()
    {
       if(position.SelectByIndex(i))
       {
-         long magic = position.Magic();
-         if(magic >= InpMagicBase && magic <= InpMagicBase + InpMagicRange)
-            total += position.Profit() + position.Swap();
+         // For Prop Firm consistency rules, ALL floating profit counts
+         // regardless of the strategy or manual entry
+         total += position.Profit() + position.Swap();
       }
    }
    return total;
@@ -742,9 +752,12 @@ void CalculateConsistencyMetrics()
          ulong ticket = HistoryDealGetTicket(i);
          if(ticket == 0) continue;
 
-         long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
          long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
-         if(magic < InpMagicBase || magic > InpMagicBase + InpMagicRange) continue;
+         long dealType = HistoryDealGetInteger(ticket, DEAL_TYPE);
+         
+         // Consistency rule: must include ALL trades in the account (prop firm view)
+         // Exclude balance operations (deposits/withdrawals)
+         if(dealType != DEAL_TYPE_BUY && dealType != DEAL_TYPE_SELL) continue;
          if(entry != DEAL_ENTRY_OUT && entry != DEAL_ENTRY_INOUT) continue;
 
          datetime dealTime = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
