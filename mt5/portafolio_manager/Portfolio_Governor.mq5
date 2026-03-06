@@ -66,7 +66,7 @@ input group "═══════ CONSISTENCY RULE ═══════"
 input bool   InpEnableConsistencyRule = true;  // Enable prop-firm Consistency Rule
 input double InpConsistencyMaxPct    = 20.0;   // Max Best-Day % of Total Profit
 input double InpConsistencyWarnPct   = 85.0;   // Warning threshold (% of max, default 85)
-input double InpConsistencyMinUSD    = 50.0;   // Min total profit ($) before rule activates
+input double InpConsistencyMinUSD    = 10.0;   // Min total profit ($) before rule activates
 input bool   InpConsistencyClose     = true;   // Proactively close positions when limit approached
 
 //+------------------------------------------------------------------+
