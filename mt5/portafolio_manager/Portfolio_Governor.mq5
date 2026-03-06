@@ -62,6 +62,13 @@ input int    InpMagicRange = 999;              // Magic Number Range (Base to Ba
 input group "═══════ UPDATE FREQUENCY ═══════"
 input int    InpUpdateSeconds = 5;             // Update Interval (seconds)
 
+input group "═══════ CONSISTENCY RULE ═══════"
+input bool   InpEnableConsistencyRule = true;  // Enable prop-firm Consistency Rule
+input double InpConsistencyMaxPct    = 20.0;   // Max Best-Day % of Total Profit
+input double InpConsistencyWarnPct   = 85.0;   // Warning threshold (% of max, default 85)
+input double InpConsistencyMinUSD    = 50.0;   // Min total profit ($) before rule activates
+input bool   InpConsistencyClose     = true;   // Proactively close positions when limit approached
+
 //+------------------------------------------------------------------+
 //| GLOBAL VARIABLES                                                  |
 //+------------------------------------------------------------------+
@@ -91,6 +98,14 @@ bool g_weeklyLimitHit = false;
 bool g_monthlyLimitHit = false;
 bool g_dailyTargetHit = false;
 bool g_dailyTargetPositionsClosed = false;
+
+// Consistency Rule tracking
+double   g_consistencyBestDay   = 0;   // Best single-day realized profit ($)
+double   g_consistencyTotal     = 0;   // Sum of all positive closed-day profits ($)
+double   g_consistencyTodayReal = 0;   // Today's realized (closed) profit ($)
+bool     g_consistencyBlocked   = false;
+bool     g_consistencyScanned   = false; // True once the full history scan ran today
+datetime g_consistencyScanDate  = 0;
 
 // Correlation matrix (pre-defined known correlations)
 struct SymbolCorrelation
@@ -157,6 +172,12 @@ int OnInit()
    GlobalVariableSet(GV_DAILY_PROFIT, 0);
    GlobalVariableSet(GV_DAILY_TARGET_HIT, 0);
 
+   // Consistency Rule GVs
+   GlobalVariableSet(GV_CONSISTENCY_BEST_DAY, 0);
+   GlobalVariableSet(GV_CONSISTENCY_TOTAL,    0);
+   GlobalVariableSet(GV_CONSISTENCY_RATIO,    0);
+   GlobalVariableSet(GV_CONSISTENCY_BLOCKED,  0);
+
    Print("===============================================================");
    // Initialize Rank Manager: Auto-Discovery is now active (no manual AddSymbol needed)
    
@@ -217,19 +238,27 @@ void OnTick()
    // 2. Calculate daily/weekly drawdowns
    CalculatePeriodDrawdowns();
 
-   // 3. Update risk multiplier
+   // 3. Consistency Rule metrics
+   if(InpEnableConsistencyRule)
+      CalculateConsistencyMetrics();
+
+   // 4. Update risk multiplier
    UpdateRiskMultiplier();
 
-   // 4. Update trading enabled status
+   // 5. Update trading enabled status
    UpdateTradingStatus();
 
-   // 5. Update dashboard
+   // 6. Proactive close if trade is rushing toward best-day cap
+   if(InpEnableConsistencyRule && InpConsistencyClose)
+      CheckConsistencyProactiveClose();
+
+   // 7. Update dashboard
    UpdateDashboard();
 
-   // 6. Update Ranks (Ranking System)
+   // 8. Update Ranks (Ranking System)
    rankManager.UpdateRanks();
 
-   // 7. Publish update timestamp
+   // 9. Publish update timestamp
    GlobalVariableSet(GV_LAST_UPDATE, (double)TimeCurrent());
 }
 
@@ -255,6 +284,11 @@ void CheckPeriodReset()
       GlobalVariableSet(GV_DAILY_PROFIT, 0);
       g_lastDayCheck = TimeCurrent();
       GlobalVariableSet(GV_DAILY_START_EQUITY, g_dailyStartEquity);
+      // Consistency Rule: reset today's realized profit and force full re-scan
+      g_consistencyTodayReal = 0;
+      g_consistencyScanned   = false;
+      g_consistencyBlocked   = false;
+      GlobalVariableSet(GV_CONSISTENCY_BLOCKED, 0);
       Print("New trading day - Daily reset. Start Equity: ", g_dailyStartEquity);
    }
 
@@ -484,6 +518,30 @@ void OnTrade()
                {
                   double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
                   AddTradeResult(profit);
+
+                  // --- Consistency Rule: incremental update ---
+                  // Check if this deal closed TODAY
+                  datetime dealTime = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
+                  MqlDateTime dealDT, nowDT;
+                  TimeToStruct(dealTime, dealDT);
+                  TimeToStruct(TimeCurrent(), nowDT);
+
+                  if(dealDT.year == nowDT.year && dealDT.mon == nowDT.mon && dealDT.day == nowDT.day)
+                  {
+                     // Full P&L = profit + swap + commission
+                     double fullPnL = HistoryDealGetDouble(ticket, DEAL_PROFIT)
+                                    + HistoryDealGetDouble(ticket, DEAL_SWAP)
+                                    + HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+                     g_consistencyTodayReal += fullPnL;
+
+                     // Invalidate cache so next Governor tick re-runs CalculateConsistencyMetrics
+                     // and CheckConsistencyProactiveClose gets fresh data immediately
+                     g_consistencyScanned = false;
+
+                     Print("[CONSISTENCY] Trade closed today. TodayReal updated: $",
+                           DoubleToString(g_consistencyTodayReal, 2),
+                           " | PnL: $", DoubleToString(fullPnL, 2));
+                  }
                }
             }
          }
@@ -632,6 +690,168 @@ void UpdateRiskMultiplier()
 //+------------------------------------------------------------------+
 //| Update trading enabled status                                     |
 //+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| Sum floating P&L of all managed open positions                    |
+//+------------------------------------------------------------------+
+double GetTotalOpenFloating()
+{
+   double total = 0;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      if(position.SelectByIndex(i))
+      {
+         long magic = position.Magic();
+         if(magic >= InpMagicBase && magic <= InpMagicBase + InpMagicRange)
+            total += position.Profit() + position.Swap();
+      }
+   }
+   return total;
+}
+
+//+------------------------------------------------------------------+
+//| Scan deal history to compute consistency metrics                  |
+//+------------------------------------------------------------------+
+void CalculateConsistencyMetrics()
+{
+   MqlDateTime now;
+   TimeToStruct(TimeCurrent(), now);
+   datetime todayStart = StringToTime(StringFormat("%04d.%02d.%02d", now.year, now.mon, now.day));
+
+   // Full history scan: once per day (or on first run)
+   if(!g_consistencyScanned || g_consistencyScanDate != todayStart)
+   {
+      g_consistencyScanned   = true;
+      g_consistencyScanDate  = todayStart;
+      g_consistencyBestDay   = 0;
+      g_consistencyTotal     = 0;
+      g_consistencyTodayReal = 0;
+
+      // Scan entire history grouped by calendar day
+      HistorySelect(0, TimeCurrent());
+      int total = HistoryDealsTotal();
+
+      // Map day -> profit using a simple two-pass approach
+      // Pass 1: collect all exit deals
+      datetime dayBucket  = 0;
+      double   dayProfit  = 0;
+      double   prevDay    = 0;
+
+      // We need per-day sums; iterate chrono order (history is chronological)
+      for(int i = 0; i < total; i++)
+      {
+         ulong ticket = HistoryDealGetTicket(i);
+         if(ticket == 0) continue;
+
+         long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
+         long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
+         if(magic < InpMagicBase || magic > InpMagicBase + InpMagicRange) continue;
+         if(entry != DEAL_ENTRY_OUT && entry != DEAL_ENTRY_INOUT) continue;
+
+         datetime dealTime = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
+         double   profit   = HistoryDealGetDouble(ticket, DEAL_PROFIT)
+                           + HistoryDealGetDouble(ticket, DEAL_SWAP)
+                           + HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+
+         // Determine day bucket for this deal
+         MqlDateTime dt;
+         TimeToStruct(dealTime, dt);
+         datetime thisDayStart = StringToTime(StringFormat("%04d.%02d.%02d", dt.year, dt.mon, dt.day));
+
+         if(thisDayStart != dayBucket)
+         {
+            // Flush previous day
+            if(dayBucket > 0 && dayBucket < todayStart)
+            {
+               if(dayProfit > g_consistencyBestDay) g_consistencyBestDay = dayProfit;
+               if(dayProfit > 0)                    g_consistencyTotal  += dayProfit;
+            }
+            dayBucket = thisDayStart;
+            dayProfit = 0;
+         }
+
+         if(thisDayStart == todayStart)
+            g_consistencyTodayReal += profit;   // Today's realized
+         else
+            dayProfit += profit;
+      }
+
+      // Flush the last historical day (not today)
+      if(dayBucket > 0 && dayBucket < todayStart)
+      {
+         if(dayProfit > g_consistencyBestDay) g_consistencyBestDay = dayProfit;
+         if(dayProfit > 0)                    g_consistencyTotal  += dayProfit;
+      }
+   }
+   else
+   {
+      // Lightweight update: just recalculate today's realized from last known trade count
+      // (OnTrade already updates g_consistencyTodayReal via AddTradeResult flow,
+      //  but we re-scan today only to be safe when a new deal comes in)
+      // Nothing extra needed here — OnTrade handles incremental updates.
+   }
+
+   // Compute ratio (skip if not enough total profit — new account)
+   double ratio = 0;
+   if(g_consistencyTotal >= InpConsistencyMinUSD && g_consistencyTotal > 0)
+   {
+      // Best day for ratio purposes: max(historical best, today's realized)
+      double effectiveBest = MathMax(g_consistencyBestDay, g_consistencyTodayReal);
+      double effectiveTotal = g_consistencyTotal + MathMax(g_consistencyTodayReal, 0);
+      if(effectiveTotal > 0)
+         ratio = effectiveBest / effectiveTotal;
+   }
+
+   // Block flag
+   double limitRatio = InpConsistencyMaxPct / 100.0;
+   g_consistencyBlocked = (ratio >= limitRatio && g_consistencyTotal >= InpConsistencyMinUSD);
+
+   // Publish to GlobalVariables
+   GlobalVariableSet(GV_CONSISTENCY_BEST_DAY, MathMax(g_consistencyBestDay, g_consistencyTodayReal));
+   GlobalVariableSet(GV_CONSISTENCY_TOTAL,    g_consistencyTotal + MathMax(g_consistencyTodayReal, 0));
+   GlobalVariableSet(GV_CONSISTENCY_RATIO,    ratio);
+   GlobalVariableSet(GV_CONSISTENCY_BLOCKED,  g_consistencyBlocked ? 1 : 0);
+
+   if(g_consistencyTotal < InpConsistencyMinUSD)
+      Print("[CONSISTENCY] Skipped: Total profit below minimum ($",
+            DoubleToString(g_consistencyTotal, 2), " < $", DoubleToString(InpConsistencyMinUSD, 2), ")");
+}
+
+//+------------------------------------------------------------------+
+//| Proactive close: shut positions before they push today over cap   |
+//+------------------------------------------------------------------+
+void CheckConsistencyProactiveClose()
+{
+   // Skip if not enough accumulated profit (new account)
+   if(g_consistencyTotal < InpConsistencyMinUSD) return;
+
+   double limitRatio       = InpConsistencyMaxPct / 100.0;
+   double openFloat        = GetTotalOpenFloating();
+
+   // Only consider closing when floating profit is POSITIVE (don't close losers for this reason)
+   if(openFloat <= 0) return;
+
+   double projectedToday   = g_consistencyTodayReal + openFloat;
+   double projectedBest    = MathMax(g_consistencyBestDay, projectedToday);
+   double projectedTotal   = g_consistencyTotal + MathMax(projectedToday, 0);
+   double projectedRatio   = (projectedTotal > 0) ? projectedBest / projectedTotal : 0;
+
+   if(projectedRatio >= limitRatio)
+   {
+      Print("[CONSISTENCY] BREACH IMMINENT: Projected ratio ",
+            DoubleToString(projectedRatio * 100, 1), "% >= ",
+            DoubleToString(InpConsistencyMaxPct, 1), "%");
+      Print("[CONSISTENCY] TodayReal=$", DoubleToString(g_consistencyTodayReal, 2),
+            " | OpenFloat=$", DoubleToString(openFloat, 2),
+            " | Projected=$", DoubleToString(projectedToday, 2));
+      Print("[CONSISTENCY] BestDay(proj)=$", DoubleToString(projectedBest, 2),
+            " | Total(proj)=$", DoubleToString(projectedTotal, 2));
+      CloseAllPositions("Consistency Rule: Best day limit approaching " +
+                        DoubleToString(projectedRatio * 100, 1) + "%");
+      // Force a metric refresh after the close
+      g_consistencyScanned = false;
+   }
+}
+
 void UpdateTradingStatus()
 {
    double dd = GlobalVariableGet(GV_CURRENT_DD);
@@ -680,6 +900,40 @@ void UpdateTradingStatus()
    {
       enabled = false;
       reason = "Daily profit target hit (gains locked)";
+   }
+
+   // Pause / reduce risk when Consistency Rule is breached
+   if(InpEnableConsistencyRule && g_consistencyTotal >= InpConsistencyMinUSD)
+   {
+      double ratio        = GlobalVariableGet(GV_CONSISTENCY_RATIO);
+      double limitRatio   = InpConsistencyMaxPct / 100.0;
+      double warnRatio    = limitRatio * (InpConsistencyWarnPct / 100.0);
+
+      if(g_consistencyBlocked)
+      {
+         enabled = false;
+         reason  = "Consistency Rule: Best day = " +
+                   DoubleToString(ratio * 100.0, 1) + "% >= " +
+                   DoubleToString(InpConsistencyMaxPct, 1) + "% limit";
+      }
+      else if(ratio >= warnRatio)
+      {
+         // Warning zone: reduce multiplier to 50% to slow further gains
+         double currentMult = GlobalVariableGet(GV_RISK_MULTIPLIER);
+         GlobalVariableSet(GV_RISK_MULTIPLIER, MathMin(currentMult, 0.5));
+         static bool warnLogged = false;
+         if(!warnLogged)
+         {
+            Print("[CONSISTENCY] WARNING: Ratio ", DoubleToString(ratio * 100.0, 1),
+                  "% approaching limit. Risk multiplier capped at 0.50.");
+            warnLogged = true;
+         }
+      }
+      else
+      {
+         static bool warnLogged = false;
+         warnLogged = false; // reset so warning prints again if ratio climbs back
+      }
    }
    // Only log on state change to avoid spam every timer tick
    static bool lastEnabled = true;
@@ -795,6 +1049,24 @@ void UpdateDashboard()
    // --- LITE DASHBOARD (HEARTBEAT) ---
    string text = "🧠 GOVERNOR ONLINE | " + TimeToString(TimeCurrent(), TIME_SECONDS) + "\n";
    text += "DD: " + DoubleToString(dd, 2) + "% | PF: " + DoubleToString(pf, 2) + "\n";
+
+   // Consistency Rule display
+   if(InpEnableConsistencyRule)
+   {
+      double cRatio    = GlobalVariableGet(GV_CONSISTENCY_RATIO) * 100.0;
+      double cBestDay  = GlobalVariableGet(GV_CONSISTENCY_BEST_DAY);
+      double cTotal    = GlobalVariableGet(GV_CONSISTENCY_TOTAL);
+      bool   cBlocked  = (GlobalVariableGet(GV_CONSISTENCY_BLOCKED) == 1);
+      string cStatus   = cBlocked ? "🔴 BLOCKED" :
+                         (cRatio >= InpConsistencyMaxPct * InpConsistencyWarnPct / 100.0) ?
+                         "⚠️ WARNING" : "✅ OK";
+      if(g_consistencyTotal < InpConsistencyMinUSD)
+         cStatus = "⏳ NEW ACCT";
+      text += "CONSIST: BestDay=$" + DoubleToString(cBestDay, 2) +
+              " | Total=$" + DoubleToString(cTotal, 2) +
+              " | " + DoubleToString(cRatio, 1) + "% [" + cStatus + "]\n";
+   }
+
    text += "--------------------------------------\n";
    text += rankManager.GetRankingTable(10); // Show Top 10
    
