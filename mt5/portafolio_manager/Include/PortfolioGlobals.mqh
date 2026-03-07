@@ -45,12 +45,6 @@
 #define GV_DAILY_PROFIT          "PG_DailyProfit"          // Today's profit %
 #define GV_DAILY_TARGET_HIT      "PG_DailyTargetHit"       // 1 = daily profit target reached today
 
-// Consistency Rule (Prop Firm: Best Day <= X% of Total Profit)
-#define GV_CONSISTENCY_BEST_DAY  "PG_ConsistencyBestDay"   // Best single-day profit ($)
-#define GV_CONSISTENCY_TOTAL     "PG_ConsistencyTotal"      // Total accumulated positive profit ($)
-#define GV_CONSISTENCY_RATIO     "PG_ConsistencyRatio"      // Best/Total ratio (0.0 – 1.0)
-#define GV_CONSISTENCY_BLOCKED   "PG_ConsistencyBlocked"    // 1 = new trades blocked by consistency rule
-
 // Session Status (Legacy - kept for backwards compatibility)
 #define GV_CURRENT_SESSION       "PG_CurrentSession"       // Current trading session (legacy)
 #define GV_SESSION_QUALITY       "PG_SessionQuality"       // Session quality rating (legacy)
