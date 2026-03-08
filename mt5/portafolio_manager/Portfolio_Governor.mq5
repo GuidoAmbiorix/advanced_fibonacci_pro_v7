@@ -1244,53 +1244,68 @@ void CreateVisualDashboard(double dd, double pf, double exposure, double riskMul
    CreateSeparator("GovSep4", x+10, y, 600, clrDimGray);
 
    // ═══════════════════════════════════════════════════════════════
-   // SECTION 4: TOP PERFORMERS (RANKING) - PRIORITY #4
+   // SECTION 4: LIVE SIGNALS RANKING - PRIORITY #4
    // ═══════════════════════════════════════════════════════════════
    y += sectionGap + 5;
-   CreateLabel("GovRankTitle", x+10, y, "🏆 TOP PERFORMERS", clrCornflowerBlue, 10, true);
+   CreateLabel("GovRankTitle", x+10, y, "🏆 LIVE SIGNALS RANKING", clrCornflowerBlue, 10, true);
 
-   // Get ranking data
-   string medals[3] = {"🥇", "🥈", "🥉"};
-   color rankColors[3] = {clrGold, clrSilver, C'205,127,50'};
+   SymbolRank ranks[];
+   int count = rankManager.GetRanks(ranks);
 
-   y += lineHeight - 2;
-   CreateLabel("GovRankHeader1", x+20, y, "SYMBOL", clrGray, 7, false);
-   CreateLabel("GovRankHeader2", x+120, y, "PROFIT", clrGray, 7, false);
-   CreateLabel("GovRankHeader3", x+210, y, "WIN%", clrGray, 7, false);
-   CreateLabel("GovRankHeader4", x+280, y, "TRADES", clrGray, 7, false);
-   CreateLabel("GovRankHeader5", x+360, y, "PF", clrGray, 7, false);
-
-   // Display top 3 with medals
-   for(int rank = 0; rank < 3; rank++)
+   if(count == 0)
    {
-      string symData = rankManager.GetSymbolAtRank(rank);
-      if(symData == "") break;
-
       y += lineHeight;
+      CreateLabel("GovNoRanks", x+20, y, "Scanning markets...", clrGray, 9, false);
+   }
+   else
+   {
+      string medals[3] = {"🥇", "🥈", "🥉"};
+      color rankColors[3] = {clrGold, clrSilver, C'205,127,50'};
 
-      // Parse symbol data: "Symbol|Profit|WinRate|Trades|PF"
-      string parts[];
-      int split = StringSplit(symData, '|', parts);
-      if(split >= 5)
+      y += lineHeight - 2;
+      CreateLabel("GovRankHeader1", x+20, y, "SYMBOL", clrGray, 7, false);
+      CreateLabel("GovRankHeader2", x+110, y, "SCORE/REQ", clrGray, 7, false);
+      CreateLabel("GovRankHeader3", x+200, y, "DIR", clrGray, 7, false);
+      CreateLabel("GovRankHeader4", x+250, y, "KILLZONE", clrGray, 7, false);
+      CreateLabel("GovRankHeader5", x+320, y, "STATUS", clrGray, 7, false);
+
+      int displayCount = MathMin(count, 5); // Show top 5
+      for(int i = 0; i < displayCount; i++)
       {
-         string sym = parts[0];
-         double profit = StringToDouble(parts[1]);
-         double winRate = StringToDouble(parts[2]);
-         int trades = (int)StringToInteger(parts[3]);
-         double pf = StringToDouble(parts[4]);
+         y += lineHeight;
 
-         color profitColor = profit > 0 ? clrLimeGreen : profit < 0 ? clrRed : clrGray;
+         string sym = ranks[i].symbol;
+         double score = ranks[i].score;
+         double req = ranks[i].reqScore;
+         string dir = ranks[i].direction > 0 ? "BUY" : (ranks[i].direction < 0 ? "SELL" : "WAIT");
+         bool kz = ranks[i].isKZOpen;
+         int rankNum = ranks[i].rank;
+         
+         // Clean symbol name
+         string cleanSym = sym;
+         StringReplace(cleanSym, ".pro", "");
+         StringReplace(cleanSym, ".PRO", "");
 
-         CreateLabel("GovRank" + IntegerToString(rank) + "Medal", x+20, y, medals[rank], rankColors[rank], 10, false);
-         CreateLabel("GovRank" + IntegerToString(rank) + "Sym", x+40, y, sym, textColor, 9, true);
-         CreateLabel("GovRank" + IntegerToString(rank) + "Profit", x+120, y, "$" + DoubleToString(profit, 0), profitColor, 9, true);
+         color scoreColor = score >= req ? clrLimeGreen : score >= 10 ? clrYellow : clrOrange;
+         color dirColor = dir == "BUY" ? clrDodgerBlue : (dir == "SELL" ? clrOrangeRed : clrGray);
+         color kzColor = kz ? clrLimeGreen : clrGray;
+         string kzText = kz ? "ACTIVE" : "CLOSED";
+         
+         string statusText = (rankNum <= 3 && kz && score >= req) ? "ELIGIBLE" : "WAITING";
+         color statusColor = (statusText == "ELIGIBLE") ? clrLimeGreen : clrGray;
 
-         color wrColor = winRate >= 60 ? clrLimeGreen : winRate >= 45 ? clrYellow : clrOrange;
-         CreateLabel("GovRank" + IntegerToString(rank) + "WR", x+210, y, DoubleToString(winRate, 0) + "%", wrColor, 8, false);
-         CreateLabel("GovRank" + IntegerToString(rank) + "Trades", x+280, y, IntegerToString(trades), clrGray, 8, false);
+         string rLabel = (i < 3) ? medals[i] : "#" + IntegerToString(rankNum);
+         color rColor = (i < 3) ? rankColors[i] : clrWhiteSmoke;
 
-         color pfColor = pf >= 2.0 ? clrLimeGreen : pf >= 1.5 ? clrYellow : clrOrange;
-         CreateLabel("GovRank" + IntegerToString(rank) + "PF", x+360, y, DoubleToString(pf, 2), pfColor, 8, false);
+         CreateLabel("GovLiveRank" + IntegerToString(i) + "Medal", x+20, y, rLabel, rColor, 10, false);
+         CreateLabel("GovLiveRank" + IntegerToString(i) + "Sym", x+45, y, cleanSym, textColor, 9, true);
+         
+         string scoreTxt = DoubleToString(score, 1) + " / " + DoubleToString(req, 1);
+         CreateLabel("GovLiveRank" + IntegerToString(i) + "Score", x+110, y, scoreTxt, scoreColor, 9, true);
+         
+         CreateLabel("GovLiveRank" + IntegerToString(i) + "Dir", x+200, y, dir, dirColor, 8, true);
+         CreateLabel("GovLiveRank" + IntegerToString(i) + "KZ", x+250, y, kzText, kzColor, 8, false);
+         CreateLabel("GovLiveRank" + IntegerToString(i) + "Status", x+320, y, statusText, statusColor, 8, true);
       }
    }
 
