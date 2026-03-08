@@ -48,7 +48,8 @@ input group "═══════ DAILY/WEEKLY LIMITS ═══════"
 input double InpDailyMaxDD = 2.5;              // Daily Max Drawdown (%) [GOAT: No daily limit, but be safe]
 input double InpWeeklyMaxDD = 3.5;             // Weekly Max Drawdown (%) [GOAT: 4% trailing total]
 input double InpMonthlyMaxDD = 4.0;            // Monthly Max Drawdown (%) [GOAT: 4% trailing max]
-input double InpDailyTarget = 1.0;             // Daily Profit Target (%, 0=disabled) [1%=$25 on $2500]
+input double InpDailyTarget = 0.0;             // Daily Profit Target (%, 0=disabled)
+input double InpDailyTargetUSD = 10.0;         // Daily Profit Target ($, 0=disabled) [GOAT: $10]
 
 input group "═══════ CORRELATION GUARD ═══════"
 input bool   InpUseCorrelationGuard = true;    // Enable Correlation Guard
@@ -361,16 +362,20 @@ void CalculatePeriodDrawdowns()
          Print("DAILY DD LIMIT HIT: ", DoubleToString(dailyDD, 2), "% >= ", InpDailyMaxDD, "%");
       }
 
-      // Daily profit tracking and target check
-      double dailyProfit = ((currentEquity - g_dailyStartEquity) / g_dailyStartEquity) * 100.0;
+      double dailyProfitUSD = currentEquity - g_dailyStartEquity;
+      double dailyProfit = (g_dailyStartEquity > 0) ? (dailyProfitUSD / g_dailyStartEquity) * 100.0 : 0;
       GlobalVariableSet(GV_DAILY_PROFIT, dailyProfit);
 
-      if(InpDailyTarget > 0 && dailyProfit >= InpDailyTarget && !g_dailyTargetHit)
+      bool targetUSDHit = (InpDailyTargetUSD > 0 && dailyProfitUSD >= InpDailyTargetUSD);
+      bool targetPctHit = (InpDailyTarget > 0 && dailyProfit >= InpDailyTarget);
+
+      if((targetUSDHit || targetPctHit) && !g_dailyTargetHit)
       {
          g_dailyTargetHit = true;
          GlobalVariableSet(GV_DAILY_TARGET_HIT, 1);
-         Print("DAILY TARGET HIT: +", DoubleToString(dailyProfit, 2), "% >= ", InpDailyTarget,
-               "% - Trading paused for today!");
+         
+         string targetMsg = targetUSDHit ? StringFormat("$%.2f", InpDailyTargetUSD) : StringFormat("%.2f%%", InpDailyTarget);
+         Print("DAILY TARGET HIT: ", targetMsg, " - Trading paused for today!");
                
          if(!g_dailyTargetPositionsClosed)
          {
@@ -1117,9 +1122,23 @@ void CreateVisualDashboard(double dd, double pf, double exposure, double riskMul
    {
       double targetPct = (dailyProfit / InpDailyTarget) * 100;
       targetPct = MathMax(0, MathMin(targetPct, 100));
+
+      // Use USD target for progress if available
+      if(InpDailyTargetUSD > 0)
+      {
+         double profitUSD = account.Balance() * (dailyProfit / 100.0);
+         targetPct = (profitUSD / InpDailyTargetUSD) * 100.0;
+         targetPct = MathMax(0, MathMin(targetPct, 100));
+      }
+
       color targetColor = g_dailyTargetHit ? clrLimeGreen : clrCornflowerBlue;
       CreateProgressBar("GovTargetBar", x+320, y-2, 150, 14, targetPct, 100, targetColor, bgColor);
-      string targetStatus = g_dailyTargetHit ? "✅ TARGET HIT" : "$" + DoubleToString(account.Balance() * InpDailyTarget / 100.0, 0) + " goal";
+      
+      string targetLabel = "";
+      if(InpDailyTargetUSD > 0) targetLabel = "$" + DoubleToString(InpDailyTargetUSD, 0) + " goal";
+      else targetLabel = DoubleToString(InpDailyTarget, 1) + "% goal";
+      
+      string targetStatus = g_dailyTargetHit ? "✅ TARGET HIT" : targetLabel;
       CreateLabel("GovTargetStatus", x+480, y, targetStatus, targetColor, 8, true);
    }
 

@@ -50,8 +50,9 @@ InpPF_ReducedMult=0.60
 ; Cut risk significantly on performance degradation.
 
 ;═══════ DAILY/WEEKLY LIMITS ═══════
-InpDailyTarget=1.0
-; Daily Profit Target (% of equity). 1% = $25 on $2500 account.
+InpDailyTarget=0.0
+InpDailyTargetUSD=10.0
+; Daily Profit Target ($ USD). $10 fixed.
 ; When hit: all positions closed, trading paused for the day.
 ; Set to 0 to disable.
 InpDailyMaxDD=20.0
