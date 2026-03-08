@@ -1200,6 +1200,8 @@ void CreateVisualDashboard(double dd, double pf, double exposure, double riskMul
             string cleanSym = symbol;
             StringReplace(cleanSym, ".pro", "");
             StringReplace(cleanSym, ".PRO", "");
+            StringReplace(cleanSym, ".x", "");
+            StringReplace(cleanSym, ".X", "");
 
             CreateLabel("GovPos" + IntegerToString(i) + "Sym", x+20, y, cleanSym, textColor, 8, false);
             CreateLabel("GovPos" + IntegerToString(i) + "Dir", x+110, y, direction,
@@ -1285,6 +1287,8 @@ void CreateVisualDashboard(double dd, double pf, double exposure, double riskMul
          string cleanSym = sym;
          StringReplace(cleanSym, ".pro", "");
          StringReplace(cleanSym, ".PRO", "");
+         StringReplace(cleanSym, ".x", "");
+         StringReplace(cleanSym, ".X", "");
 
          color scoreColor = score >= req ? clrLimeGreen : score >= 10 ? clrYellow : clrOrange;
          color dirColor = dir == "BUY" ? clrDodgerBlue : (dir == "SELL" ? clrOrangeRed : clrGray);

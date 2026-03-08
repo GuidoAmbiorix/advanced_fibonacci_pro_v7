@@ -425,6 +425,8 @@ public:
       string cleanSym = sym;
       StringReplace(cleanSym, ".pro", "");
       StringReplace(cleanSym, ".PRO", "");
+      StringReplace(cleanSym, ".x", "");
+      StringReplace(cleanSym, ".X", "");
 
       // Format: "Symbol|Profit|WinRate|Trades|PF"
       return StringFormat("%s|%.0f|%.0f|%d|%.2f", cleanSym, profit, winRate, totalTrades, pf);
