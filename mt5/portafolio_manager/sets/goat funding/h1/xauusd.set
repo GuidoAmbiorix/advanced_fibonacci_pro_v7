@@ -28,7 +28,7 @@ InpEMA_MinSlope=0.10
 InpUseChopFilter=true
 InpChopThreshold=0.75
 InpATR_MA_Period=20
-InpMinConfluenceEntry=15
+InpMinConfluenceEntry=20
 ; Increased from 14 - Gold needs higher conviction due to spreads
 InpEnableAddOns=false
 InpMaxPositions=1
@@ -48,11 +48,11 @@ InpMinVolatilityPips=50.0
 ; Gold minimum volatility is 10x higher (50 vs 5 pips)
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
-InpPartialTP_R=2.0
-InpPartialClosePercent=50.0
-InpBE_Threshold_R=1.0
-InpTrailStart_R=1.0
-InpTrailATR_Mult=1.5
+InpPartialTP_R=1.5
+InpPartialClosePercent=65.0
+InpBE_Threshold_R=0.8
+InpTrailStart_R=0.8
+InpTrailATR_Mult=1.15
 InpTrailDecayRate=0.15
 InpTrailMinMult=0.50
 InpTrailRegimeAware=true
