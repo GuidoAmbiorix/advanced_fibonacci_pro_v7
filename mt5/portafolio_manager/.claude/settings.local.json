@@ -18,7 +18,8 @@
       "Bash(do sed -i '/^InpUseQuantum=/d; /^InpQuantumWalkSteps=/d; /^InpQuantumCoherenceThreshold=/d; /^InpQuantumWeightMomentum=/d; /^; .*[Qq]uantum.*/d' \"$file\")",
       "Bash(done)",
       "Bash(do sed -i '/QUANTUM ANALYSIS SETTINGS/d' \"$file\")",
-      "Bash(do sed -i '/<<<<<<< HEAD/,/=======/{ /<<<<<<< HEAD/d; /=======/d; }; />>>>>>> /d' \"$file\")"
+      "Bash(do sed -i '/<<<<<<< HEAD/,/=======/{ /<<<<<<< HEAD/d; /=======/d; }; />>>>>>> /d' \"$file\")",
+      "Bash(do sed -i 's/^InpMinConfluenceEntry=14/InpMinConfluenceEntry=17/' \"$file\")"
     ]
   }
 }
