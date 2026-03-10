@@ -442,12 +442,12 @@ int OnInit()
       // Auto-adjust for small accounts to prevent margin issues
       if(equity < 10000)
       {
-         maxRiskAdjusted = MathMin(InpMaxRisk, 0.5);   // Small accounts: max 0.5%
+         maxRiskAdjusted = MathMin(InpMaxRisk, 1.0);   // Small accounts: max 1.0%
          Print("Small account ($", DoubleToString(equity, 2), ") - maxRisk limited to ", maxRiskAdjusted, "%");
       }
       else if(equity < 50000)
       {
-         maxRiskAdjusted = MathMin(InpMaxRisk, 0.75);  // Medium accounts: max 0.75%
+         maxRiskAdjusted = MathMin(InpMaxRisk, 1.5);  // Medium accounts: max 1.5%
          Print("Medium account ($", DoubleToString(equity, 2), ") - maxRisk limited to ", maxRiskAdjusted, "%");
       }
       else
