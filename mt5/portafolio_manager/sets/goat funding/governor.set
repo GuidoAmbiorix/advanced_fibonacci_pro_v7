@@ -1,6 +1,6 @@
 ﻿; Portfolio Governor - Goat Funded Trading Instant Pro
-; Account: $2,500 - 7 Symbols Forex (sin XAUUSD)
-; Strategy: Dynamic Draft Portfolio with Correlation Guard
+; Account: $2,500 - 8 Symbols (7 Forex + XAUUSD) - Quantum Enhanced
+; Strategy: Dynamic Draft Portfolio with Quantum Correlation Guard
 ; Risk: $20/trade | Max DD: $80 total | Sin daily DD limit
 
 ;═══════ PORTFOLIO LIMITS ═══════
@@ -85,6 +85,12 @@ InpMagicBase=100000
 InpMagicRange=999
 ; Magic Number Range
 ; Covers all Symbol_Engine instances
+
+;═══════ QUANTUM PORTFOLIO ═══════
+InpUseQuantumCorrelation=true
+; Use Quantum Entanglement
+; ENABLED: Detects non-linear correlation between assets
+; Critical for XAUUSD correlation with USD pairs
 
 ;═══════ UPDATE FREQUENCY ═══════
 InpUpdateSeconds=5

@@ -71,6 +71,11 @@ InpKellyFraction=1.0
 InpDailyMaxDD=20.0
 InpWeeklyMaxDD=20.0
 InpDailyTarget=0.0
+; QUANTUM ANALYSIS SETTINGS (NEW!)
+InpUseQuantum=true
+InpQuantumWalkSteps=50
+InpQuantumCoherenceThreshold=0.50
+InpQuantumWeightMomentum=true
 InpEnableLearning=true
 InpLogTradesToFile=true
 InpLearningHistory=180

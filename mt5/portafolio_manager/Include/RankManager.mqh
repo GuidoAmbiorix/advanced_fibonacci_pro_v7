@@ -7,6 +7,7 @@
 #define RANK_MANAGER_MQH
 
 #include "PortfolioGlobals.mqh"
+#include "Advanced\QuantumEntanglement.mqh"
 
 //+------------------------------------------------------------------+
 //| SYMBOL RANK STRUCTURE                                            |
@@ -28,6 +29,7 @@ struct SymbolRank
    double momentumFactor;       // Recent score improvement
    datetime lastRankChange;     // For hysteresis tracking
    int    consecutiveBars;      // How many bars held rank
+   double quantumMult;          // Quantum coherence multiplier (4th dimension)
 };
 
 //+------------------------------------------------------------------+
@@ -48,9 +50,39 @@ private:
    int        m_minSlots;             // Minimum active slots
    int        m_maxSlots;             // Maximum active slots
 
+   // Quantum correlation
+   CQuantumEntanglement* m_quantumEntanglement;
+   bool      m_useQuantumCorrelation;
+
 public:
    CRankManager() : m_symbolCount(0), m_hysteresisThreshold(0.5),
-                    m_hysteresisCooldown(1), m_minSlots(2), m_maxSlots(10) {}
+                    m_hysteresisCooldown(1), m_minSlots(2), m_maxSlots(10),
+                    m_quantumEntanglement(NULL), m_useQuantumCorrelation(false) {}
+
+   //+------------------------------------------------------------------+
+   //| Set quantum entanglement module for enhanced correlation          |
+   //+------------------------------------------------------------------+
+   void SetQuantumEntanglement(CQuantumEntanglement* quantumEnt, bool useQuantum = true)
+   {
+      m_quantumEntanglement = quantumEnt;
+      m_useQuantumCorrelation = useQuantum;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Get enhanced correlation using quantum entanglement if available  |
+   //+------------------------------------------------------------------+
+   double GetEnhancedCorrelation(string symbol1, string symbol2)
+   {
+      // Use quantum entanglement if available and enabled
+      if(m_useQuantumCorrelation && m_quantumEntanglement != NULL)
+      {
+         double quantum = m_quantumEntanglement.Calculate(symbol1, symbol2, 20);
+         if(quantum > 0) return quantum; // 0-1 scale
+      }
+
+      // Fallback to semantic correlation
+      return GetSemanticCorrelation(symbol1, symbol2);
+   }
 
    //+------------------------------------------------------------------+
    //| Discover Active Symbols (Auto-Discovery)                          |
@@ -187,7 +219,14 @@ public:
                             : (quality >= 2.0) ? 1.10
                                                : 1.0;
 
-         m_ranks[i].adjScore = m_ranks[i].volatilityNormScore * regimeMult * momentumMult * qualityMult;
+         // Quantum coherence multiplier (4th dimension)
+         double quantumCoherence = GlobalVariableGet(GV_QUANTUM_PREFIX + sym2);
+         double quantumMult = (quantumCoherence >= 0.75) ? 1.15   // High coherence boost
+                            : (quantumCoherence >= 0.50) ? 1.05   // Moderate boost
+                                                         : 0.95;  // Low coherence penalty
+
+         m_ranks[i].quantumMult = quantumMult;
+         m_ranks[i].adjScore = m_ranks[i].volatilityNormScore * regimeMult * momentumMult * qualityMult * quantumMult;
          m_ranks[i].rank = 99; // Default low rank
       }
 
@@ -246,7 +285,7 @@ public:
          {
             if(!isPicked[i])
             {
-               double factor = GetSemanticCorrelation(winnerSym, m_ranks[i].symbol);
+               double factor = GetEnhancedCorrelation(winnerSym, m_ranks[i].symbol);
                
                // DIRECTIONAL SENSITIVITY:
                // If directions are opposite (Buy vs Sell), reduce penalty by 50%

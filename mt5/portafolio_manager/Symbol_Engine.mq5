@@ -52,6 +52,7 @@ CPatternMemory      patternMemory;
 #include "Include\Advanced\VolumeAnalysis.mqh"
 #include "Include\Advanced\Divergence.mqh"
 #include "Include\Advanced\Inst_Concepts.mqh"
+#include "Include\Advanced\QuantumAnalysis.mqh"
 
 // Visual Debugging
 #include "Include\VisualDebug.mqh"
@@ -173,6 +174,12 @@ input double            InpDailyMaxDD = 3.0;              // Daily Max Drawdown 
 input double            InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown %
 input double            InpDailyTarget = 0.0;             // Daily Profit Target % (0=disabled)
 
+input group "======= QUANTUM ANALYSIS ======="
+input bool              InpUseQuantum = true;             // Enable Quantum Analysis
+input int               InpQuantumWalkSteps = 50;         // QRW Simulation Steps (20-100)
+input double            InpQuantumCoherenceThreshold = 0.50; // Min Coherence (0.3-0.8)
+input bool              InpQuantumWeightMomentum = true;  // Weight QRW by Momentum
+
 input group "======= LEARNING & ADAPTATION ======="
 input bool              InpEnableLearning = true;         // Enable Learning System
 input bool              InpLogTradesToFile = true;        // Log Trades to CSV
@@ -235,6 +242,7 @@ CBreakerBlocks    breakerBlocks;
 CMacroWindows     macroWindows;
 CPowerOf3         powerOf3;
 CWyckoff          wyckoff;
+CQuantumAnalysis  quantumAnalysis;
 
 // Forward Declaration
 double CalculateConfluenceScore(int direction);
@@ -498,6 +506,15 @@ int OnInit()
       if(!adaptiveFilter.Init(_Symbol, &patternRecognizer, &performanceAnalyzer,
                               InpMinConfluenceEntry, InpEnableAdaptiveFilters))
          Print("Warning: Adaptive Filter Manager initialization failed");
+   }
+
+   // Initialize Quantum Analysis
+   if(InpUseQuantum)
+   {
+      if(!quantumAnalysis.Init(InpQuantumWalkSteps, InpQuantumCoherenceThreshold, InpQuantumWeightMomentum))
+         Print("Warning: Quantum Analysis initialization failed");
+      else
+         Print("[OK] Quantum Analysis initialized (Steps:", InpQuantumWalkSteps, " Coherence:", InpQuantumCoherenceThreshold, ")");
    }
 
    // OPTIMIZATION: Validate all critical modules initialized
@@ -2163,8 +2180,21 @@ double CalculateConfluenceScore(int direction)
        score += smcFVG.GetConfluenceScore(direction) * 2.0;
        
        // Advanced ICT Concepts
-       score += breakerBlocks.GetBreakerScore(direction, g_ATR) * 3.0; 
-       score += powerOf3.GetPhaseScore(g_ATR) * 3.0; 
+       score += breakerBlocks.GetBreakerScore(direction, g_ATR) * 3.0;
+       score += powerOf3.GetPhaseScore(g_ATR) * 3.0;
+   }
+
+   // ============ 3.5. QUANTUM ANALYSIS (Max ~4.0 pts) ============
+
+   if(InpUseQuantum)
+   {
+      // Get quantum confluence score (combines QRW probability + coherence + state bonus)
+      double quantumScore = quantumAnalysis.GetConfluenceScore(direction);
+      score += quantumScore;
+
+      // Publish coherence strength to GlobalVariable for RankManager
+      double coherence = quantumAnalysis.GetCoherenceStrength();
+      GlobalVariableSet(GV_QUANTUM_PREFIX + _Symbol, coherence);
    }
 
 

@@ -29,6 +29,7 @@
 #define GV_PERIOD_PREFIX         "PG_Per_"         // Timeframe Period (seconds)
 #define GV_KZ_PREFIX             "PG_KZ_"          // Killzone Status (1=Open, 0=Closed)
 #define GV_RANK_PREFIX           "PG_Rank_"
+#define GV_QUANTUM_PREFIX        "PG_Quantum_"     // Quantum Coherence (0-1.0)
 
 // Correlation Group Risk Limits
 #define GV_GROUP_USD_RISK        "PG_GroupUSD"

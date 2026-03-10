@@ -10,7 +10,8 @@
       "Bash(powershell:*)",
       "Bash(del:*)",
       "Bash(powershell.exe:*)",
-      "WebFetch(domain:www.mql5.com)"
+      "WebFetch(domain:www.mql5.com)",
+      "mcp__mql5-dev__compile_mql5"
     ]
   }
 }
