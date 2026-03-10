@@ -1,9 +1,9 @@
 
-; XAUUSD (GOLD) - H1 Timeframe - HYPER-AGGRESSIVE SCALPING + METALS ANALYSIS
+; XAUUSD (GOLD) - H1 Timeframe - ELITE QUALITY + AGGRESSIVE EXITS
 ; Goat Funding - $80 Max DD | $20 Risk/trade
-; STRATEGY: Lower confluence (14) = More signals, Micro-profit taking (0.25R)
-; NEW: DXY correlation, safe-haven flow detection, volatility regime filtering
-; EXAMPLE: SL=-$11 → Take 75% profit at +$2.75, trail remaining 25% tight
+; STRATEGY: HIGH confluence (21) = ELITE setups only, volatility = más señales naturales
+; NEW: DXY correlation, safe-haven flow, volatility regime, seasonal bias
+; EXITS: Micro-profit 0.25R pero ENTRADAS ultra-selectivas (calidad > cantidad)
 InpMagicNumber=100008
 InpDirection=0
 InpBrokerUTCOffset=2
@@ -30,8 +30,8 @@ InpEMA_MinSlope=0.15
 InpUseChopFilter=true
 InpChopThreshold=0.60
 InpATR_MA_Period=20
-InpMinConfluenceEntry=17
-; STRATEGY: More signals + micro-profit scalping (0.25R = ~$3 profit on $11 SL)
+InpMinConfluenceEntry=21
+; ELITE: Top 10% setups only (vs 17 forex). Gold volatility = suficientes señales
 InpEnableAddOns=false
 InpMaxPositions=1
 InpRiskBase=1.0
@@ -75,11 +75,15 @@ InpHTF=16408
 InpMTF=16388
 ; H1 timeframe (same as chart)
 InpUseNewsFilter=true
-InpNewsMinutesBefore=60
-InpNewsMinutesAfter=60
+InpNewsMinutesBefore=90
+; ELITE: Evitar Fed, NFP, CPI con más tiempo (90 min vs 60)
+InpNewsMinutesAfter=90
+; Gold es MUY sensible a noticias USD - protección extendida
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=4.0
-InpVolatilitySpikeCooldown=15
+InpVolatilityThreshold=4.5
+; ELITE: Threshold más alto para evitar spikes extremos
+InpVolatilitySpikeCooldown=30
+; Cooldown extendido después de spikes (30 min vs 15)
 InpUseKelly=true
 InpKellyFraction=1.0
 InpDailyMaxDD=20.0
@@ -94,10 +98,12 @@ InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=true
 InpUseCorrelationFilter=true
 InpDailyMaxLoss_R=20.0
-InpLossCooldownMinutes=90
+InpLossCooldownMinutes=120
+; ELITE: Más tiempo entre pérdidas (120 min)
 InpMaxConsecutiveLosses=1
-InpMaxDailyTrades=5
-; INCREASED: Scalping strategy = more frequent trades
+; Detener después de 1 pérdida - reanalizar condiciones
+InpMaxDailyTrades=3
+; ELITE: Max 3 trades/día (volatilidad de oro = suficiente actividad)
 InpUseReversalFilter=true
 InpReversalCooldownMinutes=15
 InpUseSessionGovernor=true
