@@ -44,13 +44,21 @@ InpTrailStepATR=0.5
 InpMinVolatilityPips=4.0
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
+<<<<<<< HEAD
 InpPartialTP_R=1.5
 InpPartialClosePercent=60.0
 InpBE_Threshold_R=0.7
 InpTrailStart_R=0.7
 InpTrailATR_Mult=1.2
+=======
+InpPartialTP_R=0.5
+InpPartialClosePercent=50.0
+InpBE_Threshold_R=0.2
+InpTrailStart_R=0.2
+InpTrailATR_Mult=0.5
+>>>>>>> 5c7692d44f13a06d6a735530fce726b263a71d2a
 InpTrailDecayRate=0.15
-InpTrailMinMult=0.50
+InpTrailMinMult=0.10
 InpTrailRegimeAware=true
 InpMaxSpreadPoints=35
 InpUseSMC=true
