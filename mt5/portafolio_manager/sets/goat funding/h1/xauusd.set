@@ -1,7 +1,7 @@
 
-; XAUUSD (GOLD) - H1 Timeframe
+; XAUUSD (GOLD) - H1 Timeframe - ULTRA RESTRICTIVE
 ; Goat Funding - $80 Max DD | $20 Risk/trade
-; ADJUSTED for Gold: Higher spreads, different volatility, quantum-enhanced
+; HARDEST TO TRADE: Maximum filters, elite setups only (2-5 trades/month)
 InpMagicNumber=100008
 InpDirection=0
 InpBrokerUTCOffset=2
@@ -14,7 +14,7 @@ InpSwingLookback=20
 ; Gold trends longer - increased from 16
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.20
+InpZoneTolerance=0.15
 InpUseDisplacement=false
 InpDisplacementATR=0.0
 InpDisplacementLookback=3
@@ -24,12 +24,12 @@ InpRSI_Overbought=70
 InpRSI_Momentum=true
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.10
+InpEMA_MinSlope=0.15
 InpUseChopFilter=true
-InpChopThreshold=0.75
+InpChopThreshold=0.60
 InpATR_MA_Period=20
-InpMinConfluenceEntry=20
-; Increased from 14 - Gold needs higher conviction due to spreads
+InpMinConfluenceEntry=23
+; ULTRA HIGH - Only absolute elite quantum-enhanced setups (top 5%)
 InpEnableAddOns=false
 InpMaxPositions=1
 InpRiskBase=1.0
@@ -60,7 +60,7 @@ InpMaxSpreadPoints=100
 ; Gold spreads can be 20-100 points (vs 50 for forex)
 InpUseSMC=true
 InpSMC_SwingLookback=20
-InpSMC_MinImpulseATR=2.0
+InpSMC_MinImpulseATR=2.5
 InpSMC_MinFVG_ATR=0.5
 InpUseMTF=true
 InpHTF=16408
@@ -68,10 +68,10 @@ InpHTF=16408
 InpMTF=16388
 ; H1 timeframe (same as chart)
 InpUseNewsFilter=true
-InpNewsMinutesBefore=30
-InpNewsMinutesAfter=30
+InpNewsMinutesBefore=60
+InpNewsMinutesAfter=60
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=3.0
+InpVolatilityThreshold=4.0
 InpVolatilitySpikeCooldown=15
 InpUseKelly=true
 InpKellyFraction=1.0
@@ -81,10 +81,10 @@ InpDailyTarget=0.0
 ; QUANTUM ANALYSIS SETTINGS (NEW!)
 InpUseQuantum=true
 ; Enable quantum analysis
-InpQuantumWalkSteps=50
-; QRW simulation steps (default 50)
-InpQuantumCoherenceThreshold=0.50
-; Minimum coherence threshold
+InpQuantumWalkSteps=70
+; INCREASED precision for elite signals (vs 50 default)
+InpQuantumCoherenceThreshold=0.70
+; ULTRA HIGH - Only trade when all indicators aligned (vs 0.50)
 InpQuantumWeightMomentum=true
 ; Weight QRW by momentum - IMPORTANT for Gold trends
 InpEnableLearning=true
@@ -96,12 +96,12 @@ InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=true
 InpUseCorrelationFilter=true
 InpDailyMaxLoss_R=20.0
-InpLossCooldownMinutes=30
-InpMaxConsecutiveLosses=2
-InpMaxDailyTrades=5
+InpLossCooldownMinutes=120
+InpMaxConsecutiveLosses=1
+InpMaxDailyTrades=2
 InpUseReversalFilter=true
 InpReversalCooldownMinutes=15
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=3
-InpTradeCooldownMinutes=30
+InpMaxTradesPerSession=1
+InpTradeCooldownMinutes=120
 InpEnableVisualLevels=true
