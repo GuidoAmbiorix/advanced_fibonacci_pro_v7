@@ -12,7 +12,13 @@
       "Bash(powershell.exe:*)",
       "WebFetch(domain:www.mql5.com)",
       "mcp__mql5-dev__compile_mql5",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(for:*)",
+      "Bash(do sed -i '/^InpUseQuantum=/d; /^InpQuantumWalkSteps=/d; /^InpQuantumCoherenceThreshold=/d; /^InpQuantumWeightMomentum=/d; /^; .*[Qq]uantum.*/d' \"$file\")",
+      "Bash(done)",
+      "Bash(do sed -i '/QUANTUM ANALYSIS SETTINGS/d' \"$file\")",
+      "Bash(do sed -i '/<<<<<<< HEAD/,/=======/{ /<<<<<<< HEAD/d; /=======/d; }; />>>>>>> /d' \"$file\")"
     ]
   }
 }

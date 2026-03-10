@@ -16,12 +16,10 @@
 #include "Include\PortfolioGlobals.mqh"
 #include "Include\GovernorAllocator.mqh"
 #include "Include\RankManager.mqh"
-#include "Include\Advanced\QuantumEntanglement.mqh"
 // #include "Include\DashboardCanvas.mqh" // DISABLED FOR LITE MODE
 
 CGovernorAllocator allocator;
 CRankManager       rankManager;
-CQuantumEntanglement quantumEntanglement;
 // CDashboardCanvas   dashboardCanvas; // DISABLED FOR LITE MODE
 
 //+------------------------------------------------------------------+
@@ -58,8 +56,6 @@ input bool   InpUseCorrelationGuard = true;    // Enable Correlation Guard
 input double InpHighCorrelation = 0.70;        // High Correlation Threshold
 input double InpCorrelationReduction = 0.50;   // Size Reduction Factor
 
-input group "═══════ QUANTUM PORTFOLIO ═══════"
-input bool   InpUseQuantumCorrelation = true;  // Use Quantum Entanglement
 
 input group "═══════ MAGIC NUMBER RANGE ═══════"
 input int    InpMagicBase = 100000;            // Magic Number Base
@@ -203,12 +199,6 @@ int OnInit()
    Print("===============================================================");
    // Initialize Rank Manager: Auto-Discovery is now active (no manual AddSymbol needed)
 
-   // Initialize Quantum Entanglement for enhanced correlation
-   if(InpUseQuantumCorrelation)
-   {
-      rankManager.SetQuantumEntanglement(&quantumEntanglement, true);
-      Print("  [OK] Quantum Entanglement Correlation enabled");
-   }
 
    // Initialize Dashboard Canvas
    // if(!dashboardCanvas.Init("GovDashboard", 20, 20, 550, 400))

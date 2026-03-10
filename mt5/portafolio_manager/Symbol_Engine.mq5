@@ -52,7 +52,7 @@ CPatternMemory      patternMemory;
 #include "Include\Advanced\VolumeAnalysis.mqh"
 #include "Include\Advanced\Divergence.mqh"
 #include "Include\Advanced\Inst_Concepts.mqh"
-#include "Include\Advanced\QuantumAnalysis.mqh"
+#include "Include\Advanced\MetalsAnalysis.mqh"
 
 // Visual Debugging
 #include "Include\VisualDebug.mqh"
@@ -174,11 +174,6 @@ input double            InpDailyMaxDD = 3.0;              // Daily Max Drawdown 
 input double            InpWeeklyMaxDD = 6.0;             // Weekly Max Drawdown %
 input double            InpDailyTarget = 0.0;             // Daily Profit Target % (0=disabled)
 
-input group "======= QUANTUM ANALYSIS ======="
-input bool              InpUseQuantum = true;             // Enable Quantum Analysis
-input int               InpQuantumWalkSteps = 50;         // QRW Simulation Steps (20-100)
-input double            InpQuantumCoherenceThreshold = 0.50; // Min Coherence (0.3-0.8)
-input bool              InpQuantumWeightMomentum = true;  // Weight QRW by Momentum
 
 input group "======= LEARNING & ADAPTATION ======="
 input bool              InpEnableLearning = true;         // Enable Learning System
@@ -242,7 +237,7 @@ CBreakerBlocks    breakerBlocks;
 CMacroWindows     macroWindows;
 CPowerOf3         powerOf3;
 CWyckoff          wyckoff;
-CQuantumAnalysis  quantumAnalysis;
+CMetalsAnalysis   metalsAnalysis;
 
 // Forward Declaration
 double CalculateConfluenceScore(int direction);
@@ -508,13 +503,13 @@ int OnInit()
          Print("Warning: Adaptive Filter Manager initialization failed");
    }
 
-   // Initialize Quantum Analysis
-   if(InpUseQuantum)
+   // Initialize Metals Analysis (for metals symbols only)
+   if(GetCorrelationGroup(_Symbol) == GROUP_METALS)
    {
-      if(!quantumAnalysis.Init(InpQuantumWalkSteps, InpQuantumCoherenceThreshold, InpQuantumWeightMomentum))
-         Print("Warning: Quantum Analysis initialization failed");
+      if(!metalsAnalysis.Init(_Symbol))
+         Print("Warning: Metals Analysis initialization failed");
       else
-         Print("[OK] Quantum Analysis initialized (Steps:", InpQuantumWalkSteps, " Coherence:", InpQuantumCoherenceThreshold, ")");
+         Print("[OK] Metals Analysis initialized for ", _Symbol);
    }
 
    // OPTIMIZATION: Validate all critical modules initialized
@@ -2184,18 +2179,6 @@ double CalculateConfluenceScore(int direction)
        score += powerOf3.GetPhaseScore(g_ATR) * 3.0;
    }
 
-   // ============ 3.5. QUANTUM ANALYSIS (Max ~4.0 pts) ============
-
-   if(InpUseQuantum)
-   {
-      // Get quantum confluence score (combines QRW probability + coherence + state bonus)
-      double quantumScore = quantumAnalysis.GetConfluenceScore(direction);
-      score += quantumScore;
-
-      // Publish coherence strength to GlobalVariable for RankManager
-      double coherence = quantumAnalysis.GetCoherenceStrength();
-      GlobalVariableSet(GV_QUANTUM_PREFIX + _Symbol, coherence);
-   }
 
 
    // ============ 4. ADVANCED CONFIRMATIONS (Max ~5-10 pts) ============
@@ -2212,7 +2195,16 @@ double CalculateConfluenceScore(int direction)
    score += divergenceScore * 2.0; // Scale 0-1 -> 0-2
 
    // Wyckoff - 2.0 pts
-   score += wyckoff.GetWyckoffScore(direction, g_ATR) * 2.0; 
+   score += wyckoff.GetWyckoffScore(direction, g_ATR) * 2.0;
+
+   // ============ 4.5. METALS ANALYSIS (Metals Only, -5 to +6 pts) ============
+
+   if(GetCorrelationGroup(_Symbol) == GROUP_METALS)
+   {
+      // Specialized metals analysis: DXY correlation, safe-haven flows, volatility regime, seasonal
+      double metalsScore = metalsAnalysis.GetConfluenceScore(direction);
+      score += metalsScore;
+   }
 
    // Fib Zone - 2.0 pts
    if(highestBar >= 0 && lowestBar >= 0)

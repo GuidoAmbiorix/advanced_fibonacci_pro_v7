@@ -1,7 +1,9 @@
 
-; XAUUSD (GOLD) - H1 Timeframe - ULTRA RESTRICTIVE
+; XAUUSD (GOLD) - H1 Timeframe - HYPER-AGGRESSIVE SCALPING + METALS ANALYSIS
 ; Goat Funding - $80 Max DD | $20 Risk/trade
-; HARDEST TO TRADE: Maximum filters, elite setups only (2-5 trades/month)
+; STRATEGY: Lower confluence (14) = More signals, Micro-profit taking (0.25R)
+; NEW: DXY correlation, safe-haven flow detection, volatility regime filtering
+; EXAMPLE: SL=-$11 → Take 75% profit at +$2.75, trail remaining 25% tight
 InpMagicNumber=100008
 InpDirection=0
 InpBrokerUTCOffset=2
@@ -28,8 +30,8 @@ InpEMA_MinSlope=0.15
 InpUseChopFilter=true
 InpChopThreshold=0.60
 InpATR_MA_Period=20
-InpMinConfluenceEntry=23
-; ULTRA HIGH - Only absolute elite quantum-enhanced setups (top 5%)
+InpMinConfluenceEntry=14
+; STRATEGY: More signals + micro-profit scalping (0.25R = ~$3 profit on $11 SL)
 InpEnableAddOns=false
 InpMaxPositions=1
 InpRiskBase=1.0
@@ -48,11 +50,16 @@ InpMinVolatilityPips=50.0
 ; Gold minimum volatility is 10x higher (50 vs 5 pips)
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
-InpPartialTP_R=1.5
-InpPartialClosePercent=65.0
-InpBE_Threshold_R=0.8
-InpTrailStart_R=0.8
-InpTrailATR_Mult=1.15
+InpPartialTP_R=0.25
+; HYPER-AGGRESSIVE: Close 75% at 0.25R (~$2.75 profit on $11 SL)
+InpPartialClosePercent=75.0
+; Close 75% of position, let 25% run with tight trailing
+InpBE_Threshold_R=0.2
+; Move SL to breakeven at +$2.20 (20% of risk)
+InpTrailStart_R=0.2
+; Start trailing immediately at +$2.20
+InpTrailATR_Mult=0.5
+; TIGHT trailing (0.5 ATR - very aggressive, locks in tiny profits)
 InpTrailDecayRate=0.15
 InpTrailMinMult=0.50
 InpTrailRegimeAware=true
@@ -78,15 +85,6 @@ InpKellyFraction=1.0
 InpDailyMaxDD=20.0
 InpWeeklyMaxDD=20.0
 InpDailyTarget=0.0
-; QUANTUM ANALYSIS SETTINGS (NEW!)
-InpUseQuantum=true
-; Enable quantum analysis
-InpQuantumWalkSteps=70
-; INCREASED precision for elite signals (vs 50 default)
-InpQuantumCoherenceThreshold=0.70
-; ULTRA HIGH - Only trade when all indicators aligned (vs 0.50)
-InpQuantumWeightMomentum=true
-; Weight QRW by momentum - IMPORTANT for Gold trends
 InpEnableLearning=true
 InpLogTradesToFile=true
 InpLearningHistory=180
@@ -96,9 +94,10 @@ InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=true
 InpUseCorrelationFilter=true
 InpDailyMaxLoss_R=20.0
-InpLossCooldownMinutes=120
+InpLossCooldownMinutes=90
 InpMaxConsecutiveLosses=1
-InpMaxDailyTrades=2
+InpMaxDailyTrades=5
+; INCREASED: Scalping strategy = more frequent trades
 InpUseReversalFilter=true
 InpReversalCooldownMinutes=15
 InpUseSessionGovernor=true
