@@ -325,6 +325,7 @@ ulong g_tradesExecuted = 0;
 struct PositionState {
    ulong ticket;
    bool  partialClosed;
+   bool  beMovedToEntry;            // Flag: SL moved to breakeven (entry price)
    double initialRisk;              // Risk percentage (0.30 = 0.30%)
    double dollarRisk;               // Actual dollar amount at risk for R-calculation
    double initialSLDist;            // SL distance in price units at entry — used for profitR (not current trailed SL)
@@ -1455,6 +1456,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       ArrayResize(g_states, sz + 1);
       g_states[sz].ticket = ticket;
       g_states[sz].partialClosed = false;
+      g_states[sz].beMovedToEntry = false;
       g_states[sz].initialRisk = riskPct;                                    // Store risk percentage
       g_states[sz].dollarRisk = account.Equity() * (riskPct / 100.0);       // Store actual dollar risk for R-calculation
       g_states[sz].initialSLDist = slDist;                                   // Store SL distance at entry for profitR (not current trailed SL)
@@ -1765,6 +1767,33 @@ void ManagePositions()
                }
             }
          }
+
+          // 1.5. EXPLICIT BREAKEVEN MOVE (HYPER-AGGRESSIVE SCALPING)
+          // Move SL to entry price immediately when BE threshold reached
+          // This guarantees risk-free trade before dynamic trailing starts
+          if(!g_states[sIdx].beMovedToEntry && profitR >= beTrigger)
+          {
+             double entryPrice = open;  // Use opening price as breakeven
+
+             // Verify it's a favorable move
+             bool canMoveToBE = (pType == POSITION_TYPE_BUY)
+                              ? (entryPrice > sl || sl == 0)  // For BUY: entry must be above current SL
+                              : (entryPrice < sl || sl == 0); // For SELL: entry must be below current SL
+
+             if(canMoveToBE)
+             {
+                if(trade.PositionModify(ticket, entryPrice, tp))
+                {
+                   g_states[sIdx].beMovedToEntry = true;
+                   Print("✅ BREAKEVEN: SL moved to entry @ ", DoubleToString(entryPrice, _Digits),
+                         " | ProfitR: ", DoubleToString(profitR, 2), "R | Trade now RISK-FREE");
+                }
+                else
+                {
+                   Print("⚠️ BE Modify failed: ", trade.ResultRetcode(), " - ", trade.ResultRetcodeDescription());
+                }
+             }
+          }
 
           // 2. DYNAMIC ATR TRAILING SYSTEM (replaces hardcoded waterfall)
           // Multiplier decays exponentially as profitR grows:
