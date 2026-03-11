@@ -4,7 +4,7 @@
 ; Risk: $10-$15/trade | Max DD: $80 total | Sin daily DD limit
 
 ;═══════ PORTFOLIO LIMITS ═══════
-InpMaxPortfolioRisk=20.0
+InpMaxPortfolioRisk=12.0
 ; Max Total Portfolio Risk (%)
 ; Permite un riesgo de hasta 20% en el portfolio.
 
@@ -25,7 +25,7 @@ InpDD_Reduced=15.0
 ; DD Level: Reduced Risk (%)
 ; Cortar riesgo cuando se acerque al limite.
 
-InpDD_Pause=20.0
+InpDD_Pause=15.0
 ; DD Level: Pause Trading (%) - HARD STOP
 ; $60 → para bien antes del límite de $80
 
