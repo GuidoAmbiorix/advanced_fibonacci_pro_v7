@@ -1,18 +1,19 @@
-; USDJPY - H1 Timeframe - GOAT Instant Funding Pro
+; AUDUSD - H1 Timeframe - GOAT Instant Funding Pro
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
 ; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
 
-InpMagicNumber=100003
+InpMagicNumber=100004
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=true
-; USDJPY: Asian session active
+; AUDUSD: Asian session very active
 InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
+InpEnableNYKZ=false
+; AUDUSD: Skip NY (lower volatility)
 InpEnableLondonCloseKZ=false
 
 ;═══════ FIBONACCI ═══════
@@ -69,7 +70,8 @@ InpTrailType=1
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=8.0
+InpMinVolatilityPips=6.0
+; AUDUSD: Slightly lower minimum volatility
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 
@@ -85,7 +87,8 @@ InpTrailRegimeAware=true
 InpTrailMinBufferATR=0.40
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=50
+InpMaxSpreadPoints=30
+; AUDUSD: Tighter spread typically
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true

@@ -1,153 +1,176 @@
-; EURUSD - H1 Timeframe Institutional Flow
-; Core Major - Balanced
-; Optimized for H1 timeframe (reduced noise, cleaner signals)
+; EURUSD - H1 Timeframe - GOAT Instant Funding Pro
+; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
+; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
+; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
 
-; ====== IDENTITY ======
 InpMagicNumber=100001
-
-; ====== DIRECTION ======
 InpDirection=0
 InpBrokerUTCOffset=2
 
-; ====== KILLZONES ======
+;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
 
-; ====== FIBONACCI ======
-InpSwingLookback=8
+;═══════ FIBONACCI ═══════
+InpSwingLookback=35
+; H1: Need more history (35 bars = ~1.5 days)
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.20
+InpZoneTolerance=0.25
+; H1: Slightly more tolerant
 
-; ====== DISPLACEMENT ======
+;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
-InpDisplacementATR=1.2
-InpDisplacementLookback=3
+InpDisplacementATR=1.5
+; H1: More displacement space
+InpDisplacementLookback=8
 
-; ====== RSI ======
-InpRSI_Period=9
-InpRSI_Oversold=35
-InpRSI_Overbought=60
+;═══════ RSI ═══════
+InpRSI_Period=14
+InpRSI_Oversold=30
+InpRSI_Overbought=70
 InpRSI_Momentum=true
 
-; ====== TREND ======
+;═══════ TREND ═══════
 InpEMA_Period=200
 InpUseTrendFilter=true
 InpEMA_MinSlope=0.10
 
-; ====== CHOP FILTER ======
+;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
 InpChopThreshold=0.75
 InpATR_MA_Period=20
 
-; ====== CONFLUENCE ======
-InpMinConfluenceEntry=14
-; H1: Increased from 11 to 12 for better quality signals on cleaner timeframe
+;═══════ CONFLUENCE ═══════
+InpMinConfluenceEntry=15
+; OPTIMIZED: 15 for H1 (2-4 signals/day)
+InpDominanceThreshold=2.0
 InpEnableAddOns=false
-InpAddOn1_R=1.5
-InpAddOn2_R=2.8
 InpMaxPositions=1
 
-; ====== RISK ======
-; ====== RISK ======
-InpRiskBase=0.5
-; $50 Risk (FundingPips)
-InpMaxRisk=1.0
+;═══════ RISK (Before Governor Scaling) ═══════
+InpRiskBase=0.2
+; Conservative: 0.2% per trade (~$12)
+InpRiskAddOn1=0.0
+InpRiskAddOn2=0.0
+InpMaxRisk=0.5
 InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true
 
-; ====== TAKE PROFIT ======
+;═══════ TAKE PROFIT ═══════
 InpTPMode=2
-; H1: Adaptive TP mode for trend-following
+; 2=Adaptive TP (uses learned MFE)
 InpFixedTP_R=3.0
-; H1: Increased from 2.5R to 3.0R for larger moves
-InpMinTP_R=1.5
-; H1: Increased from 1.0R to 1.5R (H1 has bigger moves)
-InpMaxTP_R=5.0
-; H1: Increased from 3.5R to 5.0R to capture full H1 trends
+InpMinTP_R=2.0
+InpMaxTP_R=4.0
+; H1: Can achieve 4R targets
 InpTPUseLearnedMFE=true
 
-; ====== EXIT ======
+;═══════ TRAILING STOP ═══════
 InpTrailingMode=1
-; H1: Aggressive trailing stop for trend-following
-InpTrailType=1            ; 1=Chandelier
-InpTrailStepATR=0.5       ; Step size (if Type=2)
-InpMinVolatilityPips=5.0  ; Avoid dead zones
-InpMaxVolatilityFactor=3.0; Avoid crashes
-InpVolatilityTP_Mult=3.0  ; Dynamic Target
-InpTPMode=4               ; Use Volatility TP
-InpPartialTP_R=1.5
-; H1: Increased from 1.2R to 1.5R (take partial earlier on H1 moves)
-InpPartialClosePercent=40.0
-; H1: Reduced from 45% to 40% (keep more running for trends)
-InpBE_Threshold_R=0.6
-; Dynamic trail activates at 0.6R (early protection)
-InpTrailStart_R=0.6
-InpTrailATR_Mult=1.5
-; EURUSD: Balanced base multiplier
-InpTrailDecayRate=0.30
-; Moderate decay - tightens steadily as profit grows
-InpTrailMinMult=0.50
-; Floor: never tighter than 0.5x ATR
-InpTrailRegimeAware=true
-; Widen in trends, tighten in ranges
+; 1=Runner mode
+InpTrailType=1
+; 1=Chandelier Exit (ATR-based)
+InpTrailStepATR=0.5
 
-; ====== SPREAD ======
+;═══════ VOLATILITY FILTER ═══════
+InpMinVolatilityPips=8.0
+; H1: Need minimum 8 pips volatility
+InpMaxVolatilityFactor=3.0
+InpVolatilityTP_Mult=3.0
+
+;═══════ PARTIAL TP & TRAILING (H1 OPTIMIZED) ═══════
+InpPartialTP_R=1.0
+; H1: Partial TP at 1.0R (~$12 profit)
+InpPartialClosePercent=50.0
+; Close 50% at 1R, let 50% run
+
+InpBE_Threshold_R=0.5
+; H1: Move to BE at +0.5R (~$6 profit)
+InpTrailStart_R=0.5
+; H1: Start trailing from 0.5R
+
+InpTrailATR_Mult=1.0
+; H1: Less aggressive trail (1.0 ATR vs 0.7 for M15)
+InpTrailDecayRate=0.25
+; H1: Slower decay rate
+InpTrailMinMult=0.60
+; H1: Minimum trail 0.6 ATR (higher floor)
+
+InpTrailRegimeAware=true
+; Adjust trail based on regime
+InpTrailMinBufferATR=0.40
+; H1: Larger buffer from price
+
+;═══════ SPREAD ═══════
 InpMaxSpreadPoints=50
 
-; ====== SMC ======
+;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
-InpSMC_SwingLookback=12
-InpSMC_MinImpulseATR=2.2
-InpSMC_MinFVG_ATR=0.50
+InpSMC_SwingLookback=25
+; H1: Longer SMC lookback
+InpSMC_MinImpulseATR=2.0
+InpSMC_MinFVG_ATR=0.5
 
-; ====== MULTI-TIMEFRAME ======
+;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=true
-InpHTF=16388
-; H1 chart uses H4 (16388) for higher timeframe context
-InpMTF=16386
-; H1: Changed from M15 (16385) to H1 (16386) - PRIMARY TIMEFRAME
+InpHTF=16408
+; H4 higher timeframe
+InpMTF=16388
+; M15 lower timeframe (for precision)
 InpMTF_EMAPeriod=50
 
-; ====== NEWS FILTER ======
+;═══════ NEWS FILTER ═══════
 InpUseNewsFilter=true
-InpNewsMinutesBefore=15
-InpNewsMinutesAfter=15
+InpNewsMinutesBefore=30
+InpNewsMinutesAfter=30
 
-; ====== KELLY ======
+;═══════ VOLATILITY SPIKE PROTECTION ═══════
+InpEnableVolatilityFilter=true
+InpVolatilityThreshold=3.0
+InpVolatilitySpikeCooldown=15
+
+;═══════ KELLY POSITION SIZING ═══════
 InpUseKelly=true
-InpKellyFraction=0.25
-InpKellyFraction=0.25
-InpDailyMaxDD=4.9
-InpWeeklyMaxDD=8.0
+InpKellyFraction=0.5
+; Half-Kelly for safety
+InpDailyMaxDD=3.0
+; GOAT limit: 3% daily DD
+InpWeeklyMaxDD=4.0
+InpDailyTarget=0.0
 
-; ====== LEARNING ======
+;═══════ LEARNING & ADAPTATION ═══════
 InpEnableLearning=true
 InpLogTradesToFile=true
 InpLearningHistory=180
 InpMinTradesForLearning=50
 
-; ====== ADAPTIVE ======
-InpEnableAdaptiveRisk=true
-InpEnableAdaptiveExits=true
+;═══════ ADAPTIVE BEHAVIOR ═══════
+InpEnableAdaptiveRisk=false
+InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=true
 
-; ====== SESSION GOVERNOR (DISABLED FOR 24h) ======
-InpUseSessionGovernor=true
-InpMaxTradesPerSession=10
-InpTradeCooldownMinutes=10
-InpEnableSessionBlacklist=false
-
-; ====== PORTFOLIO PROTECTION ======
+;═══════ PORTFOLIO PROTECTION ═══════
 InpUseCorrelationFilter=true
-; Governor Draft System handles correlation ranking
-InpDailyMaxLoss_R=3.0
-InpLossCooldownMinutes=90
-; H1: Increased from 45 to 90 minutes (bug fix - consecutive loss protection)
+InpDailyMaxLoss_R=15.0
+; Circuit breaker: 15R (~$180)
+InpLossCooldownMinutes=30
 InpMaxConsecutiveLosses=2
 InpMaxDailyTrades=5
-; Max 5 trades per day (prevent overtrading)
 InpUseReversalFilter=true
+InpReversalCooldownMinutes=15
+
+;═══════ SESSION GOVERNOR ═══════
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=3
+InpTradeCooldownMinutes=30
+InpCloseIntradayProfits=false
+; H1: Don't force close at EOD
+InpEndOfDayHour=22
+
+;═══════ VISUAL DEBUGGING ═══════
+InpEnableVisualLevels=true
+InpTickThrottleSeconds=60

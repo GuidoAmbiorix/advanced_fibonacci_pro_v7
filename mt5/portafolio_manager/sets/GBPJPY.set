@@ -1,149 +1,155 @@
-; GBPJPY - H1 Timeframe "The Beast"
-; High Volatility Specialist
-; Optimized for wide swings and strong momentum
+; GBPJPY - H1 Timeframe - GOAT Instant Funding Pro
+; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
+; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
+; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
+; NOTE: GBPJPY is highly volatile - wider stops
 
-; ====== IDENTITY ======
-InpMagicNumber=100004
+InpMagicNumber=100007
 InpDirection=0
 InpBrokerUTCOffset=2
 
-; ====== KILLZONES ======
+;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=true
-; GBPJPY moves in Asia too (Tokyo)
+; GBPJPY: Very active in Asian
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
-InpEnableLondonCloseKZ=true
+InpEnableLondonCloseKZ=false
 
-; ====== FIBONACCI (Wider Tolerance) ======
-InpSwingLookback=10
-; Increased lookback for major swing points
+;═══════ FIBONACCI ═══════
+InpSwingLookback=35
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.30
-; Wider tolerance for volatile wicks
+InpZoneTolerance=0.25
 
-; ====== DISPLACEMENT ======
+;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
 InpDisplacementATR=1.5
-; Higher threshold for valid breakout
-InpDisplacementLookback=3
+InpDisplacementLookback=8
 
-; ====== RSI ======
+;═══════ RSI ═══════
 InpRSI_Period=14
-; Slower RSI to filter noise
 InpRSI_Oversold=30
 InpRSI_Overbought=70
 InpRSI_Momentum=true
 
-; ====== TREND ======
+;═══════ TREND ═══════
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.15
-; Steeper slope required
+InpEMA_MinSlope=0.10
 
-; ====== CHOP FILTER ======
+;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.60
-; Strict chop filter, GJ chops hard
-InpATR_MA_Period=14
+InpChopThreshold=0.75
+InpATR_MA_Period=20
 
-; ====== CONFLUENCE ======
-InpMinConfluenceEntry=14
-; H1: Increased from 11 to 12 for better quality signals on cleaner timeframe
+;═══════ CONFLUENCE ═══════
+InpMinConfluenceEntry=15
+InpDominanceThreshold=2.0
 InpEnableAddOns=false
-InpAddOn1_R=1.5
-InpAddOn2_R=2.8
 InpMaxPositions=1
 
-; ====== RISK ======
-InpRiskBase=0.5
-; $50 Risk (FundingPips)
-InpMaxRisk=1.0
+;═══════ RISK (Before Governor Scaling) ═══════
+InpRiskBase=0.2
+InpRiskAddOn1=0.0
+InpRiskAddOn2=0.0
+InpMaxRisk=0.5
 InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=true
 
-; ====== TAKE PROFIT (Aggressive Targets) ======
+;═══════ TAKE PROFIT ═══════
 InpTPMode=2
-InpFixedTP_R=4.0
-; Aiming for 4R runs
+InpFixedTP_R=3.0
 InpMinTP_R=2.0
-InpMaxTP_R=8.0
+InpMaxTP_R=4.0
 InpTPUseLearnedMFE=true
 
-; ====== EXIT (Wide Trailing) ======
+;═══════ TRAILING STOP ═══════
 InpTrailingMode=1
 InpTrailType=1
 InpTrailStepATR=0.5
-InpMinVolatilityPips=10.0
-InpMaxVolatilityFactor=4.0
-InpVolatilityTP_Mult=4.0
-InpPartialTP_R=2.0
-; Take partials later
-InpPartialClosePercent=30.0
-; Leave 70% running
-InpBE_Threshold_R=0.8
-; GBPJPY: Slightly later activation (needs room)
-InpTrailStart_R=0.8
-InpTrailATR_Mult=1.8
-; GBPJPY: Wide base (most volatile forex pair)
-InpTrailDecayRate=0.20
-; Slow decay - let GBPJPY trends run
-InpTrailMinMult=0.60
-; Higher floor (volatile pair needs buffer)
+
+;═══════ VOLATILITY FILTER ═══════
+InpMinVolatilityPips=12.0
+; GBPJPY: Highest volatility pair - need 12 pips minimum
+InpMaxVolatilityFactor=3.5
+InpVolatilityTP_Mult=3.0
+
+;═══════ PARTIAL TP & TRAILING (H1 OPTIMIZED) ═══════
+InpPartialTP_R=1.0
+InpPartialClosePercent=50.0
+InpBE_Threshold_R=0.5
+InpTrailStart_R=0.5
+InpTrailATR_Mult=1.1
+; GBPJPY: Slightly wider trail due to volatility
+InpTrailDecayRate=0.25
+InpTrailMinMult=0.65
+; GBPJPY: Higher minimum trail
 InpTrailRegimeAware=true
+InpTrailMinBufferATR=0.45
+; GBPJPY: Larger buffer
 
-; ====== SPREAD ======
-InpMaxSpreadPoints=80
-; Higher spread tolerance for Cross
+;═══════ SPREAD ═══════
+InpMaxSpreadPoints=60
+; GBPJPY: Widest spreads
 
-; ====== SMC ======
+;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
-InpSMC_SwingLookback=12
-InpSMC_MinImpulseATR=2.5
-InpSMC_MinFVG_ATR=1.0
+InpSMC_SwingLookback=25
+InpSMC_MinImpulseATR=2.0
+InpSMC_MinFVG_ATR=0.5
 
-; ====== MTF ======
+;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=true
-InpHTF=16388
-InpMTF=16386
+InpHTF=16408
+InpMTF=16388
 InpMTF_EMAPeriod=50
 
-; ====== NEWS ======
+;═══════ NEWS FILTER ═══════
 InpUseNewsFilter=true
 InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
-; Longer avoidance window
 
-; ====== KELLY ======
+;═══════ VOLATILITY SPIKE PROTECTION ═══════
+InpEnableVolatilityFilter=true
+InpVolatilityThreshold=4.0
+; GBPJPY: Highest spike threshold
+InpVolatilitySpikeCooldown=20
+
+;═══════ KELLY POSITION SIZING ═══════
 InpUseKelly=true
-InpKellyFraction=0.25
-InpDailyMaxDD=4.9
-InpWeeklyMaxDD=8.0
+InpKellyFraction=0.5
+InpDailyMaxDD=3.0
+InpWeeklyMaxDD=4.0
+InpDailyTarget=0.0
 
-; ====== LEARNING ======
+;═══════ LEARNING & ADAPTATION ═══════
 InpEnableLearning=true
 InpLogTradesToFile=true
 InpLearningHistory=180
 InpMinTradesForLearning=50
 
-; ====== ADAPTIVE ======
-InpEnableAdaptiveRisk=true
-InpEnableAdaptiveExits=true
+;═══════ ADAPTIVE BEHAVIOR ═══════
+InpEnableAdaptiveRisk=false
+InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=true
 
-; ====== SESSION GOVERNOR ======
-InpUseSessionGovernor=true
-InpMaxTradesPerSession=10
-InpTradeCooldownMinutes=10
-InpEnableSessionBlacklist=false
-
-; ====== PORTFOLIO PROTECTION ======
+;═══════ PORTFOLIO PROTECTION ═══════
 InpUseCorrelationFilter=true
-; Governor Draft System handles correlation ranking
-InpDailyMaxLoss_R=3.0
-InpLossCooldownMinutes=120
+InpDailyMaxLoss_R=15.0
+InpLossCooldownMinutes=30
 InpMaxConsecutiveLosses=2
 InpMaxDailyTrades=5
-; Max 5 trades per day (prevent overtrading)
 InpUseReversalFilter=true
+InpReversalCooldownMinutes=15
+
+;═══════ SESSION GOVERNOR ═══════
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=3
+InpTradeCooldownMinutes=30
+InpCloseIntradayProfits=false
+InpEndOfDayHour=22
+
+;═══════ VISUAL DEBUGGING ═══════
+InpEnableVisualLevels=true
+InpTickThrottleSeconds=60

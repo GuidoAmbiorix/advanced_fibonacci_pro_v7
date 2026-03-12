@@ -1,25 +1,28 @@
-; USDJPY - H1 Timeframe - GOAT Instant Funding Pro
+; XAUUSD (GOLD) - H1 Timeframe - GOAT Instant Funding Pro
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
 ; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
+; NOTE: GOLD has extreme volatility - parameters adjusted accordingly
 
-InpMagicNumber=100003
+InpMagicNumber=100008
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
-InpEnableAsianKZ=true
-; USDJPY: Asian session active
+InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
+; GOLD: London Open is key
 InpEnableNYKZ=true
+; GOLD: NY session very active
 InpEnableLondonCloseKZ=false
 
 ;═══════ FIBONACCI ═══════
 InpSwingLookback=35
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.25
+InpZoneTolerance=0.20
+; GOLD: Tighter tolerance due to precision
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
@@ -35,11 +38,13 @@ InpRSI_Momentum=true
 ;═══════ TREND ═══════
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.10
+InpEMA_MinSlope=0.15
+; GOLD: Stricter trend filter
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.75
+InpChopThreshold=0.65
+; GOLD: Lower threshold (more selective)
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
@@ -61,6 +66,7 @@ InpTPMode=2
 InpFixedTP_R=3.0
 InpMinTP_R=2.0
 InpMaxTP_R=4.0
+; GOLD: Can achieve 4R+ easily
 InpTPUseLearnedMFE=true
 
 ;═══════ TRAILING STOP ═══════
@@ -69,45 +75,58 @@ InpTrailType=1
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=8.0
-InpMaxVolatilityFactor=3.0
+InpMinVolatilityPips=60.0
+; GOLD: Much higher minimum (60 pips = $0.60)
+InpMaxVolatilityFactor=3.5
 InpVolatilityTP_Mult=3.0
 
-;═══════ PARTIAL TP & TRAILING (H1 OPTIMIZED) ═══════
+;═══════ PARTIAL TP & TRAILING (H1 OPTIMIZED - GOLD) ═══════
 InpPartialTP_R=1.0
 InpPartialClosePercent=50.0
 InpBE_Threshold_R=0.5
 InpTrailStart_R=0.5
-InpTrailATR_Mult=1.0
-InpTrailDecayRate=0.25
-InpTrailMinMult=0.60
+InpTrailATR_Mult=1.2
+; GOLD: Wider trail (1.2 ATR) due to extreme volatility
+InpTrailDecayRate=0.20
+; GOLD: Slower decay
+InpTrailMinMult=0.70
+; GOLD: Higher minimum (0.7 ATR floor)
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.40
+InpTrailMinBufferATR=0.50
+; GOLD: Largest buffer
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=50
+InpMaxSpreadPoints=100
+; GOLD: Can have 100+ point spreads ($1 spread)
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
 InpSMC_SwingLookback=25
-InpSMC_MinImpulseATR=2.0
+InpSMC_MinImpulseATR=2.5
+; GOLD: Higher impulse threshold
 InpSMC_MinFVG_ATR=0.5
 
 ;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=true
 InpHTF=16408
+; H4
 InpMTF=16388
+; M15
 InpMTF_EMAPeriod=50
 
 ;═══════ NEWS FILTER ═══════
 InpUseNewsFilter=true
-InpNewsMinutesBefore=30
-InpNewsMinutesAfter=30
+InpNewsMinutesBefore=90
+; GOLD: Wider news window (90 min)
+InpNewsMinutesAfter=90
+; GOLD: Very sensitive to USD news
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=3.0
-InpVolatilitySpikeCooldown=15
+InpVolatilityThreshold=4.5
+; GOLD: Highest spike threshold
+InpVolatilitySpikeCooldown=30
+; GOLD: Longer cooldown
 
 ;═══════ KELLY POSITION SIZING ═══════
 InpUseKelly=true
@@ -130,16 +149,20 @@ InpEnableAdaptiveFilters=true
 ;═══════ PORTFOLIO PROTECTION ═══════
 InpUseCorrelationFilter=true
 InpDailyMaxLoss_R=15.0
-InpLossCooldownMinutes=30
+InpLossCooldownMinutes=120
+; GOLD: Longer cooldown (2 hours)
 InpMaxConsecutiveLosses=2
-InpMaxDailyTrades=5
+InpMaxDailyTrades=3
+; GOLD: Max 3 trades/day
 InpUseReversalFilter=true
 InpReversalCooldownMinutes=15
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=3
-InpTradeCooldownMinutes=30
+InpMaxTradesPerSession=1
+; GOLD: 1 trade per session (very selective)
+InpTradeCooldownMinutes=120
+; GOLD: 2 hour cooldown between trades
 InpCloseIntradayProfits=false
 InpEndOfDayHour=22
 

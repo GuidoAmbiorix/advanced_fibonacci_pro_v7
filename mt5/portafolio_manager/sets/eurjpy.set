@@ -1,16 +1,16 @@
-; USDJPY - H1 Timeframe - GOAT Instant Funding Pro
+; EURJPY - H1 Timeframe - GOAT Instant Funding Pro
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
 ; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
 
-InpMagicNumber=100003
+InpMagicNumber=100006
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=true
-; USDJPY: Asian session active
+; EURJPY: Active in Asian session
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
@@ -69,8 +69,9 @@ InpTrailType=1
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=8.0
-InpMaxVolatilityFactor=3.0
+InpMinVolatilityPips=10.0
+; EURJPY: Higher volatility pair
+InpMaxVolatilityFactor=3.5
 InpVolatilityTP_Mult=3.0
 
 ;═══════ PARTIAL TP & TRAILING (H1 OPTIMIZED) ═══════
@@ -85,7 +86,8 @@ InpTrailRegimeAware=true
 InpTrailMinBufferATR=0.40
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=50
+InpMaxSpreadPoints=40
+; EURJPY: Wider spreads possible
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
@@ -106,7 +108,8 @@ InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=3.0
+InpVolatilityThreshold=3.5
+; EURJPY: Higher spike threshold
 InpVolatilitySpikeCooldown=15
 
 ;═══════ KELLY POSITION SIZING ═══════

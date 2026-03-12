@@ -1,100 +1,104 @@
-; Optimized for 6 assets: EURUSD, GBPUSD, USDJPY, XAUUSD, GBPJPY, USTEC
-; Account: $5,000 FundingPips
-; Strategy: Dynamic Draft Portfolio with Correlation Guard
+; Portfolio Governor - GOAT Instant Funding Pro
+; Account: $6,000 Virtual Capital
+; Phase 1 Rules: 4% Profit Target | 5% Max DD | 3% Daily DD | 3 Min Days
+; Strategy: Conservative Risk, Aggressive Trailing, Fast Profit Locking
 
 ;═══════ PORTFOLIO LIMITS ═══════
-InpMaxPortfolioRisk=5.0
-; Max Total Portfolio Risk (%) - FundingPips Hard Cap
-; Allows up to 5 simultaneous trades at 1% risk
+InpMaxPortfolioRisk=2.5
+; Max Total Portfolio Risk (%)
+; Permite hasta 5 symbols activos x 0.5% = 2.5% total
+; Conservador para proteger la cuenta
 
-InpMaxSymbolRisk=2.0
+InpMaxSymbolRisk=0.5
 ; Max Risk Per Symbol (%)
-; Increased to 2.0% to allow scaling (e.g., initial entry + 1 add-on)
+; 0.5% máximo por symbol para prevenir pérdidas grandes
 
-InpMaxGroupRisk=3.5
+InpMaxGroupRisk=1.5
 ; Max Risk Per Correlation Group (%)
-; Increased to 3.5% for 6-asset portfolio (Governor Draft handles per-group limits)
+; Máximo 1.5% por grupo correlacionado (USD, JPY, GBP, etc)
 
 ;═══════ DRAWDOWN GOVERNOR ═══════
-InpDD_Normal=3.5
-; DD Level: Normal Trading (%) - Start risk reduction
-; Triggers closer to the daily limit to allow breathing room
+InpDD_Normal=1.5
+; DD Level: Normal Trading (%)
+; Empezar a reducir riesgo cuando DD > 1.5%
 
-InpDD_Reduced=4.0
+InpDD_Reduced=2.5
 ; DD Level: Reduced Risk (%)
-; Strict reduction as we approach daily limit
+; Reducción agresiva cuando DD > 2.5%
 
-InpDD_Pause=4.8
+InpDD_Pause=4.5
 ; DD Level: Pause Trading (%) - HARD STOP
-; MUST be below 5.0% (FundingPips Daily Limit)
-; Stops all new trades at 4.8% drawdown
+; Pausar antes del límite GOAT de 5%
 
-InpDD_ReducedMult=0.60
+InpDD_ReducedMult=0.50
 ; Risk Multiplier when DD > Normal
-; Increased from 0.5 to 0.60 (40% reduction instead of 50%)
-; More gradual risk reduction allows recovery
+; Cortar riesgo a 50% cuando en drawdown
 
 ;═══════ ROLLING PF GOVERNOR ═══════
-InpRollingTrades=20
-; Rolling Window (trades) - Adjusted for 3 pairs
-; Reduced from 50 to 20 for faster adaptation to current market conditions
+InpRollingTrades=30
+; Rolling Window (trades)
+; Ventana de 30 trades para calcular Profit Factor
 
-InpPF_Normal=1.3
+InpPF_Normal=1.8
 ; PF Level: Normal Trading
-; Reduced from 1.4 to 1.3 (more achievable target)
-; Target: Win $1.30 for every $1 lost (realistic with $10 risk)
+; Target: Ganar $1.80 por cada $1 perdido
 
-InpPF_Reduced=1.15
+InpPF_Reduced=1.2
 ; PF Level: Reduced Risk
-; Reduced from 1.3 to 1.15 (earlier warning signal)
-; Warning: Performance degrading, reduce size
+; Warning: Performance degradando
 
-InpPF_Pause=0.95
+InpPF_Pause=1.0
 ; PF Level: Pause Trading
-; Reduced from 1.0 to 0.95 (stop before break-even)
-; Stop: Losing money, reassess strategy immediately
+; Stop: No hay edge, reevaluar estrategia
 
 InpPF_ReducedMult=0.70
 ; Risk Mult when PF < Normal
-; Increased from 0.65 to 0.70 (reduce size by 30% instead of 35%)
-; More gradual reduction allows recovery
+; Reducir riesgo cuando PF baja
 
 ;═══════ DAILY/WEEKLY LIMITS ═══════
-InpDailyMaxDD=4.9
+InpDailyMaxDD=3.0
 ; Daily Max Drawdown (%)
-; FundingPips Limit is 5.0% - Set to 4.9% for safety
+; GOAT limit: 3% diario ($180)
 
-InpWeeklyMaxDD=8.0
+InpWeeklyMaxDD=4.0
 ; Weekly Max Drawdown (%)
-; Intermediate stop before monthly limit
+; Conservador: 4% semanal
 
-InpMonthlyMaxDD=9.5
+InpMonthlyMaxDD=5.0
 ; Monthly Max Drawdown (%)
-; FundingPips Limit is 10.0% - Set to 9.5% for safety
+; GOAT limit: 5% mensual ($300)
+
+InpDailyTarget=0.0
+; Daily Profit Target (%, 0=disabled)
+
+InpDailyTargetUSD=80.0
+; Daily Profit Target ($)
+; Target conservador: $80/día ($240 / 3 días = $80)
+; Cuando se alcanza: cerrar todo y pausar trading
 
 ;═══════ CORRELATION GUARD ═══════
 InpUseCorrelationGuard=true
 ; Enable Correlation Guard
-; ENABLED: Dynamic Draft System manages 6-asset correlation ranking
+; ENABLED: Previene overexposure a pares correlacionados
 
 InpHighCorrelation=0.70
 ; High Correlation Threshold
-; Detects pairs moving together (EURUSD/GBPUSD, XAUUSD/USDJPY)
+; Detecta pares correlacionados (EURUSD/GBPUSD, etc)
 
 InpCorrelationReduction=0.50
 ; Size Reduction Factor
-; Cut position size in half for correlated entries
+; Reducir 50% el tamaño en entries correlacionadas
 
 ;═══════ MAGIC NUMBER RANGE ═══════
 InpMagicBase=100000
 ; Magic Number Base
-; Symbol_Engine instances use 100000-100999
+; Symbol_Engine instances usan 100000-100999
 
 InpMagicRange=999
 ; Magic Number Range
-; Covers all Symbol_Engine instances
+; Cubre todas las instancias de Symbol_Engine
 
 ;═══════ UPDATE FREQUENCY ═══════
 InpUpdateSeconds=5
 ; Update Interval (seconds)
-; Balance between responsiveness and CPU usage
+; Balance entre responsividad y uso de CPU
