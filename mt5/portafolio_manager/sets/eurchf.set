@@ -1,9 +1,10 @@
-; USDCAD - H1 Timeframe - GOAT Instant Funding Pro
+; EURCHF - H1 Timeframe - GOAT Instant Funding Pro
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
 ; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
+; NOTE: EURCHF very stable, low volatility, tight spread - excellent pair
 
-InpMagicNumber=100003
+InpMagicNumber=100007
 InpDirection=0
 InpBrokerUTCOffset=2
 
@@ -11,8 +12,8 @@ InpBrokerUTCOffset=2
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
+; EURCHF: Best in London
 InpEnableNYKZ=true
-; USDCAD: Strong in NY session
 InpEnableLondonCloseKZ=false
 
 ;═══════ FIBONACCI ═══════
@@ -69,7 +70,8 @@ InpTrailType=1
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=7.0
+InpMinVolatilityPips=5.0
+; EURCHF: Lower volatility, very stable
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 
@@ -85,7 +87,8 @@ InpTrailRegimeAware=true
 InpTrailMinBufferATR=0.40
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=35
+InpMaxSpreadPoints=25
+; EURCHF: Very tight spread (1.5-2 pips)
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true

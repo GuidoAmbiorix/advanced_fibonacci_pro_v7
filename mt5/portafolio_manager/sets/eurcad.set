@@ -1,19 +1,19 @@
-; GBPJPY - H1 Timeframe - GOAT Instant Funding Pro
+; EURCAD - H1 Timeframe - GOAT Instant Funding Pro
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
 ; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
-; NOTE: GBPJPY is highly volatile - wider stops
+; NOTE: EURCAD strong in London/NY overlap - good trending pair
 
-InpMagicNumber=100007
+InpMagicNumber=100008
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
-InpEnableAsianKZ=true
-; GBPJPY: Very active in Asian
+InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
+; EURCAD: Active in both sessions
 InpEnableLondonCloseKZ=false
 
 ;═══════ FIBONACCI ═══════
@@ -70,9 +70,9 @@ InpTrailType=1
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=12.0
-; GBPJPY: Highest volatility pair - need 12 pips minimum
-InpMaxVolatilityFactor=3.5
+InpMinVolatilityPips=8.0
+; EURCAD: Moderate volatility
+InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 
 ;═══════ PARTIAL TP & TRAILING (H1 OPTIMIZED) ═══════
@@ -80,18 +80,15 @@ InpPartialTP_R=1.0
 InpPartialClosePercent=50.0
 InpBE_Threshold_R=0.5
 InpTrailStart_R=0.5
-InpTrailATR_Mult=1.1
-; GBPJPY: Slightly wider trail due to volatility
+InpTrailATR_Mult=1.0
 InpTrailDecayRate=0.25
-InpTrailMinMult=0.65
-; GBPJPY: Higher minimum trail
+InpTrailMinMult=0.60
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.45
-; GBPJPY: Larger buffer
+InpTrailMinBufferATR=0.40
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=60
-; GBPJPY: Widest spreads
+InpMaxSpreadPoints=35
+; EURCAD: Moderate spread (2-3 pips)
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
@@ -112,9 +109,8 @@ InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=4.0
-; GBPJPY: Highest spike threshold
-InpVolatilitySpikeCooldown=20
+InpVolatilityThreshold=3.0
+InpVolatilitySpikeCooldown=15
 
 ;═══════ KELLY POSITION SIZING ═══════
 InpUseKelly=true

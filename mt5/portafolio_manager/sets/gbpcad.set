@@ -1,19 +1,20 @@
-; AUDUSD - H1 Timeframe - GOAT Instant Funding Pro
+; GBPCAD - H1 Timeframe - GOAT Instant Funding Pro
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
 ; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
+; NOTE: GBPCAD excellent for London/NY overlap - strong trends
 
-InpMagicNumber=100004
+InpMagicNumber=100006
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
-InpEnableAsianKZ=true
-; AUDUSD: Asian session very active
+InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
-InpEnableNYKZ=false
-; AUDUSD: Skip NY (lower volatility)
+; GBPCAD: Very active London
+InpEnableNYKZ=true
+; GBPCAD: Strong in NY too
 InpEnableLondonCloseKZ=false
 
 ;═══════ FIBONACCI ═══════
@@ -70,8 +71,8 @@ InpTrailType=1
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=6.0
-; AUDUSD: Slightly lower minimum volatility
+InpMinVolatilityPips=9.0
+; GBPCAD: Higher volatility cross
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 
@@ -87,8 +88,8 @@ InpTrailRegimeAware=true
 InpTrailMinBufferATR=0.40
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=30
-; AUDUSD: Tighter spread typically
+InpMaxSpreadPoints=40
+; GBPCAD: Moderate spread (2.5-3.5 pips)
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true

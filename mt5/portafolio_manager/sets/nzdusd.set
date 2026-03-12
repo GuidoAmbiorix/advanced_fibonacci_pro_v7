@@ -1,16 +1,17 @@
-; EURJPY - H1 Timeframe - GOAT Instant Funding Pro
+; NZDUSD - H1 Timeframe - GOAT Instant Funding Pro
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
 ; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
+; NOTE: NZDUSD less volatile than AUDUSD - good London/NY pair
 
-InpMagicNumber=100006
+InpMagicNumber=100010
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
-InpEnableAsianKZ=true
-; EURJPY: Active in Asian session
+InpEnableAsianKZ=false
+; NZDUSD: Skip Asian (use London/NY only)
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
@@ -69,9 +70,9 @@ InpTrailType=1
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=10.0
-; EURJPY: Higher volatility pair
-InpMaxVolatilityFactor=3.5
+InpMinVolatilityPips=7.0
+; NZDUSD: Moderate volatility
+InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 
 ;═══════ PARTIAL TP & TRAILING (H1 OPTIMIZED) ═══════
@@ -86,8 +87,8 @@ InpTrailRegimeAware=true
 InpTrailMinBufferATR=0.40
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=40
-; EURJPY: Wider spreads possible
+InpMaxSpreadPoints=35
+; NZDUSD: Moderate spread (2-3 pips)
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
@@ -108,8 +109,7 @@ InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=3.5
-; EURJPY: Higher spike threshold
+InpVolatilityThreshold=3.0
 InpVolatilitySpikeCooldown=15
 
 ;═══════ KELLY POSITION SIZING ═══════

@@ -1,17 +1,18 @@
-; USDJPY - H1 Timeframe - GOAT Instant Funding Pro
+; GBPCHF - H1 Timeframe - GOAT Instant Funding Pro
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
 ; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
+; NOTE: GBPCHF volatile but very trending - excellent for H1
 
-InpMagicNumber=100003
+InpMagicNumber=100009
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
-InpEnableAsianKZ=true
-; USDJPY: Asian session active
+InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
+; GBPCHF: Very active London
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
 
@@ -69,7 +70,8 @@ InpTrailType=1
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=8.0
+InpMinVolatilityPips=9.0
+; GBPCHF: Higher volatility
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 
@@ -78,14 +80,17 @@ InpPartialTP_R=1.0
 InpPartialClosePercent=50.0
 InpBE_Threshold_R=0.5
 InpTrailStart_R=0.5
-InpTrailATR_Mult=1.0
+InpTrailATR_Mult=1.05
+; GBPCHF: Slightly wider trail due to volatility
 InpTrailDecayRate=0.25
-InpTrailMinMult=0.60
+InpTrailMinMult=0.62
+; GBPCHF: Higher minimum
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.40
+InpTrailMinBufferATR=0.42
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=50
+InpMaxSpreadPoints=45
+; GBPCHF: Moderate-wide spread (3-4 pips)
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
@@ -106,7 +111,8 @@ InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=3.0
+InpVolatilityThreshold=3.2
+; GBPCHF: Higher spike threshold
 InpVolatilitySpikeCooldown=15
 
 ;═══════ KELLY POSITION SIZING ═══════

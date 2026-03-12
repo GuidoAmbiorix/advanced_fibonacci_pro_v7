@@ -1,28 +1,27 @@
-; XAUUSD (GOLD) - H1 Timeframe - GOAT Instant Funding Pro
+; EURGBP - H1 Timeframe - GOAT Instant Funding Pro
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
 ; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
-; NOTE: GOLD has extreme volatility - parameters adjusted accordingly
+; NOTE: EURGBP is THE BEST London pair - very stable
 
-InpMagicNumber=100008
+InpMagicNumber=100004
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
+; EURGBP: Skip Asian (low volume)
 InpEnableLondonOpenKZ=true
-; GOLD: London Open is key
+; EURGBP: BEST in London Open!
 InpEnableNYKZ=true
-; GOLD: NY session very active
 InpEnableLondonCloseKZ=false
 
 ;═══════ FIBONACCI ═══════
 InpSwingLookback=35
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.20
-; GOLD: Tighter tolerance due to precision
+InpZoneTolerance=0.25
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
@@ -38,13 +37,11 @@ InpRSI_Momentum=true
 ;═══════ TREND ═══════
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.15
-; GOLD: Stricter trend filter
+InpEMA_MinSlope=0.10
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.65
-; GOLD: Lower threshold (more selective)
+InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
@@ -66,7 +63,6 @@ InpTPMode=2
 InpFixedTP_R=3.0
 InpMinTP_R=2.0
 InpMaxTP_R=4.0
-; GOLD: Can achieve 4R+ easily
 InpTPUseLearnedMFE=true
 
 ;═══════ TRAILING STOP ═══════
@@ -75,58 +71,47 @@ InpTrailType=1
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=60.0
-; GOLD: Much higher minimum (60 pips = $0.60)
-InpMaxVolatilityFactor=3.5
+InpMinVolatilityPips=6.0
+; EURGBP: Lower volatility, stable pair
+InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 
-;═══════ PARTIAL TP & TRAILING (H1 OPTIMIZED - GOLD) ═══════
+;═══════ PARTIAL TP & TRAILING (H1 OPTIMIZED) ═══════
 InpPartialTP_R=1.0
 InpPartialClosePercent=50.0
 InpBE_Threshold_R=0.5
 InpTrailStart_R=0.5
-InpTrailATR_Mult=1.2
-; GOLD: Wider trail (1.2 ATR) due to extreme volatility
-InpTrailDecayRate=0.20
-; GOLD: Slower decay
-InpTrailMinMult=0.70
-; GOLD: Higher minimum (0.7 ATR floor)
+InpTrailATR_Mult=1.0
+InpTrailDecayRate=0.25
+InpTrailMinMult=0.60
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.50
-; GOLD: Largest buffer
+InpTrailMinBufferATR=0.40
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=100
-; GOLD: Can have 100+ point spreads ($1 spread)
+InpMaxSpreadPoints=25
+; EURGBP: Very tight spread (1-1.5 pips typical)
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
 InpSMC_SwingLookback=25
-InpSMC_MinImpulseATR=2.5
-; GOLD: Higher impulse threshold
+InpSMC_MinImpulseATR=2.0
 InpSMC_MinFVG_ATR=0.5
 
 ;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=true
 InpHTF=16408
-; H4
 InpMTF=16388
-; M15
 InpMTF_EMAPeriod=50
 
 ;═══════ NEWS FILTER ═══════
 InpUseNewsFilter=true
-InpNewsMinutesBefore=90
-; GOLD: Wider news window (90 min)
-InpNewsMinutesAfter=90
-; GOLD: Very sensitive to USD news
+InpNewsMinutesBefore=30
+InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=4.5
-; GOLD: Highest spike threshold
-InpVolatilitySpikeCooldown=30
-; GOLD: Longer cooldown
+InpVolatilityThreshold=3.0
+InpVolatilitySpikeCooldown=15
 
 ;═══════ KELLY POSITION SIZING ═══════
 InpUseKelly=true
@@ -149,20 +134,16 @@ InpEnableAdaptiveFilters=true
 ;═══════ PORTFOLIO PROTECTION ═══════
 InpUseCorrelationFilter=true
 InpDailyMaxLoss_R=15.0
-InpLossCooldownMinutes=120
-; GOLD: Longer cooldown (2 hours)
+InpLossCooldownMinutes=30
 InpMaxConsecutiveLosses=2
-InpMaxDailyTrades=3
-; GOLD: Max 3 trades/day
+InpMaxDailyTrades=5
 InpUseReversalFilter=true
 InpReversalCooldownMinutes=15
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=1
-; GOLD: 1 trade per session (very selective)
-InpTradeCooldownMinutes=120
-; GOLD: 2 hour cooldown between trades
+InpMaxTradesPerSession=3
+InpTradeCooldownMinutes=30
 InpCloseIntradayProfits=false
 InpEndOfDayHour=22
 
