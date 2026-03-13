@@ -2148,8 +2148,8 @@ double CalculateConfluenceScore(int direction)
    
    bool validStructure = (structRange >= g_ATR * 2.0); 
    
-   if(direction == 1 && lowestBar < highestBar && validStructure) score += 3.0 * weights[1]; // PHASE 3: structure weight
-   if(direction == -1 && highestBar < lowestBar && validStructure) score += 3.0 * weights[1]; // PHASE 3: structure weight
+   if(direction == 1 && highestBar < lowestBar && validStructure) score += 3.0 * weights[1]; // PHASE 3: structure weight
+   if(direction == -1 && lowestBar < highestBar && validStructure) score += 3.0 * weights[1]; // PHASE 3: structure weight
 
    // C. RSI Extremes - 2.0 points
    bool rsiValid = false;
