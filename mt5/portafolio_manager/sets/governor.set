@@ -9,8 +9,9 @@ InpMaxPortfolioRisk=2.5
 ; Permite hasta 5 symbols activos x 0.5% = 2.5% total
 ; Conservador para proteger la cuenta
 
-InpMaxSymbolRisk=0.5
+InpMaxSymbolRisk=1.5
 ; Max Risk Per Symbol (%)
+; 1.5% max para permitir max risk en pares selectos
 ; 0.5% máximo por symbol para prevenir pérdidas grandes
 
 InpMaxGroupRisk=1.5

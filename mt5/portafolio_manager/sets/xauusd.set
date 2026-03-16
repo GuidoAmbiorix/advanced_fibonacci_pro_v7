@@ -1,16 +1,16 @@
-; EURUSD - H1 Timeframe - GOAT Instant Funding Pro
+; XAUUSD - H1 Timeframe - GOAT Instant Funding Pro
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
 ; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
 
-InpMagicNumber=100001
+InpMagicNumber=100004
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=false
 InpEnableAsianKZ=false
-InpEnableLondonOpenKZ=true
+InpEnableLondonOpenKZ=false
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
 
@@ -45,15 +45,15 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=16
+InpMinConfluenceEntry=17
 ; OPTIMIZED: 15 for H1 (2-4 signals/day)
 InpDominanceThreshold=2.0
 InpEnableAddOns=false
 InpMaxPositions=1
 
 ;═══════ RISK (Before Governor Scaling) ═══════
-InpRiskBase=0.7
-; Conservative: 0.7% per trade
+InpRiskBase=1.0
+; Conservative: 1.0% per trade (Gold requires more width)
 InpRiskAddOn1=0.0
 InpRiskAddOn2=0.0
 InpMaxRisk=0.5
@@ -65,7 +65,7 @@ InpTPMode=2
 ; 2=Adaptive TP (uses learned MFE)
 InpFixedTP_R=3.0
 InpMinTP_R=2.0
-InpMaxTP_R=4.0
+InpMaxTP_R=5.0
 ; H1: Can achieve 4R targets
 InpTPUseLearnedMFE=true
 
@@ -77,8 +77,8 @@ InpTrailType=1
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=8.0
-; H1: Need minimum 8 pips volatility
+InpMinVolatilityPips=25.0
+; Gold: Ignore low vol chop
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 
@@ -93,27 +93,27 @@ InpBE_Threshold_R=0.5
 InpTrailStart_R=0.5
 ; H1: Start trailing from 0.5R
 
-InpTrailATR_Mult=0.3
-; H1: Aggressive trail step
+InpTrailATR_Mult=0.4
+; Gold: Wider trail step
 InpTrailDecayRate=0.25
 ; H1: Slower decay rate
-InpTrailMinMult=0.40
-; H1: Minimum trail 0.4 ATR (tight floor)
+InpTrailMinMult=0.50
+; Gold: Wider tight floor to survive wicks
 
 InpTrailRegimeAware=true
 ; Adjust trail based on regime
-InpTrailMinBufferATR=0.40
-; H1: Larger buffer from price
+InpTrailMinBufferATR=0.50
+; Gold: Larger buffer from price
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=50
+InpMaxSpreadPoints=100
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
 InpSMC_SwingLookback=25
 ; H1: Longer SMC lookback
 InpSMC_MinImpulseATR=2.0
-InpSMC_MinFVG_ATR=0.5
+InpSMC_MinFVG_ATR=1.0
 
 ;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=true
@@ -130,8 +130,8 @@ InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=3.0
-InpVolatilitySpikeCooldown=15
+InpVolatilityThreshold=4.0
+InpVolatilitySpikeCooldown=30
 
 ;═══════ KELLY POSITION SIZING ═══════
 InpUseKelly=true

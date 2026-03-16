@@ -1,17 +1,17 @@
-; EURUSD - H1 Timeframe - GOAT Instant Funding Pro
+; USDJPY - H1 Timeframe - GOAT Instant Funding Pro
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
 ; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
 
-InpMagicNumber=100001
+InpMagicNumber=100003
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=false
-InpEnableAsianKZ=false
+InpEnableAsianKZ=true
 InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
+InpEnableNYKZ=false
 InpEnableLondonCloseKZ=false
 
 ;═══════ FIBONACCI ═══════
