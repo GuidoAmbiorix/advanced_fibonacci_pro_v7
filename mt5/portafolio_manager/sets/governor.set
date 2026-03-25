@@ -4,30 +4,30 @@
 ; Strategy: Conservative Risk, Aggressive Trailing, Fast Profit Locking
 
 ;═══════ PORTFOLIO LIMITS ═══════
-InpMaxPortfolioRisk=2.5
+InpMaxPortfolioRisk=100.0
 ; Max Total Portfolio Risk (%)
 ; Permite hasta 5 symbols activos x 0.5% = 2.5% total
 ; Conservador para proteger la cuenta
 
-InpMaxSymbolRisk=1.5
+InpMaxSymbolRisk=100.0
 ; Max Risk Per Symbol (%)
 ; 1.5% max para permitir max risk en pares selectos
 ; 0.5% máximo por symbol para prevenir pérdidas grandes
 
-InpMaxGroupRisk=1.5
+InpMaxGroupRisk=100.0
 ; Max Risk Per Correlation Group (%)
 ; Máximo 1.5% por grupo correlacionado (USD, JPY, GBP, etc)
 
 ;═══════ DRAWDOWN GOVERNOR ═══════
-InpDD_Normal=1.5
+InpDD_Normal=100.0
 ; DD Level: Normal Trading (%)
 ; Empezar a reducir riesgo cuando DD > 1.5%
 
-InpDD_Reduced=2.5
+InpDD_Reduced=100.0
 ; DD Level: Reduced Risk (%)
 ; Reducción agresiva cuando DD > 2.5%
 
-InpDD_Pause=4.5
+InpDD_Pause=100.0
 ; DD Level: Pause Trading (%) - HARD STOP
 ; Pausar antes del límite GOAT de 5%
 
@@ -57,28 +57,28 @@ InpPF_ReducedMult=0.70
 ; Reducir riesgo cuando PF baja
 
 ;═══════ DAILY/WEEKLY LIMITS ═══════
-InpDailyMaxDD=3.0
+InpDailyMaxDD=100.0
 ; Daily Max Drawdown (%)
 ; GOAT limit: 3% diario ($180)
 
-InpWeeklyMaxDD=4.0
+InpWeeklyMaxDD=100.0
 ; Weekly Max Drawdown (%)
 ; Conservador: 4% semanal
 
-InpMonthlyMaxDD=5.0
+InpMonthlyMaxDD=100.0
 ; Monthly Max Drawdown (%)
 ; GOAT limit: 5% mensual ($300)
 
 InpDailyTarget=0.0
 ; Daily Profit Target (%, 0=disabled)
 
-InpDailyTargetUSD=80.0
+InpDailyTargetUSD=0.0
 ; Daily Profit Target ($)
 ; Target conservador: $80/día ($240 / 3 días = $80)
 ; Cuando se alcanza: cerrar todo y pausar trading
 
 ;═══════ CORRELATION GUARD ═══════
-InpUseCorrelationGuard=true
+InpUseCorrelationGuard=false
 ; Enable Correlation Guard
 ; ENABLED: Previene overexposure a pares correlacionados
 
