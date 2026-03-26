@@ -19,7 +19,8 @@
       "Bash(done)",
       "Bash(do sed -i '/QUANTUM ANALYSIS SETTINGS/d' \"$file\")",
       "Bash(do sed -i '/<<<<<<< HEAD/,/=======/{ /<<<<<<< HEAD/d; /=======/d; }; />>>>>>> /d' \"$file\")",
-      "Bash(do sed -i 's/^InpMinConfluenceEntry=14/InpMinConfluenceEntry=17/' \"$file\")"
+      "Bash(do sed -i 's/^InpMinConfluenceEntry=14/InpMinConfluenceEntry=17/' \"$file\")",
+      "Bash(__NEW_LINE_9c4f247b198eb6d3__ echo:*)"
     ]
   }
 }

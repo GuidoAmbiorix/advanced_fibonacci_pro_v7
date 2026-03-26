@@ -8,7 +8,7 @@ InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
@@ -43,17 +43,17 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=15
+InpMinConfluenceEntry=12
 InpDominanceThreshold=2.0
-InpEnableAddOns=false
-InpMaxPositions=1
+InpEnableAddOns=true
+InpMaxPositions=5
 
 ;═══════ RISK (Before Governor Scaling) ═══════
-InpRiskBase=0.2
+InpRiskBase=5.0
 InpRiskAddOn1=0.0
 InpRiskAddOn2=0.0
-InpMaxRisk=0.5
-InpMaxLotsPerTrade=5.0
+InpMaxRisk=10.0
+InpMaxLotsPerTrade=20.0
 InpEnableMarginCheck=true
 
 ;═══════ TAKE PROFIT ═══════
@@ -100,20 +100,20 @@ InpMTF=16388
 InpMTF_EMAPeriod=50
 
 ;═══════ NEWS FILTER ═══════
-InpUseNewsFilter=true
+InpUseNewsFilter=false
 InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
-InpEnableVolatilityFilter=true
+InpEnableVolatilityFilter=false
 InpVolatilityThreshold=3.0
 InpVolatilitySpikeCooldown=15
 
 ;═══════ KELLY POSITION SIZING ═══════
-InpUseKelly=true
+InpUseKelly=false
 InpKellyFraction=0.5
-InpDailyMaxDD=3.0
-InpWeeklyMaxDD=4.0
+InpDailyMaxDD=100.0
+InpWeeklyMaxDD=100.0
 InpDailyTarget=0.0
 
 ;═══════ LEARNING & ADAPTATION ═══════
@@ -128,18 +128,18 @@ InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=true
 
 ;═══════ PORTFOLIO PROTECTION ═══════
-InpUseCorrelationFilter=true
-InpDailyMaxLoss_R=15.0
-InpLossCooldownMinutes=30
-InpMaxConsecutiveLosses=2
-InpMaxDailyTrades=5
-InpUseReversalFilter=true
-InpReversalCooldownMinutes=15
+InpUseCorrelationFilter=false
+InpDailyMaxLoss_R=100.0
+InpLossCooldownMinutes=5
+InpMaxConsecutiveLosses=10
+InpMaxDailyTrades=20
+InpUseReversalFilter=false
+InpReversalCooldownMinutes=0
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=3
-InpTradeCooldownMinutes=30
+InpMaxTradesPerSession=10
+InpTradeCooldownMinutes=5
 InpCloseIntradayProfits=false
 InpEndOfDayHour=22
 
