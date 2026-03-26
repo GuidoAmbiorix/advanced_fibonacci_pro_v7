@@ -45,7 +45,7 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=12
+InpMinConfluenceEntry=15
 InpDominanceThreshold=2.0
 InpEnableAddOns=true
 InpMaxPositions=5
@@ -109,15 +109,15 @@ InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
-InpEnableVolatilityFilter=false
+InpEnableVolatilityFilter=true
 InpVolatilityThreshold=3.0
 InpVolatilitySpikeCooldown=15
 
 ;═══════ KELLY POSITION SIZING ═══════
 InpUseKelly=false
 InpKellyFraction=0.5
-InpDailyMaxDD=100.0
-InpWeeklyMaxDD=100.0
+InpDailyMaxDD=3.0
+InpWeeklyMaxDD=4.0
 InpDailyTarget=0.0
 
 ;═══════ LEARNING & ADAPTATION ═══════
@@ -132,12 +132,12 @@ InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=true
 
 ;═══════ PORTFOLIO PROTECTION ═══════
-InpUseCorrelationFilter=false
-InpDailyMaxLoss_R=100.0
+InpUseCorrelationFilter=true
+InpDailyMaxLoss_R=15.0
 InpLossCooldownMinutes=5
 InpMaxConsecutiveLosses=10
 InpMaxDailyTrades=20
-InpUseReversalFilter=false
+InpUseReversalFilter=true
 InpReversalCooldownMinutes=0
 
 ;═══════ SESSION GOVERNOR ═══════

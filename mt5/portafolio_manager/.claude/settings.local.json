@@ -20,7 +20,12 @@
       "Bash(do sed -i '/QUANTUM ANALYSIS SETTINGS/d' \"$file\")",
       "Bash(do sed -i '/<<<<<<< HEAD/,/=======/{ /<<<<<<< HEAD/d; /=======/d; }; />>>>>>> /d' \"$file\")",
       "Bash(do sed -i 's/^InpMinConfluenceEntry=14/InpMinConfluenceEntry=17/' \"$file\")",
-      "Bash(__NEW_LINE_9c4f247b198eb6d3__ echo:*)"
+      "Bash(__NEW_LINE_9c4f247b198eb6d3__ echo:*)",
+      "Bash(do sed:*)",
+      "Bash(sed -i 's/InpDailyMaxDD=100.0/InpDailyMaxDD=3.0/' \"$f\")",
+      "Bash(sed -i 's/InpWeeklyMaxDD=100.0/InpWeeklyMaxDD=4.0/' \"$f\")",
+      "Bash(sed -i 's/InpUseCorrelationFilter=false/InpUseCorrelationFilter=true/' \"$f\")",
+      "Bash(sed -i 's/InpDailyMaxLoss_R=100.0/InpDailyMaxLoss_R=15.0/' \"$f\")"
     ]
   }
 }
