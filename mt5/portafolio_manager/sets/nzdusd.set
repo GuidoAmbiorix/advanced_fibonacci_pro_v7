@@ -1,7 +1,7 @@
 ; NZDUSD - H1 Timeframe - GOAT Instant Funding Pro
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
-; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
+; Confluence: 8 (force multiplier), TP Cap 4R, 4-Stage Profit Escalator
 ; NOTE: NZDUSD less volatile than AUDUSD - good London/NY pair
 
 InpMagicNumber=100010
@@ -44,7 +44,7 @@ InpChopThreshold=0.75
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=15
+InpMinConfluenceEntry=8
 InpDominanceThreshold=2.0
 InpEnableAddOns=true
 InpMaxPositions=5
@@ -85,6 +85,31 @@ InpTrailDecayRate=0.25
 InpTrailMinMult=0.60
 InpTrailRegimeAware=true
 InpTrailMinBufferATR=0.40
+
+;═══════ PROFIT ESCALATOR (4-Stage Locking) ═══════
+InpStage1_R=0.2
+InpStage1_SL_R=-0.1
+InpStage2_R=0.5
+InpStage2_Close=30.0
+InpStage2_SL_R=0.1
+InpStage3_R=1.0
+InpStage3_Close=30.0
+InpStage3_SL_R=0.5
+InpRunnerTrailTight=0.8
+InpTimeStaleMins=60.0
+InpTimeStaleTight1=0.8
+InpTimeStaleTight2=0.6
+
+;═══════ CONFLUENCE FLIP (CSAI) ═══════
+InpEnableFlip=true
+InpFlipOppositeMinScore=13.0
+InpFlipCurrentMaxScore=8.0
+InpFlipDeadZoneMax=8.0
+InpFlipMaxPerDay=2
+InpFlipMinHoldBars=3
+InpFlipMinProfitR=-0.5
+InpFlipRequireTrend=true
+InpFlipRequireKillzone=true
 
 ;═══════ SPREAD ═══════
 InpMaxSpreadPoints=35

@@ -301,22 +301,31 @@ int GetKillzoneQuality()
 }
 
 //+------------------------------------------------------------------+
-//| CONFLUENCE SCORE THRESHOLDS                                       |
+//| CONFLUENCE SCORE THRESHOLDS (Recalibrated)                        |
+//| Old system: flat tiers with 15+ threshold = too restrictive       |
+//| New system: force multiplier rewards stronger signals with size   |
 //+------------------------------------------------------------------+
-#define CONFLUENCE_ELITE    14.0   // Elite entry: 14+/30 points (M15 Enhancement)
-#define CONFLUENCE_STRONG   12.0   // Strong entry: 12-13.9/30 points
-#define CONFLUENCE_GOOD     10.0   // Good entry: 10-11.9/30 points
-#define CONFLUENCE_WEAK     0.0    // Weak entry: <10/30 points - NO TRADE
+#define CONFLUENCE_MIN_ENTRY   8.0    // Absolute minimum to consider entry
+#define CONFLUENCE_BASE       10.0    // Base entry: 0.6x position
+#define CONFLUENCE_STRONG     13.0    // Strong: 1.0x position
+#define CONFLUENCE_ELITE      16.0    // Elite: 1.5x position
+#define CONFLUENCE_MONSTER    20.0    // Monster: 2.0x position (go all in)
+
+// Legacy defines kept for any external references
+#define CONFLUENCE_GOOD       10.0    // Alias for CONFLUENCE_BASE
+#define CONFLUENCE_WEAK        0.0    // Below minimum
 
 //+------------------------------------------------------------------+
-//| ENTRY TIER ENUM (for new confluence system)                       |
+//| ENTRY TIER ENUM (expanded with MONSTER tier)                      |
 //+------------------------------------------------------------------+
 enum ENUM_ENTRY_TIER
 {
-   TIER_NO_TRADE = 0,   // Score < 10: Skip
-   TIER_GOOD = 1,       // Score 10-11.9: 60% position
-   TIER_STRONG = 2,     // Score 12-13.9: 80% position
-   TIER_ELITE = 3       // Score 14+: 100% position
+   TIER_NO_TRADE = 0,   // Score < 8: Skip
+   TIER_BASE = 1,       // Score 8-9.9: 0.6x position (conservative)
+   TIER_GOOD = 2,       // Score 10-12.9: 0.8x position
+   TIER_STRONG = 3,     // Score 13-15.9: 1.0x position
+   TIER_ELITE = 4,      // Score 16-19.9: 1.5x position
+   TIER_MONSTER = 5     // Score 20+: 2.0x position
 };
 
 //+------------------------------------------------------------------+
@@ -324,23 +333,41 @@ enum ENUM_ENTRY_TIER
 //+------------------------------------------------------------------+
 ENUM_ENTRY_TIER GetEntryTier(double confluenceScore)
 {
+   if(confluenceScore >= CONFLUENCE_MONSTER) return TIER_MONSTER;
    if(confluenceScore >= CONFLUENCE_ELITE) return TIER_ELITE;
    if(confluenceScore >= CONFLUENCE_STRONG) return TIER_STRONG;
-   if(confluenceScore >= CONFLUENCE_GOOD) return TIER_GOOD;
+   if(confluenceScore >= CONFLUENCE_BASE) return TIER_GOOD;
+   if(confluenceScore >= CONFLUENCE_MIN_ENTRY) return TIER_BASE;
    return TIER_NO_TRADE;
 }
 
 //+------------------------------------------------------------------+
-//| GET POSITION SIZE MULTIPLIER FOR TIER                             |
+//| GET CONFLUENCE FORCE MULTIPLIER (replaces flat tier sizing)       |
+//| Returns continuous multiplier based on score strength             |
+//+------------------------------------------------------------------+
+double GetConfluenceMultiplier(double score)
+{
+   if(score >= CONFLUENCE_MONSTER) return 2.0;   // Double size on perfect setups
+   if(score >= CONFLUENCE_ELITE)   return 1.5;   // 50% bigger
+   if(score >= CONFLUENCE_STRONG)  return 1.0;   // Full size
+   if(score >= CONFLUENCE_BASE)    return 0.8;   // Standard entry
+   if(score >= CONFLUENCE_MIN_ENTRY) return 0.6; // Conservative entry
+   return 0.0;  // No trade
+}
+
+//+------------------------------------------------------------------+
+//| GET POSITION SIZE MULTIPLIER FOR TIER (legacy compatibility)      |
 //+------------------------------------------------------------------+
 double GetTierSizeMultiplier(ENUM_ENTRY_TIER tier)
 {
    switch(tier)
    {
-      case TIER_ELITE:  return 1.0;    // 100%
-      case TIER_STRONG: return 0.8;    // 80%
-      case TIER_GOOD:   return 0.6;    // 60%
-      default:          return 0.0;    // No trade
+      case TIER_MONSTER: return 2.0;    // 200%
+      case TIER_ELITE:   return 1.5;    // 150%
+      case TIER_STRONG:  return 1.0;    // 100%
+      case TIER_GOOD:    return 0.8;    // 80%
+      case TIER_BASE:    return 0.6;    // 60%
+      default:           return 0.0;    // No trade
    }
 }
 

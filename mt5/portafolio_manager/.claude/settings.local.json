@@ -25,7 +25,22 @@
       "Bash(sed -i 's/InpDailyMaxDD=100.0/InpDailyMaxDD=3.0/' \"$f\")",
       "Bash(sed -i 's/InpWeeklyMaxDD=100.0/InpWeeklyMaxDD=4.0/' \"$f\")",
       "Bash(sed -i 's/InpUseCorrelationFilter=false/InpUseCorrelationFilter=true/' \"$f\")",
-      "Bash(sed -i 's/InpDailyMaxLoss_R=100.0/InpDailyMaxLoss_R=15.0/' \"$f\")"
+      "Bash(sed -i 's/InpDailyMaxLoss_R=100.0/InpDailyMaxLoss_R=15.0/' \"$f\")",
+      "Bash(do echo:*)",
+      "Read(//c/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/**)",
+      "Bash(curl -s https://www.google.com/search?q=site:forexfactory.com+%22stop+and+reverse%22+confluence+scoring+indicator -H 'User-Agent: Mozilla/5.0')",
+      "Bash(curl -s https://www.google.com/search?q=site:mql5.com+%22flip+position%22+confluence+EA+expert+advisor -H 'User-Agent: Mozilla/5.0')",
+      "Bash(curl -s https://www.google.com/search?q=site:reddit.com+r/algotrading+confluence+reversal+scoring+system+flip+position -H 'User-Agent: Mozilla/5.0')",
+      "WebFetch(domain:www.tradingview.com)",
+      "WebFetch(domain:www.heygotrade.com)",
+      "WebFetch(domain:www.forexfactory.com)",
+      "WebFetch(domain:markrbest.github.io)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:www.rcmalternatives.com)",
+      "WebFetch(domain:www.grahamcapital.com)",
+      "WebFetch(domain:www.elitetrader.com)",
+      "WebFetch(domain:www.quantifiedstrategies.com)",
+      "Bash(echo \"$f done\")"
     ]
   }
 }
