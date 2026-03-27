@@ -3,7 +3,7 @@
 ; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
 ; Confluence: 8 (force multiplier), TP Cap 4R, 4-Stage Profit Escalator
 
-InpMagicNumber=100004
+InpMagicNumber=100011
 InpDirection=0
 InpBrokerUTCOffset=2
 
