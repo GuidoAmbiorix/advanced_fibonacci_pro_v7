@@ -1653,10 +1653,10 @@ bool CheckConfluenceFlip(ulong ticket, long pType, double profitR, int sIdx)
    }
 
    // Kill switch
-   if(killSwitch.IsTripped()) return false;
+   if(!killSwitch.IsEnabled()) return false;
 
    // News filter
-   if(InpUseNewsFilter && !newsFilter.IsSafeToTrade()) return false;
+   if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) return false;
 
    // Loss cooldown (respect general cooldown, but bypass same-direction cooldown)
    if(InpLossCooldownMinutes > 0 && g_lastLossTime > 0)
