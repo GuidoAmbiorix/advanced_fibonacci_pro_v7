@@ -8,7 +8,7 @@ InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
-InpUseKillzoneFilter=false
+InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
@@ -119,16 +119,15 @@ InpTimeStaleMins=60.0
 InpTimeStaleTight1=0.8
 InpTimeStaleTight2=0.6
 
-;═══════ CONFLUENCE FLIP (CSAI) ═══════
-InpEnableFlip=true
-InpFlipOppositeMinScore=13.0
-InpFlipCurrentMaxScore=8.0
-InpFlipDeadZoneMax=8.0
-InpFlipMaxPerDay=2
-InpFlipMinHoldBars=3
-InpFlipMinProfitR=-0.5
-InpFlipRequireTrend=true
-InpFlipRequireKillzone=true
+;═══════ ADAPTIVE ESCALATOR ═══════
+InpAdaptiveEscalator=true
+InpScoreAdaptFactor=0.05
+InpRegimeHarvest=true
+InpMFECalibration=true
+InpMomentumTrail=true
+InpChaosEmergencyLock=true
+InpFridayCloseHour=22
+
 
 ;═══════ SPREAD ═══════
 InpMaxSpreadPoints=50

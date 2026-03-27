@@ -156,16 +156,14 @@ input double            InpTimeStaleMins = 60.0;           // Time-decay: minute
 input double            InpTimeStaleTight1 = 0.8;          // Time-decay: moderate tightening (30-60 min stale)
 input double            InpTimeStaleTight2 = 0.6;          // Time-decay: aggressive tightening (60+ min stale)
 
-input group "======= CONFLUENCE FLIP (CSAI) ======="
-input bool    InpEnableFlip = false;            // Enable Confluence Flip System
-input double  InpFlipOppositeMinScore = 13.0;   // Opposite direction min score to flip
-input double  InpFlipCurrentMaxScore = 8.0;     // Current direction must decay below this
-input double  InpFlipDeadZoneMax = 8.0;         // Both scores below this = no flip (dead zone)
-input int     InpFlipMaxPerDay = 2;             // Max flips per day (whipsaw protection)
-input int     InpFlipMinHoldBars = 3;           // Min bars holding before flip allowed
-input double  InpFlipMinProfitR = -0.5;         // Min profitR to allow flip (neg = allow underwater)
-input bool    InpFlipRequireTrend = true;       // Require REGIME_TREND (block RANGE/CHAOS)
-input bool    InpFlipRequireKillzone = true;    // Require active killzone for flips
+input group "======= ADAPTIVE ESCALATOR ======="
+input bool   InpAdaptiveEscalator = true;       // Enable Adaptive Escalator
+input double InpScoreAdaptFactor = 0.05;         // Score adaptation factor per point above 13
+input bool   InpRegimeHarvest = true;            // Regime-aware harvest percentages
+input bool   InpMFECalibration = true;           // MFE-calibrated stage triggers
+input bool   InpMomentumTrail = true;            // RSI momentum trail for runner
+input bool   InpChaosEmergencyLock = true;       // Emergency lock in CHAOS regime
+input int    InpFridayCloseHour = 22;            // Friday close hour (broker time, 0=disabled)
 
 input group "======= SPREAD ======="
 input int               InpMaxSpreadPoints = 50;
@@ -322,10 +320,8 @@ double g_cachedBuyScore = 0;
 double g_cachedSellScore = 0;
 datetime g_lastScoreCalcTime = 0;
 
-// CSAI Flip Tracking
-int       g_dailyFlipCount = 0;
-datetime  g_lastFlipTime = 0;
-datetime  g_lastFlipBarTime = 0;    // Closed-candle gate
+// Friday close flag
+bool g_fridayCloseExecuted = false;
 
 // PHASE 1: Indicator buffer caching (once per bar)
 double g_cachedSMCScore_Buy = 0;
@@ -361,6 +357,7 @@ struct PositionState {
    double initialSLDist;            // SL distance in price units at entry — used for profitR (not current trailed SL)
    ENTRY_QUALITY quality;
    ConfluenceFactors entryFactors;  // Factors captured at entry bar — used for pattern learning at exit (not current bar)
+   double entryScore;               // Confluence score at entry — used by Adaptive Escalator
 
    // Profit Escalator (4-stage locking)
    bool   stage1_locked;            // Quick lock done (SL moved near entry)
@@ -626,6 +623,14 @@ int OnInit()
       Print("  [OK] Indicators initialized: RSI=", DoubleToString(g_RSI, 2), " ATR=", DoubleToString(g_ATR, 5), " EMA=", DoubleToString(g_EMA, 5));
    }
    Print("===========================================");
+   Print("[CONFIG] Killzone: ", InpUseKillzoneFilter ? "ACTIVE" : "OFF");
+   Print("[CONFIG] Adaptive Escalator: ", InpAdaptiveEscalator ? "ON" : "OFF",
+         " | ScoreAdapt=", InpScoreAdaptFactor,
+         " | RegimeHarvest=", InpRegimeHarvest,
+         " | MFECalib=", InpMFECalibration,
+         " | MomentumTrail=", InpMomentumTrail,
+         " | ChaosLock=", InpChaosEmergencyLock);
+   if(InpFridayCloseHour > 0) Print("[CONFIG] Friday Close: hour ", InpFridayCloseHour);
 
    return INIT_SUCCEEDED;
 }
@@ -725,7 +730,7 @@ void ResetDailyLossIfNewDay()
       g_consecutiveLosses = 0;
       GlobalVariableSet("PG_ConsecLoss_" + _Symbol, 0);
       g_dailyTradesCount = 0;
-      g_dailyFlipCount = 0;
+      g_fridayCloseExecuted = false;
       g_lastResetDate = currentDate;
    }
 }
@@ -914,6 +919,20 @@ void OnTick()
 
    // --- GOVERNOR EMERGENCY CLOSE GUARD ---
    if(IsDailyTargetHit()) return; // Stop trailing/managing while Governor closes positions
+
+   // --- FRIDAY PRE-WEEKEND BLOCK ---
+   if(InpFridayCloseHour > 0)
+   {
+      MqlDateTime dtFri;
+      TimeCurrent(dtFri);
+      if(dtFri.day_of_week == 5 && dtFri.hour >= InpFridayCloseHour)
+      {
+         if(!g_fridayCloseExecuted) Print("[FRIDAY] Pre-weekend block active. No new signals.");
+         g_fridayCloseExecuted = true;
+         ManagePositions(); // Still manage existing positions
+         return;            // Block new signal evaluation
+      }
+   }
 
    // --- EOD INTRADAY CLOSE GUARD ---
    if(InpCloseIntradayProfits && g_positionCount > 0)
@@ -1512,6 +1531,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       g_states[sz].initialSLDist = slDist;                                   // Store SL distance at entry for profitR (not current trailed SL)
       g_states[sz].quality = quality;
       g_states[sz].entryFactors = (type == ORDER_TYPE_BUY) ? g_lastBuyFactors : g_lastSellFactors; // Capture entry-bar factors for pattern learning
+      g_states[sz].entryScore = g_currentConfluence;  // Capture confluence score for Adaptive Escalator
       // Initialize Profit Escalator fields
       g_states[sz].stage1_locked = false;
       g_states[sz].stage2_closed = false;
@@ -1587,164 +1607,53 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
 }
 
 //+------------------------------------------------------------------+
-//| CSAI: Confluence Flip Check                                       |
-//| Returns true if position was flipped (caller should skip trailing)|
+//| ADAPTIVE ESCALATOR HELPERS                                        |
 //+------------------------------------------------------------------+
-bool CheckConfluenceFlip(ulong ticket, long pType, double profitR, int sIdx)
+
+// 4A: Score-adaptive stage trigger — high score = wider, low score = tighter
+double GetAdaptiveStageR(double baseR, double score)
 {
-   // 1. Master switch
-   if(!InpEnableFlip) return false;
+   if(!InpAdaptiveEscalator) return baseR;
+   if(score >= CONFLUENCE_STRONG) // 13+
+      return baseR * (1.0 + (score - CONFLUENCE_STRONG) * InpScoreAdaptFactor);
+   if(score < CONFLUENCE_BASE)    // <10 (BASE tier)
+      return baseR * 0.8;
+   return baseR; // 10-12.9 = default
+}
 
-   // 2. Regime filter
-   if(InpFlipRequireTrend)
+// 4B: Regime-aware harvest percentages
+double GetRegimeHarvestPct(int stage, MARKET_REGIME reg)
+{
+   if(!InpRegimeHarvest) return (stage == 2) ? InpStage2_Close : InpStage3_Close;
+
+   if(reg == REGIME_TREND)
    {
-      if(g_currentRegime != REGIME_TREND) return false;
+      if(stage == 2) return 20.0;  // Take less — let it run
+      if(stage == 3) return 20.0;  // Runner gets 60%
    }
-
-   // 3. Daily flip limit
-   if(g_dailyFlipCount >= InpFlipMaxPerDay) return false;
-
-   // 4. Closed-candle gate (new bar only)
-   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
-   if(currentBarTime == g_lastFlipBarTime) return false;
-
-   // 5. Min holding period
-   if(!PositionSelectByTicket(ticket)) return false;
-   datetime openTime = (datetime)PositionGetInteger(POSITION_TIME);
-   if(GetBarsHeld(openTime) < InpFlipMinHoldBars) return false;
-
-   // 6. Min profit floor
-   if(profitR < InpFlipMinProfitR) return false;
-
-   // 7. Killzone filter
-   if(InpFlipRequireKillzone)
+   else if(reg == REGIME_RANGE)
    {
-      if(!CheckKillzone()) return false;
+      if(stage == 2) return 40.0;  // Take profit fast
+      if(stage == 3) return 30.0;  // Runner gets 30%
    }
-
-   // 8. Spread filter
-   if(!CheckSpread(true)) return false;
-
-   // 9. Core score evaluation
-   double currentScore = (pType == POSITION_TYPE_BUY) ? g_cachedBuyScore : g_cachedSellScore;
-   double oppositeScore = (pType == POSITION_TYPE_BUY) ? g_cachedSellScore : g_cachedBuyScore;
-
-   // Dead zone: both scores too low — no conviction either way
-   if(currentScore < InpFlipDeadZoneMax && oppositeScore < InpFlipDeadZoneMax) return false;
-
-   // Current must have decayed
-   if(currentScore >= InpFlipCurrentMaxScore) return false;
-
-   // Opposite must be strong
-   if(oppositeScore < InpFlipOppositeMinScore) return false;
-
-   // Dominance check
-   if((oppositeScore - currentScore) < InpDominanceThreshold) return false;
-
-   // 10. Safety systems
-   // Daily trades limit
-   if(g_dailyTradesCount >= InpMaxDailyTrades) return false;
-
-   // Daily target hit
-   if(InpDailyTarget > 0)
+   else // VOLATILE / CHAOS
    {
-      double dailyPL = account.Profit();
-      if(dailyPL >= account.Equity() * (InpDailyTarget / 100.0)) return false;
+      if(stage == 2) return 35.0;
+      if(stage == 3) return 35.0;  // Runner gets 30%
    }
+   return (stage == 2) ? InpStage2_Close : InpStage3_Close;
+}
 
-   // Kill switch
-   if(!killSwitch.IsEnabled()) return false;
-
-   // News filter
-   if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) return false;
-
-   // Loss cooldown (respect general cooldown, but bypass same-direction cooldown)
-   if(InpLossCooldownMinutes > 0 && g_lastLossTime > 0)
-   {
-      if((TimeCurrent() - g_lastLossTime) < InpLossCooldownMinutes * 60) return false;
-   }
-
-   // General trade cooldown
-   if(InpUseSessionGovernor && InpTradeCooldownMinutes > 0)
-   {
-      datetime lastTrade = (g_lastBuyTime > g_lastSellTime) ? g_lastBuyTime : g_lastSellTime;
-      if((TimeCurrent() - lastTrade) < InpTradeCooldownMinutes * 60) return false;
-   }
-
-   // Daily loss circuit breaker
-   if(g_dailyLossR <= -InpDailyMaxLoss_R) return false;
-
-   // 11. Execute flip
-   ENUM_ORDER_TYPE oppositeType = (pType == POSITION_TYPE_BUY) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
-
-   // Governor risk approval for new direction
-   ENTRY_QUALITY quality = learning.CalculateQuality(oppositeScore);
-   double baseRisk = InpRiskBase;
-   if(InpUseKelly)
-   {
-      baseRisk = kellySizer.GetRiskForQuality(quality);
-      double newsMultiplier = InpUseNewsFilter ? newsFilter.GetNewsRiskMultiplier() : 1.0;
-      double regimeMultiplier = (g_currentRegime == REGIME_TREND) ? 1.0 : 0.8;
-      baseRisk = kellySizer.GetAdjustedRisk(quality, newsMultiplier, 1.0, regimeMultiplier);
-   }
-   baseRisk *= GetConfluenceMultiplier(oppositeScore);
-
-   GovernorRequest req = allocator.BuildRequest(
-       _Symbol, baseRisk, killSwitch.GetWinRate(),
-       killSwitch.GetRollingR(), (int)g_currentRegime);
-   double approvedRisk = allocator.RequestRisk(req);
-
-   if(approvedRisk <= 0.05)
-   {
-      Print("[FLIP] Governor denied risk for flip on ", _Symbol);
-      return false;
-   }
-
-   // Close current position
-   Print("[FLIP] Closing ", (pType == POSITION_TYPE_BUY ? "BUY" : "SELL"),
-         " | CurrentScore=", DoubleToString(currentScore, 1),
-         " OppositeScore=", DoubleToString(oppositeScore, 1),
-         " ProfitR=", DoubleToString(profitR, 2));
-
-   if(!trade.PositionClose(ticket))
-   {
-      Print("[FLIP] Failed to close position ", ticket, ": ", trade.ResultRetcode());
-      return false;
-   }
-
-   // Update flip tracking BEFORE opening new trade
-   g_dailyFlipCount++;
-   g_lastFlipTime = TimeCurrent();
-   g_lastFlipBarTime = currentBarTime;
-
-   // Open reverse position
-   g_currentConfluence = oppositeScore;
-   g_entryDirection = (oppositeType == ORDER_TYPE_BUY) ? 1 : -1;
-
-   bool opened = ExecuteTrade(oppositeType, approvedRisk, "Flip", quality);
-
-   if(opened)
-   {
-      Print("[FLIP] ", (oppositeType == ORDER_TYPE_BUY ? "BUY" : "SELL"),
-            " opened | Score=", DoubleToString(oppositeScore, 1),
-            " Risk=", DoubleToString(approvedRisk, 2), "%",
-            " DailyFlips=", g_dailyFlipCount);
-
-      if(InpEnableMobileAlerts)
-      {
-         string notifyText = "[FLIP] " + _Symbol + "\n" +
-                             (pType == POSITION_TYPE_BUY ? "BUY->SELL" : "SELL->BUY") + "\n" +
-                             "Score: " + DoubleToString(oppositeScore, 1) + "/30\n" +
-                             "PrevR: " + DoubleToString(profitR, 2);
-         SendNotification(notifyText);
-      }
-   }
-   else
-   {
-      Print("[FLIP] Closed old position but failed to open reverse on ", _Symbol);
-   }
-
-   return true;
+// 4C: MFE-calibrated Stage 3 trigger
+double GetMFECalibratedStage3R(double baseR)
+{
+   if(!InpMFECalibration) return baseR;
+   double avgMFE = learning.GetAvgMFE();
+   if(avgMFE <= 0) return baseR; // Not enough data yet
+   // Cap stage3 at 75% of learned MFE
+   double calibrated = MathMin(baseR, avgMFE * 0.75);
+   // Don't go below Stage2 trigger
+   return MathMax(calibrated, InpStage2_R + 0.1);
 }
 
 //+------------------------------------------------------------------+
@@ -1790,13 +1699,7 @@ void ManagePositions()
                       if(dReason == DEAL_REASON_SL)          exitReason = "SL";
                       else if(dReason == DEAL_REASON_TP)     exitReason = "TP";
                       else if(dReason == DEAL_REASON_EXPERT)
-                      {
-                         // Tag flip exits distinctly from regular EA closes
-                         if(g_lastFlipTime > 0 && MathAbs((int)(TimeCurrent() - g_lastFlipTime)) < 5)
-                            exitReason = "FLIP";
-                         else
-                            exitReason = "EA";
-                      }
+                         exitReason = "EA";
                       else                                   exitReason = "MANUAL";
                       break;
                    }
@@ -2001,7 +1904,8 @@ void ManagePositions()
 
          // --- STAGE 1: Quick Lock ---
          // Move SL to entry - 0.1R (near-BE with buffer for noise)
-         if(!g_states[sIdx].stage1_locked && profitR >= InpStage1_R)
+         double adaptStage1R = GetAdaptiveStageR(InpStage1_R, g_states[sIdx].entryScore);
+         if(!g_states[sIdx].stage1_locked && profitR >= adaptStage1R)
          {
             double stage1SL = (pType == POSITION_TYPE_BUY)
                             ? open + (slDist * InpStage1_SL_R)   // e.g. entry - 0.1R
@@ -2026,9 +1930,11 @@ void ManagePositions()
 
          // --- STAGE 2: First Harvest ---
          // Close 30% of position + lock SL at entry + 0.1R (guaranteed profit)
-         if(!g_states[sIdx].stage2_closed && profitR >= InpStage2_R)
+         double adaptStage2R = GetAdaptiveStageR(InpStage2_R, g_states[sIdx].entryScore);
+         double harvestPct2 = GetRegimeHarvestPct(2, g_currentRegime);
+         if(!g_states[sIdx].stage2_closed && profitR >= adaptStage2R)
          {
-            double closeVol = NormalizeDouble(vol * (InpStage2_Close / 100.0), 2);
+            double closeVol = NormalizeDouble(vol * (harvestPct2 / 100.0), 2);
             double minV = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
 
             if(closeVol >= minV && (vol - closeVol) >= minV)
@@ -2063,15 +1969,17 @@ void ManagePositions()
 
          // --- STAGE 3: Second Harvest ---
          // Close another 30% + lock SL at +0.7R
-         if(!g_states[sIdx].stage3_closed && g_states[sIdx].stage2_closed && profitR >= InpStage3_R)
+         double adaptStage3R = GetMFECalibratedStage3R(GetAdaptiveStageR(InpStage3_R, g_states[sIdx].entryScore));
+         double harvestPct3 = GetRegimeHarvestPct(3, g_currentRegime);
+         if(!g_states[sIdx].stage3_closed && g_states[sIdx].stage2_closed && profitR >= adaptStage3R)
          {
             // Recalculate volume from current position (after stage 2 partial)
             double currentVol = 0;
             if(PositionSelectByTicket(ticket))
                currentVol = PositionGetDouble(POSITION_VOLUME);
 
-            // Close ~43% of remaining (which is ~30% of original)
-            double closePercent = (InpStage3_Close / (100.0 - InpStage2_Close)) * 100.0;
+            // Close appropriate % of remaining based on regime
+            double closePercent = (harvestPct3 / (100.0 - harvestPct2)) * 100.0;
             double closeVol = NormalizeDouble(currentVol * (closePercent / 100.0), 2);
             double minV = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
 
@@ -2103,10 +2011,42 @@ void ManagePositions()
             }
          }
 
-         // --- CSAI: CONFLUENCE FLIP CHECK ---
-         if(CheckConfluenceFlip(ticket, pType, profitR, sIdx))
+         // --- 4E: CHAOS EMERGENCY LOCK ---
+         if(InpChaosEmergencyLock && InpAdaptiveEscalator && g_currentRegime == REGIME_CHAOS)
          {
-            continue;  // Position flipped — skip trailing for closed position
+            // Force Stage 1 lock if not yet locked
+            if(!g_states[sIdx].stage1_locked && profitR > 0)
+            {
+               double emergSL = (pType == POSITION_TYPE_BUY)
+                              ? open + (slDist * InpStage1_SL_R)
+                              : open - (slDist * InpStage1_SL_R);
+               bool canMove = (pType == POSITION_TYPE_BUY) ? (emergSL > sl || sl == 0) : (emergSL < sl || sl == 0);
+               if(canMove && trade.PositionModify(ticket, emergSL, tp))
+               {
+                  g_states[sIdx].stage1_locked = true;
+                  g_states[sIdx].beMovedToEntry = true;
+                  g_states[sIdx].locked_sl = emergSL;
+                  Print("[CHAOS LOCK] Emergency S1 lock @ ", DoubleToString(emergSL, _Digits));
+               }
+            }
+            // Force Stage 2 harvest if profit > 0.3R and not yet harvested
+            if(!g_states[sIdx].stage2_closed && profitR > 0.3)
+            {
+               double closeVol2 = NormalizeDouble(vol * (GetRegimeHarvestPct(2, g_currentRegime) / 100.0), 2);
+               double minV2 = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+               if(closeVol2 >= minV2 && (vol - closeVol2) >= minV2)
+               {
+                  if(trade.PositionClosePartial(ticket, closeVol2))
+                  {
+                     g_states[sIdx].stage2_closed = true;
+                     g_states[sIdx].partialClosed = true;
+                     double s2SL = (pType == POSITION_TYPE_BUY) ? open + (slDist * InpStage2_SL_R) : open - (slDist * InpStage2_SL_R);
+                     bool canMove2 = (pType == POSITION_TYPE_BUY) ? (s2SL > sl) : (s2SL < sl);
+                     if(canMove2) { trade.PositionModify(ticket, s2SL, tp); g_states[sIdx].locked_sl = s2SL; }
+                     Print("[CHAOS LOCK] Emergency S2 harvest: ", DoubleToString(closeVol2, 2), " lots @ ", DoubleToString(profitR, 2), "R");
+                  }
+               }
+            }
          }
 
          // ============================================================
@@ -2148,6 +2088,23 @@ void ManagePositions()
                    dynMult *= InpTimeStaleTight2;  // Aggressive (60+ min stale)
                 else if(minutesSincePeak > InpTimeStaleMins * 0.5)
                    dynMult *= InpTimeStaleTight1;  // Moderate (30-60 min stale)
+
+                // Step 6: RSI MOMENTUM TRAIL (Adaptive Escalator 4D)
+                if(InpMomentumTrail && InpAdaptiveEscalator && g_states[sIdx].stage3_closed)
+                {
+                   double rsiArr[1], rsiArr3[1];
+                   if(CopyBuffer(hRSI, 0, 0, 1, rsiArr) == 1 && CopyBuffer(hRSI, 0, 3, 1, rsiArr3) == 1)
+                   {
+                      double rsiAccel = rsiArr[0] - rsiArr3[0];
+                      bool isBuy = (pType == POSITION_TYPE_BUY);
+                      // Momentum accelerating in our direction → widen trail
+                      if((isBuy && rsiAccel > 5) || (!isBuy && rsiAccel < -5))
+                         dynMult *= 1.3;
+                      // Momentum decelerating → tighten trail
+                      else if((isBuy && rsiAccel < -5) || (!isBuy && rsiAccel > 5))
+                         dynMult *= 0.6;
+                   }
+                }
 
                 // Re-apply floor after all adjustments
                 dynMult = MathMax(dynMult, InpTrailMinMult * 0.5); // Allow tighter than base floor for time-decay

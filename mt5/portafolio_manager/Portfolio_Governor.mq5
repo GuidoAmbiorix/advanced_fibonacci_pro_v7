@@ -61,6 +61,9 @@ input group "═══════ MAGIC NUMBER RANGE ═══════"
 input int    InpMagicBase = 100000;            // Magic Number Base
 input int    InpMagicRange = 999;              // Magic Number Range (Base to Base+Range)
 
+input group "═══════ FRIDAY CLOSE ═══════"
+input int    InpFridayCloseHour = 22;          // Friday close hour (broker time, 0=disabled)
+
 input group "═══════ UPDATE FREQUENCY ═══════"
 input int    InpUpdateSeconds = 5;             // Update Interval (seconds)
 
@@ -73,6 +76,7 @@ CAccountInfo  account;
 
 double g_peakEquity = 0;
 datetime g_lastUpdate = 0;
+bool g_fridayCloseExecuted = false;
 
 // FIX: Transaction logging (Phase 4 - Race condition prevention)
 int g_transactionLogHandle = INVALID_HANDLE;
@@ -276,6 +280,26 @@ void ProcessGovernorUpdate()
 
    // 0. Check period resets (daily/weekly/monthly)
    CheckPeriodReset();
+
+   // 0.5 Friday Pre-Weekend Close
+   if(InpFridayCloseHour > 0)
+   {
+      MqlDateTime dtFri;
+      TimeCurrent(dtFri);
+      if(dtFri.day_of_week == 5 && dtFri.hour >= InpFridayCloseHour)
+      {
+         if(!g_fridayCloseExecuted)
+         {
+            CloseAllPositions("Friday Pre-Weekend Close");
+            g_fridayCloseExecuted = true;
+            Print("[GOVERNOR] Friday close executed at hour ", dtFri.hour);
+         }
+      }
+      else
+      {
+         g_fridayCloseExecuted = false; // Reset on non-Friday or before close hour
+      }
+   }
 
    // 1. Calculate portfolio metrics
    CalculatePortfolioMetrics();

@@ -98,6 +98,10 @@ InpMagicRange=999
 ; Magic Number Range
 ; Cubre todas las instancias de Symbol_Engine
 
+;═══════ FRIDAY CLOSE ═══════
+InpFridayCloseHour=22
+; Close all positions at 22:00 on Friday (broker time)
+
 ;═══════ UPDATE FREQUENCY ═══════
 InpUpdateSeconds=5
 ; Update Interval (seconds)

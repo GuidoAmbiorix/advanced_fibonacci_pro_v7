@@ -40,7 +40,10 @@
       "WebFetch(domain:www.grahamcapital.com)",
       "WebFetch(domain:www.elitetrader.com)",
       "WebFetch(domain:www.quantifiedstrategies.com)",
-      "Bash(echo \"$f done\")"
+      "Bash(echo \"$f done\")",
+      "WebFetch(domain:throwinggoodmoney.com)",
+      "Bash(cd \"/c/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/sets\" echo \"=== Killzone verification ===\" grep -n \"InpUseKillzoneFilter\" *.set)",
+      "Bash(\"/c/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:\"/c/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/Symbol_Engine.mq5\" /log)"
     ]
   }
 }
