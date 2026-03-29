@@ -66,40 +66,51 @@ public:
    // 3. Request Risk (The Contract Implementation)
    double RequestRisk(GovernorRequest &req)
    {
+      // Micro account detection: raise hard cap for small accounts
+      // $10-$100 accounts need higher risk % to even open 0.01 lots
+      double hardCap = GetHardCapForAccount();
+
       if(!IsGovernorActive())
       {
          // Standalone mode: simulate Governor score scaling so backtest is representative
          double score = CalculateSymbolScore(req);
          double scaledRisk = req.baseRisk * score;
-         // Still apply the hard cap
-         if(scaledRisk > 2.0) scaledRisk = 2.0;
+         // Apply account-aware hard cap
+         if(scaledRisk > hardCap) scaledRisk = hardCap;
          return scaledRisk;
       }
-      
-      // 1. Calculate Score first? Or assume req.baseRisk IS the requested score-adjusted risk?
-      // Architecture says: Symbol calculates score, then asks.
-      // But user said: "Governor decides 'how much'".
-      // So Symbol should ask with RAW risk? 
-      // User said: "double approvedRisk = RequestRiskFromGovernor(InpRiskBase * score);" in previous violation note.
-      // Ideally this function takes the final asked risk.
-      
+
       double requestedWithScore = req.baseRisk * CalculateSymbolScore(req);
-      
+
       // 2. Apply Portfolio Multiplier
       double mult = 1.0;
       if(GlobalVariableCheck(GV_RISK_MULTIPLIER))
          mult = GlobalVariableGet(GV_RISK_MULTIPLIER);
-         
+
       double finalRisk = requestedWithScore * mult;
-      
-      // 3. Exposure Check (Simple client-side guard, Governor does real check)
-      double totalExp = 0; 
+
+      // 3. Exposure Check (account-aware hard cap)
+      double totalExp = 0;
       if(GlobalVariableCheck(GV_TOTAL_EXPOSURE)) totalExp = GlobalVariableGet(GV_TOTAL_EXPOSURE);
-      
-      if(totalExp + finalRisk > 2.0) // Hard cap fail-safe
-         finalRisk = MathMax(0, 2.0 - totalExp);
-         
+
+      if(totalExp + finalRisk > hardCap)
+         finalRisk = MathMax(0, hardCap - totalExp);
+
       return finalRisk;
+   }
+
+   // Account-size-aware hard cap
+   // Micro accounts ($10-$100) need higher risk % to trade 0.01 lots
+   double GetHardCapForAccount()
+   {
+      double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+      if(equity <= 0) equity = AccountInfoDouble(ACCOUNT_BALANCE);
+
+      if(equity <= 100)       return 15.0;  // Nano: allow up to 15%
+      else if(equity <= 500)  return 12.0;  // Micro: allow up to 12%
+      else if(equity <= 2000) return 10.0;  // Cent $10-$20: allow up to 10% (full escalator)
+      else if(equity <= 10000) return 5.0;  // Small: allow up to 5%
+      else                    return 2.0;   // Standard: 2% cap
    }
    
    // Helper to check governor status

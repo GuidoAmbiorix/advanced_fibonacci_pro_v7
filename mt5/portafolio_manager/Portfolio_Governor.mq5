@@ -810,24 +810,40 @@ bool CanOpenTrade(string symbol, double requestedRisk, double &approvedRisk)
    // Apply correlation guard adjustment
    scaledRisk = GetCorrelationAdjustedRisk(symbol, scaledRisk);
 
-   // Check portfolio limit
-   if(totalExposure + scaledRisk > InpMaxPortfolioRisk)
+   // Check portfolio limit (micro-account aware)
+   double effectivePortfolioCap = InpMaxPortfolioRisk;
+   if(account.Equity() <= 500)       effectivePortfolioCap = MathMax(InpMaxPortfolioRisk, 25.0);
+   else if(account.Equity() <= 2000) effectivePortfolioCap = MathMax(InpMaxPortfolioRisk, 20.0);
+   else if(account.Equity() <= 10000) effectivePortfolioCap = MathMax(InpMaxPortfolioRisk, 10.0);
+
+   if(totalExposure + scaledRisk > effectivePortfolioCap)
    {
-      scaledRisk = MathMax(0, InpMaxPortfolioRisk - totalExposure);
+      scaledRisk = MathMax(0, effectivePortfolioCap - totalExposure);
    }
 
-   // Check symbol limit
-   scaledRisk = MathMin(scaledRisk, InpMaxSymbolRisk);
+   // Check symbol limit (micro-account aware)
+   // Micro accounts need higher % per symbol to open min lots
+   double effectiveSymbolCap = InpMaxSymbolRisk;
+   double equity = account.Equity();
+   if(equity <= 100)        effectiveSymbolCap = MathMax(InpMaxSymbolRisk, 15.0);
+   else if(equity <= 500)   effectiveSymbolCap = MathMax(InpMaxSymbolRisk, 12.0);
+   else if(equity <= 2000)  effectiveSymbolCap = MathMax(InpMaxSymbolRisk, 10.0);
+   else if(equity <= 10000) effectiveSymbolCap = MathMax(InpMaxSymbolRisk, 5.0);
 
-   // Check group limit
+   scaledRisk = MathMin(scaledRisk, effectiveSymbolCap);
+
+   // Check group limit (also micro-aware)
+   double effectiveGroupCap = InpMaxGroupRisk;
+   if(equity <= 200) effectiveGroupCap = MathMax(InpMaxGroupRisk, effectiveSymbolCap * 2.0);
+
    ENUM_CORR_GROUP group = GetCorrelationGroup(symbol);
    string gvKey = GetGroupGVKey(group);
    if(gvKey != "")
    {
       double groupRisk = GlobalVariableGet(gvKey);
-      if(groupRisk + scaledRisk > InpMaxGroupRisk)
+      if(groupRisk + scaledRisk > effectiveGroupCap)
       {
-         scaledRisk = MathMax(0, InpMaxGroupRisk - groupRisk);
+         scaledRisk = MathMax(0, effectiveGroupCap - groupRisk);
       }
    }
 

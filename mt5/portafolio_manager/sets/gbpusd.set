@@ -1,7 +1,7 @@
-; GBPUSD - H1 Timeframe - GOAT Instant Funding Pro
+; GBPUSD - M5 Timeframe - Scalper Mode
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
-; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
-; Confluence: 8 (force multiplier), TP Cap 4R, 4-Stage Profit Escalator
+; Strategy: M5 Scalping, Fast TP, Tight Trailing, Quick In/Out
+; NOTE: GBPUSD more volatile than EURUSD - slightly wider parameters
 
 InpMagicNumber=100002
 InpDirection=0
@@ -11,44 +11,46 @@ InpBrokerUTCOffset=2
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
+; GBPUSD: London is king
 InpEnableNYKZ=true
-InpEnableLondonCloseKZ=false
+InpEnableLondonCloseKZ=true
 
 ;═══════ FIBONACCI ═══════
-InpSwingLookback=35
+InpSwingLookback=12
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.25
+InpZoneTolerance=0.20
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
-InpDisplacementATR=1.5
-InpDisplacementLookback=8
+InpDisplacementATR=0.8
+InpDisplacementLookback=5
 
 ;═══════ RSI ═══════
-InpRSI_Period=14
-InpRSI_Oversold=30
-InpRSI_Overbought=70
+InpRSI_Period=7
+InpRSI_Oversold=35
+InpRSI_Overbought=65
 InpRSI_Momentum=true
 
 ;═══════ TREND ═══════
-InpEMA_Period=200
+InpEMA_Period=50
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.10
+InpEMA_MinSlope=0.05
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.75
+InpChopThreshold=0.65
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=8
-InpDominanceThreshold=2.0
-InpEnableAddOns=true
-InpMaxPositions=5
+InpMinConfluenceEntry=6
+InpDominanceThreshold=1.5
+InpEnableAddOns=false
+InpMaxPositions=3
 
 ;═══════ RISK (Before Governor Scaling) ═══════
-InpRiskBase=5.0
+InpRiskBase=10.0
+; Cent account: 10% needed for 0.03 lots (full escalator)
 InpRiskAddOn1=0.0
 InpRiskAddOn2=0.0
 InpMaxRisk=10.0
@@ -56,46 +58,49 @@ InpMaxLotsPerTrade=20.0
 InpEnableMarginCheck=true
 
 ;═══════ TAKE PROFIT ═══════
-InpTPMode=2
-InpFixedTP_R=3.0
-InpMinTP_R=2.0
-InpMaxTP_R=4.0
+InpTPMode=1
+InpFixedTP_R=1.5
+InpMinTP_R=0.8
+InpMaxTP_R=2.0
 InpTPUseLearnedMFE=true
 
 ;═══════ TRAILING STOP ═══════
 InpTrailingMode=1
 InpTrailType=1
-InpTrailStepATR=0.5
+InpTrailStepATR=0.3
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=8.0
+InpMinVolatilityPips=4.0
+; GBPUSD: Slightly higher min vol (more volatile pair)
 InpMaxVolatilityFactor=3.0
-InpVolatilityTP_Mult=3.0
+InpVolatilityTP_Mult=1.5
 
-;═══════ PARTIAL TP & TRAILING (H1 OPTIMIZED) ═══════
-InpPartialTP_R=1.0
-InpPartialClosePercent=50.0
-InpBE_Threshold_R=0.5
-InpTrailStart_R=0.5
-InpTrailATR_Mult=1.0
-InpTrailDecayRate=0.25
-InpTrailMinMult=0.60
+;═══════ PARTIAL TP & TRAILING (M5 SCALP OPTIMIZED) ═══════
+InpPartialTP_R=0.5
+InpPartialClosePercent=60.0
+InpBE_Threshold_R=0.3
+InpTrailStart_R=0.3
+InpTrailATR_Mult=0.5
+InpTrailDecayRate=0.40
+InpTrailMinMult=0.30
+; GBPUSD: Slightly wider floor (more volatile)
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.40
+InpTrailMinBufferATR=0.20
+; GBPUSD: Slightly wider buffer
 
-;═══════ PROFIT ESCALATOR (4-Stage Locking) ═══════
-InpStage1_R=0.3
-InpStage1_SL_R=-0.1
-InpStage2_R=0.7
-InpStage2_Close=30.0
-InpStage2_SL_R=0.1
-InpStage3_R=1.5
+;═══════ PROFIT ESCALATOR (M5 Compressed) ═══════
+InpStage1_R=0.2
+InpStage1_SL_R=0.0
+InpStage2_R=0.5
+InpStage2_Close=50.0
+InpStage2_SL_R=0.2
+InpStage3_R=1.0
 InpStage3_Close=30.0
-InpStage3_SL_R=0.7
-InpRunnerTrailTight=0.8
-InpTimeStaleMins=60.0
-InpTimeStaleTight1=0.8
-InpTimeStaleTight2=0.6
+InpStage3_SL_R=0.5
+InpRunnerTrailTight=0.6
+InpTimeStaleMins=10.0
+InpTimeStaleTight1=0.7
+InpTimeStaleTight2=0.5
 
 ;═══════ ADAPTIVE ESCALATOR ═══════
 InpAdaptiveEscalator=true
@@ -106,31 +111,33 @@ InpMomentumTrail=true
 InpChaosEmergencyLock=true
 InpFridayCloseHour=22
 
-
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=50
+InpMaxSpreadPoints=25
+; GBPUSD: Slightly wider than EURUSD
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
-InpSMC_SwingLookback=25
-InpSMC_MinImpulseATR=2.0
-InpSMC_MinFVG_ATR=0.5
+InpSMC_SwingLookback=15
+InpSMC_MinImpulseATR=1.0
+InpSMC_MinFVG_ATR=0.3
 
 ;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=true
-InpHTF=16408
-InpMTF=16388
+InpHTF=16385
+; H1 higher timeframe
+InpMTF=15
+; M15 medium timeframe
 InpMTF_EMAPeriod=50
 
 ;═══════ NEWS FILTER ═══════
-InpUseNewsFilter=false
-InpNewsMinutesBefore=30
-InpNewsMinutesAfter=30
+InpUseNewsFilter=true
+InpNewsMinutesBefore=15
+InpNewsMinutesAfter=15
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
 InpVolatilityThreshold=3.0
-InpVolatilitySpikeCooldown=15
+InpVolatilitySpikeCooldown=10
 
 ;═══════ KELLY POSITION SIZING ═══════
 InpUseKelly=false
@@ -152,20 +159,20 @@ InpEnableAdaptiveFilters=true
 
 ;═══════ PORTFOLIO PROTECTION ═══════
 InpUseCorrelationFilter=true
-InpDailyMaxLoss_R=15.0
-InpLossCooldownMinutes=5
-InpMaxConsecutiveLosses=10
+InpDailyMaxLoss_R=10.0
+InpLossCooldownMinutes=3
+InpMaxConsecutiveLosses=3
 InpMaxDailyTrades=20
 InpUseReversalFilter=true
-InpReversalCooldownMinutes=0
+InpReversalCooldownMinutes=3
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
 InpMaxTradesPerSession=10
-InpTradeCooldownMinutes=5
-InpCloseIntradayProfits=false
+InpTradeCooldownMinutes=3
+InpCloseIntradayProfits=true
 InpEndOfDayHour=22
 
 ;═══════ VISUAL DEBUGGING ═══════
 InpEnableVisualLevels=true
-InpTickThrottleSeconds=60
+InpTickThrottleSeconds=5

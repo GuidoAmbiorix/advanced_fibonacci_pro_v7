@@ -472,10 +472,26 @@ int OnInit()
       double maxRiskAdjusted = InpMaxRisk;
       double equity = account.Equity();
 
-      // Auto-adjust for small accounts to prevent margin issues
-      if(equity < 10000)
+      // Auto-adjust for small accounts
+      // Micro accounts ($10-$100) need higher risk % to open min lots
+      if(equity <= 100)
       {
-         maxRiskAdjusted = MathMin(InpMaxRisk, 1.0);   // Small accounts: max 1.0%
+         maxRiskAdjusted = MathMin(InpMaxRisk, 15.0);  // Nano: allow up to 15%
+         Print("Nano account (", DoubleToString(equity, 2), ") - maxRisk: ", maxRiskAdjusted, "%");
+      }
+      else if(equity <= 500)
+      {
+         maxRiskAdjusted = MathMin(InpMaxRisk, 12.0);  // Micro: allow up to 12%
+         Print("Micro account (", DoubleToString(equity, 2), ") - maxRisk: ", maxRiskAdjusted, "%");
+      }
+      else if(equity <= 2000)
+      {
+         maxRiskAdjusted = MathMin(InpMaxRisk, 10.0);  // Cent $10-$20: allow up to 10%
+         Print("Cent account (", DoubleToString(equity, 2), ") - maxRisk: ", maxRiskAdjusted, "%");
+      }
+      else if(equity < 10000)
+      {
+         maxRiskAdjusted = MathMin(InpMaxRisk, 5.0);   // Small accounts: max 5.0%
          Print("Small account ($", DoubleToString(equity, 2), ") - maxRisk limited to ", maxRiskAdjusted, "%");
       }
       else if(equity < 50000)
@@ -688,9 +704,11 @@ void ResetTradeState()
 //+------------------------------------------------------------------+
 double GetAdaptiveSL(double score)
 {
-   if(score >= 6.0) return g_ATR * 2.2; // Elite: Let it breathe
-   if(score >= 5.0) return g_ATR * 1.8; // Strong
-   return g_ATR * 1.2;                  // Good: Cut tight
+   // M5 Scalper: Tight stops — small ATR multipliers for fast in/out
+   // Elite gets slightly more room to survive M5 noise wicks
+   if(score >= 6.0) return g_ATR * 1.0;  // Elite: Room to breathe but still tight
+   if(score >= 5.0) return g_ATR * 0.8;  // Strong: Standard M5 stop
+   return g_ATR * 0.6;                   // Good: Cut very tight
 }
 
 double GetSymbolEdgeFactor()
@@ -2077,17 +2095,29 @@ void ManagePositions()
                    else if(g_currentRegime == REGIME_RANGE)  dynMult *= 0.7;
                 }
 
-                // Step 4: Runner tightening (after Stage 3, apply tighter multiplier)
+                // Step 4: Runner trail — WIDEN to let the 20% runner chase the home run
+                // We already secured 80% of profits in Stage 2+3, so this runner gets room
+                // InpRunnerTrailTight < 1.0 = tighter, > 1.0 = wider
+                // For scalping: use wider trail (1.5x) so the runner can reach 2-3R
                 if(g_states[sIdx].stage3_closed)
-                   dynMult *= InpRunnerTrailTight;
+                {
+                   // Runner gets breathing room — widen trail to let it ride
+                   dynMult *= 1.5;  // 1.5x wider trail for the runner portion
+                   // But cap it so it doesn't become absurd
+                   dynMult = MathMin(dynMult, InpTrailATR_Mult * 2.0);
+                }
 
                 // Step 5: TIME-DECAY TIGHTENING
                 // If profit hasn't made new high in X minutes, tighten trail aggressively
+                // EXCEPTION: Runner gets 3x more patience (let it ride for the home run)
                 double minutesSincePeak = (double)(TimeCurrent() - g_states[sIdx].lastPeakTime) / 60.0;
-                if(minutesSincePeak > InpTimeStaleMins)
-                   dynMult *= InpTimeStaleTight2;  // Aggressive (60+ min stale)
-                else if(minutesSincePeak > InpTimeStaleMins * 0.5)
-                   dynMult *= InpTimeStaleTight1;  // Moderate (30-60 min stale)
+                double staleMins = InpTimeStaleMins;
+                if(g_states[sIdx].stage3_closed) staleMins *= 3.0;  // Runner: 30 min patience instead of 10
+
+                if(minutesSincePeak > staleMins)
+                   dynMult *= InpTimeStaleTight2;  // Aggressive tightening
+                else if(minutesSincePeak > staleMins * 0.5)
+                   dynMult *= InpTimeStaleTight1;  // Moderate tightening
 
                 // Step 6: RSI MOMENTUM TRAIL (Adaptive Escalator 4D)
                 if(InpMomentumTrail && InpAdaptiveEscalator && g_states[sIdx].stage3_closed)

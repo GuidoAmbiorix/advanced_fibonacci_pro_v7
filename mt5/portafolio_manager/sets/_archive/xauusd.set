@@ -1,57 +1,59 @@
-; EURGBP - H1 Timeframe - GOAT Instant Funding Pro
+; XAUUSD - M5 Timeframe - Scalper Mode
 ; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
-; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
-; Confluence: 8 (force multiplier), TP Cap 4R, 4-Stage Profit Escalator
-; NOTE: EURGBP is THE BEST London pair - very stable
+; Strategy: M5 Gold Scalping, Fast TP, Wider Stops (Gold Wicks)
+; NOTE: Gold is highly volatile - wider parameters to survive wicks
 
-InpMagicNumber=100004
+InpMagicNumber=100011
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
-; EURGBP: Skip Asian (low volume)
 InpEnableLondonOpenKZ=true
-; EURGBP: BEST in London Open!
 InpEnableNYKZ=true
+; Gold: Best in NY session
 InpEnableLondonCloseKZ=false
 
 ;═══════ FIBONACCI ═══════
-InpSwingLookback=35
+InpSwingLookback=15
+; M5 Gold: Slightly more lookback (gold is wild)
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
 InpZoneTolerance=0.25
+; Gold: Keep wider tolerance (bigger wicks)
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
-InpDisplacementATR=1.5
-InpDisplacementLookback=8
+InpDisplacementATR=1.0
+; Gold: Slightly higher than FX (gold moves bigger)
+InpDisplacementLookback=5
 
 ;═══════ RSI ═══════
-InpRSI_Period=14
-InpRSI_Oversold=30
-InpRSI_Overbought=70
+InpRSI_Period=7
+InpRSI_Oversold=35
+InpRSI_Overbought=65
 InpRSI_Momentum=true
 
 ;═══════ TREND ═══════
-InpEMA_Period=200
+InpEMA_Period=50
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.10
+InpEMA_MinSlope=0.05
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.75
+InpChopThreshold=0.65
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=8
-InpDominanceThreshold=2.0
-InpEnableAddOns=true
-InpMaxPositions=5
+InpMinConfluenceEntry=6
+InpDominanceThreshold=1.5
+InpEnableAddOns=false
+InpMaxPositions=3
 
 ;═══════ RISK (Before Governor Scaling) ═══════
-InpRiskBase=5.0
+InpRiskBase=7.0
+; Gold: Higher base risk (wider SL needs more room)
 InpRiskAddOn1=0.0
 InpRiskAddOn2=0.0
 InpMaxRisk=10.0
@@ -59,47 +61,53 @@ InpMaxLotsPerTrade=20.0
 InpEnableMarginCheck=true
 
 ;═══════ TAKE PROFIT ═══════
-InpTPMode=2
-InpFixedTP_R=3.0
-InpMinTP_R=2.0
-InpMaxTP_R=4.0
+InpTPMode=1
+InpFixedTP_R=1.5
+InpMinTP_R=0.8
+InpMaxTP_R=2.5
+; Gold: Slightly higher max (gold can run)
 InpTPUseLearnedMFE=true
 
 ;═══════ TRAILING STOP ═══════
 InpTrailingMode=1
 InpTrailType=1
-InpTrailStepATR=0.5
+InpTrailStepATR=0.4
+; Gold: Slightly wider step (survives wicks)
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=6.0
-; EURGBP: Lower volatility, stable pair
+InpMinVolatilityPips=10.0
+; Gold M5: Ignore dead markets
 InpMaxVolatilityFactor=3.0
-InpVolatilityTP_Mult=3.0
+InpVolatilityTP_Mult=1.5
 
-;═══════ PARTIAL TP & TRAILING (H1 OPTIMIZED) ═══════
-InpPartialTP_R=1.0
-InpPartialClosePercent=50.0
-InpBE_Threshold_R=0.5
-InpTrailStart_R=0.5
-InpTrailATR_Mult=1.0
-InpTrailDecayRate=0.25
-InpTrailMinMult=0.60
+;═══════ PARTIAL TP & TRAILING (M5 GOLD SCALP) ═══════
+InpPartialTP_R=0.5
+InpPartialClosePercent=60.0
+InpBE_Threshold_R=0.3
+InpTrailStart_R=0.3
+InpTrailATR_Mult=0.6
+; Gold: Slightly wider trail
+InpTrailDecayRate=0.35
+InpTrailMinMult=0.35
+; Gold: Wider floor to survive wicks
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.40
+InpTrailMinBufferATR=0.25
+; Gold: Bigger buffer from price
 
-;═══════ PROFIT ESCALATOR (4-Stage Locking) ═══════
+;═══════ PROFIT ESCALATOR (M5 Gold Compressed) ═══════
 InpStage1_R=0.2
-InpStage1_SL_R=-0.1
+InpStage1_SL_R=0.0
 InpStage2_R=0.5
-InpStage2_Close=30.0
-InpStage2_SL_R=0.1
+InpStage2_Close=50.0
+InpStage2_SL_R=0.2
 InpStage3_R=1.0
 InpStage3_Close=30.0
 InpStage3_SL_R=0.5
-InpRunnerTrailTight=0.8
-InpTimeStaleMins=60.0
-InpTimeStaleTight1=0.8
-InpTimeStaleTight2=0.6
+InpRunnerTrailTight=0.7
+; Gold: Slightly wider runner
+InpTimeStaleMins=10.0
+InpTimeStaleTight1=0.7
+InpTimeStaleTight2=0.5
 
 ;═══════ ADAPTIVE ESCALATOR ═══════
 InpAdaptiveEscalator=true
@@ -110,32 +118,37 @@ InpMomentumTrail=true
 InpChaosEmergencyLock=true
 InpFridayCloseHour=22
 
-
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=25
-; EURGBP: Very tight spread (1-1.5 pips typical)
+InpMaxSpreadPoints=50
+; Gold: Wider spread acceptable (gold spreads are larger)
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
-InpSMC_SwingLookback=25
-InpSMC_MinImpulseATR=2.0
+InpSMC_SwingLookback=15
+InpSMC_MinImpulseATR=1.2
+; Gold: Slightly higher impulse threshold
 InpSMC_MinFVG_ATR=0.5
+; Gold: Keep wider FVG (gold gaps are bigger)
 
 ;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=true
-InpHTF=16408
-InpMTF=16388
+InpHTF=16385
+; H1 higher timeframe
+InpMTF=15
+; M15 medium timeframe
 InpMTF_EMAPeriod=50
 
 ;═══════ NEWS FILTER ═══════
-InpUseNewsFilter=false
-InpNewsMinutesBefore=30
-InpNewsMinutesAfter=30
+InpUseNewsFilter=true
+InpNewsMinutesBefore=15
+InpNewsMinutesAfter=15
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=3.0
+InpVolatilityThreshold=4.0
+; Gold: Higher spike threshold (gold is naturally volatile)
 InpVolatilitySpikeCooldown=15
+; Gold: Longer cooldown after spikes
 
 ;═══════ KELLY POSITION SIZING ═══════
 InpUseKelly=false
@@ -157,20 +170,24 @@ InpEnableAdaptiveFilters=true
 
 ;═══════ PORTFOLIO PROTECTION ═══════
 InpUseCorrelationFilter=true
-InpDailyMaxLoss_R=15.0
+InpDailyMaxLoss_R=10.0
 InpLossCooldownMinutes=5
-InpMaxConsecutiveLosses=10
-InpMaxDailyTrades=20
+; Gold: Slightly longer cooldown (bigger swings)
+InpMaxConsecutiveLosses=3
+InpMaxDailyTrades=15
+; Gold: Fewer daily trades (each is higher impact)
 InpUseReversalFilter=true
-InpReversalCooldownMinutes=0
+InpReversalCooldownMinutes=5
+; Gold: Longer same-direction cooldown
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=10
+InpMaxTradesPerSession=8
+; Gold: Fewer per session
 InpTradeCooldownMinutes=5
-InpCloseIntradayProfits=false
+InpCloseIntradayProfits=true
 InpEndOfDayHour=22
 
 ;═══════ VISUAL DEBUGGING ═══════
 InpEnableVisualLevels=true
-InpTickThrottleSeconds=60
+InpTickThrottleSeconds=5
