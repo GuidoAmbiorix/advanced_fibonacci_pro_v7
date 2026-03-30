@@ -3172,8 +3172,8 @@ ENUM_KILLZONE GetActiveKillzone()
    // EST Calculation (Standard UTC-5)
    int estHour = (utcDt.hour - 5 + 24) % 24;
 
-   // 1. Asian Session (20:00 - 00:00 EST)
-   if(InpEnableAsianKZ && (estHour >= 20 || estHour < 0)) return KILLZONE_ASIAN;
+   // 1. Asian Session (20:00 - 01:00 EST)
+   if(InpEnableAsianKZ && (estHour >= 20 || estHour < 1)) return KILLZONE_ASIAN;
 
    // 2. London Open (02:00 - 05:00 EST)
    if(InpEnableLondonOpenKZ && (estHour >= 2 && estHour < 5)) return KILLZONE_LONDON_OPEN;
