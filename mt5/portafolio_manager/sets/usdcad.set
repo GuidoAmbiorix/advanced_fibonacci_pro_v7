@@ -1,8 +1,8 @@
-; EURUSD - H1 Timeframe - Swing Trading
+; USDCAD - H1 Timeframe - Swing Trading
 ; Account: Exness Cent | Strategy: H1 Swing, Adaptive TP, Smart Trailing
-; Confluence: 8 (quality setups), TP Adaptive, Partial TP 1.0R/50%
+; NOTE: USDCAD strong in NY session (CAD oil correlation)
 
-InpMagicNumber=100001
+InpMagicNumber=100003
 InpDirection=0
 InpBrokerUTCOffset=2
 
@@ -11,6 +11,7 @@ InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
+; USDCAD: NY session is prime (CAD news + oil)
 InpEnableLondonCloseKZ=false
 
 ;═══════ FIBONACCI ═══════
@@ -50,7 +51,6 @@ InpMaxPositions=3
 
 ;═══════ RISK (Before Governor Scaling) ═══════
 InpRiskBase=10.0
-; Cent account: 10% needed for minimum lots
 InpRiskAddOn1=5.0
 InpRiskAddOn2=3.0
 InpMaxRisk=10.0
@@ -59,7 +59,6 @@ InpEnableMarginCheck=true
 
 ;═══════ TAKE PROFIT ═══════
 InpTPMode=2
-; H1: Adaptive TP (let winners run)
 InpFixedTP_R=3.0
 InpMinTP_R=1.5
 InpMaxTP_R=5.0
@@ -68,7 +67,6 @@ InpTPUseLearnedMFE=true
 ;═══════ TRAILING STOP ═══════
 InpTrailingMode=1
 InpTrailType=1
-; Chandelier Exit
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
@@ -98,7 +96,6 @@ InpStage3_Close=30.0
 InpStage3_SL_R=0.7
 InpRunnerTrailTight=0.8
 InpTimeStaleMins=120.0
-; H1: 2 hours stale
 InpTimeStaleTight1=0.8
 InpTimeStaleTight2=0.6
 
@@ -112,7 +109,7 @@ InpChaosEmergencyLock=true
 InpFridayCloseHour=22
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=30
+InpMaxSpreadPoints=35
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
@@ -123,9 +120,7 @@ InpSMC_MinFVG_ATR=0.5
 ;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=true
 InpHTF=16388
-; H4 higher timeframe
 InpMTF=16385
-; H1 medium timeframe (current chart)
 InpMTF_EMAPeriod=50
 
 ;═══════ NEWS FILTER ═══════

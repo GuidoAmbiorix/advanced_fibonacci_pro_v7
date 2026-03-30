@@ -7,6 +7,64 @@
 #define PORTFOLIO_GLOBALS_MQH
 
 //+------------------------------------------------------------------+
+//| BROKER SUFFIX DETECTION (Cent accounts, .pro, .x, etc.)          |
+//+------------------------------------------------------------------+
+string g_brokerSuffix = "";     // Detected broker suffix (e.g. "c" for Exness cent)
+bool   g_suffixDetected = false;
+
+// Detect broker suffix from _Symbol (call once in OnInit)
+void DetectBrokerSuffix()
+{
+   if(g_suffixDetected) return;
+   g_suffixDetected = true;
+
+   string sym = _Symbol;
+   int len = StringLen(sym);
+   if(len <= 6) { g_brokerSuffix = ""; return; }
+
+   // Check if first 6 chars are a valid currency pair
+   string upper = sym;
+   StringToUpper(upper);
+   string first3 = StringSubstr(upper, 0, 3);
+   string mid3   = StringSubstr(upper, 3, 3);
+
+   string currencies[] = {"EUR","USD","GBP","JPY","AUD","NZD","CAD","CHF","XAU","XAG","HKD","SGD","NOK","SEK","MXN","ZAR"};
+   bool validFirst = false, validMid = false;
+   for(int i = 0; i < ArraySize(currencies); i++)
+   {
+      if(first3 == currencies[i]) validFirst = true;
+      if(mid3   == currencies[i]) validMid = true;
+   }
+
+   if(validFirst && validMid)
+   {
+      g_brokerSuffix = StringSubstr(sym, 6);
+      Print("[BROKER] Detected suffix: '", g_brokerSuffix, "' from ", sym);
+   }
+}
+
+// Append broker suffix to a base symbol (e.g. "EURUSD" -> "EURUSDc")
+string BrokerSymbol(string baseSymbol)
+{
+   return baseSymbol + g_brokerSuffix;
+}
+
+// Strip broker suffix from a symbol (e.g. "EURUSDc" -> "EURUSD")
+string StripBrokerSuffix(string symbol)
+{
+   if(g_brokerSuffix == "") return symbol;
+   int suffixLen = StringLen(g_brokerSuffix);
+   int symLen = StringLen(symbol);
+   if(symLen > suffixLen)
+   {
+      string tail = StringSubstr(symbol, symLen - suffixLen);
+      if(tail == g_brokerSuffix)
+         return StringSubstr(symbol, 0, symLen - suffixLen);
+   }
+   return symbol;
+}
+
+//+------------------------------------------------------------------+
 //| GLOBAL VARIABLE KEYS (Communication Bus)                          |
 //+------------------------------------------------------------------+
 #define GV_GOVERNOR_ACTIVE       "PG_GovernorActive"       // 1 = running

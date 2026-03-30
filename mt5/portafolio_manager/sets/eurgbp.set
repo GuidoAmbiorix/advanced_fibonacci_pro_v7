@@ -1,8 +1,8 @@
-; EURUSD - H1 Timeframe - Swing Trading
+; EURGBP - H1 Timeframe - Swing Trading
 ; Account: Exness Cent | Strategy: H1 Swing, Adaptive TP, Smart Trailing
-; Confluence: 8 (quality setups), TP Adaptive, Partial TP 1.0R/50%
+; NOTE: EURGBP excellent London pair - very stable, tight spreads
 
-InpMagicNumber=100001
+InpMagicNumber=100004
 InpDirection=0
 InpBrokerUTCOffset=2
 
@@ -10,8 +10,9 @@ InpBrokerUTCOffset=2
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
+; EURGBP: London session dominant
 InpEnableNYKZ=true
-InpEnableLondonCloseKZ=false
+InpEnableLondonCloseKZ=true
 
 ;═══════ FIBONACCI ═══════
 InpSwingLookback=20
@@ -21,7 +22,8 @@ InpZoneTolerance=0.25
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
-InpDisplacementATR=1.2
+InpDisplacementATR=1.0
+; EURGBP: Lower vol pair, less displacement needed
 InpDisplacementLookback=5
 
 ;═══════ RSI ═══════
@@ -33,7 +35,8 @@ InpRSI_Momentum=true
 ;═══════ TREND ═══════
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.1
+InpEMA_MinSlope=0.08
+; EURGBP: Lower slope (ranges more)
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
@@ -48,9 +51,8 @@ InpAddOn1_R=1.5
 InpAddOn2_R=2.5
 InpMaxPositions=3
 
-;═══════ RISK (Before Governor Scaling) ═══════
+;═══════ RISK ═══════
 InpRiskBase=10.0
-; Cent account: 10% needed for minimum lots
 InpRiskAddOn1=5.0
 InpRiskAddOn2=3.0
 InpMaxRisk=10.0
@@ -59,20 +61,20 @@ InpEnableMarginCheck=true
 
 ;═══════ TAKE PROFIT ═══════
 InpTPMode=2
-; H1: Adaptive TP (let winners run)
 InpFixedTP_R=3.0
 InpMinTP_R=1.5
-InpMaxTP_R=5.0
+InpMaxTP_R=4.0
+; EURGBP: Slightly lower max (ranges more)
 InpTPUseLearnedMFE=true
 
 ;═══════ TRAILING STOP ═══════
 InpTrailingMode=1
 InpTrailType=1
-; Chandelier Exit
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=5.0
+InpMinVolatilityPips=3.0
+; EURGBP: Low vol pair
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 
@@ -98,7 +100,6 @@ InpStage3_Close=30.0
 InpStage3_SL_R=0.7
 InpRunnerTrailTight=0.8
 InpTimeStaleMins=120.0
-; H1: 2 hours stale
 InpTimeStaleTight1=0.8
 InpTimeStaleTight2=0.6
 
@@ -114,18 +115,16 @@ InpFridayCloseHour=22
 ;═══════ SPREAD ═══════
 InpMaxSpreadPoints=30
 
-;═══════ SMC - SMART MONEY CONCEPTS ═══════
+;═══════ SMC ═══════
 InpUseSMC=true
 InpSMC_SwingLookback=20
-InpSMC_MinImpulseATR=2.0
+InpSMC_MinImpulseATR=1.8
 InpSMC_MinFVG_ATR=0.5
 
 ;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=true
 InpHTF=16388
-; H4 higher timeframe
 InpMTF=16385
-; H1 medium timeframe (current chart)
 InpMTF_EMAPeriod=50
 
 ;═══════ NEWS FILTER ═══════

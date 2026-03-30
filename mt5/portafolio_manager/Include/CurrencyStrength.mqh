@@ -10,7 +10,7 @@
 //+------------------------------------------------------------------+
 string GetBaseCurrency(string symbol)
 {
-   string normalized = symbol;
+   string normalized = StripBrokerSuffix(symbol);
    StringReplace(normalized, ".pro", "");
    StringReplace(normalized, ".PRO", "");
    StringReplace(normalized, ".x", "");
@@ -23,11 +23,11 @@ string GetBaseCurrency(string symbol)
 }
 
 //+------------------------------------------------------------------+
-//| Get Quote Currency (last 3 characters)                           |
+//| Get Quote Currency (characters 3-5 after stripping suffix)       |
 //+------------------------------------------------------------------+
 string GetQuoteCurrency(string symbol)
 {
-   string normalized = symbol;
+   string normalized = StripBrokerSuffix(symbol);
    StringReplace(normalized, ".pro", "");
    StringReplace(normalized, ".PRO", "");
    StringReplace(normalized, ".x", "");
@@ -64,33 +64,33 @@ double CalculateCurrencyStrength(string currency, int lookbackBars = 24)
    if(currency == "USD")
    {
       ArrayResize(pairs, 6);
-      pairs[0] = "EURUSD"; pairs[1] = "GBPUSD"; pairs[2] = "AUDUSD";
-      pairs[3] = "USDJPY"; pairs[4] = "USDCAD"; pairs[5] = "XAUUSD";
+      pairs[0] = BrokerSymbol("EURUSD"); pairs[1] = BrokerSymbol("GBPUSD"); pairs[2] = BrokerSymbol("AUDUSD");
+      pairs[3] = BrokerSymbol("USDJPY"); pairs[4] = BrokerSymbol("USDCAD"); pairs[5] = BrokerSymbol("XAUUSD");
    }
    else if(currency == "EUR")
    {
       ArrayResize(pairs, 3);
-      pairs[0] = "EURUSD"; pairs[1] = "EURJPY"; pairs[2] = "EURGBP";
+      pairs[0] = BrokerSymbol("EURUSD"); pairs[1] = BrokerSymbol("EURJPY"); pairs[2] = BrokerSymbol("EURGBP");
    }
    else if(currency == "GBP")
    {
       ArrayResize(pairs, 3);
-      pairs[0] = "GBPUSD"; pairs[1] = "GBPJPY"; pairs[2] = "EURGBP";
+      pairs[0] = BrokerSymbol("GBPUSD"); pairs[1] = BrokerSymbol("GBPJPY"); pairs[2] = BrokerSymbol("EURGBP");
    }
    else if(currency == "JPY")
    {
       ArrayResize(pairs, 3);
-      pairs[0] = "USDJPY"; pairs[1] = "EURJPY"; pairs[2] = "GBPJPY";
+      pairs[0] = BrokerSymbol("USDJPY"); pairs[1] = BrokerSymbol("EURJPY"); pairs[2] = BrokerSymbol("GBPJPY");
    }
    else if(currency == "AUD")
    {
       ArrayResize(pairs, 2);
-      pairs[0] = "AUDUSD"; pairs[1] = "AUDCAD";
+      pairs[0] = BrokerSymbol("AUDUSD"); pairs[1] = BrokerSymbol("AUDCAD");
    }
    else if(currency == "CAD")
    {
       ArrayResize(pairs, 2);
-      pairs[0] = "USDCAD"; pairs[1] = "AUDCAD";
+      pairs[0] = BrokerSymbol("USDCAD"); pairs[1] = BrokerSymbol("AUDCAD");
    }
    else
    {

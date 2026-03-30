@@ -176,8 +176,8 @@ input double            InpSMC_MinFVG_ATR = 0.5;          // Min FVG Size (ATR m
 
 input group "======= MULTI-TIMEFRAME ======="
 input bool              InpUseMTF = true;                 // Enable MTF Analysis
-input ENUM_TIMEFRAMES   InpHTF = PERIOD_H1;               // Higher Timeframe
-input ENUM_TIMEFRAMES   InpMTF = PERIOD_M15;              // Medium Timeframe
+input ENUM_TIMEFRAMES   InpHTF = PERIOD_H4;               // Higher Timeframe
+input ENUM_TIMEFRAMES   InpMTF = PERIOD_H1;              // Medium Timeframe
 input int               InpMTF_EMAPeriod = 50;            // MTF EMA Period
 
 input group "======= NEWS FILTER ======="
@@ -384,6 +384,9 @@ ulong g_processedOnTrade[];
 //+------------------------------------------------------------------+
 int OnInit()
 {
+   // Detect broker suffix (e.g. "c" for Exness cent accounts)
+   DetectBrokerSuffix();
+
    if(!symbolInfo.Name(_Symbol)) return INIT_FAILED;
    symbolInfo.RefreshRates();
 

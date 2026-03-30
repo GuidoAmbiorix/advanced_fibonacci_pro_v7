@@ -54,9 +54,9 @@ public:
       m_symbol = symbol;
 
       // Initialize ATR indicators for DXY proxy (major USD pairs)
-      m_hATR_EURUSD = iATR("EURUSD", PERIOD_CURRENT, 14);
-      m_hATR_GBPUSD = iATR("GBPUSD", PERIOD_CURRENT, 14);
-      m_hATR_USDJPY = iATR("USDJPY", PERIOD_CURRENT, 14);
+      m_hATR_EURUSD = iATR(BrokerSymbol("EURUSD"), PERIOD_CURRENT, 14);
+      m_hATR_GBPUSD = iATR(BrokerSymbol("GBPUSD"), PERIOD_CURRENT, 14);
+      m_hATR_USDJPY = iATR(BrokerSymbol("USDJPY"), PERIOD_CURRENT, 14);
 
       // Initialize Gold ATR for volatility regime detection
       m_hATR_Gold = iATR(symbol, PERIOD_CURRENT, 14);
@@ -128,9 +128,9 @@ private:
       ArraySetAsSeries(usdjpy_close, true);
 
       // Get recent close prices
-      if(CopyClose("EURUSD", PERIOD_CURRENT, 0, 10, eurusd_close) <= 0) return 0;
-      if(CopyClose("GBPUSD", PERIOD_CURRENT, 0, 10, gbpusd_close) <= 0) return 0;
-      if(CopyClose("USDJPY", PERIOD_CURRENT, 0, 10, usdjpy_close) <= 0) return 0;
+      if(CopyClose(BrokerSymbol("EURUSD"), PERIOD_CURRENT, 0, 10, eurusd_close) <= 0) return 0;
+      if(CopyClose(BrokerSymbol("GBPUSD"), PERIOD_CURRENT, 0, 10, gbpusd_close) <= 0) return 0;
+      if(CopyClose(BrokerSymbol("USDJPY"), PERIOD_CURRENT, 0, 10, usdjpy_close) <= 0) return 0;
 
       // Calculate simple slope over 10 bars
       double eurusd_slope = (eurusd_close[0] - eurusd_close[9]) / eurusd_close[9];

@@ -43,7 +43,20 @@
       "Bash(echo \"$f done\")",
       "WebFetch(domain:throwinggoodmoney.com)",
       "Bash(cd \"/c/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/sets\" echo \"=== Killzone verification ===\" grep -n \"InpUseKillzoneFilter\" *.set)",
-      "Bash(\"/c/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:\"/c/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/Symbol_Engine.mq5\" /log)"
+      "Bash(\"/c/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:\"/c/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/Symbol_Engine.mq5\" /log)",
+      "Bash(pip install:*)",
+      "Bash(python M5_Scalper_Projections.py)",
+      "Bash(start:*)",
+      "Read(//c/Program Files/MetaTrader 5 Exness/**)",
+      "Read(//c/Program Files/MetaTrader 5/**)",
+      "Read(//c/Program Files/**)",
+      "Bash(\"/c/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:\"C:\\\\Users\\\\Ing Guido\\\\Desktop\\\\advanced_fibonacci_pro_v7\\\\mt5\\\\portafolio_manager\\\\Symbol_Engine.mq5\" /log)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(\"/c/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:\"C:\\\\Users\\\\Ing Guido\\\\Desktop\\\\advanced_fibonacci_pro_v7\\\\mt5\\\\portafolio_manager\\\\Portfolio_Governor.mq5\" /log)",
+      "Bash(find '/c/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager' -name *.log -mmin -5)",
+      "Read(//c/Users/Ing Guido/AppData/**)",
+      "Bash(\"/c/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:\"C:\\\\Users\\\\Ing Guido\\\\Desktop\\\\advanced_fibonacci_pro_v7\\\\mt5\\\\portafolio_manager\\\\Symbol_Engine.mq5\" /log:\"C:\\\\Users\\\\Ing Guido\\\\Desktop\\\\advanced_fibonacci_pro_v7\\\\mt5\\\\portafolio_manager\\\\compile_se.log\")",
+      "Bash(xargs -I{} basename {})"
     ]
   }
 }

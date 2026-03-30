@@ -1,8 +1,8 @@
-; EURUSD - H1 Timeframe - Swing Trading
+; EURCHF - H1 Timeframe - Swing Trading
 ; Account: Exness Cent | Strategy: H1 Swing, Adaptive TP, Smart Trailing
-; Confluence: 8 (quality setups), TP Adaptive, Partial TP 1.0R/50%
+; NOTE: EURCHF very stable, low volatility, tight spread - excellent for swing
 
-InpMagicNumber=100001
+InpMagicNumber=100007
 InpDirection=0
 InpBrokerUTCOffset=2
 
@@ -21,7 +21,8 @@ InpZoneTolerance=0.25
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
-InpDisplacementATR=1.2
+InpDisplacementATR=1.0
+; EURCHF: Low vol, less displacement needed
 InpDisplacementLookback=5
 
 ;═══════ RSI ═══════
@@ -33,7 +34,8 @@ InpRSI_Momentum=true
 ;═══════ TREND ═══════
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.1
+InpEMA_MinSlope=0.08
+; EURCHF: Lower slope (ranges more)
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
@@ -48,9 +50,8 @@ InpAddOn1_R=1.5
 InpAddOn2_R=2.5
 InpMaxPositions=3
 
-;═══════ RISK (Before Governor Scaling) ═══════
+;═══════ RISK ═══════
 InpRiskBase=10.0
-; Cent account: 10% needed for minimum lots
 InpRiskAddOn1=5.0
 InpRiskAddOn2=3.0
 InpMaxRisk=10.0
@@ -59,20 +60,19 @@ InpEnableMarginCheck=true
 
 ;═══════ TAKE PROFIT ═══════
 InpTPMode=2
-; H1: Adaptive TP (let winners run)
 InpFixedTP_R=3.0
 InpMinTP_R=1.5
-InpMaxTP_R=5.0
+InpMaxTP_R=4.0
 InpTPUseLearnedMFE=true
 
 ;═══════ TRAILING STOP ═══════
 InpTrailingMode=1
 InpTrailType=1
-; Chandelier Exit
 InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=5.0
+InpMinVolatilityPips=3.0
+; EURCHF: Low vol pair
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 
@@ -98,7 +98,6 @@ InpStage3_Close=30.0
 InpStage3_SL_R=0.7
 InpRunnerTrailTight=0.8
 InpTimeStaleMins=120.0
-; H1: 2 hours stale
 InpTimeStaleTight1=0.8
 InpTimeStaleTight2=0.6
 
@@ -114,18 +113,16 @@ InpFridayCloseHour=22
 ;═══════ SPREAD ═══════
 InpMaxSpreadPoints=30
 
-;═══════ SMC - SMART MONEY CONCEPTS ═══════
+;═══════ SMC ═══════
 InpUseSMC=true
 InpSMC_SwingLookback=20
-InpSMC_MinImpulseATR=2.0
+InpSMC_MinImpulseATR=1.8
 InpSMC_MinFVG_ATR=0.5
 
 ;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=true
 InpHTF=16388
-; H4 higher timeframe
 InpMTF=16385
-; H1 medium timeframe (current chart)
 InpMTF_EMAPeriod=50
 
 ;═══════ NEWS FILTER ═══════
@@ -133,19 +130,19 @@ InpUseNewsFilter=true
 InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
 
-;═══════ VOLATILITY SPIKE PROTECTION ═══════
+;═══════ VOLATILITY SPIKE ═══════
 InpEnableVolatilityFilter=true
 InpVolatilityThreshold=3.0
 InpVolatilitySpikeCooldown=30
 
-;═══════ KELLY POSITION SIZING ═══════
+;═══════ KELLY ═══════
 InpUseKelly=false
 InpKellyFraction=0.5
 InpDailyMaxDD=3.0
 InpWeeklyMaxDD=6.0
 InpDailyTarget=0.0
 
-;═══════ LEARNING & ADAPTATION ═══════
+;═══════ LEARNING ═══════
 InpEnableLearning=true
 InpLogTradesToFile=true
 InpLearningHistory=180
