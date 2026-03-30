@@ -56,7 +56,14 @@
       "Bash(find '/c/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager' -name *.log -mmin -5)",
       "Read(//c/Users/Ing Guido/AppData/**)",
       "Bash(\"/c/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:\"C:\\\\Users\\\\Ing Guido\\\\Desktop\\\\advanced_fibonacci_pro_v7\\\\mt5\\\\portafolio_manager\\\\Symbol_Engine.mq5\" /log:\"C:\\\\Users\\\\Ing Guido\\\\Desktop\\\\advanced_fibonacci_pro_v7\\\\mt5\\\\portafolio_manager\\\\compile_se.log\")",
-      "Bash(xargs -I{} basename {})"
+      "Bash(xargs -I{} basename {})",
+      "Bash(do grep:*)",
+      "Bash(echo \"=== $f ===\")",
+      "Bash(do)",
+      "Bash(sed -i 's/InpPartialTP_R=1.0/InpPartialTP_R=0.5/' \"$f\")",
+      "Bash(sed -i 's/InpPartialClosePercent=50.0/InpPartialClosePercent=60.0/' \"$f\")",
+      "Bash(sed -i 's/InpBE_Threshold_R=0.6/InpBE_Threshold_R=0.3/' \"$f\")",
+      "Bash(sed -i 's/InpTrailStart_R=0.6/InpTrailStart_R=0.3/' \"$f\")"
     ]
   }
 }

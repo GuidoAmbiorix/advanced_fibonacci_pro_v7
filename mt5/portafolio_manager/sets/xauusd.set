@@ -89,39 +89,39 @@ InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 
 ;═══════ PARTIAL TP & TRAILING ═══════
-InpPartialTP_R=1.0
-InpPartialClosePercent=40.0
-; Gold: Close less at partial (let runners run)
-InpBE_Threshold_R=0.7
-; Gold: Later BE (survive wicks)
-InpTrailStart_R=0.7
-InpTrailATR_Mult=2.0
-; Gold: Wider trail (massive wicks)
-InpTrailDecayRate=0.20
-; Gold: Slower decay
-InpTrailMinMult=0.60
-; Gold: Higher floor
+InpPartialTP_R=0.7
+; Gold: Partial at 0.7R
+InpPartialClosePercent=50.0
+; Gold: Take half
+InpBE_Threshold_R=0.4
+; Gold: Faster BE
+InpTrailStart_R=0.4
+InpTrailATR_Mult=1.5
+; Gold: Tighter trail
+InpTrailDecayRate=0.35
+; Gold: Faster decay
+InpTrailMinMult=0.50
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.40
-; Gold: Wider buffer (wicks!)
+InpTrailMinBufferATR=0.35
 
-;═══════ PROFIT ESCALATOR ═══════
-InpStage1_R=0.4
-; Gold: Later quick lock
-InpStage1_SL_R=-0.1
-InpStage2_R=1.0
-; Gold: Later first harvest
-InpStage2_Close=25.0
-; Gold: Close less (let it run)
+;═══════ PROFIT ESCALATOR (AGGRESSIVE) ═══════
+InpStage1_R=0.3
+; Gold: Quick lock
+InpStage1_SL_R=0.0
+; Gold: Lock at entry
+InpStage2_R=0.7
+; Gold: Harvest at 0.7R
+InpStage2_Close=40.0
+; Gold: Take 40%
 InpStage2_SL_R=0.2
-InpStage3_R=2.0
-; Gold: Later second harvest
-InpStage3_Close=25.0
-InpStage3_SL_R=1.0
-InpRunnerTrailTight=0.8
-InpTimeStaleMins=180.0
-; Gold: 3 hours stale (moves take time)
-InpTimeStaleTight1=0.8
+InpStage3_R=1.5
+; Gold: Second harvest at 1.5R
+InpStage3_Close=35.0
+InpStage3_SL_R=0.7
+InpRunnerTrailTight=0.6
+InpTimeStaleMins=90.0
+; Gold: 90 min stale
+InpTimeStaleTight1=0.7
 InpTimeStaleTight2=0.6
 
 ;═══════ ADAPTIVE ESCALATOR ═══════

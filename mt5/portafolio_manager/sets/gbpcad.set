@@ -76,30 +76,30 @@ InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=3.0
 
 ;═══════ PARTIAL TP & TRAILING ═══════
-InpPartialTP_R=1.0
-InpPartialClosePercent=50.0
-InpBE_Threshold_R=0.6
-InpTrailStart_R=0.6
+InpPartialTP_R=0.5
+InpPartialClosePercent=60.0
+InpBE_Threshold_R=0.3
+InpTrailStart_R=0.3
 InpTrailATR_Mult=1.5
-InpTrailDecayRate=0.25
+InpTrailDecayRate=0.40
 InpTrailMinMult=0.55
 ; GBPCAD: Wider floor for volatile cross
 InpTrailRegimeAware=true
 InpTrailMinBufferATR=0.35
 
 ;═══════ PROFIT ESCALATOR ═══════
-InpStage1_R=0.3
-InpStage1_SL_R=-0.1
-InpStage2_R=0.7
-InpStage2_Close=30.0
+InpStage1_R=0.2
+InpStage1_SL_R=0.0
+InpStage2_R=0.5
+InpStage2_Close=40.0
 InpStage2_SL_R=0.1
-InpStage3_R=1.5
-InpStage3_Close=30.0
-InpStage3_SL_R=0.7
-InpRunnerTrailTight=0.8
-InpTimeStaleMins=120.0
-InpTimeStaleTight1=0.8
-InpTimeStaleTight2=0.6
+InpStage3_R=1.0
+InpStage3_Close=35.0
+InpStage3_SL_R=0.5
+InpRunnerTrailTight=0.6
+InpTimeStaleMins=60.0
+InpTimeStaleTight1=0.7
+InpTimeStaleTight2=0.5
 
 ;═══════ ADAPTIVE ESCALATOR ═══════
 InpAdaptiveEscalator=true
