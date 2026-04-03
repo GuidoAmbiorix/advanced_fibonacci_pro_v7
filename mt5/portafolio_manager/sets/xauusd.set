@@ -52,11 +52,11 @@ InpMaxPositions=2
 ; XAUUSD: Fewer max positions - gold ties up significant margin
 
 ;═══════ RISK ═══════
-InpRiskBase=0.4
+InpRiskBase=100.0
 ; XAUUSD: Reduced risk per trade - gold stops are physically wider
-InpMaxRisk=0.8
-InpMaxLotsPerTrade=3.0
-InpEnableMarginCheck=true
+InpMaxRisk=100.0
+InpMaxLotsPerTrade=5.0
+InpEnableMarginCheck=false
 
 ;═══════ TAKE PROFIT ═══════
 InpTPMode=2

@@ -55,7 +55,7 @@ InpMaxPositions=3
 ;═══════ RISK ═══════
 InpRiskBase=100.0
 InpMaxRisk=100.0
-InpMaxLotsPerTrade=500.0
+InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=false
 
 ;═══════ TAKE PROFIT ═══════

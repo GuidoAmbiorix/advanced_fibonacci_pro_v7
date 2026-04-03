@@ -48,11 +48,11 @@ InpDominanceThreshold=2.0
 InpMaxPositions=3
 
 ;═══════ RISK (Before Governor Scaling) ═══════
-InpRiskBase=0.4
+InpRiskBase=100.0
 ; GBPCHF: Reduced risk - most volatile cross, respect wider stops
-InpMaxRisk=0.8
-InpMaxLotsPerTrade=3.0
-InpEnableMarginCheck=true
+InpMaxRisk=100.0
+InpMaxLotsPerTrade=5.0
+InpEnableMarginCheck=false
 
 ;═══════ TAKE PROFIT ═══════
 InpTPMode=2

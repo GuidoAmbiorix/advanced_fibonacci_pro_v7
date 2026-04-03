@@ -46,10 +46,10 @@ InpDominanceThreshold=2.0
 InpMaxPositions=3
 
 ;═══════ RISK (Before Governor Scaling) ═══════
-InpRiskBase=0.5
-InpMaxRisk=1.0
+InpRiskBase=100.0
+InpMaxRisk=100.0
 InpMaxLotsPerTrade=5.0
-InpEnableMarginCheck=true
+InpEnableMarginCheck=false
 
 ;═══════ TAKE PROFIT ═══════
 InpTPMode=2

@@ -54,7 +54,7 @@ InpMaxPositions=3
 InpRiskBase=100.0
 ; TEST: Full balance risk - backtest mode, no real money
 InpMaxRisk=100.0
-InpMaxLotsPerTrade=500.0
+InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=false
 
 ;═══════ TAKE PROFIT ═══════
