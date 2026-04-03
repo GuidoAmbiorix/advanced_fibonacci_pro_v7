@@ -63,7 +63,9 @@
       "Bash(sed -i 's/InpPartialTP_R=1.0/InpPartialTP_R=0.5/' \"$f\")",
       "Bash(sed -i 's/InpPartialClosePercent=50.0/InpPartialClosePercent=60.0/' \"$f\")",
       "Bash(sed -i 's/InpBE_Threshold_R=0.6/InpBE_Threshold_R=0.3/' \"$f\")",
-      "Bash(sed -i 's/InpTrailStart_R=0.6/InpTrailStart_R=0.3/' \"$f\")"
+      "Bash(sed -i 's/InpTrailStart_R=0.6/InpTrailStart_R=0.3/' \"$f\")",
+      "Bash(head -2 sets/*.set)",
+      "Bash(pip3 list:*)"
     ]
   }
 }

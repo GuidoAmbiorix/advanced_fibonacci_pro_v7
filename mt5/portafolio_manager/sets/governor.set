@@ -1,7 +1,7 @@
-; Portfolio Governor - M5 Scalper Mode
-; Account: $6,000 Virtual Capital
-; Phase 1 Rules: 4% Profit Target | 5% Max DD | 3% Daily DD | 3 Min Days
-; Strategy: M5 Scalping, Faster Updates, Tighter Risk Control
+; Portfolio Governor - H4 Swing Mode
+; Account: Standard
+; H4 Swing: Conservative DD | Let % system manage targets
+; Strategy: H4 Swing, Standard Updates, Portfolio % Management
 
 ;═══════ PORTFOLIO LIMITS ═══════
 InpMaxPortfolioRisk=2.5
@@ -44,8 +44,8 @@ InpWeeklyMaxDD=4.0
 InpMonthlyMaxDD=5.0
 
 InpDailyTarget=0.0
-InpDailyTargetUSD=80.0
-; Daily Profit Target ($)
+InpDailyTargetUSD=0.0
+; Disabled - let % system manage
 
 ;═══════ CORRELATION GUARD ═══════
 InpUseCorrelationGuard=true
@@ -60,6 +60,5 @@ InpMagicRange=999
 InpFridayCloseHour=22
 
 ;═══════ UPDATE FREQUENCY ═══════
-InpUpdateSeconds=3
-; M5: Faster updates (3 seconds instead of 5)
-; Scalping needs faster DD detection and risk adjustment
+InpUpdateSeconds=5
+; H4: Standard update frequency

@@ -153,9 +153,6 @@ SymbolCorrelation g_correlations[] = {
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   // Detect broker suffix (e.g. "c" for Exness cent accounts)
-   DetectBrokerSuffix();
-
    // Initialize GlobalVariables
    GlobalVariableSet(GV_GOVERNOR_ACTIVE, 1);
    GlobalVariableSet(GV_TRADING_ENABLED, 1);
@@ -474,14 +471,8 @@ void CloseAllPositions(string reason)
 //+------------------------------------------------------------------+
 double GetSymbolCorrelation(string sym1, string sym2)
 {
-   // Normalize symbols (strip broker suffix like "c" for cent accounts)
-   string s1 = StripBrokerSuffix(sym1), s2 = StripBrokerSuffix(sym2);
-   StringToUpper(s1);
-   StringToUpper(s2);
-
-   // Remove common suffixes
-   StringReplace(s1, ".PRO", "");
-   StringReplace(s2, ".PRO", "");
+   // Normalize symbols (strip broker suffixes)
+   string s1 = NormalizeSymbol(sym1), s2 = NormalizeSymbol(sym2);
 
    // Check predefined correlations
    for(int i = 0; i < ArraySize(g_correlations); i++)

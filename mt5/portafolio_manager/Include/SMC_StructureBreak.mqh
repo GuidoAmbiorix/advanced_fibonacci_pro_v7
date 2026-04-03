@@ -339,6 +339,11 @@ public:
       return m_lastBreakPrice;
    }
 
+   datetime GetLastBreakTime()
+   {
+      return m_lastBreakTime;
+   }
+
    //+------------------------------------------------------------------+
    //| Get most recent swing high                                        |
    //+------------------------------------------------------------------+

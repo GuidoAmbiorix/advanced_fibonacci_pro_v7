@@ -48,7 +48,7 @@ CPatternMemory      patternMemory;
 #include "Include\Adaptive\AdaptiveExitManager.mqh"
 #include "Include\Adaptive\AdaptiveFilterManager.mqh"
 
-// ADVANCED CONFLUENCE MODULES (M15 ENHANCED)
+// ADVANCED CONFLUENCE MODULES (H4 ENHANCED)
 #include "Include\Advanced\VolumeAnalysis.mqh"
 #include "Include\Advanced\Divergence.mqh"
 #include "Include\Advanced\Inst_Concepts.mqh"
@@ -104,15 +104,13 @@ input int               InpATR_MA_Period = 20;
 input group "======= CONFLUENCE ======="
 input int               InpMinConfluenceEntry = 4;
 input double            InpDominanceThreshold = 2.0;      // Signal Dominance Threshold
-input bool              InpEnableAddOns = true;
-input double            InpAddOn1_R = 1.5;
-input double            InpAddOn2_R = 2.5;
 input int               InpMaxPositions = 3;
+
+input group "======= GOVERNOR ======="
+input bool              InpStandaloneMode = false;        // Standalone Mode (bypass Governor for testing)
 
 input group "======= RISK (Before Governor Scaling) ======="
 input double            InpRiskBase = 0.25;
-input double            InpRiskAddOn1 = 0.15;
-input double            InpRiskAddOn2 = 0.10;
 input double            InpMaxRisk = 0.75;               // Maximum Risk % (Kelly Limit)
 input double            InpMaxLotsPerTrade = 0.5;        // Max Lots Per Trade
 input bool              InpEnableMarginCheck = true;     // Validate Margin Before Opening
@@ -142,19 +140,30 @@ input double            InpTrailMinMult = 0.50;           // Minimum ATR multipl
 input bool              InpTrailRegimeAware = true;       // Widen trail in trends, tighten in ranges
 input double            InpTrailMinBufferATR = 0.30;       // Min buffer from price (ATR fraction)
 
-input group "======= PROFIT ESCALATOR (4-Stage Locking) ======="
-input double            InpStage1_R = 0.3;                // Stage 1: Quick Lock trigger (R)
-input double            InpStage1_SL_R = -0.1;            // Stage 1: SL offset from entry (R, neg=below entry)
-input double            InpStage2_R = 0.7;                // Stage 2: First Harvest trigger (R)
-input double            InpStage2_Close = 30.0;           // Stage 2: % to close
-input double            InpStage2_SL_R = 0.1;             // Stage 2: Lock SL at (R from entry)
-input double            InpStage3_R = 1.5;                // Stage 3: Second Harvest trigger (R)
-input double            InpStage3_Close = 30.0;           // Stage 3: % to close
-input double            InpStage3_SL_R = 0.7;             // Stage 3: Lock SL at (R from entry)
-input double            InpRunnerTrailTight = 0.8;         // Runner: Tighter trail multiplier for final 40%
-input double            InpTimeStaleMins = 60.0;           // Time-decay: minutes without new high before tightening
-input double            InpTimeStaleTight1 = 0.8;          // Time-decay: moderate tightening (30-60 min stale)
-input double            InpTimeStaleTight2 = 0.6;          // Time-decay: aggressive tightening (60+ min stale)
+input group "======= INFINITE ESCALATOR ======="
+input double            InpEsc_FirstR = 0.5;              // Stage 0: Quick Lock trigger (R)
+input double            InpEsc_FirstSL_R = -0.1;          // Stage 0: SL offset (neg=below entry)
+input double            InpEsc_StepR = 0.7;               // Base step between harvest stages (R)
+input double            InpEsc_GrowthFactor = 1.3;        // Step growth (>1=widening gaps between stages)
+input double            InpEsc_BaseHarvest = 15.0;        // Base harvest % per stage
+input double            InpEsc_HarvestDecay = 0.85;       // Harvest decay per stage (0.85=85% of prev)
+input double            InpEsc_MinHarvest = 3.0;          // Minimum harvest % (floor)
+input int               InpEsc_MaxStages = 20;            // Safety cap on stages
+input double            InpRunnerTrailTight = 0.75;        // Runner: Wider trail multiplier
+input double            InpTimeStaleMins = 240.0;          // Time-decay: minutes without new high
+input double            InpTimeStaleTight1 = 0.8;          // Time-decay: moderate tightening
+input double            InpTimeStaleTight2 = 0.65;         // Time-decay: aggressive tightening
+
+input group "======= SCALE-IN PYRAMID ======="
+input bool              InpPyr_Enable = true;             // Enable pyramid scale-in on winners
+input int               InpPyr_Frequency = 3;             // Scale in every Nth stage
+input double            InpPyr_FirstRiskPct = 0.15;       // First add-on risk %
+input double            InpPyr_RiskDecay = 0.70;          // Risk decay per add-on (0.7=70% of prev)
+input double            InpPyr_MinRiskPct = 0.05;         // Minimum add-on risk % (floor)
+input int               InpPyr_MaxAddOns = 5;             // Maximum add-on positions
+input double            InpPyr_MinProfitR = 1.0;          // Min group profit R before first scale-in
+input double            InpAgg_MaxTotalRisk = 1.5;        // Max aggregate risk % for trade group
+input int               InpAgg_MaxPositions = 6;          // Max positions per trade group
 
 input group "======= ADAPTIVE ESCALATOR ======="
 input bool   InpAdaptiveEscalator = true;       // Enable Adaptive Escalator
@@ -164,6 +173,43 @@ input bool   InpMFECalibration = true;           // MFE-calibrated stage trigger
 input bool   InpMomentumTrail = true;            // RSI momentum trail for runner
 input bool   InpChaosEmergencyLock = true;       // Emergency lock in CHAOS regime
 input int    InpFridayCloseHour = 22;            // Friday close hour (broker time, 0=disabled)
+
+input group "======= CONFLUENCE FLIP EXIT ======="
+input bool   InpUseConflFlipExit = true;        // Exit when market scores flip direction
+input double InpConflFlipMinScore = 10.0;        // Opposite score must reach this minimum
+input double InpConflFlipDelta = 3.0;            // Opposite must exceed our direction by this delta
+input bool   InpConflFlipOnlyAfterStage0 = true; // Only flip-exit if Quick Lock was hit first
+
+input group "======= STALE TRADE EXIT ======="
+input bool   InpUseStaleTrade = true;            // Exit trades stuck below Quick Lock for too long
+input int    InpStaleBarLimit = 8;               // Bars at stage -1 (no Quick Lock yet) before exit
+                                                  // H4: 8 bars = 32 hours. Set 0 to disable.
+
+input group "======= SMART REVERSAL DETECTION ======="
+input bool   InpUseSmartReversal      = true;    // Replace Confluence Flip with multi-signal score
+input bool   InpUseMFERetraceExit     = true;    // Exit when profit retreats from peak
+input bool   InpUseFlipAndReverse     = true;    // Open opposite trade after reversal exit
+// Signal weights (auto-normalized, set 0 to disable a signal)
+input double InpRevW_CHoCH            = 0.40;    // Weight: CHoCH structural break (most reliable)
+input double InpRevW_Divergence       = 0.25;    // Weight: RSI divergence (fires early)
+input double InpRevW_LiqSweep         = 0.20;    // Weight: Opposite liquidity sweep
+input double InpRevW_ScoreVelocity    = 0.15;    // Weight: Score velocity bar-over-bar
+// Exit thresholds
+input double InpRevExitThreshold      = 0.55;    // Reversal score to trigger exit (0-1)
+input double InpRevExitMinScore       = 8.0;     // Opposite confluence must be >= this
+input bool   InpRevOnlyAfterStage0    = true;    // Only exit after Quick Lock hit first
+input int    InpRevCHoCH_MaxBars      = 5;       // CHoCH older than this = stale (ignored)
+input int    InpRevRegimeGate         = 3;       // 0=off 1=TREND 2=TREND+RANGE 3=all except CHAOS
+// MFE Retrace Exit
+input double InpMFERetrace_Threshold  = 0.40;    // Exit if profitR < peakR*(1-threshold)
+input double InpMFERetrace_MinPeakR   = 1.0;     // Only activate if peak was >= this R
+input bool   InpMFERetrace_AfterStage0= true;    // Only activate after Quick Lock
+// Flip & Reverse
+input double InpFlipRev_MinScore      = 0.75;    // Reversal score required to also flip
+input double InpFlipRev_RiskPct       = 0.20;    // Risk % for the reversal trade
+input int    InpFlipRev_CooldownBars  = 2;       // Min bars between consecutive flip trades
+input bool   InpFlipRev_RequireMFE    = true;    // Only flip if original trade hit InpFlipRev_MinPeakR
+input double InpFlipRev_MinPeakR      = 0.5;     // Min peak R original trade must have reached
 
 input group "======= SPREAD ======="
 input int               InpMaxSpreadPoints = 50;
@@ -176,8 +222,8 @@ input double            InpSMC_MinFVG_ATR = 0.5;          // Min FVG Size (ATR m
 
 input group "======= MULTI-TIMEFRAME ======="
 input bool              InpUseMTF = true;                 // Enable MTF Analysis
-input ENUM_TIMEFRAMES   InpHTF = PERIOD_H4;               // Higher Timeframe
-input ENUM_TIMEFRAMES   InpMTF = PERIOD_H1;              // Medium Timeframe
+input ENUM_TIMEFRAMES   InpHTF = PERIOD_W1;               // Higher Timeframe (Weekly)
+input ENUM_TIMEFRAMES   InpMTF = PERIOD_D1;              // Medium Timeframe (Daily)
 input int               InpMTF_EMAPeriod = 50;            // MTF EMA Period
 
 input group "======= NEWS FILTER ======="
@@ -296,8 +342,7 @@ double g_EMA50, g_EMA50_Prev, g_EMA100, g_EMA100_Prev;
 int g_entryDirection = 0;
 double g_currentConfluence = 0;
 int g_positionCount = 0;
-bool g_addOn1Triggered = false;
-bool g_addOn2Triggered = false;
+int g_activeGroupId = 0;          // Current active trade group (0=none)
 datetime g_lastCloseTime = 0;
 ulong g_lastTickTime = 0;
 datetime g_lastHeartbeat = 0;
@@ -319,6 +364,15 @@ datetime g_lastSellTime = 0;   // Last SELL trade entry time
 double g_cachedBuyScore = 0;
 double g_cachedSellScore = 0;
 datetime g_lastScoreCalcTime = 0;
+
+// Smart Reversal: previous cycle scores for velocity calculation
+double g_prevBuyScore  = 0;
+double g_prevSellScore = 0;
+
+// Flip & Reverse state
+datetime g_lastFlipTime = 0;
+int      g_lastFlipDir  = 0;
+int      g_flipBarCount = 0;
 
 // Friday close flag
 bool g_fridayCloseExecuted = false;
@@ -347,7 +401,7 @@ ulong g_tickCount = 0;
 ulong g_barCount = 0;
 ulong g_tradesExecuted = 0;
 
-// Minimal state for position tracking (backup)
+// Position state for tracking (includes infinite escalator)
 struct PositionState {
    ulong ticket;
    bool  partialClosed;
@@ -359,17 +413,41 @@ struct PositionState {
    ConfluenceFactors entryFactors;  // Factors captured at entry bar — used for pattern learning at exit (not current bar)
    double entryScore;               // Confluence score at entry — used by Adaptive Escalator
 
-   // Profit Escalator (4-stage locking)
-   bool   stage1_locked;            // Quick lock done (SL moved near entry)
-   bool   stage2_closed;            // First harvest done (30% closed)
-   bool   stage3_closed;            // Second harvest done (30% more closed)
+   // Infinite Escalator
+   int    currentStage;             // Highest completed stage (-1=none, 0=quick lock, 1+=harvest stages)
    double locked_sl;                // Current locked SL level from escalator
+   double totalHarvestedPct;        // Running total % harvested from this position
+   double initialVolume;            // Volume at entry (needed for harvest tracking)
+   bool   isRunner;                 // True when volume too small to harvest — let it ride
+
+   // Trade Group
+   int    groupId;                  // Group ID linking original + add-ons
+   bool   isAddOn;                  // true if this is a scale-in position
+   int    addOnIndex;               // 0=original, 1=first add-on, etc.
 
    // Time-decay trailing
    datetime lastPeakTime;           // When max profit was last reached
    double   peakProfitR;            // Maximum profit R achieved so far
+
+   // Stale trade tracking
+   int      barsAtStageNeg1;        // Bars elapsed while still at stage -1 (no Quick Lock)
 };
 PositionState g_states[];
+
+// Trade Group: links original entry + all scale-in add-ons
+struct TradeGroup {
+   int      groupId;
+   int      direction;              // 1=Buy, -1=Sell
+   ulong    originalTicket;         // The first position's ticket
+   double   originalEntryPrice;     // Entry price of original (for SL floor calc)
+   double   originalSLDist;         // SL distance of original (for R calc)
+   int      addOnCount;             // How many add-ons opened so far
+   int      highestStage;           // Highest escalator stage reached (any position in group)
+   double   aggregateRiskPct;       // Sum of initialRisk across all positions
+   bool     active;                 // false when all positions closed
+};
+TradeGroup g_groups[];
+int g_nextGroupId = 1;
 
 // REAL confluence factors captured during CalculateConfluenceScore()
 // Used by AdaptiveFilterManager and PatternRecognizer instead of score proxies
@@ -384,9 +462,6 @@ ulong g_processedOnTrade[];
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   // Detect broker suffix (e.g. "c" for Exness cent accounts)
-   DetectBrokerSuffix();
-
    if(!symbolInfo.Name(_Symbol)) return INIT_FAILED;
    symbolInfo.RefreshRates();
 
@@ -471,42 +546,7 @@ int OnInit()
    // Initialize Kelly Position Sizer
    if(InpUseKelly)
    {
-      // Adjust maxRisk based on account size for safety
       double maxRiskAdjusted = InpMaxRisk;
-      double equity = account.Equity();
-
-      // Auto-adjust for small accounts
-      // Micro accounts ($10-$100) need higher risk % to open min lots
-      if(equity <= 100)
-      {
-         maxRiskAdjusted = MathMin(InpMaxRisk, 15.0);  // Nano: allow up to 15%
-         Print("Nano account (", DoubleToString(equity, 2), ") - maxRisk: ", maxRiskAdjusted, "%");
-      }
-      else if(equity <= 500)
-      {
-         maxRiskAdjusted = MathMin(InpMaxRisk, 12.0);  // Micro: allow up to 12%
-         Print("Micro account (", DoubleToString(equity, 2), ") - maxRisk: ", maxRiskAdjusted, "%");
-      }
-      else if(equity <= 2000)
-      {
-         maxRiskAdjusted = MathMin(InpMaxRisk, 10.0);  // Cent $10-$20: allow up to 10%
-         Print("Cent account (", DoubleToString(equity, 2), ") - maxRisk: ", maxRiskAdjusted, "%");
-      }
-      else if(equity < 10000)
-      {
-         maxRiskAdjusted = MathMin(InpMaxRisk, 5.0);   // Small accounts: max 5.0%
-         Print("Small account ($", DoubleToString(equity, 2), ") - maxRisk limited to ", maxRiskAdjusted, "%");
-      }
-      else if(equity < 50000)
-      {
-         maxRiskAdjusted = MathMin(InpMaxRisk, 1.5);  // Medium accounts: max 1.5%
-         Print("Medium account ($", DoubleToString(equity, 2), ") - maxRisk limited to ", maxRiskAdjusted, "%");
-      }
-      else
-      {
-         maxRiskAdjusted = InpMaxRisk;  // Large accounts: use input parameter
-         Print("Large account ($", DoubleToString(equity, 2), ") - using maxRisk: ", maxRiskAdjusted, "%");
-      }
 
       kellySizer.Init(InpRiskBase, 0.25, maxRiskAdjusted, InpKellyFraction, 30, InpDailyMaxDD, InpWeeklyMaxDD, InpDailyTarget);
    }
@@ -587,13 +627,15 @@ int OnInit()
       Print("Restored g_consecutiveLosses=", g_consecutiveLosses, " from GlobalVariable");
 
    // Check if Governor is running
-   string govStatus = allocator.IsGovernorActive() ? "Connected" : "Standalone";
+   string govStatus = InpStandaloneMode ? "STANDALONE (Testing)" : (allocator.IsGovernorActive() ? "Connected" : "Standalone");
 
    Print("===========================================");
    Print("  [START] SYMBOL ENGINE v2.0: ", _Symbol);
    Print("===========================================");
    Print("  Magic: ", InpMagicNumber);
    Print("  Governor: ", govStatus);
+   if(InpStandaloneMode)
+      Print("  >>> STANDALONE MODE: Governor bypassed, using raw risk values <<<");
    Print("-------------------------------------------");
    Print("  CORE MODULES:");
    Print("    SMC Analysis: ", InpUseSMC ? "ON" : "OFF");
@@ -631,6 +673,11 @@ int OnInit()
    }
    Print("===========================================");
 
+   // Initialize Smart Reversal prev-scores to avoid cold-start velocity spike
+   g_prevBuyScore  = 0;
+   g_prevSellScore = 0;
+   g_flipBarCount  = 0;
+
    // Initialize indicators on startup
    Print("  Initializing indicators...");
    if(!UpdateIndicators())
@@ -643,8 +690,15 @@ int OnInit()
    }
    Print("===========================================");
    Print("[CONFIG] Killzone: ", InpUseKillzoneFilter ? "ACTIVE" : "OFF");
-   Print("[CONFIG] Adaptive Escalator: ", InpAdaptiveEscalator ? "ON" : "OFF",
-         " | ScoreAdapt=", InpScoreAdaptFactor,
+   Print("[CONFIG] Infinite Escalator: FirstR=", InpEsc_FirstR,
+         " StepR=", InpEsc_StepR, " Growth=", InpEsc_GrowthFactor,
+         " BaseHarvest=", InpEsc_BaseHarvest, "% Decay=", InpEsc_HarvestDecay,
+         " MaxStages=", InpEsc_MaxStages);
+   Print("[CONFIG] Pyramid: ", InpPyr_Enable ? "ON" : "OFF",
+         " | Freq=", InpPyr_Frequency,
+         " | FirstRisk=", InpPyr_FirstRiskPct, "% MaxAddOns=", InpPyr_MaxAddOns,
+         " | AggMaxRisk=", InpAgg_MaxTotalRisk, "%");
+   Print("[CONFIG] Adaptive: ScoreAdapt=", InpScoreAdaptFactor,
          " | RegimeHarvest=", InpRegimeHarvest,
          " | MFECalib=", InpMFECalibration,
          " | MomentumTrail=", InpMomentumTrail,
@@ -688,8 +742,15 @@ void ResetTradeState()
 {
    g_entryDirection = 0;
    g_positionCount = 0;
-   g_addOn1Triggered = false;
-   g_addOn2Triggered = false;
+
+   // Deactivate current trade group
+   if(g_activeGroupId > 0)
+   {
+      for(int i = 0; i < ArraySize(g_groups); i++)
+         if(g_groups[i].groupId == g_activeGroupId)
+            g_groups[i].active = false;
+   }
+   g_activeGroupId = 0;
 
    // OPTIMIZATION: Free memory properly
    if(ArraySize(g_states) > 0)
@@ -939,7 +1000,7 @@ void OnTick()
    if(g_positionCount == 0) ResetTradeState();
 
    // --- GOVERNOR EMERGENCY CLOSE GUARD ---
-   if(IsDailyTargetHit()) return; // Stop trailing/managing while Governor closes positions
+   if(!InpStandaloneMode && IsDailyTargetHit()) return; // Stop trailing/managing while Governor closes positions
 
    // --- FRIDAY PRE-WEEKEND BLOCK ---
    if(InpFridayCloseHour > 0)
@@ -1021,6 +1082,9 @@ void OnTick()
 
    // --- THROTTLED CONFLUENCE CALCULATION ---
    // Recalculate confluence scores based on throttle (not just on new bar)
+   // Preserve previous cycle for velocity calculation
+   g_prevBuyScore  = g_cachedBuyScore;
+   g_prevSellScore = g_cachedSellScore;
    g_cachedBuyScore = CalculateConfluenceScore(1);
    g_cachedSellScore = CalculateConfluenceScore(-1);
    g_lastScoreCalcTime = now;
@@ -1142,24 +1206,27 @@ void OnTick()
        }
    }
 
-   // --- RANKING GUARD (Dynamic Slots) ---
-   double myRank = 999;
-   if(GlobalVariableCheck(GV_RANK_PREFIX + _Symbol))
-      myRank = GlobalVariableGet(GV_RANK_PREFIX + _Symbol);
-
-   // Fix #5: Read active slots published by RankManager (conservative default = 3)
-   double activeSlots = GlobalVariableGet("PG_ActiveSlots");
-   int maxRankAllowed = (activeSlots >= 2) ? (int)activeSlots : 3;
-   
-   if(myRank > maxRankAllowed)
+   // --- RANKING GUARD (Dynamic Slots) --- Bypassed in Standalone Mode
+   if(!InpStandaloneMode)
    {
-      static datetime lastRankLog = 0;
-      if(TimeCurrent() - lastRankLog > 60)
+      double myRank = 999;
+      if(GlobalVariableCheck(GV_RANK_PREFIX + _Symbol))
+         myRank = GlobalVariableGet(GV_RANK_PREFIX + _Symbol);
+
+      // Fix #5: Read active slots published by RankManager (conservative default = 3)
+      double activeSlots = GlobalVariableGet("PG_ActiveSlots");
+      int maxRankAllowed = (activeSlots >= 2) ? (int)activeSlots : 3;
+
+      if(myRank > maxRankAllowed)
       {
-         Print("[RANK] Waiting: ", _Symbol, " rank #", (int)myRank, " / ", maxRankAllowed, " active slots");
-         lastRankLog = TimeCurrent();
+         static datetime lastRankLog = 0;
+         if(TimeCurrent() - lastRankLog > 60)
+         {
+            Print("[RANK] Waiting: ", _Symbol, " rank #", (int)myRank, " / ", maxRankAllowed, " active slots");
+            lastRankLog = TimeCurrent();
+         }
+         return;
       }
-      return;
    }
    // --- PORTFOLIO PROTECTION: LOSS COOLDOWN ---
    if(InpLossCooldownMinutes > 0 && g_lastLossTime > 0)
@@ -1233,7 +1300,7 @@ void OnTick()
    }
 
    // Check Governor Trading Permission
-   if(!IsTradingEnabled()) return;
+   if(!InpStandaloneMode && !IsTradingEnabled()) return;
 
    double buyScore = g_cachedBuyScore;
    double sellScore = g_cachedSellScore;
@@ -1334,15 +1401,18 @@ void OnTick()
 
 
       // GOVERNOR REQUEST
-      GovernorRequest req = allocator.BuildRequest(
-          _Symbol,
-          baseRisk,
-          killSwitch.GetWinRate(),
-          killSwitch.GetRollingR(),
-          (int)g_currentRegime
-      );
-
-      double approvedRisk = allocator.RequestRisk(req);
+      double approvedRisk = baseRisk;
+      if(!InpStandaloneMode)
+      {
+         GovernorRequest req = allocator.BuildRequest(
+             _Symbol,
+             baseRisk,
+             killSwitch.GetWinRate(),
+             killSwitch.GetRollingR(),
+             (int)g_currentRegime
+         );
+         approvedRisk = allocator.RequestRisk(req);
+      }
 
       if(approvedRisk > 0.05)
       {
@@ -1394,7 +1464,14 @@ void OnTick()
 
              g_currentConfluence = buyScore;
              g_entryDirection = 1;
-             ExecuteTrade(ORDER_TYPE_BUY, approvedRisk, "Entry", quality);
+             if(ExecuteTrade(ORDER_TYPE_BUY, approvedRisk, "Entry", quality))
+             {
+                // Create trade group for the new entry
+                int lastIdx = ArraySize(g_states) - 1;
+                double ep = PositionSelectByTicket(g_states[lastIdx].ticket) ? PositionGetDouble(POSITION_PRICE_OPEN) : symbolInfo.Ask();
+                g_activeGroupId = CreateTradeGroup(1, g_states[lastIdx].ticket, ep, g_states[lastIdx].initialSLDist, approvedRisk);
+                g_states[lastIdx].groupId = g_activeGroupId;
+             }
           }
           else if(sellScore >= minEntry && (InpDirection == 0 || InpDirection == 2))
           {
@@ -1420,19 +1497,18 @@ void OnTick()
 
              g_currentConfluence = sellScore;
              g_entryDirection = -1;
-             ExecuteTrade(ORDER_TYPE_SELL, approvedRisk, "Entry", quality);
+             if(ExecuteTrade(ORDER_TYPE_SELL, approvedRisk, "Entry", quality))
+             {
+                int lastIdx = ArraySize(g_states) - 1;
+                double ep = PositionSelectByTicket(g_states[lastIdx].ticket) ? PositionGetDouble(POSITION_PRICE_OPEN) : symbolInfo.Bid();
+                g_activeGroupId = CreateTradeGroup(-1, g_states[lastIdx].ticket, ep, g_states[lastIdx].initialSLDist, approvedRisk);
+                g_states[lastIdx].groupId = g_activeGroupId;
+             }
           }
       }
    }
 
-   // OPTIMIZATION: Add-ons disabled in all .set files - skip processing
-   // Uncomment if you re-enable add-ons:
-   /*
-   else if(g_positionCount > 0 && InpEnableAddOns && g_positionCount < InpMaxPositions)
-   {
-      CheckAddOnOpportunity();
-   }
-   */
+   // NOTE: Pyramiding is now handled by TryScaleIn() inside the Infinite Escalator loop
 }
 
 //+------------------------------------------------------------------+
@@ -1553,13 +1629,18 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       g_states[sz].quality = quality;
       g_states[sz].entryFactors = (type == ORDER_TYPE_BUY) ? g_lastBuyFactors : g_lastSellFactors; // Capture entry-bar factors for pattern learning
       g_states[sz].entryScore = g_currentConfluence;  // Capture confluence score for Adaptive Escalator
-      // Initialize Profit Escalator fields
-      g_states[sz].stage1_locked = false;
-      g_states[sz].stage2_closed = false;
-      g_states[sz].stage3_closed = false;
+      // Initialize Infinite Escalator fields
+      g_states[sz].currentStage = -1;
       g_states[sz].locked_sl = 0;
+      g_states[sz].totalHarvestedPct = 0;
+      g_states[sz].initialVolume = lots;
+      g_states[sz].isRunner = false;
+      g_states[sz].groupId = g_activeGroupId;
+      g_states[sz].isAddOn = (label != "Entry");
+      g_states[sz].addOnIndex = 0;
       g_states[sz].lastPeakTime = TimeCurrent();
       g_states[sz].peakProfitR = 0;
+      g_states[sz].barsAtStageNeg1 = 0;
 
       // LOG TO DB MANAGER
       if(InpEnableLearning && InpLogTradesToFile)
@@ -1628,12 +1709,195 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
 }
 
 //+------------------------------------------------------------------+
+//| INFINITE ESCALATOR: Formula Engine                                |
+//+------------------------------------------------------------------+
+
+// Calculate trigger R for stage N using geometric progression
+// Stage 0 = Quick Lock (FirstR)
+// Stage 1+ = FirstR + StepR * (GrowthFactor^0 + GrowthFactor^1 + ... + GrowthFactor^(n-1))
+double CalculateStageR(int stageIndex)
+{
+   if(stageIndex <= 0) return InpEsc_FirstR;
+   double sum = 0;
+   for(int i = 0; i < stageIndex; i++)
+      sum += MathPow(InpEsc_GrowthFactor, (double)i);
+   return InpEsc_FirstR + InpEsc_StepR * sum;
+}
+
+// Calculate harvest % for stage N (decaying)
+// Stage 0 = no harvest (Quick Lock only moves SL)
+double CalculateHarvestPct(int stageIndex)
+{
+   if(stageIndex <= 0) return 0.0;
+   double pct = InpEsc_BaseHarvest * MathPow(InpEsc_HarvestDecay, (double)(stageIndex - 1));
+   return MathMax(pct, InpEsc_MinHarvest);
+}
+
+// Calculate SL lock R for stage N
+// Stage 0 = special (FirstSL_R, can be negative for below-entry buffer)
+// Stage 1+ = lock at previous stage's trigger (ratchet up)
+double CalculateSLLockR(int stageIndex)
+{
+   if(stageIndex <= 0) return InpEsc_FirstSL_R;
+   return CalculateStageR(stageIndex - 1);
+}
+
+// Check if remaining volume can be harvested
+bool CanHarvest(ulong ticket, double harvestPct)
+{
+   if(!PositionSelectByTicket(ticket)) return false;
+   double currentVol = PositionGetDouble(POSITION_VOLUME);
+   double minV = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   double closeVol = NormalizeDouble(currentVol * (harvestPct / 100.0), 2);
+   // Need enough for harvest AND remaining >= minLot
+   return (closeVol >= minV && (currentVol - closeVol) >= minV);
+}
+
+//+------------------------------------------------------------------+
+//| TRADE GROUP HELPERS                                               |
+//+------------------------------------------------------------------+
+
+// Create a new trade group for an original entry
+int CreateTradeGroup(int direction, ulong ticket, double entryPrice, double slDist, double riskPct)
+{
+   int gId = g_nextGroupId++;
+   int sz = ArraySize(g_groups);
+   ArrayResize(g_groups, sz + 1);
+   g_groups[sz].groupId = gId;
+   g_groups[sz].direction = direction;
+   g_groups[sz].originalTicket = ticket;
+   g_groups[sz].originalEntryPrice = entryPrice;
+   g_groups[sz].originalSLDist = slDist;
+   g_groups[sz].addOnCount = 0;
+   g_groups[sz].highestStage = -1;
+   g_groups[sz].aggregateRiskPct = riskPct;
+   g_groups[sz].active = true;
+   return gId;
+}
+
+// Find group index by ID
+int FindGroupIndex(int groupId)
+{
+   for(int i = 0; i < ArraySize(g_groups); i++)
+      if(g_groups[i].groupId == groupId) return i;
+   return -1;
+}
+
+// Get the group SL floor price from stage level
+double GetGroupSLFloor(int groupIdx, int stageIndex)
+{
+   if(groupIdx < 0) return 0;
+   double entryPrice = g_groups[groupIdx].originalEntryPrice;
+   double slDist = g_groups[groupIdx].originalSLDist;
+   double slLockR = CalculateSLLockR(stageIndex);
+   if(g_groups[groupIdx].direction == 1) // Buy
+      return entryPrice + (slDist * slLockR);
+   else // Sell
+      return entryPrice - (slDist * slLockR);
+}
+
+// Apply group SL floor to all positions in the group
+void ApplyGroupSLFloor(int groupId)
+{
+   int gIdx = FindGroupIndex(groupId);
+   if(gIdx < 0) return;
+   int highStage = g_groups[gIdx].highestStage;
+   if(highStage < 0) return;
+
+   double floorSL = GetGroupSLFloor(gIdx, highStage);
+   int dir = g_groups[gIdx].direction;
+
+   for(int i = 0; i < ArraySize(g_states); i++)
+   {
+      if(g_states[i].groupId != groupId) continue;
+      if(!PositionSelectByTicket(g_states[i].ticket)) continue;
+
+      double currentSL = PositionGetDouble(POSITION_SL);
+      double tp = PositionGetDouble(POSITION_TP);
+      bool shouldMove = (dir == 1) ? (floorSL > currentSL + _Point*5) : (floorSL < currentSL - _Point*5 || currentSL == 0);
+
+      if(shouldMove)
+      {
+         if(trade.PositionModify(g_states[i].ticket, floorSL, tp))
+         {
+            if(floorSL > g_states[i].locked_sl || g_states[i].locked_sl == 0)
+               g_states[i].locked_sl = floorSL;
+            if(g_states[i].isAddOn)
+               Print("[GROUP SL] Add-on #", g_states[i].addOnIndex, " SL raised to group floor ", DoubleToString(floorSL, _Digits));
+         }
+      }
+   }
+}
+
+// Try scale-in at current stage
+void TryScaleIn(int groupId, int stageIndex, double profitR)
+{
+   if(!InpPyr_Enable) return;
+   if(stageIndex <= 0 || stageIndex % InpPyr_Frequency != 0) return;
+   if(profitR < InpPyr_MinProfitR) return;
+
+   int gIdx = FindGroupIndex(groupId);
+   if(gIdx < 0 || !g_groups[gIdx].active) return;
+   if(g_groups[gIdx].addOnCount >= InpPyr_MaxAddOns) return;
+
+   // Count total positions in group
+   int groupPosCount = 0;
+   for(int i = 0; i < ArraySize(g_states); i++)
+      if(g_states[i].groupId == groupId && PositionSelectByTicket(g_states[i].ticket))
+         groupPosCount++;
+   if(groupPosCount >= InpAgg_MaxPositions) return;
+
+   // Calculate risk with decay
+   int addOnIdx = g_groups[gIdx].addOnCount;
+   double addOnRisk = InpPyr_FirstRiskPct * MathPow(InpPyr_RiskDecay, (double)addOnIdx);
+   addOnRisk = MathMax(addOnRisk, InpPyr_MinRiskPct);
+
+   // Check aggregate risk budget
+   double remainingBudget = InpAgg_MaxTotalRisk - g_groups[gIdx].aggregateRiskPct;
+   if(addOnRisk > remainingBudget) addOnRisk = remainingBudget;
+   if(addOnRisk < InpPyr_MinRiskPct) return; // Budget exhausted
+
+   // Governor approval
+   double approved = addOnRisk;
+   if(!InpStandaloneMode)
+   {
+      GovernorRequest req = allocator.BuildRequest(_Symbol, addOnRisk, killSwitch.GetWinRate(), killSwitch.GetRollingR(), (int)g_currentRegime);
+      approved = allocator.RequestRisk(req);
+   }
+   if(approved < 0.05) return;
+
+   ENUM_ORDER_TYPE type = (g_groups[gIdx].direction == 1) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+   string label = "Pyr" + IntegerToString(addOnIdx + 1);
+
+   if(ExecuteTrade(type, approved, label, EQ_GOOD))
+   {
+      // Tag the new position state with group info
+      int lastIdx = ArraySize(g_states) - 1;
+      g_states[lastIdx].groupId = groupId;
+      g_states[lastIdx].isAddOn = true;
+      g_states[lastIdx].addOnIndex = addOnIdx + 1;
+
+      g_groups[gIdx].addOnCount++;
+      g_groups[gIdx].aggregateRiskPct += approved;
+
+      Print("[PYRAMID #", addOnIdx + 1, "] Stage ", stageIndex,
+            " | Risk: ", DoubleToString(approved, 2), "%",
+            " | AggRisk: ", DoubleToString(g_groups[gIdx].aggregateRiskPct, 2), "%",
+            " | ProfitR: ", DoubleToString(profitR, 2));
+
+      // Apply group SL floor to the new add-on
+      ApplyGroupSLFloor(groupId);
+   }
+}
+
+//+------------------------------------------------------------------+
 //| ADAPTIVE ESCALATOR HELPERS                                        |
 //+------------------------------------------------------------------+
 
-// 4A: Score-adaptive stage trigger — high score = wider, low score = tighter
-double GetAdaptiveStageR(double baseR, double score)
+// Score-adaptive stage trigger — high score = wider, low score = tighter
+double GetAdaptiveStageR(int stageIndex, double score)
 {
+   double baseR = CalculateStageR(stageIndex);
    if(!InpAdaptiveEscalator) return baseR;
    if(score >= CONFLUENCE_STRONG) // 13+
       return baseR * (1.0 + (score - CONFLUENCE_STRONG) * InpScoreAdaptFactor);
@@ -1642,39 +1906,28 @@ double GetAdaptiveStageR(double baseR, double score)
    return baseR; // 10-12.9 = default
 }
 
-// 4B: Regime-aware harvest percentages
-double GetRegimeHarvestPct(int stage, MARKET_REGIME reg)
+// Regime-aware harvest percentages (works with formula-based harvest)
+double GetRegimeHarvestPct(int stageIndex, MARKET_REGIME reg)
 {
-   if(!InpRegimeHarvest) return (stage == 2) ? InpStage2_Close : InpStage3_Close;
+   double basePct = CalculateHarvestPct(stageIndex);
+   if(!InpRegimeHarvest) return basePct;
 
-   if(reg == REGIME_TREND)
-   {
-      if(stage == 2) return 20.0;  // Take less — let it run
-      if(stage == 3) return 20.0;  // Runner gets 60%
-   }
-   else if(reg == REGIME_RANGE)
-   {
-      if(stage == 2) return 40.0;  // Take profit fast
-      if(stage == 3) return 30.0;  // Runner gets 30%
-   }
-   else // VOLATILE / CHAOS
-   {
-      if(stage == 2) return 35.0;
-      if(stage == 3) return 35.0;  // Runner gets 30%
-   }
-   return (stage == 2) ? InpStage2_Close : InpStage3_Close;
+   if(reg == REGIME_TREND) return basePct * 0.7;      // Take less in trends — let it run
+   if(reg == REGIME_RANGE) return basePct * 1.3;       // Take more in ranges
+   return basePct; // VOLATILE / CHAOS = base
 }
 
-// 4C: MFE-calibrated Stage 3 trigger
-double GetMFECalibratedStage3R(double baseR)
+// MFE-calibrated stage trigger (generalized for any stage)
+double GetMFECalibratedStageR(int stageIndex, double entryScore = 0)
 {
+   double baseR = GetAdaptiveStageR(stageIndex, (entryScore > 0) ? entryScore : g_currentConfluence);
    if(!InpMFECalibration) return baseR;
    double avgMFE = learning.GetAvgMFE();
-   if(avgMFE <= 0) return baseR; // Not enough data yet
-   // Cap stage3 at 75% of learned MFE
-   double calibrated = MathMin(baseR, avgMFE * 0.75);
-   // Don't go below Stage2 trigger
-   return MathMax(calibrated, InpStage2_R + 0.1);
+   if(avgMFE <= 0) return baseR;
+   // Don't set stages beyond 90% of learned MFE (progressively conservative)
+   double mfeCap = avgMFE * MathMax(0.5, 0.90 - stageIndex * 0.02);
+   double prevStageR = (stageIndex > 0) ? CalculateStageR(stageIndex - 1) : 0;
+   return MathMin(baseR, MathMax(mfeCap, prevStageR + 0.1));
 }
 
 //+------------------------------------------------------------------+
@@ -1682,6 +1935,15 @@ double GetMFECalibratedStage3R(double baseR)
 //+------------------------------------------------------------------+
 void ManagePositions()
 {
+   // Flip & Reverse cooldown: decrement once per new bar
+   static datetime s_lastFlipCooldownBar = 0;
+   datetime curBar = iTime(_Symbol, PERIOD_CURRENT, 0);
+   if(curBar != s_lastFlipCooldownBar && g_flipBarCount > 0)
+   {
+      g_flipBarCount--;
+      s_lastFlipCooldownBar = curBar;
+   }
+
    // 1. Cleanup Closed Positions & Update Stats
    for(int i=ArraySize(g_states)-1; i>=0; i--)
    {
@@ -1845,13 +2107,18 @@ void ManagePositions()
          g_states[stateCount].initialRisk = InpRiskBase;
          g_states[stateCount].dollarRisk = account.Equity() * (InpRiskBase / 100.0);
          g_states[stateCount].quality = EQ_GOOD;
-         // Initialize escalator fields
-         g_states[stateCount].stage1_locked = false;
-         g_states[stateCount].stage2_closed = false;
-         g_states[stateCount].stage3_closed = false;
+         // Initialize infinite escalator fields
+         g_states[stateCount].currentStage = -1;
          g_states[stateCount].locked_sl = 0;
+         g_states[stateCount].totalHarvestedPct = 0;
+         g_states[stateCount].initialVolume = vol;
+         g_states[stateCount].isRunner = false;
+         g_states[stateCount].groupId = g_activeGroupId;
+         g_states[stateCount].isAddOn = false;
+         g_states[stateCount].addOnIndex = 0;
          g_states[stateCount].lastPeakTime = TimeCurrent();
          g_states[stateCount].peakProfitR = 0;
+         g_states[stateCount].barsAtStageNeg1 = 0;
          Print("Warning: Created fallback position state for ticket ", ticket, " - R-calculations may be approximate");
          sIdx = stateCount;
       }
@@ -1898,6 +2165,170 @@ void ManagePositions()
          if(quality == EQ_ELITE) { partTP *= 1.5; trailStart *= 1.5; }
       }
 
+      // ============================================================
+      // STALE TRADE EXIT
+      // If Quick Lock hasn't triggered after N bars, the trade is going
+      // nowhere — exit before it bleeds further.
+      // barsAtStageNeg1 = bars held since entry with no Quick Lock
+      // ============================================================
+      if(InpUseStaleTrade && InpStaleBarLimit > 0 && g_states[sIdx].currentStage < 0)
+      {
+         // Count bars elapsed since entry (not ticks) using the entry timestamp
+         if(PositionSelectByTicket(ticket))
+         {
+            datetime entryTime = (datetime)PositionGetInteger(POSITION_TIME);
+            int barsHeld = GetBarsHeld(entryTime);
+            g_states[sIdx].barsAtStageNeg1 = barsHeld;
+
+            if(barsHeld >= InpStaleBarLimit)
+            {
+               Print("[STALE EXIT] Ticket #", ticket,
+                     " | ", barsHeld, " bars with no Quick Lock",
+                     " | ProfitR: ", DoubleToString(profitR, 2),
+                     " | Closing stale trade.");
+               if(InpEnableMobileAlerts)
+                  SendNotification("[STALE] " + _Symbol + " closed after " + IntegerToString(barsHeld) + " bars no progress");
+               if(trade.PositionClose(ticket))
+                  continue;
+            }
+         }
+      }
+
+      // ============================================================
+      // MFE RETRACE EXIT
+      // Exit when profit retreats X% from peak — catches reversals
+      // on winning trades before they give everything back.
+      // ============================================================
+      if(InpUseMFERetraceExit)
+      {
+         bool peakOk  = (g_states[sIdx].peakProfitR >= InpMFERetrace_MinPeakR);
+         bool stageOk = !InpMFERetrace_AfterStage0 || (g_states[sIdx].currentStage >= 0);
+         if(peakOk && stageOk)
+         {
+            double retreatThreshold = g_states[sIdx].peakProfitR * (1.0 - InpMFERetrace_Threshold);
+            if(profitR < retreatThreshold)
+            {
+               Print("[MFE RETRACE EXIT] #", ticket,
+                     " | Peak=", DoubleToString(g_states[sIdx].peakProfitR, 2),
+                     "R Current=", DoubleToString(profitR, 2),
+                     "R Threshold=", DoubleToString(retreatThreshold, 2), "R");
+               if(InpEnableMobileAlerts)
+                  SendNotification("[MFE EXIT] " + _Symbol +
+                                    " fell " + DoubleToString(g_states[sIdx].peakProfitR,1) +
+                                    "R→" + DoubleToString(profitR,1) + "R");
+               if(trade.PositionClose(ticket)) continue;
+            }
+         }
+      }
+
+      // ============================================================
+      // SMART REVERSAL EXIT (+ optional Flip & Reverse)
+      // Multi-signal: CHoCH + Divergence + LiqSweep + ScoreVelocity
+      // Falls back to legacy Confluence Flip if SmartReversal=false
+      // ============================================================
+      if(InpUseSmartReversal)
+      {
+         if(IsReversalAllowedInRegime())
+         {
+            int posDir   = (pType == POSITION_TYPE_BUY) ? 1 : -1;
+            int oppDir   = -posDir;
+            bool stageOk = !InpRevOnlyAfterStage0 || (g_states[sIdx].currentStage >= 0);
+            double oppScore = (oppDir == 1) ? g_cachedBuyScore : g_cachedSellScore;
+
+            if(stageOk && oppScore >= InpRevExitMinScore)
+            {
+               double revScore = CalcReversalScore(posDir);
+               if(revScore >= InpRevExitThreshold)
+               {
+                  string revReason = BuildReversalReason(posDir, revScore);
+                  Print("[SMART REVERSAL EXIT] #", ticket, " | ", revReason,
+                        " | ProfitR=", DoubleToString(profitR, 2));
+                  if(InpEnableMobileAlerts)
+                     SendNotification("[SMART FLIP] " + _Symbol + " " + revReason);
+
+                  // Capture flip intent BEFORE closing (state wiped after close)
+                  bool shouldFlip = InpUseFlipAndReverse
+                                 && (revScore >= InpFlipRev_MinScore)
+                                 && (!InpFlipRev_RequireMFE || g_states[sIdx].peakProfitR >= InpFlipRev_MinPeakR)
+                                 && (g_flipBarCount <= 0);
+                  int    flipDir  = oppDir;
+                  double flipRisk = InpFlipRev_RiskPct;
+
+                  if(trade.PositionClose(ticket))
+                  {
+                     if(shouldFlip)
+                     {
+                        ENUM_ORDER_TYPE flipType = (flipDir == 1) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+                        ENTRY_QUALITY   flipQual = (revScore >= 0.90) ? EQ_ELITE
+                                                 : (revScore >= 0.80) ? EQ_STRONG : EQ_GOOD;
+                        Print("[FLIP & REVERSE] Opening ", (flipDir==1?"BUY":"SELL"),
+                              " | Score=", DoubleToString(revScore,2),
+                              " | Risk=", DoubleToString(flipRisk,3), "%");
+                        if(ExecuteTrade(flipType, flipRisk, "FlipRev", flipQual))
+                        {
+                           g_lastFlipTime = TimeCurrent();
+                           g_lastFlipDir  = flipDir;
+                           g_flipBarCount = InpFlipRev_CooldownBars;
+                           int lastIdx = ArraySize(g_states) - 1;
+                           double ep = PositionSelectByTicket(g_states[lastIdx].ticket)
+                                      ? PositionGetDouble(POSITION_PRICE_OPEN)
+                                      : (flipDir == 1 ? symbolInfo.Ask() : symbolInfo.Bid());
+                           g_activeGroupId = CreateTradeGroup(flipDir, g_states[lastIdx].ticket,
+                                                               ep, g_states[lastIdx].initialSLDist, flipRisk);
+                           g_states[lastIdx].groupId = g_activeGroupId;
+                           if(InpEnableMobileAlerts)
+                              SendNotification("[FLIPPED] " + _Symbol +
+                                               (flipDir==1?" NOW LONG":" NOW SHORT") +
+                                               " Score=" + DoubleToString(revScore,2));
+                        }
+                     }
+                     continue;
+                  }
+               }
+            }
+         }
+      }
+      else if(InpUseConflFlipExit)
+      {
+         // --- LEGACY CONFLUENCE FLIP EXIT ---
+         bool flipConditionMet = false;
+         string flipReason = "";
+         if(pType == POSITION_TYPE_BUY)
+         {
+            bool sellDominates = (g_cachedSellScore >= InpConflFlipMinScore) &&
+                                 (g_cachedSellScore - g_cachedBuyScore >= InpConflFlipDelta);
+            bool stageOk = !InpConflFlipOnlyAfterStage0 || (g_states[sIdx].currentStage >= 0);
+            if(sellDominates && stageOk)
+            {
+               flipConditionMet = true;
+               flipReason = StringFormat("BUY→FLIP: Sell=%.1f Buy=%.1f D=%.1f",
+                                         g_cachedSellScore, g_cachedBuyScore,
+                                         g_cachedSellScore - g_cachedBuyScore);
+            }
+         }
+         else
+         {
+            bool buyDominates = (g_cachedBuyScore >= InpConflFlipMinScore) &&
+                                (g_cachedBuyScore - g_cachedSellScore >= InpConflFlipDelta);
+            bool stageOk = !InpConflFlipOnlyAfterStage0 || (g_states[sIdx].currentStage >= 0);
+            if(buyDominates && stageOk)
+            {
+               flipConditionMet = true;
+               flipReason = StringFormat("SELL→FLIP: Buy=%.1f Sell=%.1f D=%.1f",
+                                         g_cachedBuyScore, g_cachedSellScore,
+                                         g_cachedBuyScore - g_cachedSellScore);
+            }
+         }
+         if(flipConditionMet)
+         {
+            Print("[LEGACY FLIP EXIT] #", ticket, " | ", flipReason,
+                  " | ProfitR=", DoubleToString(profitR, 2));
+            if(InpEnableMobileAlerts)
+               SendNotification("[FLIP] " + _Symbol + " " + flipReason);
+            if(trade.PositionClose(ticket)) continue;
+         }
+      }
+
       // Skip trailing if Mode 2 (Adaptive only) and TP is set
       if(InpTPMode == 2 && tp > 0 && InpTrailingMode == 0)
       {
@@ -1909,11 +2340,10 @@ void ManagePositions()
       if(InpTrailingMode >= 1)
       {
          // ============================================================
-         // PROFIT ESCALATOR: 4-Stage Profit Locking System
-         // Stage 1: Quick Lock   (+0.3R) -> SL near entry
-         // Stage 2: First Harvest (+0.7R) -> Close 30%, lock profit
-         // Stage 3: Second Harvest (+1.5R) -> Close 30% more, lock higher
-         // Stage 4: Runner       (+2.0R+) -> Let final 40% run with tight trail
+         // INFINITE ESCALATOR: N-Stage Dynamic Profit Locking
+         // Stage 0: Quick Lock (SL near entry, no harvest)
+         // Stage 1..N: Harvest declining %, ratchet SL up
+         // Runner: When volume < 2*minLot, stop harvesting, let it ride
          // ============================================================
 
          // --- Update Peak Profit Tracking (for time-decay trail) ---
@@ -1923,148 +2353,137 @@ void ManagePositions()
             g_states[sIdx].lastPeakTime = TimeCurrent();
          }
 
-         // --- STAGE 1: Quick Lock ---
-         // Move SL to entry - 0.1R (near-BE with buffer for noise)
-         double adaptStage1R = GetAdaptiveStageR(InpStage1_R, g_states[sIdx].entryScore);
-         if(!g_states[sIdx].stage1_locked && profitR >= adaptStage1R)
-         {
-            double stage1SL = (pType == POSITION_TYPE_BUY)
-                            ? open + (slDist * InpStage1_SL_R)   // e.g. entry - 0.1R
-                            : open - (slDist * InpStage1_SL_R);
-
-            bool canMove = (pType == POSITION_TYPE_BUY)
-                         ? (stage1SL > sl || sl == 0)
-                         : (stage1SL < sl || sl == 0);
-
-            if(canMove)
-            {
-               if(trade.PositionModify(ticket, stage1SL, tp))
-               {
-                  g_states[sIdx].stage1_locked = true;
-                  g_states[sIdx].beMovedToEntry = true; // Also mark legacy BE flag
-                  g_states[sIdx].locked_sl = stage1SL;
-                  Print("[ESCALATOR S1] Quick Lock @ ", DoubleToString(stage1SL, _Digits),
-                        " | ProfitR: ", DoubleToString(profitR, 2), "R");
-               }
-            }
-         }
-
-         // --- STAGE 2: First Harvest ---
-         // Close 30% of position + lock SL at entry + 0.1R (guaranteed profit)
-         double adaptStage2R = GetAdaptiveStageR(InpStage2_R, g_states[sIdx].entryScore);
-         double harvestPct2 = GetRegimeHarvestPct(2, g_currentRegime);
-         if(!g_states[sIdx].stage2_closed && profitR >= adaptStage2R)
-         {
-            double closeVol = NormalizeDouble(vol * (harvestPct2 / 100.0), 2);
-            double minV = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
-
-            if(closeVol >= minV && (vol - closeVol) >= minV)
-            {
-               if(trade.PositionClosePartial(ticket, closeVol))
-               {
-                  g_states[sIdx].stage2_closed = true;
-                  g_states[sIdx].partialClosed = true;
-                  learning.SetPartialClosed(ticket, true);
-
-                  // Lock SL at entry + InpStage2_SL_R
-                  double stage2SL = (pType == POSITION_TYPE_BUY)
-                                  ? open + (slDist * InpStage2_SL_R)
-                                  : open - (slDist * InpStage2_SL_R);
-
-                  bool canMove = (pType == POSITION_TYPE_BUY)
-                               ? (stage2SL > sl)
-                               : (stage2SL < sl);
-
-                  if(canMove)
-                  {
-                     trade.PositionModify(ticket, stage2SL, tp);
-                     g_states[sIdx].locked_sl = stage2SL;
-                  }
-
-                  Print("[ESCALATOR S2] First Harvest: ", DoubleToString(closeVol, 2),
-                        " lots closed @ ", DoubleToString(profitR, 2), "R | SL locked @ ",
-                        DoubleToString(stage2SL, _Digits));
-               }
-            }
-         }
-
-         // --- STAGE 3: Second Harvest ---
-         // Close another 30% + lock SL at +0.7R
-         double adaptStage3R = GetMFECalibratedStage3R(GetAdaptiveStageR(InpStage3_R, g_states[sIdx].entryScore));
-         double harvestPct3 = GetRegimeHarvestPct(3, g_currentRegime);
-         if(!g_states[sIdx].stage3_closed && g_states[sIdx].stage2_closed && profitR >= adaptStage3R)
-         {
-            // Recalculate volume from current position (after stage 2 partial)
-            double currentVol = 0;
-            if(PositionSelectByTicket(ticket))
-               currentVol = PositionGetDouble(POSITION_VOLUME);
-
-            // Close appropriate % of remaining based on regime
-            double closePercent = (harvestPct3 / (100.0 - harvestPct2)) * 100.0;
-            double closeVol = NormalizeDouble(currentVol * (closePercent / 100.0), 2);
-            double minV = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
-
-            if(closeVol >= minV && (currentVol - closeVol) >= minV)
-            {
-               if(trade.PositionClosePartial(ticket, closeVol))
-               {
-                  g_states[sIdx].stage3_closed = true;
-
-                  // Lock SL at entry + InpStage3_SL_R
-                  double stage3SL = (pType == POSITION_TYPE_BUY)
-                                  ? open + (slDist * InpStage3_SL_R)
-                                  : open - (slDist * InpStage3_SL_R);
-
-                  bool canMove = (pType == POSITION_TYPE_BUY)
-                               ? (stage3SL > sl)
-                               : (stage3SL < sl);
-
-                  if(canMove)
-                  {
-                     trade.PositionModify(ticket, stage3SL, tp);
-                     g_states[sIdx].locked_sl = stage3SL;
-                  }
-
-                  Print("[ESCALATOR S3] Second Harvest: ", DoubleToString(closeVol, 2),
-                        " lots closed @ ", DoubleToString(profitR, 2), "R | SL locked @ ",
-                        DoubleToString(stage3SL, _Digits));
-               }
-            }
-         }
-
-         // --- 4E: CHAOS EMERGENCY LOCK ---
+         // --- CHAOS EMERGENCY LOCK ---
          if(InpChaosEmergencyLock && InpAdaptiveEscalator && g_currentRegime == REGIME_CHAOS)
          {
-            // Force Stage 1 lock if not yet locked
-            if(!g_states[sIdx].stage1_locked && profitR > 0)
+            if(g_states[sIdx].currentStage < 0 && profitR > 0)
             {
+               // Force Quick Lock
                double emergSL = (pType == POSITION_TYPE_BUY)
-                              ? open + (slDist * InpStage1_SL_R)
-                              : open - (slDist * InpStage1_SL_R);
-               bool canMove = (pType == POSITION_TYPE_BUY) ? (emergSL > sl || sl == 0) : (emergSL < sl || sl == 0);
-               if(canMove && trade.PositionModify(ticket, emergSL, tp))
+                              ? open + (slDist * InpEsc_FirstSL_R)
+                              : open - (slDist * InpEsc_FirstSL_R);
+               bool canMoveE = (pType == POSITION_TYPE_BUY) ? (emergSL > sl || sl == 0) : (emergSL < sl || sl == 0);
+               if(canMoveE && trade.PositionModify(ticket, emergSL, tp))
                {
-                  g_states[sIdx].stage1_locked = true;
+                  g_states[sIdx].currentStage = 0;
                   g_states[sIdx].beMovedToEntry = true;
                   g_states[sIdx].locked_sl = emergSL;
-                  Print("[CHAOS LOCK] Emergency S1 lock @ ", DoubleToString(emergSL, _Digits));
+                  Print("[CHAOS LOCK] Emergency S0 @ ", DoubleToString(emergSL, _Digits));
                }
             }
-            // Force Stage 2 harvest if profit > 0.3R and not yet harvested
-            if(!g_states[sIdx].stage2_closed && profitR > 0.3)
+            if(g_states[sIdx].currentStage == 0 && profitR > 0.3 && !g_states[sIdx].isRunner)
             {
-               double closeVol2 = NormalizeDouble(vol * (GetRegimeHarvestPct(2, g_currentRegime) / 100.0), 2);
-               double minV2 = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
-               if(closeVol2 >= minV2 && (vol - closeVol2) >= minV2)
+               // Force first harvest
+               double chaosHarvest = GetRegimeHarvestPct(1, g_currentRegime);
+               if(CanHarvest(ticket, chaosHarvest))
                {
-                  if(trade.PositionClosePartial(ticket, closeVol2))
+                  double currentVolC = PositionGetDouble(POSITION_VOLUME);
+                  double closeVolC = NormalizeDouble(currentVolC * (chaosHarvest / 100.0), 2);
+                  if(trade.PositionClosePartial(ticket, closeVolC))
                   {
-                     g_states[sIdx].stage2_closed = true;
+                     g_states[sIdx].currentStage = 1;
+                     g_states[sIdx].totalHarvestedPct += chaosHarvest;
                      g_states[sIdx].partialClosed = true;
-                     double s2SL = (pType == POSITION_TYPE_BUY) ? open + (slDist * InpStage2_SL_R) : open - (slDist * InpStage2_SL_R);
-                     bool canMove2 = (pType == POSITION_TYPE_BUY) ? (s2SL > sl) : (s2SL < sl);
-                     if(canMove2) { trade.PositionModify(ticket, s2SL, tp); g_states[sIdx].locked_sl = s2SL; }
-                     Print("[CHAOS LOCK] Emergency S2 harvest: ", DoubleToString(closeVol2, 2), " lots @ ", DoubleToString(profitR, 2), "R");
+                     double chaosSL = (pType == POSITION_TYPE_BUY) ? open + (slDist * CalculateSLLockR(1)) : open - (slDist * CalculateSLLockR(1));
+                     bool canMoveC = (pType == POSITION_TYPE_BUY) ? (chaosSL > sl) : (chaosSL < sl);
+                     if(canMoveC) { trade.PositionModify(ticket, chaosSL, tp); g_states[sIdx].locked_sl = chaosSL; }
+                     Print("[CHAOS HARVEST] ", DoubleToString(closeVolC, 2), " lots @ ", DoubleToString(profitR, 2), "R");
+                  }
+               }
+            }
+         }
+
+         // --- N-STAGE ESCALATOR LOOP ---
+         if(!g_states[sIdx].isRunner)
+         {
+            for(int stage = g_states[sIdx].currentStage + 1; stage < InpEsc_MaxStages; stage++)
+            {
+               // MFE-calibrated trigger already includes score adaptation via GetAdaptiveStageR()
+               double triggerR = InpMFECalibration
+                               ? GetMFECalibratedStageR(stage, g_states[sIdx].entryScore)
+                               : GetAdaptiveStageR(stage, g_states[sIdx].entryScore);
+               if(profitR < triggerR) break; // Haven't reached next stage
+
+               if(stage == 0)
+               {
+                  // --- QUICK LOCK: Move SL, no harvest ---
+                  double lockSL = (pType == POSITION_TYPE_BUY)
+                                ? open + (slDist * InpEsc_FirstSL_R)
+                                : open - (slDist * InpEsc_FirstSL_R);
+                  bool canMove0 = (pType == POSITION_TYPE_BUY)
+                                ? (lockSL > sl || sl == 0)
+                                : (lockSL < sl || sl == 0);
+                  if(canMove0 && trade.PositionModify(ticket, lockSL, tp))
+                  {
+                     g_states[sIdx].beMovedToEntry = true;
+                     g_states[sIdx].locked_sl = lockSL;
+                     Print("[ESC S0] Quick Lock @ ", DoubleToString(lockSL, _Digits),
+                           " | R:", DoubleToString(profitR, 2));
+                  }
+               }
+               else
+               {
+                  // --- HARVEST STAGE: Partial close + ratchet SL ---
+                  double harvestPct = GetRegimeHarvestPct(stage, g_currentRegime);
+
+                  if(!CanHarvest(ticket, harvestPct))
+                  {
+                     // Volume too small to harvest - become RUNNER
+                     g_states[sIdx].isRunner = true;
+                     Print("[ESC] -> RUNNER at stage ", stage,
+                           " | Harvested: ", DoubleToString(g_states[sIdx].totalHarvestedPct, 1), "%",
+                           " | R:", DoubleToString(profitR, 2));
+                     break;
+                  }
+
+                  // Refresh volume after potential previous harvests in same tick
+                  if(!PositionSelectByTicket(ticket)) break;
+                  double currentVol = PositionGetDouble(POSITION_VOLUME);
+                  double closeVol = NormalizeDouble(currentVol * (harvestPct / 100.0), 2);
+
+                  if(trade.PositionClosePartial(ticket, closeVol))
+                  {
+                     g_states[sIdx].partialClosed = true;
+                     g_states[sIdx].totalHarvestedPct += harvestPct;
+                     if(stage == 1) learning.SetPartialClosed(ticket, true);
+
+                     // Ratchet SL to previous stage's trigger level
+                     double slLockR = CalculateSLLockR(stage);
+                     double stageSL = (pType == POSITION_TYPE_BUY)
+                                    ? open + (slDist * slLockR)
+                                    : open - (slDist * slLockR);
+                     bool canMoveS = (pType == POSITION_TYPE_BUY)
+                                   ? (stageSL > sl)
+                                   : (stageSL < sl);
+                     if(canMoveS)
+                     {
+                        // Refresh TP after partial close
+                        if(PositionSelectByTicket(ticket)) tp = PositionGetDouble(POSITION_TP);
+                        trade.PositionModify(ticket, stageSL, tp);
+                        g_states[sIdx].locked_sl = stageSL;
+                     }
+
+                     Print("[ESC S", stage, "] Harvest ", DoubleToString(harvestPct, 1), "% (",
+                           DoubleToString(closeVol, 2), " lots) @ ", DoubleToString(profitR, 2),
+                           "R | SL: ", DoubleToString(stageSL, _Digits),
+                           " | Total: ", DoubleToString(g_states[sIdx].totalHarvestedPct, 1), "%");
+
+                     // --- SCALE-IN CHECK at this stage ---
+                     if(g_states[sIdx].groupId > 0)
+                        TryScaleIn(g_states[sIdx].groupId, stage, profitR);
+                  }
+               }
+
+               g_states[sIdx].currentStage = stage;
+
+               // Update group highest stage
+               if(g_states[sIdx].groupId > 0)
+               {
+                  int gIdx = FindGroupIndex(g_states[sIdx].groupId);
+                  if(gIdx >= 0 && stage > g_groups[gIdx].highestStage)
+                  {
+                     g_groups[gIdx].highestStage = stage;
+                     ApplyGroupSLFloor(g_states[sIdx].groupId);
                   }
                }
             }
@@ -2072,8 +2491,8 @@ void ManagePositions()
 
          // ============================================================
          // DYNAMIC ATR TRAILING SYSTEM (with time-decay tightening)
-         // Now applies to the RUNNER portion (final 40% after Stage 3)
-         // or to full position if stages haven't triggered yet
+         // Applies to RUNNER (after harvests exhausted) or full position
+         // if stages haven't triggered yet
          // ============================================================
          if(profitR >= InpBE_Threshold_R)
          {
@@ -2102,7 +2521,7 @@ void ManagePositions()
                 // We already secured 80% of profits in Stage 2+3, so this runner gets room
                 // InpRunnerTrailTight < 1.0 = tighter, > 1.0 = wider
                 // For scalping: use wider trail (1.5x) so the runner can reach 2-3R
-                if(g_states[sIdx].stage3_closed)
+                if(g_states[sIdx].isRunner)
                 {
                    // Runner gets breathing room — widen trail to let it ride
                    dynMult *= 1.5;  // 1.5x wider trail for the runner portion
@@ -2115,7 +2534,7 @@ void ManagePositions()
                 // EXCEPTION: Runner gets 3x more patience (let it ride for the home run)
                 double minutesSincePeak = (double)(TimeCurrent() - g_states[sIdx].lastPeakTime) / 60.0;
                 double staleMins = InpTimeStaleMins;
-                if(g_states[sIdx].stage3_closed) staleMins *= 3.0;  // Runner: 30 min patience instead of 10
+                if(g_states[sIdx].isRunner) staleMins *= 3.0;  // Runner: 30 min patience instead of 10
 
                 if(minutesSincePeak > staleMins)
                    dynMult *= InpTimeStaleTight2;  // Aggressive tightening
@@ -2123,7 +2542,7 @@ void ManagePositions()
                    dynMult *= InpTimeStaleTight1;  // Moderate tightening
 
                 // Step 6: RSI MOMENTUM TRAIL (Adaptive Escalator 4D)
-                if(InpMomentumTrail && InpAdaptiveEscalator && g_states[sIdx].stage3_closed)
+                if(InpMomentumTrail && InpAdaptiveEscalator && g_states[sIdx].isRunner)
                 {
                    double rsiArr[1], rsiArr3[1];
                    if(CopyBuffer(hRSI, 0, 0, 1, rsiArr) == 1 && CopyBuffer(hRSI, 0, 3, 1, rsiArr3) == 1)
@@ -2205,7 +2624,7 @@ void ManagePositions()
                             " ce=", DoubleToString(chandelierSL,_Digits),
                             " best=", DoubleToString(bestSL,_Digits),
                             " R=", DoubleToString(profitR,2),
-                            g_states[sIdx].stage3_closed ? " [RUNNER]" : "");
+                            g_states[sIdx].isRunner ? " [RUNNER]" : "");
                    }
                 }
              }
@@ -2301,50 +2720,8 @@ void OnTrade()
    }
 }
 
-//+------------------------------------------------------------------+
-//| Check Add-On Opportunity                                          |
-//+------------------------------------------------------------------+
-void CheckAddOnOpportunity()
-{
-   double totalR = GetTotalProfitR();
-   double currentScore = CalculateConfluenceScore(g_entryDirection);
-
-   if(!g_addOn1Triggered && g_positionCount < InpMaxPositions)
-   {
-      if(totalR >= InpAddOn1_R && currentScore >= InpMinConfluenceEntry)
-      {
-         GovernorRequest req = allocator.BuildRequest(_Symbol, InpRiskAddOn1, killSwitch.GetWinRate(), killSwitch.GetRollingR(), (int)g_currentRegime);
-         double approved = allocator.RequestRisk(req);
-         if(approved > 0.05)
-         {
-            ENUM_ORDER_TYPE type = (g_entryDirection == 1) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
-            if(ExecuteTrade(type, approved, "Add1", EQ_GOOD))
-            {
-               g_addOn1Triggered = true;
-               Print("ADD #1 | R:", DoubleToString(totalR,1), " | Risk:", approved);
-            }
-         }
-      }
-   }
-
-   if(!g_addOn2Triggered && g_addOn1Triggered && g_positionCount < InpMaxPositions)
-   {
-      if(totalR >= InpAddOn2_R && currentScore >= InpMinConfluenceEntry + 1)
-      {
-         GovernorRequest req = allocator.BuildRequest(_Symbol, InpRiskAddOn2, killSwitch.GetWinRate(), killSwitch.GetRollingR(), (int)g_currentRegime);
-         double approved = allocator.RequestRisk(req);
-         if(approved > 0.05)
-         {
-            ENUM_ORDER_TYPE type = (g_entryDirection == 1) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
-            if(ExecuteTrade(type, approved, "Add2", EQ_GOOD))
-            {
-               g_addOn2Triggered = true;
-               Print("ADD #2 | R:", DoubleToString(totalR,1), " | Risk:", approved);
-            }
-         }
-      }
-   }
-}
+// NOTE: CheckAddOnOpportunity() removed — pyramiding now handled by
+// TryScaleIn() inside the Infinite Escalator loop in ManagePositions()
 
 //+------------------------------------------------------------------+
 //| PHASE 1: Update all indicators once per bar with caching          |
@@ -2446,6 +2823,99 @@ void BuildConfluenceFactors(ConfluenceFactors &factors, int direction, double sc
    factors.killzone = KILLZONE_NONE;
    factors.regime = g_currentRegime;
    factors.confluenceScore = score;
+}
+
+//+------------------------------------------------------------------+
+//| SMART REVERSAL: Regime gate                                       |
+//+------------------------------------------------------------------+
+bool IsReversalAllowedInRegime()
+{
+   if(InpRevRegimeGate == 0) return false;
+   if(g_currentRegime == REGIME_CHAOS) return false;
+   if(InpRevRegimeGate == 1) return (g_currentRegime == REGIME_TREND);
+   if(InpRevRegimeGate == 2) return (g_currentRegime == REGIME_TREND || g_currentRegime == REGIME_RANGE);
+   return true; // gate==3: all except CHAOS
+}
+
+//+------------------------------------------------------------------+
+//| SMART REVERSAL: Multi-signal reversal score 0.0-1.0              |
+//+------------------------------------------------------------------+
+double CalcReversalScore(int posDir)
+{
+   int oppDir = -posDir;
+   double choch = 0, diverg = 0, sweep = 0, veloc = 0;
+
+   // --- Signal 1: CHoCH structural break ---
+   if(InpRevW_CHoCH > 0 && smcStructure.IsCHoCH())
+   {
+      ENUM_STRUCTURE_TYPE bt = smcStructure.GetLastBreakType();
+      bool oppCHoCH = (posDir ==  1 && bt == STRUCT_CHOCH_BEARISH) ||
+                      (posDir == -1 && bt == STRUCT_CHOCH_BULLISH);
+      if(oppCHoCH)
+      {
+         datetime breakTime = smcStructure.GetLastBreakTime();
+         int barsSince = iBarShift(_Symbol, PERIOD_CURRENT, breakTime, false);
+         if(barsSince >= 0 && barsSince <= InpRevCHoCH_MaxBars) choch = 1.0;
+      }
+   }
+
+   // --- Signal 2: RSI divergence (opposite direction) ---
+   if(InpRevW_Divergence > 0)
+   {
+      double divRaw = (oppDir == 1) ? g_cachedDivergenceScore_Buy : g_cachedDivergenceScore_Sell;
+      diverg = MathMin(divRaw, 1.5) / 1.5;
+   }
+
+   // --- Signal 3: Liquidity sweep aligned with opposite direction ---
+   if(InpRevW_LiqSweep > 0)
+      sweep = smcLiquidity.IsSweepAligned(oppDir) ? 1.0 : 0.0;
+
+   // --- Signal 4: Score velocity (opp accelerating, own decelerating) ---
+   if(InpRevW_ScoreVelocity > 0)
+   {
+      double ownPrev = (posDir ==  1) ? g_prevBuyScore  : g_prevSellScore;
+      double oppPrev = (posDir ==  1) ? g_prevSellScore : g_prevBuyScore;
+      double ownNow  = (posDir ==  1) ? g_cachedBuyScore  : g_cachedSellScore;
+      double oppNow  = (posDir ==  1) ? g_cachedSellScore : g_cachedBuyScore;
+      double velRaw  = (oppNow - oppPrev) - (ownNow - ownPrev);
+      veloc = MathMax(0.0, MathMin(velRaw / 5.0, 1.0));
+   }
+
+   // --- Weighted sum, normalized by actual weight total ---
+   double weightSum = InpRevW_CHoCH + InpRevW_Divergence + InpRevW_LiqSweep + InpRevW_ScoreVelocity;
+   if(weightSum <= 0) return 0.0;
+   double raw = choch  * InpRevW_CHoCH
+              + diverg * InpRevW_Divergence
+              + sweep  * InpRevW_LiqSweep
+              + veloc  * InpRevW_ScoreVelocity;
+   return MathMin(raw / weightSum, 1.0);
+}
+
+//+------------------------------------------------------------------+
+//| SMART REVERSAL: Build reason string for logging                   |
+//+------------------------------------------------------------------+
+string BuildReversalReason(int posDir, double score)
+{
+   int oppDir = -posDir;
+   string r = "";
+
+   if(InpRevW_CHoCH > 0 && smcStructure.IsCHoCH())
+   {
+      ENUM_STRUCTURE_TYPE bt = smcStructure.GetLastBreakType();
+      bool oppCHoCH = (posDir ==  1 && bt == STRUCT_CHOCH_BEARISH) ||
+                      (posDir == -1 && bt == STRUCT_CHOCH_BULLISH);
+      if(oppCHoCH) r += "CHoCH ";
+   }
+   double divRaw = (oppDir == 1) ? g_cachedDivergenceScore_Buy : g_cachedDivergenceScore_Sell;
+   if(divRaw >= 0.3) r += "DIV(" + DoubleToString(divRaw, 1) + ") ";
+   if(smcLiquidity.IsSweepAligned(oppDir)) r += "SWEEP ";
+   double ownPrev = (posDir ==  1) ? g_prevBuyScore  : g_prevSellScore;
+   double oppPrev = (posDir ==  1) ? g_prevSellScore : g_prevBuyScore;
+   double ownNow  = (posDir ==  1) ? g_cachedBuyScore  : g_cachedSellScore;
+   double oppNow  = (posDir ==  1) ? g_cachedSellScore : g_cachedBuyScore;
+   double velRaw  = (oppNow - oppPrev) - (ownNow - ownPrev);
+   if(velRaw > 0) r += "VEL(+" + DoubleToString(velRaw, 1) + ") ";
+   return "Score=" + DoubleToString(score, 2) + " [" + r + "]";
 }
 
 //+------------------------------------------------------------------+
@@ -2674,6 +3144,10 @@ double CalculateConfluenceScore(int direction)
    outFactors.killzone       = KILLZONE_NONE;
    outFactors.regime         = g_currentRegime;
    outFactors.confluenceScore = score;
+
+   // Write back to global factors
+   if(direction == 1) g_lastBuyFactors = outFactors;
+   else g_lastSellFactors = outFactors;
 
    return score;  // Max possible: ~30-37 points (with clustering bonus)
 }
@@ -2930,8 +3404,8 @@ void UpdateDashboard()
       sellS = CalculateConfluenceScore(-1);
    }
 
-   string govStatus = allocator.IsGovernorActive() ? "Connected " + DoubleToString(GetRiskMultiplier()*100,0) + "%" : "Standalone";
-   string tradingStatus = IsTradingEnabled() ? "ACTIVE" : "BLOCKED";
+   string govStatus = InpStandaloneMode ? "STANDALONE" : (allocator.IsGovernorActive() ? "Connected " + DoubleToString(GetRiskMultiplier()*100,0) + "%" : "Standalone");
+   string tradingStatus = InpStandaloneMode ? "ACTIVE (Solo)" : (IsTradingEnabled() ? "ACTIVE" : "BLOCKED");
 
    // Check for blocks
    if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) tradingStatus = "NEWS BLOCKED";
@@ -3018,6 +3492,50 @@ void UpdateDashboard()
    txt += "-------------------------------------------\n";
    txt += "Positions: " + IntegerToString(g_positionCount) + "/" + IntegerToString(InpMaxPositions) + "\n";
    txt += "Total R: " + DoubleToString(totalR, 2) + "\n";
+
+   // Escalator & Group info for active positions
+   for(int si = 0; si < ArraySize(g_states); si++)
+   {
+      if(!PositionSelectByTicket(g_states[si].ticket)) continue;
+      string tag = g_states[si].isRunner ? " [RUNNER]" : "";
+      string addon = g_states[si].isAddOn ? " Pyr#" + IntegerToString(g_states[si].addOnIndex) : "";
+      string staleTag = "";
+      if(InpUseStaleTrade && g_states[si].currentStage < 0 && InpStaleBarLimit > 0)
+      {
+         int pct = (int)(100.0 * g_states[si].barsAtStageNeg1 / InpStaleBarLimit);
+         staleTag = " STALE:" + IntegerToString(g_states[si].barsAtStageNeg1) + "/" + IntegerToString(InpStaleBarLimit) + "b";
+         if(pct >= 75) staleTag += "!";
+      }
+      txt += "#" + IntegerToString((int)g_states[si].ticket) + addon +
+             " S" + IntegerToString(g_states[si].currentStage) +
+             " H:" + DoubleToString(g_states[si].totalHarvestedPct, 0) + "%" +
+             tag + staleTag + "\n";
+   }
+
+   // Smart Reversal live score
+   if(g_positionCount > 0)
+   {
+      int posDir = (g_entryDirection != 0) ? g_entryDirection : 1;
+      if(InpUseSmartReversal)
+      {
+         double revScore = CalcReversalScore(posDir);
+         txt += "REV SCORE: " + DoubleToString(revScore, 2) +
+                "/" + DoubleToString(InpRevExitThreshold, 2);
+         if(revScore >= InpRevExitThreshold)      txt += " [EXIT!]";
+         else if(revScore >= InpRevExitThreshold * 0.75) txt += " [WARNING]";
+         if(revScore >= InpFlipRev_MinScore)      txt += " [FLIP!]";
+         txt += "\n";
+      }
+      else if(InpUseConflFlipExit)
+      {
+         double oppScore = (posDir == 1) ? g_cachedSellScore : g_cachedBuyScore;
+         double ownScore = (posDir == 1) ? g_cachedBuyScore  : g_cachedSellScore;
+         double delta    = oppScore - ownScore;
+         if(delta > 0)
+            txt += "FLIP RISK: opp=" + DoubleToString(oppScore,1) + " own=" + DoubleToString(ownScore,1) +
+                   " D=" + DoubleToString(delta,1) + "/" + DoubleToString(InpConflFlipDelta,1) + "\n";
+      }
+   }
 
    // Kelly stats
    if(InpUseKelly)

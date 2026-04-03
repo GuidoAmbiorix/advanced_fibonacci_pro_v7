@@ -7,61 +7,60 @@
 #define PORTFOLIO_GLOBALS_MQH
 
 //+------------------------------------------------------------------+
-//| BROKER SUFFIX DETECTION (Cent accounts, .pro, .x, etc.)          |
+//| SYMBOL NORMALIZATION (Generic suffix handling)                    |
 //+------------------------------------------------------------------+
-string g_brokerSuffix = "";     // Detected broker suffix (e.g. "c" for Exness cent)
-bool   g_suffixDetected = false;
 
-// Detect broker suffix from _Symbol (call once in OnInit)
-void DetectBrokerSuffix()
+// Normalize symbol by stripping known broker suffixes (.pro, .raw, .x, c, m, etc.)
+// Returns clean base symbol (e.g. "EURUSDc" -> "EURUSD", "XAUUSD.pro" -> "XAUUSD")
+string NormalizeSymbol(string symbol)
 {
-   if(g_suffixDetected) return;
-   g_suffixDetected = true;
+   string sym = symbol;
+   StringToUpper(sym);
 
-   string sym = _Symbol;
+   // Strip known dot-suffixes first
+   string dotSuffixes[] = {".PRO", ".RAW", ".STD", ".ECN", ".STP", ".X"};
+   for(int i = 0; i < ArraySize(dotSuffixes); i++)
+   {
+      int pos = StringFind(sym, dotSuffixes[i]);
+      if(pos > 0)
+      {
+         sym = StringSubstr(sym, 0, pos);
+         return sym;
+      }
+   }
+
+   // For FX pairs (6+ chars): check if first 6 are valid currencies, strip remainder
    int len = StringLen(sym);
-   if(len <= 6) { g_brokerSuffix = ""; return; }
-
-   // Check if first 6 chars are a valid currency pair
-   string upper = sym;
-   StringToUpper(upper);
-   string first3 = StringSubstr(upper, 0, 3);
-   string mid3   = StringSubstr(upper, 3, 3);
-
-   string currencies[] = {"EUR","USD","GBP","JPY","AUD","NZD","CAD","CHF","XAU","XAG","HKD","SGD","NOK","SEK","MXN","ZAR"};
-   bool validFirst = false, validMid = false;
-   for(int i = 0; i < ArraySize(currencies); i++)
+   if(len > 6)
    {
-      if(first3 == currencies[i]) validFirst = true;
-      if(mid3   == currencies[i]) validMid = true;
+      string first3 = StringSubstr(sym, 0, 3);
+      string mid3   = StringSubstr(sym, 3, 3);
+
+      string currencies[] = {"EUR","USD","GBP","JPY","AUD","NZD","CAD","CHF","XAU","XAG","HKD","SGD","NOK","SEK","MXN","ZAR"};
+      bool validFirst = false, validMid = false;
+      for(int j = 0; j < ArraySize(currencies); j++)
+      {
+         if(first3 == currencies[j]) validFirst = true;
+         if(mid3   == currencies[j]) validMid = true;
+      }
+
+      if(validFirst && validMid)
+         return StringSubstr(sym, 0, 6);
    }
 
-   if(validFirst && validMid)
-   {
-      g_brokerSuffix = StringSubstr(sym, 6);
-      Print("[BROKER] Detected suffix: '", g_brokerSuffix, "' from ", sym);
-   }
+   return sym;
 }
 
-// Append broker suffix to a base symbol (e.g. "EURUSD" -> "EURUSDc")
-string BrokerSymbol(string baseSymbol)
-{
-   return baseSymbol + g_brokerSuffix;
-}
-
-// Strip broker suffix from a symbol (e.g. "EURUSDc" -> "EURUSD")
+// Backward-compatible wrappers for legacy code
 string StripBrokerSuffix(string symbol)
 {
-   if(g_brokerSuffix == "") return symbol;
-   int suffixLen = StringLen(g_brokerSuffix);
-   int symLen = StringLen(symbol);
-   if(symLen > suffixLen)
-   {
-      string tail = StringSubstr(symbol, symLen - suffixLen);
-      if(tail == g_brokerSuffix)
-         return StringSubstr(symbol, 0, symLen - suffixLen);
-   }
-   return symbol;
+   return NormalizeSymbol(symbol);
+}
+
+// Legacy: returns symbol as-is (no suffix needed for standard accounts)
+string BrokerSymbol(string baseSymbol)
+{
+   return baseSymbol;
 }
 
 //+------------------------------------------------------------------+
