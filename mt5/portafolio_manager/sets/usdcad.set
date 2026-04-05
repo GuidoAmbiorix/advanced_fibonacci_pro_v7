@@ -1,5 +1,5 @@
-; USDCAD - H4 Timeframe - Swing Trading
-; Account: Standard | Strategy: H4 Swing, Adaptive TP, Smart Trailing
+; USDCAD - H4 - CONSERVATIVE LIVE SET
+; PURPOSE: Real account / live trading. Capital preservation first.
 
 InpMagicNumber=100003
 InpDirection=0
@@ -20,7 +20,7 @@ InpZoneTolerance=0.25
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
-InpDisplacementATR=1.2
+InpDisplacementATR=1.0
 InpDisplacementLookback=5
 
 ;═══════ RSI ═══════
@@ -36,26 +36,26 @@ InpEMA_MinSlope=0.1
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.75
+InpChopThreshold=0.70
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=8
+InpMinConfluenceEntry=16
 InpDominanceThreshold=2.0
-InpMaxPositions=3
+InpMaxPositions=1
 
-;═══════ RISK (Before Governor Scaling) ═══════
-InpRiskBase=100.0
-InpMaxRisk=100.0
-InpMaxLotsPerTrade=5.0
-InpEnableMarginCheck=false
+;═══════ RISK ═══════
+InpRiskBase=1.0
+InpMaxRisk=1.0
+InpMaxLotsPerTrade=2.0
+InpEnableMarginCheck=true
 
 ;═══════ TAKE PROFIT ═══════
 InpTPMode=2
-InpFixedTP_R=4.0
+InpFixedTP_R=3.0
 InpMinTP_R=2.0
-InpMaxTP_R=8.0
-InpTPUseLearnedMFE=true
+InpMaxTP_R=5.0
+InpTPUseLearnedMFE=false
 
 ;═══════ TRAILING STOP ═══════
 InpTrailingMode=1
@@ -64,85 +64,57 @@ InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
 InpMinVolatilityPips=5.0
-InpMaxVolatilityFactor=3.0
+InpMaxVolatilityFactor=2.5
 InpVolatilityTP_Mult=3.0
 
 ;═══════ PARTIAL TP & TRAILING ═══════
 InpPartialTP_R=1.0
 InpPartialClosePercent=50.0
-InpBE_Threshold_R=0.8
+InpBE_Threshold_R=0.7
 InpTrailStart_R=0.8
 InpTrailATR_Mult=1.5
-InpTrailDecayRate=0.25
+InpTrailDecayRate=0.20
 InpTrailMinMult=0.50
 InpTrailRegimeAware=true
 InpTrailMinBufferATR=0.35
 
 ;═══════ INFINITE ESCALATOR ═══════
 InpEsc_FirstR=0.5
-InpEsc_FirstSL_R=-0.1
+InpEsc_FirstSL_R=-0.05
 InpEsc_StepR=0.7
-InpEsc_GrowthFactor=1.3
-InpEsc_BaseHarvest=12.0
-InpEsc_HarvestDecay=0.85
-InpEsc_MinHarvest=3.0
-InpEsc_MaxStages=20
-InpRunnerTrailTight=0.75
-InpTimeStaleMins=240.0
-InpTimeStaleTight1=0.8
-InpTimeStaleTight2=0.65
+InpEsc_GrowthFactor=1.2
+InpEsc_BaseHarvest=25.0
+InpEsc_HarvestDecay=0.80
+InpEsc_MinHarvest=5.0
+InpEsc_MaxStages=10
+InpRunnerTrailTight=0.70
+InpTimeStaleMins=200.0
+InpTimeStaleTight1=0.75
+InpTimeStaleTight2=0.60
 
 ;═══════ SCALE-IN PYRAMID ═══════
-InpPyr_Enable=true
+InpPyr_Enable=false
 InpPyr_Frequency=3
-InpPyr_FirstRiskPct=0.15
+InpPyr_FirstRiskPct=0.10
 InpPyr_RiskDecay=0.70
-InpPyr_MinRiskPct=0.05
-InpPyr_MaxAddOns=3
-InpPyr_MinProfitR=1.0
-InpAgg_MaxTotalRisk=1.2
-InpAgg_MaxPositions=4
+InpPyr_MinRiskPct=0.03
+InpPyr_MaxAddOns=2
+InpPyr_MinProfitR=1.5
+InpAgg_MaxTotalRisk=1.0
+InpAgg_MaxPositions=1
 
 ;═══════ ADAPTIVE ESCALATOR ═══════
 InpAdaptiveEscalator=true
 InpScoreAdaptFactor=0.05
 InpRegimeHarvest=true
-InpMFECalibration=true
+InpMFECalibration=false
 InpMomentumTrail=true
 InpChaosEmergencyLock=true
 InpFridayCloseHour=22
 
-;═══════ CONFLUENCE FLIP EXIT (legacy fallback) ═══════
-InpUseConflFlipExit=false
-InpConflFlipMinScore=10.0
-InpConflFlipDelta=3.0
-InpConflFlipOnlyAfterStage0=true
-
 ;═══════ STALE TRADE EXIT ═══════
 InpUseStaleTrade=true
-InpStaleBarLimit=8
-
-;═══════ SMART REVERSAL DETECTION ═══════
-InpUseSmartReversal=true
-InpUseMFERetraceExit=true
-InpUseFlipAndReverse=true
-InpRevW_CHoCH=0.40
-InpRevW_Divergence=0.25
-InpRevW_LiqSweep=0.20
-InpRevW_ScoreVelocity=0.15
-InpRevExitThreshold=0.55
-InpRevExitMinScore=8.0
-InpRevOnlyAfterStage0=true
-InpRevCHoCH_MaxBars=5
-InpRevRegimeGate=3
-InpMFERetrace_Threshold=0.40
-InpMFERetrace_MinPeakR=1.0
-InpMFERetrace_AfterStage0=true
-InpFlipRev_MinScore=0.75
-InpFlipRev_RiskPct=0.20
-InpFlipRev_CooldownBars=2
-InpFlipRev_RequireMFE=true
-InpFlipRev_MinPeakR=0.5
+InpStaleBarLimit=6
 
 ;═══════ SPREAD ═══════
 InpMaxSpreadPoints=30
@@ -150,8 +122,8 @@ InpMaxSpreadPoints=30
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
 InpSMC_SwingLookback=20
-InpSMC_MinImpulseATR=2.0
-InpSMC_MinFVG_ATR=0.5
+InpSMC_MinImpulseATR=1.8
+InpSMC_MinFVG_ATR=0.4
 
 ;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=true
@@ -166,17 +138,17 @@ InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=3.0
-InpVolatilitySpikeCooldown=30
+InpVolatilityThreshold=2.5
+InpVolatilitySpikeCooldown=45
 
 ;═══════ KELLY POSITION SIZING ═══════
 InpUseKelly=false
 InpKellyFraction=0.5
-InpDailyMaxDD=3.0
-InpWeeklyMaxDD=6.0
+InpDailyMaxDD=2.0
+InpWeeklyMaxDD=4.0
 InpDailyTarget=0.0
 
-;═══════ LEARNING & ADAPTATION ═══════
+;═══════ LEARNING ═══════
 InpEnableLearning=true
 InpLogTradesToFile=true
 InpLearningHistory=180
@@ -185,24 +157,31 @@ InpMinTradesForLearning=50
 ;═══════ ADAPTIVE BEHAVIOR ═══════
 InpEnableAdaptiveRisk=false
 InpEnableAdaptiveExits=false
-InpEnableAdaptiveFilters=true
+InpEnableAdaptiveFilters=false
 
 ;═══════ PORTFOLIO PROTECTION ═══════
-InpUseCorrelationFilter=true
-InpDailyMaxLoss_R=6.0
-InpLossCooldownMinutes=30
-InpMaxConsecutiveLosses=3
+InpUseCorrelationFilter=false
+InpDailyMaxLoss_R=2.0
+InpLossCooldownMinutes=60
+InpMaxConsecutiveLosses=2
 InpMaxDailyTrades=3
 InpUseReversalFilter=true
-InpReversalCooldownMinutes=60
+InpReversalCooldownMinutes=90
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=2
+InpMaxTradesPerSession=1
 InpTradeCooldownMinutes=60
 InpCloseIntradayProfits=false
 InpEndOfDayHour=22
 
+;═══════ GOVERNOR ═══════
+InpGov_Enabled=true
+InpGov_DD_Reduce=5.0
+InpGov_DD_Pause=10.0
+InpGov_ReducedMult=0.5
+InpGov_DailyMaxDD=3.0
+
 ;═══════ VISUAL DEBUGGING ═══════
 InpEnableVisualLevels=true
-InpTickThrottleSeconds=60
+InpTickThrottleSeconds=30

@@ -1126,7 +1126,7 @@ void CreateVisualDashboard(double dd, double pf, double exposure, double riskMul
    y += 10;
    color statusColor = tradingEnabled ? clrLimeGreen : clrOrangeRed;
    string statusText = tradingEnabled ? "● ONLINE" : "● PAUSED";
-   CreateLabel("GovHeader", x+10, y, "🧠 GOAT INSTANT PRO $2500", clrGold, 11, true);
+   CreateLabel("GovHeader", x+10, y, "INFERNAL PORTFOLIO GOVERNOR v1.0", clrGold, 11, true);
    CreateLabel("GovStatus", x+320, y, statusText, statusColor, 10, true);
 
    // Market status indicator

@@ -65,7 +65,8 @@
       "Bash(sed -i 's/InpBE_Threshold_R=0.6/InpBE_Threshold_R=0.3/' \"$f\")",
       "Bash(sed -i 's/InpTrailStart_R=0.6/InpTrailStart_R=0.3/' \"$f\")",
       "Bash(head -2 sets/*.set)",
-      "Bash(pip3 list:*)"
+      "Bash(pip3 list:*)",
+      "Bash(\"/c/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/sets/gbpusd.set\":*)"
     ]
   }
 }

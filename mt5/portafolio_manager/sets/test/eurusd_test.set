@@ -1,14 +1,12 @@
-; EURUSD - H4 Timeframe - STANDALONE TEST
-; Account: Standard | Strategy: H4 Swing, Adaptive TP, Smart Trailing
-; PURPOSE: Testing without Governor - standalone backtest
-; LOAD: Strategy Tester > EURUSD H4 > Load this .set
+; EURUSD - H4 - CONSERVATIVE TEST SET
+; PURPOSE: Demo or live account testing. Capital preservation first.
+; LOAD: Strategy Tester OR attach to EURUSD H4 chart with Standalone=true
 
 InpMagicNumber=100001
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ GOVERNOR (STANDALONE) ═══════
-InpStandaloneMode=true
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
@@ -25,7 +23,7 @@ InpZoneTolerance=0.25
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
-InpDisplacementATR=1.2
+InpDisplacementATR=1.0
 InpDisplacementLookback=5
 
 ;═══════ RSI ═══════
@@ -41,28 +39,30 @@ InpEMA_MinSlope=0.1
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.75
+InpChopThreshold=0.70
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=15
-; TEST: Higher confluence - filter to only best setups for clean backtest results
-InpDominanceThreshold=3.0
-InpMaxPositions=3
+InpMinConfluenceEntry=19
+; TEST: Elite setups only - score 19+ required
+InpDominanceThreshold=2.0
+InpMaxPositions=1
+; One position at a time - no overlap risk
 
-;═══════ RISK ═══════
-InpRiskBase=100.0
-; TEST: Full balance risk - backtest mode, no real money
-InpMaxRisk=100.0
+;═══════ RISK - TEST ═══════
+InpRiskBase=50.0
+; TEST: 50% balance risk for backtest observation
+InpMaxRisk=50.0
 InpMaxLotsPerTrade=5.0
 InpEnableMarginCheck=false
 
 ;═══════ TAKE PROFIT ═══════
 InpTPMode=2
-InpFixedTP_R=4.0
+InpFixedTP_R=3.0
 InpMinTP_R=2.0
-InpMaxTP_R=8.0
-InpTPUseLearnedMFE=true
+InpMaxTP_R=6.0
+InpTPUseLearnedMFE=false
+; Disabled: not enough history on first run
 
 ;═══════ TRAILING STOP ═══════
 InpTrailingMode=1
@@ -71,102 +71,80 @@ InpTrailStepATR=0.5
 
 ;═══════ VOLATILITY FILTER ═══════
 InpMinVolatilityPips=5.0
-InpMaxVolatilityFactor=3.0
+InpMaxVolatilityFactor=2.5
+; Tighter: avoid entering in extreme volatility
 InpVolatilityTP_Mult=3.0
 
 ;═══════ PARTIAL TP & TRAILING ═══════
 InpPartialTP_R=1.0
 InpPartialClosePercent=50.0
-InpBE_Threshold_R=0.8
+InpBE_Threshold_R=0.7
+; Move to BE early - protect capital first
 InpTrailStart_R=0.8
 InpTrailATR_Mult=1.5
-InpTrailDecayRate=0.25
+InpTrailDecayRate=0.20
 InpTrailMinMult=0.50
 InpTrailRegimeAware=true
 InpTrailMinBufferATR=0.35
 
-;═══════ INFINITE ESCALATOR ═══════
+;═══════ INFINITE ESCALATOR - CONSERVATIVE ═══════
 InpEsc_FirstR=0.5
-InpEsc_FirstSL_R=-0.1
-InpEsc_StepR=0.7
-InpEsc_GrowthFactor=1.3
-InpEsc_BaseHarvest=15.0
-; TEST EURUSD: Harvest 15% per stage
-InpEsc_HarvestDecay=0.85
-InpEsc_MinHarvest=3.0
-InpEsc_MaxStages=20
-InpRunnerTrailTight=0.75
-InpTimeStaleMins=240.0
-InpTimeStaleTight1=0.8
-InpTimeStaleTight2=0.65
+; Quick lock at 0.5R - get to breakeven fast
+InpEsc_FirstSL_R=-0.05
+; Very tight post-lock buffer
+InpEsc_StepR=0.8
+InpEsc_GrowthFactor=1.2
+InpEsc_BaseHarvest=25.0
+; Harvest more per stage - lock in gains consistently
+InpEsc_HarvestDecay=0.80
+InpEsc_MinHarvest=5.0
+InpEsc_MaxStages=10
+; Cap at 10 stages - do not chase extended runners
+InpRunnerTrailTight=0.70
+InpTimeStaleMins=200.0
+InpTimeStaleTight1=0.75
+InpTimeStaleTight2=0.60
 
 ;═══════ SCALE-IN PYRAMID ═══════
-InpPyr_Enable=true
+InpPyr_Enable=false
+; DISABLED: No pyramiding in conservative test mode
 InpPyr_Frequency=3
-InpPyr_FirstRiskPct=0.15
+InpPyr_FirstRiskPct=0.10
 InpPyr_RiskDecay=0.70
-InpPyr_MinRiskPct=0.05
-InpPyr_MaxAddOns=3
-InpPyr_MinProfitR=1.0
-InpAgg_MaxTotalRisk=100.0
-; TEST: Full aggregate risk
-InpAgg_MaxPositions=6
+InpPyr_MinRiskPct=0.03
+InpPyr_MaxAddOns=2
+InpPyr_MinProfitR=1.5
+InpAgg_MaxTotalRisk=2.0
+; Max 2% aggregate risk even if pyramid were enabled
+InpAgg_MaxPositions=2
 
 ;═══════ ADAPTIVE ESCALATOR ═══════
 InpAdaptiveEscalator=true
 InpScoreAdaptFactor=0.05
 InpRegimeHarvest=true
-InpMFECalibration=true
+InpMFECalibration=false
 InpMomentumTrail=true
 InpChaosEmergencyLock=true
+; Emergency lock in chaos - critical for capital protection
 InpFridayCloseHour=22
-
-;═══════ CONFLUENCE FLIP EXIT (legacy fallback) ═══════
-InpUseConflFlipExit=false
-InpConflFlipMinScore=10.0
-InpConflFlipDelta=3.0
-InpConflFlipOnlyAfterStage0=true
 
 ;═══════ STALE TRADE EXIT ═══════
 InpUseStaleTrade=true
-InpStaleBarLimit=8
-
-;═══════ SMART REVERSAL DETECTION ═══════
-InpUseSmartReversal=true
-InpUseMFERetraceExit=true
-InpUseFlipAndReverse=true
-InpRevW_CHoCH=0.40
-InpRevW_Divergence=0.25
-InpRevW_LiqSweep=0.20
-InpRevW_ScoreVelocity=0.15
-InpRevExitThreshold=0.55
-InpRevExitMinScore=8.0
-InpRevOnlyAfterStage0=false
-; TEST: false - catch reversals earlier in backtest to observe behavior
-InpRevCHoCH_MaxBars=5
-InpRevRegimeGate=3
-InpMFERetrace_Threshold=0.40
-InpMFERetrace_MinPeakR=1.0
-InpMFERetrace_AfterStage0=true
-InpFlipRev_MinScore=0.75
-InpFlipRev_RiskPct=0.20
-InpFlipRev_CooldownBars=2
-InpFlipRev_RequireMFE=false
-; TEST: false - observe all flip signals regardless of MFE in backtest
-InpFlipRev_MinPeakR=0.5
+InpStaleBarLimit=6
+; Close stale trades faster - free capital sooner
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=30
+InpMaxSpreadPoints=25
+; Strict spread: only trade in good liquidity conditions
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
 InpSMC_SwingLookback=20
-InpSMC_MinImpulseATR=2.0
-InpSMC_MinFVG_ATR=0.5
+InpSMC_MinImpulseATR=1.8
+InpSMC_MinFVG_ATR=0.4
 
 ;═══════ MULTI-TIMEFRAME (OFF for backtest) ═══════
 InpUseMTF=false
-; TEST: MTF disabled - avoid history cache build errors in strategy tester
 InpHTF=49153
 InpMTF=16408
 InpMTF_EMAPeriod=50
@@ -178,17 +156,18 @@ InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=3.0
-InpVolatilitySpikeCooldown=30
+InpVolatilityThreshold=2.5
+; More sensitive spike detection
+InpVolatilitySpikeCooldown=45
 
 ;═══════ KELLY POSITION SIZING ═══════
 InpUseKelly=false
 InpKellyFraction=0.5
-InpDailyMaxDD=3.0
-InpWeeklyMaxDD=6.0
+InpDailyMaxDD=2.0
+InpWeeklyMaxDD=4.0
 InpDailyTarget=0.0
 
-;═══════ LEARNING (OFF for backtest) ═══════
+;═══════ LEARNING ═══════
 InpEnableLearning=false
 InpLogTradesToFile=false
 InpLearningHistory=180
@@ -198,27 +177,41 @@ InpMinTradesForLearning=50
 InpEnableAdaptiveRisk=false
 InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=false
-; TEST: Adaptive filters off - pure signal testing
 
 ;═══════ PORTFOLIO PROTECTION ═══════
 InpUseCorrelationFilter=false
-; TEST: No correlation filter - standalone single-symbol test
-InpDailyMaxLoss_R=6.0
-InpLossCooldownMinutes=30
-InpMaxConsecutiveLosses=3
-InpMaxDailyTrades=5
-; TEST: More daily trades allowed - observe frequency behavior
+InpDailyMaxLoss_R=3.0
+; Stop trading after 3R daily loss - hard rule
+InpLossCooldownMinutes=60
+; 1 hour cooldown after loss streak
+InpMaxConsecutiveLosses=2
+; Stop after 2 consecutive losses - investigate before continuing
+InpMaxDailyTrades=3
+; Quality over quantity
 InpUseReversalFilter=true
-InpReversalCooldownMinutes=60
+InpReversalCooldownMinutes=90
+; 90 min before retrying same direction
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=2
+InpMaxTradesPerSession=1
+; One trade per session - best setup only
 InpTradeCooldownMinutes=60
 InpCloseIntradayProfits=false
 InpEndOfDayHour=22
 
+;═══════ GOVERNOR ═══════
+InpGov_Enabled=true
+; Activate drawdown control during standalone/backtest testing
+InpGov_DD_Reduce=5.0
+; Reduce risk at 5% total drawdown from peak
+InpGov_DD_Pause=10.0
+; Pause trading at 10% total drawdown from peak
+InpGov_ReducedMult=0.5
+; Risk multiplier when in reduced mode (50% of normal risk)
+InpGov_DailyMaxDD=5.0
+; Stop trading for the day after 5% daily drawdown
+
 ;═══════ VISUAL DEBUGGING ═══════
 InpEnableVisualLevels=true
 InpTickThrottleSeconds=30
-; TEST: More frequent throttle - faster backtest response

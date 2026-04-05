@@ -19,7 +19,7 @@
 #include "Include\MarketRegime.mqh"
 #include "Include\KillSwitch.mqh"
 #include "Include\Learning_MFE_MAE.mqh"
-#include "Include\GovernorAllocator.mqh"
+#include "Include\SelfGovernor.mqh"
 
 // Smart Money Concepts Modules
 #include "Include\SMC_StructureBreak.mqh"
@@ -107,7 +107,11 @@ input double            InpDominanceThreshold = 2.0;      // Signal Dominance Th
 input int               InpMaxPositions = 3;
 
 input group "======= GOVERNOR ======="
-input bool              InpStandaloneMode = false;        // Standalone Mode (bypass Governor for testing)
+input bool              InpGov_Enabled     = true;   // Enable drawdown-based risk control
+input double            InpGov_DD_Reduce   = 5.0;    // Total DD % to start reducing risk
+input double            InpGov_DD_Pause    = 10.0;   // Total DD % to pause trading entirely
+input double            InpGov_ReducedMult = 0.5;    // Risk multiplier when in reduce zone
+input double            InpGov_DailyMaxDD  = 5.0;    // Daily DD % to stop trading for the day
 
 input group "======= RISK (Before Governor Scaling) ======="
 input double            InpRiskBase = 0.25;
@@ -174,42 +178,10 @@ input bool   InpMomentumTrail = true;            // RSI momentum trail for runne
 input bool   InpChaosEmergencyLock = true;       // Emergency lock in CHAOS regime
 input int    InpFridayCloseHour = 22;            // Friday close hour (broker time, 0=disabled)
 
-input group "======= CONFLUENCE FLIP EXIT ======="
-input bool   InpUseConflFlipExit = true;        // Exit when market scores flip direction
-input double InpConflFlipMinScore = 10.0;        // Opposite score must reach this minimum
-input double InpConflFlipDelta = 3.0;            // Opposite must exceed our direction by this delta
-input bool   InpConflFlipOnlyAfterStage0 = true; // Only flip-exit if Quick Lock was hit first
-
 input group "======= STALE TRADE EXIT ======="
 input bool   InpUseStaleTrade = true;            // Exit trades stuck below Quick Lock for too long
 input int    InpStaleBarLimit = 8;               // Bars at stage -1 (no Quick Lock yet) before exit
                                                   // H4: 8 bars = 32 hours. Set 0 to disable.
-
-input group "======= SMART REVERSAL DETECTION ======="
-input bool   InpUseSmartReversal      = true;    // Replace Confluence Flip with multi-signal score
-input bool   InpUseMFERetraceExit     = true;    // Exit when profit retreats from peak
-input bool   InpUseFlipAndReverse     = true;    // Open opposite trade after reversal exit
-// Signal weights (auto-normalized, set 0 to disable a signal)
-input double InpRevW_CHoCH            = 0.40;    // Weight: CHoCH structural break (most reliable)
-input double InpRevW_Divergence       = 0.25;    // Weight: RSI divergence (fires early)
-input double InpRevW_LiqSweep         = 0.20;    // Weight: Opposite liquidity sweep
-input double InpRevW_ScoreVelocity    = 0.15;    // Weight: Score velocity bar-over-bar
-// Exit thresholds
-input double InpRevExitThreshold      = 0.55;    // Reversal score to trigger exit (0-1)
-input double InpRevExitMinScore       = 8.0;     // Opposite confluence must be >= this
-input bool   InpRevOnlyAfterStage0    = true;    // Only exit after Quick Lock hit first
-input int    InpRevCHoCH_MaxBars      = 5;       // CHoCH older than this = stale (ignored)
-input int    InpRevRegimeGate         = 3;       // 0=off 1=TREND 2=TREND+RANGE 3=all except CHAOS
-// MFE Retrace Exit
-input double InpMFERetrace_Threshold  = 0.40;    // Exit if profitR < peakR*(1-threshold)
-input double InpMFERetrace_MinPeakR   = 1.0;     // Only activate if peak was >= this R
-input bool   InpMFERetrace_AfterStage0= true;    // Only activate after Quick Lock
-// Flip & Reverse
-input double InpFlipRev_MinScore      = 0.75;    // Reversal score required to also flip
-input double InpFlipRev_RiskPct       = 0.20;    // Risk % for the reversal trade
-input int    InpFlipRev_CooldownBars  = 2;       // Min bars between consecutive flip trades
-input bool   InpFlipRev_RequireMFE    = true;    // Only flip if original trade hit InpFlipRev_MinPeakR
-input double InpFlipRev_MinPeakR      = 0.5;     // Min peak R original trade must have reached
 
 input group "======= SPREAD ======="
 input int               InpMaxSpreadPoints = 50;
@@ -297,7 +269,7 @@ CFailSafe         failSafe;
 CMarketRegime     regime;
 CKillSwitch       killSwitch;
 CLearningEngine   learning;
-CGovernorAllocator allocator;
+CSelfGovernor      selfGov;
 
 // ADVANCED MODULE OBJECTS
 CVolumeAnalysis   volumeAnalysis;
@@ -357,6 +329,7 @@ double g_dailyLossR = 0;
 int    g_consecutiveLosses = 0;
 int    g_dailyTradesCount = 0;  // FIX: Track daily trades to prevent overtrading
 datetime g_lastResetDate = 0;
+
 datetime g_lastBuyTime = 0;    // Last BUY trade entry time
 datetime g_lastSellTime = 0;   // Last SELL trade entry time
 
@@ -368,11 +341,6 @@ datetime g_lastScoreCalcTime = 0;
 // Smart Reversal: previous cycle scores for velocity calculation
 double g_prevBuyScore  = 0;
 double g_prevSellScore = 0;
-
-// Flip & Reverse state
-datetime g_lastFlipTime = 0;
-int      g_lastFlipDir  = 0;
-int      g_flipBarCount = 0;
 
 // Friday close flag
 bool g_fridayCloseExecuted = false;
@@ -626,16 +594,14 @@ int OnInit()
    if(g_consecutiveLosses > 0)
       Print("Restored g_consecutiveLosses=", g_consecutiveLosses, " from GlobalVariable");
 
-   // Check if Governor is running
-   string govStatus = InpStandaloneMode ? "STANDALONE (Testing)" : (allocator.IsGovernorActive() ? "Connected" : "Standalone");
+   // Initialize self-contained Governor
+   selfGov.Init(InpGov_Enabled, InpGov_DD_Reduce, InpGov_DD_Pause, InpGov_ReducedMult, InpGov_DailyMaxDD);
 
    Print("===========================================");
    Print("  [START] SYMBOL ENGINE v2.0: ", _Symbol);
    Print("===========================================");
    Print("  Magic: ", InpMagicNumber);
-   Print("  Governor: ", govStatus);
-   if(InpStandaloneMode)
-      Print("  >>> STANDALONE MODE: Governor bypassed, using raw risk values <<<");
+   Print("  Governor: ", selfGov.GetStatus());
    Print("-------------------------------------------");
    Print("  CORE MODULES:");
    Print("    SMC Analysis: ", InpUseSMC ? "ON" : "OFF");
@@ -673,10 +639,8 @@ int OnInit()
    }
    Print("===========================================");
 
-   // Initialize Smart Reversal prev-scores to avoid cold-start velocity spike
    g_prevBuyScore  = 0;
    g_prevSellScore = 0;
-   g_flipBarCount  = 0;
 
    // Initialize indicators on startup
    Print("  Initializing indicators...");
@@ -1000,7 +964,7 @@ void OnTick()
    if(g_positionCount == 0) ResetTradeState();
 
    // --- GOVERNOR EMERGENCY CLOSE GUARD ---
-   if(!InpStandaloneMode && IsDailyTargetHit()) return; // Stop trailing/managing while Governor closes positions
+   if(!selfGov.IsTradingEnabled()) return; // Governor paused — do not manage positions during DD halt
 
    // --- FRIDAY PRE-WEEKEND BLOCK ---
    if(InpFridayCloseHour > 0)
@@ -1102,12 +1066,15 @@ void OnTick()
             }
             g_cachedBuyScore = 0;
             g_cachedSellScore = 0;
+            // Reset prev scores so velocity doesn't spike on next bar
+            g_prevBuyScore  = 0;
+            g_prevSellScore = 0;
          }
       }
 
       // --- RANKING SYSTEM: PUBLISH SCORE ---
       double maxScore = (g_cachedBuyScore > g_cachedSellScore) ? g_cachedBuyScore : g_cachedSellScore;
-      double direction = (g_cachedBuyScore > g_cachedSellScore) ? 1.0 : -1.0;
+      double direction = (maxScore <= 0) ? 0.0 : (g_cachedBuyScore > g_cachedSellScore) ? 1.0 : -1.0;
       
       GlobalVariableSet(GV_SCORE_PREFIX + _Symbol, maxScore);
       GlobalVariableSet(GV_REQ_PREFIX + _Symbol, InpMinConfluenceEntry);
@@ -1206,28 +1173,6 @@ void OnTick()
        }
    }
 
-   // --- RANKING GUARD (Dynamic Slots) --- Bypassed in Standalone Mode
-   if(!InpStandaloneMode)
-   {
-      double myRank = 999;
-      if(GlobalVariableCheck(GV_RANK_PREFIX + _Symbol))
-         myRank = GlobalVariableGet(GV_RANK_PREFIX + _Symbol);
-
-      // Fix #5: Read active slots published by RankManager (conservative default = 3)
-      double activeSlots = GlobalVariableGet("PG_ActiveSlots");
-      int maxRankAllowed = (activeSlots >= 2) ? (int)activeSlots : 3;
-
-      if(myRank > maxRankAllowed)
-      {
-         static datetime lastRankLog = 0;
-         if(TimeCurrent() - lastRankLog > 60)
-         {
-            Print("[RANK] Waiting: ", _Symbol, " rank #", (int)myRank, " / ", maxRankAllowed, " active slots");
-            lastRankLog = TimeCurrent();
-         }
-         return;
-      }
-   }
    // --- PORTFOLIO PROTECTION: LOSS COOLDOWN ---
    if(InpLossCooldownMinutes > 0 && g_lastLossTime > 0)
    {
@@ -1300,7 +1245,7 @@ void OnTick()
    }
 
    // Check Governor Trading Permission
-   if(!InpStandaloneMode && !IsTradingEnabled()) return;
+   if(!selfGov.IsTradingEnabled()) return;
 
    double buyScore = g_cachedBuyScore;
    double sellScore = g_cachedSellScore;
@@ -1400,19 +1345,8 @@ void OnTick()
       }
 
 
-      // GOVERNOR REQUEST
-      double approvedRisk = baseRisk;
-      if(!InpStandaloneMode)
-      {
-         GovernorRequest req = allocator.BuildRequest(
-             _Symbol,
-             baseRisk,
-             killSwitch.GetWinRate(),
-             killSwitch.GetRollingR(),
-             (int)g_currentRegime
-         );
-         approvedRisk = allocator.RequestRisk(req);
-      }
+      // GOVERNOR: apply drawdown multiplier and account hard cap
+      double approvedRisk = selfGov.ApproveRisk(baseRisk);
 
       if(approvedRisk > 0.05)
       {
@@ -1857,13 +1791,7 @@ void TryScaleIn(int groupId, int stageIndex, double profitR)
    if(addOnRisk > remainingBudget) addOnRisk = remainingBudget;
    if(addOnRisk < InpPyr_MinRiskPct) return; // Budget exhausted
 
-   // Governor approval
-   double approved = addOnRisk;
-   if(!InpStandaloneMode)
-   {
-      GovernorRequest req = allocator.BuildRequest(_Symbol, addOnRisk, killSwitch.GetWinRate(), killSwitch.GetRollingR(), (int)g_currentRegime);
-      approved = allocator.RequestRisk(req);
-   }
+   double approved = selfGov.ApproveRisk(addOnRisk);
    if(approved < 0.05) return;
 
    ENUM_ORDER_TYPE type = (g_groups[gIdx].direction == 1) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
@@ -1935,14 +1863,7 @@ double GetMFECalibratedStageR(int stageIndex, double entryScore = 0)
 //+------------------------------------------------------------------+
 void ManagePositions()
 {
-   // Flip & Reverse cooldown: decrement once per new bar
-   static datetime s_lastFlipCooldownBar = 0;
-   datetime curBar = iTime(_Symbol, PERIOD_CURRENT, 0);
-   if(curBar != s_lastFlipCooldownBar && g_flipBarCount > 0)
-   {
-      g_flipBarCount--;
-      s_lastFlipCooldownBar = curBar;
-   }
+
 
    // 1. Cleanup Closed Positions & Update Stats
    for(int i=ArraySize(g_states)-1; i>=0; i--)
@@ -2194,140 +2115,6 @@ void ManagePositions()
          }
       }
 
-      // ============================================================
-      // MFE RETRACE EXIT
-      // Exit when profit retreats X% from peak — catches reversals
-      // on winning trades before they give everything back.
-      // ============================================================
-      if(InpUseMFERetraceExit)
-      {
-         bool peakOk  = (g_states[sIdx].peakProfitR >= InpMFERetrace_MinPeakR);
-         bool stageOk = !InpMFERetrace_AfterStage0 || (g_states[sIdx].currentStage >= 0);
-         if(peakOk && stageOk)
-         {
-            double retreatThreshold = g_states[sIdx].peakProfitR * (1.0 - InpMFERetrace_Threshold);
-            if(profitR < retreatThreshold)
-            {
-               Print("[MFE RETRACE EXIT] #", ticket,
-                     " | Peak=", DoubleToString(g_states[sIdx].peakProfitR, 2),
-                     "R Current=", DoubleToString(profitR, 2),
-                     "R Threshold=", DoubleToString(retreatThreshold, 2), "R");
-               if(InpEnableMobileAlerts)
-                  SendNotification("[MFE EXIT] " + _Symbol +
-                                    " fell " + DoubleToString(g_states[sIdx].peakProfitR,1) +
-                                    "R→" + DoubleToString(profitR,1) + "R");
-               if(trade.PositionClose(ticket)) continue;
-            }
-         }
-      }
-
-      // ============================================================
-      // SMART REVERSAL EXIT (+ optional Flip & Reverse)
-      // Multi-signal: CHoCH + Divergence + LiqSweep + ScoreVelocity
-      // Falls back to legacy Confluence Flip if SmartReversal=false
-      // ============================================================
-      if(InpUseSmartReversal)
-      {
-         if(IsReversalAllowedInRegime())
-         {
-            int posDir   = (pType == POSITION_TYPE_BUY) ? 1 : -1;
-            int oppDir   = -posDir;
-            bool stageOk = !InpRevOnlyAfterStage0 || (g_states[sIdx].currentStage >= 0);
-            double oppScore = (oppDir == 1) ? g_cachedBuyScore : g_cachedSellScore;
-
-            if(stageOk && oppScore >= InpRevExitMinScore)
-            {
-               double revScore = CalcReversalScore(posDir);
-               if(revScore >= InpRevExitThreshold)
-               {
-                  string revReason = BuildReversalReason(posDir, revScore);
-                  Print("[SMART REVERSAL EXIT] #", ticket, " | ", revReason,
-                        " | ProfitR=", DoubleToString(profitR, 2));
-                  if(InpEnableMobileAlerts)
-                     SendNotification("[SMART FLIP] " + _Symbol + " " + revReason);
-
-                  // Capture flip intent BEFORE closing (state wiped after close)
-                  bool shouldFlip = InpUseFlipAndReverse
-                                 && (revScore >= InpFlipRev_MinScore)
-                                 && (!InpFlipRev_RequireMFE || g_states[sIdx].peakProfitR >= InpFlipRev_MinPeakR)
-                                 && (g_flipBarCount <= 0);
-                  int    flipDir  = oppDir;
-                  double flipRisk = InpFlipRev_RiskPct;
-
-                  if(trade.PositionClose(ticket))
-                  {
-                     if(shouldFlip)
-                     {
-                        ENUM_ORDER_TYPE flipType = (flipDir == 1) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
-                        ENTRY_QUALITY   flipQual = (revScore >= 0.90) ? EQ_ELITE
-                                                 : (revScore >= 0.80) ? EQ_STRONG : EQ_GOOD;
-                        Print("[FLIP & REVERSE] Opening ", (flipDir==1?"BUY":"SELL"),
-                              " | Score=", DoubleToString(revScore,2),
-                              " | Risk=", DoubleToString(flipRisk,3), "%");
-                        if(ExecuteTrade(flipType, flipRisk, "FlipRev", flipQual))
-                        {
-                           g_lastFlipTime = TimeCurrent();
-                           g_lastFlipDir  = flipDir;
-                           g_flipBarCount = InpFlipRev_CooldownBars;
-                           int lastIdx = ArraySize(g_states) - 1;
-                           double ep = PositionSelectByTicket(g_states[lastIdx].ticket)
-                                      ? PositionGetDouble(POSITION_PRICE_OPEN)
-                                      : (flipDir == 1 ? symbolInfo.Ask() : symbolInfo.Bid());
-                           g_activeGroupId = CreateTradeGroup(flipDir, g_states[lastIdx].ticket,
-                                                               ep, g_states[lastIdx].initialSLDist, flipRisk);
-                           g_states[lastIdx].groupId = g_activeGroupId;
-                           if(InpEnableMobileAlerts)
-                              SendNotification("[FLIPPED] " + _Symbol +
-                                               (flipDir==1?" NOW LONG":" NOW SHORT") +
-                                               " Score=" + DoubleToString(revScore,2));
-                        }
-                     }
-                     continue;
-                  }
-               }
-            }
-         }
-      }
-      else if(InpUseConflFlipExit)
-      {
-         // --- LEGACY CONFLUENCE FLIP EXIT ---
-         bool flipConditionMet = false;
-         string flipReason = "";
-         if(pType == POSITION_TYPE_BUY)
-         {
-            bool sellDominates = (g_cachedSellScore >= InpConflFlipMinScore) &&
-                                 (g_cachedSellScore - g_cachedBuyScore >= InpConflFlipDelta);
-            bool stageOk = !InpConflFlipOnlyAfterStage0 || (g_states[sIdx].currentStage >= 0);
-            if(sellDominates && stageOk)
-            {
-               flipConditionMet = true;
-               flipReason = StringFormat("BUY→FLIP: Sell=%.1f Buy=%.1f D=%.1f",
-                                         g_cachedSellScore, g_cachedBuyScore,
-                                         g_cachedSellScore - g_cachedBuyScore);
-            }
-         }
-         else
-         {
-            bool buyDominates = (g_cachedBuyScore >= InpConflFlipMinScore) &&
-                                (g_cachedBuyScore - g_cachedSellScore >= InpConflFlipDelta);
-            bool stageOk = !InpConflFlipOnlyAfterStage0 || (g_states[sIdx].currentStage >= 0);
-            if(buyDominates && stageOk)
-            {
-               flipConditionMet = true;
-               flipReason = StringFormat("SELL→FLIP: Buy=%.1f Sell=%.1f D=%.1f",
-                                         g_cachedBuyScore, g_cachedSellScore,
-                                         g_cachedBuyScore - g_cachedSellScore);
-            }
-         }
-         if(flipConditionMet)
-         {
-            Print("[LEGACY FLIP EXIT] #", ticket, " | ", flipReason,
-                  " | ProfitR=", DoubleToString(profitR, 2));
-            if(InpEnableMobileAlerts)
-               SendNotification("[FLIP] " + _Symbol + " " + flipReason);
-            if(trade.PositionClose(ticket)) continue;
-         }
-      }
 
       // Skip trailing if Mode 2 (Adaptive only) and TP is set
       if(InpTPMode == 2 && tp > 0 && InpTrailingMode == 0)
@@ -2825,98 +2612,6 @@ void BuildConfluenceFactors(ConfluenceFactors &factors, int direction, double sc
    factors.confluenceScore = score;
 }
 
-//+------------------------------------------------------------------+
-//| SMART REVERSAL: Regime gate                                       |
-//+------------------------------------------------------------------+
-bool IsReversalAllowedInRegime()
-{
-   if(InpRevRegimeGate == 0) return false;
-   if(g_currentRegime == REGIME_CHAOS) return false;
-   if(InpRevRegimeGate == 1) return (g_currentRegime == REGIME_TREND);
-   if(InpRevRegimeGate == 2) return (g_currentRegime == REGIME_TREND || g_currentRegime == REGIME_RANGE);
-   return true; // gate==3: all except CHAOS
-}
-
-//+------------------------------------------------------------------+
-//| SMART REVERSAL: Multi-signal reversal score 0.0-1.0              |
-//+------------------------------------------------------------------+
-double CalcReversalScore(int posDir)
-{
-   int oppDir = -posDir;
-   double choch = 0, diverg = 0, sweep = 0, veloc = 0;
-
-   // --- Signal 1: CHoCH structural break ---
-   if(InpRevW_CHoCH > 0 && smcStructure.IsCHoCH())
-   {
-      ENUM_STRUCTURE_TYPE bt = smcStructure.GetLastBreakType();
-      bool oppCHoCH = (posDir ==  1 && bt == STRUCT_CHOCH_BEARISH) ||
-                      (posDir == -1 && bt == STRUCT_CHOCH_BULLISH);
-      if(oppCHoCH)
-      {
-         datetime breakTime = smcStructure.GetLastBreakTime();
-         int barsSince = iBarShift(_Symbol, PERIOD_CURRENT, breakTime, false);
-         if(barsSince >= 0 && barsSince <= InpRevCHoCH_MaxBars) choch = 1.0;
-      }
-   }
-
-   // --- Signal 2: RSI divergence (opposite direction) ---
-   if(InpRevW_Divergence > 0)
-   {
-      double divRaw = (oppDir == 1) ? g_cachedDivergenceScore_Buy : g_cachedDivergenceScore_Sell;
-      diverg = MathMin(divRaw, 1.5) / 1.5;
-   }
-
-   // --- Signal 3: Liquidity sweep aligned with opposite direction ---
-   if(InpRevW_LiqSweep > 0)
-      sweep = smcLiquidity.IsSweepAligned(oppDir) ? 1.0 : 0.0;
-
-   // --- Signal 4: Score velocity (opp accelerating, own decelerating) ---
-   if(InpRevW_ScoreVelocity > 0)
-   {
-      double ownPrev = (posDir ==  1) ? g_prevBuyScore  : g_prevSellScore;
-      double oppPrev = (posDir ==  1) ? g_prevSellScore : g_prevBuyScore;
-      double ownNow  = (posDir ==  1) ? g_cachedBuyScore  : g_cachedSellScore;
-      double oppNow  = (posDir ==  1) ? g_cachedSellScore : g_cachedBuyScore;
-      double velRaw  = (oppNow - oppPrev) - (ownNow - ownPrev);
-      veloc = MathMax(0.0, MathMin(velRaw / 5.0, 1.0));
-   }
-
-   // --- Weighted sum, normalized by actual weight total ---
-   double weightSum = InpRevW_CHoCH + InpRevW_Divergence + InpRevW_LiqSweep + InpRevW_ScoreVelocity;
-   if(weightSum <= 0) return 0.0;
-   double raw = choch  * InpRevW_CHoCH
-              + diverg * InpRevW_Divergence
-              + sweep  * InpRevW_LiqSweep
-              + veloc  * InpRevW_ScoreVelocity;
-   return MathMin(raw / weightSum, 1.0);
-}
-
-//+------------------------------------------------------------------+
-//| SMART REVERSAL: Build reason string for logging                   |
-//+------------------------------------------------------------------+
-string BuildReversalReason(int posDir, double score)
-{
-   int oppDir = -posDir;
-   string r = "";
-
-   if(InpRevW_CHoCH > 0 && smcStructure.IsCHoCH())
-   {
-      ENUM_STRUCTURE_TYPE bt = smcStructure.GetLastBreakType();
-      bool oppCHoCH = (posDir ==  1 && bt == STRUCT_CHOCH_BEARISH) ||
-                      (posDir == -1 && bt == STRUCT_CHOCH_BULLISH);
-      if(oppCHoCH) r += "CHoCH ";
-   }
-   double divRaw = (oppDir == 1) ? g_cachedDivergenceScore_Buy : g_cachedDivergenceScore_Sell;
-   if(divRaw >= 0.3) r += "DIV(" + DoubleToString(divRaw, 1) + ") ";
-   if(smcLiquidity.IsSweepAligned(oppDir)) r += "SWEEP ";
-   double ownPrev = (posDir ==  1) ? g_prevBuyScore  : g_prevSellScore;
-   double oppPrev = (posDir ==  1) ? g_prevSellScore : g_prevBuyScore;
-   double ownNow  = (posDir ==  1) ? g_cachedBuyScore  : g_cachedSellScore;
-   double oppNow  = (posDir ==  1) ? g_cachedSellScore : g_cachedBuyScore;
-   double velRaw  = (oppNow - oppPrev) - (ownNow - ownPrev);
-   if(velRaw > 0) r += "VEL(+" + DoubleToString(velRaw, 1) + ") ";
-   return "Score=" + DoubleToString(score, 2) + " [" + r + "]";
-}
 
 //+------------------------------------------------------------------+
 //| NEW Confluence Score (0-30) - M15 Enhanced Analysis               |
@@ -3404,8 +3099,8 @@ void UpdateDashboard()
       sellS = CalculateConfluenceScore(-1);
    }
 
-   string govStatus = InpStandaloneMode ? "STANDALONE" : (allocator.IsGovernorActive() ? "Connected " + DoubleToString(GetRiskMultiplier()*100,0) + "%" : "Standalone");
-   string tradingStatus = InpStandaloneMode ? "ACTIVE (Solo)" : (IsTradingEnabled() ? "ACTIVE" : "BLOCKED");
+   string govStatus = selfGov.GetStatus();
+   string tradingStatus = selfGov.IsTradingEnabled() ? "ACTIVE" : "PAUSED (DD)";
 
    // Check for blocks
    if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) tradingStatus = "NEWS BLOCKED";
@@ -3510,31 +3205,6 @@ void UpdateDashboard()
              " S" + IntegerToString(g_states[si].currentStage) +
              " H:" + DoubleToString(g_states[si].totalHarvestedPct, 0) + "%" +
              tag + staleTag + "\n";
-   }
-
-   // Smart Reversal live score
-   if(g_positionCount > 0)
-   {
-      int posDir = (g_entryDirection != 0) ? g_entryDirection : 1;
-      if(InpUseSmartReversal)
-      {
-         double revScore = CalcReversalScore(posDir);
-         txt += "REV SCORE: " + DoubleToString(revScore, 2) +
-                "/" + DoubleToString(InpRevExitThreshold, 2);
-         if(revScore >= InpRevExitThreshold)      txt += " [EXIT!]";
-         else if(revScore >= InpRevExitThreshold * 0.75) txt += " [WARNING]";
-         if(revScore >= InpFlipRev_MinScore)      txt += " [FLIP!]";
-         txt += "\n";
-      }
-      else if(InpUseConflFlipExit)
-      {
-         double oppScore = (posDir == 1) ? g_cachedSellScore : g_cachedBuyScore;
-         double ownScore = (posDir == 1) ? g_cachedBuyScore  : g_cachedSellScore;
-         double delta    = oppScore - ownScore;
-         if(delta > 0)
-            txt += "FLIP RISK: opp=" + DoubleToString(oppScore,1) + " own=" + DoubleToString(ownScore,1) +
-                   " D=" + DoubleToString(delta,1) + "/" + DoubleToString(InpConflFlipDelta,1) + "\n";
-      }
    }
 
    // Kelly stats
@@ -3712,3 +3382,4 @@ bool CheckKillzone()
 {
    return GetActiveKillzone() != KILLZONE_NONE;
 }
+
