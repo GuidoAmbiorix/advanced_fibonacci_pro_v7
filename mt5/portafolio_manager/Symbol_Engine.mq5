@@ -1,4 +1,4 @@
-﻿//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
 //|                                            Symbol_Engine.mq5     |
 //|          Symbol Engine - Requests Permission from Governor       |
 //|             Confluence Ladder + Portfolio Integration            |
@@ -1699,14 +1699,27 @@ bool CanHarvest(ulong ticket, double harvestPct)
 bool SafeModifySL(ulong ticket, double newSL, double tp)
 {
    if(!PositionSelectByTicket(ticket)) return false;
+   
    double curr = PositionGetDouble(POSITION_PRICE_CURRENT);
+   double currentSL = PositionGetDouble(POSITION_SL);
+   double currentTP = PositionGetDouble(POSITION_TP);
    ENUM_POSITION_TYPE pType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
-   double stopsLv = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
-   double freezeLv = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_FREEZE_LEVEL) * _Point;
+   
+   // Skip modification if nothing changed functionally to prevent unnecessary requests
+   if(NormalizeDouble(newSL, _Digits) == NormalizeDouble(currentSL, _Digits) &&
+      NormalizeDouble(tp, _Digits) == NormalizeDouble(currentTP, _Digits)) return true;
+      
+   double stopsLv = (double)SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+   double freezeLv = (double)SymbolInfoInteger(_Symbol, SYMBOL_TRADE_FREEZE_LEVEL) * _Point;
    double minDist = MathMax(stopsLv, freezeLv) + _Point * 5; // Small extra buffer
 
-   if(pType == POSITION_TYPE_BUY  && curr - newSL < minDist) return false;
-   if(pType == POSITION_TYPE_SELL && newSL - curr < minDist) return false;
+   // SL validation
+   if(pType == POSITION_TYPE_BUY  && newSL > 0 && curr - newSL < minDist) return false;
+   if(pType == POSITION_TYPE_SELL && newSL > 0 && newSL - curr < minDist) return false;
+   
+   // TP validation (if TP is uncomfortably close to current price, modifying the order will fail)
+   if(pType == POSITION_TYPE_BUY  && tp > 0 && tp - curr < minDist) return false;
+   if(pType == POSITION_TYPE_SELL && tp > 0 && curr - tp < minDist) return false;
 
    return trade.PositionModify(ticket, newSL, tp);
 }
@@ -2426,7 +2439,7 @@ void ManagePositions()
 
                 if(slBetter)
                 {
-                   if(trade.PositionModify(ticket, bestSL, tp))
+                   if(SafeModifySL(ticket, bestSL, tp))
                    {
                       g_states[sIdx].locked_sl = bestSL; // Update locked SL
                       Print("DynTrail: mult=", DoubleToString(dynMult,2),
