@@ -1,13 +1,13 @@
 //+------------------------------------------------------------------+
 //|                                            SMC_StructureBreak.mqh |
 //|          Smart Money Concepts - Break of Structure & CHoCH        |
-//|                                  Copyright 2026, Guido Ambiorix   |
+//|                                  Copyright 2026, Infernal Portfolio Governor   |
 //+------------------------------------------------------------------+
 #ifndef SMC_STRUCTURE_BREAK_MQH
 #define SMC_STRUCTURE_BREAK_MQH
 
-#property copyright "Guido Ambiorix"
-#property link      "https://github.com/GuidoAmbiorix"
+#property copyright "Infernal Portfolio Governor"
+#property link      "https://www.mql5.com"
 #property strict
 
 //+------------------------------------------------------------------+

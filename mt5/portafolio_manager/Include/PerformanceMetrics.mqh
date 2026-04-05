@@ -1,6 +1,6 @@
 //+------------------------------------------------------------------+
 //|                                           PerformanceMetrics.mqh |
-//|                                  Copyright 2026, Guido Ambiorix  |
+//|                                  Copyright 2026, Infernal Portfolio Governor  |
 //+------------------------------------------------------------------+
 #ifndef PERFORMANCE_METRICS_MQH
 #define PERFORMANCE_METRICS_MQH

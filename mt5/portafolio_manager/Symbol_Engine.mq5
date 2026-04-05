@@ -3,10 +3,10 @@
 //|          Symbol Engine - Requests Permission from Governor       |
 //|             Confluence Ladder + Portfolio Integration            |
 //+------------------------------------------------------------------+
-#property copyright "Symbol Engine - Portfolio Aware"
-#property link      "https://github.com/GuidoAmbiorix"
+#property copyright "Infernal Portfolio Governor"
+#property link      "https://www.mql5.com"
 #property version   "2.00"
-#property description "Symbol Engine: Thin Shell Architecture"
+#property description "Infernal Portfolio Governor — Symbol Engine"
 #property strict
 
 #include <Trade\Trade.mqh>

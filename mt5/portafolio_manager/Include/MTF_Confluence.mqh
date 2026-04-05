@@ -1,13 +1,13 @@
 //+------------------------------------------------------------------+
 //|                                              MTF_Confluence.mqh  |
 //|          Multi-Timeframe Confluence Analysis                      |
-//|                                  Copyright 2026, Guido Ambiorix   |
+//|                                  Copyright 2026, Infernal Portfolio Governor   |
 //+------------------------------------------------------------------+
 #ifndef MTF_CONFLUENCE_MQH
 #define MTF_CONFLUENCE_MQH
 
-#property copyright "Guido Ambiorix"
-#property link      "https://github.com/GuidoAmbiorix"
+#property copyright "Infernal Portfolio Governor"
+#property link      "https://www.mql5.com"
 #property strict
 
 //+------------------------------------------------------------------+

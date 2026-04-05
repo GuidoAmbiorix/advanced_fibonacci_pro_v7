@@ -1,12 +1,12 @@
 //+------------------------------------------------------------------+
 //|                                              DatabaseManager.mqh |
 //|          SQLite Database Manager for Portfolio Governor          |
-//|                                  Copyright 2026, Guido Ambiorix   |
+//|                                  Copyright 2026, Infernal Portfolio Governor   |
 //+------------------------------------------------------------------+
 #ifndef DATABASE_MANAGER_MQH
 #define DATABASE_MANAGER_MQH
 
-#property copyright "Guido Ambiorix"
+#property copyright "Infernal Portfolio Governor"
 #property strict
 
 #include "KillzoneConfig.mqh"     // For ENUM_KILLZONE

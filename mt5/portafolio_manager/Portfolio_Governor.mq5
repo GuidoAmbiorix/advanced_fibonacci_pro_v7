@@ -3,10 +3,10 @@
 //|          🧠 CENTRAL BRAIN - Multi-Symbol Risk Controller         |
 //|             Manages: DD, Exposure, PF, Correlation Groups        |
 //+------------------------------------------------------------------+
-#property copyright "Portfolio Governor"
-#property link      "https://github.com/GuidoAmbiorix"
+#property copyright "Infernal Portfolio Governor"
+#property link      "https://www.mql5.com"
 #property version   "1.00"
-#property description "🧠 Portfolio Governor: Central Risk Brain"
+#property description "Infernal Portfolio Governor: Central Risk Brain"
 #property description "Run on ONE chart only. Controls all Symbol Engines."
 #property strict
 
@@ -34,7 +34,7 @@ input double InpMaxGroupRisk = 2.0;            // Max Risk Per Correlation Group
 input group "═══════ DRAWDOWN GOVERNOR ═══════"
 input double InpDD_Normal = 1.5;               // DD Level: Normal Trading (%)
 input double InpDD_Reduced = 2.5;              // DD Level: Reduced Risk (%)
-input double InpDD_Pause = 3.5;                // DD Level: Pause Trading (%) [GOAT: Max 4%]
+input double InpDD_Pause = 3.5;                // DD Level: Pause Trading (%)
 input double InpDD_ReducedMult = 0.5;          // Risk Multiplier when DD > Normal
 
 input group "═══════ ROLLING PF GOVERNOR ═══════"
@@ -45,11 +45,11 @@ input double InpPF_Pause = 1.0;                // PF Level: Pause Trading
 input double InpPF_ReducedMult = 0.7;          // Risk Mult when PF < Normal
 
 input group "═══════ DAILY/WEEKLY LIMITS ═══════"
-input double InpDailyMaxDD = 2.5;              // Daily Max Drawdown (%) [GOAT: No daily limit, but be safe]
-input double InpWeeklyMaxDD = 3.5;             // Weekly Max Drawdown (%) [GOAT: 4% trailing total]
-input double InpMonthlyMaxDD = 4.0;            // Monthly Max Drawdown (%) [GOAT: 4% trailing max]
+input double InpDailyMaxDD = 2.5;              // Daily Max Drawdown (%)
+input double InpWeeklyMaxDD = 3.5;             // Weekly Max Drawdown (%)
+input double InpMonthlyMaxDD = 4.0;            // Monthly Max Drawdown (%)
 input double InpDailyTarget = 0.0;             // Daily Profit Target (%, 0=disabled)
-input double InpDailyTargetUSD = 10.0;         // Daily Profit Target ($, 0=disabled) [GOAT: $10]
+input double InpDailyTargetUSD = 10.0;         // Daily Profit Target ($, 0=disabled)
 
 input group "═══════ CORRELATION GUARD ═══════"
 input bool   InpUseCorrelationGuard = true;    // Enable Correlation Guard
@@ -1198,7 +1198,7 @@ void CreateVisualDashboard(double dd, double pf, double exposure, double riskMul
    CreateLabel("GovDDLabel", x+20, y, "Drawdown:", textColor, 8, false);
    CreateLabel("GovDDValue", x+110, y, DoubleToString(dd, 2) + "%", ddColor, 9, true);
    CreateProgressBar("GovDDBar", x+180, y-2, 150, 14, dd, InpDD_Pause, ddColor, bgColor);
-   CreateLabel("GovDDLimit", x+340, y, "Max: " + DoubleToString(InpDD_Pause, 1) + "% (GOAT: 4%)", clrGray, 7, false);
+   CreateLabel("GovDDLimit", x+340, y, "Max: " + DoubleToString(InpDD_Pause, 1) + "%", clrGray, 7, false);
 
    y += lineHeight + sectionGap;
    CreateSeparator("GovSep3", x+10, y, 600, clrDimGray);

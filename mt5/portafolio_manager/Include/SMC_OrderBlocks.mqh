@@ -1,13 +1,13 @@
 //+------------------------------------------------------------------+
 //|                                              SMC_OrderBlocks.mqh |
 //|          Smart Money Concepts - Order Block Detection             |
-//|                                  Copyright 2026, Guido Ambiorix   |
+//|                                  Copyright 2026, Infernal Portfolio Governor   |
 //+------------------------------------------------------------------+
 #ifndef SMC_ORDER_BLOCKS_MQH
 #define SMC_ORDER_BLOCKS_MQH
 
-#property copyright "Guido Ambiorix"
-#property link      "https://github.com/GuidoAmbiorix"
+#property copyright "Infernal Portfolio Governor"
+#property link      "https://www.mql5.com"
 #property strict
 
 //+------------------------------------------------------------------+

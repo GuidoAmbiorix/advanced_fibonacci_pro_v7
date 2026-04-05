@@ -1,13 +1,13 @@
 //+------------------------------------------------------------------+
 //|                                              TradeJournal.mqh    |
 //|                         Persistent Trade History Logger           |
-//|                                  Copyright 2026, Guido Ambiorix   |
+//|                                  Copyright 2026, Infernal Portfolio Governor   |
 //+------------------------------------------------------------------+
 #ifndef TRADE_JOURNAL_MQH
 #define TRADE_JOURNAL_MQH
 
-#property copyright "Guido Ambiorix"
-#property link      "https://github.com/GuidoAmbiorix"
+#property copyright "Infernal Portfolio Governor"
+#property link      "https://www.mql5.com"
 #property strict
 
 #include "../Learning_MFE_MAE.mqh"  // For ENTRY_QUALITY enum

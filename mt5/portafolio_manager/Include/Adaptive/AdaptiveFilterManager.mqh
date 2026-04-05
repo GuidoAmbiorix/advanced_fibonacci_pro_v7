@@ -1,13 +1,13 @@
 //+------------------------------------------------------------------+
 //|                                       AdaptiveFilterManager.mqh   |
 //|                  Smart Entry Filtering with Pattern Learning      |
-//|                                  Copyright 2026, Guido Ambiorix   |
+//|                                  Copyright 2026, Infernal Portfolio Governor   |
 //+------------------------------------------------------------------+
 #ifndef ADAPTIVE_FILTER_MANAGER_MQH
 #define ADAPTIVE_FILTER_MANAGER_MQH
 
-#property copyright "Guido Ambiorix"
-#property link      "https://github.com/GuidoAmbiorix"
+#property copyright "Infernal Portfolio Governor"
+#property link      "https://www.mql5.com"
 #property strict
 
 #include "../Learning/PatternRecognizer.mqh"

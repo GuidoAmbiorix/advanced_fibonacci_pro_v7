@@ -1,6 +1,6 @@
 //+------------------------------------------------------------------+
 //|                                                  RankManager.mqh |
-//|                                  Copyright 2026, Guido Ambiorix  |
+//|                                  Copyright 2026, Infernal Portfolio Governor  |
 //|                         ENHANCED with MTF, Performance, Currency |
 //+------------------------------------------------------------------+
 #ifndef RANK_MANAGER_MQH

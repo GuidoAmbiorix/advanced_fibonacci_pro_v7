@@ -1,12 +1,12 @@
 //+------------------------------------------------------------------+
 //|                                                   Divergence.mqh |
 //|          RSI Divergence Detection                                 |
-//|                                  Copyright 2026, Guido Ambiorix   |
+//|                                  Copyright 2026, Infernal Portfolio Governor   |
 //+------------------------------------------------------------------+
 #ifndef DIVERGENCE_MQH
 #define DIVERGENCE_MQH
 
-#property copyright "Guido Ambiorix"
+#property copyright "Infernal Portfolio Governor"
 #property strict
 
 class CDivergence

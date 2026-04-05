@@ -1,13 +1,13 @@
 //+------------------------------------------------------------------+
 //|                                           GovernorAllocator.mqh |
-//|                                  Copyright 2026, Guido Ambiorix  |
-//|                                     https://github.com/GuidoAmbiorix |
+//|                                  Copyright 2026, Infernal Portfolio Governor  |
+//|                                     https://www.mql5.com |
 //+------------------------------------------------------------------+
 #ifndef GOVERNOR_ALLOCATOR_MQH
 #define GOVERNOR_ALLOCATOR_MQH
 
-#property copyright "Guido Ambiorix"
-#property link      "https://github.com/GuidoAmbiorix"
+#property copyright "Infernal Portfolio Governor"
+#property link      "https://www.mql5.com"
 #property strict
 
 #include "PortfolioGlobals.mqh" // Access to GV keys

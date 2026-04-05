@@ -1,12 +1,12 @@
 //+------------------------------------------------------------------+
 //|                                                Inst_Concepts.mqh |
 //|          Institutional Concepts (Breakers, Macro, AMD, Wyckoff)   |
-//|                                  Copyright 2026, Guido Ambiorix   |
+//|                                  Copyright 2026, Infernal Portfolio Governor   |
 //+------------------------------------------------------------------+
 #ifndef INST_CONCEPTS_MQH
 #define INST_CONCEPTS_MQH
 
-#property copyright "Guido Ambiorix"
+#property copyright "Infernal Portfolio Governor"
 #property strict
 
 //+------------------------------------------------------------------+

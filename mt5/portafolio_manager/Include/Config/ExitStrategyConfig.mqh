@@ -1,13 +1,13 @@
 //+------------------------------------------------------------------+
 //|                                        ExitStrategyConfig.mqh    |
 //|                      Exit Strategy Configuration Defaults         |
-//|                                  Copyright 2026, Guido Ambiorix   |
+//|                                  Copyright 2026, Infernal Portfolio Governor   |
 //+------------------------------------------------------------------+
 #ifndef EXIT_STRATEGY_CONFIG_MQH
 #define EXIT_STRATEGY_CONFIG_MQH
 
-#property copyright "Guido Ambiorix"
-#property link      "https://github.com/GuidoAmbiorix"
+#property copyright "Infernal Portfolio Governor"
+#property link      "https://www.mql5.com"
 #property strict
 
 //+------------------------------------------------------------------+

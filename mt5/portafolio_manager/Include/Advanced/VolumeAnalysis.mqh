@@ -1,12 +1,12 @@
 //+------------------------------------------------------------------+
 //|                                               VolumeAnalysis.mqh |
 //|          Basic Volume Price Analysis for Confluence               |
-//|                                  Copyright 2026, Guido Ambiorix   |
+//|                                  Copyright 2026, Infernal Portfolio Governor   |
 //+------------------------------------------------------------------+
 #ifndef VOLUME_ANALYSIS_MQH
 #define VOLUME_ANALYSIS_MQH
 
-#property copyright "Guido Ambiorix"
+#property copyright "Infernal Portfolio Governor"
 #property strict
 
 class CVolumeAnalysis

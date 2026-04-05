@@ -1,7 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                              DashboardCanvas.mqh |
-//|                                  Copyright 2026, Guido Ambiorix  |
-//|                                     https://github.com/GuidoAmbiorix |
+//|                                  Copyright 2026, Portfolio Governor   |
+//|                                     https://www.mql5.com              |
 //+------------------------------------------------------------------+
 #ifndef DASHBOARD_CANVAS_MQH
 #define DASHBOARD_CANVAS_MQH
@@ -64,7 +64,7 @@ public:
       FillRectangle(0, 0, m_dashWidth, 30, m_colHeader); // Title Bar
       
       // 2. Draw Title
-      TextOut(10, 8, "🧠 PORTFOLIO GOVERNOR v2.0", m_colText);
+      TextOut(10, 8, "INFERNAL PORTFOLIO GOVERNOR v1.0", m_colText);
       
       // 3. Draw Health Stats
       TextOut(10, 40, "Equity: $" + DoubleToString(equity, 2), m_colText);

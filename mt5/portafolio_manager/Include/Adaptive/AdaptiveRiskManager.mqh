@@ -1,13 +1,13 @@
 //+------------------------------------------------------------------+
 //|                                        AdaptiveRiskManager.mqh   |
 //|                  Context-Aware Dynamic Position Sizing            |
-//|                                  Copyright 2026, Guido Ambiorix   |
+//|                                  Copyright 2026, Infernal Portfolio Governor   |
 //+------------------------------------------------------------------+
 #ifndef ADAPTIVE_RISK_MANAGER_MQH
 #define ADAPTIVE_RISK_MANAGER_MQH
 
-#property copyright "Guido Ambiorix"
-#property link      "https://github.com/GuidoAmbiorix"
+#property copyright "Infernal Portfolio Governor"
+#property link      "https://www.mql5.com"
 #property strict
 
 #include "../Learning/PerformanceAnalyzer.mqh"

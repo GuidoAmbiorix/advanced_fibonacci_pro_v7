@@ -1,6 +1,6 @@
 //+------------------------------------------------------------------+
 //|                                            CurrencyStrength.mqh  |
-//|                                  Copyright 2026, Guido Ambiorix  |
+//|                                  Copyright 2026, Infernal Portfolio Governor  |
 //+------------------------------------------------------------------+
 #ifndef CURRENCY_STRENGTH_MQH
 #define CURRENCY_STRENGTH_MQH

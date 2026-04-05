@@ -1,13 +1,13 @@
 //+------------------------------------------------------------------+
 //|                                                  NewsFilter.mqh  |
 //|          High-Impact News Event Filter                            |
-//|                                  Copyright 2026, Guido Ambiorix   |
+//|                                  Copyright 2026, Infernal Portfolio Governor   |
 //+------------------------------------------------------------------+
 #ifndef NEWS_FILTER_MQH
 #define NEWS_FILTER_MQH
 
-#property copyright "Guido Ambiorix"
-#property link      "https://github.com/GuidoAmbiorix"
+#property copyright "Infernal Portfolio Governor"
+#property link      "https://www.mql5.com"
 #property strict
 
 //+------------------------------------------------------------------+

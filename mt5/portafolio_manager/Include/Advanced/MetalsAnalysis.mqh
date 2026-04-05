@@ -1,7 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                              MetalsAnalysis.mqh |
-//|                                  Copyright 2026, Guido Ambiorix  |
-//|                              https://github.com/GuidoAmbiorix    |
+//|                                  Copyright 2026, Infernal Portfolio Governor  |
+//|                              https://www.mql5.com    |
 //+------------------------------------------------------------------+
 #ifndef METALS_ANALYSIS_MQH
 #define METALS_ANALYSIS_MQH

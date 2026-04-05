@@ -22,13 +22,13 @@ InpSwingLookback=24
 ; Gold H4: Wider lookback matching production gold settings
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.30
-; Gold H4: Wider tolerance - gold wicks are aggressive
+InpZoneTolerance=0.40
+; TEST: Wider tolerance to catch more Fib zone entries
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
-InpDisplacementATR=1.5
-; Gold H4: Higher displacement - needs strong institutional push
+InpDisplacementATR=0.8
+; TEST FIX: Relaxed from 1.5 - 1.5x ATR is too strict for H4 gold, SMC was getting 0 pts
 InpDisplacementLookback=5
 
 ;═══════ RSI ═══════
@@ -45,14 +45,15 @@ InpEMA_MinSlope=0.1
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.80
-; Gold H4: Stricter chop - only trade clear gold trends
+InpChopThreshold=0.60
+; TEST FIX: Lowered from 0.80 - 80% was blocking too many H4 gold bars during normal consolidation
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=10
-; Gold H4: Higher confluence - gold is harder to predict
-InpDominanceThreshold=2.5
+InpMinConfluenceEntry=7
+; TEST FIX: Lowered from 10 - without SMC firing, score barely hits 10. Need SMC to build up data first.
+InpDominanceThreshold=1.5
+; TEST FIX: Lowered from 2.5 - gold has balanced buy/sell signals, 2.5 was zeroing valid setups
 InpMaxPositions=2
 
 ;═══════ RISK ═══════
@@ -180,16 +181,16 @@ InpFlipRev_RequireMFE=true
 InpFlipRev_MinPeakR=0.5
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=50
-; Gold: Wide spread tolerance
+InpMaxSpreadPoints=200
+; TEST FIX: Raised from 50 - XAUUSD spread in points can vary by broker/decimal representation
 
 ;═══════ SMC - SMART MONEY CONCEPTS ═══════
 InpUseSMC=true
 InpSMC_SwingLookback=24
-InpSMC_MinImpulseATR=2.5
-; Gold H4: Strong impulse required
-InpSMC_MinFVG_ATR=0.6
-; Gold H4: Larger FVG required
+InpSMC_MinImpulseATR=1.2
+; TEST FIX: Lowered from 2.5 - 2.5x ATR threshold was making ALL 5 SMC modules return 0 pts (13 pts of signal lost)
+InpSMC_MinFVG_ATR=0.4
+; TEST FIX: Lowered from 0.6 to allow more FVG signals
 
 ;═══════ MULTI-TIMEFRAME (OFF for backtest) ═══════
 InpUseMTF=false
@@ -236,17 +237,17 @@ InpLossCooldownMinutes=45
 ; Gold: Longer cooldown after loss
 InpMaxConsecutiveLosses=2
 ; Gold: Stop after 2 consecutive losses
-InpMaxDailyTrades=4
-; TEST GOLD: Slightly more trades allowed vs production
+InpMaxDailyTrades=8
+; TEST FIX: Raised from 4 - allow more daily trades to observe backtest behavior
 InpUseReversalFilter=true
 InpReversalCooldownMinutes=60
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=1
-; Gold: Only 1 trade per session - quality setups only
-InpTradeCooldownMinutes=90
-; Gold: 90 min cooldown between trades
+InpMaxTradesPerSession=3
+; TEST FIX: Raised from 1 - allow more trades per session to observe behavior
+InpTradeCooldownMinutes=45
+; TEST FIX: Lowered from 90 - 90 min cooldown was too restrictive for H4 backtest observation
 InpCloseIntradayProfits=false
 InpEndOfDayHour=22
 
