@@ -737,7 +737,7 @@ class AdaptiveMultiStrategyEngine:
             
         allowed, reason = self._check_funding_rules(current_time)
         if not allowed:
-            logger.warning(f"⛔ Funding Rule Stop: {reason}")
+            logger.warning(f"R Funding Rule Stop: {reason}")
             return {'signals': [], 'message': f'Funding Rule Stop: {reason}'}
 
         # 2. Select optimal strategy
@@ -1652,7 +1652,7 @@ class AdaptiveMultiStrategyEngine:
             
             logger.info(f"🎯 HIGH PROB RANGE BUY @ {entry:.5f} (RSI={rsi:.1f}, Stoch={stoch_k:.1f})")
             if bullish_candle:
-                logger.info(f"   ✅ Bullish candlestick confirmed!")
+                logger.info(f"   R Bullish candlestick confirmed!")
 
             return AdaptiveSignal(
                 symbol=self.symbol,
@@ -1688,7 +1688,7 @@ class AdaptiveMultiStrategyEngine:
 
             logger.info(f"🎯 HIGH PROB RANGE SELL @ {entry:.5f} (RSI={rsi:.1f}, Stoch={stoch_k:.1f})")
             if bearish_candle:
-                logger.info(f"   ✅ Bearish candlestick confirmed!")
+                logger.info(f"   R Bearish candlestick confirmed!")
 
             return AdaptiveSignal(
                 symbol=self.symbol,

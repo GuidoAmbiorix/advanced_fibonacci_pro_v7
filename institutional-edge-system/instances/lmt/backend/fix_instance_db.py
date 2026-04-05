@@ -100,7 +100,7 @@ def fix_db():
     try:
         c.execute(query, values)
         conn.commit()
-        print(f"✅ Database patched successfully. 'trading_session' set to '{slot_data['trading_session']}'.")
+        print(f"R Database patched successfully. 'trading_session' set to '{slot_data['trading_session']}'.")
     except Exception as e:
         print(f"❌ Failed to insert slot: {e}")
     finally:

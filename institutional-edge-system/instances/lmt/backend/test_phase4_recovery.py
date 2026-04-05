@@ -87,7 +87,7 @@ def test_smart_recovery():
         
         # Check accuracy (allow small float error)
         if abs(l1.price - expected_618) < 0.0001 and abs(l2.price - expected_786) < 0.0001:
-            print("✅ SUCCES: Smart Levels match Fibonacci calculations perfectly.")
+            print("R SUCCES: Smart Levels match Fibonacci calculations perfectly.")
         else:
             print("❌ FAILED: Levels do not match expected Fibonacci values.")
     else:

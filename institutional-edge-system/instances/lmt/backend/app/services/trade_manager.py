@@ -457,7 +457,7 @@ class TradeManager:
             if self.mt5_connector.close_partial_position(ticket, volume_to_close):
                 db_trade.is_partially_closed = True
                 db.commit()
-                logger.info(f"✅ Partial close successful for {ticket}")
+                logger.info(f"R Partial close successful for {ticket}")
                 
                 # Move SL to BE immediately after partial
                 self._check_and_move_to_be(trade, r_multiple, 0) # Force BE check
@@ -472,7 +472,7 @@ class TradeManager:
         logger.info(f"Moving SL for trade {ticket} to {sl}")
         result = self.mt5_connector.modify_position(ticket, sl, tp)
         if result:
-            logger.info(f"✅ SL moved for trade {ticket}")
+            logger.info(f"R SL moved for trade {ticket}")
         else:
             logger.error(f"❌ Failed to move SL for trade {ticket}")
 

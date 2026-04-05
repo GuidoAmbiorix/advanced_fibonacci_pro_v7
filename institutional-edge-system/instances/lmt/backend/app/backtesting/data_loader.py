@@ -62,13 +62,13 @@ class DataLoader:
                         break
                     except Exception as connection_err:
                         if i < max_retries - 1:
-                            logger.warning(f"⚠️ Connection attempt {i+1}/{max_retries} failed. Retrying in 2s...")
+                            logger.warning(f"R Connection attempt {i+1}/{max_retries} failed. Retrying in 2s...")
                             import time
                             time.sleep(2)
                         else:
                             raise connection_err
                             
-                logger.info(f"✅ RPyC connection established")
+                logger.info(f"R RPyC connection established")
 
                 global mt5
                 mt5 = conn.modules.MetaTrader5
@@ -78,7 +78,7 @@ class DataLoader:
                 if not mt5.initialize():
                     logger.error("❌ MT5 initialization failed")
                     return None
-                logger.info(f"✅ MT5 initialized successfully")
+                logger.info(f"R MT5 initialized successfully")
 
                 # Populate TIMEFRAME_MAP dynamically
                 self.TIMEFRAME_MAP = {
@@ -92,7 +92,7 @@ class DataLoader:
                 }
 
                 self.mt5_initialized = True
-                logger.info(f"✅ MT5 DataLoader fully initialized")
+                logger.info(f"R MT5 DataLoader fully initialized")
             except Exception as e:
                 logger.error(f"❌ Failed to connect to MT5 Service: {e}")
                 logger.exception("Full exception trace:")
@@ -117,7 +117,7 @@ class DataLoader:
                     variant = f"{prefix}{base_symbol}{suffix}"
                     if mt5.symbol_select(variant, True):
                         if variant != base_symbol:
-                            logger.info(f"✅ Symbol {base_symbol} resolved to {variant}")
+                            logger.info(f"R Symbol {base_symbol} resolved to {variant}")
                         return variant
             return None
         
@@ -140,7 +140,7 @@ class DataLoader:
         start_date = start_date.replace(microsecond=0)
         end_date = end_date.replace(microsecond=0)
 
-        logger.info(f"📊 Requesting MT5 data for {symbol} {timeframe} from {start_date} to {end_date}")
+        logger.info(f"R Requesting MT5 data for {symbol} {timeframe} from {start_date} to {end_date}")
 
         # Fetch data in chunks (monthly) to avoid timeouts/limits
         chunks = []
@@ -163,14 +163,14 @@ class DataLoader:
                 )
 
                 if rates is not None and len(rates) > 0:
-                    logger.info(f"✅ Chunk received: {len(rates)} bars")
+                    logger.info(f"R Chunk received: {len(rates)} bars")
                     # Convert RPyC netref to local numpy array
                     local_rates = obtain(rates)
                     chunks.append(local_rates)
                 else:
                     error = mt5.last_error()
                     if error[0] != 1: # 1 = No data, which is fine for some chunks
-                        logger.warning(f"⚠️  Chunk failed or empty: {error}")
+                        logger.warning(f"R  Chunk failed or empty: {error}")
 
             except Exception as e:
                 logger.error(f"❌ Error fetching chunk: {e}")
@@ -185,7 +185,7 @@ class DataLoader:
         # Concatenate all chunks into a single numpy structured array
         import numpy as np
         all_rates = np.concatenate(chunks)
-        logger.info(f"✅ Total bars fetched: {len(all_rates)}")
+        logger.info(f"R Total bars fetched: {len(all_rates)}")
 
         # Convert to DataFrame (preserves structured array fields as columns)
         df = pd.DataFrame(all_rates)
@@ -325,9 +325,9 @@ class DataLoader:
         is_valid = len(issues) == 0
 
         if is_valid:
-            logger.info("✅ Data validation passed")
+            logger.info("R Data validation passed")
         else:
-            logger.warning(f"⚠️ Data validation issues: {issues}")
+            logger.warning(f"R Data validation issues: {issues}")
 
         return is_valid, issues
 

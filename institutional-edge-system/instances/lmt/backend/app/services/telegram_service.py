@@ -79,7 +79,7 @@ class TelegramService:
         if not self.enabled:
             return
 
-        icon = "✅" if metrics.net_profit > 0 else "❌"
+        icon = "R" if metrics.net_profit > 0 else "❌"
         message = (
             f"{icon} **BACKTEST COMPLETE**\n"
             f"Net Profit: ${metrics.net_profit:.2f}\n"

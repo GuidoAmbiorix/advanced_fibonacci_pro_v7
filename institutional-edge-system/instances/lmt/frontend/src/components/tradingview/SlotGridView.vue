@@ -273,7 +273,7 @@
                           <div class="form-field">
                             <label>End of Session Action</label>
                             <select v-model="editingSlot.session_end_action" class="input-select">
-                              <option value="HOLD">📊 Hold Positions</option>
+                              <option value="HOLD">R Hold Positions</option>
                               <option value="CLOSE">❌ Close All Trades</option>
                               <option value="BE">🎯 Move to Breakeven</option>
                             </select>
@@ -420,7 +420,7 @@ const strategies = [
   {
     key: 'enable_vwap_strategy',
     name: 'VWAP Scalp',
-    icon: '📊',
+    icon: 'R',
     description: 'Volume-weighted average price mean reversion',
     premium: false
   },

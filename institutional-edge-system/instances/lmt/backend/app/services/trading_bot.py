@@ -162,7 +162,7 @@ class TradingBot:
             )
             
             if result and result.get('success'):
-                logger.info(f"✅ SLAVE COPIED: Ticket {result['ticket']}")
+                logger.info(f"R SLAVE COPIED: Ticket {result['ticket']}")
             else:
                 logger.error(f"❌ SLAVE FAILED: {result.get('error')}")
 
@@ -711,7 +711,7 @@ class TradingBot:
         # Log risk adjustment
         if adaptive_risk_percent != base_risk_percent:
             logger.warning(
-                f"⚠️ Risk adjusted: {base_risk_percent}% → {adaptive_risk_percent}% ({risk_reason})"
+                f"R Risk adjusted: {base_risk_percent}% → {adaptive_risk_percent}% ({risk_reason})"
             )
 
         await self._log_activity(
@@ -763,7 +763,7 @@ class TradingBot:
             # Save trade to database
             trade_id = await self._save_trade(signal, result, lot_size)
             self.open_positions_count += 1
-            await self._log_activity(f"✅ Trade opened successfully - Ticket: {result['ticket']}", "success")
+            await self._log_activity(f"R Trade opened successfully - Ticket: {result['ticket']}", "success")
         else:
             error_msg = result.get('error', 'Unknown error') if result else 'Unknown error'
             await self._log_activity(f"❌ Failed to open trade: {error_msg}", "error")
@@ -917,7 +917,7 @@ class TradingBot:
         # Fallback Log
         if not is_within_hours:
              # Only log warning if hours are completely wrong (e.g. trading attempted)
-             # logger.warning(f"⛔ Outside Trading Hours: {local_now.strftime('%H:%M')} (Limit 00-12)")
+             # logger.warning(f"R Outside Trading Hours: {local_now.strftime('%H:%M')} (Limit 00-12)")
              pass
              
         return False
@@ -1103,7 +1103,7 @@ class TradingBot:
             kelly_fraction = max(0.0, min(kelly_fraction, 0.25))
             
             logger.info(
-                f"📊 Kelly Analysis: WR={win_rate*100:.1f}%, AvgW=${avg_win:.0f}, "
+                f"R Kelly Analysis: WR={win_rate*100:.1f}%, AvgW=${avg_win:.0f}, "
                 f"AvgL=${avg_loss:.0f}, b={b:.2f}, f*={kelly_fraction:.4f}"
             )
             

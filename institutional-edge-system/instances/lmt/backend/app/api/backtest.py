@@ -82,7 +82,7 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
 
         # Define Callbacks
         def on_progress(pct, stats):
-            logger.info(f"📊 Session {session_id} Progress: {pct:.1f}% | Balance: ${stats.get('balance', 0):,.2f} | Trades: {stats.get('trades', 0)}")
+            logger.info(f"R Session {session_id} Progress: {pct:.1f}% | Balance: ${stats.get('balance', 0):,.2f} | Trades: {stats.get('trades', 0)}")
             asyncio.run_coroutine_threadsafe(
                 sio.emit('backtest_progress', {
                     'session_id': session_id,
@@ -198,7 +198,7 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
 
         logger.info(f"🔧 Session {session_id} Creating BacktestEngine...")
         engine = BacktestEngine(config)
-        logger.info(f"✅ Session {session_id} BacktestEngine created successfully")
+        logger.info(f"R Session {session_id} BacktestEngine created successfully")
 
         # 3. Run Backtest
         logger.info(f"▶️  Session {session_id} Starting backtest execution...")
@@ -207,7 +207,7 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             on_trade=on_trade,
             on_log=on_log
         )
-        logger.info(f"✅ Session {session_id} Backtest execution completed!")
+        logger.info(f"R Session {session_id} Backtest execution completed!")
         logger.info(f"📈 Results: Net Profit: ${results.metrics.net_profit:,.2f} | Win Rate: {results.metrics.win_rate:.1f}% | Trades: {results.metrics.total_trades}")
 
         # 4. Save Results to DB
@@ -243,7 +243,7 @@ def run_backtest_task(session_id: int, request: BacktestRequest, db: Session, lo
             db.add(db_trade)
             
         db.commit()
-        logger.info(f"✅ Session {session_id} Results saved to database successfully")
+        logger.info(f"R Session {session_id} Results saved to database successfully")
         logger.info(f"🎉 BACKTEST COMPLETED - Session {session_id} | ${final_balance:,.2f} ({results.metrics.net_profit:+,.2f})")
 
         # Emit completion event

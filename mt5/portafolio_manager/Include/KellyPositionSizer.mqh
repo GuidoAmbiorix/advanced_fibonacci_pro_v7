@@ -304,7 +304,7 @@ public:
          if(m_dailyTargetPct > 0 && dailyProfit >= m_dailyTargetPct && !m_dailyTargetHit)
          {
             m_dailyTargetHit = true;
-            Print("✅ KELLY: Daily profit target reached: +", DoubleToString(dailyProfit, 2),
+            Print("R KELLY: Daily profit target reached: +", DoubleToString(dailyProfit, 2),
                   "% >= ", m_dailyTargetPct, "% - No more entries today");
          }
       }
@@ -378,7 +378,7 @@ public:
       string limitStr = "";
       if(m_dailyLimitHit) limitStr = " [DAILY LIMIT]";
       else if(m_weeklyLimitHit) limitStr = " [WEEKLY LIMIT]";
-      else if(m_dailyTargetHit) limitStr = " [DAILY TARGET ✅]";
+      else if(m_dailyTargetHit) limitStr = " [DAILY TARGET R]";
 
       return "KELLY: WR=" + DoubleToString(m_winRate * 100, 1) + "% " +
              "R:R=" + DoubleToString(m_rewardRiskRatio, 2) + " " +

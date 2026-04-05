@@ -82,7 +82,7 @@ void OnStart()
 
    Print("");
    Print("=================================================");
-   Print("📊 SPREAD STATISTICS (", samples, " samples)");
+   Print("R SPREAD STATISTICS (", samples, " samples)");
    Print("=================================================");
 
    if(samples > 0)
@@ -100,22 +100,22 @@ void OnStart()
       // Recommendations based on average spread
       if(avgSpreadUSD <= 0.50)
       {
-         Print("✅ EXCELLENT SPREADS (ECN/Raw account)");
+         Print("R EXCELLENT SPREADS (ECN/Raw account)");
          Print("   InpMetals_MaxSpreadUSD = 0.80  (tight filter)");
       }
       else if(avgSpreadUSD <= 1.00)
       {
-         Print("✅ GOOD SPREADS (Standard account)");
+         Print("R GOOD SPREADS (Standard account)");
          Print("   InpMetals_MaxSpreadUSD = 1.20  (current: 1.0 is OK but slightly tight)");
       }
       else if(avgSpreadUSD <= 1.50)
       {
-         Print("⚠️ MODERATE SPREADS");
+         Print("R MODERATE SPREADS");
          Print("   InpMetals_MaxSpreadUSD = 1.80  (increase from 1.0)");
       }
       else
       {
-         Print("⛔ HIGH SPREADS (consider different broker)");
+         Print("R HIGH SPREADS (consider different broker)");
          Print("   InpMetals_MaxSpreadUSD = 2.50  (or disable filter)");
       }
 
@@ -128,13 +128,13 @@ void OnStart()
          {
             // This is simplified - actual calculation would need all samples
          }
-         Print("⚠️ WARNING: ", DoubleToString((maxSpreadUSD > 1.0 ? 1 : 0) * 100, 0),
+         Print("R WARNING: ", DoubleToString((maxSpreadUSD > 1.0 ? 1 : 0) * 100, 0),
                "% of samples exceed current threshold");
          Print("   You may miss trading opportunities during certain sessions");
       }
       else
       {
-         Print("✅ Current threshold (1.0 USD) is adequate for your broker");
+         Print("R Current threshold (1.0 USD) is adequate for your broker");
       }
    }
    else

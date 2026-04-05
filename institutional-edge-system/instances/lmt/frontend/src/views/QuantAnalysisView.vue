@@ -105,7 +105,7 @@
             <div class="h-64 flex items-center justify-center text-gray-500">
               <!-- Placeholder for ApexCharts -->
               <div class="text-center">
-                <div class="text-6xl mb-3">📊</div>
+                <div class="text-6xl mb-3">R</div>
                 <p>Equity curves with different Kelly fractions</p>
                 <p class="text-sm text-gray-600">Full Kelly vs Half Kelly vs Quarter Kelly</p>
               </div>
@@ -249,7 +249,7 @@ const selectedTimeframe = ref('H1')
 const accountBalance = ref(10000)
 
 const tabs = [
-  { id: 'kelly', icon: '📊', label: 'Kelly Sizing' },
+  { id: 'kelly', icon: 'R', label: 'Kelly Sizing' },
   { id: 'regime', icon: '🔥', label: 'Regime Detection' },
   { id: 'oos', icon: '🔬', label: 'OOS Validation' },
   { id: 'cointegration', icon: '🔗', label: 'Cointegration' }

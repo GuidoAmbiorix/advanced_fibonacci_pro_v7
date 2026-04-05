@@ -2,7 +2,7 @@
   <div class="card h-full flex flex-col">
     <div class="card-header">
       <h3 class="text-sm font-bold text-primary uppercase tracking-wider flex items-center space-x-2">
-        <span>📊</span>
+        <span>R</span>
         <span>Fundamental Data</span>
       </h3>
       <div v-if="loading" class="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>

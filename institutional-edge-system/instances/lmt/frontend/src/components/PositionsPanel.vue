@@ -1,7 +1,7 @@
 <template>
   <div class="card">
     <div class="card-header flex items-center justify-between">
-      <h2 class="text-xl font-bold">📊 Open Positions</h2>
+      <h2 class="text-xl font-bold">R Open Positions</h2>
       <div class="flex items-center space-x-2">
         <span v-if="positions.length > 0" class="badge badge-info">
           {{ positions.length }} Open

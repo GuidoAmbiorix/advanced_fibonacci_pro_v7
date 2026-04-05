@@ -4,7 +4,7 @@
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center">
-          <span class="text-xl">📊</span>
+          <span class="text-xl">R</span>
         </div>
         <div>
           <h3 class="text-lg font-bold text-white">Kelly Position Sizing</h3>
@@ -183,7 +183,7 @@
           :key="idx"
           class="p-3 rounded-lg bg-amber-500/20 border border-amber-500/30 text-sm text-amber-200 flex items-start gap-2"
         >
-          <span>⚠️</span>
+          <span>R</span>
           <span>{{ warning }}</span>
         </div>
       </div>

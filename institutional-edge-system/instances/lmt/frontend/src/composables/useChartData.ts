@@ -72,7 +72,7 @@ export function useChartData(slotId: number) {
     socket.on('new_candle', (data: any) => {
       if (data.slot_id === slotId) {
         // Emit event for chart to consume
-        console.log('📊 New candle received:', data.candle)
+        console.log('R New candle received:', data.candle)
       }
     })
   })

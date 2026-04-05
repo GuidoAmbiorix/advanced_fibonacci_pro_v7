@@ -4512,7 +4512,7 @@
         "kind": 5,
         "importPath": "institutional-edge-system.backend.analyze_trades",
         "description": "institutional-edge-system.backend.analyze_trades",
-        "peekOfCode": "tp_count = len(tp_trades)\nsl_count = len(sl_trades)\nif tp_count < sl_count:\n    print(f'⚠️  Más SL ({sl_count}) que TP ({tp_count}) → TPs muy lejos o SLs muy cerca')\nelse:\n    print(f'✅ Balance razonable: {tp_count} TP vs {sl_count} SL')\n# Check R:R\navg_tp_r = tp_r_values.mean()\nif avg_tp_r < 1.5:\n    print(f'⚠️  TP promedio {avg_tp_r:.2f}R es bajo → Necesitas usar TP2 o TP3')",
+        "peekOfCode": "tp_count = len(tp_trades)\nsl_count = len(sl_trades)\nif tp_count < sl_count:\n    print(f'R  Más SL ({sl_count}) que TP ({tp_count}) → TPs muy lejos o SLs muy cerca')\nelse:\n    print(f'R Balance razonable: {tp_count} TP vs {sl_count} SL')\n# Check R:R\navg_tp_r = tp_r_values.mean()\nif avg_tp_r < 1.5:\n    print(f'R  TP promedio {avg_tp_r:.2f}R es bajo → Necesitas usar TP2 o TP3')",
         "detail": "institutional-edge-system.backend.analyze_trades",
         "documentation": {}
     },
@@ -4521,7 +4521,7 @@
         "kind": 5,
         "importPath": "institutional-edge-system.backend.analyze_trades",
         "description": "institutional-edge-system.backend.analyze_trades",
-        "peekOfCode": "sl_count = len(sl_trades)\nif tp_count < sl_count:\n    print(f'⚠️  Más SL ({sl_count}) que TP ({tp_count}) → TPs muy lejos o SLs muy cerca')\nelse:\n    print(f'✅ Balance razonable: {tp_count} TP vs {sl_count} SL')\n# Check R:R\navg_tp_r = tp_r_values.mean()\nif avg_tp_r < 1.5:\n    print(f'⚠️  TP promedio {avg_tp_r:.2f}R es bajo → Necesitas usar TP2 o TP3')\nelse:",
+        "peekOfCode": "sl_count = len(sl_trades)\nif tp_count < sl_count:\n    print(f'R  Más SL ({sl_count}) que TP ({tp_count}) → TPs muy lejos o SLs muy cerca')\nelse:\n    print(f'R Balance razonable: {tp_count} TP vs {sl_count} SL')\n# Check R:R\navg_tp_r = tp_r_values.mean()\nif avg_tp_r < 1.5:\n    print(f'R  TP promedio {avg_tp_r:.2f}R es bajo → Necesitas usar TP2 o TP3')\nelse:",
         "detail": "institutional-edge-system.backend.analyze_trades",
         "documentation": {}
     },
@@ -4530,7 +4530,7 @@
         "kind": 5,
         "importPath": "institutional-edge-system.backend.analyze_trades",
         "description": "institutional-edge-system.backend.analyze_trades",
-        "peekOfCode": "avg_tp_r = tp_r_values.mean()\nif avg_tp_r < 1.5:\n    print(f'⚠️  TP promedio {avg_tp_r:.2f}R es bajo → Necesitas usar TP2 o TP3')\nelse:\n    print(f'✅ TP promedio {avg_tp_r:.2f}R es razonable')\n# Check BUY vs SELL\nbuy_wr = (df[df['type']=='BUY']['pnl']>0).sum() / len(df[df['type']=='BUY']) * 100\nsell_wr = (df[df['type']=='SELL']['pnl']>0).sum() / len(df[df['type']=='SELL']) * 100\nif abs(buy_wr - sell_wr) > 10:\n    better = 'BUY' if buy_wr > sell_wr else 'SELL'",
+        "peekOfCode": "avg_tp_r = tp_r_values.mean()\nif avg_tp_r < 1.5:\n    print(f'R  TP promedio {avg_tp_r:.2f}R es bajo → Necesitas usar TP2 o TP3')\nelse:\n    print(f'R TP promedio {avg_tp_r:.2f}R es razonable')\n# Check BUY vs SELL\nbuy_wr = (df[df['type']=='BUY']['pnl']>0).sum() / len(df[df['type']=='BUY']) * 100\nsell_wr = (df[df['type']=='SELL']['pnl']>0).sum() / len(df[df['type']=='SELL']) * 100\nif abs(buy_wr - sell_wr) > 10:\n    better = 'BUY' if buy_wr > sell_wr else 'SELL'",
         "detail": "institutional-edge-system.backend.analyze_trades",
         "documentation": {}
     },
@@ -4539,7 +4539,7 @@
         "kind": 5,
         "importPath": "institutional-edge-system.backend.analyze_trades",
         "description": "institutional-edge-system.backend.analyze_trades",
-        "peekOfCode": "buy_wr = (df[df['type']=='BUY']['pnl']>0).sum() / len(df[df['type']=='BUY']) * 100\nsell_wr = (df[df['type']=='SELL']['pnl']>0).sum() / len(df[df['type']=='SELL']) * 100\nif abs(buy_wr - sell_wr) > 10:\n    better = 'BUY' if buy_wr > sell_wr else 'SELL'\n    print(f'⚠️  {better} tiene significativamente mejor WR → Considerar solo {better}')\nelse:\n    print('✅ BUY y SELL tienen performance similar')\nprint()\nprint('='*70)",
+        "peekOfCode": "buy_wr = (df[df['type']=='BUY']['pnl']>0).sum() / len(df[df['type']=='BUY']) * 100\nsell_wr = (df[df['type']=='SELL']['pnl']>0).sum() / len(df[df['type']=='SELL']) * 100\nif abs(buy_wr - sell_wr) > 10:\n    better = 'BUY' if buy_wr > sell_wr else 'SELL'\n    print(f'R  {better} tiene significativamente mejor WR → Considerar solo {better}')\nelse:\n    print('R BUY y SELL tienen performance similar')\nprint()\nprint('='*70)",
         "detail": "institutional-edge-system.backend.analyze_trades",
         "documentation": {}
     },
@@ -4548,7 +4548,7 @@
         "kind": 5,
         "importPath": "institutional-edge-system.backend.analyze_trades",
         "description": "institutional-edge-system.backend.analyze_trades",
-        "peekOfCode": "sell_wr = (df[df['type']=='SELL']['pnl']>0).sum() / len(df[df['type']=='SELL']) * 100\nif abs(buy_wr - sell_wr) > 10:\n    better = 'BUY' if buy_wr > sell_wr else 'SELL'\n    print(f'⚠️  {better} tiene significativamente mejor WR → Considerar solo {better}')\nelse:\n    print('✅ BUY y SELL tienen performance similar')\nprint()\nprint('='*70)",
+        "peekOfCode": "sell_wr = (df[df['type']=='SELL']['pnl']>0).sum() / len(df[df['type']=='SELL']) * 100\nif abs(buy_wr - sell_wr) > 10:\n    better = 'BUY' if buy_wr > sell_wr else 'SELL'\n    print(f'R  {better} tiene significativamente mejor WR → Considerar solo {better}')\nelse:\n    print('R BUY y SELL tienen performance similar')\nprint()\nprint('='*70)",
         "detail": "institutional-edge-system.backend.analyze_trades",
         "documentation": {}
     },

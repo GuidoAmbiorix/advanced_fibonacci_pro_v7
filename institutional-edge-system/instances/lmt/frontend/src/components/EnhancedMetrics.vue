@@ -90,7 +90,7 @@
     <!-- Drawdown Analysis -->
     <div class="bg-gray-800/30 rounded-xl p-5 mb-6">
       <h4 class="text-sm font-medium text-white mb-4 flex items-center gap-2">
-        <span>📊</span>
+        <span>R</span>
         <span>Drawdown Analysis</span>
       </h4>
       

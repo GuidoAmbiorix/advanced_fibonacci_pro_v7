@@ -157,7 +157,7 @@ class InstitutionalProEngine:
 
         # 1. NaN Guard (Critical for stability)
         if df.iloc[-1][['rsi', 'macd_hist', 'stoch_k', 'atr']].isna().any():
-             # logger.warning(f"⚠️ {self.symbol}: Indicators contain NaN values (RSI/MACD/Stoch/ATR). Skipping.")
+             # logger.warning(f"R {self.symbol}: Indicators contain NaN values (RSI/MACD/Stoch/ATR). Skipping.")
              structure = self.structure_analyzer.analyze(df)
              return {'signals': [], 'structure': structure, 'reason': "NaN Indicators"}
 

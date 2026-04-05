@@ -89,7 +89,7 @@ class RiskControls:
         """Deactivate kill switch - resume trading"""
         with self._kill_switch_lock:
             self._kill_switch_active = False
-            logger.info("✅ Kill switch deactivated - trading resumed")
+            logger.info("R Kill switch deactivated - trading resumed")
     
     def is_kill_switch_active(self) -> bool:
         """Check if kill switch is active"""

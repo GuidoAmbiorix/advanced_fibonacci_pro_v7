@@ -30,7 +30,7 @@ class DiscordService:
         else:
             logger.info("Discord Service initialized (Rate limit: 1 msg per {}s)".format(self.MIN_MESSAGE_INTERVAL))
             if self.signals_webhook_url != self.webhook_url:
-                logger.info("✅ Separate Signals Channel Configured")
+                logger.info("R Separate Signals Channel Configured")
 
     async def _wait_for_rate_limit(self):
         """Wait if we're sending messages too fast"""
@@ -146,7 +146,7 @@ class DiscordService:
         color = 0xFFD700 if metrics.net_profit > 0 else 0x808080
         
         embed = {
-            "title": "📊 BACKTEST COMPLETE",
+            "title": "R BACKTEST COMPLETE",
             "description": f"Results for **{metrics.total_trades}** trades",
             "color": color,
             "fields": [
@@ -184,7 +184,7 @@ class DiscordService:
             color = 0xFF0000 # Red
 
         embed = {
-            "title": "📊 MARKET STATUS UPDATE",
+            "title": "R MARKET STATUS UPDATE",
             "description": f"Analysis for **{analysis.get('symbol', 'UNKNOWN')}** ({analysis.get('timeframe', 'UNKNOWN')})",
             "color": color,
             "fields": [

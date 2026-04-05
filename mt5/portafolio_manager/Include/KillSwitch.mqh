@@ -42,7 +42,7 @@ public:
       if(rOutcome < -1.5)
       {
          m_disabledUntil = TimeCurrent() + 1800; // 30m Cooldown
-         Print("⛔ KillSwitch: Heavy Loss. Cooldown 30m.");
+         Print("R KillSwitch: Heavy Loss. Cooldown 30m.");
       }
    }
 
@@ -84,7 +84,7 @@ public:
 
    string GetStatus()
    {
-      if(TimeCurrent() < m_disabledUntil) return "🥶 COOL " + IntegerToString((int)(m_disabledUntil-TimeCurrent())/60) + "m";
+      if(TimeCurrent() < m_disabledUntil) return "R COOL " + IntegerToString((int)(m_disabledUntil-TimeCurrent())/60) + "m";
       if(!IsEnabled()) return "💀 KILLED";
       return "🟢 ACTIVE";
    }

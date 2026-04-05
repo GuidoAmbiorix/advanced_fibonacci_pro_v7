@@ -4,7 +4,7 @@
     <div v-else class="flex items-center justify-center h-full text-slate-500">
       <span v-if="error" class="text-red-400 flex flex-col items-center">
         <div class="flex items-center mb-2">
-          <span class="mr-2">⚠️</span> {{ error }}
+          <span class="mr-2">R</span> {{ error }}
         </div>
         <button @click="updateChart" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-white transition-colors">
           🔄 Retry

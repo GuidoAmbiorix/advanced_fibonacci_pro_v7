@@ -194,7 +194,7 @@
           :key="idx"
           class="p-3 rounded-lg bg-amber-500/20 border border-amber-500/30 text-sm text-amber-200 flex items-start gap-2"
         >
-          <span>⚠️</span>
+          <span>R</span>
           <span>{{ warning }}</span>
         </div>
       </div>
@@ -227,7 +227,7 @@ const hasTradeData = computed(() => props.trades.length > 20)
 
 const statusIcon = computed(() => {
   if (!result.value) return ''
-  return result.value.is_valid ? '✅' : '❌'
+  return result.value.is_valid ? 'R' : '❌'
 })
 
 const statusLabel = computed(() => {

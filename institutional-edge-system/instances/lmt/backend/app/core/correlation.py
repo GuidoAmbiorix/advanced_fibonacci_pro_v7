@@ -105,9 +105,9 @@ class CorrelationCalculator:
                     corr = matrix[sym1][sym2]
                     if abs(corr) >= threshold:
                         if corr > 0:
-                            warnings.append(f"⚠️ {sym1} & {sym2} highly correlated ({corr:.2f}) - Similar risk exposure")
+                            warnings.append(f"R {sym1} & {sym2} highly correlated ({corr:.2f}) - Similar risk exposure")
                         else:
-                            warnings.append(f"📊 {sym1} & {sym2} negatively correlated ({corr:.2f}) - Potential hedge")
+                            warnings.append(f"R {sym1} & {sym2} negatively correlated ({corr:.2f}) - Potential hedge")
         
         return warnings
     

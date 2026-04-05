@@ -142,7 +142,7 @@ class GoldenEngine:
                 if macro_structure.trend == "NEUTRAL":
                     # Optional: Allow invalidation if immediate structure is very strong?
                     # For now, safe approach: Block.
-                    logger.info(f"⚠️ Signal BLOCKED: Macro Bias is NEUTRAL (Ranging)")
+                    logger.info(f"R Signal BLOCKED: Macro Bias is NEUTRAL (Ranging)")
                     return {'signals': [], 'structure': structure}
             # --- MACRO BIAS END ---
 

@@ -268,7 +268,7 @@ class EnhancedConfluenceScorer:
                 'matched': matched
             }
 
-        # ✅ FIX: Check H1 with PRICE PROXIMITY (not just presence)
+        # R FIX: Check H1 with PRICE PROXIMITY (not just presence)
         h1_info = check_level_match(fib_h1, 'H1')
         if h1_info:
             matches['H1'] = h1_info
@@ -277,7 +277,7 @@ class EnhancedConfluenceScorer:
                 # Check golden pocket (0.618-0.786)
                 if h1_info['level'] in ['0.618', '0.786']:
                     is_golden = True
-                logger.debug(f"✅ H1 Fib MATCH: {h1_info['level']}@{h1_info['price']:.5f}, diff={h1_info['diff']:.5f}")
+                logger.debug(f"R H1 Fib MATCH: {h1_info['level']}@{h1_info['price']:.5f}, diff={h1_info['diff']:.5f}")
             else:
                 logger.debug(f"❌ H1 Fib no match: {h1_info['level']}@{h1_info['price']:.5f}, diff={h1_info['diff']:.5f} > tol={tolerance_price:.5f}")
 
@@ -287,7 +287,7 @@ class EnhancedConfluenceScorer:
             matches['H4'] = h4_info
             if h4_info['matched']:
                 timeframes_matched += 1
-                logger.debug(f"✅ H4 Fib MATCH: {h4_info['level']}@{h4_info['price']:.5f}")
+                logger.debug(f"R H4 Fib MATCH: {h4_info['level']}@{h4_info['price']:.5f}")
 
         # Check D1 confluence
         d1_info = check_level_match(fib_d1, 'D1')
@@ -295,7 +295,7 @@ class EnhancedConfluenceScorer:
             matches['D1'] = d1_info
             if d1_info['matched']:
                 timeframes_matched += 1
-                logger.debug(f"✅ D1 Fib MATCH: {d1_info['level']}@{d1_info['price']:.5f}")
+                logger.debug(f"R D1 Fib MATCH: {d1_info['level']}@{d1_info['price']:.5f}")
 
         # Calculate score based on confluence
         if timeframes_matched == 1:
@@ -312,7 +312,7 @@ class EnhancedConfluenceScorer:
 
         # Summary log
         if timeframes_matched > 0:
-            logger.debug(f"📊 Fib Confluence: {timeframes_matched} TF(s) matched, score={fib_score}, golden={is_golden}")
+            logger.debug(f"R Fib Confluence: {timeframes_matched} TF(s) matched, score={fib_score}, golden={is_golden}")
 
         return fib_score, is_golden, timeframes_matched, matches
 

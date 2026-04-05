@@ -102,12 +102,12 @@ public:
 
          if(m_hATR_M1 == INVALID_HANDLE || m_hATR_H1 == INVALID_HANDLE)
          {
-            Print("⚠️ NEWS FILTER: Failed to create volatility indicators - Spike detection disabled");
+            Print("R NEWS FILTER: Failed to create volatility indicators - Spike detection disabled");
             m_enableVolatilityFilter = false;
          }
          else
          {
-            Print("✅ NEWS FILTER: Volatility spike detection enabled (Threshold: ", m_volatilityThreshold, "x)");
+            Print("R NEWS FILTER: Volatility spike detection enabled (Threshold: ", m_volatilityThreshold, "x)");
          }
       }
 
@@ -353,7 +353,7 @@ public:
          if(minutesSinceSpike >= m_spikeCooldownMinutes)
          {
             m_inVolatilitySpike = false;
-            Print("✅ VOLATILITY NORMALIZED: ", m_symbol, " | Trading resumed");
+            Print("R VOLATILITY NORMALIZED: ", m_symbol, " | Trading resumed");
          }
       }
    }
@@ -546,7 +546,7 @@ public:
       if(threshold > 0)
       {
          m_volatilityThreshold = threshold;
-         Print("📊 NEWS FILTER: Volatility threshold set to ", threshold, "x");
+         Print("R NEWS FILTER: Volatility threshold set to ", threshold, "x");
       }
    }
 
@@ -557,14 +557,14 @@ public:
       if(minutes > 0)
       {
          m_spikeCooldownMinutes = minutes;
-         Print("⏱️ NEWS FILTER: Spike cooldown set to ", minutes, " minutes");
+         Print("R NEWS FILTER: Spike cooldown set to ", minutes, " minutes");
       }
    }
 
    void EnableVolatilityFilter(bool enable)
    {
       m_enableVolatilityFilter = enable;
-      Print(enable ? "✅ Volatility spike detection enabled" : "❌ Volatility spike detection disabled");
+      Print(enable ? "R Volatility spike detection enabled" : "❌ Volatility spike detection disabled");
    }
 
    bool IsVolatilityFilterEnabled() { return m_enableVolatilityFilter; }

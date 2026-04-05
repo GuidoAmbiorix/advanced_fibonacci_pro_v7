@@ -65,7 +65,7 @@ socket.on("disconnect", (reason) => {
 });
 
 socket.on("connect_error", (error) => {
-  console.error("⚠️ Socket connection error:", error.message);
+  console.error("R Socket connection error:", error.message);
   isConnected.value = false;
 });
 
@@ -76,7 +76,7 @@ socket.io.on("reconnect_attempt", (attempt) => {
 });
 
 socket.io.on("reconnect", (attempt) => {
-  console.log(`✅ Reconnected after ${attempt} attempts`);
+  console.log(`R Reconnected after ${attempt} attempts`);
   isConnected.value = true;
   isReconnecting.value = false;
   reconnectAttempts.value = 0;

@@ -44,10 +44,10 @@
 
       <!-- Alerts -->
       <div v-if="riskPercentage > 80" class="bg-red-500/20 border border-red-500/50 p-3 rounded text-xs text-red-200 flex items-center animate-pulse">
-        <span class="mr-2">⚠️</span> CRITICAL RISK LEVEL DETECTED
+        <span class="mr-2">R</span> CRITICAL RISK LEVEL DETECTED
       </div>
       <div v-else class="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded text-xs text-emerald-400 flex items-center">
-        <span class="mr-2">✅</span> Risk Parameters Normal
+        <span class="mr-2">R</span> Risk Parameters Normal
       </div>
     </div>
   </div>

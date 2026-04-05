@@ -16,7 +16,7 @@ async def run_simulation():
     print("🚀 Starting Trading Bot Simulation...")
 
     # 1. Create Synthetic Data (Strong Uptrend + Pullback + Resumption)
-    print("📊 Generating synthetic market data for Trend Following BUY...")
+    print("R Generating synthetic market data for Trend Following BUY...")
     dates = pd.date_range(end=datetime.now(), periods=200, freq='15min')
     data = {
         'time': dates,
@@ -172,7 +172,7 @@ async def run_simulation():
     
     # Check if market status update was sent
     if mock_discord.send_market_status_update.called:
-        print("✅ Market Status Update sent to Discord")
+        print("R Market Status Update sent to Discord")
         call_args = mock_discord.send_market_status_update.call_args[0][0]
         print(f"   - Bull Score: {call_args.get('bull_confluence_score')}")
         print(f"   - Bear Score: {call_args.get('bear_confluence_score')}")
@@ -182,17 +182,17 @@ async def run_simulation():
 
     # Check if trade was placed
     if mock_mt5.place_trade.called:
-        print("✅ Trade Executed on MT5")
+        print("R Trade Executed on MT5")
         trade_args = mock_mt5.place_trade.call_args
         print(f"   - Args: {trade_args}")
     else:
-        print("⚠️ No Trade Executed (Check signal logic or filters)")
+        print("R No Trade Executed (Check signal logic or filters)")
         
     # Check if signal alert was sent
     if mock_discord.send_signal_alert.called:
-        print("✅ Signal Alert sent to Discord")
+        print("R Signal Alert sent to Discord")
     else:
-        print("⚠️ No Signal Alert sent")
+        print("R No Signal Alert sent")
 
 if __name__ == "__main__":
     asyncio.run(run_simulation())

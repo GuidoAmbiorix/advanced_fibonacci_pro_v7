@@ -272,7 +272,7 @@ def main():
     predictor.save_model(str(model_path))
 
     logger.info("\n" + "=" * 70)
-    logger.info("✅ Model training complete!")
+    logger.info("R Model training complete!")
     logger.info("Model saved to: {}", model_path)
     logger.info("=" * 70)
 

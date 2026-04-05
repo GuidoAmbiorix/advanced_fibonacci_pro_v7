@@ -201,7 +201,7 @@ class MT5Connector:
                         stop_loss = entry_price + min_distance
                     stop_loss = self._normalize_price(symbol, stop_loss)
                     logger.warning(
-                        f"⚠️ SL adjusted for {symbol}: {old_sl:.5f} → {stop_loss:.5f} "
+                        f"R SL adjusted for {symbol}: {old_sl:.5f} → {stop_loss:.5f} "
                         f"(min distance: {min_distance:.5f})"
                     )
             
@@ -216,7 +216,7 @@ class MT5Connector:
                         take_profit = entry_price - min_distance
                     take_profit = self._normalize_price(symbol, take_profit)
                     logger.warning(
-                        f"⚠️ TP adjusted for {symbol}: {old_tp:.5f} → {take_profit:.5f} "
+                        f"R TP adjusted for {symbol}: {old_tp:.5f} → {take_profit:.5f} "
                         f"(min distance: {min_distance:.5f})"
                     )
             
@@ -270,7 +270,7 @@ def proxy_order_send(req):
                     'M30': 30, 'H1': 16385, 'H4': 16388,
                     'D1': 16408, 'W1': 32769, 'MN1': 49153,
                 }
-                logger.info("✅ RPyC connection established and proxies defined")
+                logger.info("R RPyC connection established and proxies defined")
                 
             except Exception as e:
                 logger.error(f"❌ Failed to connect via RPyC: {e}")
@@ -283,7 +283,7 @@ def proxy_order_send(req):
                 logger.error(f"❌ MT5 initialize() failed: {err_code}")
                 return False
             
-            logger.info("✅ MT5 initialized successfully")
+            logger.info("R MT5 initialized successfully")
             
             # Login
             if self.login and self.password and self.server:
@@ -297,9 +297,9 @@ def proxy_order_send(req):
                     err_code = mt5.last_error()
                     logger.error(f"❌ MT5 login failed for account {self.login}: {err_code}")
                     return False
-                logger.info(f"✅ Successfully logged into {self.login}")
+                logger.info(f"R Successfully logged into {self.login}")
             else:
-                logger.warning("⚠️ No MT5 credentials provided - using current terminal session")
+                logger.warning("R No MT5 credentials provided - using current terminal session")
 
             self.connected = True
             
@@ -307,9 +307,9 @@ def proxy_order_send(req):
             try:
                 account_info = mt5.account_info()
                 if account_info:
-                    logger.info(f"📊 Account {account_info.login} | Balance: ${account_info.balance:.2f}")
+                    logger.info(f"R Account {account_info.login} | Balance: ${account_info.balance:.2f}")
                 else:
-                    logger.warning("⚠️ Connected but Account Info unavailable")
+                    logger.warning("R Connected but Account Info unavailable")
             except:
                 pass 
                 
@@ -356,9 +356,9 @@ def proxy_order_send(req):
             
             account_info = mt5.account_info()
             if account_info:
-                logger.info(f"✅ Switched to account {login} | Balance: ${account_info.balance:.2f}")
+                logger.info(f"R Switched to account {login} | Balance: ${account_info.balance:.2f}")
             else:
-                logger.warning(f"⚠️ Switched to account {login} but account_info unavailable")
+                logger.warning(f"R Switched to account {login} but account_info unavailable")
             
             return True
             
@@ -489,15 +489,15 @@ def proxy_order_send(req):
                 return mt5.ORDER_FILLING_IOC
             
             filling = symbol_info.filling_mode
-            logger.info(f"📊 Symbol {symbol} filling_mode flags: {filling} (binary: {bin(filling)})")
+            logger.info(f"R Symbol {symbol} filling_mode flags: {filling} (binary: {bin(filling)})")
             
             # Try filling modes in order of typical broker compatibility
             # IOC (2) is usually most compatible, then RETURN (4), then FOK (1)
             if filling & 2:  # IOC
-                logger.info(f"✅ Using ORDER_FILLING_IOC for {symbol}")
+                logger.info(f"R Using ORDER_FILLING_IOC for {symbol}")
                 return mt5.ORDER_FILLING_IOC
             if filling & 1:  # FOK
-                logger.info(f"✅ Using ORDER_FILLING_FOK for {symbol}")
+                logger.info(f"R Using ORDER_FILLING_FOK for {symbol}")
                 return mt5.ORDER_FILLING_FOK
             
             # If zero or only RETURN, try IOC as default
@@ -610,7 +610,7 @@ def proxy_order_send(req):
                     logger.error(f"Invalid tick prices for {symbol}: ask={tick.ask}, bid={tick.bid}. Market may be closed or symbol not found.")
                     return {"success": False, "error": f"Invalid tick prices for {symbol}. Market may be closed."}
 
-                logger.info(f"📊 Tick for {symbol}: bid={tick.bid}, ask={tick.ask}")
+                logger.info(f"R Tick for {symbol}: bid={tick.bid}, ask={tick.ask}")
 
                 # Map order types
                 order_type_map = {
@@ -719,7 +719,7 @@ def proxy_order_send(req):
                         "error": f"Order Validation Failed: {check_result.comment} ({check_result.retcode})"
                     }
                 else:
-                    logger.info(f"✅ order_check passed: margin_free={check_result.margin_free}")
+                    logger.info(f"R order_check passed: margin_free={check_result.margin_free}")
                 
                 if hasattr(self, 'proxy_order_send'):
                     result = self.proxy_order_send(request)
@@ -1042,7 +1042,7 @@ def proxy_order_send(req):
             
             if sl_distance < min_sl_distance:
                 logger.warning(
-                    f"⚠️ SL Clamp: {symbol} SL {sl_distance:.5f} < {min_sl_distance:.5f} (3.0 pips). "
+                    f"R SL Clamp: {symbol} SL {sl_distance:.5f} < {min_sl_distance:.5f} (3.0 pips). "
                     f"Using clamped value for safety."
                 )
                 sl_distance = min_sl_distance
@@ -1094,7 +1094,7 @@ def proxy_order_send(req):
                 
                 if risk_per_lot < (contract_risk * 0.1): # If it's < 10% of expected (e.g. $2.85 vs $285)
                      logger.warning(
-                         f"⚠️ Tick Value anomaly detected for {symbol}. "
+                         f"R Tick Value anomaly detected for {symbol}. "
                          f"TickVal: {tick_value}, Risk/Lot: {risk_per_lot:.2f}. "
                          f"Using Contract Size ({symbol_info.trade_contract_size}) fallback: {contract_risk:.2f}"
                      )
@@ -1110,7 +1110,7 @@ def proxy_order_send(req):
             # Check if we are forcing up to min volume
             if lot_size < symbol_info.volume_min:
                 logger.warning(
-                    f"⚠️ Small Account Warning: Calculated lots ({lot_size}) < Min lots ({symbol_info.volume_min}). "
+                    f"R Small Account Warning: Calculated lots ({lot_size}) < Min lots ({symbol_info.volume_min}). "
                     f"Forcing trade size to {symbol_info.volume_min} lots. Risk % will be exceeded!"
                 )
             

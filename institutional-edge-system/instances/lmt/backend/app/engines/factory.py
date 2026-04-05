@@ -28,7 +28,7 @@ class EngineFactory:
             
         # Map Legacy/Deleted engines to the new Gold Standard (or Golden)
         elif engine_type in ['SILVER', 'BRONZE', 'PLATINUM', 'ADAPTIVE']:
-             logger.warning(f"⚠️ Legacy engine '{engine_type}' requested. Mapping to INSTITUTIONAL PRO.")
+             logger.warning(f"R Legacy engine '{engine_type}' requested. Mapping to INSTITUTIONAL PRO.")
              return InstitutionalProEngine(config)
              
         else:

@@ -164,7 +164,7 @@ async def connect_mt5_background():
     for i in range(max_retries):
         logger.info(f"Connecting to MT5 (Attempt {i+1}/{max_retries})...")
         if mt5_connector.connect():
-            logger.info("✅ MT5 connected successfully")
+            logger.info("R MT5 connected successfully")
             return
         
         logger.warning("⏳ MT5 not ready (still installing/starting?)... Waiting 5s.")
@@ -180,7 +180,7 @@ async def startup_event():
     # Initialize Log Manager (System Logs)
     from app.core.log_manager import log_manager
     logger.add(log_manager.sink, serialize=False, level="DEBUG", enqueue=True)
-    logger.info("✅ Log Manager initialized")
+    logger.info("R Log Manager initialized")
     logger.info("SL FIXED APPLIED V4.3")
 
 
@@ -235,12 +235,12 @@ async def startup_event():
                 )
                 db.add(new_account)
                 db.commit()
-                logger.info(f"✅ Account {login_str} created and activated.")
+                logger.info(f"R Account {login_str} created and activated.")
             else:
                 if not account.is_active:
                      account.is_active = True
                      db.commit()
-                     logger.info(f"✅ Account {login_str} reactivated.")
+                     logger.info(f"R Account {login_str} reactivated.")
                 logger.info(f"ℹ️ Account {login_str} already exists.")
             
             db.close()

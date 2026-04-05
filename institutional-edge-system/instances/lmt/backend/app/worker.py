@@ -15,7 +15,7 @@ async def process_signal(signal_data):
     
     # In a full implementation, we would initialize MT5Connector here and execute
     # For now, we just log it to prove the decoupling works
-    logger.info("✅ Signal processed by worker")
+    logger.info("R Signal processed by worker")
 
 async def main():
     logger.info("🚀 Starting Trade Worker...")

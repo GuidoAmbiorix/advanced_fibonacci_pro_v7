@@ -1959,7 +1959,7 @@ class TradingEngine:
 
         # Log swing analysis
         logger.debug(
-            f"📊 Fibonacci Analysis: price={current_price:.5f}, "
+            f"R Fibonacci Analysis: price={current_price:.5f}, "
             f"last_swing={'HIGH' if last_swing.is_high else 'LOW'}@{last_swing.price:.5f}, "
             f"prev_swing={'HIGH' if prev_swing.is_high else 'LOW'}@{prev_swing.price:.5f}, "
             f"tolerance={tolerance:.5f}"
@@ -1995,7 +1995,7 @@ class TradingEngine:
                 }
 
                 # Log calculated levels
-                logger.debug(f"📊 Bullish Fib Levels: {', '.join([f'{k}={v:.5f}' for k, v in fib_levels.items()])}")
+                logger.debug(f"R Bullish Fib Levels: {', '.join([f'{k}={v:.5f}' for k, v in fib_levels.items()])}")
 
                 # Check proximity (RELAXED tolerance)
                 for level_name, price in fib_levels.items():
@@ -2004,7 +2004,7 @@ class TradingEngine:
                         result['bullish_price'] = price
                         if level_name in ['0.618', '0.786']:
                             result['is_golden_zone'] = True
-                        logger.debug(f"✅ Bullish Fibonacci MATCH: {level_name} @ {price:.5f} (current: {current_price:.5f}, diff: {abs(current_price - price):.5f}, tolerance: {tolerance:.5f})")
+                        logger.debug(f"R Bullish Fibonacci MATCH: {level_name} @ {price:.5f} (current: {current_price:.5f}, diff: {abs(current_price - price):.5f}, tolerance: {tolerance:.5f})")
                         break
 
                 # Log if no match found
@@ -2041,7 +2041,7 @@ class TradingEngine:
                 }
 
                 # Log calculated levels
-                logger.debug(f"📊 Bearish Fib Levels: {', '.join([f'{k}={v:.5f}' for k, v in fib_levels.items()])}")
+                logger.debug(f"R Bearish Fib Levels: {', '.join([f'{k}={v:.5f}' for k, v in fib_levels.items()])}")
 
                 # Check proximity (RELAXED tolerance)
                 for level_name, price in fib_levels.items():
@@ -2050,7 +2050,7 @@ class TradingEngine:
                         result['bearish_price'] = price
                         if level_name in ['0.618', '0.786']:
                             result['is_golden_zone'] = True
-                        logger.debug(f"✅ Bearish Fibonacci MATCH: {level_name} @ {price:.5f} (current: {current_price:.5f}, diff: {abs(current_price - price):.5f}, tolerance: {tolerance:.5f})")
+                        logger.debug(f"R Bearish Fibonacci MATCH: {level_name} @ {price:.5f} (current: {current_price:.5f}, diff: {abs(current_price - price):.5f}, tolerance: {tolerance:.5f})")
                         break
 
                 # Log if no match found
@@ -2266,13 +2266,13 @@ class TradingEngine:
                     signal.ai_recommendation = ai_recommendation
 
                     trade_type_info = f" [{confluence_data.get('bull_trade_type', '')}]" if 'bull_trade_type' in confluence_data else ""
-                    logger.info("✅ BUY signal generated{} - Confluence: {}/10, AI: {:.1f}% ({})",
+                    logger.info("R BUY signal generated{} - Confluence: {}/10, AI: {:.1f}% ({})",
                                trade_type_info, bull_score, ai_confidence, ai_recommendation)
                 except Exception as e:
                     logger.error("AI prediction error: {}", e)
             else:
                 trade_type_info = f" [{confluence_data.get('bull_trade_type', '')}]" if 'bull_trade_type' in confluence_data else ""
-                logger.info("✅ BUY signal generated{} with higher TF confirmation", trade_type_info)
+                logger.info("R BUY signal generated{} with higher TF confirmation", trade_type_info)
 
             signals.append(signal)
 
@@ -2336,12 +2336,12 @@ class TradingEngine:
                     signal.ai_confidence = ai_confidence
                     signal.ai_recommendation = ai_recommendation
 
-                    logger.info("✅ SELL signal generated - Confluence: {}/10, AI: {:.1f}% ({})",
+                    logger.info("R SELL signal generated - Confluence: {}/10, AI: {:.1f}% ({})",
                                bear_score, ai_confidence, ai_recommendation)
                 except Exception as e:
                     logger.error("AI prediction error: {}", e)
             else:
-                logger.info("✅ SELL signal generated with higher TF confirmation")
+                logger.info("R SELL signal generated with higher TF confirmation")
 
             signals.append(signal)
 

@@ -92,13 +92,13 @@ def seed_database():
             logger.info("🌱 Seeding XAUUSD BotSlot (Institutional Gold)...")
             slot = BotSlot(**slot_data)
             db.add(slot)
-            logger.info("✅ Created XAUUSD BotSlot.")
+            logger.info("R Created XAUUSD BotSlot.")
         else:
             logger.info("🔄 Updating XAUUSD BotSlot with User Specs...")
             # Update existing slot attributes
             for key, value in slot_data.items():
                 setattr(slot, key, value)
-            logger.info("✅ Updated XAUUSD BotSlot.")
+            logger.info("R Updated XAUUSD BotSlot.")
             
         db.commit()
 

@@ -1068,7 +1068,7 @@ void OnTick()
          {
             if(g_cachedBuyScore > InpMinConfluenceEntry || g_cachedSellScore > InpMinConfluenceEntry)
             {
-               Print("âš ï¸ DOMINANCE FILTER: Blocked Signal. Buy=", DoubleToString(g_cachedBuyScore,1),
+               Print("R DOMINANCE FILTER: Blocked Signal. Buy=", DoubleToString(g_cachedBuyScore,1),
                      " Sell=", DoubleToString(g_cachedSellScore,1), " Delta=", DoubleToString(delta,1), " < ", InpDominanceThreshold);
             }
             g_cachedBuyScore = 0;
@@ -1158,7 +1158,7 @@ void OnTick()
       static datetime lastCorrWarning = 0;
       if(TimeCurrent() - lastCorrWarning > 300)
       {
-         Print("âš ï¸ [WARN] CORRELATION BLOCK: Cannot trade ", _Symbol, " - Correlated pair already active");
+         Print("R [WARN] CORRELATION BLOCK: Cannot trade ", _Symbol, " - Correlated pair already active");
          lastCorrWarning = TimeCurrent();
       }
       return;
@@ -1218,7 +1218,7 @@ void OnTick()
       static datetime lastRSIWarning = 0;
       if(TimeCurrent() - lastRSIWarning > 300)
       {
-         Print("â¸ï¸ RSI in dead zone: ", DoubleToString(g_RSI, 1), " (48-52) - waiting for momentum");
+         Print("R RSI in dead zone: ", DoubleToString(g_RSI, 1), " (48-52) - waiting for momentum");
          lastRSIWarning = TimeCurrent();
       }
       return;
@@ -1232,7 +1232,7 @@ void OnTick()
       static datetime lastEMAWarning = 0;
       if(TimeCurrent() - lastEMAWarning > 300)
       {
-         Print("â¸ï¸ Too close to EMA 200: ", DoubleToString(emaDistance / _Point, 0),
+         Print("R Too close to EMA 200: ", DoubleToString(emaDistance / _Point, 0),
                " pips (min: ", DoubleToString(minDistance / _Point, 0), " pips)");
          lastEMAWarning = TimeCurrent();
       }
@@ -1395,7 +1395,7 @@ void OnTick()
                    if(TimeCurrent() - lastCooldownWarning > 60)
                    {
                       int remainingSec = requiredCooldown - secondsSince;
-                      Print("â¸ï¸ SAME-DIRECTION COOLDOWN: BUY blocked - ",
+                      Print("R SAME-DIRECTION COOLDOWN: BUY blocked - ",
                             IntegerToString(remainingSec / 60), "m ", IntegerToString(remainingSec % 60), "s remaining");
                       lastCooldownWarning = TimeCurrent();
                    }
@@ -1428,7 +1428,7 @@ void OnTick()
                    if(TimeCurrent() - lastCooldownWarning > 60)
                    {
                       int remainingSec = requiredCooldown - secondsSince;
-                      Print("â¸ï¸ SAME-DIRECTION COOLDOWN: SELL blocked - ",
+                      Print("R SAME-DIRECTION COOLDOWN: SELL blocked - ",
                             IntegerToString(remainingSec / 60), "m ", IntegerToString(remainingSec % 60), "s remaining");
                       lastCooldownWarning = TimeCurrent();
                    }
@@ -1482,7 +1482,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
        if (minLotRiskDollar > maxRiskDollar && maxRiskDollar > 0)
        {
           // Reject trade: minimum lot would exceed allowed risk — do NOT tighten SL (creates unrealistic stops)
-          Print("⚠️ TRADE REJECTED: min lot risk $", DoubleToString(minLotRiskDollar, 2),
+          Print("R TRADE REJECTED: min lot risk $", DoubleToString(minLotRiskDollar, 2),
                 " > max allowed $", DoubleToString(maxRiskDollar, 2), " on ", _Symbol, ". Account too small for this SL.");
           return false;
        }
@@ -2971,7 +2971,7 @@ bool CheckSpread(bool isEntry = false)
       static datetime lastSpreadWarning = 0;
       if(TimeCurrent() - lastSpreadWarning > 60)
       {
-         Print("âš ï¸ [WARN] Spread too wide: ", lastSpread, " > ", InpMaxSpreadPoints, " points");
+         Print("R [WARN] Spread too wide: ", lastSpread, " > ", InpMaxSpreadPoints, " points");
          lastSpreadWarning = TimeCurrent();
       }
       return false;
@@ -3048,7 +3048,7 @@ double CalculateLotSize(double slDist, double riskPct)
    // Additional safety limit
    if(lots > InpMaxLotsPerTrade)
    {
-      Print("âš ï¸ Lots capped: ", DoubleToString(lots, 3), " -> ", DoubleToString(InpMaxLotsPerTrade, 2));
+      Print("R Lots capped: ", DoubleToString(lots, 3), " -> ", DoubleToString(InpMaxLotsPerTrade, 2));
       lots = InpMaxLotsPerTrade;
    }
 

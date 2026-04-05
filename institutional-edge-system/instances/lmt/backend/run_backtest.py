@@ -101,7 +101,7 @@ def main():
 
     print("\n" + "="*64)
     if is_passing:
-        print("✅ STRATEGY VALIDATED - Ready for demo trading")
+        print("R STRATEGY VALIDATED - Ready for demo trading")
     else:
         print("❌ STRATEGY NEEDS IMPROVEMENT - Do NOT trade live")
     print("="*64 + "\n")

@@ -103,7 +103,7 @@ def test_brain_logic():
     if signal_weak:
         print(f"❌ FAILED: Weak signal accepted! Score: {signal_weak.score}")
     else:
-        print("✅ PASSED: Weak signal REJECTED by Brain (Score too low)")
+        print("R PASSED: Weak signal REJECTED by Brain (Score too low)")
         
     # Case 2: WITH DISPLACEMENT
     print("\n[TEST 2] Testing Sweep WITH Displacement...")
@@ -113,7 +113,7 @@ def test_brain_logic():
     signal_strong = engine._liquidity_sweep_signal(df_strong, df_strong)
     
     if signal_strong:
-        print(f"✅ PASSED: Strong signal ACCEPTED! Score: {signal_strong.score}")
+        print(f"R PASSED: Strong signal ACCEPTED! Score: {signal_strong.score}")
         print(f"   Reason: {signal_strong.metadata.get('brain_reason')}")
     else:
         print("❌ FAILED: Strong signal rejected unexpectedly.")

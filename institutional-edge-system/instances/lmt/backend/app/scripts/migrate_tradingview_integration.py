@@ -51,7 +51,7 @@ def run_migration():
                     FOREIGN KEY (slot_id) REFERENCES bot_slots(id) ON DELETE CASCADE
                 )
             """))
-            logger.info("✅ Created user_annotations table")
+            logger.info("R Created user_annotations table")
 
             # 2. Create annotation_templates table
             conn.execute(text("""
@@ -68,7 +68,7 @@ def run_migration():
                     FOREIGN KEY (user_id) REFERENCES users(id)
                 )
             """))
-            logger.info("✅ Created annotation_templates table")
+            logger.info("R Created annotation_templates table")
 
             # 3. Create grid_configurations table
             conn.execute(text("""
@@ -87,7 +87,7 @@ def run_migration():
                     FOREIGN KEY (user_id) REFERENCES users(id)
                 )
             """))
-            logger.info("✅ Created grid_configurations table")
+            logger.info("R Created grid_configurations table")
 
             # 4. Create backtest_heatmap_data table
             conn.execute(text("""
@@ -109,7 +109,7 @@ def run_migration():
                     FOREIGN KEY (session_id) REFERENCES backtest_sessions(id) ON DELETE CASCADE
                 )
             """))
-            logger.info("✅ Created backtest_heatmap_data table")
+            logger.info("R Created backtest_heatmap_data table")
 
             # 5. Create strategy_comparisons table
             conn.execute(text("""
@@ -124,7 +124,7 @@ def run_migration():
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """))
-            logger.info("✅ Created strategy_comparisons table")
+            logger.info("R Created strategy_comparisons table")
 
             logger.info("📝 Adding new columns to existing tables...")
 
@@ -133,74 +133,74 @@ def run_migration():
                 conn.execute(text("""
                     ALTER TABLE bot_slots ADD COLUMN respect_user_zones BOOLEAN DEFAULT 1
                 """))
-                logger.info("✅ Added respect_user_zones to bot_slots")
+                logger.info("R Added respect_user_zones to bot_slots")
             except Exception as e:
-                logger.warning(f"⚠️  respect_user_zones column may already exist: {e}")
+                logger.warning(f"R  respect_user_zones column may already exist: {e}")
 
             try:
                 conn.execute(text("""
                     ALTER TABLE bot_slots ADD COLUMN daily_pnl REAL DEFAULT 0.0
                 """))
-                logger.info("✅ Added daily_pnl to bot_slots")
+                logger.info("R Added daily_pnl to bot_slots")
             except Exception as e:
-                logger.warning(f"⚠️  daily_pnl column may already exist: {e}")
+                logger.warning(f"R  daily_pnl column may already exist: {e}")
 
             try:
                 conn.execute(text("""
                     ALTER TABLE bot_slots ADD COLUMN last_signal_time TIMESTAMP
                 """))
-                logger.info("✅ Added last_signal_time to bot_slots")
+                logger.info("R Added last_signal_time to bot_slots")
             except Exception as e:
-                logger.warning(f"⚠️  last_signal_time column may already exist: {e}")
+                logger.warning(f"R  last_signal_time column may already exist: {e}")
 
             try:
                 conn.execute(text("""
                     ALTER TABLE bot_slots ADD COLUMN last_trade_time TIMESTAMP
                 """))
-                logger.info("✅ Added last_trade_time to bot_slots")
+                logger.info("R Added last_trade_time to bot_slots")
             except Exception as e:
-                logger.warning(f"⚠️  last_trade_time column may already exist: {e}")
+                logger.warning(f"R  last_trade_time column may already exist: {e}")
 
             # 7. Add columns to backtest_sessions
             try:
                 conn.execute(text("""
                     ALTER TABLE backtest_sessions ADD COLUMN avg_trade_duration_hours REAL
                 """))
-                logger.info("✅ Added avg_trade_duration_hours to backtest_sessions")
+                logger.info("R Added avg_trade_duration_hours to backtest_sessions")
             except Exception as e:
-                logger.warning(f"⚠️  avg_trade_duration_hours column may already exist: {e}")
+                logger.warning(f"R  avg_trade_duration_hours column may already exist: {e}")
 
             try:
                 conn.execute(text("""
                     ALTER TABLE backtest_sessions ADD COLUMN largest_win REAL
                 """))
-                logger.info("✅ Added largest_win to backtest_sessions")
+                logger.info("R Added largest_win to backtest_sessions")
             except Exception as e:
-                logger.warning(f"⚠️  largest_win column may already exist: {e}")
+                logger.warning(f"R  largest_win column may already exist: {e}")
 
             try:
                 conn.execute(text("""
                     ALTER TABLE backtest_sessions ADD COLUMN largest_loss REAL
                 """))
-                logger.info("✅ Added largest_loss to backtest_sessions")
+                logger.info("R Added largest_loss to backtest_sessions")
             except Exception as e:
-                logger.warning(f"⚠️  largest_loss column may already exist: {e}")
+                logger.warning(f"R  largest_loss column may already exist: {e}")
 
             try:
                 conn.execute(text("""
                     ALTER TABLE backtest_sessions ADD COLUMN consecutive_wins INTEGER DEFAULT 0
                 """))
-                logger.info("✅ Added consecutive_wins to backtest_sessions")
+                logger.info("R Added consecutive_wins to backtest_sessions")
             except Exception as e:
-                logger.warning(f"⚠️  consecutive_wins column may already exist: {e}")
+                logger.warning(f"R  consecutive_wins column may already exist: {e}")
 
             try:
                 conn.execute(text("""
                     ALTER TABLE backtest_sessions ADD COLUMN consecutive_losses INTEGER DEFAULT 0
                 """))
-                logger.info("✅ Added consecutive_losses to backtest_sessions")
+                logger.info("R Added consecutive_losses to backtest_sessions")
             except Exception as e:
-                logger.warning(f"⚠️  consecutive_losses column may already exist: {e}")
+                logger.warning(f"R  consecutive_losses column may already exist: {e}")
 
             # Commit transaction
             trans.commit()

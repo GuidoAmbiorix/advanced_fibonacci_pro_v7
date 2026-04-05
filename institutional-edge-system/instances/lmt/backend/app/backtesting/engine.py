@@ -83,7 +83,7 @@ class BacktestEngine:
         self.portfolio_manager = PortfolioManager(max_portfolio_risk=100.0)  # Allow aggressive testing
 
         logger.info(f"BacktestEngine initialized - {config.symbol} {config.timeframe}")
-        logger.info("✅ Using AdaptiveRiskManager + PortfolioManager (same as live trading)")
+        logger.info("R Using AdaptiveRiskManager + PortfolioManager (same as live trading)")
         self.discord = DiscordService()
 
     def _init_trading_engine(self):
@@ -295,7 +295,7 @@ class BacktestEngine:
             if not trading_halted_dd and self.config.max_drawdown_percent > 0:
                 if current_drawdown_pct >= self.config.max_drawdown_percent:
                     trading_halted_dd = True
-                    logger.warning(f"⛔ DRAWDOWN BREAKER: {current_drawdown_pct:.1f}% >= {self.config.max_drawdown_percent}% limit - Trading stopped!")
+                    logger.warning(f"R DRAWDOWN BREAKER: {current_drawdown_pct:.1f}% >= {self.config.max_drawdown_percent}% limit - Trading stopped!")
             
             # Skip new trades if halted by drawdown
             if trading_halted_dd:
@@ -400,7 +400,7 @@ class BacktestEngine:
                     # Filter: Min Volume Check (Debug for low trade counts)
                     # We can't easily check volume here without calling risk manager, but we can check if risk is tiny
                     if self.config.risk_percent < 0.01:
-                         logger.warning(f"⚠️ Very low risk percent ({self.config.risk_percent}%) might result in 0 volume trades!")
+                         logger.warning(f"R Very low risk percent ({self.config.risk_percent}%) might result in 0 volume trades!")
 
 
                     # Additional filter: confidence threshold (LOW for debugging)
@@ -489,7 +489,7 @@ class BacktestEngine:
                     )
                     
                     if trade is None:
-                         logger.warning(f"⚠️ Trade rejected by simulator (likely 0 volume). Check Risk % or Balance.")
+                         logger.warning(f"R Trade rejected by simulator (likely 0 volume). Check Risk % or Balance.")
 
 
                     if trade:
@@ -708,7 +708,7 @@ class BacktestEngine:
         m = results.metrics
 
         logger.info("")
-        logger.info("📊 BACKTEST SUMMARY")
+        logger.info("R BACKTEST SUMMARY")
         logger.info("-" * 60)
         logger.info(f"Total Trades:     {m.total_trades}")
         logger.info(f"Win Rate:         {m.win_rate:.2f}%")
@@ -729,7 +729,7 @@ class BacktestEngine:
             m.average_rr >= 2.0
         )
 
-        verdict = "✅ PASS" if is_passing else "❌ FAIL"
+        verdict = "R PASS" if is_passing else "❌ FAIL"
         logger.info(f"VERDICT: {verdict}")
         
         if not is_passing:

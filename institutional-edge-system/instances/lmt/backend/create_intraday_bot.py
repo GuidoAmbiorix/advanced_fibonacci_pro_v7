@@ -28,15 +28,15 @@ async def create_intraday_bot():
         
         # 1. DROP BotSlots table to force schema update (since we added columns)
         try:
-            print("⚠️ force-refreshing 'bot_slots' table schema...")
+            print("R force-refreshing 'bot_slots' table schema...")
             BotSlot.__table__.drop(engine)
-            print("✅ Dropped old bot_slots table.")
+            print("R Dropped old bot_slots table.")
         except Exception as e:
-            print(f"⚠️ Table drop skipped (might not exist): {e}")
+            print(f"R Table drop skipped (might not exist): {e}")
 
         # Re-create all tables
         Base.metadata.create_all(bind=engine)
-        print("✅ Schema updated.")
+        print("R Schema updated.")
 
         # 2. Clean up old bots
         old_bots = db.query(BotConfig).filter(BotConfig.name.in_(["Stable Duo Portfolio", "Gold Scalper Pro", "Balanced Portfolio"])).all()
@@ -100,7 +100,7 @@ async def create_intraday_bot():
         slot1 = BotSlot(
             bot_config_id=bot_config.id,
             symbol="EURJPY",
-            timeframe="H1", # ✅ H1 Momentum
+            timeframe="H1", # R H1 Momentum
             direction_filter="BOTH",
             enabled=True,
             
@@ -118,7 +118,7 @@ async def create_intraday_bot():
             
             # Srat logic
             use_adx_filter=True,
-            use_h1_trend_filter=True, # ✅ MOMENTUM: Enable H1 Filter
+            use_h1_trend_filter=True, # R MOMENTUM: Enable H1 Filter
             
             # TSL
             tsl_mode="TIERED",
@@ -132,7 +132,7 @@ async def create_intraday_bot():
         slot2 = BotSlot(
             bot_config_id=bot_config.id,
             symbol="EURGBP",
-            timeframe="H1", # ✅ H1 for Range
+            timeframe="H1", # R H1 for Range
             direction_filter="BOTH",
             enabled=True,
             
@@ -155,7 +155,7 @@ async def create_intraday_bot():
             # Custom Range Logic
             stoch_k_period=9,    # Faster Stoch
             stoch_d_period=3,
-            vwap_use_trend_filter=False, # ✅ Mean Reversion (Ignore EMA Trend)
+            vwap_use_trend_filter=False, # R Mean Reversion (Ignore EMA Trend)
             
             # TSL - ATR Mode
             tsl_mode="ATR",
@@ -165,7 +165,7 @@ async def create_intraday_bot():
         db.add(slot2)
         
         db.commit()
-        print(f"✅ Created '{BOT_NAME}' successfully!")
+        print(f"R Created '{BOT_NAME}' successfully!")
         return True
         
     except Exception as e:

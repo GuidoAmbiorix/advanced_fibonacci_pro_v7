@@ -1,7 +1,7 @@
 <template>
   <div class="bg-gray-800 rounded-xl border border-gray-700 p-4">
     <div class="flex justify-between items-center mb-4">
-      <h3 class="text-sm font-semibold text-gray-300">📊 Correlation Matrix</h3>
+      <h3 class="text-sm font-semibold text-gray-300">R Correlation Matrix</h3>
       <button 
         @click="fetchCorrelation"
         :disabled="loading"

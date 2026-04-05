@@ -13,9 +13,9 @@ try:
     
     if events is not None and not events.empty:
         print(events.head())
-        print("✅ ecocal success")
+        print("R ecocal success")
     else:
-        print("⚠️ ecocal returned empty data (or None)")
+        print("R ecocal returned empty data (or None)")
         
 except Exception as e:
     print(f"❌ ecocal failed: {e}")

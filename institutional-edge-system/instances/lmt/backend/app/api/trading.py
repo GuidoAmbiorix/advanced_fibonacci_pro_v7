@@ -155,7 +155,7 @@ class LiveTradingSession:
             # 'trading_session' (Frontend) -> 'session_mode' (Engine)
             golden_config['session_mode'] = config.get('trading_session', 'ALL') 
             
-            logger.info(f"✅ Live Session: Mapped XAU_PRO config (RR: {golden_config['rr_ratio']}, Session: {golden_config['session_mode']})")
+            logger.info(f"R Live Session: Mapped XAU_PRO config (RR: {golden_config['rr_ratio']}, Session: {golden_config['session_mode']})")
 
         self.engine = EngineFactory.create_engine(engine_type, golden_config)
     
@@ -184,7 +184,7 @@ class LiveTradingSession:
 
                 # 0. Check kill switch
                 if self.risk_controls.is_kill_switch_active():
-                    logger.warning(f"⛔ {self.session_id}: Kill switch active - pausing")
+                    logger.warning(f"R {self.session_id}: Kill switch active - pausing")
                     await asyncio.sleep(10)
                     continue
 
@@ -192,7 +192,7 @@ class LiveTradingSession:
                 # utc_now = datetime.utcnow()
                 # local_now = utc_now - timedelta(hours=4)
                 # if not (0 <= local_now.hour < 12):
-                #     logger.debug(f"⛔ {self.session_id}: Outside trading hours")
+                #     logger.debug(f"R {self.session_id}: Outside trading hours")
                 #     await asyncio.sleep(60)
                 #     continue
 
@@ -204,7 +204,7 @@ class LiveTradingSession:
                 in_session = self._is_in_trading_session(utc_now.hour, trading_session)
                 
                 if not in_session and session_end_action == 'DISABLE_NEW':
-                    logger.info(f"⛔ {self.session_id}: Outside {trading_session} session (UTC {utc_now.hour}:00) - No New Entries")
+                    logger.info(f"R {self.session_id}: Outside {trading_session} session (UTC {utc_now.hour}:00) - No New Entries")
                     # Still manage existing positions
                     await self._manage_open_positions()
                     await asyncio.sleep(60)
@@ -255,7 +255,7 @@ class LiveTradingSession:
                     max_spread = 20.0    # Forex (2 pips = 20 points usually)
                     
                 if spread and spread > max_spread:
-                    logger.warning(f"⛔ {self.session_id}: High spread: {spread:.1f} > {max_spread}")
+                    logger.warning(f"R {self.session_id}: High spread: {spread:.1f} > {max_spread}")
                     await asyncio.sleep(30)
                     continue
 
@@ -419,7 +419,7 @@ class LiveTradingSession:
         
         if result and result.get('success'):
             ticket = result['ticket']
-            logger.info(f"✅ {self.session_id}: Trade opened - Ticket {ticket}")
+            logger.info(f"R {self.session_id}: Trade opened - Ticket {ticket}")
             
             # Register with risk controls
             self.risk_controls.register_position_opened(account_id, symbol)
@@ -494,7 +494,7 @@ class LiveTradingSession:
                     partial_volume = round(partial_volume, 2)
                     
                     if partial_volume >= 0.01:
-                        logger.info(f"📊 Taking partial profit: {partial_volume} lots @ {current_price}")
+                        logger.info(f"R Taking partial profit: {partial_volume} lots @ {current_price}")
                         if self.mt5.close_partial_position(ticket, partial_volume):
                             managed['partial_taken'] = True
                             managed['current_volume'] -= partial_volume
@@ -642,7 +642,7 @@ def get_mt5_connector(account: MT5Account) -> MT5Connector:
     if not _mt5_connector.connected:
         try:
             if _mt5_connector.connect():
-                logger.info(f"✅ MT5 connected via Connector as {account.login}")
+                logger.info(f"R MT5 connected via Connector as {account.login}")
             else:
                 logger.error("Failed to connect to MT5 via Connector")
         except Exception as e:
@@ -697,7 +697,7 @@ async def start_trading(
         if slot:
             logger.info(f"✨ Auto-detected Slot {slot.id} for {request.symbol} - Loading DB Config")
         else:
-            logger.warning(f"⚠️ DEBUG: Auto-detect FAILED for symbol: '{stripped_symbol}'. No enabled slot found in DB.")
+            logger.warning(f"R DEBUG: Auto-detect FAILED for symbol: '{stripped_symbol}'. No enabled slot found in DB.")
 
 
     if slot:
@@ -859,7 +859,7 @@ async def execute_manual_order(
         return {"success": False, "error": "Order execution failed - no response from MT5"}
     
     if result.get("success"):
-        logger.info(f"✅ Manual Order Success: Ticket {result.get('ticket')}")
+        logger.info(f"R Manual Order Success: Ticket {result.get('ticket')}")
         return {
             "success": True,
             "ticket": result.get("ticket"),

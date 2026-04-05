@@ -9,7 +9,7 @@
 
     <div class="card-body">
       <div v-if="trades.length === 0" class="text-center text-gray-400 py-8">
-        <div class="text-4xl mb-4">📊</div>
+        <div class="text-4xl mb-4">R</div>
         <p>No trades yet</p>
       </div>
 

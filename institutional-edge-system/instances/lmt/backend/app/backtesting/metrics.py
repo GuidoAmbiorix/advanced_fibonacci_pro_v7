@@ -332,7 +332,7 @@ class MetricsCalculator:
 ║              BACKTEST PERFORMANCE SUMMARY                    ║
 ╚══════════════════════════════════════════════════════════════╝
 
-📊 BASIC STATISTICS
+R BASIC STATISTICS
 ────────────────────────────────────────────────────────────────
 Total Trades:           {metrics.total_trades}
 Winning Trades:         {metrics.winning_trades} ({metrics.win_rate:.2f}%)
@@ -367,19 +367,19 @@ Sortino Ratio:          {metrics.sortino_ratio:.2f}
 Calmar Ratio:           {metrics.calmar_ratio:.2f}
 Recovery Factor:        {metrics.recovery_factor:.2f}
 
-📊 DISTRIBUTION
+R DISTRIBUTION
 ────────────────────────────────────────────────────────────────
 Best Trade:             ${metrics.best_trade:.2f}
 Worst Trade:            ${metrics.worst_trade:.2f}
 Median Trade:           ${metrics.median_trade:.2f}
 
-⏱️  TIME METRICS
+R  TIME METRICS
 ────────────────────────────────────────────────────────────────
 Avg Trade Duration:     {metrics.avg_trade_duration_hours:.1f} hours
 Trades Per Month:       {metrics.total_trades_per_month:.1f}
 
 ╔══════════════════════════════════════════════════════════════╗
-║  VERDICT: {"✅ PASS" if MetricsCalculator._is_passing(metrics) else "❌ FAIL"}                                           ║
+║  VERDICT: {"R PASS" if MetricsCalculator._is_passing(metrics) else "❌ FAIL"}                                           ║
 ╚══════════════════════════════════════════════════════════════╝
         """
         return summary

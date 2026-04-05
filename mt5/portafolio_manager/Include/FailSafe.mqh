@@ -53,7 +53,7 @@ public:
    {
       m_consecutiveFailures++;
       m_lastFailureTime = TimeCurrent();
-      Print("⚠️ FAILSAFE: Execution reported failure. Count: ", m_consecutiveFailures);
+      Print("R FAILSAFE: Execution reported failure. Count: ", m_consecutiveFailures);
    }
    
    void ReportSuccess()

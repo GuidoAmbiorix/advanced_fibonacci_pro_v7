@@ -87,16 +87,16 @@ def main():
                     all_results[symbol]['net_pnl'] = net
                     all_results[symbol]['profit_factor'] = pf
                     
-                    print(f"   ✅ {symbol}: {total} trades, {wr:.0f}% WR, PF: {pf:.2f}")
+                    print(f"   R {symbol}: {total} trades, {wr:.0f}% WR, PF: {pf:.2f}")
             except:
-                print(f"   ⚠️ {symbol}: No trades file")
+                print(f"   R {symbol}: No trades file")
         else:
             print(f"   ❌ {symbol}: Error")
     
     # Print comparison table
     print()
     print("=" * 70)
-    print("  📊 TABLA COMPARATIVA")
+    print("  R TABLA COMPARATIVA")
     print("=" * 70)
     print(f"{'Symbol':<10} {'Trades':<8} {'Win Rate':<10} {'PF':<8} {'Net PnL':<12} {'%/Mes':<8}")
     print("-" * 70)

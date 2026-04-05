@@ -21,7 +21,7 @@
               : 'text-gray-400 hover:text-white hover:bg-gray-700/50'"
           >
             <span class="flex items-center gap-2">
-              📊 <span>Backtest</span>
+              R <span>Backtest</span>
             </span>
           </button>
           <button 
@@ -456,7 +456,7 @@
                     <select v-model="slot.session_end_action" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-[10px]">
                        <option value="HOLD">✋ Hold Trades</option>
                        <option value="CLOSE">❌ Close All</option>
-                       <option value="DISABLE_NEW">⛔ No New Entries</option>
+                       <option value="DISABLE_NEW">R No New Entries</option>
                     </select>
                  </div>
               </div>
@@ -531,7 +531,7 @@
                <!-- RSI Value -->
                <div class="p-2 bg-purple-900/10 rounded border border-purple-600/30">
                   <div class="mb-2 flex items-center gap-2">
-                     <span class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">📊 Value (RSI)</span>
+                     <span class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">R Value (RSI)</span>
                   </div>
                   <div class="grid grid-cols-3 gap-2">
                      <div>
@@ -721,7 +721,7 @@
       <div class="flex justify-between items-center mb-3">
         <h3 class="text-sm font-semibold text-red-300">🔴 Live Account Info</h3>
         <span v-if="activeAccount" class="text-xs text-gray-400">Connected to {{ activeAccount.name }}</span>
-        <span v-else class="text-xs text-red-400">⚠️ No account selected</span>
+        <span v-else class="text-xs text-red-400">R No account selected</span>
       </div>
       
       <div v-if="activeAccount" class="grid grid-cols-2 md:grid-cols-6 gap-4">
@@ -749,7 +749,7 @@
         </div>
         <!-- Daily DD -->
         <div class="bg-gray-800/60 rounded-lg p-3 text-center">
-          <div class="text-xs text-gray-500 mb-1">📊 Daily DD</div>
+          <div class="text-xs text-gray-500 mb-1">R Daily DD</div>
           <div class="text-lg font-bold" :class="riskStatus.daily_dd_percent > 2 ? 'text-orange-400' : 'text-green-400'">
             {{ riskStatus.daily_dd_percent?.toFixed(1) || 0 }}% / {{ activeAccount.max_daily_dd_percent }}%
           </div>
@@ -781,7 +781,7 @@
       <!-- PORTFOLIO COMBINED SUMMARY - BACKTEST ONLY -->
       <div v-if="tradingMode === 'backtest'" class="bg-gradient-to-r from-blue-900/40 to-purple-900/40 rounded-xl border border-blue-700 p-4">
         <div class="flex justify-between items-center mb-3">
-          <h3 class="font-semibold text-white text-lg">📊 Portfolio Summary</h3>
+          <h3 class="font-semibold text-white text-lg">R Portfolio Summary</h3>
           <span class="text-xs text-gray-400">Combined results from all {{ slots.filter(s => s.enabled).length }} slots</span>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -820,7 +820,7 @@
       </div>
       
       <!-- ═══════════════════════════════════════════════════════════════════════ -->
-      <!-- 📊 QUANTITATIVE ANALYSIS PANEL (from Dr. Chan's book)                  -->
+      <!-- R QUANTITATIVE ANALYSIS PANEL (from Dr. Chan's book)                  -->
       <!-- ═══════════════════════════════════════════════════════════════════════ -->
       <div v-if="tradingMode === 'backtest' && portfolioMetrics.totalTrades > 0" class="mt-4">
         <!-- Collapsible Header -->
@@ -873,7 +873,7 @@
         
         <!-- Portfolio Risk Summary -->
         <div class="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <h3 class="text-sm font-semibold text-gray-300 mb-3">⚠️ Portfolio Risk</h3>
+          <h3 class="text-sm font-semibold text-gray-300 mb-3">R Portfolio Risk</h3>
           <div class="space-y-3">
             <div>
               <div class="flex justify-between text-xs mb-1">
@@ -1064,10 +1064,10 @@
           <div class="p-4 flex items-start gap-3">
             <!-- Icon -->
             <div class="flex-shrink-0 text-2xl">
-              <span v-if="toastType === 'success'">✅</span>
+              <span v-if="toastType === 'success'">R</span>
               <span v-else-if="toastType === 'error'">❌</span>
               <span v-else-if="toastType === 'info'">ℹ️</span>
-              <span v-else-if="toastType === 'warning'">⚠️</span>
+              <span v-else-if="toastType === 'warning'">R</span>
             </div>
 
             <!-- Message -->
@@ -1289,7 +1289,7 @@ const loadOpenPositions = async () => {
     const response = await axios.get(`${API_URL}/api/market/positions`)
     const positions = response.data
     
-    console.log('📊 Loaded positions:', positions)
+    console.log('R Loaded positions:', positions)
     
     // Add each position to the trades table
     positions.forEach(pos => {
@@ -1315,7 +1315,7 @@ const loadOpenPositions = async () => {
       }
     })
     
-    console.log('✅ Loaded', positions.length, 'open positions')
+    console.log('R Loaded', positions.length, 'open positions')
   } catch (error) {
     console.error('Failed to load positions:', error)
   }
@@ -1356,7 +1356,7 @@ const executeManualTrade = async () => {
     const response = await axios.post(`${API_URL}/api/trading/manual-order`, payload)
     
     if (response.data.success) {
-      showToastNotification(`✅ Trade executed! Ticket: ${response.data.ticket}`, 'success')
+      showToastNotification(`R Trade executed! Ticket: ${response.data.ticket}`, 'success')
       showManualTradeModal.value = false
       // Reload positions to see the new trade
       await loadOpenPositions()
@@ -1568,7 +1568,7 @@ const slots = ref([
     risk_percent: 0.5, volume_mode: 'RISK', fixed_volume: 0.1, timeframe: 'H1', 
     tp_ratio: 2.0, sl_atr_multiplier: 1.2, 
     rsi_period: 9, rsi_overbought: 75, rsi_oversold: 25,
-    tsl_mode: 'TIERED', use_h1_trend_filter: true, // ✅ Momentum: H1 Filter ON
+    tsl_mode: 'TIERED', use_h1_trend_filter: true, // R Momentum: H1 Filter ON
     tsl_activation_r: 1.0, // Activate at 1R
     max_duration: 4, // Max hold 4 hours
     partial_tp_on: false, min_confluence_score: 7, description: 'The Beast Cross (H1 Momentum - Safe Mode)',
@@ -1909,7 +1909,7 @@ const runBacktest = async () => {
         
         socket.once('connect', () => {
           clearTimeout(timeout)
-          console.log('✅ Socket connected for live trading')
+          console.log('R Socket connected for live trading')
           resolve()
         })
         
@@ -1969,7 +1969,7 @@ const runBacktest = async () => {
       
     } else {
       // BACKTEST MODE - Run simulation
-      console.log('📊 Starting BACKTEST mode...')
+      console.log('R Starting BACKTEST mode...')
       backtestStatus.value = 'Sending requests...'
 
       const promises = enabledSlots.map(async (slot) => {
@@ -2054,7 +2054,7 @@ const runBacktest = async () => {
         
         console.log(`📤 Sending backtest request for ${slot.symbol}...`, payload)
         const response = await axios.post(`${API_URL}/api/backtest/run`, payload)
-        console.log(`✅ Backtest response for ${slot.symbol}:`, response.data)
+        console.log(`R Backtest response for ${slot.symbol}:`, response.data)
         slot.sessionId = response.data.session_id
         return response
       })
@@ -2416,7 +2416,7 @@ const addSlot = async () => {
         config: {}
       })
       
-      showToastNotification(`✅ Created Slot ${dbSlot.id} (EURUSD)`, 'success')
+      showToastNotification(`R Created Slot ${dbSlot.id} (EURUSD)`, 'success')
       console.log(`➕ Added new slot ${dbSlot.id}`)
       
   } catch (error) {
@@ -2536,18 +2536,18 @@ const saveSlot = async (slot) => {
         // Update existing
         await axios.put(`${API_URL}/api/slots/${slot.dbId}`, payload)
         console.log(`💾 Updated slot ${slot.dbId}`)
-        showToastNotification('✅ Configuration Saved!', 'success')
+        showToastNotification('R Configuration Saved!', 'success')
       } else {
         // Create new
         const response = await axios.post(`${API_URL}/api/slots/`, payload)
         slot.dbId = response.data.id
         console.log(`💾 Created slot ${slot.dbId}`)
-        showToastNotification('✅ New Slot Created!', 'success')
+        showToastNotification('R New Slot Created!', 'success')
       }
     } catch (error) {
       // Handle 404 (Slot not found in DB but exists in Frontend) - Retry as Create
       if (error.response && error.response.status === 404 && slot.dbId) {
-        console.warn(`⚠️ Slot ${slot.dbId} not found in DB (404). Re-creating...`)
+        console.warn(`R Slot ${slot.dbId} not found in DB (404). Re-creating...`)
         try {
            const response = await axios.post(`${API_URL}/api/slots/`, payload)
            slot.dbId = response.data.id
@@ -2714,8 +2714,8 @@ const getConfluenceDescription = (score) => {
   if (score >= 10) return '💎 Elite only - Institutional Sweep signals'
   if (score >= 9) return '⭐ Strong signals - Trend Following + Institutional'
   if (score >= 8) return '📈 Good signals - VWAP + Breakout included'
-  if (score >= 7) return '📊 Medium signals - Range + most strategies'
-  if (score >= 5) return '⚠️ Includes weak signals - more trades, lower quality'
+  if (score >= 7) return 'R Medium signals - Range + most strategies'
+  if (score >= 5) return 'R Includes weak signals - more trades, lower quality'
   return '❌ All signals - high risk, many false positives'
 }
 

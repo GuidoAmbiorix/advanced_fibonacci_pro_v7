@@ -120,8 +120,8 @@ const hasTrades = computed(() => props.trades.length > 10)
 const statusIcon = computed(() => {
   if (!result.value) return '⏳'
   const status = result.value.overall_status
-  if (status === 'PASS') return '✅'
-  if (status === 'WARN') return '⚠️'
+  if (status === 'PASS') return 'R'
+  if (status === 'WARN') return 'R'
   return '❌'
 })
 

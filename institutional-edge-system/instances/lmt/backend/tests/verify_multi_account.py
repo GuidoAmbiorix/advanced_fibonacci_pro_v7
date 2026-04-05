@@ -28,7 +28,7 @@ def test_terminal_cloning():
     
     if result['success']:
         if os.path.exists(result['path']) and os.path.exists(result['exe_path']):
-            logger.success("✅ Terminal Cloning Verified")
+            logger.success("R Terminal Cloning Verified")
             # Cleanup
             shutil.rmtree(result['path'])
         else:
@@ -65,7 +65,7 @@ def test_worker_process():
     try:
         response = resp_q.get(timeout=5)
         logger.info(f"Received from Worker: {response}")
-        logger.success("✅ Worker Communication Verified")
+        logger.success("R Worker Communication Verified")
     except Exception as e:
         logger.error(f"❌ Worker timed out: {e}")
         

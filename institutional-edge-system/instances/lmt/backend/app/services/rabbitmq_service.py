@@ -30,10 +30,10 @@ class RabbitMQService:
                     durable=True
                 )
 
-                logger.info("✅ Connected to RabbitMQ")
+                logger.info("R Connected to RabbitMQ")
                 return
             except Exception as e:
-                logger.warning(f"⚠️ RabbitMQ Connection attempt {attempt + 1} failed: {e}")
+                logger.warning(f"R RabbitMQ Connection attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(retry_delay)
                 else:

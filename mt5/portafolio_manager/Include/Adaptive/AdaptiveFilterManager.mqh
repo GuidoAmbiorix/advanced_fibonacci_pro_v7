@@ -234,7 +234,7 @@ public:
             // Recent performance is strong → lower threshold (allow more entries)
             threshold -= 1.0;
             if(m_recentTradeCount % 20 == 0)
-               Print("✅ ", m_symbol, " - Lowering threshold: Rolling WR ", DoubleToString(rollingWR * 100, 1), "% (good)");
+               Print("R ", m_symbol, " - Lowering threshold: Rolling WR ", DoubleToString(rollingWR * 100, 1), "% (good)");
          }
          else if(rollingWR < 0.40)
          {
@@ -395,7 +395,7 @@ public:
       if(m_recentTradeCount % 20 == 0)
       {
          double rollingWR = GetRollingWinRate();
-         Print("📊 ", m_symbol, " - ", m_recentTradeCount, " trades | Rolling WR (20): ",
+         Print("R ", m_symbol, " - ", m_recentTradeCount, " trades | Rolling WR (20): ",
                DoubleToString(rollingWR * 100, 1), "%");
       }
    }

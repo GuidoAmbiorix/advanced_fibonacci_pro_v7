@@ -37,12 +37,12 @@ def test_elite_upgrades():
     df = engine._ensure_indicators(df)
     
     if 'ker' in df.columns:
-        print(f"✅ KER Calculated. Last value: {df['ker'].iloc[-1]:.4f}")
+        print(f"R KER Calculated. Last value: {df['ker'].iloc[-1]:.4f}")
     else:
         print("❌ KER Missing")
         
     if 'rvol' in df.columns:
-        print(f"✅ RVOL Calculated. Last value: {df['rvol'].iloc[-1]:.4f}")
+        print(f"R RVOL Calculated. Last value: {df['rvol'].iloc[-1]:.4f}")
     else:
         print("❌ RVOL Missing")
         
@@ -54,7 +54,7 @@ def test_elite_upgrades():
     
     allowed, reason = engine._check_funding_rules(datetime.now())
     if not allowed and "NEWS FILTER" in reason:
-        print("✅ Governance correctly blocked trade due to News Filter")
+        print("R Governance correctly blocked trade due to News Filter")
     else:
         print(f"❌ Governance FAILED to block trade. Result: {allowed}, Reason: {reason}")
     

@@ -28,7 +28,7 @@ defineProps({
   },
   icon: {
     type: String,
-    default: '📊'
+    default: 'R'
   }
 })
 </script>
