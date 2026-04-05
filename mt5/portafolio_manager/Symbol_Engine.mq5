@@ -433,6 +433,11 @@ int OnInit()
    if(!symbolInfo.Name(_Symbol)) return INIT_FAILED;
    symbolInfo.RefreshRates();
 
+   // Timeframe recommendation (H4 is optimal; EA works on any TF but is calibrated for H4)
+   if(_Period != PERIOD_H4)
+      Print("[WARN] Recommended timeframe is H4. Current: ", EnumToString(_Period),
+            ". EA will run but parameters are calibrated for H4.");
+
    trade.SetExpertMagicNumber(InpMagicNumber);
    trade.SetDeviationInPoints(10);
 
@@ -465,15 +470,17 @@ int OnInit()
    ArrayResize(g_states, 0);
 
    // OPTIMIZATION: Initialize Learning Engine with error checking
+   // Disable file persistence in Strategy Tester (avoids symbol mismatch + file I/O errors on validator)
    if(InpEnableLearning)
    {
-      if(!learning.Init(_Symbol, true))  // Enable persistence
+      bool enablePersistence = !MQLInfoInteger(MQL_TESTER);
+      if(!learning.Init(_Symbol, enablePersistence))
       {
          Print("Warning: Learning engine initialization failed - continuing without learning");
       }
       else
       {
-         Print("[OK] Learning engine initialized with persistence");
+         Print("[OK] Learning engine initialized", enablePersistence ? " with persistence" : " (tester: no persistence)");
       }
    }
 
@@ -519,8 +526,8 @@ int OnInit()
       kellySizer.Init(InpRiskBase, 0.25, maxRiskAdjusted, InpKellyFraction, 30, InpDailyMaxDD, InpWeeklyMaxDD, InpDailyTarget);
    }
 
-   // Initialize Database Manager (replaces Trade Journal)
-   if(InpEnableLearning && InpLogTradesToFile)
+   // Initialize Database Manager (disabled in Strategy Tester to avoid file I/O errors on validator)
+   if(InpEnableLearning && InpLogTradesToFile && !MQLInfoInteger(MQL_TESTER))
    {
       if(!dbManager.Init())
          Print("Warning: Database Manager initialization failed");
@@ -1576,8 +1583,8 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       g_states[sz].peakProfitR = 0;
       g_states[sz].barsAtStageNeg1 = 0;
 
-      // LOG TO DB MANAGER
-      if(InpEnableLearning && InpLogTradesToFile)
+      // LOG TO DB MANAGER (skip in Strategy Tester)
+      if(InpEnableLearning && InpLogTradesToFile && !MQLInfoInteger(MQL_TESTER))
       {
          string killzoneStr = "DISABLED";
          string strategyStr = "STANDARD"; // or derive from add-ons
@@ -1687,6 +1694,23 @@ bool CanHarvest(ulong ticket, double harvestPct)
    return (closeVol >= minV && (currentVol - closeVol) >= minV);
 }
 
+// Safe SL modify: validates new SL is far enough from current price (stops level check)
+// Prevents "invalid stops" errors on brokers with high stops level (e.g. MetaQuotes validation server)
+bool SafeModifySL(ulong ticket, double newSL, double tp)
+{
+   if(!PositionSelectByTicket(ticket)) return false;
+   double curr = PositionGetDouble(POSITION_PRICE_CURRENT);
+   ENUM_POSITION_TYPE pType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+   double stopsLv = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+   double freezeLv = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_FREEZE_LEVEL) * _Point;
+   double minDist = MathMax(stopsLv, freezeLv) + _Point * 5; // Small extra buffer
+
+   if(pType == POSITION_TYPE_BUY  && curr - newSL < minDist) return false;
+   if(pType == POSITION_TYPE_SELL && newSL - curr < minDist) return false;
+
+   return trade.PositionModify(ticket, newSL, tp);
+}
+
 //+------------------------------------------------------------------+
 //| TRADE GROUP HELPERS                                               |
 //+------------------------------------------------------------------+
@@ -1752,7 +1776,7 @@ void ApplyGroupSLFloor(int groupId)
 
       if(shouldMove)
       {
-         if(trade.PositionModify(g_states[i].ticket, floorSL, tp))
+         if(SafeModifySL(g_states[i].ticket, floorSL, tp))
          {
             if(floorSL > g_states[i].locked_sl || g_states[i].locked_sl == 0)
                g_states[i].locked_sl = floorSL;
@@ -2150,7 +2174,7 @@ void ManagePositions()
                               ? open + (slDist * InpEsc_FirstSL_R)
                               : open - (slDist * InpEsc_FirstSL_R);
                bool canMoveE = (pType == POSITION_TYPE_BUY) ? (emergSL > sl || sl == 0) : (emergSL < sl || sl == 0);
-               if(canMoveE && trade.PositionModify(ticket, emergSL, tp))
+               if(canMoveE && SafeModifySL(ticket, emergSL, tp))
                {
                   g_states[sIdx].currentStage = 0;
                   g_states[sIdx].beMovedToEntry = true;
@@ -2173,7 +2197,7 @@ void ManagePositions()
                      g_states[sIdx].partialClosed = true;
                      double chaosSL = (pType == POSITION_TYPE_BUY) ? open + (slDist * CalculateSLLockR(1)) : open - (slDist * CalculateSLLockR(1));
                      bool canMoveC = (pType == POSITION_TYPE_BUY) ? (chaosSL > sl) : (chaosSL < sl);
-                     if(canMoveC) { trade.PositionModify(ticket, chaosSL, tp); g_states[sIdx].locked_sl = chaosSL; }
+                     if(canMoveC && SafeModifySL(ticket, chaosSL, tp)) g_states[sIdx].locked_sl = chaosSL;
                      Print("[CHAOS HARVEST] ", DoubleToString(closeVolC, 2), " lots @ ", DoubleToString(profitR, 2), "R");
                   }
                }
@@ -2200,7 +2224,7 @@ void ManagePositions()
                   bool canMove0 = (pType == POSITION_TYPE_BUY)
                                 ? (lockSL > sl || sl == 0)
                                 : (lockSL < sl || sl == 0);
-                  if(canMove0 && trade.PositionModify(ticket, lockSL, tp))
+                  if(canMove0 && SafeModifySL(ticket, lockSL, tp))
                   {
                      g_states[sIdx].beMovedToEntry = true;
                      g_states[sIdx].locked_sl = lockSL;
@@ -2246,8 +2270,8 @@ void ManagePositions()
                      {
                         // Refresh TP after partial close
                         if(PositionSelectByTicket(ticket)) tp = PositionGetDouble(POSITION_TP);
-                        trade.PositionModify(ticket, stageSL, tp);
-                        g_states[sIdx].locked_sl = stageSL;
+                        if(SafeModifySL(ticket, stageSL, tp))
+                           g_states[sIdx].locked_sl = stageSL;
                      }
 
                      Print("[ESC S", stage, "] Harvest ", DoubleToString(harvestPct, 1), "% (",
