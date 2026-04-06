@@ -6,7 +6,7 @@
 #property copyright "Infernal Portfolio Governor"
 #property link      "https://www.mql5.com"
 #property version   "2.00"
-#property description "Infernal Portfolio Governor — Symbol Engine"
+#property description "Infernal Portfolio Governor R Symbol Engine"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -376,17 +376,17 @@ struct PositionState {
    bool  beMovedToEntry;            // Flag: SL moved to breakeven (entry price)
    double initialRisk;              // Risk percentage (0.30 = 0.30%)
    double dollarRisk;               // Actual dollar amount at risk for R-calculation
-   double initialSLDist;            // SL distance in price units at entry — used for profitR (not current trailed SL)
+   double initialSLDist;            // SL distance in price units at entry R used for profitR (not current trailed SL)
    ENTRY_QUALITY quality;
-   ConfluenceFactors entryFactors;  // Factors captured at entry bar — used for pattern learning at exit (not current bar)
-   double entryScore;               // Confluence score at entry — used by Adaptive Escalator
+   ConfluenceFactors entryFactors;  // Factors captured at entry bar R used for pattern learning at exit (not current bar)
+   double entryScore;               // Confluence score at entry R used by Adaptive Escalator
 
    // Infinite Escalator
    int    currentStage;             // Highest completed stage (-1=none, 0=quick lock, 1+=harvest stages)
    double locked_sl;                // Current locked SL level from escalator
    double totalHarvestedPct;        // Running total % harvested from this position
    double initialVolume;            // Volume at entry (needed for harvest tracking)
-   bool   isRunner;                 // True when volume too small to harvest — let it ride
+   bool   isRunner;                 // True when volume too small to harvest R let it ride
 
    // Trade Group
    int    groupId;                  // Group ID linking original + add-ons
@@ -739,7 +739,7 @@ void ResetTradeState()
 //+------------------------------------------------------------------+
 double GetAdaptiveSL(double score)
 {
-   // M5 Scalper: Tight stops — small ATR multipliers for fast in/out
+   // M5 Scalper: Tight stops R small ATR multipliers for fast in/out
    // Elite gets slightly more room to survive M5 noise wicks
    if(score >= 6.0) return g_ATR * 1.0;  // Elite: Room to breathe but still tight
    if(score >= 5.0) return g_ATR * 0.8;  // Strong: Standard M5 stop
@@ -971,7 +971,7 @@ void OnTick()
    if(g_positionCount == 0) ResetTradeState();
 
    // --- GOVERNOR EMERGENCY CLOSE GUARD ---
-   if(!selfGov.IsTradingEnabled()) return; // Governor paused — do not manage positions during DD halt
+   if(!selfGov.IsTradingEnabled()) return; // Governor paused R do not manage positions during DD halt
 
    // --- FRIDAY PRE-WEEKEND BLOCK ---
    if(InpFridayCloseHour > 0)
@@ -1095,7 +1095,7 @@ void OnTick()
       bool isKZOpen = !InpUseKillzoneFilter || CheckKillzone();
       GlobalVariableSet(GV_KZ_PREFIX + _Symbol, isKZOpen ? 1.0 : 0.0);
 
-      // ATR publish — required by RankManager for volatility-normalized adjScore
+      // ATR publish R required by RankManager for volatility-normalized adjScore
       GlobalVariableSet("PG_ATR_" + _Symbol, g_ATR);
 
       // Fix #3: Publish regime and signal quality for RankManager multipliers
@@ -1481,7 +1481,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
        
        if (minLotRiskDollar > maxRiskDollar && maxRiskDollar > 0)
        {
-          // Reject trade: minimum lot would exceed allowed risk — do NOT tighten SL (creates unrealistic stops)
+          // Reject trade: minimum lot would exceed allowed risk R do NOT tighten SL (creates unrealistic stops)
           Print("R TRADE REJECTED: min lot risk $", DoubleToString(minLotRiskDollar, 2),
                 " > max allowed $", DoubleToString(maxRiskDollar, 2), " on ", _Symbol, ". Account too small for this SL.");
           return false;
@@ -1859,7 +1859,7 @@ void TryScaleIn(int groupId, int stageIndex, double profitR)
 //| ADAPTIVE ESCALATOR HELPERS                                        |
 //+------------------------------------------------------------------+
 
-// Score-adaptive stage trigger — high score = wider, low score = tighter
+// Score-adaptive stage trigger R high score = wider, low score = tighter
 double GetAdaptiveStageR(int stageIndex, double score)
 {
    double baseR = CalculateStageR(stageIndex);
@@ -1877,7 +1877,7 @@ double GetRegimeHarvestPct(int stageIndex, MARKET_REGIME reg)
    double basePct = CalculateHarvestPct(stageIndex);
    if(!InpRegimeHarvest) return basePct;
 
-   if(reg == REGIME_TREND) return basePct * 0.7;      // Take less in trends — let it run
+   if(reg == REGIME_TREND) return basePct * 0.7;      // Take less in trends R let it run
    if(reg == REGIME_RANGE) return basePct * 1.3;       // Take more in ranges
    return basePct; // VOLATILE / CHAOS = base
 }
@@ -1965,7 +1965,7 @@ void ManagePositions()
                 exitCtx.profitR = profitR;
                 // ... (rest used below)
 
-                // Update Pattern Database — use factors captured at ENTRY bar, not current bar
+                // Update Pattern Database R use factors captured at ENTRY bar, not current bar
                 ConfluenceFactors factors = g_states[i].entryFactors;
                 patternRecognizer.UpdatePatternDatabase(factors, profitR);
              }
@@ -2085,7 +2085,7 @@ void ManagePositions()
       if(risk <= 0) risk = _Point * 100;
 
       double rawProfit = (pType == POSITION_TYPE_BUY) ? (curr - open) : (open - curr);
-      // Use initialSLDist stored at entry — immune to trail movement; prevents premature partial/trail activation
+      // Use initialSLDist stored at entry R immune to trail movement; prevents premature partial/trail activation
       double slDist = (g_states[sIdx].initialSLDist > _Point) ? g_states[sIdx].initialSLDist
                     : (sl > 0)                                  ? MathAbs(open - sl)
                                                                 : risk;
@@ -2126,7 +2126,7 @@ void ManagePositions()
       // ============================================================
       // STALE TRADE EXIT
       // If Quick Lock hasn't triggered after N bars, the trade is going
-      // nowhere — exit before it bleeds further.
+      // nowhere R exit before it bleeds further.
       // barsAtStageNeg1 = bars held since entry with no Quick Lock
       // ============================================================
       if(InpUseStaleTrade && InpStaleBarLimit > 0 && g_states[sIdx].currentStage < 0)
@@ -2341,13 +2341,13 @@ void ManagePositions()
                    else if(g_currentRegime == REGIME_RANGE)  dynMult *= 0.7;
                 }
 
-                // Step 4: Runner trail — WIDEN to let the 20% runner chase the home run
+                // Step 4: Runner trail R WIDEN to let the 20% runner chase the home run
                 // We already secured 80% of profits in Stage 2+3, so this runner gets room
                 // InpRunnerTrailTight < 1.0 = tighter, > 1.0 = wider
                 // For scalping: use wider trail (1.5x) so the runner can reach 2-3R
                 if(g_states[sIdx].isRunner)
                 {
-                   // Runner gets breathing room — widen trail to let it ride
+                   // Runner gets breathing room R widen trail to let it ride
                    dynMult *= 1.5;  // 1.5x wider trail for the runner portion
                    // But cap it so it doesn't become absurd
                    dynMult = MathMin(dynMult, InpTrailATR_Mult * 2.0);
@@ -2544,7 +2544,7 @@ void OnTrade()
    }
 }
 
-// NOTE: CheckAddOnOpportunity() removed — pyramiding now handled by
+// NOTE: CheckAddOnOpportunity() removed R pyramiding now handled by
 // TryScaleIn() inside the Infinite Escalator loop in ManagePositions()
 
 //+------------------------------------------------------------------+

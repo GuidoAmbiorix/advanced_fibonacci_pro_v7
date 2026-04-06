@@ -90,17 +90,17 @@ public:
 
       if(dailyDD >= m_dailyMaxDD)
       {
-         LogThrottled("Daily DD " + DoubleToString(dailyDD,2) + "% >= " + DoubleToString(m_dailyMaxDD,1) + "% — PAUSED for today", lastLog1);
+         LogThrottled("Daily DD " + DoubleToString(dailyDD,2) + "% >= " + DoubleToString(m_dailyMaxDD,1) + "% R PAUSED for today", lastLog1);
          return 0.0;
       }
       if(totalDD >= m_ddPause)
       {
-         LogThrottled("Total DD " + DoubleToString(totalDD,2) + "% >= " + DoubleToString(m_ddPause,1) + "% — TRADING HALTED", lastLog2);
+         LogThrottled("Total DD " + DoubleToString(totalDD,2) + "% >= " + DoubleToString(m_ddPause,1) + "% R TRADING HALTED", lastLog2);
          return 0.0;
       }
       if(totalDD >= m_ddReduce)
       {
-         LogThrottled("Total DD " + DoubleToString(totalDD,2) + "% — risk reduced to " + DoubleToString(m_reducedMult*100,0) + "%", lastLog3);
+         LogThrottled("Total DD " + DoubleToString(totalDD,2) + "% R risk reduced to " + DoubleToString(m_reducedMult*100,0) + "%", lastLog3);
          return m_reducedMult;
       }
 
