@@ -282,22 +282,31 @@ int OnCalculate(const int rates_total, const int prev_calculated,
 
          // Place arrow
          double entryPrice = (sigDir > 0) ? high[i] : low[i];
+
+         // Compute SL / TP — retrieve ATR via proper handle (bar i, shifted from current)
+         double atrVal = _Point * 100; // safe fallback (10 pips)
+         {
+            int hATRtmp = iATR(_Symbol, _Period, 14);
+            if(hATRtmp != INVALID_HANDLE)
+            {
+               double atrCur[1];
+               // CopyBuffer with start_pos = i reads the bar i bars ago
+               if(CopyBuffer(hATRtmp, 0, i, 1, atrCur) == 1)
+                  atrVal = atrCur[0];
+               IndicatorRelease(hATRtmp);
+            }
+         }
+
          if(sigDir > 0)
          {
-            g_buyBuf[i]  = low[i]  - iATR(_Symbol, _Period, 14) * 0.5;
+            g_buyBuf[i]  = low[i]  - atrVal * 0.5;
             g_sellBuf[i] = EMPTY_VALUE;
          }
          else
          {
-            g_sellBuf[i] = high[i] + iATR(_Symbol, _Period, 14) * 0.5;
+            g_sellBuf[i] = high[i] + atrVal * 0.5;
             g_buyBuf[i]  = EMPTY_VALUE;
          }
-
-         // Compute SL / TP
-         double atrVal = iATR(_Symbol, _Period, 14);
-         double atrCur[1];
-         if(CopyBuffer(iATR(_Symbol, _Period, 14), 0, i, 1, atrCur) == 1)
-            atrVal = atrCur[0];
 
          double sl = 0, tp1 = 0, tp2 = 0;
          OrderBlock nearOB;
@@ -395,8 +404,16 @@ void DrawSLTPLines(datetime sigTime, double sl, double tp1, double tp2,
    DeleteByTag("SIG_");
 
    string dirStr = (dir > 0) ? "BUY" : "SELL";
-   double pip    = _Point * 10;
-   if(pip <= 0) pip = _Point;
+   // Instrument-aware pip size (same logic as DrawDashboard)
+   double pip;
+   {
+      int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+      if(digits == 5 || digits == 3)
+         pip = _Point * 10;
+      else
+         pip = _Point;
+      if(pip <= 0) pip = _Point;
+   }
 
    double slPips  = MathAbs(entry - sl)  / pip;
    double tp1Pips = MathAbs(entry - tp1) / pip;
@@ -1174,7 +1191,20 @@ void DrawDashboard()
       if(CopyBuffer(hATR14, 0, 1, 1, ab) == 1) atrVal = ab[0];
       IndicatorRelease(hATR14);
    }
-   double pip        = (_Point > 0) ? _Point * 10 : 0.0001;
+   // Pip calculation: detect instrument type to set correct pip size.
+   // 5-digit forex (EURUSD): _Point=0.00001, pip=0.0001 (_Point*10)
+   // 3-digit JPY pairs (USDJPY): _Point=0.001, pip=0.01 (_Point*10)
+   // XAUUSD / metals (4-digit): _Point=0.01, pip=0.01 (same as _Point, not *10)
+   // Indices / CFDs: _Point varies; use _Point as pip unit.
+   double pip;
+   {
+      int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+      if(digits == 5 || digits == 3)
+         pip = _Point * 10;           // Standard 5-digit forex / 3-digit JPY
+      else
+         pip = _Point;                // Metals (4-digit), indices, etc.
+      if(pip <= 0) pip = _Point;      // Fallback: never allow zero
+   }
    double atrPips    = (pip > 0) ? atrVal / pip : 0;
    double spreadPips = SymbolInfoInteger(_Symbol, SYMBOL_SPREAD) / 10.0;
    double bid        = SymbolInfoDouble(_Symbol, SYMBOL_BID);
@@ -1250,7 +1280,7 @@ void DrawDashboard()
              StringFormat("  |  %02d:%02d", dtNow.hour, dtNow.min),
              C'130,190,215', fsS);
    DashLabel("H2", x+pw-68, curY+2,
-             "Align " + IntegerToString((int)(alignment*100)) + "%",
+             "Align " + IntegerToString((int)alignment) + "%",
              C'0,185,215', fsS);
    curY += lh + 4;
 
@@ -1307,7 +1337,14 @@ void DrawDashboard()
    string modName[6]  = { "MTF Bias", "Ord Block", "Fair Val",
                            "Structure", "Liquidity", "Killzone" };
    double modScore[6] = { sMTF, sOB,  sFVG, sStr, sLiq, sKZ };
-   double modMax[6]   = { 3.0,  2.5,  2.0,  2.0,  1.5,  1.0 };
+   // modMax must match the actual cap from each module's GetConfluenceScore():
+   // MTF: ScoreMTF -> base(2.0) + alignment/100(1.0) = 3.0
+   // OB:  GetConfluenceScore caps at 1.5
+   // FVG: GetConfluenceScore caps at 1.0
+   // Struct: GetConfluenceScore caps at 1.5
+   // Liq:  GetConfluenceScore caps at 1.5
+   // KZ:   ScoreKZ max = 1.0
+   double modMax[6]   = { 3.0,  1.5,  1.0,  1.5,  1.5,  1.0 };
 
    int cellW   = 93;
    int cellH   = 52;
@@ -1404,8 +1441,8 @@ void DrawDashboard()
 
    DashPanel("D6BG", x-2, curY, pw+4, lh+2, COL_ROW_A);
    DashLabel("D6", px, curY+2,
-             StringFormat("To PDH: %+.1fp   To PDL: %+.1fp",
-                          toPDH, -toPDL),
+             StringFormat("To PDH: %+.1fp   To PDL: -%+.1fp",
+                          toPDH, toPDL),
              C'175,175,128', fsS);
    curY += lh + 4;
 
@@ -1494,7 +1531,7 @@ double ScoreMTF(ENUM_HTF_BIAS bias, double alignment)
 
 double ScoreKZ()
 {
-   datetime utc = TimeCurrent() - InpBrokerUTCOffset * 3600;
+   datetime utc = TimeCurrent() - (long)InpBrokerUTCOffset * 3600;
    MqlDateTime d; TimeToStruct(utc, d);
    int est = (d.hour - 5 + 24) % 24;
    if(InpKZLondon && est >= 2 && est < 5)  return 1.0;
@@ -1509,7 +1546,7 @@ double ScoreKZ()
 //+------------------------------------------------------------------+
 string KZName()
 {
-   datetime utc = TimeCurrent() - InpBrokerUTCOffset * 3600;
+   datetime utc = TimeCurrent() - (long)InpBrokerUTCOffset * 3600;
    MqlDateTime d; TimeToStruct(utc, d);
    int est = (d.hour - 5 + 24) % 24;
    if(InpKZAsian  && (est >= 20 || est < 1)) return "Asian KZ";
