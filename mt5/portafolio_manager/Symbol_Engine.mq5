@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Infernal Portfolio Governor"
 #property link      "https://www.mql5.com"
-#property version   "2.00"
+#property version   "2.10"
 #property description "Infernal Portfolio Governor R Symbol Engine"
 #property strict
 
@@ -243,6 +243,9 @@ input bool              InpEnableLondonOpenKZ = true;     // Enable London Open 
 input bool              InpEnableNYKZ = true;             // Enable NY Killzone
 input bool              InpEnableLondonCloseKZ = false;   // Enable London Close Killzone
 input bool              InpNotifyKillzoneOpen = true;     // Notify on Killzone Open
+input bool              InpCloseOnKillzoneEnd = true;     // Close trades when their killzone ends
+input int               InpKZBEMinutesBefore = 15;        // Mins before KZ end to force breakeven (0=off)
+input double            InpKZBEMinProfitR    = 0.1;       // Min profit R required to force breakeven
 
 
 input group "======= SESSION GOVERNOR ======="
@@ -399,6 +402,9 @@ struct PositionState {
 
    // Stale trade tracking
    int      barsAtStageNeg1;        // Bars elapsed while still at stage -1 (no Quick Lock)
+
+   // Killzone tracking
+   ENUM_KILLZONE entryKillzone;     // Active killzone when trade was opened
 };
 PositionState g_states[];
 
@@ -946,19 +952,41 @@ void OnTick()
 {
 
 
-   // --- KILLZONE NOTIFICATION ---
-   if(InpNotifyKillzoneOpen)
+   // --- KILLZONE STATE CHANGE DETECTION ---
    {
       ENUM_KILLZONE currentKZ = GetActiveKillzone();
       if(currentKZ != g_lastKillzoneState)
       {
-         // Only notify on OPEN (state change to non-NONE), not close
-         if(currentKZ != KILLZONE_NONE)
+         // Notify on open
+         if(currentKZ != KILLZONE_NONE && InpNotifyKillzoneOpen)
          {
              string msg = "[INFO] KILLZONE OPEN: " + KillzoneToString(currentKZ) + " on " + _Symbol;
              if(InpEnableMobileAlerts) SendNotification(msg);
              Print(msg);
          }
+
+         // Close trades that belong to the killzone that just ended (only if in profit - let SL handle losses)
+         if(currentKZ == KILLZONE_NONE && InpCloseOnKillzoneEnd && g_lastKillzoneState != KILLZONE_NONE)
+         {
+            ENUM_KILLZONE closedKZ = g_lastKillzoneState;
+            Print("[KZ CLOSE] ", KillzoneToString(closedKZ), " ended - scanning trades opened in that session");
+            for(int i = ArraySize(g_states) - 1; i >= 0; i--)
+            {
+               if(g_states[i].entryKillzone != closedKZ) continue;
+               if(!PositionSelectByTicket(g_states[i].ticket))   continue;
+               double posProfit = PositionGetDouble(POSITION_PROFIT);
+               if(posProfit <= 0)
+               {
+                  Print("[KZ CLOSE] Ticket #", g_states[i].ticket, " in loss (", DoubleToString(posProfit,2), ") - leaving for SL");
+                  continue;
+               }
+               if(trade.PositionClose(g_states[i].ticket))
+                  Print("[KZ CLOSE] Ticket #", g_states[i].ticket, " closed at KZ end, profit=", DoubleToString(posProfit,2));
+               else
+                  Print("[KZ CLOSE] Failed to close #", g_states[i].ticket, " err=", GetLastError());
+            }
+         }
+
          g_lastKillzoneState = currentKZ;
       }
    }
@@ -1582,6 +1610,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       g_states[sz].lastPeakTime = TimeCurrent();
       g_states[sz].peakProfitR = 0;
       g_states[sz].barsAtStageNeg1 = 0;
+      g_states[sz].entryKillzone = GetActiveKillzone();
 
       // LOG TO DB MANAGER (skip in Strategy Tester)
       if(InpEnableLearning && InpLogTradesToFile && !MQLInfoInteger(MQL_TESTER))
@@ -2077,6 +2106,7 @@ void ManagePositions()
          g_states[stateCount].lastPeakTime = TimeCurrent();
          g_states[stateCount].peakProfitR = 0;
          g_states[stateCount].barsAtStageNeg1 = 0;
+         g_states[stateCount].entryKillzone  = GetActiveKillzone();
          Print("Warning: Created fallback position state for ticket ", ticket, " - R-calculations may be approximate");
          sIdx = stateCount;
       }
@@ -2124,6 +2154,39 @@ void ManagePositions()
       }
 
       // ============================================================
+      // LAYER 1: FORCE BREAKEVEN BEFORE KILLZONE ENDS
+      // If KZ is about to close and trade has any profit but no Quick
+      // Lock yet, force SL to entry so close-on-KZ-end exits at BE
+      // worst case, not at a loss.
+      // ============================================================
+      if(InpCloseOnKillzoneEnd && InpKZBEMinutesBefore > 0 &&
+         g_states[sIdx].currentStage < 0 &&
+         g_states[sIdx].entryKillzone != KILLZONE_NONE &&
+         g_states[sIdx].entryKillzone == GetActiveKillzone() &&
+         profitR >= InpKZBEMinProfitR)
+      {
+         int minsLeft = GetMinutesToKZEnd();
+         if(minsLeft >= 0 && minsLeft <= InpKZBEMinutesBefore)
+         {
+            // Move SL to entry + 1 point buffer to guarantee exit at BE or better
+            double beSL = (pType == POSITION_TYPE_BUY)
+                          ? open + _Point
+                          : open - _Point;
+            if(SafeModifySL(ticket, beSL, tp))
+            {
+               g_states[sIdx].locked_sl  = beSL;
+               g_states[sIdx].currentStage = 0;  // Mark Quick Lock done (BE is set)
+               Print("[KZ BE] Ticket #", ticket,
+                     " forced BE - KZ ends in ", minsLeft, " mins"
+                     " | profitR=", DoubleToString(profitR, 2));
+               if(InpEnableMobileAlerts)
+                  SendNotification("[KZ BE] " + _Symbol + " #" + IntegerToString((int)ticket) +
+                                   " BE set, KZ ends in " + IntegerToString(minsLeft) + "m");
+            }
+         }
+      }
+
+      // ============================================================
       // STALE TRADE EXIT
       // If Quick Lock hasn't triggered after N bars, the trade is going
       // nowhere R exit before it bleeds further.
@@ -2140,14 +2203,30 @@ void ManagePositions()
 
             if(barsHeld >= InpStaleBarLimit)
             {
-               Print("[STALE EXIT] Ticket #", ticket,
-                     " | ", barsHeld, " bars with no Quick Lock",
-                     " | ProfitR: ", DoubleToString(profitR, 2),
-                     " | Closing stale trade.");
-               if(InpEnableMobileAlerts)
-                  SendNotification("[STALE] " + _Symbol + " closed after " + IntegerToString(barsHeld) + " bars no progress");
-               if(trade.PositionClose(ticket))
-                  continue;
+               if(profitR > 0)
+               {
+                  // In profit but stale: take what we have, no point waiting
+                  Print("[STALE EXIT] Ticket #", ticket,
+                        " | ", barsHeld, " bars with no Quick Lock",
+                        " | ProfitR: ", DoubleToString(profitR, 2),
+                        " | Closing in profit.");
+                  if(InpEnableMobileAlerts)
+                     SendNotification("[STALE] " + _Symbol + " closed +" + DoubleToString(profitR,2) + "R after " + IntegerToString(barsHeld) + " bars");
+                  if(trade.PositionClose(ticket))
+                     continue;
+               }
+               else
+               {
+                  // In loss: do NOT close manually (adds to loss). Let original SL protect.
+                  // Tighten SL toward entry to cap further damage.
+                  double entrySL = (pType == POSITION_TYPE_BUY)
+                                   ? open - g_states[sIdx].initialSLDist * 0.5
+                                   : open + g_states[sIdx].initialSLDist * 0.5;
+                  if(SafeModifySL(ticket, entrySL, tp))
+                     Print("[STALE TIGHTEN] Ticket #", ticket,
+                           " | stale in loss (", DoubleToString(profitR,2), "R)"
+                           " | SL tightened to 50% of initial distance");
+               }
             }
          }
       }
@@ -3418,5 +3497,30 @@ ENUM_KILLZONE GetActiveKillzone()
 bool CheckKillzone()
 {
    return GetActiveKillzone() != KILLZONE_NONE;
+}
+
+//+------------------------------------------------------------------+
+//| Minutes remaining until current killzone ends (-1 if none)       |
+//+------------------------------------------------------------------+
+int GetMinutesToKZEnd()
+{
+   ENUM_KILLZONE kz = GetActiveKillzone();
+   if(kz == KILLZONE_NONE) return -1;
+
+   datetime utcTime = TimeCurrent() - (InpBrokerUTCOffset * 3600);
+   MqlDateTime utcDt;
+   TimeToStruct(utcTime, utcDt);
+   int estHour = (utcDt.hour - 5 + 24) % 24;
+   int currentMins = estHour * 60 + utcDt.min;
+
+   int endMins = 0;
+   if(kz == KILLZONE_ASIAN)        endMins =  1 * 60;  // ends 01:00 EST
+   if(kz == KILLZONE_LONDON_OPEN)  endMins =  5 * 60;  // ends 05:00 EST
+   if(kz == KILLZONE_NY)           endMins = 10 * 60;  // ends 10:00 EST
+   if(kz == KILLZONE_LONDON_CLOSE) endMins = 12 * 60;  // ends 12:00 EST
+
+   int remaining = endMins - currentMins;
+   if(remaining < 0) remaining += 24 * 60;  // midnight wrap (Asian KZ)
+   return remaining;
 }
 

@@ -66,7 +66,9 @@
       "Bash(sed -i 's/InpTrailStart_R=0.6/InpTrailStart_R=0.3/' \"$f\")",
       "Bash(head -2 sets/*.set)",
       "Bash(pip3 list:*)",
-      "Bash(\"/c/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/sets/gbpusd.set\":*)"
+      "Bash(\"/c/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/sets/gbpusd.set\":*)",
+      "Bash(head -30 grep -n \"^   [a-zA-Z].*\\(\" \"C:/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/Include/NewsFilter.mqh\")",
+      "WebFetch(domain:www.earnforex.com)"
     ]
   }
 }
