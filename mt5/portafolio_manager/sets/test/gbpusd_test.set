@@ -1,125 +1,127 @@
-; GBPUSD - H4 - CONSERVATIVE TEST SET
-; PURPOSE: Demo or live account testing. Capital preservation first.
-; LOAD: Strategy Tester OR attach to GBPUSD H4 chart with Standalone=true
-; NOTE: GBPUSD is more volatile than EURUSD - filters are slightly tighter
+; GBPUSD - H1 - CONSERVATIVE SCALPER TEST
+; PURPOSE: Slow steady equity curve. Small account ($10-$50). Capital preservation.
+; NOTE: GBP more volatile — slightly wider tolerances than EURUSD.
 
 InpMagicNumber=100002
 InpDirection=0
 InpBrokerUTCOffset=2
 
-;═══════ GOVERNOR (STANDALONE) ═══════
-
 ;═══════ KILLZONES ═══════
+; Cable: London Close included — strong institutional moves at session end
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=true
-; GBPUSD: London close included - cable moves hard at session end
+InpCloseOnKillzoneEnd=false
+InpKZBEMinutesBefore=0
+InpKZBEMinProfitR=0.0
+InpNotifyKillzoneOpen=false
+
+;═══════ MOMENTUM EXIT ═══════
+InpUseMomentumExit=true
+InpMomADX_Period=14
+InpMomADX_Threshold=20.0
+InpMomATR_CollapseRatio=0.65
+InpMomBarsNoProgress=5
+InpMomProgressATR=0.2
+InpMomSignalsToExit=2
+InpMomRecoveryMinScore=1
 
 ;═══════ FIBONACCI ═══════
 InpSwingLookback=20
-InpFibLevelLow=0.618
+InpFibLevelLow=0.500
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.30
-; GBPUSD: Wider tolerance - cable wicks are aggressive on H4
+InpZoneTolerance=0.50
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
-InpDisplacementATR=1.1
-; GBPUSD: Cable needs a clear directional push before entry
-InpDisplacementLookback=5
+InpDisplacementATR=0.7
+InpDisplacementLookback=4
 
 ;═══════ RSI ═══════
 InpRSI_Period=14
-InpRSI_Oversold=43
-; GBPUSD: Slightly more extreme oversold - cable tends to overextend
-InpRSI_Overbought=57
+InpRSI_Oversold=33
+InpRSI_Overbought=67
 InpRSI_Momentum=true
 
 ;═══════ TREND ═══════
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.1
+InpEMA_MinSlope=0.03
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.70
+InpChopThreshold=0.80
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
 InpMinConfluenceEntry=19
-; TEST: Elite setups only - score 19+ required
-InpDominanceThreshold=2.0
+InpDominanceThreshold=0.5
 InpMaxPositions=1
-; One position at a time
 
-;═══════ RISK - TEST ═══════
-InpRiskBase=50.0
-; TEST: 50% balance risk for backtest observation
-InpMaxRisk=50.0
-InpMaxLotsPerTrade=5.0
-InpEnableMarginCheck=false
+;═══════ RISK - CONSERVATIVE SMALL ACCOUNT ═══════
+InpRiskBase=20.0
+InpMaxRisk=25.0
+InpMaxLotsPerTrade=0.01
+InpEnableMarginCheck=true
 
 ;═══════ TAKE PROFIT ═══════
 InpTPMode=2
-InpFixedTP_R=3.0
-InpMinTP_R=2.0
-InpMaxTP_R=6.0
+InpFixedTP_R=2.0
+InpMinTP_R=1.5
+InpMaxTP_R=3.0
 InpTPUseLearnedMFE=false
 
 ;═══════ TRAILING STOP ═══════
 InpTrailingMode=1
 InpTrailType=1
-InpTrailStepATR=0.5
+InpTrailStepATR=0.2
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=6.0
-; GBPUSD: Higher minimum - cable H4 bars are naturally larger
-InpMaxVolatilityFactor=2.5
-InpVolatilityTP_Mult=3.0
+InpMinVolatilityPips=2.0
+InpMaxVolatilityFactor=4.0
+InpVolatilityTP_Mult=2.0
 
-;═══════ PARTIAL TP & TRAILING ═══════
-InpPartialTP_R=1.0
-InpPartialClosePercent=50.0
-InpBE_Threshold_R=0.7
-InpTrailStart_R=0.8
-InpTrailATR_Mult=1.6
-; GBPUSD: Slightly wider trail - cable needs room to breathe
-InpTrailDecayRate=0.20
-InpTrailMinMult=0.55
+;═══════ PARTIAL TP & TRAILING — AGGRESSIVE HARVEST ═══════
+InpPartialTP_R=0.55
+InpPartialClosePercent=55.0
+InpBE_Threshold_R=0.35
+InpTrailStart_R=0.45
+InpTrailATR_Mult=0.75
+InpTrailDecayRate=0.38
+InpTrailMinMult=0.22
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.35
+InpTrailMinBufferATR=0.15
 
-;═══════ INFINITE ESCALATOR - CONSERVATIVE ═══════
-InpEsc_FirstR=0.5
-InpEsc_FirstSL_R=-0.05
-InpEsc_StepR=0.8
-InpEsc_GrowthFactor=1.2
-InpEsc_BaseHarvest=25.0
-InpEsc_HarvestDecay=0.80
-InpEsc_MinHarvest=5.0
-InpEsc_MaxStages=10
-InpRunnerTrailTight=0.70
-InpTimeStaleMins=200.0
-InpTimeStaleTight1=0.75
-InpTimeStaleTight2=0.60
+;═══════ INFINITE ESCALATOR — NATURAL HARVEST ═══════
+InpEsc_FirstR=0.18
+InpEsc_FirstSL_R=-0.02
+InpEsc_StepR=0.22
+InpEsc_GrowthFactor=1.5
+InpEsc_BaseHarvest=50.0
+InpEsc_HarvestDecay=0.68
+InpEsc_MinHarvest=15.0
+InpEsc_MaxStages=12
+InpRunnerTrailTight=0.88
+InpTimeStaleMins=75.0
+InpTimeStaleTight1=0.90
+InpTimeStaleTight2=0.78
 
 ;═══════ SCALE-IN PYRAMID ═══════
 InpPyr_Enable=false
-; DISABLED: No pyramiding in conservative test mode
 InpPyr_Frequency=3
 InpPyr_FirstRiskPct=0.10
 InpPyr_RiskDecay=0.70
 InpPyr_MinRiskPct=0.03
 InpPyr_MaxAddOns=2
-InpPyr_MinProfitR=1.5
+InpPyr_MinProfitR=1.0
 InpAgg_MaxTotalRisk=2.0
-InpAgg_MaxPositions=2
+InpAgg_MaxPositions=1
 
 ;═══════ ADAPTIVE ESCALATOR ═══════
 InpAdaptiveEscalator=true
-InpScoreAdaptFactor=0.05
+InpScoreAdaptFactor=0.15
 InpRegimeHarvest=true
 InpMFECalibration=false
 InpMomentumTrail=true
@@ -128,46 +130,45 @@ InpFridayCloseHour=22
 
 ;═══════ STALE TRADE EXIT ═══════
 InpUseStaleTrade=true
-InpStaleBarLimit=6
+InpStaleBarLimit=4
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=30
-; GBPUSD: Slightly wider than EURUSD but still strict
+InpMaxSpreadPoints=35
 
-;═══════ SMC - SMART MONEY CONCEPTS ═══════
+;═══════ SMC ═══════
 InpUseSMC=true
 InpSMC_SwingLookback=20
-InpSMC_MinImpulseATR=1.8
-InpSMC_MinFVG_ATR=0.4
+InpSMC_MinImpulseATR=1.2
+InpSMC_MinFVG_ATR=0.25
 
-;═══════ MULTI-TIMEFRAME (OFF for backtest) ═══════
+;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=false
-InpHTF=49153
-InpMTF=16408
+InpHTF=16408
+InpMTF=16388
 InpMTF_EMAPeriod=50
 
-;═══════ NEWS FILTER (OFF for backtest) ═══════
+;═══════ NEWS FILTER ═══════
 InpUseNewsFilter=false
 InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=2.5
-InpVolatilitySpikeCooldown=45
+InpVolatilityThreshold=3.0
+InpVolatilitySpikeCooldown=20
 
-;═══════ KELLY POSITION SIZING ═══════
+;═══════ KELLY ═══════
 InpUseKelly=false
 InpKellyFraction=0.5
-InpDailyMaxDD=2.0
-InpWeeklyMaxDD=4.0
+InpDailyMaxDD=5.0
+InpWeeklyMaxDD=10.0
 InpDailyTarget=0.0
 
 ;═══════ LEARNING ═══════
-InpEnableLearning=false
-InpLogTradesToFile=false
+InpEnableLearning=true
+InpLogTradesToFile=true
 InpLearningHistory=180
-InpMinTradesForLearning=50
+InpMinTradesForLearning=20
 
 ;═══════ ADAPTIVE BEHAVIOR ═══════
 InpEnableAdaptiveRisk=false
@@ -177,33 +178,27 @@ InpEnableAdaptiveFilters=false
 ;═══════ PORTFOLIO PROTECTION ═══════
 InpUseCorrelationFilter=false
 InpDailyMaxLoss_R=3.0
-; Stop after 3R daily loss
-InpLossCooldownMinutes=60
-InpMaxConsecutiveLosses=2
-; Stop after 2 consecutive losses
-InpMaxDailyTrades=3
-InpUseReversalFilter=true
-InpReversalCooldownMinutes=90
+InpLossCooldownMinutes=30
+InpMaxConsecutiveLosses=3
+InpMaxDailyTrades=5
+InpUseReversalFilter=false
+InpReversalCooldownMinutes=30
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=1
-InpTradeCooldownMinutes=60
+InpMaxTradesPerSession=2
+InpTradeCooldownMinutes=30
 InpCloseIntradayProfits=false
 InpEndOfDayHour=22
 
 ;═══════ GOVERNOR ═══════
 InpGov_Enabled=true
-; Activate drawdown control during standalone/backtest testing
 InpGov_DD_Reduce=5.0
-; Reduce risk at 5% total drawdown from peak
 InpGov_DD_Pause=10.0
-; Pause trading at 10% total drawdown from peak
 InpGov_ReducedMult=0.5
-; Risk multiplier when in reduced mode (50% of normal risk)
-InpGov_DailyMaxDD=5.0
-; Stop trading for the day after 5% daily drawdown
+InpGov_DailyMaxDD=4.0
 
 ;═══════ VISUAL DEBUGGING ═══════
 InpEnableVisualLevels=true
-InpTickThrottleSeconds=30
+InpTickThrottleSeconds=10
+

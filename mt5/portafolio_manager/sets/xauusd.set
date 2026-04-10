@@ -12,6 +12,21 @@ InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
+InpCloseOnKillzoneEnd=false
+InpKZBEMinutesBefore=15
+InpKZBEMinProfitR=0.1
+InpNotifyKillzoneOpen=true
+
+;═══════ MOMENTUM EXIT ═══════
+; Gold moves in bigger ATR bursts — require more signals (avoid premature exits)
+InpUseMomentumExit=true
+InpMomADX_Period=14
+InpMomADX_Threshold=22.0
+InpMomATR_CollapseRatio=0.50
+InpMomBarsNoProgress=10
+InpMomProgressATR=0.4
+InpMomSignalsToExit=3
+InpMomRecoveryMinScore=2
 
 ;═══════ FIBONACCI ═══════
 InpSwingLookback=24
@@ -26,8 +41,8 @@ InpDisplacementLookback=5
 
 ;═══════ RSI ═══════
 InpRSI_Period=14
-InpRSI_Oversold=40
-InpRSI_Overbought=60
+InpRSI_Oversold=30
+InpRSI_Overbought=70
 InpRSI_Momentum=true
 
 ;═══════ TREND ═══════
@@ -41,7 +56,7 @@ InpChopThreshold=0.65
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=16
+InpMinConfluenceEntry=14
 InpDominanceThreshold=1.5
 InpMaxPositions=1
 

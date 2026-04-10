@@ -1,13 +1,12 @@
-; XAUUSD (Gold) - H4 - ULTRA CONSERVATIVE TEST SET
-; PURPOSE: Maximum equity curve preservation. Profit only from elite setups.
-; LOAD: Strategy Tester OR attach to XAUUSD H4 chart with Standalone=true
-; PHILOSOPHY: One great trade > three mediocre trades. Never give back profits.
+; XAUUSD (Gold) - H1 - CONSERVATIVE SCALPER TEST
+; PURPOSE: Slow steady equity curve. Small account ($10-$50). Capital preservation.
+; NOTE: Gold 0.01 lots has large SL dollar value. 5% is the minimum viable risk
+;       for $50 accounts. On $10 accounts, trades may still be rejected — Gold
+;       requires a larger account than forex pairs for conservative sizing.
 
 InpMagicNumber=100011
 InpDirection=0
 InpBrokerUTCOffset=2
-
-;═══════ GOVERNOR (STANDALONE) ═══════
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
@@ -15,180 +14,168 @@ InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
+InpCloseOnKillzoneEnd=false
+InpKZBEMinutesBefore=0
+InpKZBEMinProfitR=0.0
+InpNotifyKillzoneOpen=false
+
+;═══════ MOMENTUM EXIT ═══════
+InpUseMomentumExit=true
+InpMomADX_Period=14
+InpMomADX_Threshold=20.0
+InpMomATR_CollapseRatio=0.65
+InpMomBarsNoProgress=5
+InpMomProgressATR=0.2
+InpMomSignalsToExit=2
+InpMomRecoveryMinScore=1
 
 ;═══════ FIBONACCI ═══════
-InpSwingLookback=24
-InpFibLevelLow=0.618
+InpSwingLookback=20
+InpFibLevelLow=0.500
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.35
-; Slightly tighter than before - only take clean fib taps
+InpZoneTolerance=0.50
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
-InpDisplacementATR=1.0
-; Require clearer institutional displacement on gold
-InpDisplacementLookback=5
+InpDisplacementATR=0.7
+InpDisplacementLookback=4
 
 ;═══════ RSI ═══════
+; Gold: wide thresholds — stays overbought in bull trends for weeks
 InpRSI_Period=14
-InpRSI_Oversold=40
-InpRSI_Overbought=60
+InpRSI_Oversold=30
+InpRSI_Overbought=70
 InpRSI_Momentum=true
 
 ;═══════ TREND ═══════
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.15
-; Require a more defined trend - avoids ranging gold markets
+InpEMA_MinSlope=0.03
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.65
-; Tighter - only trade when gold has clear directional structure
+InpChopThreshold=0.80
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=19
-; Elite setups only - 19+ required
-InpDominanceThreshold=1.5
-; Gold: relaxed dominance - signals are naturally more balanced
+InpMinConfluenceEntry=12
+InpDominanceThreshold=0.5
 InpMaxPositions=1
-; One position only - never overlap on gold
 
-;═══════ RISK - TEST ═══════
-InpRiskBase=50.0
-; TEST: 50% balance for backtest observation
-InpMaxRisk=50.0
-InpMaxLotsPerTrade=5.0
-InpEnableMarginCheck=false
+;═══════ RISK - SMALL ACCOUNT XAUUSD ═══════
+; XAUUSDm 0.01 lots (minimum) = ~$17-20 SL dollar risk regardless of %.
+; InpRiskBase=40% is NOT actual exposure — it only unlocks the trade validation.
+; InpMaxLotsPerTrade=0.01 is the real cap. The account always risks ~$17-20/trade.
+; Governors and session limits are the real protection here.
+; Minimum account recommended for Gold: $200+ for meaningful risk control.
+InpRiskBase=40.0
+InpMaxRisk=40.0
+InpMaxLotsPerTrade=0.01
+InpEnableMarginCheck=true
 
 ;═══════ TAKE PROFIT ═══════
 InpTPMode=2
-InpFixedTP_R=3.0
-; Reduced from 4R - take profits consistently, do not chase
-InpMinTP_R=2.0
-InpMaxTP_R=5.0
-; Cap at 5R - gold rarely runs cleanly beyond that on H4
+InpFixedTP_R=2.0
+InpMinTP_R=1.5
+InpMaxTP_R=3.0
 InpTPUseLearnedMFE=false
 
 ;═══════ TRAILING STOP ═══════
 InpTrailingMode=1
 InpTrailType=1
-InpTrailStepATR=0.4
-; Tighter trail step - lock in gains faster on gold
+InpTrailStepATR=0.2
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=20.0
-InpMaxVolatilityFactor=2.0
-; Tighter max - avoid entering chaotic gold spikes
-InpVolatilityTP_Mult=3.0
+InpMinVolatilityPips=10.0
+InpMaxVolatilityFactor=4.0
+InpVolatilityTP_Mult=2.0
 
-;═══════ PARTIAL TP & TRAILING ═══════
-InpPartialTP_R=0.8
-; Take partial much earlier - lock cash before gold reverses
-InpPartialClosePercent=50.0
-; Close 50% at partial - meaningful protection
-InpBE_Threshold_R=0.5
-; Move to breakeven at 0.5R - protect capital aggressively
-InpTrailStart_R=0.7
-; Start trailing early
-InpTrailATR_Mult=1.4
-; Tighter trail multiplier
-InpTrailDecayRate=0.25
-InpTrailMinMult=0.35
+;═══════ PARTIAL TP & TRAILING — AGGRESSIVE HARVEST ═══════
+InpPartialTP_R=0.30
+InpPartialClosePercent=70.0
+InpBE_Threshold_R=0.15
+InpTrailStart_R=0.20
+InpTrailATR_Mult=0.45
+InpTrailDecayRate=0.50
+InpTrailMinMult=0.12
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.30
+InpTrailMinBufferATR=0.10
 
-;═══════ INFINITE ESCALATOR - ULTRA CONSERVATIVE ═══════
-InpEsc_FirstR=0.4
-; Lock profits at 0.4R - very early protection
-InpEsc_FirstSL_R=-0.03
-; Almost no buffer after first lock
-InpEsc_StepR=0.6
-; Smaller escalator steps - harvest frequently
-InpEsc_GrowthFactor=1.1
-; Slow growth factor - do not let steps expand too much
-InpEsc_BaseHarvest=35.0
-; Harvest 35% per stage - lock gains aggressively
-InpEsc_HarvestDecay=0.85
-InpEsc_MinHarvest=8.0
-InpEsc_MaxStages=8
-; Cap at 8 stages - do not chase extended runners
-InpRunnerTrailTight=0.65
-InpTimeStaleMins=240.0
-; 240 min before stale on gold H4
-InpTimeStaleTight1=0.70
-InpTimeStaleTight2=0.55
+;═══════ INFINITE ESCALATOR — AGGRESSIVE HARVEST ═══════
+InpEsc_FirstR=0.08
+InpEsc_FirstSL_R=-0.01
+InpEsc_StepR=0.10
+InpEsc_GrowthFactor=1.8
+InpEsc_BaseHarvest=70.0
+InpEsc_HarvestDecay=0.60
+InpEsc_MinHarvest=25.0
+InpEsc_MaxStages=15
+InpRunnerTrailTight=0.96
+InpTimeStaleMins=60.0
+InpTimeStaleTight1=0.95
+InpTimeStaleTight2=0.85
 
 ;═══════ SCALE-IN PYRAMID ═══════
 InpPyr_Enable=false
-; DISABLED: Pyramiding forbidden in ultra-conservative mode
-InpPyr_Frequency=2
+InpPyr_Frequency=3
 InpPyr_FirstRiskPct=0.10
-InpPyr_RiskDecay=0.65
+InpPyr_RiskDecay=0.70
 InpPyr_MinRiskPct=0.03
 InpPyr_MaxAddOns=2
-InpPyr_MinProfitR=2.0
-InpAgg_MaxTotalRisk=1.0
+InpPyr_MinProfitR=1.0
+InpAgg_MaxTotalRisk=2.0
 InpAgg_MaxPositions=1
 
 ;═══════ ADAPTIVE ESCALATOR ═══════
 InpAdaptiveEscalator=true
-InpScoreAdaptFactor=0.06
+InpScoreAdaptFactor=0.15
 InpRegimeHarvest=true
 InpMFECalibration=false
 InpMomentumTrail=true
 InpChaosEmergencyLock=true
-; Critical for gold - flash crashes happen
 InpFridayCloseHour=21
-; Close 1 hour earlier on Friday - gold weekend gaps are dangerous
 
 ;═══════ STALE TRADE EXIT ═══════
 InpUseStaleTrade=true
-InpStaleBarLimit=8
-; Exit faster - free capital if gold is not moving
+InpStaleBarLimit=4
 
 ;═══════ SPREAD ═══════
 InpMaxSpreadPoints=200
-; Gold: Wide spread tolerance - XAUUSD broker representation varies
 
-;═══════ SMC - SMART MONEY CONCEPTS ═══════
+;═══════ SMC ═══════
 InpUseSMC=true
-InpSMC_SwingLookback=24
-InpSMC_MinImpulseATR=1.5
-; Slightly tighter - require more meaningful institutional impulse
-InpSMC_MinFVG_ATR=0.4
+InpSMC_SwingLookback=20
+InpSMC_MinImpulseATR=1.2
+InpSMC_MinFVG_ATR=0.25
 
-;═══════ MULTI-TIMEFRAME (OFF for backtest) ═══════
+;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=false
-InpHTF=49153
-InpMTF=16408
+InpHTF=16408
+InpMTF=16388
 InpMTF_EMAPeriod=50
 
-;═══════ NEWS FILTER (OFF for backtest) ═══════
+;═══════ NEWS FILTER ═══════
 InpUseNewsFilter=false
-InpNewsMinutesBefore=45
+InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=2.0
-; More sensitive spike detection - gold flash crashes are lethal
-InpVolatilitySpikeCooldown=90
-; 90 min cooldown - do not rush back into gold after a spike
+InpVolatilityThreshold=3.0
+InpVolatilitySpikeCooldown=20
 
-;═══════ KELLY POSITION SIZING ═══════
+;═══════ KELLY ═══════
 InpUseKelly=false
 InpKellyFraction=0.5
-InpDailyMaxDD=2.0
-InpWeeklyMaxDD=4.0
+InpDailyMaxDD=5.0
+InpWeeklyMaxDD=10.0
 InpDailyTarget=0.0
 
 ;═══════ LEARNING ═══════
-InpEnableLearning=false
-InpLogTradesToFile=false
+InpEnableLearning=true
+InpLogTradesToFile=true
 InpLearningHistory=180
-InpMinTradesForLearning=50
+InpMinTradesForLearning=20
 
 ;═══════ ADAPTIVE BEHAVIOR ═══════
 InpEnableAdaptiveRisk=false
@@ -197,38 +184,28 @@ InpEnableAdaptiveFilters=false
 
 ;═══════ PORTFOLIO PROTECTION ═══════
 InpUseCorrelationFilter=false
-InpDailyMaxLoss_R=1.5
-; Stop after 1.5R daily loss - gold losses are large in dollar terms
-InpLossCooldownMinutes=120
-; 2 hour cooldown after any loss
-InpMaxConsecutiveLosses=1
-; Stop after 1 consecutive loss - investigate before re-entering gold
-InpMaxDailyTrades=2
-; Maximum 2 trades per day - quality over quantity
-InpUseReversalFilter=true
-InpReversalCooldownMinutes=180
-; 3 hour reversal cooldown - never chase gold in the same session
+InpDailyMaxLoss_R=3.0
+InpLossCooldownMinutes=30
+InpMaxConsecutiveLosses=3
+InpMaxDailyTrades=5
+InpUseReversalFilter=false
+InpReversalCooldownMinutes=30
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=1
-; One trade per session - the best setup only
-InpTradeCooldownMinutes=120
-; 2 hour cooldown between trades
+InpMaxTradesPerSession=2
+InpTradeCooldownMinutes=30
 InpCloseIntradayProfits=false
 InpEndOfDayHour=22
 
 ;═══════ GOVERNOR ═══════
 InpGov_Enabled=true
-InpGov_DD_Reduce=3.0
-; Reduce risk at 3% drawdown from peak
-InpGov_DD_Pause=6.0
-; Pause trading at 6% drawdown from peak
-InpGov_ReducedMult=0.3
-; Drop to 30% risk when in drawdown - very conservative
-InpGov_DailyMaxDD=3.0
-; Stop for the day after 3% daily drawdown
+InpGov_DD_Reduce=5.0
+InpGov_DD_Pause=10.0
+InpGov_ReducedMult=0.5
+InpGov_DailyMaxDD=4.0
 
 ;═══════ VISUAL DEBUGGING ═══════
 InpEnableVisualLevels=true
-InpTickThrottleSeconds=30
+InpTickThrottleSeconds=10
+

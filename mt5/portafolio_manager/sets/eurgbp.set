@@ -9,8 +9,22 @@ InpBrokerUTCOffset=2
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
-InpEnableLondonCloseKZ=false
+InpEnableNYKZ=false
+InpEnableLondonCloseKZ=true
+InpCloseOnKillzoneEnd=false
+InpKZBEMinutesBefore=15
+InpKZBEMinProfitR=0.1
+InpNotifyKillzoneOpen=true
+
+;═══════ MOMENTUM EXIT ═══════
+InpUseMomentumExit=true
+InpMomADX_Period=14
+InpMomADX_Threshold=25.0
+InpMomATR_CollapseRatio=0.55
+InpMomBarsNoProgress=8
+InpMomProgressATR=0.3
+InpMomSignalsToExit=3
+InpMomRecoveryMinScore=2
 
 ;═══════ FIBONACCI ═══════
 InpSwingLookback=20

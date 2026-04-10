@@ -243,10 +243,19 @@ input bool              InpEnableLondonOpenKZ = true;     // Enable London Open 
 input bool              InpEnableNYKZ = true;             // Enable NY Killzone
 input bool              InpEnableLondonCloseKZ = false;   // Enable London Close Killzone
 input bool              InpNotifyKillzoneOpen = true;     // Notify on Killzone Open
-input bool              InpCloseOnKillzoneEnd = true;     // Close trades when their killzone ends
+input bool              InpCloseOnKillzoneEnd = false;    // Close trades when their killzone ends
 input int               InpKZBEMinutesBefore = 15;        // Mins before KZ end to force breakeven (0=off)
 input double            InpKZBEMinProfitR    = 0.1;       // Min profit R required to force breakeven
 
+input group "======= MOMENTUM EXIT ======="
+input bool              InpUseMomentumExit      = true;   // Detect & exit trades that lost momentum
+input int               InpMomADX_Period        = 14;     // ADX period for momentum measurement
+input double            InpMomADX_Threshold     = 25.0;   // ADX must have been above this (was trending)
+input double            InpMomATR_CollapseRatio = 0.55;   // Exit if ATR drops below X% of entry ATR
+input int               InpMomBarsNoProgress    = 8;      // Bars without meaningful price progress
+input double            InpMomProgressATR       = 0.3;    // Min ATR multiples to consider "progressing"
+input int               InpMomSignalsToExit     = 3;      // Signals needed (1-5) to trigger momentum exit
+input int               InpMomRecoveryMinScore  = 2;      // Recovery signals needed to spare a losing trade
 
 input group "======= SESSION GOVERNOR ======="
 input bool              InpUseSessionGovernor = true;     // Enable Session Governor
@@ -310,6 +319,8 @@ CAdaptiveFilterManager adaptiveFilter;
 
 int hRSI, hATR, hEMA;
 int hEMA50, hEMA100;   // Reversal filter EMAs
+int hADX  = INVALID_HANDLE;   // Momentum exit: ADX
+int hMACD = INVALID_HANDLE;   // Momentum exit: MACD
 double g_RSI, g_RSI_Prev, g_ATR, g_EMA, g_EMA_Prev, g_ATR_MA;
 double g_EMA50, g_EMA50_Prev, g_EMA100, g_EMA100_Prev;
 
@@ -405,6 +416,9 @@ struct PositionState {
 
    // Killzone tracking
    ENUM_KILLZONE entryKillzone;     // Active killzone when trade was opened
+
+   // Momentum exit tracking
+   double entryATR;                 // ATR at entry bar (for collapse detection)
 };
 PositionState g_states[];
 
@@ -470,6 +484,17 @@ int OnInit()
          Print("ERROR: Reversal filter EMA handles invalid");
          return INIT_FAILED;
       }
+   }
+
+   // Initialize Momentum Exit indicators
+   if(InpUseMomentumExit)
+   {
+      hADX  = iADX(_Symbol, PERIOD_CURRENT, InpMomADX_Period);
+      hMACD = iMACD(_Symbol, PERIOD_CURRENT, 12, 26, 9, PRICE_CLOSE);
+      if(hADX == INVALID_HANDLE || hMACD == INVALID_HANDLE)
+         Print("[WARN] Momentum Exit: indicator handles invalid - feature will be disabled");
+      else
+         Print("[OK] Momentum Exit initialized (ADX/MACD/RSI+ATR+Progress)");
    }
 
    failSafe.Init(InpMaxSpreadPoints);
@@ -965,7 +990,7 @@ void OnTick()
              Print(msg);
          }
 
-         // Close trades that belong to the killzone that just ended (only if in profit - let SL handle losses)
+         // Close trades that belong to the killzone that just ended (unconditional - profit or loss)
          if(currentKZ == KILLZONE_NONE && InpCloseOnKillzoneEnd && g_lastKillzoneState != KILLZONE_NONE)
          {
             ENUM_KILLZONE closedKZ = g_lastKillzoneState;
@@ -975,15 +1000,10 @@ void OnTick()
                if(g_states[i].entryKillzone != closedKZ) continue;
                if(!PositionSelectByTicket(g_states[i].ticket))   continue;
                double posProfit = PositionGetDouble(POSITION_PROFIT);
-               if(posProfit <= 0)
-               {
-                  Print("[KZ CLOSE] Ticket #", g_states[i].ticket, " in loss (", DoubleToString(posProfit,2), ") - leaving for SL");
-                  continue;
-               }
                if(trade.PositionClose(g_states[i].ticket))
-                  Print("[KZ CLOSE] Ticket #", g_states[i].ticket, " closed at KZ end, profit=", DoubleToString(posProfit,2));
+                  Print("[KZ CLOSE] #", g_states[i].ticket, " closed at KZ end, P/L=", DoubleToString(posProfit,2));
                else
-                  Print("[KZ CLOSE] Failed to close #", g_states[i].ticket, " err=", GetLastError());
+                  Print("[KZ CLOSE] Failed #", g_states[i].ticket, " err=", GetLastError());
             }
          }
 
@@ -1611,6 +1631,7 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
       g_states[sz].peakProfitR = 0;
       g_states[sz].barsAtStageNeg1 = 0;
       g_states[sz].entryKillzone = GetActiveKillzone();
+      g_states[sz].entryATR = g_ATR;             // Store ATR at entry for momentum collapse detection
 
       // LOG TO DB MANAGER (skip in Strategy Tester)
       if(InpEnableLearning && InpLogTradesToFile && !MQLInfoInteger(MQL_TESTER))
@@ -1925,6 +1946,157 @@ double GetMFECalibratedStageR(int stageIndex, double entryScore = 0)
 }
 
 //+------------------------------------------------------------------+
+//| Momentum Exit: detect when trade lost its driving force          |
+//| Returns true if position was closed (caller should continue)     |
+//+------------------------------------------------------------------+
+bool CheckMomentumExit(ulong ticket, int sIdx, long pType, double open, double curr, double profitR)
+{
+   if(!InpUseMomentumExit) return false;
+   if(hADX == INVALID_HANDLE || hMACD == INVALID_HANDLE) return false;
+
+   // ---- Read ADX buffers (3 bars: [0]=last closed, [1]=prev, [2]=2 bars ago) ----
+   double adxMain[3], diPlus[3], diMinus[3];
+   if(CopyBuffer(hADX, 0, 1, 3, adxMain)  < 3) return false;
+   if(CopyBuffer(hADX, 1, 1, 3, diPlus)   < 3) return false;
+   if(CopyBuffer(hADX, 2, 1, 3, diMinus)  < 3) return false;
+   ArraySetAsSeries(adxMain,  true);
+   ArraySetAsSeries(diPlus,   true);
+   ArraySetAsSeries(diMinus,  true);
+
+   // ---- Read MACD histogram (buffer 2) ----
+   double macdHist[2];
+   if(CopyBuffer(hMACD, 2, 1, 2, macdHist) < 2) return false;
+   ArraySetAsSeries(macdHist, true);
+   // [0]=last closed bar, [1]=bar before it
+
+   // ============================================================
+   // EVALUATE 5 MOMENTUM LOSS SIGNALS
+   // ============================================================
+   int exitScore = 0;
+   string signals = "";
+
+   // Signal 1: ADX was strong (>=Threshold) but now declining + DI flipped against trade
+   bool adxWasStrong      = (adxMain[2] >= InpMomADX_Threshold || adxMain[1] >= InpMomADX_Threshold);
+   bool adxNowFalling     = (adxMain[0] < adxMain[1]);
+   bool diFlippedAgainst  = (pType == POSITION_TYPE_BUY) ? (diMinus[0] > diPlus[0])
+                                                          : (diPlus[0] > diMinus[0]);
+   if(adxWasStrong && adxNowFalling && diFlippedAgainst)
+   { exitScore++; signals += "ADX "; }
+
+   // Signal 2: RSI crossed the 50 midpoint against trade (momentum direction changed)
+   bool rsiCrossedMid = (pType == POSITION_TYPE_BUY) ? (g_RSI_Prev >= 50.0 && g_RSI < 50.0)
+                                                      : (g_RSI_Prev <= 50.0 && g_RSI > 50.0);
+   if(rsiCrossedMid)
+   { exitScore++; signals += "RSI50 "; }
+
+   // Signal 3: MACD histogram crossed zero line against trade
+   bool macdCrossedZero = (pType == POSITION_TYPE_BUY) ? (macdHist[1] > 0.0 && macdHist[0] <= 0.0)
+                                                        : (macdHist[1] < 0.0 && macdHist[0] >= 0.0);
+   if(macdCrossedZero)
+   { exitScore++; signals += "MACD0 "; }
+
+   // Signal 4: ATR collapsed relative to entry ATR (volatility drained — no energy left)
+   if(g_states[sIdx].entryATR > _Point)
+   {
+      double atrRatio = g_ATR / g_states[sIdx].entryATR;
+      if(atrRatio < InpMomATR_CollapseRatio)
+      { exitScore++; signals += StringFormat("ATR%.0f%% ", atrRatio*100); }
+   }
+
+   // Signal 5: N bars without meaningful price progress in trade direction
+   if(PositionSelectByTicket(ticket))
+   {
+      datetime entryTime = (datetime)PositionGetInteger(POSITION_TIME);
+      int barsHeld = GetBarsHeld(entryTime);
+      if(barsHeld >= InpMomBarsNoProgress)
+      {
+         double minProgress = InpMomProgressATR * g_ATR;
+         double maxMove = 0.0;
+         if(pType == POSITION_TYPE_BUY)
+         {
+            int highBar = iHighest(_Symbol, PERIOD_CURRENT, MODE_HIGH, barsHeld, 1);
+            maxMove = iHigh(_Symbol, PERIOD_CURRENT, highBar) - open;
+         }
+         else
+         {
+            int lowBar  = iLowest(_Symbol, PERIOD_CURRENT, MODE_LOW, barsHeld, 1);
+            maxMove = open - iLow(_Symbol, PERIOD_CURRENT, lowBar);
+         }
+         if(maxMove < minProgress)
+         { exitScore++; signals += StringFormat("NoProgress(%db) ", barsHeld); }
+      }
+   }
+
+   // ============================================================
+   // EXIT DECISION
+   // ============================================================
+   if(exitScore < InpMomSignalsToExit) return false;
+
+   if(!PositionSelectByTicket(ticket)) return false;
+   double posProfit = PositionGetDouble(POSITION_PROFIT);
+   bool   isLosing  = (posProfit < 0);
+
+   if(!isLosing)
+   {
+      // Profitable trade: close — lock gains, momentum is gone
+      Print("[MOM EXIT] #", ticket, " signals=", exitScore, "/5 [", signals, "]",
+            " profit=", DoubleToString(posProfit,2), " profitR=", DoubleToString(profitR,2),
+            " — closing (momentum exhausted)");
+      if(InpEnableMobileAlerts)
+         SendNotification("[MOM] " + _Symbol + " +" + DoubleToString(profitR,2) +
+                          "R closed: momentum exhausted");
+      trade.PositionClose(ticket);
+      return true;
+   }
+   else
+   {
+      // ============================================================
+      // LOSING TRADE: Evaluate recovery probability before closing
+      // ============================================================
+      int recoveryScore = 0;
+      string recSignals = "";
+
+      // Recovery 1: EMA200 trend still aligned with the trade
+      bool trendAligned = (pType == POSITION_TYPE_BUY) ? (curr > g_EMA) : (curr < g_EMA);
+      if(trendAligned) { recoveryScore++; recSignals += "EMA200 "; }
+
+      // Recovery 2: RSI not deeply extended against trade direction (room to bounce)
+      bool rsiHasRoom = (pType == POSITION_TYPE_BUY) ? (g_RSI > 25.0) : (g_RSI < 75.0);
+      if(rsiHasRoom) { recoveryScore++; recSignals += "RSI-room "; }
+
+      // Recovery 3: EMA50 still supportive (structure intact)
+      if(hEMA50 != INVALID_HANDLE && InpUseReversalFilter)
+      {
+         bool ema50Aligned = (pType == POSITION_TYPE_BUY) ? (curr > g_EMA50) : (curr < g_EMA50);
+         if(ema50Aligned) { recoveryScore++; recSignals += "EMA50 "; }
+      }
+
+      // Recovery 4: ADX still shows residual trend force (just declining, not dead)
+      if(adxMain[0] > InpMomADX_Threshold * 0.65)
+      { recoveryScore++; recSignals += "ADX-residual "; }
+
+      Print("[MOM] #", ticket, " in loss (", DoubleToString(posProfit,2),
+            ") | exitSig=", exitScore, "[", signals, "] | recovery=", recoveryScore,
+            "/", InpMomRecoveryMinScore, " [", recSignals, "]");
+
+      if(recoveryScore >= InpMomRecoveryMinScore)
+      {
+         Print("[MOM] Recovery signals present — keeping trade open");
+         return false;
+      }
+
+      // No recovery: close the losing trade
+      Print("[MOM EXIT] #", ticket, " no recovery — closing loss (",
+            DoubleToString(profitR,2), "R)");
+      if(InpEnableMobileAlerts)
+         SendNotification("[MOM] " + _Symbol + " " + DoubleToString(profitR,2) +
+                          "R closed: no recovery signal");
+      trade.PositionClose(ticket);
+      return true;
+   }
+}
+
+//+------------------------------------------------------------------+
 //| Manage Positions                                                  |
 //+------------------------------------------------------------------+
 void ManagePositions()
@@ -2055,6 +2227,12 @@ void ManagePositions()
    }
 
    // 2. Manage Open Positions
+   // Momentum exit: gate to once per bar (crossover signals are bar-close events)
+   static datetime s_prevMomBar = 0;
+   datetime s_currBar = iTime(_Symbol, PERIOD_CURRENT, 0);
+   bool isMomCheckBar = (s_currBar != s_prevMomBar);
+   if(isMomCheckBar) s_prevMomBar = s_currBar;
+
    for(int i = PositionsTotal() - 1; i >= 0; i--)
    {
       if(!position.SelectByIndex(i)) continue;
@@ -2107,6 +2285,7 @@ void ManagePositions()
          g_states[stateCount].peakProfitR = 0;
          g_states[stateCount].barsAtStageNeg1 = 0;
          g_states[stateCount].entryKillzone  = GetActiveKillzone();
+         g_states[stateCount].entryATR       = g_ATR;
          Print("Warning: Created fallback position state for ticket ", ticket, " - R-calculations may be approximate");
          sIdx = stateCount;
       }
@@ -2231,6 +2410,12 @@ void ManagePositions()
          }
       }
 
+
+      // ============================================================
+      // MOMENTUM EXIT CHECK (once per bar, before trailing logic)
+      // ============================================================
+      if(isMomCheckBar && CheckMomentumExit(ticket, sIdx, pType, open, curr, profitR))
+         continue;
 
       // Skip trailing if Mode 2 (Adaptive only) and TP is set
       if(InpTPMode == 2 && tp > 0 && InpTrailingMode == 0)

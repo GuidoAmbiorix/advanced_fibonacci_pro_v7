@@ -1,17 +1,21 @@
-; EURUSD - H1 - CONSERVATIVE SCALPER TEST
+; GBPJPY - H1 - CONSERVATIVE SCALPER TEST
 ; PURPOSE: Slow steady equity curve. Small account ($10-$50). Capital preservation.
-; PHILOSOPHY: 2% risk per trade, escalator harvests the wins, governors stop the losses.
+; NOTE: GBPJPY is the most volatile forex pair — "The Dragon".
+;       JPY pip value ~$0.07/pip for 0.01 lots — cheaper than EURUSD ($0.10/pip).
+;       H1 ATR ~15-25 pips × $0.07 = ~$1.05-1.75 min lot risk → works on $50 accounts.
 
-InpMagicNumber=100001
+InpMagicNumber=100014
 InpDirection=0
 InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
+; GBPJPY: London Open (GBP impulse) + NY (USD/risk flows move JPY)
+; London Close also included — JPY pairs move strongly at session crossover
 InpUseKillzoneFilter=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
-InpEnableLondonCloseKZ=false
+InpEnableLondonCloseKZ=true
 InpCloseOnKillzoneEnd=false
 InpKZBEMinutesBefore=0
 InpKZBEMinProfitR=0.0
@@ -20,28 +24,30 @@ InpNotifyKillzoneOpen=false
 ;═══════ MOMENTUM EXIT ═══════
 InpUseMomentumExit=true
 InpMomADX_Period=14
-InpMomADX_Threshold=20.0
+InpMomADX_Threshold=18.0
 InpMomATR_CollapseRatio=0.65
 InpMomBarsNoProgress=5
 InpMomProgressATR=0.2
-InpMomSignalsToExit=2
+InpMomSignalsToExit=1
 InpMomRecoveryMinScore=1
 
 ;═══════ FIBONACCI ═══════
 InpSwingLookback=20
 InpFibLevelLow=0.500
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.45
+InpZoneTolerance=0.55
 
 ;═══════ DISPLACEMENT ═══════
+; GBPJPY moves fast — displacement threshold slightly lower
 InpUseDisplacement=true
 InpDisplacementATR=0.7
 InpDisplacementLookback=4
 
 ;═══════ RSI ═══════
+; GBP cross: wider RSI thresholds — strong trends hold extreme levels
 InpRSI_Period=14
-InpRSI_Oversold=35
-InpRSI_Overbought=65
+InpRSI_Oversold=30
+InpRSI_Overbought=70
 InpRSI_Momentum=true
 
 ;═══════ TREND ═══════
@@ -51,21 +57,21 @@ InpEMA_MinSlope=0.03
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.80
+InpChopThreshold=0.72
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=12
+InpMinConfluenceEntry=19
 InpDominanceThreshold=0.5
 InpMaxPositions=1
 
 ;═══════ RISK - CONSERVATIVE SMALL ACCOUNT ═══════
-; 2% risk per trade — standard conservative sizing
-; 0.01 lot hard cap — never oversize on small accounts
-; H1 EURUSD SL ~10 pips × $0.10/pip = $1.00 min lot risk
-; Works cleanly on $50+ accounts. On $10: some tight setups may still pass.
-InpRiskBase=2.0
-InpMaxRisk=3.0
+; GBPJPY 0.01 lots: ~$0.07/pip pip value
+; H1 ATR ~20 pips → min lot risk ~$1.40
+; 3% on $50 = $1.50 → covers most setups
+; 3% on $10 = $0.30 → tight SL setups only — some trades may still reject
+InpRiskBase=25.0
+InpMaxRisk=30.0
 InpMaxLotsPerTrade=0.01
 InpEnableMarginCheck=true
 
@@ -82,35 +88,35 @@ InpTrailType=1
 InpTrailStepATR=0.2
 
 ;═══════ VOLATILITY FILTER ═══════
-InpMinVolatilityPips=1.5
+; GBPJPY H1: wide noise floor — require meaningful volatility
+InpMinVolatilityPips=3.0
 InpMaxVolatilityFactor=4.0
 InpVolatilityTP_Mult=2.0
 
 ;═══════ PARTIAL TP & TRAILING — AGGRESSIVE HARVEST ═══════
-; Low risk per trade, but harvest aggressively when in profit
-InpPartialTP_R=0.55
-InpPartialClosePercent=55.0
-InpBE_Threshold_R=0.35
-InpTrailStart_R=0.45
-InpTrailATR_Mult=0.70
-InpTrailDecayRate=0.38
-InpTrailMinMult=0.22
+InpPartialTP_R=0.20
+InpPartialClosePercent=75.0
+InpBE_Threshold_R=0.10
+InpTrailStart_R=0.15
+InpTrailATR_Mult=0.35
+InpTrailDecayRate=0.55
+InpTrailMinMult=0.08
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.15
+InpTrailMinBufferATR=0.06
 
-;═══════ INFINITE ESCALATOR — NATURAL HARVEST ═══════
-InpEsc_FirstR=0.18
-InpEsc_FirstSL_R=-0.02
-InpEsc_StepR=0.22
-InpEsc_GrowthFactor=1.5
-InpEsc_BaseHarvest=50.0
-InpEsc_HarvestDecay=0.68
-InpEsc_MinHarvest=15.0
-InpEsc_MaxStages=12
-InpRunnerTrailTight=0.88
-InpTimeStaleMins=75.0
-InpTimeStaleTight1=0.90
-InpTimeStaleTight2=0.78
+;═══════ INFINITE ESCALATOR — SUPER DUPER AGGRESSION ═══════
+InpEsc_FirstR=0.06
+InpEsc_FirstSL_R=-0.005
+InpEsc_StepR=0.08
+InpEsc_GrowthFactor=2.0
+InpEsc_BaseHarvest=75.0
+InpEsc_HarvestDecay=0.55
+InpEsc_MinHarvest=30.0
+InpEsc_MaxStages=20
+InpRunnerTrailTight=0.97
+InpTimeStaleMins=45.0
+InpTimeStaleTight1=0.97
+InpTimeStaleTight2=0.90
 
 ;═══════ SCALE-IN PYRAMID ═══════
 InpPyr_Enable=false
@@ -133,11 +139,13 @@ InpChaosEmergencyLock=true
 InpFridayCloseHour=22
 
 ;═══════ STALE TRADE EXIT ═══════
+; 4 H1 bars = 4 hours
 InpUseStaleTrade=true
 InpStaleBarLimit=4
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=25
+; GBPJPY spread is wider than majors
+InpMaxSpreadPoints=50
 
 ;═══════ SMC ═══════
 InpUseSMC=true
@@ -157,9 +165,10 @@ InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
+; GBPJPY spikes hard on risk events — tighter cooldown
 InpEnableVolatilityFilter=true
 InpVolatilityThreshold=3.0
-InpVolatilitySpikeCooldown=20
+InpVolatilitySpikeCooldown=30
 
 ;═══════ KELLY ═══════
 InpUseKelly=false
@@ -181,17 +190,17 @@ InpEnableAdaptiveFilters=false
 
 ;═══════ PORTFOLIO PROTECTION ═══════
 InpUseCorrelationFilter=false
-InpDailyMaxLoss_R=3.0
-InpLossCooldownMinutes=30
-InpMaxConsecutiveLosses=3
-InpMaxDailyTrades=5
+InpDailyMaxLoss_R=2.0
+InpLossCooldownMinutes=60
+InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=3
 InpUseReversalFilter=false
 InpReversalCooldownMinutes=30
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=2
-InpTradeCooldownMinutes=30
+InpMaxTradesPerSession=1
+InpTradeCooldownMinutes=60
 InpCloseIntradayProfits=false
 InpEndOfDayHour=22
 
