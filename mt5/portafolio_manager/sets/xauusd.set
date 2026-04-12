@@ -1,6 +1,6 @@
-; XAUUSD (Gold) - H4 - CONSERVATIVE LIVE SET
-; PURPOSE: Real account / live trading. Capital preservation first.
-; NOTE: Gold has larger ATR, DXY correlation, flash crash risk - handled accordingly.
+; XAUUSD (Gold) - H4 - AGGRESSIVE LIVE
+; PHILOSOPHY: Enter only elite setups. Lock profit fast. Runner gives back nothing.
+; Gold: wider RSI thresholds, larger ATR, flash crash protection active.
 
 InpMagicNumber=100011
 InpDirection=0
@@ -13,19 +13,19 @@ InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
 InpCloseOnKillzoneEnd=false
-InpKZBEMinutesBefore=15
-InpKZBEMinProfitR=0.1
+InpKZBEMinutesBefore=0
+InpKZBEMinProfitR=0.0
 InpNotifyKillzoneOpen=true
 
 ;═══════ MOMENTUM EXIT ═══════
-; Gold moves in bigger ATR bursts — require more signals (avoid premature exits)
+; Gold: lower ADX threshold — institutional flows more directional
 InpUseMomentumExit=true
 InpMomADX_Period=14
 InpMomADX_Threshold=22.0
-InpMomATR_CollapseRatio=0.50
-InpMomBarsNoProgress=10
-InpMomProgressATR=0.4
-InpMomSignalsToExit=3
+InpMomATR_CollapseRatio=0.55
+InpMomBarsNoProgress=6
+InpMomProgressATR=0.25
+InpMomSignalsToExit=2
 InpMomRecoveryMinScore=2
 
 ;═══════ FIBONACCI ═══════
@@ -36,10 +36,11 @@ InpZoneTolerance=0.35
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
-InpDisplacementATR=1.0
+InpDisplacementATR=1.5
 InpDisplacementLookback=5
 
 ;═══════ RSI ═══════
+; Gold: stays overbought for weeks in bull trends
 InpRSI_Period=14
 InpRSI_Oversold=30
 InpRSI_Overbought=70
@@ -48,22 +49,23 @@ InpRSI_Momentum=true
 ;═══════ TREND ═══════
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.15
+InpEMA_MinSlope=0.08
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.65
+InpChopThreshold=0.68
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=14
+; Gold: slightly lower — SMC and MTF harder to align on XAUUSD
+InpMinConfluenceEntry=15
 InpDominanceThreshold=1.5
 InpMaxPositions=1
 
 ;═══════ RISK ═══════
+; Gold positions large in dollar terms — conservative sizing
 InpRiskBase=0.5
-; Gold: Half risk vs forex - dollar value per pip is much larger
-InpMaxRisk=0.5
+InpMaxRisk=0.75
 InpMaxLotsPerTrade=1.0
 InpEnableMarginCheck=true
 
@@ -81,48 +83,48 @@ InpTrailStepATR=0.4
 
 ;═══════ VOLATILITY FILTER ═══════
 InpMinVolatilityPips=20.0
-InpMaxVolatilityFactor=2.0
-InpVolatilityTP_Mult=3.0
+InpMaxVolatilityFactor=2.5
+InpVolatilityTP_Mult=2.5
 
-;═══════ PARTIAL TP & TRAILING ═══════
-InpPartialTP_R=0.8
-InpPartialClosePercent=50.0
-InpBE_Threshold_R=0.5
-InpTrailStart_R=0.7
-InpTrailATR_Mult=1.4
-InpTrailDecayRate=0.25
-InpTrailMinMult=0.35
+;═══════ PARTIAL TP & TRAILING — AGGRESSIVE ═══════
+InpPartialTP_R=0.40
+InpPartialClosePercent=60.0
+InpBE_Threshold_R=0.20
+InpTrailStart_R=0.30
+InpTrailATR_Mult=0.90
+InpTrailDecayRate=0.35
+InpTrailMinMult=0.28
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.30
+InpTrailMinBufferATR=0.22
 
-;═══════ INFINITE ESCALATOR ═══════
-InpEsc_FirstR=0.4
-InpEsc_FirstSL_R=-0.03
-InpEsc_StepR=0.6
-InpEsc_GrowthFactor=1.1
-InpEsc_BaseHarvest=35.0
-InpEsc_HarvestDecay=0.85
-InpEsc_MinHarvest=8.0
-InpEsc_MaxStages=8
-InpRunnerTrailTight=0.65
-InpTimeStaleMins=240.0
-InpTimeStaleTight1=0.70
-InpTimeStaleTight2=0.55
+;═══════ INFINITE ESCALATOR — AGGRESSIVE ═══════
+InpEsc_FirstR=0.15
+InpEsc_FirstSL_R=-0.02
+InpEsc_StepR=0.20
+InpEsc_GrowthFactor=1.7
+InpEsc_BaseHarvest=65.0
+InpEsc_HarvestDecay=0.62
+InpEsc_MinHarvest=20.0
+InpEsc_MaxStages=15
+InpRunnerTrailTight=0.93
+InpTimeStaleMins=120.0
+InpTimeStaleTight1=0.92
+InpTimeStaleTight2=0.82
 
 ;═══════ SCALE-IN PYRAMID ═══════
 InpPyr_Enable=false
-InpPyr_Frequency=2
+InpPyr_Frequency=3
 InpPyr_FirstRiskPct=0.10
-InpPyr_RiskDecay=0.65
+InpPyr_RiskDecay=0.70
 InpPyr_MinRiskPct=0.03
 InpPyr_MaxAddOns=2
-InpPyr_MinProfitR=2.0
+InpPyr_MinProfitR=1.5
 InpAgg_MaxTotalRisk=1.0
 InpAgg_MaxPositions=1
 
 ;═══════ ADAPTIVE ESCALATOR ═══════
 InpAdaptiveEscalator=true
-InpScoreAdaptFactor=0.06
+InpScoreAdaptFactor=0.08
 InpRegimeHarvest=true
 InpMFECalibration=false
 InpMomentumTrail=true
@@ -131,16 +133,16 @@ InpFridayCloseHour=21
 
 ;═══════ STALE TRADE EXIT ═══════
 InpUseStaleTrade=true
-InpStaleBarLimit=8
+InpStaleBarLimit=6
 
 ;═══════ SPREAD ═══════
 InpMaxSpreadPoints=200
 
-;═══════ SMC - SMART MONEY CONCEPTS ═══════
+;═══════ SMC ═══════
 InpUseSMC=true
 InpSMC_SwingLookback=24
-InpSMC_MinImpulseATR=1.5
-InpSMC_MinFVG_ATR=0.4
+InpSMC_MinImpulseATR=2.0
+InpSMC_MinFVG_ATR=0.5
 
 ;═══════ MULTI-TIMEFRAME ═══════
 InpUseMTF=true
@@ -154,15 +156,16 @@ InpNewsMinutesBefore=45
 InpNewsMinutesAfter=30
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
+; Gold: flash crashes happen — aggressive cooldown
 InpEnableVolatilityFilter=true
 InpVolatilityThreshold=2.0
 InpVolatilitySpikeCooldown=90
 
-;═══════ KELLY POSITION SIZING ═══════
+;═══════ KELLY ═══════
 InpUseKelly=false
 InpKellyFraction=0.5
-InpDailyMaxDD=2.0
-InpWeeklyMaxDD=4.0
+InpDailyMaxDD=3.0
+InpWeeklyMaxDD=6.0
 InpDailyTarget=0.0
 
 ;═══════ LEARNING ═══════
@@ -176,29 +179,30 @@ InpEnableAdaptiveRisk=false
 InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=false
 
-;═══════ PORTFOLIO PROTECTION ═══════
+;═══════ PORTFOLIO PROTECTION (per-symbol backup) ═══════
 InpUseCorrelationFilter=false
-InpDailyMaxLoss_R=1.5
-InpLossCooldownMinutes=120
-InpMaxConsecutiveLosses=1
-InpMaxDailyTrades=2
+InpDailyMaxLoss_R=3.0
+InpLossCooldownMinutes=90
+InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=3
 InpUseReversalFilter=true
-InpReversalCooldownMinutes=180
+InpReversalCooldownMinutes=120
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
 InpMaxTradesPerSession=1
-InpTradeCooldownMinutes=120
+InpTradeCooldownMinutes=90
 InpCloseIntradayProfits=false
-InpEndOfDayHour=22
+InpEndOfDayHour=21
 
-;═══════ GOVERNOR ═══════
+;═══════ GOVERNOR (per-symbol backup) ═══════
 InpGov_Enabled=true
-InpGov_DD_Reduce=4.0
-InpGov_DD_Pause=8.0
-InpGov_ReducedMult=0.3
-InpGov_DailyMaxDD=3.0
+InpGov_DD_Reduce=8.0
+InpGov_DD_Pause=15.0
+InpGov_ReducedMult=0.5
+InpGov_DailyMaxDD=5.0
 
 ;═══════ VISUAL DEBUGGING ═══════
 InpEnableVisualLevels=true
 InpTickThrottleSeconds=30
+

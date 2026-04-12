@@ -1,5 +1,6 @@
-; USDCAD - H4 - CONSERVATIVE LIVE SET
-; PURPOSE: Real account / live trading. Capital preservation first.
+; USDCAD - H4 - AGGRESSIVE LIVE
+; PHILOSOPHY: Enter only elite setups. Lock profit fast. Runner gives back nothing.
+; CAD: Oil-correlated. NY session dominates — strongest moves at NY open.
 
 InpMagicNumber=100003
 InpDirection=0
@@ -12,8 +13,8 @@ InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
 InpCloseOnKillzoneEnd=false
-InpKZBEMinutesBefore=15
-InpKZBEMinProfitR=0.1
+InpKZBEMinutesBefore=0
+InpKZBEMinProfitR=0.0
 InpNotifyKillzoneOpen=true
 
 ;═══════ MOMENTUM EXIT ═══════
@@ -21,46 +22,46 @@ InpUseMomentumExit=true
 InpMomADX_Period=14
 InpMomADX_Threshold=25.0
 InpMomATR_CollapseRatio=0.55
-InpMomBarsNoProgress=8
-InpMomProgressATR=0.3
-InpMomSignalsToExit=3
+InpMomBarsNoProgress=6
+InpMomProgressATR=0.25
+InpMomSignalsToExit=2
 InpMomRecoveryMinScore=2
 
 ;═══════ FIBONACCI ═══════
-InpSwingLookback=20
+InpSwingLookback=24
 InpFibLevelLow=0.618
 InpFibLevelHigh=0.786
-InpZoneTolerance=0.25
+InpZoneTolerance=0.20
 
 ;═══════ DISPLACEMENT ═══════
 InpUseDisplacement=true
-InpDisplacementATR=1.0
+InpDisplacementATR=1.2
 InpDisplacementLookback=5
 
 ;═══════ RSI ═══════
 InpRSI_Period=14
-InpRSI_Oversold=45
-InpRSI_Overbought=55
+InpRSI_Oversold=40
+InpRSI_Overbought=60
 InpRSI_Momentum=true
 
 ;═══════ TREND ═══════
 InpEMA_Period=200
 InpUseTrendFilter=true
-InpEMA_MinSlope=0.1
+InpEMA_MinSlope=0.08
 
 ;═══════ CHOP FILTER ═══════
 InpUseChopFilter=true
-InpChopThreshold=0.70
+InpChopThreshold=0.68
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=16
-InpDominanceThreshold=2.0
+InpMinConfluenceEntry=17
+InpDominanceThreshold=1.5
 InpMaxPositions=1
 
 ;═══════ RISK ═══════
 InpRiskBase=1.0
-InpMaxRisk=1.0
+InpMaxRisk=1.5
 InpMaxLotsPerTrade=2.0
 InpEnableMarginCheck=true
 
@@ -74,37 +75,37 @@ InpTPUseLearnedMFE=false
 ;═══════ TRAILING STOP ═══════
 InpTrailingMode=1
 InpTrailType=1
-InpTrailStepATR=0.5
+InpTrailStepATR=0.4
 
 ;═══════ VOLATILITY FILTER ═══════
 InpMinVolatilityPips=5.0
-InpMaxVolatilityFactor=2.5
-InpVolatilityTP_Mult=3.0
+InpMaxVolatilityFactor=3.0
+InpVolatilityTP_Mult=2.5
 
-;═══════ PARTIAL TP & TRAILING ═══════
-InpPartialTP_R=1.0
-InpPartialClosePercent=50.0
-InpBE_Threshold_R=0.7
-InpTrailStart_R=0.8
-InpTrailATR_Mult=1.5
-InpTrailDecayRate=0.20
-InpTrailMinMult=0.50
+;═══════ PARTIAL TP & TRAILING — AGGRESSIVE ═══════
+InpPartialTP_R=0.40
+InpPartialClosePercent=60.0
+InpBE_Threshold_R=0.20
+InpTrailStart_R=0.30
+InpTrailATR_Mult=0.80
+InpTrailDecayRate=0.35
+InpTrailMinMult=0.25
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.35
+InpTrailMinBufferATR=0.18
 
-;═══════ INFINITE ESCALATOR ═══════
-InpEsc_FirstR=0.5
-InpEsc_FirstSL_R=-0.05
-InpEsc_StepR=0.7
-InpEsc_GrowthFactor=1.2
-InpEsc_BaseHarvest=25.0
-InpEsc_HarvestDecay=0.80
-InpEsc_MinHarvest=5.0
-InpEsc_MaxStages=10
-InpRunnerTrailTight=0.70
-InpTimeStaleMins=200.0
-InpTimeStaleTight1=0.75
-InpTimeStaleTight2=0.60
+;═══════ INFINITE ESCALATOR — AGGRESSIVE ═══════
+InpEsc_FirstR=0.15
+InpEsc_FirstSL_R=-0.02
+InpEsc_StepR=0.20
+InpEsc_GrowthFactor=1.7
+InpEsc_BaseHarvest=65.0
+InpEsc_HarvestDecay=0.62
+InpEsc_MinHarvest=20.0
+InpEsc_MaxStages=15
+InpRunnerTrailTight=0.93
+InpTimeStaleMins=120.0
+InpTimeStaleTight1=0.92
+InpTimeStaleTight2=0.82
 
 ;═══════ SCALE-IN PYRAMID ═══════
 InpPyr_Enable=false
@@ -114,12 +115,12 @@ InpPyr_RiskDecay=0.70
 InpPyr_MinRiskPct=0.03
 InpPyr_MaxAddOns=2
 InpPyr_MinProfitR=1.5
-InpAgg_MaxTotalRisk=1.0
+InpAgg_MaxTotalRisk=1.5
 InpAgg_MaxPositions=1
 
 ;═══════ ADAPTIVE ESCALATOR ═══════
 InpAdaptiveEscalator=true
-InpScoreAdaptFactor=0.05
+InpScoreAdaptFactor=0.08
 InpRegimeHarvest=true
 InpMFECalibration=false
 InpMomentumTrail=true
@@ -131,11 +132,11 @@ InpUseStaleTrade=true
 InpStaleBarLimit=6
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=30
+InpMaxSpreadPoints=25
 
-;═══════ SMC - SMART MONEY CONCEPTS ═══════
+;═══════ SMC ═══════
 InpUseSMC=true
-InpSMC_SwingLookback=20
+InpSMC_SwingLookback=24
 InpSMC_MinImpulseATR=1.8
 InpSMC_MinFVG_ATR=0.4
 
@@ -155,11 +156,11 @@ InpEnableVolatilityFilter=true
 InpVolatilityThreshold=2.5
 InpVolatilitySpikeCooldown=45
 
-;═══════ KELLY POSITION SIZING ═══════
+;═══════ KELLY ═══════
 InpUseKelly=false
 InpKellyFraction=0.5
-InpDailyMaxDD=2.0
-InpWeeklyMaxDD=4.0
+InpDailyMaxDD=3.0
+InpWeeklyMaxDD=6.0
 InpDailyTarget=0.0
 
 ;═══════ LEARNING ═══════
@@ -173,29 +174,30 @@ InpEnableAdaptiveRisk=false
 InpEnableAdaptiveExits=false
 InpEnableAdaptiveFilters=false
 
-;═══════ PORTFOLIO PROTECTION ═══════
+;═══════ PORTFOLIO PROTECTION (per-symbol backup) ═══════
 InpUseCorrelationFilter=false
-InpDailyMaxLoss_R=2.0
+InpDailyMaxLoss_R=3.0
 InpLossCooldownMinutes=60
-InpMaxConsecutiveLosses=2
-InpMaxDailyTrades=3
+InpMaxConsecutiveLosses=3
+InpMaxDailyTrades=5
 InpUseReversalFilter=true
 InpReversalCooldownMinutes=90
 
 ;═══════ SESSION GOVERNOR ═══════
 InpUseSessionGovernor=true
-InpMaxTradesPerSession=1
+InpMaxTradesPerSession=2
 InpTradeCooldownMinutes=60
 InpCloseIntradayProfits=false
 InpEndOfDayHour=22
 
-;═══════ GOVERNOR ═══════
+;═══════ GOVERNOR (per-symbol backup) ═══════
 InpGov_Enabled=true
-InpGov_DD_Reduce=5.0
-InpGov_DD_Pause=10.0
+InpGov_DD_Reduce=8.0
+InpGov_DD_Pause=15.0
 InpGov_ReducedMult=0.5
-InpGov_DailyMaxDD=3.0
+InpGov_DailyMaxDD=5.0
 
 ;═══════ VISUAL DEBUGGING ═══════
 InpEnableVisualLevels=true
 InpTickThrottleSeconds=30
+
