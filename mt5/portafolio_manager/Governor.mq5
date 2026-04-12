@@ -384,7 +384,8 @@ string CheckCorrelation()
 // Strip broker suffix (m, .raw, .ECN, etc.) and uppercase
 string SymbolClean(string sym)
 {
-   sym = StringTrimLeft(StringTrimRight(sym));
+   StringTrimRight(sym);
+   StringTrimLeft(sym);
    StringToUpper(sym);
    // Keep only A-Z characters, stop after 6
    string result = "";
