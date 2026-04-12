@@ -1955,18 +1955,18 @@ bool CheckMomentumExit(ulong ticket, int sIdx, long pType, double open, double c
    if(hADX == INVALID_HANDLE || hMACD == INVALID_HANDLE) return false;
 
    // ---- Read ADX buffers (3 bars: [0]=last closed, [1]=prev, [2]=2 bars ago) ----
-   double adxMain[3], diPlus[3], diMinus[3];
-   if(CopyBuffer(hADX, 0, 1, 3, adxMain)  < 3) return false;
-   if(CopyBuffer(hADX, 1, 1, 3, diPlus)   < 3) return false;
-   if(CopyBuffer(hADX, 2, 1, 3, diMinus)  < 3) return false;
+   double adxMain[], diPlus[], diMinus[];
    ArraySetAsSeries(adxMain,  true);
    ArraySetAsSeries(diPlus,   true);
    ArraySetAsSeries(diMinus,  true);
+   if(CopyBuffer(hADX, 0, 1, 3, adxMain)  < 3) return false;
+   if(CopyBuffer(hADX, 1, 1, 3, diPlus)   < 3) return false;
+   if(CopyBuffer(hADX, 2, 1, 3, diMinus)  < 3) return false;
 
    // ---- Read MACD histogram (buffer 2) ----
-   double macdHist[2];
-   if(CopyBuffer(hMACD, 2, 1, 2, macdHist) < 2) return false;
+   double macdHist[];
    ArraySetAsSeries(macdHist, true);
+   if(CopyBuffer(hMACD, 2, 1, 2, macdHist) < 2) return false;
    // [0]=last closed bar, [1]=bar before it
 
    // ============================================================
