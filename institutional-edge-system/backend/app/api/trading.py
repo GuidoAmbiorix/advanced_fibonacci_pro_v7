@@ -20,11 +20,9 @@ import uuid
 import asyncio
 
 from app.api.database import get_db
-from app.models.database import MT5Account, BotSlot
+from app.models.database import MT5Account, BotSlot, Trade, ExecutionLog
 from app.core.crypto import decrypt_password
 from app.core.prop_firm_manager import PropFirmManager
-from app.core.mt5_connector import MT5Connector
-from app.core.mt5_connector import MT5Connector
 from app.core.mt5_connector import MT5Connector
 from app.engines.golden.core import GoldenEngine
 from app.engines.factory import EngineFactory
@@ -57,10 +55,6 @@ class TradingStartRequest(BaseModel):
     enable_partial_tp: bool = True
     partial_tp_percent: float = 50.0
     enable_trailing_stop: bool = True
-    enable_partial_tp: bool = True
-    partial_tp_percent: float = 50.0
-    enable_trailing_stop: bool = True
-    enable_trailing_stop: bool = True
     # Engine Config
     engine_type: str = "ADAPTIVE"
     trading_session: str = "ALL" # session override
@@ -87,13 +81,15 @@ class LiveTradingSession:
         config: dict,
         account: MT5Account,
         mt5: MT5Connector,
-        risk_controls: RiskControls
+        risk_controls: RiskControls,
+        db: Session = None
     ):
         self.session_id = session_id
         self.config = config
         self.account = account
         self.mt5 = mt5
         self.risk_controls = risk_controls
+        self.db = db
         self.is_running = False
         self.trades = []
         self.managed_positions: Dict[int, Dict] = {}  # ticket -> position info
@@ -392,11 +388,11 @@ class LiveTradingSession:
         
         if result and result.get('success'):
             ticket = result['ticket']
-            logger.info(f"✅ {self.session_id}: Trade opened - Ticket {ticket}")
-            
+            logger.info(f"✅ {self.session_id}: Trade OPENED - Ticket {ticket} | {signal.signal_type} {lot_size} lots {symbol} @ {result.get('price')} | SL={signal.stop_loss} TP={signal.take_profit_1}")
+
             # Register with risk controls
             self.risk_controls.register_position_opened(account_id, symbol)
-            
+
             # Track for partial TP management
             self.managed_positions[ticket] = {
                 'symbol': symbol,
@@ -412,7 +408,7 @@ class LiveTradingSession:
                 'breakeven_moved': False,
                 'opened_at': datetime.utcnow()
             }
-            
+
             trade_data = {
                 'ticket': ticket,
                 'symbol': symbol,
@@ -425,7 +421,50 @@ class LiveTradingSession:
                 'opened_at': datetime.utcnow().isoformat()
             }
             self.trades.append(trade_data)
-            
+
+            # Write Trade & ExecutionLog to DB
+            if self.db:
+                try:
+                    db_trade = Trade(
+                        user_id=self.account.user_id,
+                        ticket=ticket,
+                        symbol=symbol,
+                        trade_type=signal.signal_type,
+                        entry_price=signal.entry_price,
+                        stop_loss=signal.stop_loss,
+                        take_profit_1=signal.take_profit_1,
+                        take_profit_2=getattr(signal, 'take_profit_2', None),
+                        take_profit_3=getattr(signal, 'take_profit_3', None),
+                        volume=lot_size,
+                        risk_percent=self.config['risk_percent'],
+                        confluence_score=int(getattr(signal, 'confluence_score', 0)),
+                        status="OPEN",
+                        opened_at=datetime.utcnow()
+                    )
+                    self.db.add(db_trade)
+                    self.db.flush()
+                    exec_log = ExecutionLog(
+                        trade_id=db_trade.id,
+                        symbol=symbol,
+                        action="OPEN",
+                        message=f"[{self.session_id}] {signal.signal_type} {lot_size} lots @ {result.get('price')} | SL={signal.stop_loss} TP={signal.take_profit_1}",
+                        details={
+                            "ticket": ticket,
+                            "volume": lot_size,
+                            "price": result.get('price'),
+                            "slippage_points": result.get('slippage_points', 0),
+                            "session_id": self.session_id
+                        }
+                    )
+                    self.db.add(exec_log)
+                    self.db.commit()
+                except Exception as e:
+                    logger.error(f"Failed to write Trade/ExecutionLog to DB: {e}")
+                    try:
+                        self.db.rollback()
+                    except Exception:
+                        pass
+
             # Emit WebSocket event
             try:
                 await sio.emit('live_trade_opened', trade_data)
@@ -433,7 +472,19 @@ class LiveTradingSession:
                 logger.warning(f"Could not emit trade event: {e}")
         else:
             error = result.get('error', 'Unknown') if result else 'No response'
-            logger.error(f"❌ {self.session_id}: Trade failed - {error}")
+            logger.error(f"❌ {self.session_id}: Trade FAILED - {error} | {signal.signal_type} {lot_size} lots {symbol}")
+            if self.db:
+                try:
+                    exec_log = ExecutionLog(
+                        symbol=symbol,
+                        action="ERROR",
+                        message=f"[{self.session_id}] Trade FAILED: {error} | {signal.signal_type} {lot_size} lots",
+                        details={"error": error, "signal_type": signal.signal_type, "volume": lot_size}
+                    )
+                    self.db.add(exec_log)
+                    self.db.commit()
+                except Exception as e:
+                    logger.error(f"Failed to write error ExecutionLog: {e}")
 
     async def _manage_open_positions(self):
         """Manage open positions: partial TPs, trailing stops, time-based exits"""
@@ -467,21 +518,44 @@ class LiveTradingSession:
                     partial_volume = round(partial_volume, 2)
                     
                     if partial_volume >= 0.01:
-                        logger.info(f"📊 Taking partial profit: {partial_volume} lots @ {current_price}")
+                        logger.info(f"📊 PARTIAL CLOSE: {partial_volume} lots @ {current_price} | Ticket {ticket} {pos['symbol']}")
                         if self.mt5.close_partial_position(ticket, partial_volume):
                             managed['partial_taken'] = True
                             managed['current_volume'] -= partial_volume
-                            
+
+                            if self.db:
+                                try:
+                                    self.db.add(ExecutionLog(
+                                        symbol=pos['symbol'], action="CLOSE",
+                                        message=f"[{self.session_id}] Partial TP1 close: {partial_volume} lots @ {current_price}",
+                                        details={"ticket": ticket, "volume": partial_volume, "price": current_price, "reason": "PARTIAL_TP1"}
+                                    ))
+                                    self.db.commit()
+                                except Exception as e:
+                                    logger.error(f"ExecutionLog write failed: {e}")
+
                             # Move SL to breakeven
                             if not managed['breakeven_moved']:
+                                old_sl = pos['sl']
                                 self.mt5.modify_position(
                                     ticket,
                                     stop_loss=entry_price,
                                     take_profit=managed['take_profit_2']
                                 )
                                 managed['breakeven_moved'] = True
-                                logger.info(f"🛡️ Moved SL to breakeven for ticket {ticket}")
-                            
+                                logger.info(f"🛡️ BREAKEVEN: Ticket {ticket} SL moved {old_sl} → {entry_price} (BE)")
+
+                                if self.db:
+                                    try:
+                                        self.db.add(ExecutionLog(
+                                            symbol=pos['symbol'], action="MODIFY",
+                                            message=f"[{self.session_id}] SL moved to breakeven: {old_sl} → {entry_price}",
+                                            details={"ticket": ticket, "old_sl": old_sl, "new_sl": entry_price, "reason": "BREAKEVEN"}
+                                        ))
+                                        self.db.commit()
+                                    except Exception as e:
+                                        logger.error(f"ExecutionLog write failed: {e}")
+
                             await sio.emit('partial_tp_taken', {
                                 'ticket': ticket,
                                 'volume_closed': partial_volume,
@@ -492,7 +566,8 @@ class LiveTradingSession:
             # Check activation condition: breakeven moved AND profit >= tsl_activation_r
             tsl_activation_r = self.config.get('tsl_activation_r', 0.0)
             sl_distance = abs(entry_price - managed['stop_loss']) if managed['stop_loss'] else 0
-            current_r_profit = (profit_points * self.mt5.get_symbol_point(pos['symbol']) / sl_distance) if sl_distance > 0 else 0
+            profit_price = (current_price - entry_price) if is_buy else (entry_price - current_price)
+            current_r_profit = (profit_price / sl_distance) if sl_distance > 0 else 0
             
             tsl_activated = managed['breakeven_moved'] and current_r_profit >= tsl_activation_r
             
@@ -508,28 +583,48 @@ class LiveTradingSession:
                     if is_buy:
                         new_sl = current_price - trail_distance
                         if new_sl > pos['sl']:
+                            old_sl = pos['sl']
                             self.mt5.modify_position(ticket, stop_loss=new_sl)
-                            logger.debug(f"📈 Trailing SL moved to {new_sl:.5f}")
-                            # Emit trailing stop event
+                            logger.info(f"📈 TRAILING SL: Ticket {ticket} {pos['symbol']} BUY: {old_sl:.5f} → {new_sl:.5f}")
+                            if self.db:
+                                try:
+                                    self.db.add(ExecutionLog(
+                                        symbol=pos['symbol'], action="MODIFY",
+                                        message=f"[{self.session_id}] Trailing SL BUY: {old_sl:.5f} → {new_sl:.5f}",
+                                        details={"ticket": ticket, "old_sl": old_sl, "new_sl": new_sl, "reason": "TRAILING_STOP", "direction": "BUY"}
+                                    ))
+                                    self.db.commit()
+                                except Exception as e:
+                                    logger.error(f"ExecutionLog write failed: {e}")
                             await sio.emit('trailing_stop_moved', {
                                 'session_id': self.session_id,
                                 'ticket': ticket,
                                 'symbol': pos['symbol'],
-                                'old_sl': pos['sl'],
+                                'old_sl': old_sl,
                                 'new_sl': new_sl,
                                 'direction': 'BUY'
                             })
                     else:
                         new_sl = current_price + trail_distance
                         if new_sl < pos['sl']:
+                            old_sl = pos['sl']
                             self.mt5.modify_position(ticket, stop_loss=new_sl)
-                            logger.debug(f"📉 Trailing SL moved to {new_sl:.5f}")
-                            # Emit trailing stop event
+                            logger.info(f"📉 TRAILING SL: Ticket {ticket} {pos['symbol']} SELL: {old_sl:.5f} → {new_sl:.5f}")
+                            if self.db:
+                                try:
+                                    self.db.add(ExecutionLog(
+                                        symbol=pos['symbol'], action="MODIFY",
+                                        message=f"[{self.session_id}] Trailing SL SELL: {old_sl:.5f} → {new_sl:.5f}",
+                                        details={"ticket": ticket, "old_sl": old_sl, "new_sl": new_sl, "reason": "TRAILING_STOP", "direction": "SELL"}
+                                    ))
+                                    self.db.commit()
+                                except Exception as e:
+                                    logger.error(f"ExecutionLog write failed: {e}")
                             await sio.emit('trailing_stop_moved', {
                                 'session_id': self.session_id,
                                 'ticket': ticket,
                                 'symbol': pos['symbol'],
-                                'old_sl': pos['sl'],
+                                'old_sl': old_sl,
                                 'new_sl': new_sl,
                                 'direction': 'SELL'
                             })
@@ -540,13 +635,22 @@ class LiveTradingSession:
                 opened_at = managed['opened_at']
                 duration = datetime.utcnow() - opened_at
                 if duration > timedelta(hours=max_hours):
-                    logger.info(f"⏰ Time exit: closing position {ticket} after {duration}")
                     pnl = pos['profit']
+                    logger.info(f"⏰ TIME EXIT: Ticket {ticket} {pos['symbol']} after {duration} | PnL={pnl:.2f}")
                     if self.mt5.close_position(ticket):
                         self.risk_controls.register_position_closed(
                             account_id, pos['symbol'], pnl, self.account.starting_balance
                         )
-                        # Emit trade closed event
+                        if self.db:
+                            try:
+                                self.db.add(ExecutionLog(
+                                    symbol=pos['symbol'], action="CLOSE",
+                                    message=f"[{self.session_id}] Time exit after {duration} | PnL={pnl:.2f}",
+                                    details={"ticket": ticket, "pnl": pnl, "duration_hours": max_hours, "reason": "TIME_EXIT"}
+                                ))
+                                self.db.commit()
+                            except Exception as e:
+                                logger.error(f"ExecutionLog write failed: {e}")
                         await sio.emit('live_trade_closed', {
                             'session_id': self.session_id,
                             'ticket': ticket,
@@ -737,7 +841,8 @@ async def start_trading(
         config=config,
         account=account,
         mt5=mt5,
-        risk_controls=risk_controls
+        risk_controls=risk_controls,
+        db=db
     )
     active_sessions[session_id] = session
     

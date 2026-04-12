@@ -32,10 +32,21 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+      // Token expired - silently refresh it
+      try {
+        const res = await fetch('/api/auth/auto-token')
+        if (res.ok) {
+          const data = await res.json()
+          localStorage.setItem('token', data.access_token)
+          // Retry the original request with the new token
+          error.config.headers.Authorization = `Bearer ${data.access_token}`
+          return api(error.config)
+        }
+      } catch (e) {
+        console.warn('Token refresh failed:', e)
+      }
     }
     return Promise.reject(error)
   }

@@ -192,10 +192,10 @@ class OrderSimulator:
                 status="OPEN"
             )
 
-            logger.debug(
-                f"Opened {signal_type} {symbol} @ {entry_price:.5f}, "
-                f"SL: {stop_loss:.5f}, TP: {take_profit:.5f}, "
-                f"Volume: {volume} lots, Risk: {risk_percent}%"
+            logger.info(
+                f"[BT] OPEN {signal_type} {symbol} @ {entry_price:.5f} | "
+                f"SL={stop_loss:.5f} TP={take_profit:.5f} | "
+                f"Vol={volume} lots | Risk={risk_percent}% | Score={confluence_score}"
             )
 
             return trade
@@ -247,12 +247,12 @@ class OrderSimulator:
                 if direction == "BUY" and new_sl > trade.stop_loss:
                     old_sl = trade.stop_loss
                     trade.stop_loss = new_sl
-                    logger.debug(f"TSL [{self.tsl_mode}] BUY: {old_sl:.5f} → {new_sl:.5f}")
+                    logger.info(f"[BT] TRAILING SL [{self.tsl_mode}] BUY {trade.symbol}: {old_sl:.5f} → {new_sl:.5f}")
                     return True
                 elif direction == "SELL" and (trade.stop_loss == 0 or new_sl < trade.stop_loss):
                     old_sl = trade.stop_loss
                     trade.stop_loss = new_sl
-                    logger.debug(f"TSL [{self.tsl_mode}] SELL: {old_sl:.5f} → {new_sl:.5f}")
+                    logger.info(f"[BT] TRAILING SL [{self.tsl_mode}] SELL {trade.symbol}: {old_sl:.5f} → {new_sl:.5f}")
                     return True
             return False
         
@@ -281,7 +281,7 @@ class OrderSimulator:
             if new_sl and new_sl > trade.stop_loss:
                 old_sl = trade.stop_loss
                 trade.stop_loss = new_sl
-                logger.debug(f"Trailing SL updated: {old_sl:.5f} → {new_sl:.5f} (Profit: {profit_r:.2f}R)")
+                logger.info(f"[BT] TRAILING SL [TIERED] BUY {trade.symbol}: {old_sl:.5f} → {new_sl:.5f} ({profit_r:.2f}R)")
                 return True
 
         else:  # SELL
@@ -298,7 +298,7 @@ class OrderSimulator:
             if new_sl and new_sl < trade.stop_loss:
                 old_sl = trade.stop_loss
                 trade.stop_loss = new_sl
-                logger.debug(f"Trailing SL updated: {old_sl:.5f} → {new_sl:.5f} (Profit: {profit_r:.2f}R)")
+                logger.info(f"[BT] TRAILING SL [TIERED] SELL {trade.symbol}: {old_sl:.5f} → {new_sl:.5f} ({profit_r:.2f}R)")
                 return True
 
         return False
@@ -418,7 +418,7 @@ class OrderSimulator:
                     pip_size=profile.pip_size,
                     pip_value=profile.pip_value_per_lot
                 )
-                logger.debug(f"BUY trade {trade.ticket} hit SL @ {exit_price:.5f}")
+                logger.info(f"[BT] CLOSE SL: BUY {trade.symbol} @ {exit_price:.5f} | PnL=${trade.pnl:.2f}")
                 return "CLOSED_SL"
 
             # Check TP
@@ -453,7 +453,7 @@ class OrderSimulator:
                     pip_size=profile.pip_size,
                     pip_value=profile.pip_value_per_lot
                 )
-                logger.debug(f"BUY trade {trade.ticket} hit TP @ {exit_price:.5f}, P&L: ${trade.pnl:.2f}")
+                logger.info(f"[BT] CLOSE TP: BUY {trade.symbol} @ {exit_price:.5f} | PnL=${trade.pnl:.2f}")
                 return "CLOSED_TP"
 
         else:  # SELL
@@ -475,7 +475,7 @@ class OrderSimulator:
                     pip_size=profile.pip_size,
                     pip_value=profile.pip_value_per_lot
                 )
-                logger.debug(f"SELL trade {trade.ticket} hit SL @ {exit_price:.5f}")
+                logger.info(f"[BT] CLOSE SL: SELL {trade.symbol} @ {exit_price:.5f} | PnL=${trade.pnl:.2f}")
                 return "CLOSED_SL"
 
             # Check TP
@@ -514,7 +514,7 @@ class OrderSimulator:
                     pip_size=profile.pip_size,
                     pip_value=profile.pip_value_per_lot
                 )
-                logger.debug(f"SELL trade {trade.ticket} hit TP @ {exit_price:.5f}, P&L: ${trade.pnl:.2f}")
+                logger.info(f"[BT] CLOSE TP: SELL {trade.symbol} @ {exit_price:.5f} | PnL=${trade.pnl:.2f}")
                 return "CLOSED_TP"
 
         # Still open - update floating P&L

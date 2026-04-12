@@ -1,13 +1,20 @@
-
-version: '3.8'
+# ============================================================================
+# INSTITUTIONAL EDGE PRO - Single Instance Stack
+# Usage: docker compose up -d
+# ============================================================================
 
 services:
+
+  # --------------------------------------------------------------------------
+  # MetaTrader 5 Terminal (VNC + RPyC)
+  # VNC UI:  http://localhost:3000  (password: trading)
+  # --------------------------------------------------------------------------
   mt5:
     image: gmag11/metatrader5_vnc:latest
-    container_name: mt5_terminal_${INSTANCE_NAME:-main}
+    container_name: mt5_terminal
     ports:
-      - "${VNC_PORT:-3000}:3000"   # VNC Web Interface
-      - "${RPYC_PORT:-8001}:8001"   # RPyC Server
+      - "3000:3000"   # VNC Web Interface
+      - "8001:8001"   # RPyC Server (internal trading connection)
     environment:
       - CUSTOM_USER=trader
       - PASSWORD=trading
@@ -16,52 +23,85 @@ services:
       - mt5_config:/config
     restart: unless-stopped
     networks:
-      - bot-net
+      - app-net
 
+  # --------------------------------------------------------------------------
+  # Backend API (FastAPI + Trading Engine)
+  # API:  http://localhost:8000
+  # --------------------------------------------------------------------------
   backend:
     build: ./backend
-    container_name: institutional_backend_${INSTANCE_NAME:-main}
+    container_name: trading_backend
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "8000:8000"
     env_file:
       - .env
     environment:
+      # MT5 connection (resolves to mt5 container)
       - MT5_HOST=mt5
       - MT5_PORT=8001
-      - PGPASSWORD=secret
+      # Use SQLite for simplicity (no extra DB container needed)
       - DATABASE_URL=sqlite:///./sql_app.db
-      # Multi-Account / Signal Distribution
-      - RABBITMQ_HOST=institutional_rabbitmq
+      # RabbitMQ (resolves to rabbitmq container)
+      - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
-      - INSTANCE_ROLE=${INSTANCE_ROLE:-SOLO}
-      - MT5_LOGIN=${MT5_LOGIN}
-      - MT5_PASSWORD=${MT5_PASSWORD}
-      - MT5_SERVER=${MT5_SERVER}
+      # Single instance mode
+      - INSTANCE_ROLE=SOLO
+      # Celery broker via RabbitMQ (no Redis container needed)
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=rpc://
     depends_on:
       - mt5
+      - rabbitmq
     volumes:
-      - ${PROJECT_ROOT_HOST:-.}/backend/app:/app/app
+      - ./backend/app:/app/app
       - backend_data:/app/data
+    restart: unless-stopped
     networks:
-      - bot-net
-      - trading_network
+      - app-net
 
+  # --------------------------------------------------------------------------
+  # Frontend Dashboard (Vue 3 + Nginx)
+  # Dashboard: http://localhost:80
+  # Proxies /api/ and /socket.io/ to backend automatically
+  # --------------------------------------------------------------------------
   frontend:
     build: ./frontend
-    container_name: institutional_frontend_${INSTANCE_NAME:-main}
+    container_name: trading_frontend
     ports:
-      - "${WEB_PORT:-80}:80"
+      - "80:80"
     depends_on:
       - backend
+    restart: unless-stopped
     networks:
-      - bot-net
+      - app-net
+
+  # --------------------------------------------------------------------------
+  # RabbitMQ (Message Broker for async tasks / signal distribution)
+  # Management UI: http://localhost:15672 (guest/guest)
+  # --------------------------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: trading_rabbitmq
+    ports:
+      - "15672:15672"  # Management UI
+      # Port 5672 is internal-only (backend connects via service name)
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    restart: unless-stopped
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 volumes:
   mt5_config:
   backend_data:
 
 networks:
-  bot-net:
-    external: true
-  trading_network:
-    external: true
+  app-net:
+    driver: bridge

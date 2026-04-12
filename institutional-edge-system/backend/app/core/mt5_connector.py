@@ -170,47 +170,6 @@ class MT5Connector:
         except Exception as e:
             logger.error(f"CRITICAL ERROR in connect(): {e}")
             return False
-            
-            logger.info("✅ MT5 initialized successfully")
-            
-            # ================================================================
-            # LOGIN TO ACCOUNT (works for both local and remote/shared)
-            # This is the KEY for automatic multi-account support!
-            # ================================================================
-            if self.login and self.password and self.server:
-                logger.info(f"🔐 Logging into account {self.login} on server {self.server}...")
-                
-                authorized = mt5.login(
-                    login=int(self.login),
-                    password=self.password,
-                    server=self.server
-                )
-                
-                if not authorized:
-                    err_code = mt5.last_error()
-                    logger.error(f"❌ MT5 login failed for account {self.login}: {err_code}")
-                    return False
-                    
-                logger.info(f"✅ Successfully logged into MT5 account: {self.login}")
-            else:
-                logger.warning("⚠️ No MT5 credentials provided - using current terminal session")
-
-            self.connected = True
-            
-            # Verify connection
-            account_info = mt5.account_info()
-            if account_info:
-                logger.info(f"📊 Account {account_info.login} | Balance: ${account_info.balance:.2f} | Equity: ${account_info.equity:.2f}")
-            else:
-                logger.warning("⚠️ Connected but Account Info unavailable (Terminal initializing?)")
-                if self.login and self.password:
-                    return False  # Force retry
-            
-            return True
-
-        except Exception as e:
-            logger.exception(f"Error connecting to MT5: {e}")
-            return False
 
     def disconnect(self):
         """Disconnect from MT5"""
@@ -380,10 +339,12 @@ class MT5Connector:
             if symbol_info is None:
                 return mt5.ORDER_FILLING_FOK
             filling = symbol_info.filling_mode
-            if filling & 1:
-                return mt5.ORDER_FILLING_FOK
+            # RETURN first: works for Market Execution brokers (most forex/gold)
+            # Fall back to IOC, then FOK for other execution types
             if filling & 2:
                 return mt5.ORDER_FILLING_IOC
+            if filling & 1:
+                return mt5.ORDER_FILLING_FOK
             return mt5.ORDER_FILLING_RETURN
         except Exception as e:
             logger.error(f"Error determining filling mode: {e}")
@@ -516,12 +477,12 @@ class MT5Connector:
                     "type_filling": filling_mode,
                 }
 
-                if stop_loss:
+                if stop_loss is not None:
                     request["sl"] = stop_loss
-                if take_profit:
+                if take_profit is not None:
                     request["tp"] = take_profit
 
-                result = mt5.order_send(request=request)
+                result = mt5.order_send(request)
 
                 if result is None:
                     logger.error("Order send failed, error: {}", mt5.last_error())
@@ -678,8 +639,8 @@ class MT5Connector:
                 "action": mt5.TRADE_ACTION_SLTP,
                 "symbol": position.symbol,
                 "position": ticket,
-                "sl": stop_loss if stop_loss else position.sl,
-                "tp": take_profit if take_profit else position.tp,
+                "sl": stop_loss if stop_loss is not None else position.sl,
+                "tp": take_profit if take_profit is not None else position.tp,
             }
 
             result = mt5.order_send(request)
@@ -898,6 +859,24 @@ class MT5Connector:
         except Exception as e:
             logger.exception("Error checking market status: {}", e)
             return False
+
+    def _determine_symbol_type(self, path: str, name: str) -> str:
+        """Determine symbol type based on path and name"""
+        path_lower = (path or "").lower()
+        name_upper = (name or "").upper()
+        if "forex" in path_lower or "fx" in path_lower:
+            return "forex"
+        if "crypto" in path_lower or "btc" in name_upper or "eth" in name_upper:
+            return "crypto"
+        if "metal" in path_lower or "xau" in name_upper or "xag" in name_upper:
+            return "metal"
+        if "index" in path_lower or "indices" in path_lower:
+            return "index"
+        if "commodity" in path_lower or "oil" in name_upper or "gas" in name_upper:
+            return "commodity"
+        if "stock" in path_lower or "share" in path_lower:
+            return "stock"
+        return "other"
 
     def get_all_symbols(self) -> List[Dict]:
         """Get all symbols available in the terminal"""

@@ -2,10 +2,8 @@ import asyncio
 from sqlalchemy.orm import Session
 from app.core.mt5_connector import MT5Connector
 from app.models.database import ExecutionLog, Trade
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from datetime import datetime, timedelta
+from loguru import logger
 
 class ExecutionEngine:
     """
@@ -31,7 +29,7 @@ class ExecutionEngine:
         recent_trade = self.db.query(Trade).filter(
             Trade.symbol == symbol,
             Trade.status == "OPEN",
-            Trade.opened_at >= datetime.utcnow() - asyncio.timedelta(minutes=1)
+            Trade.opened_at >= datetime.utcnow() - timedelta(minutes=1)
         ).first()
         
         if recent_trade:
@@ -46,8 +44,7 @@ class ExecutionEngine:
                     order_type=order_type,
                     volume=volume,
                     stop_loss=sl,
-                    take_profit=tp,
-                    deviation=deviation
+                    take_profit=tp
                 )
                 
                 if result and result.get('success'):

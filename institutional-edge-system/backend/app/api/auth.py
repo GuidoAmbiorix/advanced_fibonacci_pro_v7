@@ -20,6 +20,31 @@ from app.schemas import schemas
 
 router = APIRouter()
 
+
+@router.get("/auto-token", response_model=schemas.Token)
+def auto_token(db: Session = Depends(database.get_db)) -> Any:
+    """
+    Return a valid system token automatically (no credentials required).
+    This is intentional: the app is a local single-user trading terminal.
+    """
+    user = db.query(User).filter(User.is_admin == True).first()
+    if not user:
+        user = db.query(User).first()
+    if not user:
+        raise HTTPException(status_code=503, detail="System not initialized yet")
+
+    access_token_expires = timedelta(days=365)
+    access_token = security.create_access_token(
+        subject=user.id, expires_delta=access_token_expires
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "username": user.username
+    }
+
+
 @router.post("/register", response_model=schemas.UserResponse)
 def register_user(
     user_in: schemas.UserCreate,
