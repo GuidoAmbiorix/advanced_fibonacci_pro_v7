@@ -16,7 +16,7 @@
 #include "Include\PortfolioGlobals.mqh"
 #include "Include\KillzoneConfig.mqh"
 #include "Include\FailSafe.mqh"
-#include "Include\MarketRegime.mqh"
+#include "Include\Regime\RegimeEngine.mqh"
 #include "Include\KillSwitch.mqh"
 #include "Include\Learning_MFE_MAE.mqh"
 #include "Include\SelfGovernor.mqh"
@@ -278,7 +278,9 @@ CSymbolInfo    symbolInfo;
 
 // MODULE OBJECTS
 CFailSafe         failSafe;
-CMarketRegime     regime;
+CRegimeEngine     g_regimeEngine;   // Adaptive regime detector (5 regimes)
+RegimeContext     g_regimeCtx;      // Full context: regime + escalator + signals
+EscalatorConfig   g_escCfg;         // Dynamic escalator config (updated each bar from regime)
 CKillSwitch       killSwitch;
 CLearningEngine   learning;
 CSelfGovernor      selfGov;
@@ -635,6 +637,23 @@ int OnInit()
    // Initialize self-contained Governor
    selfGov.Init(InpGov_Enabled, InpGov_DD_Reduce, InpGov_DD_Pause, InpGov_ReducedMult, InpGov_DailyMaxDD);
 
+   // Initialize Regime Engine (5-regime adaptive system)
+   if(!g_regimeEngine.Init(_Symbol, PERIOD_CURRENT))
+      Print("[WARN] RegimeEngine init failed — using input defaults for escalator");
+
+   // Seed g_escCfg with .set file inputs as fallback (overwritten each bar by regime)
+   g_escCfg.enabled          = true;
+   g_escCfg.firstR            = InpEsc_FirstR;
+   g_escCfg.firstSL_R         = InpEsc_FirstSL_R;
+   g_escCfg.stepR             = InpEsc_StepR;
+   g_escCfg.growthFactor      = InpEsc_GrowthFactor;
+   g_escCfg.baseHarvest       = InpEsc_BaseHarvest;
+   g_escCfg.harvestDecay      = InpEsc_HarvestDecay;
+   g_escCfg.minHarvest        = InpEsc_MinHarvest;
+   g_escCfg.maxStages         = InpEsc_MaxStages;
+   g_escCfg.runnerTrailTight  = InpRunnerTrailTight;
+   g_escCfg.timeStaleMins     = InpTimeStaleMins;
+
    Print("===========================================");
    Print("  [START] SYMBOL ENGINE v2.0: ", _Symbol);
    Print("===========================================");
@@ -729,6 +748,9 @@ void OnDeinit(const int reason)
 
    // Cleanup MTF
    if(InpUseMTF) mtfAnalysis.Deinit();
+
+   // Cleanup Regime Engine
+   g_regimeEngine.Deinit();
 
    // Save learning data before exit
    if(InpEnableLearning)
@@ -946,10 +968,11 @@ double CalculateTakeProfit(double price, double slDist, int direction,
       else if(quality == EQ_STRONG) tpR *= 1.1;
       else if(quality == EQ_WEAK) tpR *= 0.8;
 
-      // Regime adjustments (H1-optimized)
-      if(g_currentRegime == REGIME_TREND) tpR *= 1.5;        // H1: Increased from 1.3 to 1.5 (let H1 trends run)
-      else if(g_currentRegime == REGIME_RANGE) tpR *= 0.70;  // H1: Reduced from 0.85 to 0.70 (tighten range exits)
-      else if(g_currentRegime == REGIME_VOLATILE) tpR *= 1.2; // H1: Increased from 1.1 to 1.2
+      // Regime adjustments (H4 calibrated, 5-regime)
+      if(g_currentRegime == REGIME_TREND_STRONG) tpR *= 1.5;  // Let strong trends run
+      else if(g_currentRegime == REGIME_TREND_WEAK) tpR *= 1.1; // Small extension
+      else if(g_currentRegime == REGIME_RANGING)   tpR *= 0.65; // Tight — TP at mean
+      else if(g_currentRegime == REGIME_VOLATILE)  tpR *= 1.2;  // Quick spike target
    }
 
    // Clamp to min/max
@@ -1095,8 +1118,18 @@ void OnTick()
    // --- UPDATE ALL MODULES ON NEW BAR ---
    UpdateModules();
 
-   // --- MODULE: MARKET REGIME ---
-   g_currentRegime = regime.Detect(g_ATR, g_ATR_MA, g_EMA, g_EMA_Prev);
+   // --- MODULE: MARKET REGIME (5-regime adaptive engine) ---
+   g_regimeCtx     = g_regimeEngine.Evaluate(InpMinConfluenceEntry, InpMaxSpreadPoints);
+   g_currentRegime = g_regimeCtx.regime;
+   // Update dynamic escalator config (overrides InpEsc_* with regime-calibrated values)
+   if(g_regimeCtx.escalator.enabled)
+      g_escCfg = g_regimeCtx.escalator;
+   else
+   {
+      // CRISIS: disable escalator but keep struct populated safely
+      g_escCfg.enabled    = false;
+      g_escCfg.maxStages  = 0;
+   }
    // g_currentRegime check moved down to allow score calculation for visibility
 
    // --- THROTTLED CONFLUENCE CALCULATION ---
@@ -1156,11 +1189,13 @@ void OnTick()
       GlobalVariableSet("PG_Quality_" + _Symbol, bestQuality);
 
       // --- SCAN LOG: visibility into regime and signal strength ---
-      string regimeStr = regime.RegimeToString(g_currentRegime);
-      Print("[SCAN] ", _Symbol, " | ", regimeStr,
+      Print("[SCAN] ", _Symbol, " | ", g_regimeCtx.regimeLabel,
+            "(", IntegerToString(g_regimeCtx.regimeScore), "%)",
             " | Buy=", DoubleToString(g_cachedBuyScore, 1),
             " Sell=", DoubleToString(g_cachedSellScore, 1),
-            " | Need=", InpMinConfluenceEntry);
+            " | Need=", g_regimeCtx.minConfluence,
+            " | Esc.FirstR=", DoubleToString(g_escCfg.firstR, 2),
+            " Harvest=", DoubleToString(g_escCfg.baseHarvest, 0), "%");
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---
    if(!failSafe.IsExecutionSafe()) return;
@@ -1255,7 +1290,7 @@ void OnTick()
 
    // === TRADING FILTERS START HERE ===
    
-   if(g_currentRegime == REGIME_CHAOS) return;
+   if(!g_regimeCtx.allowEntries) return;  // CRISIS regime: no new entries
 
    // PRE-ENTRY FILTERS (Quick Exits for Performance)
    if(!CheckSpread(true)) return;
@@ -1371,7 +1406,7 @@ void OnTick()
          // Apply additional multipliers
          double newsMultiplier = InpUseNewsFilter ? newsFilter.GetNewsRiskMultiplier() : 1.0;
          double killzoneMultiplier = 1.0;
-         double regimeMultiplier = (g_currentRegime == REGIME_TREND) ? 1.0 : 0.8;
+         double regimeMultiplier = g_regimeCtx.riskMultiplier;
 
          baseRisk = kellySizer.GetAdjustedRisk(quality, newsMultiplier, killzoneMultiplier, regimeMultiplier);
       }
@@ -1405,8 +1440,8 @@ void OnTick()
 
       if(approvedRisk > 0.05)
       {
-          // FIX: Wire up dynamic threshold (Phase 5)
-          double minEntry = InpMinConfluenceEntry;  // Base threshold from .set file
+          // Dynamic threshold: base from .set + regime adjustment
+          double minEntry = (double)g_regimeCtx.minConfluence;
 
           // Use adaptive threshold if enabled
           if(InpEnableAdaptiveFilters && adaptiveFilter.IsAdaptationEnabled())
@@ -1494,6 +1529,65 @@ void OnTick()
                 g_states[lastIdx].groupId = g_activeGroupId;
              }
           }
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      // REGIME ALTERNATIVE ENTRIES: Mean Reversion & Volatility
+      // Fire only when main momentum entry did NOT qualify but the
+      // regime engine found a regime-specific setup.
+      // ══════════════════════════════════════════════════════════════
+      bool mainEntryFired = (buyScore >= minEntry || sellScore >= minEntry);
+
+      if(!mainEntryFired && approvedRisk > 0.05)
+      {
+         // ── RANGING: Mean Reversion ───────────────────────────────
+         if(g_currentRegime == REGIME_RANGING && g_regimeCtx.mrSignalValid)
+         {
+            MRSignal mrSig = g_regimeCtx.mrSignal;
+            if(mrSig.score >= 20)
+            {
+               double mrRisk = approvedRisk * g_regimeCtx.riskMultiplier;
+               ENUM_ORDER_TYPE mrType = (mrSig.direction == ORDER_TYPE_BUY) ?
+                                         ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+               ENTRY_QUALITY   mrQ    = (mrSig.score >= 28) ? EQ_STRONG : EQ_GOOD;
+               Print("[MR ENTRY] Regime=RANGING | Score=", mrSig.score, " | ", mrSig.reason);
+               if(ExecuteTrade(mrType, mrRisk, "MR", mrQ))
+               {
+                  int lastIdx = ArraySize(g_states) - 1;
+                  double ep = PositionSelectByTicket(g_states[lastIdx].ticket) ?
+                              PositionGetDouble(POSITION_PRICE_OPEN) : symbolInfo.Ask();
+                  g_activeGroupId = CreateTradeGroup(mrType == ORDER_TYPE_BUY ? 1 : -1,
+                                    g_states[lastIdx].ticket, ep,
+                                    g_states[lastIdx].initialSLDist, mrRisk);
+                  g_states[lastIdx].groupId = g_activeGroupId;
+               }
+            }
+         }
+         // ── VOLATILE / TREND_WEAK: Compression Breakout ───────────
+         else if((g_currentRegime == REGIME_VOLATILE || g_currentRegime == REGIME_TREND_WEAK)
+                 && g_regimeCtx.volSignalValid)
+         {
+            VolSignal volSig = g_regimeCtx.volSignal;
+            if(volSig.score >= 20)
+            {
+               double volRisk = approvedRisk * g_regimeCtx.riskMultiplier;
+               ENUM_ORDER_TYPE volType = (volSig.direction == ORDER_TYPE_BUY) ?
+                                          ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+               ENTRY_QUALITY   volQ    = (volSig.score >= 28) ? EQ_STRONG : EQ_GOOD;
+               Print("[VOL ENTRY] Regime=", g_regimeCtx.regimeLabel, " | Score=", volSig.score,
+                     " | Breakout=", volSig.isBreakout ? "YES" : "NO", " | ", volSig.reason);
+               if(ExecuteTrade(volType, volRisk, "VOL", volQ))
+               {
+                  int lastIdx = ArraySize(g_states) - 1;
+                  double ep = PositionSelectByTicket(g_states[lastIdx].ticket) ?
+                              PositionGetDouble(POSITION_PRICE_OPEN) : symbolInfo.Ask();
+                  g_activeGroupId = CreateTradeGroup(volType == ORDER_TYPE_BUY ? 1 : -1,
+                                    g_states[lastIdx].ticket, ep,
+                                    g_states[lastIdx].initialSLDist, volRisk);
+                  g_states[lastIdx].groupId = g_activeGroupId;
+               }
+            }
+         }
       }
    }
 
@@ -1704,32 +1798,31 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
 //+------------------------------------------------------------------+
 
 // Calculate trigger R for stage N using geometric progression
-// Stage 0 = Quick Lock (FirstR)
-// Stage 1+ = FirstR + StepR * (GrowthFactor^0 + GrowthFactor^1 + ... + GrowthFactor^(n-1))
+// Stage 0 = Quick Lock (FirstR)  — uses dynamic g_escCfg (set per regime each bar)
+// Stage 1+ = FirstR + StepR * (GrowthFactor^0 + ... + GrowthFactor^(n-1))
 double CalculateStageR(int stageIndex)
 {
-   if(stageIndex <= 0) return InpEsc_FirstR;
+   if(stageIndex <= 0) return g_escCfg.firstR;
    double sum = 0;
    for(int i = 0; i < stageIndex; i++)
-      sum += MathPow(InpEsc_GrowthFactor, (double)i);
-   return InpEsc_FirstR + InpEsc_StepR * sum;
+      sum += MathPow(g_escCfg.growthFactor, (double)i);
+   return g_escCfg.firstR + g_escCfg.stepR * sum;
 }
 
-// Calculate harvest % for stage N (decaying)
-// Stage 0 = no harvest (Quick Lock only moves SL)
+// Calculate harvest % for stage N (decaying per regime)
 double CalculateHarvestPct(int stageIndex)
 {
    if(stageIndex <= 0) return 0.0;
-   double pct = InpEsc_BaseHarvest * MathPow(InpEsc_HarvestDecay, (double)(stageIndex - 1));
-   return MathMax(pct, InpEsc_MinHarvest);
+   double pct = g_escCfg.baseHarvest * MathPow(g_escCfg.harvestDecay, (double)(stageIndex - 1));
+   return MathMax(pct, g_escCfg.minHarvest);
 }
 
 // Calculate SL lock R for stage N
-// Stage 0 = special (FirstSL_R, can be negative for below-entry buffer)
-// Stage 1+ = lock at previous stage's trigger (ratchet up)
+// Stage 0 = FirstSL_R (can be negative = below-entry buffer)
+// Stage 1+ = lock at previous stage trigger (ratchet up)
 double CalculateSLLockR(int stageIndex)
 {
-   if(stageIndex <= 0) return InpEsc_FirstSL_R;
+   if(stageIndex <= 0) return g_escCfg.firstSL_R;
    return CalculateStageR(stageIndex - 1);
 }
 
@@ -1921,15 +2014,18 @@ double GetAdaptiveStageR(int stageIndex, double score)
    return baseR; // 10-12.9 = default
 }
 
-// Regime-aware harvest percentages (works with formula-based harvest)
-double GetRegimeHarvestPct(int stageIndex, MARKET_REGIME reg)
+// Regime-aware harvest percentages — already baked into g_escCfg.baseHarvest,
+// but this fine-tunes the formula output further if InpRegimeHarvest is on
+double GetRegimeHarvestPct(int stageIndex, ENUM_MARKET_REGIME reg)
 {
    double basePct = CalculateHarvestPct(stageIndex);
    if(!InpRegimeHarvest) return basePct;
 
-   if(reg == REGIME_TREND) return basePct * 0.7;      // Take less in trends R let it run
-   if(reg == REGIME_RANGE) return basePct * 1.3;       // Take more in ranges
-   return basePct; // VOLATILE / CHAOS = base
+   if(reg == REGIME_TREND_STRONG) return basePct * 0.70;  // Let trend run, take less
+   if(reg == REGIME_TREND_WEAK)   return basePct * 0.85;  // Slight reduction
+   if(reg == REGIME_RANGING)      return basePct * 1.20;  // Take more — will reverse
+   if(reg == REGIME_VOLATILE)     return basePct * 1.10;  // Slightly more — unpredictable
+   return basePct; // CRISIS = already off via g_escCfg.enabled
 }
 
 // MFE-calibrated stage trigger (generalized for any stage)
@@ -2484,7 +2580,7 @@ void ManagePositions()
          // --- N-STAGE ESCALATOR LOOP ---
          if(!g_states[sIdx].isRunner)
          {
-            for(int stage = g_states[sIdx].currentStage + 1; stage < InpEsc_MaxStages; stage++)
+            for(int stage = g_states[sIdx].currentStage + 1; stage < g_escCfg.maxStages; stage++)
             {
                // MFE-calibrated trigger already includes score adaptation via GetAdaptiveStageR()
                double triggerR = InpMFECalibration
@@ -2598,11 +2694,13 @@ void ManagePositions()
                 if(quality == EQ_WEAK)  dynMult *= 0.8;
                 if(quality == EQ_ELITE) dynMult *= 1.2;
 
-                // Step 3: Regime-aware adjustment
+                // Step 3: Regime-aware adjustment (5-regime)
                 if(InpTrailRegimeAware)
                 {
-                   if(g_currentRegime == REGIME_TREND)      dynMult *= 1.2; // Was 1.4 - tightened
-                   else if(g_currentRegime == REGIME_RANGE)  dynMult *= 0.7;
+                   if(g_currentRegime == REGIME_TREND_STRONG) dynMult *= 1.2;
+                   else if(g_currentRegime == REGIME_TREND_WEAK) dynMult *= 1.0;
+                   else if(g_currentRegime == REGIME_RANGING)   dynMult *= 0.7;
+                   else if(g_currentRegime == REGIME_VOLATILE)  dynMult *= 0.85;
                 }
 
                 // Step 4: Runner trail R WIDEN to let the 20% runner chase the home run
@@ -2621,13 +2719,13 @@ void ManagePositions()
                 // If profit hasn't made new high in X minutes, tighten trail aggressively
                 // EXCEPTION: Runner gets 3x more patience (let it ride for the home run)
                 double minutesSincePeak = (double)(TimeCurrent() - g_states[sIdx].lastPeakTime) / 60.0;
-                double staleMins = InpTimeStaleMins;
-                if(g_states[sIdx].isRunner) staleMins *= 3.0;  // Runner: 30 min patience instead of 10
+                double staleMins = g_escCfg.timeStaleMins;   // dynamic per regime
+                if(g_states[sIdx].isRunner) staleMins *= 3.0; // runner gets 3x patience
 
                 if(minutesSincePeak > staleMins)
-                   dynMult *= InpTimeStaleTight2;  // Aggressive tightening
+                   dynMult *= InpTimeStaleTight2;   // Aggressive tightening (keep as input — fine-tune per pair)
                 else if(minutesSincePeak > staleMins * 0.5)
-                   dynMult *= InpTimeStaleTight1;  // Moderate tightening
+                   dynMult *= InpTimeStaleTight1;   // Moderate tightening
 
                 // Step 6: RSI MOMENTUM TRAIL (Adaptive Escalator 4D)
                 if(InpMomentumTrail && InpAdaptiveEscalator && g_states[sIdx].isRunner)
