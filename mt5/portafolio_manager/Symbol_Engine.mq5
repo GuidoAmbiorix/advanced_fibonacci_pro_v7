@@ -2591,8 +2591,8 @@ void ManagePositions()
                {
                   // --- QUICK LOCK: Move SL, no harvest ---
                   double lockSL = (pType == POSITION_TYPE_BUY)
-                                ? open + (slDist * InpEsc_FirstSL_R)
-                                : open - (slDist * InpEsc_FirstSL_R);
+                                ? open + (slDist * g_escCfg.firstSL_R)
+                                : open - (slDist * g_escCfg.firstSL_R);
                   bool canMove0 = (pType == POSITION_TYPE_BUY)
                                 ? (lockSL > sl || sl == 0)
                                 : (lockSL < sl || sl == 0);
