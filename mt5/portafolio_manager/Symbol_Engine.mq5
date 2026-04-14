@@ -3274,23 +3274,15 @@ double GetTotalProfitR()
 //+------------------------------------------------------------------+
 bool UpdateIndicators()
 {
+   // Wait for indicators to finish warming up before reading buffers
+   if(BarsCalculated(hRSI) < 3 || BarsCalculated(hATR) < 3 || BarsCalculated(hEMA) < 3)
+      return false; // Silent during warmup — not an error
+
    double bufRSI[2], bufATR[1], bufEMA[2];
 
-   if(CopyBuffer(hRSI, 0, 1, 2, bufRSI) != 2)
-   {
-      Print("ERROR: Failed to copy RSI buffer");
-      return false;
-   }
-   if(CopyBuffer(hATR, 0, 1, 1, bufATR) != 1)
-   {
-      Print("ERROR: Failed to copy ATR buffer");
-      return false;
-   }
-   if(CopyBuffer(hEMA, 0, 1, 2, bufEMA) != 2)
-   {
-      Print("ERROR: Failed to copy EMA buffer");
-      return false;
-   }
+   if(CopyBuffer(hRSI, 0, 1, 2, bufRSI) != 2) return false;
+   if(CopyBuffer(hATR, 0, 1, 1, bufATR) != 1) return false;
+   if(CopyBuffer(hEMA, 0, 1, 2, bufEMA) != 2) return false;
 
    g_RSI_Prev = bufRSI[0];
    g_RSI = bufRSI[1];
@@ -3492,13 +3484,8 @@ void UpdateDashboard()
    double buyS = g_cachedBuyScore;
    double sellS = g_cachedSellScore;
 
-   // If scores not calculated yet (first tick), calculate them
-   // ALWAYS calculate for dashboard visibility (even if trading is blocked)
-   if(g_lastScoreCalcTime == 0)
-   {
-      buyS = CalculateConfluenceScore(1);
-      sellS = CalculateConfluenceScore(-1);
-   }
+   // Scores are populated by the throttled OnTick block; show 0 until ready
+   // (do NOT call CalculateConfluenceScore here — indicators may not be warmed up)
 
    string govStatus = selfGov.GetStatus();
    string tradingStatus = selfGov.IsTradingEnabled() ? "ACTIVE" : "PAUSED (DD)";
