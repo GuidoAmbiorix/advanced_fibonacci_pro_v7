@@ -1041,8 +1041,19 @@ void OnTick()
    g_positionCount = CountPositions();
    if(g_positionCount == 0) ResetTradeState();
 
+   // Dashboard always updates — must be before any early return guards
+   // so the panel stays visible even when Governor/Friday/DD blocks trading
+   {
+      static datetime lastDashboardUpdate = 0;
+      if(TimeCurrent() - lastDashboardUpdate >= 5)
+      {
+         UpdateDashboard();
+         lastDashboardUpdate = TimeCurrent();
+      }
+   }
+
    // --- GOVERNOR EMERGENCY CLOSE GUARD ---
-   if(!selfGov.IsTradingEnabled()) return; // Governor paused R do not manage positions during DD halt
+   if(!selfGov.IsTradingEnabled()) return; // Governor paused — do not manage positions during DD halt
 
    // --- FRIDAY PRE-WEEKEND BLOCK ---
    if(InpFridayCloseHour > 0)
@@ -1085,17 +1096,9 @@ void OnTick()
    }
 
    ManagePositions();
-   
+
    // Update visual debugging lines
    UpdateAllPositionVisuals();
-
-   // OPTIMIZATION: Update dashboard less frequently (every 5 seconds instead of every tick)
-   static datetime lastDashboardUpdate = 0;
-   if(TimeCurrent() - lastDashboardUpdate >= 5)
-   {
-      UpdateDashboard();
-      lastDashboardUpdate = TimeCurrent();
-   }
 
    // --- PERFORMANCE THROTTLE ---
    static datetime lastHeavyUpdate = 0;
