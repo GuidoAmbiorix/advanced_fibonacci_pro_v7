@@ -744,6 +744,31 @@ int OnInit()
 void OnTimer()
 {
    UpdateDashboard();
+
+   // Heartbeat every 60 seconds — visible even with zero ticks
+   static datetime lastHeartbeat = 0;
+   if(TimeCurrent() - lastHeartbeat >= 60)
+   {
+      lastHeartbeat = TimeCurrent();
+      string reason = "OK";
+      if(!selfGov.IsTradingEnabled())
+         reason = "GOVERNOR_PAUSED";
+      else if(!g_regimeCtx.allowEntries)
+         reason = "CRISIS_REGIME";
+      else if(g_consecutiveLosses >= InpMaxConsecutiveLosses && InpMaxConsecutiveLosses > 0)
+         reason = "LOSS_STREAK";
+      else if(InpUseKillzoneFilter && !CheckKillzone() &&
+              !(InpKZRegimeAware && (g_currentRegime == REGIME_RANGING ||
+                                    g_currentRegime == REGIME_VOLATILE)))
+         reason = "OUTSIDE_KZ";
+
+      Print("[HEARTBEAT] ", _Symbol,
+            " | Regime=", g_regimeCtx.regimeLabel,
+            " | D1=", g_regimeEngine.GetD1Label(),
+            " | Status=", reason,
+            " | Spread=", (int)symbolInfo.Spread(),
+            " | Ticks=", g_tickCount);
+   }
 }
 
 void OnDeinit(const int reason)
