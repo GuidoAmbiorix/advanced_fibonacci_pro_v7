@@ -1529,17 +1529,15 @@ void OnTick()
                 g_states[lastIdx].groupId = g_activeGroupId;
              }
           }
-      }
 
-      // ══════════════════════════════════════════════════════════════
-      // REGIME ALTERNATIVE ENTRIES: Mean Reversion & Volatility
-      // Fire only when main momentum entry did NOT qualify but the
-      // regime engine found a regime-specific setup.
-      // ══════════════════════════════════════════════════════════════
-      bool mainEntryFired = (buyScore >= minEntry || sellScore >= minEntry);
-
-      if(!mainEntryFired && approvedRisk > 0.05)
-      {
+         // ══════════════════════════════════════════════════════════════
+         // REGIME ALTERNATIVE ENTRIES: Mean Reversion & Volatility
+         // Fire only when main momentum entry did NOT qualify but the
+         // regime engine found a regime-specific setup.
+         // ══════════════════════════════════════════════════════════════
+         bool mainEntryFired = (buyScore >= minEntry || sellScore >= minEntry);
+         if(!mainEntryFired)
+         {
          // ── RANGING: Mean Reversion ───────────────────────────────
          if(g_currentRegime == REGIME_RANGING && g_regimeCtx.mrSignalValid)
          {
@@ -1588,8 +1586,9 @@ void OnTick()
                }
             }
          }
-      }
-   }
+         } // end !mainEntryFired
+      } // end approvedRisk > 0.05
+   } // end g_positionCount == 0
 
    // NOTE: Pyramiding is now handled by TryScaleIn() inside the Infinite Escalator loop
 }
@@ -3022,7 +3021,7 @@ double CalculateConfluenceScore(int direction)
 
    // PHASE 3: Get regime-adaptive weights
    double weights[];
-   regime.GetAdaptiveWeights(g_currentRegime, weights);
+   g_regimeEngine.GetAdaptiveWeights(g_currentRegime, weights);
 
    // ============ 1. CORE SMC & PRICE ACTION (Max ~13.0 pts) ============
 

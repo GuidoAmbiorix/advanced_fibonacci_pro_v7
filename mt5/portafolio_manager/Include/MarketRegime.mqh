@@ -196,13 +196,13 @@ public:
       // ── 5. EMA slope (200 EMA) ─────────────────────────────────────
       double emaArr[];
       ArraySetAsSeries(emaArr, true);
-      int hEMA = iMA(m_symbol, m_tf, 200, 0, MODE_EMA, PRICE_CLOSE);
+      int hEMALocal = iMA(m_symbol, m_tf, 200, 0, MODE_EMA, PRICE_CLOSE);
       double emaSlope = 0;
-      if(hEMA != INVALID_HANDLE)
+      if(hEMALocal != INVALID_HANDLE)
       {
-         if(CopyBuffer(hEMA, 0, 1, 3, emaArr) >= 3)
+         if(CopyBuffer(hEMALocal, 0, 1, 3, emaArr) >= 3)
             emaSlope = (emaArr[0] - emaArr[2]) / avgATR; // normalized slope
-         IndicatorRelease(hEMA);
+         IndicatorRelease(hEMALocal);
       }
       result.emaSlope = emaSlope;
 

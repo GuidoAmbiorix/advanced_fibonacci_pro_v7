@@ -124,7 +124,7 @@ public:
       ArraySetAsSeries(closes, true);
       if(CopyClose(m_symbol, m_tf, 1, 3, closes) < 3) return sig;
 
-      double spread = SymbolInfoInteger(m_symbol, SYMBOL_SPREAD) * SymbolInfoDouble(m_symbol, SYMBOL_POINT);
+      double spread = (double)SymbolInfoInteger(m_symbol, SYMBOL_SPREAD) * SymbolInfoDouble(m_symbol, SYMBOL_POINT);
       if(SymbolInfoInteger(m_symbol, SYMBOL_SPREAD) > maxSpreadPoints) return sig;
 
       double point   = SymbolInfoDouble(m_symbol, SYMBOL_POINT);

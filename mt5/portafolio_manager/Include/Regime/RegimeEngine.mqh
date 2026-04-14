@@ -147,10 +147,16 @@ public:
 
    // Accessors
    MARKET_REGIME GetCurrentRegime()     { return m_lastCtx.regime; }
-   string             GetCurrentLabel()       { return m_lastCtx.regimeLabel; }
-   bool               IsInCompression()       { return m_vol.IsInCompression(); }
-   int                GetCompressionBars()    { return m_vol.GetCompressionBars(); }
-   double             GetBBWidthPct()         { return m_mr.GetBBWidthPct(); }
+   string        GetCurrentLabel()      { return m_lastCtx.regimeLabel; }
+   bool          IsInCompression()      { return m_vol.IsInCompression(); }
+   int           GetCompressionBars()   { return m_vol.GetCompressionBars(); }
+   double        GetBBWidthPct()        { return m_mr.GetBBWidthPct(); }
+
+   // Proxy — allows Symbol_Engine to call g_regimeEngine.GetAdaptiveWeights()
+   void GetAdaptiveWeights(MARKET_REGIME regime, double &weights[])
+   {
+      m_detector.GetAdaptiveWeights(regime, weights);
+   }
 };
 
 #endif
