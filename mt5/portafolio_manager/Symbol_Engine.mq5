@@ -2016,7 +2016,7 @@ double GetAdaptiveStageR(int stageIndex, double score)
 
 // Regime-aware harvest percentages — already baked into g_escCfg.baseHarvest,
 // but this fine-tunes the formula output further if InpRegimeHarvest is on
-double GetRegimeHarvestPct(int stageIndex, ENUM_MARKET_REGIME reg)
+double GetRegimeHarvestPct(int stageIndex, MARKET_REGIME reg)
 {
    double basePct = CalculateHarvestPct(stageIndex);
    if(!InpRegimeHarvest) return basePct;

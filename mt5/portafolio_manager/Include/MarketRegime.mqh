@@ -4,13 +4,13 @@
 //|  Inputs: ATR ratio, ADX, Chop Index, Autocorrelation, EMA slope  |
 //|  Output: RegimeResult (regime + score 0-100 + confidence 0-1)    |
 //+------------------------------------------------------------------+
-#ifndef MARKET_REGIME_MQH
-#define MARKET_REGIME_MQH
+#ifndef MARKET_REGIME_MQH_INCLUDED
+#define MARKET_REGIME_MQH_INCLUDED
 
 //───────────────────────────────────────────────────────────────────
 // ENUMS & STRUCTS
 //───────────────────────────────────────────────────────────────────
-enum ENUM_MARKET_REGIME
+enum MARKET_REGIME
 {
    REGIME_UNKNOWN      = -1,
    REGIME_TREND_STRONG =  0,   // ~25% of time — momentum, ADX high, autocorr positive
@@ -19,10 +19,14 @@ enum ENUM_MARKET_REGIME
    REGIME_VOLATILE     =  3,   // ~20% of time — ATR spike, no clear direction
    REGIME_CRISIS       =  4    //  ~5% of time — extreme spike, stay out
 };
+// Backward compatibility — old enum values used by Adaptive modules
+#define REGIME_TREND  REGIME_TREND_STRONG
+#define REGIME_RANGE  REGIME_RANGING
+#define REGIME_CHAOS  REGIME_CRISIS
 
 struct RegimeResult
 {
-   ENUM_MARKET_REGIME regime;
+   MARKET_REGIME regime;
    int                score;       // 0-100: how strong the regime signal is
    double             confidence;  // 0.0-1.0: agreement between indicators
    string             label;
@@ -59,7 +63,7 @@ class CMarketRegime
 {
 private:
    // hysteresis: don't flip regime on every tick
-   ENUM_MARKET_REGIME m_lastRegime;
+   MARKET_REGIME m_lastRegime;
    double             m_lastConfidence;
    int                m_barsSinceChange;
    int                m_hysteresisMinBars;  // min bars before regime can change
@@ -246,7 +250,7 @@ public:
       if(totalVotes == 0) return result;
 
       int maxVote = voteTrendStrong;
-      ENUM_MARKET_REGIME candidate = REGIME_TREND_STRONG;
+      MARKET_REGIME candidate = REGIME_TREND_STRONG;
       if(voteTrendWeak  > maxVote) { maxVote = voteTrendWeak;  candidate = REGIME_TREND_WEAK; }
       if(voteRanging    > maxVote) { maxVote = voteRanging;    candidate = REGIME_RANGING; }
       if(voteVolatile   > maxVote) { maxVote = voteVolatile;   candidate = REGIME_VOLATILE; }
@@ -277,7 +281,7 @@ public:
    //+------------------------------------------------------------------+
    //| Returns escalator config calibrated for the current regime        |
    //+------------------------------------------------------------------+
-   EscalatorConfig GetEscalatorConfig(ENUM_MARKET_REGIME regime)
+   EscalatorConfig GetEscalatorConfig(MARKET_REGIME regime)
    {
       EscalatorConfig cfg;
 
@@ -365,7 +369,7 @@ public:
    //+------------------------------------------------------------------+
    //| Adaptive confluence weights per regime                            |
    //+------------------------------------------------------------------+
-   void GetAdaptiveWeights(ENUM_MARKET_REGIME regime, double &weights[])
+   void GetAdaptiveWeights(MARKET_REGIME regime, double &weights[])
    {
       // weights[0]=Trend, [1]=Structure/OB, [2]=PriceAction, [3]=Volume, [4]=MTF
       ArrayResize(weights, 5);
@@ -393,7 +397,7 @@ public:
    //+------------------------------------------------------------------+
    //| Minimum confluence score required per regime                      |
    //+------------------------------------------------------------------+
-   int GetMinConfluenceForRegime(ENUM_MARKET_REGIME regime, int baseMin)
+   int GetMinConfluenceForRegime(MARKET_REGIME regime, int baseMin)
    {
       switch(regime)
       {
@@ -409,7 +413,7 @@ public:
    //+------------------------------------------------------------------+
    //| Risk size multiplier per regime                                   |
    //+------------------------------------------------------------------+
-   double GetRiskMultiplier(ENUM_MARKET_REGIME regime)
+   double GetRiskMultiplier(MARKET_REGIME regime)
    {
       switch(regime)
       {
@@ -433,7 +437,7 @@ public:
       return MathMax(1.0 - (0.9 * (double)barAge / (double)maxAgeBars), 0.1);
    }
 
-   string RegimeToString(ENUM_MARKET_REGIME r)
+   string RegimeToString(MARKET_REGIME r)
    {
       switch(r)
       {
@@ -467,14 +471,5 @@ private:
    }
 };
 
-
-//───────────────────────────────────────────────────────────────────
-// BACKWARD COMPATIBILITY — for AdaptiveRiskManager, AdaptiveExitManager,
-// AdaptiveFilterManager and any module that still references the old enum
-//───────────────────────────────────────────────────────────────────
-typedef ENUM_MARKET_REGIME MARKET_REGIME;
-#define REGIME_TREND    REGIME_TREND_STRONG
-#define REGIME_RANGE    REGIME_RANGING
-#define REGIME_CHAOS    REGIME_CRISIS
 
 #endif

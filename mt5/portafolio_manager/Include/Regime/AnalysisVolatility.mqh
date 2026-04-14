@@ -5,8 +5,8 @@
 //|         Small size, immediate harvest, tight runner.              |
 //|  Works during: news releases, Asian→London open, key levels.     |
 //+------------------------------------------------------------------+
-#ifndef ANALYSIS_VOLATILITY_MQH
-#define ANALYSIS_VOLATILITY_MQH
+#ifndef ANALYSIS_VOLATILITY_MQH_INCLUDED
+#define ANALYSIS_VOLATILITY_MQH_INCLUDED
 
 struct VolSignal
 {

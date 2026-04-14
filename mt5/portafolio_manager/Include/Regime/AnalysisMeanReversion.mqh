@@ -5,8 +5,8 @@
 //|         TP = BB midline. SL = beyond outer band.                 |
 //|         No runner. Quick escalator. Works 35% of the time.       |
 //+------------------------------------------------------------------+
-#ifndef ANALYSIS_MEAN_REVERSION_MQH
-#define ANALYSIS_MEAN_REVERSION_MQH
+#ifndef ANALYSIS_MEAN_REVERSION_MQH_INCLUDED
+#define ANALYSIS_MEAN_REVERSION_MQH_INCLUDED
 
 struct MRSignal
 {

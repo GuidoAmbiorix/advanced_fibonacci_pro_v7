@@ -10,8 +10,8 @@
 //|    RegimeContext ctx = g_regime.Evaluate(InpMinConfluenceEntry); |
 //|    // use ctx.escalator, ctx.riskMult, ctx.minConfluence, etc.   |
 //+------------------------------------------------------------------+
-#ifndef REGIME_ENGINE_MQH
-#define REGIME_ENGINE_MQH
+#ifndef REGIME_ENGINE_MQH_INCLUDED
+#define REGIME_ENGINE_MQH_INCLUDED
 
 #include "../MarketRegime.mqh"
 #include "AnalysisMeanReversion.mqh"
@@ -23,7 +23,7 @@
 struct RegimeContext
 {
    // What is the market doing right now?
-   ENUM_MARKET_REGIME regime;
+   MARKET_REGIME regime;
    string             regimeLabel;
    int                regimeScore;       // 0-100 confidence
    double             regimeConfidence;  // 0.0-1.0
@@ -146,7 +146,7 @@ public:
    }
 
    // Accessors
-   ENUM_MARKET_REGIME GetCurrentRegime()     { return m_lastCtx.regime; }
+   MARKET_REGIME GetCurrentRegime()     { return m_lastCtx.regime; }
    string             GetCurrentLabel()       { return m_lastCtx.regimeLabel; }
    bool               IsInCompression()       { return m_vol.IsInCompression(); }
    int                GetCompressionBars()    { return m_vol.GetCompressionBars(); }
