@@ -726,11 +726,22 @@ int OnInit()
          " | ChaosLock=", InpChaosEmergencyLock);
    if(InpFridayCloseHour > 0) Print("[CONFIG] Friday Close: hour ", InpFridayCloseHour);
 
+   EventSetTimer(5); // Dashboard timer: update every 5 seconds regardless of ticks
+
    return INIT_SUCCEEDED;
+}
+
+//+------------------------------------------------------------------+
+//| Timer — keeps dashboard alive even with no market ticks          |
+//+------------------------------------------------------------------+
+void OnTimer()
+{
+   UpdateDashboard();
 }
 
 void OnDeinit(const int reason)
 {
+   EventKillTimer();
    if(hRSI != INVALID_HANDLE) IndicatorRelease(hRSI);
    if(hATR != INVALID_HANDLE) IndicatorRelease(hATR);
    if(hEMA != INVALID_HANDLE) IndicatorRelease(hEMA);
@@ -1040,17 +1051,6 @@ void OnTick()
 
    g_positionCount = CountPositions();
    if(g_positionCount == 0) ResetTradeState();
-
-   // Dashboard always updates — must be before any early return guards
-   // so the panel stays visible even when Governor/Friday/DD blocks trading
-   {
-      static datetime lastDashboardUpdate = 0;
-      if(TimeCurrent() - lastDashboardUpdate >= 5)
-      {
-         UpdateDashboard();
-         lastDashboardUpdate = TimeCurrent();
-      }
-   }
 
    // --- GOVERNOR EMERGENCY CLOSE GUARD ---
    if(!selfGov.IsTradingEnabled()) return; // Governor paused — do not manage positions during DD halt
