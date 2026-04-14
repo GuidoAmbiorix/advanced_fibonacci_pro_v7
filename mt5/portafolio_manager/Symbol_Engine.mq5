@@ -184,7 +184,9 @@ input int    InpStaleBarLimit = 8;               // Bars at stage -1 (no Quick L
                                                   // H4: 8 bars = 32 hours. Set 0 to disable.
 
 input group "======= SPREAD ======="
-input int               InpMaxSpreadPoints = 50;
+input int               InpMaxSpreadPoints   = 50;   // Max spread — Trend entries (points)
+input int               InpMaxSpreadRanging  = 25;   // Max spread — RANGING/MR entries (tighter)
+input int               InpMaxSpreadVolatile = 80;   // Max spread — VOLATILE breakout (wider ok)
 
 input group "======= SMC - SMART MONEY CONCEPTS ======="
 input bool              InpUseSMC = true;                 // Enable SMC Analysis
@@ -238,6 +240,7 @@ input int               InpReversalCooldownMinutes = 15;  // Min Time Between Sa
 
 input group "======= KILLZONES ======="
 input bool              InpUseKillzoneFilter = true;      // Enable Killzone Filter
+input bool              InpKZRegimeAware = true;          // Bypass KZ for RANGING/VOLATILE regimes
 input bool              InpEnableAsianKZ = false;         // Enable Asian Killzone
 input bool              InpEnableLondonOpenKZ = true;     // Enable London Open Killzone
 input bool              InpEnableNYKZ = true;             // Enable NY Killzone
@@ -446,6 +449,10 @@ ConfluenceFactors g_lastSellFactors;
 
 // OnTrade dedup: track tickets already processed by ManagePositions
 ulong g_processedOnTrade[];
+
+// Per-regime trade statistics (in-memory, resets on EA restart)
+struct RegimeTradeStat { int wins; int losses; double totalR; };
+RegimeTradeStat g_regimeStats[5];   // index = MARKET_REGIME (0-4)
 
 //+------------------------------------------------------------------+
 //| Init                                                              |
@@ -1253,17 +1260,32 @@ void OnTick()
    // --- PRE-ENTRY FILTER: KILLZONE CHECK ---
    if(InpUseKillzoneFilter)
    {
-       // Check if current time is in an active killzone
-       if(!CheckKillzone())
-       {
-          static datetime lastKZLog = 0;
-          if(TimeCurrent() - lastKZLog > 300)
-          {
-             Print("[BLOCKED] Outside Killzone - Current time not in enabled killzones");
-             lastKZLog = TimeCurrent();
-          }
-          return;
-       }
+      // Regime-aware bypass: RANGING and VOLATILE don't need institutional liquidity
+      // RANGING  → mean reversion works in any session (Asia included)
+      // VOLATILE → breakouts triggered by news/events, not session opens
+      bool kzBypassed = InpKZRegimeAware &&
+                        (g_currentRegime == REGIME_RANGING ||
+                         g_currentRegime == REGIME_VOLATILE);
+
+      if(!kzBypassed && !CheckKillzone())
+      {
+         static datetime lastKZLog = 0;
+         if(TimeCurrent() - lastKZLog > 300)
+         {
+            Print("[BLOCKED] Outside Killzone - Current time not in enabled killzones");
+            lastKZLog = TimeCurrent();
+         }
+         return;
+      }
+      if(kzBypassed && !CheckKillzone())
+      {
+         static datetime lastKZBypassLog = 0;
+         if(TimeCurrent() - lastKZBypassLog > 300)
+         {
+            Print("[KZ BYPASS] Regime=", g_regimeCtx.regimeLabel, " — KZ filter skipped");
+            lastKZBypassLog = TimeCurrent();
+         }
+      }
    }
 
    // --- PORTFOLIO PROTECTION: LOSS COOLDOWN ---
@@ -1446,6 +1468,11 @@ void OnTick()
           // Dynamic threshold: base from .set + regime adjustment
           double minEntry = (double)g_regimeCtx.minConfluence;
 
+          // Regime duration: fresh regime = less confidence → require more confluence
+          // Regime just switched (< 3 bars) is still establishing itself
+          if(g_regimeCtx.regimePersistenceBars < 3)
+             minEntry += 2.0;
+
           // Use adaptive threshold if enabled
           if(InpEnableAdaptiveFilters && adaptiveFilter.IsAdaptationEnabled())
            {
@@ -1542,7 +1569,9 @@ void OnTick()
          if(!mainEntryFired)
          {
          // ── RANGING: Mean Reversion ───────────────────────────────
-         if(g_currentRegime == REGIME_RANGING && g_regimeCtx.mrSignalValid)
+         // htfConflict: D1 is trending → H4 range is a pullback, not a true range
+         // MR entries counter-trend to D1 would be dangerous → skip
+         if(g_currentRegime == REGIME_RANGING && g_regimeCtx.mrSignalValid && !g_regimeCtx.htfConflict)
          {
             MRSignal mrSig = g_regimeCtx.mrSignal;
             if(mrSig.score >= 20)
@@ -1949,6 +1978,9 @@ void ApplyGroupSLFloor(int groupId)
 void TryScaleIn(int groupId, int stageIndex, double profitR)
 {
    if(!InpPyr_Enable) return;
+   // No pyramiding in mean-reversion or volatility regimes:
+   // price will reverse in RANGING; breakouts are one-shot in VOLATILE
+   if(g_currentRegime == REGIME_RANGING || g_currentRegime == REGIME_VOLATILE) return;
    if(stageIndex <= 0 || stageIndex % InpPyr_Frequency != 0) return;
    if(profitR < InpPyr_MinProfitR) return;
 
@@ -2905,6 +2937,15 @@ void OnTrade()
        {
           kellySizer.AddTradeResult(rOutcome, quality);
        }
+
+       // Update per-regime trade statistics (in-memory)
+       int rIdx = (int)g_currentRegime;
+       if(rIdx >= 0 && rIdx < 5)
+       {
+          if(rOutcome > 0) g_regimeStats[rIdx].wins++;
+          else             g_regimeStats[rIdx].losses++;
+          g_regimeStats[rIdx].totalR += rOutcome;
+       }
    }
 }
 
@@ -3320,32 +3361,42 @@ bool CheckChopFilter()
    return (g_ATR >= g_ATR_MA * InpChopThreshold);
 }
 
+// Returns the max spread allowed for the current regime
+int GetEffectiveMaxSpread()
+{
+   switch(g_currentRegime)
+   {
+      case REGIME_RANGING:  return InpMaxSpreadRanging;   // tight: small TP, cost matters
+      case REGIME_VOLATILE: return InpMaxSpreadVolatile;  // wide ok: big move expected
+      default:              return InpMaxSpreadPoints;     // trend/unknown: use base input
+   }
+}
+
 bool CheckSpread(bool isEntry = false)
 {
-   if(InpMaxSpreadPoints <= 0) return true;
+   int maxSpread = GetEffectiveMaxSpread();
+   if(maxSpread <= 0) return true;
 
-   // OPTIMIZATION: Cache spread value to avoid multiple calls
+   // Cache spread value (update every 5s or on entry)
    static int lastSpread = 0;
    static datetime lastSpreadCheck = 0;
-
-   // Update spread every 5 seconds (spreads don't change that fast), or immediately if it's an entry
    if(isEntry || TimeCurrent() - lastSpreadCheck >= 5)
    {
       lastSpread = (int)symbolInfo.Spread();
       lastSpreadCheck = TimeCurrent();
    }
 
-   if(lastSpread > InpMaxSpreadPoints)
+   if(lastSpread > maxSpread)
    {
       static datetime lastSpreadWarning = 0;
       if(TimeCurrent() - lastSpreadWarning > 60)
       {
-         Print("R [WARN] Spread too wide: ", lastSpread, " > ", InpMaxSpreadPoints, " points");
+         Print("[WARN] Spread too wide: ", lastSpread, " > ", maxSpread,
+               " (regime=", g_regimeCtx.regimeLabel, ")");
          lastSpreadWarning = TimeCurrent();
       }
       return false;
    }
-
    return true;
 }
 
@@ -3498,25 +3549,65 @@ void UpdateDashboard()
    string kzStatus = "DISABLED";
    if(InpUseKillzoneFilter)
    {
-       kzStatus = CheckKillzone() ? "OPEN " : "CLOSED ";
-       // Identify active KZ for display
-       datetime utcTime = TimeCurrent() - (InpBrokerUTCOffset * 3600);
-       MqlDateTime utcDt; TimeToStruct(utcTime, utcDt);
-       int estHour = (utcDt.hour - 5 + 24) % 24;
-       if(estHour >= 20 || estHour < 0) kzStatus += "[Asia]";
-       else if(estHour >= 2 && estHour < 5) kzStatus += "[LonOpen]";
-       else if(estHour >= 7 && estHour < 10) kzStatus += "[NY]";
-       else if(estHour >= 10 && estHour < 12) kzStatus += "[LonClose]";
-       else kzStatus += "[OFF]";
+      bool kzOpen = CheckKillzone();
+      bool kzBypassed = InpKZRegimeAware &&
+                        (g_currentRegime == REGIME_RANGING ||
+                         g_currentRegime == REGIME_VOLATILE);
+      if(kzBypassed && !kzOpen)
+         kzStatus = "BYPASSED ";
+      else
+         kzStatus = kzOpen ? "OPEN " : "CLOSED ";
+      // Identify active session
+      datetime utcTime = TimeCurrent() - (InpBrokerUTCOffset * 3600);
+      MqlDateTime utcDt; TimeToStruct(utcTime, utcDt);
+      int estHour = (utcDt.hour - 5 + 24) % 24;
+      if(estHour >= 20 || estHour < 0) kzStatus += "[Asia]";
+      else if(estHour >= 2 && estHour < 5) kzStatus += "[LonOpen]";
+      else if(estHour >= 7 && estHour < 10) kzStatus += "[NY]";
+      else if(estHour >= 10 && estHour < 12) kzStatus += "[LonClose]";
+      else kzStatus += "[OFF]";
    }
 
+   // ── AutoTrading status (most critical check) ──────────────────
+   bool autoTradingOn = (bool)TerminalInfoInteger(TERMINAL_TRADE_ALLOWED)
+                     && (bool)MQLInfoInteger(MQL_TRADE_ALLOWED);
+
    string txt = "===========================================\n";
+   if(!autoTradingOn)
+      txt += ">>> !! AUTOTRADING DISABLED !! <<<\n";
    txt += "  SYMBOL ENGINE v2.0: " + _Symbol + "\n";
    txt += "===========================================\n";
    txt += "Governor: " + govStatus + "\n";
    txt += "Trading: " + tradingStatus + "\n";
    txt += "Killzone: " + kzStatus + "\n";
    txt += "-------------------------------------------\n";
+
+   // ── REGIME BLOCK ─────────────────────────────────────────────────
+   txt += "REGIME H4: " + g_regimeCtx.regimeLabel +
+          " (" + IntegerToString(g_regimeCtx.regimeScore) + "%" +
+          " | " + IntegerToString(g_regimeCtx.regimePersistenceBars) + "b)\n";
+   txt += "REGIME D1: " + g_regimeEngine.GetD1Label();
+   if(g_regimeCtx.htfConflict)
+      txt += "  !! HTF CONFLICT: MR disabled\n";
+   else
+      txt += "\n";
+   txt += "Spread now: " + IntegerToString((int)symbolInfo.Spread()) +
+          " / limit: " + IntegerToString(GetEffectiveMaxSpread()) + "\n";
+
+   // Per-regime stats (session)
+   string regNames[5] = {"TSTR","TWEAK","RANG","VOL","CRIS"};
+   txt += "Stats: ";
+   for(int ri = 0; ri < 5; ri++)
+   {
+      int tot = g_regimeStats[ri].wins + g_regimeStats[ri].losses;
+      if(tot == 0) continue;
+      int wr = (int)MathRound(100.0 * g_regimeStats[ri].wins / tot);
+      txt += regNames[ri] + "=" + IntegerToString(wr) + "% " +
+             DoubleToString(g_regimeStats[ri].totalR, 1) + "R  ";
+   }
+   txt += "\n";
+   txt += "-------------------------------------------\n";
+
    txt += "Price: " + DoubleToString(price, (int)symbolInfo.Digits()) + "\n";
    txt += "RSI: " + DoubleToString(g_RSI, 1) + "\n";
 

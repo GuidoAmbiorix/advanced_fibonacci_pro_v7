@@ -450,6 +450,9 @@ public:
       }
    }
 
+   // How many bars the current regime has been active (0 = just changed)
+   int GetPersistenceBars() { return m_barsSinceChange; }
+
 private:
    //+------------------------------------------------------------------+
    //| Pearson autocorrelation at lag k                                  |
