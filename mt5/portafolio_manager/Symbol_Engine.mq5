@@ -756,7 +756,17 @@ void OnTimer()
       else if(!g_regimeCtx.allowEntries)
          reason = "CRISIS_REGIME";
       else if(g_consecutiveLosses >= InpMaxConsecutiveLosses && InpMaxConsecutiveLosses > 0)
-         reason = "LOSS_STREAK";
+         reason = "LOSS_STREAK(" + IntegerToString(g_consecutiveLosses) + ")";
+      else if(!failSafe.IsExecutionSafe())
+         reason = "FAILSAFE_BLOCKED";
+      else if(!killSwitch.IsEnabled())
+         reason = "KILL_SWITCH(" + killSwitch.GetStatus() + ")";
+      else if(InpUseNewsFilter && !newsFilter.IsTradingAllowed())
+         reason = "NEWS_FILTER";
+      else if(InpUseKelly && !kellySizer.IsTradingAllowed())
+         reason = "KELLY_DD_LIMIT";
+      else if(InpEnableAdaptiveFilters && !adaptiveFilter.IsVolatilitySafe(g_ATR, InpMinVolatilityPips, InpMaxVolatilityFactor, g_ATR_MA))
+         reason = "VOLATILITY_UNSAFE(ATR=" + DoubleToString(g_ATR / _Point / 10, 0) + "pips)";
       else if(InpUseKillzoneFilter && !CheckKillzone() &&
               !(InpKZRegimeAware && (g_currentRegime == REGIME_RANGING ||
                                     g_currentRegime == REGIME_VOLATILE)))
@@ -1236,7 +1246,17 @@ void OnTick()
             " Harvest=", DoubleToString(g_escCfg.baseHarvest, 0), "%");
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---
-   if(!failSafe.IsExecutionSafe()) return;
+   if(!failSafe.IsExecutionSafe())
+   {
+      static datetime lastFSLog = 0;
+      if(TimeCurrent() - lastFSLog > 60)
+      {
+         Print("[BLOCKED] FAILSAFE: spread=", (int)symbolInfo.Spread(),
+               " (maxSpread=", InpMaxSpreadPoints, " or circuit breaker active)");
+         lastFSLog = TimeCurrent();
+      }
+      return;
+   }
 
    // --- MODULE: KILL SWITCH (Quick Exit) ---
    if(!killSwitch.IsEnabled())
@@ -1252,11 +1272,29 @@ void OnTick()
    }
 
    // --- MODULE: NEWS FILTER ---
-   if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) return;
-
+   if(InpUseNewsFilter && !newsFilter.IsTradingAllowed())
+   {
+      static datetime lastNewsLog = 0;
+      if(TimeCurrent() - lastNewsLog > 60)
+      {
+         Print("[BLOCKED] NEWS_FILTER: trading paused around news event");
+         lastNewsLog = TimeCurrent();
+      }
+      return;
+   }
 
    // --- MODULE: KELLY POSITION SIZER (DD + DAILY TARGET LIMITS) ---
-   if(InpUseKelly && !kellySizer.IsTradingAllowed()) return;
+   if(InpUseKelly && !kellySizer.IsTradingAllowed())
+   {
+      static datetime lastKellyLog = 0;
+      if(TimeCurrent() - lastKellyLog > 60)
+      {
+         Print("[BLOCKED] KELLY_DD_LIMIT: dailyDD=", DoubleToString(kellySizer.GetDailyDD(), 2),
+               "% weeklyDD=", DoubleToString(kellySizer.GetWeeklyDD(), 2), "%");
+         lastKellyLog = TimeCurrent();
+      }
+      return;
+   }
 
 
    // --- PORTFOLIO PROTECTION: DAILY LOSS CIRCUIT BREAKER ---
@@ -1557,7 +1595,7 @@ void OnTick()
           static datetime lastScoreLog = 0;
           if(TimeCurrent() - lastScoreLog > 300)
           {
-             Print("[SCAN] ", _Symbol,
+             Print("[ENTRY_CHECK] ", _Symbol,
                    " | Buy=", DoubleToString(buyScore, 1),
                    " Sell=", DoubleToString(sellScore, 1),
                    " minEntry=", DoubleToString(minEntry, 1),
