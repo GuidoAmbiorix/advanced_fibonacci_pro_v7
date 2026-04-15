@@ -69,7 +69,8 @@
       "Bash(\"/c/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/sets/gbpusd.set\":*)",
       "Bash(head -30 grep -n \"^   [a-zA-Z].*\\(\" \"C:/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/Include/NewsFilter.mqh\")",
       "WebFetch(domain:www.earnforex.com)",
-      "Bash(python -c \":*)"
+      "Bash(python -c \":*)",
+      "Bash(/dev/null echo:*)"
     ]
   }
 }

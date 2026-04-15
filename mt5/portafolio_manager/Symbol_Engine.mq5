@@ -266,6 +266,7 @@ input int               InpMaxTradesPerSession = 3;       // Max Trades Per Sess
 input int               InpTradeCooldownMinutes = 30;     // Cooldown Between Trades
 input bool              InpCloseIntradayProfits = true;   // Close Profitable Trades at EOD (H1 Intraday)
 input int               InpEndOfDayHour = 22;             // EOD Hour (Broker Time, typically 22:00 or 23:00)
+input bool              InpResetKillSwitch = false;       // RESET Kill Switch hard lock (toggle ON to unlock)
 
 input group "======= VISUAL DEBUGGING ======="
 input bool              InpEnableVisualLevels = true;     // Draw Trade Levels on Chart
@@ -735,6 +736,13 @@ int OnInit()
 
    EventSetTimer(5); // Dashboard timer: update every 5 seconds regardless of ticks
 
+   // Kill Switch manual reset (change input to true → applies on reattach/change params)
+   if(InpResetKillSwitch)
+   {
+      killSwitch.Reset();
+      Print("[KILLSWITCH] Hard lock manually reset via InpResetKillSwitch.");
+   }
+
    return INIT_SUCCEEDED;
 }
 
@@ -1161,7 +1169,17 @@ void OnTick()
       prevBarTime = currentBarTime;
    }
 
-   if(!UpdateIndicators()) return;
+   if(!UpdateIndicators())
+   {
+      static datetime lastIndLog = 0;
+      if(TimeCurrent() - lastIndLog > 60)
+      {
+         Print("[DIAG] UpdateIndicators() returned false — BarsCalc RSI=", BarsCalculated(hRSI),
+               " ATR=", BarsCalculated(hATR), " EMA=", BarsCalculated(hEMA));
+         lastIndLog = TimeCurrent();
+      }
+      return;
+   }
 
    // --- UPDATE ALL MODULES ON NEW BAR ---
    UpdateModules();
@@ -1190,23 +1208,24 @@ void OnTick()
    g_lastScoreCalcTime = now;
 
    // --- SIGNAL DOMINANCE FILTER ---
-      if(InpDominanceThreshold > 0)
+   // Skip in RANGING/VOLATILE: buy≈sell is normal when market has no clear bias
+   bool dominanceApplies = (g_currentRegime == REGIME_TREND_STRONG || g_currentRegime == REGIME_TREND_WEAK);
+   if(InpDominanceThreshold > 0 && dominanceApplies)
+   {
+      double delta = MathAbs(g_cachedBuyScore - g_cachedSellScore);
+      if(delta < InpDominanceThreshold)
       {
-         double delta = MathAbs(g_cachedBuyScore - g_cachedSellScore);
-         if(delta < InpDominanceThreshold)
+         if(g_cachedBuyScore > InpMinConfluenceEntry || g_cachedSellScore > InpMinConfluenceEntry)
          {
-            if(g_cachedBuyScore > InpMinConfluenceEntry || g_cachedSellScore > InpMinConfluenceEntry)
-            {
-               Print("R DOMINANCE FILTER: Blocked Signal. Buy=", DoubleToString(g_cachedBuyScore,1),
-                     " Sell=", DoubleToString(g_cachedSellScore,1), " Delta=", DoubleToString(delta,1), " < ", InpDominanceThreshold);
-            }
-            g_cachedBuyScore = 0;
-            g_cachedSellScore = 0;
-            // Reset prev scores so velocity doesn't spike on next bar
-            g_prevBuyScore  = 0;
-            g_prevSellScore = 0;
+            Print("R DOMINANCE FILTER: Blocked Signal. Buy=", DoubleToString(g_cachedBuyScore,1),
+                  " Sell=", DoubleToString(g_cachedSellScore,1), " Delta=", DoubleToString(delta,1), " < ", InpDominanceThreshold);
          }
+         g_cachedBuyScore = 0;
+         g_cachedSellScore = 0;
+         g_prevBuyScore  = 0;
+         g_prevSellScore = 0;
       }
+   }
 
       // --- RANKING SYSTEM: PUBLISH SCORE ---
       double maxScore = (g_cachedBuyScore > g_cachedSellScore) ? g_cachedBuyScore : g_cachedSellScore;
