@@ -132,7 +132,9 @@ InpUseStaleTrade=true
 InpStaleBarLimit=6
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=20
+InpMaxSpreadPoints=50
+InpMaxSpreadRanging=50
+InpMaxSpreadVolatile=80
 
 ;═══════ SMC ═══════
 InpUseSMC=true
