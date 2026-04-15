@@ -1,47 +1,47 @@
 ; Portfolio Governor - H4 Swing Mode
 ; Account: Standard
-; H4 Swing: Conservative DD | Let % system manage targets
+; H4 Swing: Aggressive Mode | Let % system manage targets
 ; Strategy: H4 Swing, Standard Updates, Portfolio % Management
 
 ;═══════ PORTFOLIO LIMITS ═══════
-InpMaxPortfolioRisk=2.5
+InpMaxPortfolioRisk=6.0
 ; Max Total Portfolio Risk (%)
-; Permite hasta 5 symbols activos x 0.5% = 2.5% total
+; Permite hasta 6 symbols activos x 1% = 6% total
 
-InpMaxSymbolRisk=0.5
+InpMaxSymbolRisk=1.5
 ; Max Risk Per Symbol (%)
 
-InpMaxGroupRisk=1.5
+InpMaxGroupRisk=3.0
 ; Max Risk Per Correlation Group (%)
 
 ;═══════ DRAWDOWN GOVERNOR ═══════
-InpDD_Normal=1.5
+InpDD_Normal=3.0
 ; DD Level: Normal Trading (%)
 
-InpDD_Reduced=2.5
+InpDD_Reduced=6.0
 ; DD Level: Reduced Risk (%)
 
-InpDD_Pause=4.5
+InpDD_Pause=10.0
 ; DD Level: Pause Trading (%) - HARD STOP
 
-InpDD_ReducedMult=0.50
+InpDD_ReducedMult=0.70
 ; Risk Multiplier when DD > Normal
 
 ;═══════ ROLLING PF GOVERNOR ═══════
 InpRollingTrades=30
 ; Rolling Window (trades)
 
-InpPF_Normal=1.8
-InpPF_Reduced=1.2
-InpPF_Pause=1.0
-InpPF_ReducedMult=0.70
+InpPF_Normal=1.4
+InpPF_Reduced=1.0
+InpPF_Pause=0.8
+InpPF_ReducedMult=0.80
 
 ;═══════ DAILY/WEEKLY LIMITS ═══════
-InpDailyMaxDD=3.0
-; GOAT limit: 3% diario
+InpDailyMaxDD=5.0
+; Diario: 5% antes de pausar
 
-InpWeeklyMaxDD=4.0
-InpMonthlyMaxDD=5.0
+InpWeeklyMaxDD=10.0
+InpMonthlyMaxDD=15.0
 
 InpDailyTarget=0.0
 InpDailyTargetUSD=0.0
@@ -49,8 +49,8 @@ InpDailyTargetUSD=0.0
 
 ;═══════ CORRELATION GUARD ═══════
 InpUseCorrelationGuard=true
-InpHighCorrelation=0.70
-InpCorrelationReduction=0.50
+InpHighCorrelation=0.80
+InpCorrelationReduction=0.60
 
 ;═══════ MAGIC NUMBER RANGE ═══════
 InpMagicBase=100000
