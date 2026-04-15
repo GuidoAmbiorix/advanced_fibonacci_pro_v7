@@ -761,6 +761,9 @@ void OnTimer()
               !(InpKZRegimeAware && (g_currentRegime == REGIME_RANGING ||
                                     g_currentRegime == REGIME_VOLATILE)))
          reason = "OUTSIDE_KZ";
+      else if((int)symbolInfo.Spread() > GetEffectiveMaxSpread())
+         reason = "SPREAD_WIDE(" + IntegerToString((int)symbolInfo.Spread()) +
+                  ">" + IntegerToString(GetEffectiveMaxSpread()) + ")";
 
       Print("[HEARTBEAT] ", _Symbol,
             " | Regime=", g_regimeCtx.regimeLabel,
@@ -1345,31 +1348,37 @@ void OnTick()
    // PRE-ENTRY FILTERS (Quick Exits for Performance)
    if(!CheckSpread(true)) return;
 
-   // OPTIMIZATION: RSI Compression Filter (avoid choppy middle zone)
-   if(g_RSI > 48 && g_RSI < 52)
+   // RSI Compression Filter — only for trend regimes
+   // In RANGING/VOLATILE: RSI near 50 is normal, MR entries need RSI at extremes (handled by MR module)
+   bool isTrendRegime = (g_currentRegime == REGIME_TREND_STRONG || g_currentRegime == REGIME_TREND_WEAK);
+   if(isTrendRegime && g_RSI > 48 && g_RSI < 52)
    {
       static datetime lastRSIWarning = 0;
       if(TimeCurrent() - lastRSIWarning > 300)
       {
-         Print("R RSI in dead zone: ", DoubleToString(g_RSI, 1), " (48-52) - waiting for momentum");
+         Print("[BLOCKED] RSI dead zone: ", DoubleToString(g_RSI, 1), " (48-52) - waiting for momentum");
          lastRSIWarning = TimeCurrent();
       }
       return;
    }
 
-   // OPTIMIZATION: EMA Proximity Filter (avoid chop near EMA)
-   double emaDistance = MathAbs(symbolInfo.Bid() - g_EMA);
-   double minDistance = g_ATR * 0.35;
-   if(emaDistance < minDistance)
+   // EMA Proximity Filter — only for trend regimes
+   // In RANGING/VOLATILE: price oscillates around EMA by design — filter not applicable
+   if(isTrendRegime)
    {
-      static datetime lastEMAWarning = 0;
-      if(TimeCurrent() - lastEMAWarning > 300)
+      double emaDistance = MathAbs(symbolInfo.Bid() - g_EMA);
+      double minDistance = g_ATR * 0.35;
+      if(emaDistance < minDistance)
       {
-         Print("R Too close to EMA 200: ", DoubleToString(emaDistance / _Point, 0),
-               " pips (min: ", DoubleToString(minDistance / _Point, 0), " pips)");
-         lastEMAWarning = TimeCurrent();
+         static datetime lastEMAWarning = 0;
+         if(TimeCurrent() - lastEMAWarning > 300)
+         {
+            Print("[BLOCKED] Too close to EMA 200: ", DoubleToString(emaDistance / _Point, 0),
+                  " pips (min: ", DoubleToString(minDistance / _Point, 0), " pips)");
+            lastEMAWarning = TimeCurrent();
+         }
+         return;
       }
-      return;
    }
 
    // FIX: Volatility Safety Check
