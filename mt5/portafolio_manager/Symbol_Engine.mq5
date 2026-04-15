@@ -1431,7 +1431,17 @@ void OnTick()
       {
           // Cooldown Check
           datetime lastTrade = (g_lastBuyTime > g_lastSellTime) ? g_lastBuyTime : g_lastSellTime;
-          if(TimeCurrent() - lastTrade < InpTradeCooldownMinutes * 60) return;
+          if(TimeCurrent() - lastTrade < InpTradeCooldownMinutes * 60)
+          {
+             static datetime lastCooldownLog = 0;
+             if(TimeCurrent() - lastCooldownLog > 60)
+             {
+                int remaining = (int)(InpTradeCooldownMinutes * 60 - (TimeCurrent() - lastTrade));
+                Print("[BLOCKED] SESSION_COOLDOWN: ", remaining / 60, "m ", remaining % 60, "s remaining");
+                lastCooldownLog = TimeCurrent();
+             }
+             return;
+          }
           
           // Max Trades Check (Simple Session Reset logic required or daily limit)
           // For now, using simple daily limit as proxy or relying on Allocator
@@ -1440,7 +1450,10 @@ void OnTick()
       // --- KILLZONES ---
       if(InpUseKillzoneFilter)
       {
-          if(!CheckKillzone()) return;
+         bool kzBypassedInner = InpKZRegimeAware &&
+                                (g_currentRegime == REGIME_RANGING ||
+                                 g_currentRegime == REGIME_VOLATILE);
+         if(!kzBypassedInner && !CheckKillzone()) return;
       }
 
       double bestScore = (buyScore > sellScore) ? buyScore : sellScore;
@@ -1497,7 +1510,19 @@ void OnTick()
       // GOVERNOR: apply drawdown multiplier and account hard cap
       double approvedRisk = selfGov.ApproveRisk(baseRisk);
 
-      if(approvedRisk > 0.05)
+      if(approvedRisk <= 0.05)
+      {
+         static datetime lastRiskLog = 0;
+         if(TimeCurrent() - lastRiskLog > 60)
+         {
+            Print("[BLOCKED] APPROVED_RISK_TOO_LOW: approvedRisk=", DoubleToString(approvedRisk, 4),
+                  " baseRisk=", DoubleToString(baseRisk, 4),
+                  " regime=", g_regimeCtx.regimeLabel,
+                  " riskMult=", DoubleToString(g_regimeCtx.riskMultiplier, 2));
+            lastRiskLog = TimeCurrent();
+         }
+      }
+      else
       {
           // Dynamic threshold: base from .set + regime adjustment
           double minEntry = (double)g_regimeCtx.minConfluence;
@@ -1520,12 +1545,26 @@ void OnTick()
              minEntry = adaptiveFilter.CalculateDynamicThreshold(thresholdFactors, currentKZ, g_currentRegime);
 
              static datetime lastThresholdLog = 0;
-             if(TimeCurrent() - lastThresholdLog > 3600)  // Log hourly
+             if(TimeCurrent() - lastThresholdLog > 300)  // Log every 5 min
              {
                 Print("[INFO] Dynamic Threshold: ", DoubleToString(minEntry, 2),
                       " (base: ", DoubleToString(InpMinConfluenceEntry, 2), ")");
                 lastThresholdLog = TimeCurrent();
              }
+          }
+
+          // Diagnostic: show score vs threshold every 5 min when not trading
+          static datetime lastScoreLog = 0;
+          if(TimeCurrent() - lastScoreLog > 300)
+          {
+             Print("[SCAN] ", _Symbol,
+                   " | Buy=", DoubleToString(buyScore, 1),
+                   " Sell=", DoubleToString(sellScore, 1),
+                   " minEntry=", DoubleToString(minEntry, 1),
+                   " risk=", DoubleToString(approvedRisk, 4),
+                   " regime=", g_regimeCtx.regimeLabel,
+                   " dir=", InpDirection);
+             lastScoreLog = TimeCurrent();
           }
 
           if(buyScore >= minEntry && (InpDirection == 0 || InpDirection == 1))
@@ -1602,6 +1641,15 @@ void OnTick()
          bool mainEntryFired = (buyScore >= minEntry || sellScore >= minEntry);
          if(!mainEntryFired)
          {
+            static datetime lastFailLog = 0;
+            if(TimeCurrent() - lastFailLog > 300)
+            {
+               Print("[BLOCKED] SCORE_VS_THRESHOLD: Buy=", DoubleToString(buyScore, 1),
+                     " Sell=", DoubleToString(sellScore, 1),
+                     " minEntry=", DoubleToString(minEntry, 1),
+                     " Dir=", InpDirection);
+               lastFailLog = TimeCurrent();
+            }
          // ── RANGING: Mean Reversion ───────────────────────────────
          // htfConflict: D1 is trending → H4 range is a pullback, not a true range
          // MR entries counter-trend to D1 would be dangerous → skip
