@@ -72,6 +72,7 @@ private:
    // indicator handles (created externally, passed in)
    int    m_hATR;
    int    m_hADX;
+   int    m_hEMA;
    int    m_atrPeriod;
    int    m_adxPeriod;
    int    m_lookback;      // bars for autocorrelation + ATR average
@@ -88,6 +89,7 @@ public:
       m_changeThreshold   = 0.62;  // need 62% confidence to switch
       m_hATR              = INVALID_HANDLE;
       m_hADX              = INVALID_HANDLE;
+      m_hEMA              = INVALID_HANDLE;
       m_atrPeriod         = 14;
       m_adxPeriod         = 14;
       m_lookback          = 50;
@@ -112,14 +114,16 @@ public:
 
       m_hATR = iATR(symbol, tf, atrPeriod);
       m_hADX = iADX(symbol, tf, adxPeriod);
+      m_hEMA = iMA(symbol, tf, 200, 0, MODE_EMA, PRICE_CLOSE);
 
-      return (m_hATR != INVALID_HANDLE && m_hADX != INVALID_HANDLE);
+      return (m_hATR != INVALID_HANDLE && m_hADX != INVALID_HANDLE && m_hEMA != INVALID_HANDLE);
    }
 
    void Deinit()
    {
       if(m_hATR != INVALID_HANDLE) { IndicatorRelease(m_hATR); m_hATR = INVALID_HANDLE; }
       if(m_hADX != INVALID_HANDLE) { IndicatorRelease(m_hADX); m_hADX = INVALID_HANDLE; }
+      if(m_hEMA != INVALID_HANDLE) { IndicatorRelease(m_hEMA); m_hEMA = INVALID_HANDLE; }
    }
 
    //+------------------------------------------------------------------+
@@ -196,14 +200,9 @@ public:
       // ── 5. EMA slope (200 EMA) ─────────────────────────────────────
       double emaArr[];
       ArraySetAsSeries(emaArr, true);
-      int hEMALocal = iMA(m_symbol, m_tf, 200, 0, MODE_EMA, PRICE_CLOSE);
       double emaSlope = 0;
-      if(hEMALocal != INVALID_HANDLE)
-      {
-         if(CopyBuffer(hEMALocal, 0, 1, 3, emaArr) >= 3)
-            emaSlope = (emaArr[0] - emaArr[2]) / avgATR; // normalized slope
-         IndicatorRelease(hEMALocal);
-      }
+      if(m_hEMA != INVALID_HANDLE && CopyBuffer(m_hEMA, 0, 1, 3, emaArr) >= 3)
+         emaSlope = (emaArr[0] - emaArr[2]) / avgATR; // normalized slope
       result.emaSlope = emaSlope;
 
       // ── SCORING: Each metric votes 0-20 for a regime ───────────────
