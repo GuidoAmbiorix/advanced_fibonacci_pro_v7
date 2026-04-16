@@ -36,6 +36,14 @@ struct RegimeResult
    double             chopValue;
    double             autocorr;
    double             emaSlope;
+   // Upgrade 2: ER + Fractal Index
+   double             erValue;
+   double             fractalIndex;
+
+   RegimeResult() : regime(REGIME_UNKNOWN), score(0), confidence(0.0),
+                    label("UNKNOWN"), atrRatio(1.0), adxValue(0.0),
+                    chopValue(1.0), autocorr(0.0), emaSlope(0.0),
+                    erValue(0.5), fractalIndex(0.5) {}
 };
 
 //───────────────────────────────────────────────────────────────────
@@ -79,6 +87,17 @@ private:
    string m_symbol;
    ENUM_TIMEFRAMES m_tf;
 
+   // Upgrade 1: Rolling mode buffer
+   int    m_regimeBuffer[20];
+   int    m_bufHead;
+   int    m_bufFilled;
+   bool   m_useRollingMode;
+
+   // Upgrade 2: ER + Fractal Index
+   int  m_erPeriod;
+   int  m_fractalPeriod;
+   bool m_useERFractal;
+
 public:
    CMarketRegime()
    {
@@ -95,6 +114,15 @@ public:
       m_lookback          = 50;
       m_symbol            = _Symbol;
       m_tf                = PERIOD_CURRENT;
+      // Upgrade 1: Rolling mode buffer
+      m_bufHead           = 0;
+      m_bufFilled         = 0;
+      m_useRollingMode    = true;
+      ArrayInitialize(m_regimeBuffer, 0);
+      // Upgrade 2: ER + Fractal Index
+      m_erPeriod          = 10;
+      m_fractalPeriod     = 32;
+      m_useERFractal      = true;
    }
 
    //+------------------------------------------------------------------+
@@ -102,7 +130,8 @@ public:
    //+------------------------------------------------------------------+
    bool Init(string symbol, ENUM_TIMEFRAMES tf, int atrPeriod = 14,
              int adxPeriod = 14, int lookback = 50,
-             int hysteresisMinBars = 2, double changeThreshold = 0.62)
+             int hysteresisMinBars = 2, double changeThreshold = 0.62,
+             bool useRollingMode = true, bool useERFractal = true)
    {
       m_symbol            = symbol;
       m_tf                = tf;
@@ -111,6 +140,11 @@ public:
       m_lookback          = lookback;
       m_hysteresisMinBars = hysteresisMinBars;
       m_changeThreshold   = changeThreshold;
+      m_useRollingMode    = useRollingMode;
+      m_useERFractal      = useERFractal;
+
+      // Upgrade 1: reduce hysteresis when rolling mode active (buffer handles smoothing)
+      if(useRollingMode && hysteresisMinBars >= 2) m_hysteresisMinBars = 1;
 
       m_hATR = iATR(symbol, tf, atrPeriod);
       m_hADX = iADX(symbol, tf, adxPeriod);
@@ -170,7 +204,9 @@ public:
       double closes[];
       ArraySetAsSeries(closes, true);
       int acLen = 20;
-      if(CopyClose(m_symbol, m_tf, 1, acLen + 1, closes) < acLen + 1)
+      int fetchBars = MathMax(acLen + 2, m_fractalPeriod + 2);
+      int copiedCloses = CopyClose(m_symbol, m_tf, 1, fetchBars, closes);
+      if(copiedCloses < acLen + 1)
          return result;
 
       double returns[];
@@ -244,6 +280,65 @@ public:
       else if(MathAbs(emaSlope) < 0.08) { voteRanging     += 20; }
       else                              { voteTrendWeak   += 12; voteRanging += 8; }
 
+      // ── Upgrade 2: Kaufman ER + Fractal Index ─────────────────────
+      if(m_useERFractal)
+      {
+         // --- Kaufman Efficiency Ratio ---
+         int erN = MathMin(m_erPeriod, copiedCloses - 1);
+         double er = 0.5;
+         if(erN >= 3)
+         {
+            double netChange = MathAbs(closes[0] - closes[erN]);
+            double pathLen   = 0;
+            for(int _i = 0; _i < erN; _i++)
+               pathLen += MathAbs(closes[_i] - closes[_i+1]);
+            if(pathLen > 0) er = netChange / pathLen;
+         }
+         result.erValue = er;
+
+         // --- Fractal Index (R/S method, 32 bars) ---
+         int fN = MathMin(m_fractalPeriod, copiedCloses - 1);
+         double fracH = 0.5;
+         if(fN >= 8)
+         {
+            double mu = 0;
+            double logR[]; ArrayResize(logR, fN);
+            for(int _i = 0; _i < fN; _i++)
+            {
+               logR[_i] = (closes[_i+1] > 0) ? MathLog(closes[_i] / closes[_i+1]) : 0;
+               mu += logR[_i];
+            }
+            mu /= fN;
+
+            double cumDev = 0, maxDev = -DBL_MAX, minDev = DBL_MAX, devSS = 0;
+            for(int _i = 0; _i < fN; _i++)
+            {
+               cumDev += (logR[_i] - mu);
+               if(cumDev > maxDev) maxDev = cumDev;
+               if(cumDev < minDev) minDev = cumDev;
+               devSS  += (logR[_i] - mu) * (logR[_i] - mu);
+            }
+            double R = maxDev - minDev;
+            double S = MathSqrt(devSS / fN);
+            if(S > 0 && R > 0)
+               fracH = MathLog(R / S) / MathLog((double)fN / 2.0);
+            fracH = MathMax(0.0, MathMin(1.0, fracH));
+         }
+         result.fractalIndex = fracH;
+
+         // --- Add ER votes ---
+         if(er > 0.7)       { voteTrendStrong += 20; }
+         else if(er > 0.5)  { voteTrendWeak   += 15; voteTrendStrong += 5; }
+         else if(er < 0.2)  { voteRanging     += 20; }
+         else               { voteRanging     += 10; voteVolatile    += 10; }
+
+         // --- Add Fractal votes ---
+         if(fracH > 0.65)       { voteTrendStrong += 20; }
+         else if(fracH > 0.55)  { voteTrendWeak   += 20; }
+         else if(fracH < 0.40)  { voteRanging     += 20; }
+         else                   { voteVolatile    += 10; voteRanging += 10; }
+      }
+
       // ── Find winning regime ────────────────────────────────────────
       int totalVotes = voteTrendStrong + voteTrendWeak + voteRanging + voteVolatile + voteCrisis;
       if(totalVotes == 0) return result;
@@ -257,6 +352,31 @@ public:
 
       double confidence = (double)maxVote / (double)totalVotes;
       int    score      = (int)MathRound(confidence * 100.0);
+
+      // ── Upgrade 1: Rolling Mode Buffer ──────────────────────────
+      if(m_useRollingMode)
+      {
+         m_regimeBuffer[m_bufHead] = (int)candidate;
+         m_bufHead = (m_bufHead + 1) % 20;
+         if(m_bufFilled < 20) m_bufFilled++;
+
+         // Compute mode (most frequent regime in buffer)
+         int counts[5] = {0,0,0,0,0};
+         for(int _i = 0; _i < m_bufFilled; _i++)
+            counts[m_regimeBuffer[_i]]++;
+
+         int modeRegime = (int)candidate;
+         int modeCount  = 0;
+         for(int _r = 0; _r < 5; _r++)
+            if(counts[_r] > modeCount) { modeCount = counts[_r]; modeRegime = _r; }
+
+         // Per-regime minimum confirmation
+         int minConf[5] = {8, 6, 5, 4, 2}; // TREND_STRONG, TREND_WEAK, RANGING, VOLATILE, CRISIS
+         if(counts[modeRegime] < minConf[modeRegime])
+            modeRegime = (int)m_lastRegime; // not enough confirmation, stick with last
+
+         candidate = (MARKET_REGIME)modeRegime;
+      }
 
       // ── Hysteresis: resist regime whipsaws ────────────────────────
       m_barsSinceChange++;

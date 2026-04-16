@@ -55,7 +55,7 @@ InpChopThreshold=0.68
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
-InpMinConfluenceEntry=12
+InpMinConfluenceEntry=15
 InpDominanceThreshold=1.5
 InpMaxPositions=1
 

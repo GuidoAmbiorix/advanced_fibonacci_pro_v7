@@ -268,6 +268,13 @@ input bool              InpCloseIntradayProfits = true;   // Close Profitable Tr
 input int               InpEndOfDayHour = 22;             // EOD Hour (Broker Time, typically 22:00 or 23:00)
 input bool              InpResetKillSwitch = false;       // RESET Kill Switch hard lock (toggle ON to unlock)
 
+input group "======= REGIME UPGRADES ======="
+input bool InpUseRollingMode = true;  // U1: Rolling mode buffer (20-bar anti-whipsaw)
+input bool InpUseERFractal   = true;  // U2: ER + Fractal Index voting signals
+input bool InpUseH1Trigger   = true;  // U3: H1 execution trigger alignment check
+input bool InpUseVolTarget   = true;  // U4: Volatility targeting position sizing
+input bool InpUseHMM         = true;  // U5: HMM high/low volatility overlay
+
 input group "======= VISUAL DEBUGGING ======="
 input bool              InpEnableVisualLevels = true;     // Draw Trade Levels on Chart
 input int               InpTickThrottleSeconds = 60;      // Performance: Tick Throttle (seconds)
@@ -646,7 +653,10 @@ int OnInit()
    selfGov.Init(InpGov_Enabled, InpGov_DD_Reduce, InpGov_DD_Pause, InpGov_ReducedMult, InpGov_DailyMaxDD);
 
    // Initialize Regime Engine (5-regime adaptive system)
-   if(!g_regimeEngine.Init(_Symbol, PERIOD_CURRENT))
+   if(!g_regimeEngine.Init(_Symbol, PERIOD_CURRENT,
+                           InpMinConfluenceEntry, InpMaxSpreadPoints,
+                           InpUseRollingMode, InpUseERFractal,
+                           InpUseH1Trigger, InpUseVolTarget, InpUseHMM))
       Print("[WARN] RegimeEngine init failed — using input defaults for escalator");
 
    // Seed g_escCfg with .set file inputs as fallback (overwritten each bar by regime)
@@ -782,6 +792,10 @@ void OnTimer()
       else if((int)symbolInfo.Spread() > GetEffectiveMaxSpread())
          reason = "SPREAD_WIDE(" + IntegerToString((int)symbolInfo.Spread()) +
                   ">" + IntegerToString(GetEffectiveMaxSpread()) + ")";
+      else if(InpUseH1Trigger && !g_regimeCtx.h1H4Aligned)
+         reason = "H1_MISALIGNED(MTF=" + IntegerToString(g_regimeCtx.mtfAlignmentScore) + "/3)";
+      else if(InpUseHMM && g_regimeCtx.hmm_state == HMM_HIGH_VOL && g_regimeCtx.hmm_confidence > 0.70)
+         reason = "HMM_HIGH_VOL(" + DoubleToString(g_regimeCtx.hmm_confidence*100,0) + "%)";
 
       Print("[HEARTBEAT] ", _Symbol,
             " | Regime=", g_regimeCtx.regimeLabel,
@@ -1371,6 +1385,33 @@ void OnTick()
             lastKZBypassLog = TimeCurrent();
          }
       }
+   }
+
+   // --- H1 EXECUTION TRIGGER (Upgrade 3) ---
+   if(InpUseH1Trigger && !g_regimeCtx.h1H4Aligned)
+   {
+      static datetime lastH1Log = 0;
+      if(TimeCurrent() - lastH1Log > 300)
+      {
+         Print("[BLOCKED] H1_MISALIGNED: H1=", g_regimeEngine.GetH1Label(),
+               " H4=", g_regimeCtx.regimeLabel, " MTF=", g_regimeCtx.mtfAlignmentScore, "/3");
+         lastH1Log = TimeCurrent();
+      }
+      return;
+   }
+
+   // --- HMM OVERLAY (Upgrade 5) ---
+   if(InpUseHMM && g_regimeCtx.hmm_state == HMM_HIGH_VOL
+               && g_regimeCtx.hmm_confidence > 0.70
+               && g_currentRegime != REGIME_VOLATILE)
+   {
+      static datetime lastHMMLog = 0;
+      if(TimeCurrent() - lastHMMLog > 300)
+      {
+         Print("[BLOCKED] HMM_HIGH_VOL: confidence=", DoubleToString(g_regimeCtx.hmm_confidence*100,0), "%");
+         lastHMMLog = TimeCurrent();
+      }
+      return;
    }
 
    // --- PORTFOLIO PROTECTION: LOSS COOLDOWN ---
@@ -3730,6 +3771,16 @@ void UpdateDashboard()
       txt += "  !! HTF CONFLICT: MR disabled\n";
    else
       txt += "\n";
+   if(InpUseH1Trigger)
+      txt += "REGIME H1: " + g_regimeEngine.GetH1Label() +
+             " | MTF Align=" + IntegerToString(g_regimeCtx.mtfAlignmentScore) + "/3\n";
+   if(InpUseVolTarget && g_regimeCtx.realizedVol > 0)
+      txt += "VolTarget: RV=" + DoubleToString(g_regimeCtx.realizedVol, 1) + "%" +
+             " TV=" + DoubleToString(g_regimeCtx.targetVol, 1) + "%" +
+             " Mult=" + DoubleToString(g_regimeCtx.volTargetMultiplier, 2) + "\n";
+   if(InpUseHMM)
+      txt += "HMM: " + (g_regimeCtx.hmm_state == HMM_LOW_VOL ? "LOW_VOL" : "HIGH_VOL") +
+             " (" + DoubleToString(g_regimeCtx.hmm_confidence*100, 0) + "%)\n";
    txt += "Spread now: " + IntegerToString((int)symbolInfo.Spread()) +
           " / limit: " + IntegerToString(GetEffectiveMaxSpread()) + "\n";
 

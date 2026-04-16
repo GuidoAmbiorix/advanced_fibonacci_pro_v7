@@ -4,11 +4,11 @@
 ; Strategy: H4 Swing, Standard Updates, Portfolio % Management
 
 ;═══════ PORTFOLIO LIMITS ═══════
-InpMaxPortfolioRisk=6.0
+InpMaxPortfolioRisk=100.0
 ; Max Total Portfolio Risk (%)
-; Permite hasta 6 symbols activos x 1% = 6% total
+; TEST MODE: sin limite
 
-InpMaxSymbolRisk=1.5
+InpMaxSymbolRisk=3.0
 ; Max Risk Per Symbol (%)
 
 InpMaxGroupRisk=3.0
