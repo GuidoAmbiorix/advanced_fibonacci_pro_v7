@@ -203,3 +203,4 @@ InpGov_DailyMaxDD=5.0
 InpEnableVisualLevels=true
 InpTickThrottleSeconds=30
 
+InpUseRollingMode=true

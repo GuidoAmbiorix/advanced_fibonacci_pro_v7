@@ -356,26 +356,37 @@ public:
       // ── Upgrade 1: Rolling Mode Buffer ──────────────────────────
       if(m_useRollingMode)
       {
-         m_regimeBuffer[m_bufHead] = (int)candidate;
-         m_bufHead = (m_bufHead + 1) % 20;
-         if(m_bufFilled < 20) m_bufFilled++;
+         // Only store valid regimes (0-4) in buffer, never UNKNOWN (-1)
+         if((int)candidate >= 0 && (int)candidate < 5)
+         {
+            m_regimeBuffer[m_bufHead] = (int)candidate;
+            m_bufHead = (m_bufHead + 1) % 20;
+            if(m_bufFilled < 20) m_bufFilled++;
+         }
 
-         // Compute mode (most frequent regime in buffer)
-         int counts[5] = {0,0,0,0,0};
-         for(int _i = 0; _i < m_bufFilled; _i++)
-            counts[m_regimeBuffer[_i]]++;
+         // Warmup: < 5 bars → use raw detected regime immediately, never UNKNOWN
+         if(m_bufFilled >= 5)
+         {
+            // Majority vote (most frequent) over filled buffer
+            int counts[5] = {0,0,0,0,0};
+            for(int _i = 0; _i < m_bufFilled; _i++)
+            {
+               int _r = m_regimeBuffer[_i];
+               if(_r >= 0 && _r < 5) counts[_r]++;
+            }
 
-         int modeRegime = (int)candidate;
-         int modeCount  = 0;
-         for(int _r = 0; _r < 5; _r++)
-            if(counts[_r] > modeCount) { modeCount = counts[_r]; modeRegime = _r; }
+            int modeRegime = (int)candidate;
+            int modeCount  = 0;
+            for(int _r = 0; _r < 5; _r++)
+               if(counts[_r] > modeCount) { modeCount = counts[_r]; modeRegime = _r; }
 
-         // Per-regime minimum confirmation
-         int minConf[5] = {8, 6, 5, 4, 2}; // TREND_STRONG, TREND_WEAK, RANGING, VOLATILE, CRISIS
-         if(counts[modeRegime] < minConf[modeRegime])
-            modeRegime = (int)m_lastRegime; // not enough confirmation, stick with last
-
-         candidate = (MARKET_REGIME)modeRegime;
+            // Percentage thresholds — falls back to raw candidate, NOT to UNKNOWN
+            double minPct[5] = {0.45, 0.35, 0.30, 0.25, 0.15};
+            double modePct = (double)modeCount / (double)m_bufFilled;
+            if(modePct >= minPct[modeRegime])
+               candidate = (MARKET_REGIME)modeRegime;
+            // else: candidate stays as raw detected regime (never UNKNOWN)
+         }
       }
 
       // ── Hysteresis: resist regime whipsaws ────────────────────────
