@@ -82,26 +82,26 @@ InpMinVolatilityPips=5.0
 InpMaxVolatilityFactor=3.0
 InpVolatilityTP_Mult=2.5
 
-;═══════ PARTIAL TP & TRAILING — AGGRESSIVE ═══════
-InpPartialTP_R=0.40
-InpPartialClosePercent=60.0
-InpBE_Threshold_R=0.20
-InpTrailStart_R=0.30
-InpTrailATR_Mult=0.80
-InpTrailDecayRate=0.35
-InpTrailMinMult=0.25
+;═══════ PARTIAL TP & TRAILING — SECURE + RUN ═══════
+InpPartialTP_R=2.00
+InpPartialClosePercent=20.0
+InpBE_Threshold_R=1.00
+InpTrailStart_R=1.20
+InpTrailATR_Mult=2.00
+InpTrailDecayRate=0.12
+InpTrailMinMult=0.80
 InpTrailRegimeAware=true
-InpTrailMinBufferATR=0.18
+InpTrailMinBufferATR=0.50
 
-;═══════ INFINITE ESCALATOR — AGGRESSIVE ═══════
-InpEsc_FirstR=0.15
-InpEsc_FirstSL_R=-0.02
-InpEsc_StepR=0.20
-InpEsc_GrowthFactor=1.7
-InpEsc_BaseHarvest=65.0
-InpEsc_HarvestDecay=0.62
-InpEsc_MinHarvest=20.0
-InpEsc_MaxStages=15
+;═══════ INFINITE ESCALATOR — SECURE + RUN ═══════
+InpEsc_FirstR=1.00
+InpEsc_FirstSL_R=0.00
+InpEsc_StepR=0.80
+InpEsc_GrowthFactor=1.40
+InpEsc_BaseHarvest=20.0
+InpEsc_HarvestDecay=0.85
+InpEsc_MinHarvest=5.0
+InpEsc_MaxStages=10
 InpRunnerTrailTight=0.93
 InpTimeStaleMins=120.0
 InpTimeStaleTight1=0.92
