@@ -58,7 +58,7 @@ InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE ═══════
 ; Gold: slightly lower — SMC and MTF harder to align on XAUUSD
-InpMinConfluenceEntry=17
+InpMinConfluenceEntry=18
 InpDominanceThreshold=1.5
 InpMaxPositions=1
 
@@ -209,3 +209,4 @@ InpEnableVisualLevels=true
 InpTickThrottleSeconds=30
 
 InpUseRollingMode=true
+InpSymbolCooldown=4

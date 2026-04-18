@@ -275,6 +275,9 @@ input bool InpUseH1Trigger   = true;  // U3: H1 execution trigger alignment chec
 input bool InpUseVolTarget   = true;  // U4: Volatility targeting position sizing
 input bool InpUseHMM         = true;  // U5: HMM high/low volatility overlay
 
+input group "======= GOVERNOR v2 ======="
+input int  InpSymbolCooldown = 4;     // Hours cooldown after close (sync with governor.set)
+
 input group "======= VISUAL DEBUGGING ======="
 input bool              InpEnableVisualLevels = true;     // Draw Trade Levels on Chart
 input int               InpTickThrottleSeconds = 60;      // Performance: Tick Throttle (seconds)
@@ -796,6 +799,12 @@ void OnTimer()
          reason = "H1_MISALIGNED(MTF=" + IntegerToString(g_regimeCtx.mtfAlignmentScore) + "/3)";
       else if(InpUseHMM && g_regimeCtx.hmm_state == HMM_HIGH_VOL && g_regimeCtx.hmm_confidence > 0.70)
          reason = "HMM_HIGH_VOL(" + DoubleToString(g_regimeCtx.hmm_confidence*100,0) + "%)";
+      else if(GlobalVariableCheck(GV_PREFRIDAY_BLOCK) && GlobalVariableGet(GV_PREFRIDAY_BLOCK) > 0.5)
+         reason = "PRE_FRIDAY_BLOCK";
+      else if(GlobalVariableCheck("GV_COOLDOWN_" + _Symbol) &&
+              GlobalVariableGet("GV_COOLDOWN_" + _Symbol) > 0 &&
+              TimeCurrent() - (datetime)GlobalVariableGet("GV_COOLDOWN_" + _Symbol) < InpSymbolCooldown * 3600)
+         reason = "SYMBOL_COOLDOWN(" + IntegerToString((int)((GlobalVariableGet("GV_COOLDOWN_" + _Symbol) + InpSymbolCooldown*3600 - TimeCurrent())/60)) + "min)";
 
       Print("[HEARTBEAT] ", _Symbol,
             " | Regime=", g_regimeCtx.regimeLabel,
@@ -1443,6 +1452,35 @@ void OnTick()
    
    if(!g_regimeCtx.allowEntries) return;  // CRISIS regime: no new entries
 
+   // --- GOVERNOR v2: PRE-FRIDAY BLOCK ---
+   if(GlobalVariableCheck(GV_PREFRIDAY_BLOCK) && GlobalVariableGet(GV_PREFRIDAY_BLOCK) > 0.5)
+   {
+      static datetime lastPFLog = 0;
+      if(TimeCurrent() - lastPFLog > 300)
+      {
+         Print("[BLOCKED] PRE_FRIDAY: Governor blocking new entries before weekend");
+         lastPFLog = TimeCurrent();
+      }
+      return;
+   }
+
+   // --- GOVERNOR v2: PER-SYMBOL COOLDOWN ---
+   if(InpSymbolCooldown > 0 && GlobalVariableCheck("GV_COOLDOWN_" + _Symbol))
+   {
+      datetime lastClose = (datetime)GlobalVariableGet("GV_COOLDOWN_" + _Symbol);
+      if(lastClose > 0 && TimeCurrent() - lastClose < (datetime)InpSymbolCooldown * 3600)
+      {
+         static datetime lastCDLog = 0;
+         if(TimeCurrent() - lastCDLog > 300)
+         {
+            int remMin = (int)((lastClose + InpSymbolCooldown*3600 - TimeCurrent()) / 60);
+            Print("[BLOCKED] COOLDOWN_", _Symbol, ": ", remMin, "min remaining");
+            lastCDLog = TimeCurrent();
+         }
+         return;
+      }
+   }
+
    // PRE-ENTRY FILTERS (Quick Exits for Performance)
    if(!CheckSpread(true)) return;
 
@@ -1622,6 +1660,54 @@ void OnTick()
       }
       else
       {
+          // ── ASMA: Regime-Based Strategy Filter ─────────────────────
+          // Adapt allowed signal TYPE based on current regime (MQL5 ASMA pattern)
+          bool asmaBlock = false;
+          string asmaReason = "";
+
+          switch(g_currentRegime)
+          {
+             case REGIME_TREND_STRONG:
+             case REGIME_TREND_WEAK:
+                // Trend regimes: block mean-reversion signals (mrSignalValid = counter-trend)
+                if(g_regimeCtx.mrSignalValid)
+                {
+                   asmaBlock  = true;
+                   asmaReason = "ASMA_MR_IN_TREND(" + g_regimeCtx.regimeLabel + ")";
+                }
+                break;
+
+             case REGIME_RANGING:
+                // Ranging: block if volSignal (breakout) is driving the score
+                if(g_regimeCtx.volSignalValid && !g_regimeCtx.mrSignalValid)
+                {
+                   asmaBlock  = true;
+                   asmaReason = "ASMA_BREAKOUT_IN_RANGING";
+                }
+                break;
+
+             case REGIME_VOLATILE:
+                // Volatile: no new entries — manage existing only
+                asmaBlock  = true;
+                asmaReason = "ASMA_VOLATILE_NO_ENTRY";
+                break;
+
+             default:
+                break;
+          }
+
+          if(asmaBlock)
+          {
+             static datetime lastASMALog = 0;
+             if(TimeCurrent() - lastASMALog > 300)
+             {
+                Print("[ASMA] Signal suppressed: ", asmaReason);
+                lastASMALog = TimeCurrent();
+             }
+             return;
+          }
+          // ── End ASMA ─────────────────────────────────────────────────
+
           // Dynamic threshold: base from .set + regime adjustment
           double minEntry = (double)g_regimeCtx.minConfluence;
 

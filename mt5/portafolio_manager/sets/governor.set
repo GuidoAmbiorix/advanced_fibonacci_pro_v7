@@ -1,64 +1,51 @@
-; Portfolio Governor - H4 Swing Mode
-; Account: Standard
-; H4 Swing: Aggressive Mode | Let % system manage targets
-; Strategy: H4 Swing, Standard Updates, Portfolio % Management
+; Portfolio Governor v2 - H4 Swing Mode
+; Account: Standard | Production mode
+; Governor v2: full risk controls + ASMA + cooldowns
 
-;═══════ PORTFOLIO LIMITS ═══════
-InpMaxPortfolioRisk=100.0
-; Max Total Portfolio Risk (%)
-; TEST MODE: sin limite
+;═══════ SYMBOL ENGINE MAGIC RANGE ═══════
+InpMagicMin=100001
+InpMagicMax=100020
 
-InpMaxSymbolRisk=3.0
-; Max Risk Per Symbol (%)
+;═══════ DAILY P&L CONTROL ═══════
+InpDailyProfitTarget=0.0
+InpDailyLossLimit=-150.0
+InpPauseOnProfitTarget=true
+InpCloseOnDailyLoss=true
 
-InpMaxGroupRisk=3.0
-; Max Risk Per Correlation Group (%)
+;═══════ PORTFOLIO DRAWDOWN ═══════
+InpMaxPortfolioDD_Pct=12.0
+InpReduceRiskAt_Pct=6.0
+InpCloseAllOnMaxDD=true
 
-;═══════ DRAWDOWN GOVERNOR ═══════
-InpDD_Normal=3.0
-; DD Level: Normal Trading (%)
-
-InpDD_Reduced=6.0
-; DD Level: Reduced Risk (%)
-
-InpDD_Pause=10.0
-; DD Level: Pause Trading (%) - HARD STOP
-
-InpDD_ReducedMult=0.70
-; Risk Multiplier when DD > Normal
-
-;═══════ ROLLING PF GOVERNOR ═══════
-InpRollingTrades=30
-; Rolling Window (trades)
-
-InpPF_Normal=1.4
-InpPF_Reduced=1.0
-InpPF_Pause=0.8
-InpPF_ReducedMult=0.80
-
-;═══════ DAILY/WEEKLY LIMITS ═══════
-InpDailyMaxDD=5.0
-; Diario: 5% antes de pausar
-
-InpWeeklyMaxDD=10.0
-InpMonthlyMaxDD=15.0
-
-InpDailyTarget=0.0
-InpDailyTargetUSD=0.0
-; Disabled - let % system manage
-
-;═══════ CORRELATION GUARD ═══════
-InpUseCorrelationGuard=true
-InpHighCorrelation=0.80
-InpCorrelationReduction=0.60
-
-;═══════ MAGIC NUMBER RANGE ═══════
-InpMagicBase=100000
-InpMagicRange=999
+;═══════ CORRELATION FILTER ═══════
+InpUseCorrelFilter=true
+InpMaxSameCurrency=2
+InpCloseCorrelOnBreech=false
 
 ;═══════ FRIDAY CLOSE ═══════
-InpFridayCloseHour=22
+InpFridayClose=true
+InpFridayCloseHour=20
+InpFridayCloseMinute=0
 
-;═══════ UPDATE FREQUENCY ═══════
-InpUpdateSeconds=5
-; H4: Standard update frequency
+;═══════ DISPLAY ═══════
+InpShowDashboard=true
+InpRefreshSeconds=5
+InpDashboardCorner=0
+
+;═══════ TIEMPO Y COOLDOWN ═══════
+InpFridayBlockHours=3
+InpSymbolCooldownHours=4
+
+;═══════ LÍMITES DE OPERACIÓN ═══════
+InpMaxOpenPositions=7
+InpMaxDailyTrades=10
+InpMaxWeeklyTrades=25
+
+;═══════ RACHA DE PÉRDIDAS ═══════
+InpConsecLossReduce=5
+InpConsecLossPause=10
+
+;═══════ EQUITY CURVE FILTER ═══════
+InpUseEqCurve=true
+InpEqCurvePeriod=20
+InpEqCurveReductMult=0.6

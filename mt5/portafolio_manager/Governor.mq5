@@ -49,6 +49,28 @@ input bool   InpShowDashboard        = true;    // Show dashboard via Comment
 input int    InpRefreshSeconds       = 5;       // Timer interval in seconds
 input int    InpDashboardCorner      = 0;       // 0=TopLeft (unused, Comment always top-left)
 
+//--- Time filters
+input group "======= TIEMPO Y COOLDOWN ======="
+input int    InpFridayBlockHours     = 3;       // Hours before Friday close to block entries (0=disabled)
+input int    InpSymbolCooldownHours  = 4;       // Cooldown hours per symbol after close (0=disabled)
+
+//--- Trade limits
+input group "======= LÍMITES DE OPERACIÓN ======="
+input int    InpMaxOpenPositions     = 7;       // Max simultaneous open positions (0=disabled)
+input int    InpMaxDailyTrades       = 10;      // Max trades opened today total (0=disabled)
+input int    InpMaxWeeklyTrades      = 25;      // Max trades opened this week (0=disabled)
+
+//--- Consecutive loss streak
+input group "======= RACHA DE PÉRDIDAS ======="
+input int    InpConsecLossReduce     = 5;       // Reduce risk 50% after N consecutive losses
+input int    InpConsecLossPause      = 10;      // Pause trading after N consecutive losses
+
+//--- Equity curve filter
+input group "======= EQUITY CURVE FILTER ======="
+input bool   InpUseEqCurve           = true;    // Enable equity curve MA filter
+input int    InpEqCurvePeriod        = 20;      // Equity SMA period (snapshots every RefreshSeconds)
+input double InpEqCurveReductMult    = 0.6;     // Risk multiplier when equity < SMA (0.0-1.0)
+
 //+------------------------------------------------------------------+
 //| GlobalVariable keys (Symbol Engine can read these)               |
 //+------------------------------------------------------------------+
@@ -60,6 +82,10 @@ input int    InpDashboardCorner      = 0;       // 0=TopLeft (unused, Comment al
 #define GV_DAY_START_BAL     "GOV_DAY_START_BAL"       // Balance at start of today
 #define GV_DAY_DATE          "GOV_DAY_DATE"            // Stored day timestamp
 #define GV_EQUITY_PEAK       "GOV_EQUITY_PEAK"         // Running equity peak
+// v2 additions
+#define GV_PREFRIDAY_BLOCK   "GOV_PREFRIDAY_BLOCK"     // 1.0 = block new entries pre-weekend
+#define GV_COOLDOWN_PREFIX   "GV_COOLDOWN_"            // + symbol = last close timestamp
+#define GV_CONSEC_LOSSES     "GOV_CONSEC_LOSSES"       // current consecutive loss count
 
 //+------------------------------------------------------------------+
 //| State                                                             |
@@ -72,6 +98,21 @@ bool      g_fridayClosed = false;
 
 // Known base currencies for correlation check
 string    g_currencies[] = {"EUR","GBP","USD","JPY","CHF","CAD","AUD","NZD","XAU","XAG"};
+
+// v2: Equity curve buffer
+double   g_eqCurveBuf[50];
+int      g_eqBufHead   = 0;
+int      g_eqBufFilled = 0;
+
+// v2: Consecutive losses
+int      g_consecLosses  = 0;
+datetime g_lastHistCheck = 0;
+
+// v2: Per-symbol cooldown tracking
+string   g_cdSymbols[];
+datetime g_cdLastClose[];
+bool     g_cdWasOpen[];
+int      g_cdCount = 0;
 
 //+------------------------------------------------------------------+
 int OnInit()
@@ -95,6 +136,11 @@ int OnInit()
    GlobalVariableSet(GV_REDUCE_RISK,     1.0);
    GlobalVariableSet(GV_DAILY_TARGET_HIT,0.0);
    GlobalVariableSet(GV_CURRENT_DD,      0.0);
+   GlobalVariableSet(GV_PREFRIDAY_BLOCK, 0.0);
+   GlobalVariableSet(GV_CONSEC_LOSSES,   0.0);
+
+   // v2: init equity curve buffer
+   ArrayInitialize(g_eqCurveBuf, 0.0);
 
    EventSetTimer(InpRefreshSeconds);
 
@@ -115,11 +161,212 @@ void OnDeinit(const int reason)
    GlobalVariableSet(GV_EMERGENCY_CLOSE, 0.0);
    GlobalVariableSet(GV_REDUCE_RISK,     1.0);
    GlobalVariableSet(GV_DAILY_TARGET_HIT,0.0);
+   GlobalVariableSet(GV_PREFRIDAY_BLOCK, 0.0);
    Comment("");
    Print("Governor removed — all control flags cleared.");
 }
 
 void OnTick() { } // Timer does the work
+
+//+------------------------------------------------------------------+
+//| v2: Pre-Friday entry block                                        |
+//+------------------------------------------------------------------+
+bool IsPreFridayBlock()
+{
+   if(InpFridayBlockHours <= 0) return false;
+   MqlDateTime dt;
+   TimeToStruct(TimeCurrent(), dt);
+   if(dt.day_of_week != 5) return false;
+   int blockHour = InpFridayCloseHour - InpFridayBlockHours;
+   if(blockHour < 0) blockHour = 0;
+   return (dt.hour >= blockHour);
+}
+
+//+------------------------------------------------------------------+
+//| v2: Equity curve SMA filter — returns risk multiplier            |
+//+------------------------------------------------------------------+
+double GetEqCurveMultiplier()
+{
+   if(!InpUseEqCurve || InpEqCurvePeriod <= 0) return 1.0;
+
+   double eq = AccountInfoDouble(ACCOUNT_EQUITY);
+   int idx = g_eqBufHead % InpEqCurvePeriod;
+   g_eqCurveBuf[idx] = eq;
+   g_eqBufHead++;
+   if(g_eqBufFilled < InpEqCurvePeriod) g_eqBufFilled++;
+
+   if(g_eqBufFilled < InpEqCurvePeriod / 2) return 1.0; // warmup
+
+   double sum = 0;
+   int n = MathMin(g_eqBufFilled, InpEqCurvePeriod);
+   for(int i = 0; i < n; i++)
+   {
+      int bi = ((g_eqBufHead - 1 - i) % InpEqCurvePeriod + InpEqCurvePeriod) % InpEqCurvePeriod;
+      sum += g_eqCurveBuf[bi];
+   }
+   double sma = sum / n;
+   if(sma <= 0) return 1.0;
+
+   if(eq < sma)
+   {
+      static datetime lastEqLog = 0;
+      if(TimeCurrent() - lastEqLog > 300)
+      {
+         Print("[GOVERNOR] EqCurve: equity=", DoubleToString(eq,2),
+               " < SMA", InpEqCurvePeriod, "=", DoubleToString(sma,2),
+               " → risk x", DoubleToString(InpEqCurveReductMult,2));
+         lastEqLog = TimeCurrent();
+      }
+      return InpEqCurveReductMult;
+   }
+   return 1.0;
+}
+
+//+------------------------------------------------------------------+
+//| v2: Count ENTRY deals today for managed magic range              |
+//+------------------------------------------------------------------+
+int CountTodayTrades()
+{
+   if(InpMaxDailyTrades <= 0) return 0;
+   datetime todayStart = GetDayStart(TimeCurrent());
+   HistorySelect(todayStart, TimeCurrent());
+   int count = 0;
+   int total = HistoryDealsTotal();
+   for(int i = 0; i < total; i++)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket == 0) continue;
+      int magic = (int)HistoryDealGetInteger(ticket, DEAL_MAGIC);
+      if(magic < InpMagicMin || magic > InpMagicMax) continue;
+      if((ENUM_DEAL_ENTRY)HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_IN) continue;
+      count++;
+   }
+   return count;
+}
+
+//+------------------------------------------------------------------+
+//| v2: Count ENTRY deals this week                                   |
+//+------------------------------------------------------------------+
+int CountWeekTrades()
+{
+   if(InpMaxWeeklyTrades <= 0) return 0;
+   datetime weekStart = (datetime)iTime(NULL, PERIOD_W1, 0);
+   HistorySelect(weekStart, TimeCurrent());
+   int count = 0;
+   int total = HistoryDealsTotal();
+   for(int i = 0; i < total; i++)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket == 0) continue;
+      int magic = (int)HistoryDealGetInteger(ticket, DEAL_MAGIC);
+      if(magic < InpMagicMin || magic > InpMagicMax) continue;
+      if((ENUM_DEAL_ENTRY)HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_IN) continue;
+      count++;
+   }
+   return count;
+}
+
+//+------------------------------------------------------------------+
+//| v2: Detect consecutive losses from history                        |
+//+------------------------------------------------------------------+
+int CheckConsecLosses()
+{
+   if(TimeCurrent() - g_lastHistCheck < 30) return g_consecLosses;
+   g_lastHistCheck = TimeCurrent();
+
+   HistorySelect(TimeCurrent() - 30*24*3600, TimeCurrent());
+   int total = HistoryDealsTotal();
+   int streak = 0;
+
+   for(int i = total - 1; i >= 0; i--)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket == 0) continue;
+      int magic = (int)HistoryDealGetInteger(ticket, DEAL_MAGIC);
+      if(magic < InpMagicMin || magic > InpMagicMax) continue;
+      if((ENUM_DEAL_ENTRY)HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+
+      double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT)
+                    + HistoryDealGetDouble(ticket, DEAL_SWAP)
+                    + HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+
+      if(profit < 0) streak++;
+      else           break;
+   }
+
+   g_consecLosses = streak;
+   GlobalVariableSet(GV_CONSEC_LOSSES, (double)streak);
+   return streak;
+}
+
+//+------------------------------------------------------------------+
+//| v2: Publish per-symbol cooldown when position closes             |
+//+------------------------------------------------------------------+
+void PublishCooldowns()
+{
+   if(InpSymbolCooldownHours <= 0) return;
+
+   // Collect currently open managed symbols
+   string nowOpen[];
+   int nowCount = 0;
+   for(int i = 0; i < PositionsTotal(); i++)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(!PositionSelectByTicket(ticket)) continue;
+      int magic = (int)PositionGetInteger(POSITION_MAGIC);
+      if(magic < InpMagicMin || magic > InpMagicMax) continue;
+      string sym = PositionGetString(POSITION_SYMBOL);
+      // Add if not duplicate
+      bool dup = false;
+      for(int k = 0; k < nowCount; k++) if(nowOpen[k] == sym) { dup = true; break; }
+      if(!dup) { ArrayResize(nowOpen, nowCount+1); nowOpen[nowCount++] = sym; }
+   }
+
+   // Detect closes: symbols that were tracked as open but are now gone
+   for(int t = 0; t < g_cdCount; t++)
+   {
+      if(!g_cdWasOpen[t]) continue;
+      bool stillOpen = false;
+      for(int o = 0; o < nowCount; o++)
+         if(nowOpen[o] == g_cdSymbols[t]) { stillOpen = true; break; }
+
+      if(!stillOpen)
+      {
+         // Position just closed — set cooldown
+         g_cdLastClose[t] = TimeCurrent();
+         g_cdWasOpen[t]   = false;
+         GlobalVariableSet(GV_COOLDOWN_PREFIX + g_cdSymbols[t], (double)TimeCurrent());
+         Print("[GOVERNOR] Cooldown set: ", g_cdSymbols[t], " locked for ",
+               InpSymbolCooldownHours, "h");
+      }
+      // Expire cooldown
+      if(g_cdLastClose[t] > 0 &&
+         TimeCurrent() - g_cdLastClose[t] > (datetime)InpSymbolCooldownHours * 3600)
+      {
+         g_cdLastClose[t] = 0;
+         GlobalVariableSet(GV_COOLDOWN_PREFIX + g_cdSymbols[t], 0.0);
+      }
+   }
+
+   // Rebuild tracking array from current open positions
+   ArrayResize(g_cdSymbols,   nowCount);
+   ArrayResize(g_cdLastClose, nowCount);
+   ArrayResize(g_cdWasOpen,   nowCount);
+   for(int o = 0; o < nowCount; o++)
+   {
+      // Preserve existing cooldown data if symbol already tracked
+      bool found = false;
+      for(int t = 0; t < g_cdCount; t++)
+         if(g_cdSymbols[t] == nowOpen[o]) { found = true; break; }
+      if(!found)
+      {
+         g_cdSymbols[o]   = nowOpen[o];
+         g_cdLastClose[o] = 0;
+         g_cdWasOpen[o]   = true;
+      }
+   }
+   g_cdCount = nowCount;
+}
 
 //+------------------------------------------------------------------+
 void OnTimer()
@@ -194,6 +441,57 @@ void OnTimer()
    // Reset Friday flag on Monday
    MqlDateTime dt; TimeToStruct(TimeCurrent(), dt);
    if(dt.day_of_week != 5) g_fridayClosed = false;
+
+   //--- Rule 5: Pre-Friday entry block
+   bool preFriday = IsPreFridayBlock();
+   GlobalVariableSet(GV_PREFRIDAY_BLOCK, preFriday ? 1.0 : 0.0);
+   if(preFriday && !pauseEntries)
+   {
+      pauseEntries = true;
+      if(pauseReason == "") pauseReason = StringFormat("PRE_FRIDAY(%dh before close)", InpFridayBlockHours);
+   }
+
+   //--- Rule 6: Max open positions
+   int nOpen = CountManagedPositions();
+   if(InpMaxOpenPositions > 0 && nOpen >= InpMaxOpenPositions && !pauseEntries)
+   {
+      pauseEntries = true;
+      pauseReason  = StringFormat("MAX_POSITIONS(%d/%d)", nOpen, InpMaxOpenPositions);
+   }
+
+   //--- Rule 7: Max daily trades
+   int todayTrades = CountTodayTrades();
+   if(InpMaxDailyTrades > 0 && todayTrades >= InpMaxDailyTrades && !pauseEntries)
+   {
+      pauseEntries = true;
+      pauseReason  = StringFormat("MAX_DAILY(%d/%d)", todayTrades, InpMaxDailyTrades);
+   }
+
+   //--- Rule 8: Max weekly trades
+   int weekTrades = CountWeekTrades();
+   if(InpMaxWeeklyTrades > 0 && weekTrades >= InpMaxWeeklyTrades && !pauseEntries)
+   {
+      pauseEntries = true;
+      pauseReason  = StringFormat("MAX_WEEKLY(%d/%d)", weekTrades, InpMaxWeeklyTrades);
+   }
+
+   //--- Rule 9: Consecutive loss streak
+   int consec = CheckConsecLosses();
+   if(InpConsecLossPause > 0 && consec >= InpConsecLossPause && !pauseEntries)
+   {
+      pauseEntries = true;
+      pauseReason  = StringFormat("CONSEC_LOSS_PAUSE(%d losses)", consec);
+   }
+   else if(InpConsecLossReduce > 0 && consec >= InpConsecLossReduce)
+      riskMult = MathMin(riskMult, 0.5);
+
+   //--- Rule 10: Equity curve filter
+   double eqMult = GetEqCurveMultiplier();
+   if(eqMult < 1.0)
+      riskMult = MathMin(riskMult, eqMult);
+
+   //--- Publish per-symbol cooldowns
+   PublishCooldowns();
 
    //--- Execute emergency close
    if(emergencyClose)
@@ -492,6 +790,28 @@ void DrawDashboard(double dailyPnL, double dd, double riskMult,
    // Positions
    msg += StringFormat("  Open Trades : %d  (magic %d-%d)\n", nTrades, InpMagicMin, InpMagicMax);
    msg += StringFormat("  Floating    : $%.2f\n", floating);
+   msg += "\n";
+
+   // v2: Trade counters
+   int td = CountTodayTrades();
+   int tw = CountWeekTrades();
+   msg += StringFormat("  Trades Today : %d", td);
+   if(InpMaxDailyTrades > 0) msg += StringFormat("/%d", InpMaxDailyTrades);
+   msg += StringFormat("  |  Week: %d", tw);
+   if(InpMaxWeeklyTrades > 0) msg += StringFormat("/%d", InpMaxWeeklyTrades);
+   msg += "\n";
+
+   // v2: Consecutive losses
+   if(g_consecLosses > 0)
+      msg += StringFormat("  Streak: %d consec losses (reduce@%d pause@%d)\n",
+                          g_consecLosses, InpConsecLossReduce, InpConsecLossPause);
+
+   // v2: Equity curve
+   double eqm = GetEqCurveMultiplier();
+   if(InpUseEqCurve && eqm < 1.0)
+      msg += StringFormat("  EqCurve: equity BELOW SMA%d → risk x%.1f\n",
+                          InpEqCurvePeriod, eqm);
+
    msg += "\n";
 
    // Status
