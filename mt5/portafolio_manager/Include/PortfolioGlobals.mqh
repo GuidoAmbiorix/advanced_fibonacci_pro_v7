@@ -118,6 +118,11 @@ string BrokerSymbol(string baseSymbol)
 // Market Regime
 #define GV_MARKET_REGIME         "PG_MarketRegime"         // Current market regime
 
+// Governor v2 — inter-EA communication bus
+#define GV_PREFRIDAY_BLOCK       "GOV_PREFRIDAY_BLOCK"     // 1 = pre-Friday block active
+#define GV_COOLDOWN_PREFIX       "GV_COOLDOWN_"            // + symbol = last close timestamp
+#define GV_CONSEC_LOSSES         "GOV_CONSEC_LOSSES"       // consecutive losing trades count
+
 // Correlation Matrix
 #define GV_CORR_EUR_GBP          "PG_CorrEURGBP"           // EUR/GBP correlation
 #define GV_CORR_USD_JPY          "PG_CorrUSDJPY"           // USD/JPY correlation
