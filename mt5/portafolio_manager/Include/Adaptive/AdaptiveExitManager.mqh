@@ -92,14 +92,20 @@ public:
       // Adjust by regime
       switch(mktRegime)
       {
-         case REGIME_TREND:
-            trailStartR *= 1.2;  // Trail later in trends (let winners run)
+         case REGIME_TREND_STRONG:
+            trailStartR *= 1.2;   // Trail later in strong trends (let winners run)
             break;
-         case REGIME_RANGE:
+         case REGIME_TREND_WEAK:
+            trailStartR *= 1.1;   // Slightly later — trend but weaker momentum
+            break;
+         case REGIME_RANGING:
             trailStartR *= 0.85;  // Trail earlier in ranges
             break;
          case REGIME_VOLATILE:
-            trailStartR *= 1.1;  // Trail slightly later in volatility
+            trailStartR *= 1.1;   // Trail slightly later in volatility
+            break;
+         case REGIME_CRISIS:
+            trailStartR *= 0.75;  // Trail very early in crisis — protect capital
             break;
       }
 
@@ -156,14 +162,20 @@ public:
       // Adjust by regime
       switch(mktRegime)
       {
-         case REGIME_TREND:
-            trailMult *= 1.4;  // Wider trail in trends
+         case REGIME_TREND_STRONG:
+            trailMult *= 1.4;  // Widest trail — strong trend
             break;
-         case REGIME_RANGE:
+         case REGIME_TREND_WEAK:
+            trailMult *= 1.2;  // Wide but less than strong trend
+            break;
+         case REGIME_RANGING:
             trailMult *= 0.9;  // Tighter trail in ranges
             break;
          case REGIME_VOLATILE:
             trailMult *= 1.3;  // Wider trail in volatility
+            break;
+         case REGIME_CRISIS:
+            trailMult *= 1.0;  // No widening in crisis — use base
             break;
       }
 
@@ -240,14 +252,20 @@ public:
       // Adjust by regime
       switch(mktRegime)
       {
-         case REGIME_TREND:
-            partialR *= 1.15;  // Take partial later in trends
+         case REGIME_TREND_STRONG:
+            partialR *= 1.15;  // Take partial later in strong trends
             break;
-         case REGIME_RANGE:
+         case REGIME_TREND_WEAK:
+            partialR *= 1.08;  // Slightly later than default
+            break;
+         case REGIME_RANGING:
             partialR *= 0.9;   // Take partial earlier in ranges
             break;
          case REGIME_VOLATILE:
             partialR *= 1.0;
+            break;
+         case REGIME_CRISIS:
+            partialR *= 0.8;   // Take partial early in crisis
             break;
       }
 
@@ -289,14 +307,20 @@ public:
       // Adjust by regime
       switch(mktRegime)
       {
-         case REGIME_TREND:
-            percent *= 0.8;  // Close less in trends (let more run)
+         case REGIME_TREND_STRONG:
+            percent *= 0.8;  // Close less in strong trends (let more run)
             break;
-         case REGIME_RANGE:
+         case REGIME_TREND_WEAK:
+            percent *= 0.9;  // Close slightly less — trend may fade
+            break;
+         case REGIME_RANGING:
             percent *= 1.1;  // Close more in ranges
             break;
          case REGIME_VOLATILE:
             percent *= 1.0;
+            break;
+         case REGIME_CRISIS:
+            percent *= 1.25; // Close most in crisis — capital protection
             break;
       }
 
@@ -350,11 +374,11 @@ public:
          return false;
 
       // Use fixed TP in ranging markets with weaker entries
-      if(mktRegime == REGIME_RANGE && (quality == EQ_WEAK || quality == EQ_GOOD))
+      if(mktRegime == REGIME_RANGING && (quality == EQ_WEAK || quality == EQ_GOOD))
          return true;
 
-      // Use fixed TP in highly volatile conditions
-      if(mktRegime == REGIME_VOLATILE)
+      // Use fixed TP in highly volatile or crisis conditions
+      if(mktRegime == REGIME_VOLATILE || mktRegime == REGIME_CRISIS)
          return true;
 
       return false;
@@ -380,14 +404,20 @@ public:
       // Adjust by regime
       switch(mktRegime)
       {
-         case REGIME_TREND:
-            tpR *= 1.3;
+         case REGIME_TREND_STRONG:
+            tpR *= 1.3;   // Furthest TP in strong trends
             break;
-         case REGIME_RANGE:
+         case REGIME_TREND_WEAK:
+            tpR *= 1.15;  // Slightly further than default
+            break;
+         case REGIME_RANGING:
             tpR *= 0.85;
             break;
          case REGIME_VOLATILE:
             tpR *= 1.1;
+            break;
+         case REGIME_CRISIS:
+            tpR *= 0.75;  // Conservative TP in crisis
             break;
       }
 
@@ -427,9 +457,11 @@ public:
       string regimeAdj = "Regime: ";
       switch(mktRegime)
       {
-         case REGIME_TREND:    regimeAdj += "TREND (Wider trail)"; break;
-         case REGIME_RANGE:    regimeAdj += "RANGE (Tighter)"; break;
-         case REGIME_VOLATILE: regimeAdj += "VOLATILE (Wider)"; break;
+         case REGIME_TREND_STRONG: regimeAdj += "TREND_STRONG (Widest trail)"; break;
+         case REGIME_TREND_WEAK:   regimeAdj += "TREND_WEAK (Wide trail)"; break;
+         case REGIME_RANGING:      regimeAdj += "RANGING (Tighter)"; break;
+         case REGIME_VOLATILE:     regimeAdj += "VOLATILE (Wider)"; break;
+         case REGIME_CRISIS:       regimeAdj += "CRISIS (Tight+Fast harvest)"; break;
          default:              regimeAdj += "UNKNOWN"; break;
       }
       txt += regimeAdj;

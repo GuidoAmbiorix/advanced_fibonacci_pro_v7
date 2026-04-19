@@ -260,7 +260,7 @@ public:
       MARKET_REGIME best = REGIME_UNKNOWN;
       double bestExpectancy = -999;
 
-      MARKET_REGIME regimes[] = {REGIME_TREND, REGIME_RANGE, REGIME_VOLATILE};
+      MARKET_REGIME regimes[] = {REGIME_TREND_STRONG, REGIME_TREND_WEAK, REGIME_RANGING, REGIME_VOLATILE, REGIME_CRISIS};
 
       for(int i = 0; i < ArraySize(regimes); i++)
       {

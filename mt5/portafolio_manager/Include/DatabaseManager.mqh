@@ -96,8 +96,6 @@ private:
    bool           m_isOpen;
 
 public:
-// ... (Init, Close, Execute methods remain same)
-
    //+------------------------------------------------------------------+
    //| Get Trades from DB                                               |
    //+------------------------------------------------------------------+
@@ -154,11 +152,7 @@ public:
          output[i].entry.ticket = row.ticket;
          output[i].entry.symbol = row.symbol;
          output[i].entry.entryTime = (datetime)row.entry_time;
-         output[i].entry.direction = (row.type == 0) ? 1 : -1; // 0=BUY in DB logic from Import? Wait, Import said dealType. 
-                                                               // Importer: tradeType = (entryDealType == DEAL_TYPE_BUY) ? 0 : 1; 
-                                                               // So 0=BUY, 1=SELL. 
-                                                               // TradeRecord: 1=Buy, -1=Sell.
-         output[i].entry.direction = (row.type == 0) ? 1 : -1; 
+         output[i].entry.direction = (row.type == 0) ? 1 : -1; // 0=BUY, 1=SELL in DB; TradeRecord: 1=Buy, -1=Sell
          output[i].entry.lots = row.lots;
          output[i].entry.entryPrice = row.entry_price;
          output[i].entry.sl = row.sl;
@@ -189,9 +183,11 @@ public:
 
    // Helpers for Enum Conversion (Simple versions)
    MARKET_REGIME StringToRegime(string s) {
-      if(s == "TREND") return REGIME_TREND;
-      if(s == "RANGE") return REGIME_RANGE;
-      if(s == "VOLATILE") return REGIME_VOLATILE;
+      if(s == "TREND_STRONG" || s == "TREND") return REGIME_TREND_STRONG;
+      if(s == "TREND_WEAK")                   return REGIME_TREND_WEAK;
+      if(s == "RANGING"     || s == "RANGE")  return REGIME_RANGING;
+      if(s == "VOLATILE")                     return REGIME_VOLATILE;
+      if(s == "CRISIS")                       return REGIME_CRISIS;
       return REGIME_UNKNOWN;
    }
    
