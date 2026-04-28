@@ -282,7 +282,7 @@ public:
             ctx.volTargetMultiplier = MathMax(0.3, MathMin(2.0, tv / rv));
          else
             ctx.volTargetMultiplier = (tv == 0.0) ? 0.0 : 1.0;
-         ctx.riskMultiplier = ctx.volTargetMultiplier;
+         ctx.riskMultiplier = MathMax(0.1, ctx.riskMultiplier * ctx.volTargetMultiplier);
       }
       else
       {

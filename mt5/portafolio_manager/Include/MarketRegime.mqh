@@ -418,63 +418,67 @@ public:
       switch(regime)
       {
          case REGIME_TREND_STRONG:
-            // Let it run — full aggressive escalator
+            // Let it run: small harvests, large runner, wide steps
+            // avgWin target: ~2.0R (20% harvested at 0.5R, rest runs to 3-4R)
             cfg.enabled         = true;
-            cfg.firstR          = 0.15;
-            cfg.firstSL_R       = -0.02;
-            cfg.stepR           = 0.20;
-            cfg.growthFactor    = 1.7;
-            cfg.baseHarvest     = 65.0;
-            cfg.harvestDecay    = 0.62;
-            cfg.minHarvest      = 20.0;
+            cfg.firstR          = 0.50;   // QuickLock only after meaningful profit
+            cfg.firstSL_R       = -0.10;  // SL moves to -10% of risk (near entry)
+            cfg.stepR           = 0.50;   // wide harvest steps
+            cfg.growthFactor    = 1.40;   // widening gaps between stages
+            cfg.baseHarvest     = 20.0;   // harvest small — keep runner alive
+            cfg.harvestDecay    = 0.85;   // slow decay
+            cfg.minHarvest      = 5.0;    // never force-close runner
             cfg.maxStages       = 15;
-            cfg.runnerTrailTight = 0.93;
-            cfg.timeStaleMins   = 120.0;
+            cfg.runnerTrailTight = 0.85;
+            cfg.timeStaleMins   = 180.0;
             break;
 
          case REGIME_TREND_WEAK:
-            // Trend fading — tighten runner, harvest more per stage
+            // Trend fading: harvest faster but still let runner contribute
+            // avgWin target: ~1.5R
             cfg.enabled         = true;
-            cfg.firstR          = 0.20;
-            cfg.firstSL_R       = -0.015;
-            cfg.stepR           = 0.25;
-            cfg.growthFactor    = 1.5;
-            cfg.baseHarvest     = 75.0;
-            cfg.harvestDecay    = 0.70;
-            cfg.minHarvest      = 30.0;
+            cfg.firstR          = 0.40;
+            cfg.firstSL_R       = -0.08;
+            cfg.stepR           = 0.40;
+            cfg.growthFactor    = 1.30;
+            cfg.baseHarvest     = 30.0;   // harvest 30% per stage
+            cfg.harvestDecay    = 0.80;
+            cfg.minHarvest      = 10.0;
             cfg.maxStages       = 10;
             cfg.runnerTrailTight = 0.88;
-            cfg.timeStaleMins   = 90.0;
+            cfg.timeStaleMins   = 120.0;
             break;
 
          case REGIME_RANGING:
-            // Quick harvest — price WILL reverse, no runner
+            // Harvest at meaningful level (0.8R), keep 50% for range target
+            // avgWin target: ~1.0R (50%x0.8 + 50% runner to range TP ~1.5R)
             cfg.enabled         = true;
-            cfg.firstR          = 0.30;
-            cfg.firstSL_R       = -0.01;
-            cfg.stepR           = 0.35;
-            cfg.growthFactor    = 1.2;
-            cfg.baseHarvest     = 90.0;
-            cfg.harvestDecay    = 0.85;
-            cfg.minHarvest      = 70.0;
-            cfg.maxStages       = 4;
-            cfg.runnerTrailTight = 0.0;  // no runner in range
-            cfg.timeStaleMins   = 45.0;
+            cfg.firstR          = 0.80;   // wait for real profit before harvesting
+            cfg.firstSL_R       = -0.05;
+            cfg.stepR           = 0.40;
+            cfg.growthFactor    = 1.10;
+            cfg.baseHarvest     = 50.0;   // harvest half at each stage
+            cfg.harvestDecay    = 0.80;
+            cfg.minHarvest      = 25.0;
+            cfg.maxStages       = 3;
+            cfg.runnerTrailTight = 0.0;   // no runner — range will reverse
+            cfg.timeStaleMins   = 60.0;
             break;
 
          case REGIME_VOLATILE:
-            // Capture the spike, exit immediately
+            // Capture spike: harvest 45% quickly, keep rest for continuation
+            // avgWin target: ~1.2R
             cfg.enabled         = true;
-            cfg.firstR          = 0.10;
-            cfg.firstSL_R       = -0.005;
-            cfg.stepR           = 0.15;
-            cfg.growthFactor    = 1.1;
-            cfg.baseHarvest     = 95.0;
-            cfg.harvestDecay    = 0.90;
-            cfg.minHarvest      = 80.0;
-            cfg.maxStages       = 3;
-            cfg.runnerTrailTight = 0.98;
-            cfg.timeStaleMins   = 20.0;
+            cfg.firstR          = 0.60;   // don't harvest on first-bar noise
+            cfg.firstSL_R       = -0.05;
+            cfg.stepR           = 0.35;
+            cfg.growthFactor    = 1.15;
+            cfg.baseHarvest     = 45.0;
+            cfg.harvestDecay    = 0.80;
+            cfg.minHarvest      = 20.0;
+            cfg.maxStages       = 5;
+            cfg.runnerTrailTight = 0.95;  // tight runner — volatile reverses fast
+            cfg.timeStaleMins   = 40.0;
             break;
 
          case REGIME_CRISIS:
@@ -534,7 +538,7 @@ public:
          case REGIME_TREND_STRONG: return baseMin;          // use configured value
          case REGIME_TREND_WEAK:   return baseMin + 2;      // need more confirmation
          case REGIME_RANGING:      return baseMin - 2;      // mean reversion: easier entry
-         case REGIME_VOLATILE:     return baseMin + 4;      // very selective
+         case REGIME_VOLATILE:     return baseMin + 1;      // small filter — size reduced via riskMult
          case REGIME_CRISIS:       return 999;              // no entries in crisis
          default:                  return baseMin;
       }
