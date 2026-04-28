@@ -91,9 +91,9 @@ InpPartialTP_R=0.25
 InpPartialClosePercent=70.0
 InpBE_Threshold_R=0.15
 InpTrailStart_R=0.20
-InpTrailATR_Mult=0.70
-InpTrailDecayRate=0.45
-InpTrailMinMult=0.22
+InpTrailATR_Mult=1.50
+InpTrailDecayRate=0.30
+InpTrailMinMult=0.40
 InpTrailRegimeAware=true
 InpTrailMinBufferATR=0.15
 
@@ -178,7 +178,7 @@ InpMinTradesForLearning=50
 
 ;═══════ ADAPTIVE BEHAVIOR ═══════
 InpEnableAdaptiveRisk=false
-InpEnableAdaptiveExits=false
+InpEnableAdaptiveExits=true
 InpEnableAdaptiveFilters=false
 
 ;═══════ PORTFOLIO PROTECTION (per-symbol backup) ═══════

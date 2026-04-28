@@ -297,6 +297,14 @@ public:
          m_hmm.UpdateObservation(ctx.realizedVol);
          ctx.hmm_state      = m_hmm.GetState();
          ctx.hmm_confidence = m_hmm.GetConfidence();
+
+         // Proportional size reduction instead of hard binary block:
+         // conf 0.60 = no change, conf 0.80 = -25%, conf 1.00 = -50%
+         if(ctx.hmm_state == HMM_HIGH_VOL && ctx.hmm_confidence > 0.60)
+         {
+            double hmmPenalty = (ctx.hmm_confidence - 0.60) / 0.40;
+            ctx.riskMultiplier *= MathMax(0.40, 1.0 - hmmPenalty * 0.50);
+         }
       }
       else
       {

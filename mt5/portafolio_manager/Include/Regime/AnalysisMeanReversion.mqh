@@ -194,8 +194,8 @@ public:
          sig.reason = StringFormat("MR SELL: BB_pierce+RSI%.0f score=%d", rsi[0], sig.score);
       }
 
-      // Validate: TP must be bigger than SL (reward:risk >= 1.0)
-      if(sig.valid && sig.tpPips < sig.slPips * 0.8)
+      // Validate: TP must have at least 1:1 R:R (no point in worse)
+      if(sig.valid && sig.tpPips < sig.slPips * 1.0)
       {
          sig.valid  = false;
          sig.reason = "MR: R:R too low";

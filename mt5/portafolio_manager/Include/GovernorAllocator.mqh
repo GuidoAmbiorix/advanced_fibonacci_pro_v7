@@ -36,18 +36,22 @@ public:
    double CalculateSymbolScore(GovernorRequest &req)
    {
       double score = 1.0;
-      
+
       // Win Rate Weight
       if(req.winRate > 0.6) score += 0.5;
       if(req.winRate < 0.4) score -= 0.3;
-      
+
       // Rolling R Weight
       if(req.rollingR > 2.0) score += 0.5;
       if(req.rollingR < -1.0) score -= 0.5;
-      
-      // Regime Penalty
-      if(req.regime == 2) score = 0; // Chaos = Zero Allocation
-      
+
+      // 5-regime mapping (req.regime = raw MARKET_REGIME enum value 0-4)
+      // 0=TREND_STRONG, 1=TREND_WEAK, 2=RANGING, 3=VOLATILE, 4=CRISIS
+      if(req.regime == 4)      score = 0;           // CRISIS: zero allocation
+      else if(req.regime == 3) score *= 0.50;        // VOLATILE: half size
+      else if(req.regime == 2) score *= 0.75;        // RANGING: reduced size
+      else if(req.regime == 1) score *= 0.85;        // TREND_WEAK: slight reduction
+
       return MathMax(0, score);
    }
    

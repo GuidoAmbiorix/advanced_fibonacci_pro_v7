@@ -214,7 +214,10 @@ public:
       for(int i = 0; i < acLen; i++)
          returns[i] = (closes[i] > 0) ? (closes[i] - closes[i+1]) / closes[i+1] : 0;
 
-      double autocorr = _CalcAutocorr(returns, acLen, 1);
+      // Average lags 1-3 for robustness (lag-1 alone is too noisy)
+      double autocorr = (_CalcAutocorr(returns, acLen, 1) +
+                         _CalcAutocorr(returns, acLen, 2) +
+                         _CalcAutocorr(returns, acLen, 3)) / 3.0;
       result.autocorr = autocorr;
 
       // ── 4. Chop (simple: ATR range vs high-low range) ─────────────

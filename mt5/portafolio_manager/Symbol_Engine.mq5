@@ -1410,8 +1410,9 @@ void OnTick()
    }
 
    // --- HMM OVERLAY (Upgrade 5) ---
+   // Hard block only at extreme HMM confidence (0.70-0.90 is handled via riskMultiplier reduction)
    if(InpUseHMM && g_regimeCtx.hmm_state == HMM_HIGH_VOL
-               && g_regimeCtx.hmm_confidence > 0.70
+               && g_regimeCtx.hmm_confidence > 0.90
                && g_currentRegime != REGIME_VOLATILE)
    {
       static datetime lastHMMLog = 0;
