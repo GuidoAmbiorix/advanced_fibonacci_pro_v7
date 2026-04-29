@@ -48,6 +48,10 @@ CPatternMemory      patternMemory;
 #include "Include\Adaptive\AdaptiveExitManager.mqh"
 #include "Include\Adaptive\AdaptiveFilterManager.mqh"
 
+// Macro & Portfolio Modules
+#include "Include\MacroSentiment.mqh"
+#include "Include\CurrencyExposure.mqh"
+
 // ADVANCED CONFLUENCE MODULES (H4 ENHANCED)
 #include "Include\Advanced\VolumeAnalysis.mqh"
 #include "Include\Advanced\Divergence.mqh"
@@ -275,6 +279,11 @@ input bool InpUseH1Trigger   = true;  // U3: H1 execution trigger alignment chec
 input bool InpUseVolTarget   = true;  // U4: Volatility targeting position sizing
 input bool InpUseHMM         = true;  // U5: HMM high/low volatility overlay
 
+input group "======= MACRO SENTIMENT ======="
+input bool   InpUseMacroSentiment  = true;   // Enable Macro Sentiment filter (DXY+VIX+SafeHaven)
+input bool   InpUseDXYConflict     = true;   // Block entries conflicting with DXY trend
+input double InpMaxCurrencyExposure = 0.30;  // Max lots per currency (0=disabled)
+
 input group "======= GOVERNOR v2 ======="
 input int  InpSymbolCooldown = 4;     // Hours cooldown after close (sync with governor.set)
 
@@ -332,6 +341,10 @@ CPatternRecognizer  patternRecognizer;
 CAdaptiveRiskManager   adaptiveRisk;
 CAdaptiveExitManager   adaptiveExit;
 CAdaptiveFilterManager adaptiveFilter;
+
+// MACRO & PORTFOLIO OBJECTS
+CMacroSentiment   macroSentiment;
+CCurrencyExposure currencyExposure;
 
 int hRSI, hATR, hEMA;
 int hEMA50, hEMA100;   // Reversal filter EMAs
@@ -576,6 +589,14 @@ int OnInit()
 
       kellySizer.Init(InpRiskBase, 0.25, maxRiskAdjusted, InpKellyFraction, 30, InpDailyMaxDD, InpWeeklyMaxDD, InpDailyTarget);
    }
+
+   // Initialize Macro Sentiment
+   if(InpUseMacroSentiment)
+      macroSentiment.Init(PERIOD_H4);
+
+   // Initialize Currency Exposure tracker
+   if(InpMaxCurrencyExposure > 0)
+      currencyExposure.Init(InpMagicNumber);
 
    // Initialize Database Manager (disabled in Strategy Tester to avoid file I/O errors on validator)
    if(InpEnableLearning && InpLogTradesToFile && !MQLInfoInteger(MQL_TESTER))
@@ -838,6 +859,9 @@ void OnDeinit(const int reason)
 
    // Cleanup Regime Engine
    g_regimeEngine.Deinit();
+
+   // Cleanup Macro Sentiment
+   if(InpUseMacroSentiment) macroSentiment.Deinit();
 
    // Save learning data before exit
    if(InpEnableLearning)
@@ -1210,6 +1234,12 @@ void OnTick()
    // --- MODULE: MARKET REGIME (5-regime adaptive engine) ---
    g_regimeCtx     = g_regimeEngine.Evaluate(InpMinConfluenceEntry, InpMaxSpreadPoints);
    g_currentRegime = g_regimeCtx.regime;
+
+   // --- MACRO SENTIMENT: Update once per bar ---
+   if(InpUseMacroSentiment) macroSentiment.Update();
+
+   // --- CURRENCY EXPOSURE: Rebuild once per bar ---
+   if(InpMaxCurrencyExposure > 0) currencyExposure.RebuildFromPositions();
    // Update dynamic escalator config (overrides InpEsc_* with regime-calibrated values)
    if(g_regimeCtx.escalator.enabled)
       g_escCfg = g_regimeCtx.escalator;
@@ -1647,6 +1677,10 @@ void OnTick()
       // GOVERNOR: apply drawdown multiplier and account hard cap
       double approvedRisk = selfGov.ApproveRisk(baseRisk);
 
+      // MACRO SENTIMENT: scale approved risk by macro environment
+      if(InpUseMacroSentiment)
+         approvedRisk *= macroSentiment.GetRiskMultiplier();
+
       if(approvedRisk <= 0.05)
       {
          static datetime lastRiskLog = 0;
@@ -1752,6 +1786,34 @@ void OnTick()
              lastScoreLog = TimeCurrent();
           }
 
+          // ── DXY CONFLICT FILTER ───────────────────────────────────────
+          if(InpUseMacroSentiment && InpUseDXYConflict)
+          {
+             if(buyScore >= sellScore && macroSentiment.IsConflicting(_Symbol, ORDER_TYPE_BUY))
+             {
+                static datetime lastDXYLog = 0;
+                if(TimeCurrent() - lastDXYLog > 300)
+                {
+                   Print("[MACRO] DXY conflict: BUY on ", _Symbol, " blocked (DXY=",
+                         DoubleToString(macroSentiment.GetDXY(), 2), ")");
+                   lastDXYLog = TimeCurrent();
+                }
+                buyScore = 0;
+             }
+             if(sellScore > buyScore && macroSentiment.IsConflicting(_Symbol, ORDER_TYPE_SELL))
+             {
+                static datetime lastDXYLogS = 0;
+                if(TimeCurrent() - lastDXYLogS > 300)
+                {
+                   Print("[MACRO] DXY conflict: SELL on ", _Symbol, " blocked (DXY=",
+                         DoubleToString(macroSentiment.GetDXY(), 2), ")");
+                   lastDXYLogS = TimeCurrent();
+                }
+                sellScore = 0;
+             }
+          }
+          // ── END DXY CONFLICT FILTER ───────────────────────────────────
+
           if(buyScore >= minEntry && (InpDirection == 0 || InpDirection == 1))
           {
              // --- PORTFOLIO PROTECTION: SAME-DIRECTION COOLDOWN ---
@@ -1771,6 +1833,17 @@ void OnTick()
                       lastCooldownWarning = TimeCurrent();
                    }
                    return;  // Skip this trade
+                }
+             }
+
+             // CURRENCY EXPOSURE CHECK
+             if(InpMaxCurrencyExposure > 0)
+             {
+                double estLots = approvedRisk / 100.0 * AccountInfoDouble(ACCOUNT_EQUITY) / 1000.0;
+                if(!currencyExposure.IsSafe(_Symbol, ORDER_TYPE_BUY, MathMax(0.01, estLots), InpMaxCurrencyExposure))
+                {
+                   Print("[EXPOSURE] BUY blocked: currency exposure limit reached");
+                   return;
                 }
              }
 
@@ -1804,6 +1877,17 @@ void OnTick()
                       lastCooldownWarning = TimeCurrent();
                    }
                    return;  // Skip this trade
+                }
+             }
+
+             // CURRENCY EXPOSURE CHECK
+             if(InpMaxCurrencyExposure > 0)
+             {
+                double estLots = approvedRisk / 100.0 * AccountInfoDouble(ACCOUNT_EQUITY) / 1000.0;
+                if(!currencyExposure.IsSafe(_Symbol, ORDER_TYPE_SELL, MathMax(0.01, estLots), InpMaxCurrencyExposure))
+                {
+                   Print("[EXPOSURE] SELL blocked: currency exposure limit reached");
+                   return;
                 }
              }
 
@@ -3868,6 +3952,10 @@ void UpdateDashboard()
    if(InpUseHMM)
       txt += "HMM: " + (g_regimeCtx.hmm_state == HMM_LOW_VOL ? "LOW_VOL" : "HIGH_VOL") +
              " (" + DoubleToString(g_regimeCtx.hmm_confidence*100, 0) + "%)\n";
+   if(InpUseMacroSentiment)
+      txt += macroSentiment.GetStatus() + "\n";
+   if(InpMaxCurrencyExposure > 0)
+      txt += currencyExposure.GetStatus(InpMaxCurrencyExposure) + "\n";
    txt += "Spread now: " + IntegerToString((int)symbolInfo.Spread()) +
           " / limit: " + IntegerToString(GetEffectiveMaxSpread()) + "\n";
 
