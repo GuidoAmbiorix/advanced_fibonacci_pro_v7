@@ -373,6 +373,12 @@ int    g_consecutiveLosses = 0;
 int    g_dailyTradesCount = 0;  // FIX: Track daily trades to prevent overtrading
 datetime g_lastResetDate = 0;
 
+// PULLBACK VALIDATION: Track last closed trade for re-entry filter
+int      g_lastTradeDir = 0;           // direction of last closed trade (1=buy, -1=sell)
+bool     g_lastTradeWasWin = false;    // was last closed trade profitable?
+double   g_lastTradeClosePrice = 0;    // approximate close price of last trade
+datetime g_lastTradeCloseTime = 0;     // when last trade closed
+
 datetime g_lastBuyTime = 0;    // Last BUY trade entry time
 datetime g_lastSellTime = 0;   // Last SELL trade entry time
 
@@ -1814,6 +1820,40 @@ void OnTick()
           }
           // ── END DXY CONFLICT FILTER ───────────────────────────────────
 
+          // ── PULLBACK VALIDATION: No chasing after winning trade ────────
+          // Require at least 0.382 ATR retracement before re-entering same direction
+          if(g_lastTradeWasWin && g_lastTradeCloseTime > 0 && g_ATR > 0)
+          {
+             int secSinceClose = (int)(TimeCurrent() - g_lastTradeCloseTime);
+             if(secSinceClose < PeriodSeconds(PERIOD_H4) * 6)
+             {
+                double minPullback = g_ATR * 0.382;
+                if(g_lastTradeDir == 1)
+                {
+                   if(symbolInfo.Bid() > g_lastTradeClosePrice - minPullback)
+                   {
+                      static datetime lastPBLogB = 0;
+                      if(TimeCurrent() - lastPBLogB > 300)
+                      { Print("[PULLBACK] BUY blocked: need ", DoubleToString(minPullback/_Point,0), " pip drop after last win (gap=",
+                              DoubleToString((g_lastTradeClosePrice - symbolInfo.Bid())/_Point,0), ")"); lastPBLogB = TimeCurrent(); }
+                      buyScore = 0;
+                   }
+                }
+                else if(g_lastTradeDir == -1)
+                {
+                   if(symbolInfo.Ask() < g_lastTradeClosePrice + minPullback)
+                   {
+                      static datetime lastPBLogS = 0;
+                      if(TimeCurrent() - lastPBLogS > 300)
+                      { Print("[PULLBACK] SELL blocked: need ", DoubleToString(minPullback/_Point,0), " pip rise after last win (gap=",
+                              DoubleToString((symbolInfo.Ask() - g_lastTradeClosePrice)/_Point,0), ")"); lastPBLogS = TimeCurrent(); }
+                      sellScore = 0;
+                   }
+                }
+             }
+          }
+          // ── END PULLBACK VALIDATION ────────────────────────────────────
+
           if(buyScore >= minEntry && (InpDirection == 0 || InpDirection == 1))
           {
              // --- PORTFOLIO PROTECTION: SAME-DIRECTION COOLDOWN ---
@@ -2689,6 +2729,11 @@ void ManagePositions()
                 g_consecutiveLosses = 0;
                 GlobalVariableSet("PG_ConsecLoss_" + _Symbol, 0); // Persist reset across restarts
              }
+             // Track last trade result for pullback validation (P3)
+             g_lastTradeDir = g_entryDirection;
+             g_lastTradeWasWin = (profitMoney > 0);
+             g_lastTradeClosePrice = (g_entryDirection == 1) ? symbolInfo.Bid() : symbolInfo.Ask();
+             g_lastTradeCloseTime = TimeCurrent();
          }
 
          g_lastCloseTime = TimeCurrent();
