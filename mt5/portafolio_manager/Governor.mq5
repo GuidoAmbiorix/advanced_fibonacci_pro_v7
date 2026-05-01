@@ -541,7 +541,7 @@ void OnTimer()
 
    //--- Dashboard
    if(InpShowDashboard)
-      DrawDashboard(dailyPnL, dd, riskMult, pauseEntries, pauseReason,
+      DrawDashboard(dailyPnL, dd, riskMult, eqMult, pauseEntries, pauseReason,
                     emergencyClose, closeReason, correlWarning);
 }
 
@@ -777,7 +777,7 @@ double GetManagedFloating()
 //+------------------------------------------------------------------+
 //| Dashboard                                                         |
 //+------------------------------------------------------------------+
-void DrawDashboard(double dailyPnL, double dd, double riskMult,
+void DrawDashboard(double dailyPnL, double dd, double riskMult, double eqMult,
                    bool paused, string pauseReason,
                    bool emergency, string closeReason,
                    string correlWarning)
@@ -832,11 +832,10 @@ void DrawDashboard(double dailyPnL, double dd, double riskMult,
       msg += StringFormat("  Streak: %d consec losses (reduce@%d pause@%d)\n",
                           g_consecLosses, InpConsecLossReduce, InpConsecLossPause);
 
-   // v2: Equity curve
-   double eqm = GetEqCurveMultiplier();
-   if(InpUseEqCurve && eqm < 1.0)
+   // v2: Equity curve (value passed from OnTimer — no double-sampling)
+   if(InpUseEqCurve && eqMult < 1.0)
       msg += StringFormat("  EqCurve: equity BELOW SMA%d → risk x%.1f\n",
-                          InpEqCurvePeriod, eqm);
+                          InpEqCurvePeriod, eqMult);
 
    msg += "\n";
 
