@@ -1,0 +1,71 @@
+; Portfolio Governor — FUNDED ACCOUNT $6,000
+; Prop Firm: 1-Step Challenge
+; Rules: Profit +9% ($540) | Max DD 6% ($360) | Daily DD 3% ($180) | Min 3 days
+;
+; STRATEGY: Protect capital first, grow slow and steady.
+; Target: ~$30-40/day net average over 14-20 trading days.
+; Risk per trade: 0.3% = $18. At 2R average winner = $36/trade.
+; Need ~15 net winners to hit $540.
+
+;═══════ SYMBOL ENGINE MAGIC RANGE ═══════
+; Use a DIFFERENT magic range than your main account!
+InpMagicMin=200001
+InpMagicMax=200020
+
+;═══════ DAILY P&L CONTROL ═══════
+; Hard stop at -$160 (buffer below the -$180 prop firm limit)
+; Pause at +$120/day to protect profits (don't give back gains)
+InpDailyProfitTarget=120.0
+InpDailyLossLimit=-160.0
+InpPauseOnProfitTarget=true
+InpCloseOnDailyLoss=true
+
+;═══════ PORTFOLIO DRAWDOWN ═══════
+; Hard close at 5% DD ($300) — buffer below the 6% ($360) prop firm limit
+; Reduce risk at 2.5% DD ($150) — early warning
+InpMaxPortfolioDD_Pct=5.0
+InpReduceRiskAt_Pct=2.5
+InpCloseAllOnMaxDD=true
+
+;═══════ CORRELATION FILTER ═══════
+; Max 1 position per currency — no correlated exposure doubling
+InpUseCorrelFilter=true
+InpMaxSameCurrency=1
+InpCloseCorrelOnBreech=true
+
+;═══════ FRIDAY CLOSE ═══════
+; MANDATORY: always close before weekend on funded accounts
+InpFridayClose=true
+InpFridayCloseHour=20
+InpFridayCloseMinute=0
+
+;═══════ DISPLAY ═══════
+InpShowDashboard=true
+InpRefreshSeconds=5
+InpDashboardCorner=0
+
+;═══════ TIEMPO Y COOLDOWN ═══════
+; Block new entries 4h before Friday close
+InpFridayBlockHours=4
+; 6h cooldown per symbol after close (more conservative on funded)
+InpSymbolCooldownHours=6
+
+;═══════ LÍMITES DE OPERACIÓN ═══════
+; Max 3 simultaneous positions (limits correlated risk)
+; Max 4 trades/day (3% DD ÷ 0.5% max risk = 6 theoretical, use 4 for safety)
+; Max 15 trades/week
+InpMaxOpenPositions=3
+InpMaxDailyTrades=4
+InpMaxWeeklyTrades=15
+
+;═══════ RACHA DE PÉRDIDAS ═══════
+; Reduce risk 50% after 2 consecutive losses
+; Pause after 4 consecutive losses (close to daily DD limit)
+InpConsecLossReduce=2
+InpConsecLossPause=4
+
+;═══════ EQUITY CURVE FILTER ═══════
+; If equity drops below 20-bar SMA, reduce size to 50%
+InpUseEqCurve=true
+InpEqCurvePeriod=20
+InpEqCurveReductMult=0.5
