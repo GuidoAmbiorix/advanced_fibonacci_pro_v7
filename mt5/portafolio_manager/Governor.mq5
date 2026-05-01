@@ -99,8 +99,9 @@ bool      g_fridayClosed = false;
 // Known base currencies for correlation check
 string    g_currencies[] = {"EUR","GBP","USD","JPY","CHF","CAD","AUD","NZD","XAU","XAG"};
 
-// v2: Equity curve buffer
-double   g_eqCurveBuf[50];
+// v2: Equity curve buffer — size capped at 200 to prevent out-of-bounds
+#define EQ_BUF_MAX 200
+double   g_eqCurveBuf[EQ_BUF_MAX];
 int      g_eqBufHead   = 0;
 int      g_eqBufFilled = 0;
 
@@ -189,19 +190,20 @@ double GetEqCurveMultiplier()
 {
    if(!InpUseEqCurve || InpEqCurvePeriod <= 0) return 1.0;
 
+   int safePeriod = MathMin(InpEqCurvePeriod, EQ_BUF_MAX); // guard against oversized period
    double eq = AccountInfoDouble(ACCOUNT_EQUITY);
-   int idx = g_eqBufHead % InpEqCurvePeriod;
+   int idx = g_eqBufHead % safePeriod;
    g_eqCurveBuf[idx] = eq;
    g_eqBufHead++;
-   if(g_eqBufFilled < InpEqCurvePeriod) g_eqBufFilled++;
+   if(g_eqBufFilled < safePeriod) g_eqBufFilled++;
 
-   if(g_eqBufFilled < InpEqCurvePeriod / 2) return 1.0; // warmup
+   if(g_eqBufFilled < safePeriod / 2) return 1.0; // warmup
 
    double sum = 0;
-   int n = MathMin(g_eqBufFilled, InpEqCurvePeriod);
+   int n = MathMin(g_eqBufFilled, safePeriod);
    for(int i = 0; i < n; i++)
    {
-      int bi = ((g_eqBufHead - 1 - i) % InpEqCurvePeriod + InpEqCurvePeriod) % InpEqCurvePeriod;
+      int bi = ((g_eqBufHead - 1 - i) % safePeriod + safePeriod) % safePeriod;
       sum += g_eqCurveBuf[bi];
    }
    double sma = sum / n;
@@ -348,16 +350,40 @@ void PublishCooldowns()
       }
    }
 
-   // Rebuild tracking array from current open positions
+   // Rebuild tracking array — copy old data BEFORE resize to avoid out-of-bounds
+   string   oldSymbols[];
+   datetime oldLastClose[];
+   bool     oldWasOpen[];
+   int      oldCount = g_cdCount;
+   ArrayResize(oldSymbols,   oldCount);
+   ArrayResize(oldLastClose, oldCount);
+   ArrayResize(oldWasOpen,   oldCount);
+   for(int k = 0; k < oldCount; k++)
+   {
+      oldSymbols[k]   = g_cdSymbols[k];
+      oldLastClose[k] = g_cdLastClose[k];
+      oldWasOpen[k]   = g_cdWasOpen[k];
+   }
+
    ArrayResize(g_cdSymbols,   nowCount);
    ArrayResize(g_cdLastClose, nowCount);
    ArrayResize(g_cdWasOpen,   nowCount);
+
    for(int o = 0; o < nowCount; o++)
    {
-      // Preserve existing cooldown data if symbol already tracked
       bool found = false;
-      for(int t = 0; t < g_cdCount; t++)
-         if(g_cdSymbols[t] == nowOpen[o]) { found = true; break; }
+      for(int t = 0; t < oldCount; t++)
+      {
+         if(oldSymbols[t] == nowOpen[o])
+         {
+            // Preserve existing cooldown entry at the correct new index
+            g_cdSymbols[o]   = oldSymbols[t];
+            g_cdLastClose[o] = oldLastClose[t];
+            g_cdWasOpen[o]   = oldWasOpen[t];
+            found = true;
+            break;
+         }
+      }
       if(!found)
       {
          g_cdSymbols[o]   = nowOpen[o];
