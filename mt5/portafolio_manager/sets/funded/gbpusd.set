@@ -1,7 +1,7 @@
 ; GBPUSD — FUNDED ACCOUNT $6,000
 ; Prop Firm: 9% target | 6% max DD | 3% daily DD
 ; PHILOSOPHY: Elite entries only. Protect capital above all.
-; Risk: 0.3% per trade = $18 | Target: 2R avg = $36/winner
+; Risk: 0.45% per trade = $27 | Target: 2R avg = $54/winner
 
 InpMagicNumber=200002
 InpDirection=0
@@ -9,6 +9,7 @@ InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
+InpKZRegimeAware=false
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
@@ -61,7 +62,7 @@ InpDominanceThreshold=2.0
 InpMaxPositions=1
 
 ;═══════ RISK — CONSERVATIVE 0.3% ═══════
-InpRiskBase=0.30
+InpRiskBase=0.45
 InpMaxRisk=0.50
 InpMaxLotsPerTrade=0.30
 InpEnableMarginCheck=true
