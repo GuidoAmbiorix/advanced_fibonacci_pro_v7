@@ -1,7 +1,7 @@
-; USDJPY — FUNDED ACCOUNT $6,000
+; USDJPY — FUNDED ACCOUNT
 ; Prop Firm: 9% target | 6% max DD | 3% daily DD
 ; PHILOSOPHY: Elite entries only. Protect capital above all.
-; Risk: 0.45% per trade = $27 | Target: 2R avg = $54/winner
+; Risk: 0.10% per trade | Target: 2R avg
 
 InpMagicNumber=200003
 InpDirection=0
@@ -10,7 +10,7 @@ InpBrokerUTCOffset=2
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
 InpKZRegimeAware=false
-InpEnableAsianKZ=true
+InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
 InpEnableLondonCloseKZ=false
@@ -56,15 +56,15 @@ InpUseChopFilter=true
 InpChopThreshold=0.68
 InpATR_MA_Period=20
 
-;═══════ CONFLUENCE — MORE SELECTIVE ON FUNDED ═══════
+;═══════ CONFLUENCE — CALIBRATED FOR FUNDED FREQUENCY ═══════
 InpMinConfluenceEntry=20
 InpDominanceThreshold=2.0
 InpMaxPositions=1
 
-;═══════ RISK — CONSERVATIVE 0.3% ═══════
-InpRiskBase=0.45
-InpMaxRisk=0.50
-InpMaxLotsPerTrade=0.30
+;═══════ RISK — CONSERVATIVE 0.10% ═══════
+InpRiskBase=0.10
+InpMaxRisk=0.15
+InpMaxLotsPerTrade=0.15
 InpEnableMarginCheck=true
 
 ;═══════ TAKE PROFIT ═══════
@@ -152,8 +152,8 @@ InpMTF_EMAPeriod=50
 
 ;═══════ NEWS FILTER ═══════
 InpUseNewsFilter=true
-InpNewsMinutesBefore=45
-InpNewsMinutesAfter=45
+InpNewsMinutesBefore=60
+InpNewsMinutesAfter=60
 
 ;═══════ VOLATILITY SPIKE PROTECTION ═══════
 InpEnableVolatilityFilter=true

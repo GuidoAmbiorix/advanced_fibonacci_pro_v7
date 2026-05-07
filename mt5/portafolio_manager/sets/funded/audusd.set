@@ -1,9 +1,9 @@
-; EURUSD — FUNDED ACCOUNT
+; AUDUSD — FUNDED ACCOUNT
 ; Prop Firm: 9% target | 6% max DD | 3% daily DD
 ; PHILOSOPHY: Elite entries only. Protect capital above all.
 ; Risk: 0.10% per trade | Target: 2R avg
 
-InpMagicNumber=200001
+InpMagicNumber=200005
 InpDirection=0
 InpBrokerUTCOffset=2
 
