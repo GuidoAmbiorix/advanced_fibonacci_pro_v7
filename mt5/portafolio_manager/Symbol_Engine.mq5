@@ -1300,7 +1300,7 @@ void OnTick()
       GlobalVariableSet(GV_DIR_PREFIX + _Symbol, direction);
       
       // Timer Data
-      GlobalVariableSet(GV_BAROPEN_PREFIX + _Symbol, (double)currentBarTime);
+      GlobalVariableSet(GV_BAROPEN_PREFIX + _Symbol, (double)currentBar);
       GlobalVariableSet(GV_PERIOD_PREFIX + _Symbol, (double)PeriodSeconds(InpMTF));
       
       // Killzone Status
