@@ -18,6 +18,27 @@ InpMaxPortfolioDD_Pct=5.0
 InpReduceRiskAt_Pct=2.0
 InpCloseAllOnMaxDD=true
 
+;═══════ CORRELATION FILTER ═══════
+; Max 2 positions per currency — allowed for high diversification
+InpUseCorrelFilter=true
+InpMaxSameCurrency=2
+InpCloseCorrelOnBreech=true
+
+;═══════ FRIDAY CLOSE ═══════
+; MANDATORY: always close before weekend on funded accounts
+InpFridayClose=true
+InpFridayCloseHour=20
+InpFridayCloseMinute=0
+
+;═══════ DISPLAY ═══════
+InpShowDashboard=true
+InpRefreshSeconds=5
+InpDashboardCorner=0
+
+;═══════ TIEMPO Y COOLDOWN ═══════
+InpFridayBlockHours=4
+InpSymbolCooldownHours=6
+
 ;═══════ LÍMITES DE OPERACIÓN ═══════
 ; Max 10 simultaneous positions (highly diversified)
 ; Max 12 trades/day
@@ -27,10 +48,10 @@ InpMaxDailyTrades=12
 InpMaxWeeklyTrades=40
 
 ;═══════ RACHA DE PÉRDIDAS ═══════
-; Reduce risk 50% after 2 consecutive losses
-; Pause after 4 consecutive losses (close to daily DD limit)
-InpConsecLossReduce=2
-InpConsecLossPause=4
+; Reduce risk 50% after 4 consecutive losses
+; Pause after 8 consecutive losses (calibrated for 28 pairs)
+InpConsecLossReduce=4
+InpConsecLossPause=8
 
 ;═══════ EQUITY CURVE FILTER ═══════
 ; If equity drops below 20-bar SMA, reduce size to 50%
