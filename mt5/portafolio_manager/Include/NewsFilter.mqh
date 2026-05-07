@@ -125,14 +125,15 @@ public:
    //+------------------------------------------------------------------+
    void ExtractCurrencies()
    {
+      string sym = m_symbol;
+      StringToUpper(sym);
+
       m_baseCurrency = SymbolInfoString(m_symbol, SYMBOL_CURRENCY_BASE);
       m_quoteCurrency = SymbolInfoString(m_symbol, SYMBOL_CURRENCY_PROFIT);
 
       // Fallback for non-standard symbols if needed
       if(m_baseCurrency == "")
       {
-         string sym = m_symbol;
-         StringToUpper(sym);
          StringReplace(sym, ".PRO", "");
          StringReplace(sym, ".STD", "");
          StringReplace(sym, "_SB", "");

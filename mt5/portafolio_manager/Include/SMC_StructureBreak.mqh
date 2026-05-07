@@ -293,10 +293,10 @@ public:
       {
          long breakingVol = iVolume(m_symbol, m_timeframe, 1); // Volume of the confirmation bar
          double avgVol = 0;
-         for(int i = 2; i <= 21; i++) avgVol += iVolume(m_symbol, m_timeframe, i);
+         for(int i = 2; i <= 21; i++) avgVol += (double)iVolume(m_symbol, m_timeframe, i);
          avgVol /= 20;
 
-         if(avgVol > 0 && breakingVol > avgVol * 1.5)
+         if(avgVol > 0 && (double)breakingVol > avgVol * 1.5)
          {
             score += 0.5; // Institutional confirmation bonus
          }

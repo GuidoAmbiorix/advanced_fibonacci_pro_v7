@@ -1160,43 +1160,6 @@ void OnTick()
       }
    }
 
-   // --- DATA UPDATES & POSITION TRACKING ---
-   UpdateMarketData();
-   RefreshPositionCount();
-
-   // --- TRADE MANAGEMENT (EVERY TICK) ---
-   if(g_positionCount > 0)
-   {
-      ManageTrailingExits();
-      MonitorGroupPerformance();
-   }
-
-   // --- HEAVY ANALYTICS (THROTTLED) ---
-   if(runHeavy)
-   {
-      lastHeavyCalc = TimeCurrent();
-      
-      // Update Master Regime
-      g_regimeCtx = g_regimeEngine.Evaluate(InpMinConfluenceEntry, InpMaxSpreadPoints);
-      g_currentRegime = g_regimeCtx.regime;
-
-      // Update Individual Modules
-      smcStructure.Update();
-      smcOrderBlocks.Update();
-      smcFVG.Update();
-      smcLiquidity.Update();
-      mtfAnalysis.Update();
-      newsFilter.Update();
-      macroSentiment.Update();
-      
-      // Update Dashboard Overlay
-      UpdateDashboard();
-   }
-   
-   // --- ENTRY LOGIC (Only if heavy analytics just updated) ---
-   if(runHeavy && g_positionCount < InpMaxOpenPositions)
-   {
-
    g_tickCount++;  // Performance monitoring
 
    symbolInfo.RefreshRates();
@@ -1253,19 +1216,15 @@ void OnTick()
    UpdateAllPositionVisuals();
 
    // --- PERFORMANCE THROTTLE ---
-   static datetime lastHeavyUpdate = 0;
-   datetime now = TimeCurrent();
-   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
-
-   if(now - lastHeavyUpdate < InpTickThrottleSeconds) return;
-   lastHeavyUpdate = now;
+   if(!runHeavy) return;
+   lastHeavyCalc = TimeCurrent();
 
    // Simple bar count update without external function
    static datetime prevBarTime = 0;
-   if(currentBarTime != prevBarTime)
+   if(currentBar != prevBarTime)
    {
       g_barCount++;
-      prevBarTime = currentBarTime;
+      prevBarTime = currentBar;
    }
 
    if(!UpdateIndicators())
