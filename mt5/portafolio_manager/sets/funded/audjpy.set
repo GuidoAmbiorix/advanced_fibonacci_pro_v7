@@ -9,7 +9,7 @@ InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
-InpKZRegimeAware=false
+InpKZRegimeAware=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
@@ -57,7 +57,7 @@ InpChopThreshold=0.68
 InpATR_MA_Period=20
 
 ;═══════ CONFLUENCE — CALIBRATED FOR FUNDED FREQUENCY ═══════
-InpMinConfluenceEntry=20
+InpMinConfluenceEntry=18
 InpDominanceThreshold=2.0
 InpMaxPositions=1
 

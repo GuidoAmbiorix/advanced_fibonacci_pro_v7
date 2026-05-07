@@ -8,7 +8,7 @@ InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
-InpKZRegimeAware=false
+InpKZRegimeAware=true
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
