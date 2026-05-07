@@ -365,33 +365,55 @@ void PublishCooldowns()
       oldWasOpen[k]   = g_cdWasOpen[k];
    }
 
-   ArrayResize(g_cdSymbols,   nowCount);
-   ArrayResize(g_cdLastClose, nowCount);
-   ArrayResize(g_cdWasOpen,   nowCount);
+   // Build new tracking list:
+   //   1) All currently open symbols (with restored cooldown data from old list)
+   //   2) Closed symbols that still have an active cooldown — prevent data loss on mass-close
+   string   keepSym[];
+   datetime keepLastClose[];
+   bool     keepWasOpen[];
+   int      keepCount = 0;
 
+   // Pass 1: currently open positions
    for(int o = 0; o < nowCount; o++)
    {
-      bool found = false;
+      ArrayResize(keepSym,       keepCount + 1);
+      ArrayResize(keepLastClose, keepCount + 1);
+      ArrayResize(keepWasOpen,   keepCount + 1);
+      keepSym[keepCount]       = nowOpen[o];
+      keepLastClose[keepCount] = 0;
+      keepWasOpen[keepCount]   = true;
       for(int t = 0; t < oldCount; t++)
-      {
-         if(oldSymbols[t] == nowOpen[o])
-         {
-            // Preserve existing cooldown entry at the correct new index
-            g_cdSymbols[o]   = oldSymbols[t];
-            g_cdLastClose[o] = oldLastClose[t];
-            g_cdWasOpen[o]   = oldWasOpen[t];
-            found = true;
-            break;
-         }
-      }
-      if(!found)
-      {
-         g_cdSymbols[o]   = nowOpen[o];
-         g_cdLastClose[o] = 0;
-         g_cdWasOpen[o]   = true;
-      }
+         if(oldSymbols[t] == nowOpen[o]) { keepLastClose[keepCount] = oldLastClose[t]; break; }
+      keepCount++;
    }
-   g_cdCount = nowCount;
+
+   // Pass 2: old entries with active cooldown that are no longer open (preserve across mass-close)
+   for(int t = 0; t < oldCount; t++)
+   {
+      if(oldLastClose[t] == 0) continue; // no active cooldown — skip
+      bool alreadyIn = false;
+      for(int k = 0; k < keepCount; k++)
+         if(keepSym[k] == oldSymbols[t]) { alreadyIn = true; break; }
+      if(alreadyIn) continue;
+      ArrayResize(keepSym,       keepCount + 1);
+      ArrayResize(keepLastClose, keepCount + 1);
+      ArrayResize(keepWasOpen,   keepCount + 1);
+      keepSym[keepCount]       = oldSymbols[t];
+      keepLastClose[keepCount] = oldLastClose[t];
+      keepWasOpen[keepCount]   = false;
+      keepCount++;
+   }
+
+   ArrayResize(g_cdSymbols,   keepCount);
+   ArrayResize(g_cdLastClose, keepCount);
+   ArrayResize(g_cdWasOpen,   keepCount);
+   for(int k = 0; k < keepCount; k++)
+   {
+      g_cdSymbols[k]   = keepSym[k];
+      g_cdLastClose[k] = keepLastClose[k];
+      g_cdWasOpen[k]   = keepWasOpen[k];
+   }
+   g_cdCount = keepCount;
 }
 
 //+------------------------------------------------------------------+
@@ -516,6 +538,20 @@ void OnTimer()
    if(eqMult < 1.0)
       riskMult = MathMin(riskMult, eqMult);
 
+   //--- Correlation check BEFORE publishing pause flag (preventive, not just reactive)
+   string correlWarning = "";
+   if(InpUseCorrelFilter)
+   {
+      correlWarning = CheckCorrelation();
+      if(correlWarning != "" && !pauseEntries)
+      {
+         pauseEntries = true;
+         if(pauseReason == "")
+            pauseReason = (correlWarning == "AT_CAP") ? "CORREL_AT_LIMIT" :
+                          "CORRELATION: " + correlWarning;
+      }
+   }
+
    //--- Publish per-symbol cooldowns
    PublishCooldowns();
 
@@ -534,15 +570,10 @@ void OnTimer()
    GlobalVariableSet(GV_PAUSE_ENTRIES, pauseEntries ? 1.0 : 0.0);
    GlobalVariableSet(GV_REDUCE_RISK,   riskMult);
 
-   //--- Correlation check
-   string correlWarning = "";
-   if(InpUseCorrelFilter)
-      correlWarning = CheckCorrelation();
-
    //--- Dashboard
    if(InpShowDashboard)
       DrawDashboard(dailyPnL, dd, riskMult, eqMult, pauseEntries, pauseReason,
-                    emergencyClose, closeReason, correlWarning);
+                    emergencyClose, closeReason, correlWarning, todayTrades, weekTrades);
 }
 
 //+------------------------------------------------------------------+
@@ -573,10 +604,21 @@ void CheckNewDay()
       GlobalVariableSet(GV_DAY_START_BAL, g_dayStartBal);
       GlobalVariableSet(GV_DAY_DATE, (double)today);
       g_lastDay = today;
-      // Reset daily flags
+      // Reset daily flags — keep emergency active if still in critical DD
       GlobalVariableSet(GV_DAILY_TARGET_HIT, 0.0);
-      GlobalVariableSet(GV_PAUSE_ENTRIES,    0.0);
-      GlobalVariableSet(GV_EMERGENCY_CLOSE,  0.0);
+      double _eq = AccountInfoDouble(ACCOUNT_EQUITY);
+      double _dd = (g_equityPeak > 0) ? (g_equityPeak - _eq) / g_equityPeak * 100.0 : 0.0;
+      bool _stillEmergency = (InpCloseAllOnMaxDD && _dd >= InpMaxPortfolioDD_Pct);
+      if(!_stillEmergency)
+      {
+         GlobalVariableSet(GV_PAUSE_ENTRIES,   0.0);
+         GlobalVariableSet(GV_EMERGENCY_CLOSE, 0.0);
+      }
+      else
+      {
+         Print("Governor: New day — EMERGENCY stays active (DD=",
+               DoubleToString(_dd,2), "% >= limit ", DoubleToString(InpMaxPortfolioDD_Pct,1), "%)");
+      }
       Print("Governor: New trading day. Day start balance: $", DoubleToString(g_dayStartBal, 2));
    }
 }
@@ -686,6 +728,7 @@ string CheckCorrelation()
 
    // Find over-correlated currencies
    string warning = "";
+   bool   atCapacity = false; // at limit — block entries but don't close
    for(int c = 0; c < nCurr; c++)
    {
       int abs_exp = MathAbs(exposure[c]);
@@ -694,6 +737,8 @@ string CheckCorrelation()
          string side = (exposure[c] > 0) ? "LONG" : "SHORT";
          warning += StringFormat("%s: %d× %s  ", g_currencies[c], abs_exp, side);
       }
+      else if(abs_exp == InpMaxSameCurrency)
+         atCapacity = true; // at limit — prevent next entry but no close needed
    }
 
    if(warning != "" && InpCloseCorrelOnBreech)
@@ -701,6 +746,10 @@ string CheckCorrelation()
       // Close the newest managed position to reduce correlation
       CloseNewestManagedPosition();
    }
+
+   // Prefix "AT_CAP" so OnTimer can set pauseEntries=true without closing
+   if(warning == "" && atCapacity)
+      warning = "AT_CAP";
 
    return warning;
 }
@@ -780,7 +829,7 @@ double GetManagedFloating()
 void DrawDashboard(double dailyPnL, double dd, double riskMult, double eqMult,
                    bool paused, string pauseReason,
                    bool emergency, string closeReason,
-                   string correlWarning)
+                   string correlWarning, int todayTrades, int weekTrades)
 {
    double balance  = AccountInfoDouble(ACCOUNT_BALANCE);
    double equity   = AccountInfoDouble(ACCOUNT_EQUITY);
@@ -818,9 +867,9 @@ void DrawDashboard(double dailyPnL, double dd, double riskMult, double eqMult,
    msg += StringFormat("  Floating    : $%.2f\n", floating);
    msg += "\n";
 
-   // v2: Trade counters
-   int td = CountTodayTrades();
-   int tw = CountWeekTrades();
+   // v2: Trade counters (cached from OnTimer — no redundant HistorySelect)
+   int td = todayTrades;
+   int tw = weekTrades;
    msg += StringFormat("  Trades Today : %d", td);
    if(InpMaxDailyTrades > 0) msg += StringFormat("/%d", InpMaxDailyTrades);
    msg += StringFormat("  |  Week: %d", tw);
