@@ -125,25 +125,29 @@ public:
    //+------------------------------------------------------------------+
    void ExtractCurrencies()
    {
-      string sym = m_symbol;
-      StringToUpper(sym);
+      m_baseCurrency = SymbolInfoString(m_symbol, SYMBOL_CURRENCY_BASE);
+      m_quoteCurrency = SymbolInfoString(m_symbol, SYMBOL_CURRENCY_PROFIT);
 
-      // Handle common symbol formats
-      // Standard forex: EURUSD, EUR/USD
-      // Metals: XAUUSD, GOLD
-      // Indices: NAS100, US30
-
-      // Remove common suffixes
-      StringReplace(sym, ".PRO", "");
-      StringReplace(sym, ".STD", "");
-      StringReplace(sym, "_SB", "");
-      StringReplace(sym, "/", "");
-
-      // Standard 6-char forex pairs
-      if(StringLen(sym) >= 6)
+      // Fallback for non-standard symbols if needed
+      if(m_baseCurrency == "")
       {
-         m_baseCurrency = StringSubstr(sym, 0, 3);
-         m_quoteCurrency = StringSubstr(sym, 3, 3);
+         string sym = m_symbol;
+         StringToUpper(sym);
+         StringReplace(sym, ".PRO", "");
+         StringReplace(sym, ".STD", "");
+         StringReplace(sym, "_SB", "");
+         StringReplace(sym, "/", "");
+
+         if(StringLen(sym) >= 6)
+         {
+            m_baseCurrency = StringSubstr(sym, 0, 3);
+            m_quoteCurrency = StringSubstr(sym, 3, 3);
+         }
+         else
+         {
+            m_baseCurrency = sym;
+            m_quoteCurrency = "USD";
+         }
       }
 
       // Handle metals

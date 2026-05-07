@@ -607,8 +607,10 @@ private:
       for(int i = 0; i < n; i++)
          den += (series[i] - mean) * (series[i] - mean);
 
-      return (den > 0) ? num / den : 0.0;
+      // Add epsilon (1e-10) to prevent division by zero in extremely low vol
+      return (den > 1e-10) ? num / den : 0.0;
    }
+
 };
 
 

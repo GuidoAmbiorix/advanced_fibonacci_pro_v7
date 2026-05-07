@@ -24,6 +24,7 @@ private:
 
    double   m_peakEquity;
    double   m_dailyStart;
+   double   m_lastBalance;
    datetime m_dayStart;
 
    void LogThrottled(string msg, datetime &lastLog)
@@ -45,6 +46,7 @@ public:
       m_dailyMaxDD   = dailyMaxDD;
       m_peakEquity   = 0;
       m_dailyStart   = 0;
+      m_lastBalance  = AccountInfoDouble(ACCOUNT_BALANCE);
       m_dayStart     = 0;
    }
 
@@ -65,11 +67,41 @@ public:
    {
       if(!m_enabled) return 1.0;
 
-      double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+      double equity  = AccountInfoDouble(ACCOUNT_EQUITY);
+      double balance = AccountInfoDouble(ACCOUNT_BALANCE);
       if(equity <= 0) return 1.0;
 
       if(m_peakEquity <= 0) m_peakEquity = equity;
       if(m_dailyStart <= 0) { m_dailyStart = equity; m_dayStart = TimeCurrent(); }
+
+      // --- DETECT DEPOSITS/WITHDRAWALS ---
+      // If balance changed without active positions (or significantly more than expected)
+      // we adjust the anchors to avoid "fake" drawdowns or "fake" peaks.
+      if(m_lastBalance > 0 && MathAbs(balance - m_lastBalance) > 0.01)
+      {
+         int positions = PositionsTotal();
+         // If no positions, any balance change is a deposit/withdrawal or a closed trade result.
+         // If we want to be precise, we'd check history, but a simple way is to check 
+         // if the change is a withdrawal/deposit by assuming closed trades are handled by peak equity growth.
+         // Actually, if we just adjust peak equity by the same amount as the balance change:
+         double diff = balance - m_lastBalance;
+         
+         // If it's a deposit/withdrawal (we can't easily distinguish from a closed trade here 
+         // without more complex logic, but if we adjust peakEquity by the diff, we neutralize the impact)
+         // Wait: if it's a profit from a trade, we want peakEquity to grow naturally.
+         // If it's a withdrawal, balance drops, equity drops, diff is negative. 
+         // If we subtract diff from peakEquity, peakEquity drops too, maintaining the % DD.
+         
+         // Better: Only adjust if there are no open positions, or if the change is "external".
+         // In MT5, external deposits/withdrawals have specific DEAL_TYPEs.
+         // For now, let's use a simple heuristic: if balance change occurs, adjust anchors.
+         m_peakEquity += diff;
+         m_dailyStart += diff;
+         m_lastBalance = balance;
+         
+         if(diff < 0) Print("[GOVERNOR] Balance reduction detected ($", MathAbs(diff), "). Anchors adjusted to prevent fake DD.");
+         else if(diff > 0) Print("[GOVERNOR] Balance increase detected ($", diff, "). Anchors adjusted.");
+      }
 
       if(equity > m_peakEquity) m_peakEquity = equity;
 

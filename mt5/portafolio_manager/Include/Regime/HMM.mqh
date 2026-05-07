@@ -45,11 +45,20 @@ private:
 
    void _Reestimate()
    {
+      // 1. Re-estimate Emissions (B matrix)
       for(int s = 0; s < 2; s++)
       {
-         double total = m_emitCount[s][0] + m_emitCount[s][1] + 1e-6;
-         m_B[s][0] = MathMax(0.05, MathMin(0.95, m_emitCount[s][0] / total));
+         double totalE = m_emitCount[s][0] + m_emitCount[s][1] + 1e-6;
+         m_B[s][0] = MathMax(0.05, MathMin(0.95, m_emitCount[s][0] / totalE));
          m_B[s][1] = 1.0 - m_B[s][0];
+      }
+
+      // 2. Re-estimate Transitions (A matrix)
+      for(int s = 0; s < 2; s++)
+      {
+         double totalT = m_transCount[s][0] + m_transCount[s][1] + 1e-6;
+         m_A[s][0] = MathMax(0.10, MathMin(0.90, m_transCount[s][0] / totalT));
+         m_A[s][1] = 1.0 - m_A[s][0];
       }
    }
 
@@ -88,6 +97,8 @@ public:
    {
       if(!m_initialized) return;
 
+      int prevState = (int)m_state;
+
       // Store vol in buffer
       m_volBuffer[m_volHead] = realizedVol;
       m_volHead = (m_volHead + 1) % 50;
@@ -115,10 +126,10 @@ public:
       m_confidence = MathMax(m_alpha[0], m_alpha[1]);
 
       // Accumulate soft counts for re-estimation
-      int prevState = (int)m_state;
-      m_emitCount[prevState][obs] += 1.0;
+      m_emitCount[(int)m_state][obs] += 1.0;
+      m_transCount[prevState][(int)m_state] += 1.0;
 
-      // Re-estimate emissions periodically
+      // Re-estimate parameters periodically
       m_updateCount++;
       if(m_updateCount >= m_updateInterval)
       {

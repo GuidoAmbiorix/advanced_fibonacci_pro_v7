@@ -1115,7 +1115,16 @@ double CalculateTakeProfit(double price, double slDist, int direction,
 //+------------------------------------------------------------------+
 void OnTick()
 {
+   // --- PERFORMANCE THROTTLE ---
+   // Heavy calculations (Regime, Confluence, Filters) run only every 10 seconds 
+   // or on a new bar. Trade management (trailing, exits) runs on EVERY tick.
+   static datetime lastHeavyCalc = 0;
+   bool newBar = false;
+   datetime currentBar = iTime(_Symbol, PERIOD_CURRENT, 0);
+   static datetime lastBar = 0;
+   if(currentBar != lastBar) { newBar = true; lastBar = currentBar; }
 
+   bool runHeavy = (newBar || (TimeCurrent() - lastHeavyCalc >= 10));
 
    // --- KILLZONE STATE CHANGE DETECTION ---
    {
@@ -1150,6 +1159,43 @@ void OnTick()
          g_lastKillzoneState = currentKZ;
       }
    }
+
+   // --- DATA UPDATES & POSITION TRACKING ---
+   UpdateMarketData();
+   RefreshPositionCount();
+
+   // --- TRADE MANAGEMENT (EVERY TICK) ---
+   if(g_positionCount > 0)
+   {
+      ManageTrailingExits();
+      MonitorGroupPerformance();
+   }
+
+   // --- HEAVY ANALYTICS (THROTTLED) ---
+   if(runHeavy)
+   {
+      lastHeavyCalc = TimeCurrent();
+      
+      // Update Master Regime
+      g_regimeCtx = g_regimeEngine.Evaluate(InpMinConfluenceEntry, InpMaxSpreadPoints);
+      g_currentRegime = g_regimeCtx.regime;
+
+      // Update Individual Modules
+      smcStructure.Update();
+      smcOrderBlocks.Update();
+      smcFVG.Update();
+      smcLiquidity.Update();
+      mtfAnalysis.Update();
+      newsFilter.Update();
+      macroSentiment.Update();
+      
+      // Update Dashboard Overlay
+      UpdateDashboard();
+   }
+   
+   // --- ENTRY LOGIC (Only if heavy analytics just updated) ---
+   if(runHeavy && g_positionCount < InpMaxOpenPositions)
+   {
 
    g_tickCount++;  // Performance monitoring
 

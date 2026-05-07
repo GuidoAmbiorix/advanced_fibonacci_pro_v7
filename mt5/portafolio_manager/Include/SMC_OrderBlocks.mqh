@@ -142,8 +142,8 @@ public:
    //+------------------------------------------------------------------+
    void CheckForNewOB(int barIndex)
    {
-      // Need at least 2 bars after for impulse confirmation
-      if(barIndex < 2) return;
+      // Need at least 5 bars after for impulse confirmation
+      if(barIndex < 5) return;
 
       double open = iOpen(m_symbol, m_timeframe, barIndex);
       double close = iClose(m_symbol, m_timeframe, barIndex);
@@ -159,8 +159,8 @@ public:
          double impulseHigh = 0;
          double impulseLow = high;  // Start from current high
 
-         // Check next 2 bars for bullish impulse
-         for(int i = 1; i <= 2; i++)
+         // Check next 5 bars for bullish impulse (institutional displacement)
+         for(int i = 1; i <= 5; i++)
          {
             int checkBar = barIndex - i;
             if(checkBar < 0) break;
@@ -187,8 +187,8 @@ public:
          double impulseHigh = low;  // Start from current low
          double impulseLow = 999999;
 
-         // Check next 2 bars for bearish impulse
-         for(int i = 1; i <= 2; i++)
+         // Check next 5 bars for bearish impulse
+         for(int i = 1; i <= 5; i++)
          {
             int checkBar = barIndex - i;
             if(checkBar < 0) break;

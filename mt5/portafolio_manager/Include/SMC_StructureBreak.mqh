@@ -287,6 +287,21 @@ public:
          if(m_currentStructure == MS_BEARISH) score += 0.5;
       }
 
+      // --- VOLUME VALIDATION (RVOL) ---
+      // If a break occurred recently, check if it had institutional volume
+      if(score > 0)
+      {
+         long breakingVol = iVolume(m_symbol, m_timeframe, 1); // Volume of the confirmation bar
+         double avgVol = 0;
+         for(int i = 2; i <= 21; i++) avgVol += iVolume(m_symbol, m_timeframe, i);
+         avgVol /= 20;
+
+         if(avgVol > 0 && breakingVol > avgVol * 1.5)
+         {
+            score += 0.5; // Institutional confirmation bonus
+         }
+      }
+
       // Check recency - break within last 10 bars is more relevant
       int barsSinceBreak = iBarShift(m_symbol, m_timeframe, m_lastBreakTime, false);
       if(barsSinceBreak > 10) score *= 0.5;
