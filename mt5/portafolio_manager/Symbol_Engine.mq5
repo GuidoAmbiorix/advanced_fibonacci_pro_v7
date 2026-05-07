@@ -1269,7 +1269,7 @@ void OnTick()
    g_prevSellScore = g_cachedSellScore;
    g_cachedBuyScore = CalculateConfluenceScore(1);
    g_cachedSellScore = CalculateConfluenceScore(-1);
-   g_lastScoreCalcTime = now;
+   g_lastScoreCalcTime = TimeCurrent();
 
    // --- SIGNAL DOMINANCE FILTER ---
    // Skip in RANGING/VOLATILE: buy≈sell is normal when market has no clear bias
