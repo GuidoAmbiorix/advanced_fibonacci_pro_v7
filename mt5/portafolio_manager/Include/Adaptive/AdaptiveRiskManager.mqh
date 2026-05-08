@@ -82,7 +82,8 @@ public:
    //| Calculate Adaptive Risk for Entry                                |
    //+------------------------------------------------------------------+
    double CalculateAdaptiveRisk(ENUM_KILLZONE killzone, MARKET_REGIME mktRegime,
-                                 ConfluenceFactors &factors, ENTRY_QUALITY quality)
+                                 ConfluenceFactors &factors, ENTRY_QUALITY quality,
+                                 double rvol, double moneyFlow)
    {
       // Start with base risk
       double risk = m_baseRisk;
@@ -107,6 +108,10 @@ public:
       double patternMultiplier = m_patternRecognizer.GetRecommendedRiskMultiplier(factors);
       risk *= patternMultiplier;
 
+      // Apply ignition multiplier (institutional volume spike)
+      double ignitionMultiplier = GetIgnitionMultiplier(rvol, moneyFlow, mktRegime);
+      risk *= ignitionMultiplier;
+
       // Apply entry quality multiplier
       double qualityMultiplier = GetQualityMultiplier(quality);
       risk *= qualityMultiplier;
@@ -120,6 +125,19 @@ public:
       if(risk > m_maxRisk) risk = m_maxRisk;
 
       return risk;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Institutional Ignition Multiplier                                |
+   //+------------------------------------------------------------------+
+   double GetIgnitionMultiplier(double rvol, double moneyFlow, MARKET_REGIME regime)
+   {
+      // If the market "screams" (institutional volume + clear flow + volatile regime)
+      if(rvol > 3.0 && MathAbs(moneyFlow) > 0.5 && regime == REGIME_VOLATILE)
+      {
+         return 1.40; // Increase risk by 40%
+      }
+      return 1.0;
    }
 
    //+------------------------------------------------------------------+
