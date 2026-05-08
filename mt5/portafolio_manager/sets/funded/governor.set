@@ -1,42 +1,24 @@
 ; GOVERNOR CONFIG — FUNDED ACCOUNT SAFETY FIRST
 ; Daily DD: 3% Max | Total DD: 6% Max
-; This file sets the Governor's parameters to enforce risk management.
-
 InpGov_Enabled=true
-
-; Drawdown limits (as percentages of starting equity for the period)
-InpDailyMaxDD=3.5     ; *** Adjusted to 3.5% for safety buffer ***
-InpWeeklyMaxDD=6.0    ; Standard 6% weekly drawdown limit
-
-; Pause/Reduce trading parameters
-InpGov_DD_Reduce=1.5  ; Reduce risk at 1.5% DD
-InpGov_DD_Pause=3.5   ; *** PAUSE TRADING if 3.5% DD is hit ***
-InpGov_ReducedMult=0.5 ; Reduce lot size to 50% when trading is reduced
-
-; Targets (optional)
-InpDailyTarget=0.0    ; Disabled by default
-InpWeeklyTarget=0.0   ; Disabled by default
-
-; Other safety settings
+InpDailyMaxDD=3.5
+InpWeeklyMaxDD=6.0
+InpGov_DD_Reduce=1.5
+InpGov_DD_Pause=3.5
+InpGov_ReducedMult=0.5
 InpUseCorrelationFilter=true
-InpMaxCurrencyExposure=0.03 ; Max combined lot exposure per currency (e.g., 0.03 for USD pairs)
+InpMaxCurrencyExposure=0.03
 InpMaxConsecutiveLosses=2
 InpMaxDailyTrades=3
 InpUseReversalFilter=true
 InpReversalCooldownMinutes=120
-
-; Session Governor
 InpUseSessionGovernor=true
 InpMaxTradesPerSession=1
 InpTradeCooldownMinutes=120
 InpCloseIntradayProfits=false
 InpEndOfDayHour=21
-
-; Dynamic exits
 InpFridayCloseHour=20
 InpUseStaleTrade=true
 InpStaleBarLimit=6
-
-; Debugging
 InpEnableVisualLevels=true
 InpTickThrottleSeconds=10
