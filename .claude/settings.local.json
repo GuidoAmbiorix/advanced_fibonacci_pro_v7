@@ -11,7 +11,14 @@
       "Bash(TZ='America/New_York' date:*)",
       "Bash(python3:*)",
       "Bash(git checkout:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(docker volume:*)",
+      "Bash(docker network:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker stats:*)"
     ]
   }
 }

@@ -1,5 +1,5 @@
 services:
-  # Service for FIRST RUN ONLY - Initializes Wine directory structure for MT5-1
+  # Service for FIRST RUN ONLY - Initializes Wine directory structure
   mt5-init:
     image: gmag11/metatrader5_vnc:latest
     container_name: mt5-init
@@ -18,34 +18,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3G
+          memory: 8G
         reservations:
-          memory: 512M
+          memory: 2G
 
-  # Service for FIRST RUN ONLY - Initializes Wine directory structure for MT5-2
-  mt5-init-1:
-    image: gmag11/metatrader5_vnc:latest
-    container_name: mt5-init-1
-    profiles: ["init"]
-    ports:
-      - "3001:3000"
-      - "8001:8001"
-    environment:
-      - CUSTOM_USER=trader
-      - PASSWORD=trading
-    volumes:
-      - mt5_config_2:/config
-    networks:
-      mt5_network_v2:
-        ipv4_address: 10.13.13.21
-    deploy:
-      resources:
-        limits:
-          memory: 3G
-        reservations:
-          memory: 512M
-
-  # MT5 Instance 1 - NORMAL OPERATION
+  # MT5 Single Instance - NORMAL OPERATION
   mt5:
     image: gmag11/metatrader5_vnc:latest
     container_name: mt5-1
@@ -68,42 +45,13 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3G
+          memory: 8G
         reservations:
-          memory: 512M
-    restart: unless-stopped
-
-  # MT5 Instance 2 - NORMAL OPERATION
-  mt5-1:
-    image: gmag11/metatrader5_vnc:latest
-    container_name: mt5-2
-    profiles: ["app"]
-    ports:
-      - "3001:3000"  # VNC web interface
-      - "8001:8001"  # VNC port
-    environment:
-      - CUSTOM_USER=trader
-      - PASSWORD=trading
-    volumes:
-      - mt5_config_2:/config
-      - type: bind
-        source: ./mt5/portafolio_manager_2  # Different source folder or same
-        target: /config/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts/portafolio_manager
-        read_only: false
-    networks:
-      mt5_network_v2:
-        ipv4_address: 10.13.13.21
-    deploy:
-      resources:
-        limits:
-          memory: 3G
-        reservations:
-          memory: 512M
+          memory: 2G
     restart: unless-stopped
 
 volumes:
   mt5_config_1:
-  mt5_config_2:
 
 networks:
   mt5_network_v2:
