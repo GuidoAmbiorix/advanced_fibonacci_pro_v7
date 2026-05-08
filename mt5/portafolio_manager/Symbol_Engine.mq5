@@ -572,9 +572,13 @@ int OnInit()
 
    // Initialize Volume Analysis
    if(!volumeAnalysis.Init(_Symbol, PERIOD_CURRENT))
+   {
       Print("Warning: Volume Analysis module init failed");
+   }
    else
+   {
       Print("[OK] Volume Analysis initialized");
+   }
 
    // Initialize MTF Analysis
    if(InpUseMTF)
