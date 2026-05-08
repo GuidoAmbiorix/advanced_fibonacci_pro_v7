@@ -104,30 +104,34 @@ PerformanceMetrics GetSymbolPerformance(string symbol, int lookbackTrades = 30)
                         ((1.0 - metrics.winRate) * metrics.avgLoss);
 
    // Calculate performance multiplier (0.7x to 1.3x)
+   // STABILIZATION: Require a minimum of 10 trades for full multiplier impact
    if(metrics.totalTrades >= 10)
    {
+      double baseMult = 1.0;
+
       // HOT HAND: PF > 2.0 AND Win Rate > 55%
       if(metrics.profitFactor > 2.0 && metrics.winRate > 0.55)
-         metrics.performanceMult = 1.30;
+         baseMult = 1.30;
 
       // WARM HAND: PF > 1.5 AND Win Rate > 50%
       else if(metrics.profitFactor > 1.5 && metrics.winRate > 0.50)
-         metrics.performanceMult = 1.15;
+         baseMult = 1.15;
 
       // COLD HAND: PF < 1.0 OR Win Rate < 40%
       else if(metrics.profitFactor < 1.0 || metrics.winRate < 0.40)
-         metrics.performanceMult = 0.70;
+         baseMult = 0.70;
 
       // COOLING: PF < 1.2 OR Win Rate < 45%
       else if(metrics.profitFactor < 1.2 || metrics.winRate < 0.45)
-         metrics.performanceMult = 0.85;
+         baseMult = 0.85;
 
-      else
-         metrics.performanceMult = 1.0; // Neutral
+      // Gradual weighting: linearly scale from 1.0 at 10 trades to full baseMult at 20 trades
+      double weight = MathMin(1.0, (double)(metrics.totalTrades - 10) / 10.0);
+      metrics.performanceMult = 1.0 + ((baseMult - 1.0) * weight);
    }
    else
    {
-      metrics.performanceMult = 1.0; // Not enough data, neutral
+      metrics.performanceMult = 1.0; // Not enough data, remain neutral
    }
 
    return metrics;

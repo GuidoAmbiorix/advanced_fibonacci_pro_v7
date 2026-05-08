@@ -192,10 +192,11 @@ public:
       //   W = Win Rate
       //   R = Reward/Risk Ratio (Avg Win / Avg Loss)
 
-      if(m_rewardRiskRatio <= 0)
+      // STABILIZATION: Require a minimum sample before trusting Kelly
+      if(m_rewardRiskRatio <= 0 || ArraySize(m_tradeHistory) < 10)
       {
          m_kellyPercent = 0;
-         m_optimalRisk = m_baseRisk;
+         m_optimalRisk = m_baseRisk; // Use safety base risk for small samples
          return;
       }
 
