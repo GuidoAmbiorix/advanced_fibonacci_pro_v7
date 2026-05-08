@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Configuración Enjambre 15 - Estrategia Agresiva</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background: #f4f4f9; }
+        h1 { color: #2c3e50; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; background: white; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #34495e; color: white; }
+        .m15 { color: #27ae60; font-weight: bold; }
+        .h1 { color: #2980b9; font-weight: bold; }
+        .config-box { background: #e8f6f3; padding: 15px; border-left: 5px solid #27ae60; }
+    </style>
+</head>
+<body>
+    <h1>Plan de Implementación: Enjambre de 15 Agresivo</h1>
+    
+    <h2>1. Distribución de Timeframes (Gráfico MT5)</h2>
+    <table>
+        <tr><th>Categoría</th><th>Pares</th><th>Timeframe MT5</th></tr>
+        <tr class="m15"><td>Alta Frecuencia</td><td>EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, GBPJPY, EURJPY, AUDJPY, CHFJPY, EURGBP, GBPCAD, GBPAUD</td><td>M15</td></tr>
+        <tr class="h1"><td>Commodities / Ciclos</td><td>EURCAD, AUDCAD, NZDUSD</td><td>H1</td></tr>
+    </table>
+
+    <h2>2. Configuración Global para todos los .set</h2>
+    <div class="config-box">
+        <ul>
+            <li><strong>InpMinConfluenceEntry:</strong> 15.0</li>
+            <li><strong>InpMaxLotsPerTrade:</strong> 0.05</li>
+            <li><strong>InpRiskBase:</strong> 0.05</li>
+            <li><strong>InpKZRegimeAware:</strong> true</li>
+            <li><strong>InpEsc_FirstR:</strong> 1.2</li>
+            <li><strong>InpEsc_StepR:</strong> 0.8</li>
+            <li><strong>InpEsc_BaseHarvest:</strong> 50.0</li>
+            <li><strong>InpEsc_MaxStages:</strong> 5</li>
+            <li><strong>InpMTF:</strong> PERIOD_H4 (Asegurar que el ID corresponda a H4)</li>
+        </ul>
+    </div>
+
+    <h2>3. Ajustes Específicos por Grupo</h2>
+    <ul>
+        <li><strong>Grupo JPY:</strong> <code>InpMaxSpreadPoints=35</code>, <code>InpTrailATR_Mult=2.5</code></li>
+        <li><strong>Grupo GBP:</strong> <code>InpSMC_MinImpulseATR=1.5</code>, <code>InpMTF_Weight=0.5</code></li>
+        <li><strong>Grupo Commodities:</strong> <code>InpUseHMM=true</code>, <code>InpUseMacroSentiment=true</code></li>
+    </ul>
+
+    <p><em>Nota: Recuerda verificar que el ID de PERIOD_H4 en tus .set sea correcto según tu broker.</em></p>
+</body>
+</html>
