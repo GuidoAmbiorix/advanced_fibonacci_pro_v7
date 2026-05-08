@@ -1,7 +1,7 @@
-; EURUSD — FUNDED ACCOUNT
+; EURUSD — AGGRESSIVE ENSEMBLE SWARM
 ; Prop Firm: 9% target | 6% max DD | 3% daily DD
-; PHILOSOPHY: Elite entries only. Protect capital above all.
-; Risk: 0.10% per trade | Target: 2R avg
+; PHILOSOPHY: High frequency, aggressive entries, managed risk.
+; Risk: 0.05% per trade | Target: 2R avg + Escalator
 
 InpMagicNumber=200001
 InpDirection=0
@@ -9,7 +9,7 @@ InpBrokerUTCOffset=2
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
-InpKZRegimeAware=true
+InpKZRegimeAware=true ; *** MAINTAINED: Bypass enabled for aggressive trading ***
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
@@ -56,15 +56,15 @@ InpUseChopFilter=true
 InpChopThreshold=0.68
 InpATR_MA_Period=20
 
-;═══════ CONFLUENCE — CALIBRATED FOR FUNDED FREQUENCY ═══════
-InpMinConfluenceEntry=18
+;═══════ CONFLUENCE — **AGGRESSIVE SWARM TARGET: 15.0** ═══════
+InpMinConfluenceEntry=15.0 ; *** LOWERED TO 15.0 ***
 InpDominanceThreshold=2.0
 InpMaxPositions=1
 
-;═══════ RISK — CONSERVATIVE 0.10% ═══════
-InpRiskBase=0.10
-InpMaxRisk=0.15
-InpMaxLotsPerTrade=0.15
+;═══════ RISK — **AGGRESSIVE 0.05 LOT** ═══════
+InpRiskBase=0.05 ; *** SET TO 0.05% ***
+InpMaxRisk=0.15 ; Base risk will be capped by lot size, but this adds a layer
+InpMaxLotsPerTrade=0.05 ; *** SET TO 0.05 LOTS ***
 InpEnableMarginCheck=true
 
 ;═══════ TAKE PROFIT ═══════
@@ -91,19 +91,18 @@ InpBE_Threshold_R=0.15
 InpTrailStart_R=0.20
 InpTrailATR_Mult=1.20
 InpTrailDecayRate=0.30
-InpTrailMinMult=0.40
 InpTrailRegimeAware=true
 InpTrailMinBufferATR=0.12
 
-;═══════ INFINITE ESCALATOR — CALIBRATED ═══════
-InpEsc_FirstR=0.40
+;═══════ INFINITE ESCALATOR — **AGGRESSIVE** ═══════
+InpEsc_FirstR=1.2 ; *** INCREASED STAGE 1 ***
 InpEsc_FirstSL_R=-0.01
-InpEsc_StepR=0.20
+InpEsc_StepR=0.8  ; *** NEW STEP SIZE ***
 InpEsc_GrowthFactor=1.50
-InpEsc_BaseHarvest=35.0
+InpEsc_BaseHarvest=50.0 ; *** INCREASED HARVEST ***
 InpEsc_HarvestDecay=0.40
 InpEsc_MinHarvest=10.0
-InpEsc_MaxStages=20
+InpEsc_MaxStages=5      ; *** REDUCED STAGES FOR AGGRESSIVENESS ***
 InpRunnerTrailTight=0.93
 InpTimeStaleMins=120.0
 InpTimeStaleTight1=0.92
@@ -141,13 +140,13 @@ InpMaxSpreadVolatile=60
 ;═══════ SMC ═══════
 InpUseSMC=true
 InpSMC_SwingLookback=24
-InpSMC_MinImpulseATR=1.8
+InpSMC_MinImpulseATR=1.5 ; *** ADJUSTED FOR GBP GROUP ***
 InpSMC_MinFVG_ATR=0.4
 
-;═══════ MULTI-TIMEFRAME ═══════
+;═══════ MULTI-TIMEFRAME — **H4 BIAS** ═══════
 InpUseMTF=true
-InpHTF=49153
-InpMTF=16408
+InpHTF=49153 ; PERIOD_H4
+InpMTF=16408 ; PERIOD_H1 (This will be adjusted per group below)
 InpMTF_EMAPeriod=50
 
 ;═══════ NEWS FILTER ═══════
@@ -179,7 +178,8 @@ InpEnableAdaptiveExits=true
 InpEnableAdaptiveFilters=true
 
 ;═══════ PORTFOLIO PROTECTION — TIGHT ON FUNDED ═══════
-InpUseCorrelationFilter=false
+InpUseCorrelationFilter=true
+InpMaxCurrencyExposure=0.03
 InpDailyMaxLoss_R=2.0
 InpLossCooldownMinutes=240
 InpMaxConsecutiveLosses=2
@@ -194,16 +194,16 @@ InpTradeCooldownMinutes=120
 InpCloseIntradayProfits=false
 InpEndOfDayHour=21
 
-;═══════ GOVERNOR (per-symbol backup) ═══════
+;═══════ GOVERNOR (per-symbol backup) — **AGGRESSIVE SAFETY CAPS** ═══════
 InpGov_Enabled=true
 InpGov_DD_Reduce=1.5
-InpGov_DD_Pause=2.5
+InpGov_DD_Pause=3.5  ; *** Adjusted for Daily DD 3% ***
 InpGov_ReducedMult=0.5
-InpGov_DailyMaxDD=3.0
+InpGov_DailyMaxDD=3.5 ; *** Adjusted for Daily DD 3% ***
 
 ;═══════ VISUAL DEBUGGING ═══════
 InpEnableVisualLevels=true
-InpTickThrottleSeconds=30
+InpTickThrottleSeconds=10 ; *** Adjusted for performance ***
 
 InpUseRollingMode=true
 InpSymbolCooldown=6
