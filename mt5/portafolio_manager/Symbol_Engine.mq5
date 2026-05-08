@@ -570,6 +570,12 @@ int OnInit()
          Print("Warning: SMC Liquidity module init failed");
    }
 
+   // Initialize Volume Analysis
+   if(!volumeAnalysis.Init(_Symbol, PERIOD_CURRENT))
+      Print("Warning: Volume Analysis module init failed");
+   else
+      Print("[OK] Volume Analysis initialized");
+
    // Initialize MTF Analysis
    if(InpUseMTF)
    {
@@ -1680,8 +1686,10 @@ void OnTick()
             return;  // Exit OnTick without trading
          }
 
-         // Calculate adaptive risk
-         baseRisk = adaptiveRisk.CalculateAdaptiveRisk(currentKZ, g_currentRegime, factors, quality);
+         // Calculate adaptive risk with Volume Analysis (Ignition logic)
+         double rvol = volumeAnalysis.CalculateRVOL(20);
+         double moneyFlow = volumeAnalysis.CalculateRapidMoneyFlow(5);
+         baseRisk = adaptiveRisk.CalculateAdaptiveRisk(currentKZ, g_currentRegime, factors, quality, (double)rvol, (double)moneyFlow);
       }
 
 
