@@ -1,6 +1,6 @@
 ; NZDUSD — AGGRESSIVE ENSEMBLE SWARM
 InpMagicNumber=200013
-InpMinConfluenceEntry=15.0
+InpMinConfluenceEntry=16
 InpMaxLotsPerTrade=0.05
 InpRiskBase=0.05
 InpKZRegimeAware=true

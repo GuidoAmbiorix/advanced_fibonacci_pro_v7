@@ -1,6 +1,6 @@
 ; GBPJPY — AGGRESSIVE ENSEMBLE SWARM
 InpMagicNumber=200011
-InpMinConfluenceEntry=15.0
+InpMinConfluenceEntry=16
 InpMaxLotsPerTrade=0.05
 InpRiskBase=0.05
 InpKZRegimeAware=true
@@ -19,3 +19,5 @@ InpMaxCurrencyExposure=0.03
 InpMaxSpreadPoints=35
 InpTrailATR_Mult=2.5
 InpSMC_MinImpulseATR=1.5
+InpMTF_Weight=0.5
+

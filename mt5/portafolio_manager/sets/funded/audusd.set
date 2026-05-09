@@ -1,7 +1,7 @@
 ; AUDUSD — AGGRESSIVE ENSEMBLE SWARM
 ; Risk: 0.05% | Target: 2R avg + Escalator
 InpMagicNumber=200003
-InpMinConfluenceEntry=15.0
+InpMinConfluenceEntry=16
 InpMaxLotsPerTrade=0.05
 InpRiskBase=0.05
 InpKZRegimeAware=true

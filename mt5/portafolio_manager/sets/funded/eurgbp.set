@@ -1,6 +1,6 @@
 ; EURGBP — AGGRESSIVE ENSEMBLE SWARM
 InpMagicNumber=200006
-InpMinConfluenceEntry=15.0
+InpMinConfluenceEntry=16
 InpMaxLotsPerTrade=0.05
 InpRiskBase=0.05
 InpKZRegimeAware=true
@@ -17,3 +17,5 @@ InpTickThrottleSeconds=10
 InpUseCorrelationFilter=true
 InpMaxCurrencyExposure=0.03
 InpSMC_MinImpulseATR=1.5
+InpMTF_Weight=0.5
+
