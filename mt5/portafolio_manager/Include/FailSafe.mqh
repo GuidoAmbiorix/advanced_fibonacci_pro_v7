@@ -33,11 +33,22 @@ public:
       m_symbol.Name(_Symbol);
    }
    
-   bool IsExecutionSafe()
+   bool IsExecutionSafe(bool isNewTrade = true)
    {
-      // 1. Spread Check
+      // 1. Spread Check (Adaptive ATR-Relative)
       m_symbol.RefreshRates();
-      if(m_symbol.Spread() > m_maxSpread) return false;
+      
+      // Calculate dynamic spread limit (30% of current ATR)
+      double currentATR = iATR(_Symbol, _Period, 14);
+      double dynamicMaxSpread = currentATR * 0.30;
+      
+      // Safety floor: 20 points (to handle ECN/raw spreads)
+      if(dynamicMaxSpread < 20) dynamicMaxSpread = 20;
+
+      // Tighten for new trades, allow 50% extra for existing trades to avoid "Quick Closes"
+      double limit = isNewTrade ? dynamicMaxSpread : (dynamicMaxSpread * 1.5);
+
+      if(m_symbol.Spread() > limit) return false;
       
       // 2. Circuit Breaker (if too many failures recently)
       if(m_consecutiveFailures >= 3)
