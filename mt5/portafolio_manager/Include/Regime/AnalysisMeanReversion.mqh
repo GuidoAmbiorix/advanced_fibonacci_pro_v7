@@ -89,7 +89,7 @@ public:
    //+------------------------------------------------------------------+
    //| Analyze current bar and return signal                             |
    //+------------------------------------------------------------------+
-   MRSignal Analyze(double maxSpreadPoints)
+   MRSignal Analyze()
    {
       MRSignal sig;
       sig.valid     = false;
@@ -123,9 +123,6 @@ public:
       double closes[];
       ArraySetAsSeries(closes, true);
       if(CopyClose(m_symbol, m_tf, 1, 3, closes) < 3) return sig;
-
-      double spread = (double)SymbolInfoInteger(m_symbol, SYMBOL_SPREAD) * SymbolInfoDouble(m_symbol, SYMBOL_POINT);
-      if(SymbolInfoInteger(m_symbol, SYMBOL_SPREAD) > maxSpreadPoints) return sig;
 
       double point   = SymbolInfoDouble(m_symbol, SYMBOL_POINT);
       double bbWidth = bbUp[0] - bbLow[0];

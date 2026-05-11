@@ -56,6 +56,6 @@ const int    CFG_DISPLACEMENT_LOOKBACK = 5;     // Bars to look back
 //+------------------------------------------------------------------+
 //| SPREAD FILTER                                                    |
 //+------------------------------------------------------------------+
-const int    CFG_MAX_SPREAD_POINTS = 50;        // Maximum allowed spread in points
+const int    CFG_MAX_SPREAD_POINTS = 200;        // Maximum allowed spread in points (High limit to allow FailSafe to manage)
 
 #endif

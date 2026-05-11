@@ -480,10 +480,20 @@ public:
    bool IsEnabled() { return m_filterEnabled; }
 
    //+------------------------------------------------------------------+
-   //| Get current status                                                |
+   //| News Ignition Bypass: Allows trading during news if score is high |
    //+------------------------------------------------------------------+
-   bool IsInNewsWindow() { return m_inNewsWindow; }
-   string GetCurrentEventName() { return m_currentEventName; }
+   bool IsTradingThroughNewsAllowed(double currentScore)
+   {
+      // FOMC and Interest Rate decisions are too risky to bypass
+      if(m_currentEventName != "" && (StringFind(m_currentEventName, "FOMC") >= 0 || StringFind(m_currentEventName, "INTEREST RATE") >= 0)) 
+         return false;
+
+      // If confluency is very high, allow trading with reduced risk
+      if(currentScore >= 25.0) 
+         return true;
+
+      return false;
+   }
 
    //+------------------------------------------------------------------+
    //| 🪙 METALS: Check if event is gold-relevant (high impact for XAUUSD) |

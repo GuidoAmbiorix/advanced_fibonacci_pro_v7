@@ -1366,15 +1366,23 @@ void OnTick()
    // --- MODULE: NEWS FILTER ---
    if(InpUseNewsFilter && !newsFilter.IsTradingAllowed())
    {
-      static datetime lastNewsLog = 0;
-      if(TimeCurrent() - lastNewsLog > 60)
+      // HACK: Allow trading if confluence is high enough (Ignition)
+      if(newsFilter.IsTradingThroughNewsAllowed(g_cachedBuyScore > g_cachedSellScore ? g_cachedBuyScore : g_cachedSellScore))
       {
-         Print("[BLOCKED] NEWS_FILTER: trading paused around news event");
-         lastNewsLog = TimeCurrent();
+         Print("[IGNITION] News window active but Confluence > 25: Trading with 0.5x Risk");
+         // Multiplier reduction is handled in entry risk calc
       }
-      return;
+      else
+      {
+         static datetime lastNewsLog = 0;
+         if(TimeCurrent() - lastNewsLog > 60)
+         {
+            Print("[BLOCKED] NEWS_FILTER: trading paused around news event");
+            lastNewsLog = TimeCurrent();
+         }
+         return;
+      }
    }
-
    // --- MODULE: KELLY POSITION SIZER (DD + DAILY TARGET LIMITS) ---
    if(InpUseKelly && !kellySizer.IsTradingAllowed())
    {
