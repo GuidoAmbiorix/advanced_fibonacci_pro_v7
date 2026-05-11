@@ -1253,9 +1253,8 @@ void OnTick()
    UpdateModules();
 
    // --- MODULE: MARKET REGIME (5-regime adaptive engine) ---
-   g_regimeCtx     = g_regimeEngine.Evaluate(InpMinConfluenceEntry, InpMaxSpreadPoints);
+   g_regimeCtx     = g_regimeEngine.Evaluate(InpMinConfluenceEntry);
    g_currentRegime = g_regimeCtx.regime;
-
    // --- MACRO SENTIMENT: Update once per bar ---
    if(InpUseMacroSentiment) macroSentiment.Update();
 
