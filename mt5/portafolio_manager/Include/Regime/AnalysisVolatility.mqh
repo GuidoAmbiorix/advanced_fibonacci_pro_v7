@@ -141,9 +141,6 @@ public:
       if(CopyLow(m_symbol,   m_tf, 1, 5, lows)   < 5) return sig;
       if(CopyOpen(m_symbol,  m_tf, 1, 5, opens)  < 5) return sig;
 
-      long spread = SymbolInfoInteger(m_symbol, SYMBOL_SPREAD);
-      if((double)spread > maxSpreadPoints) return sig;
-
       double point = SymbolInfoDouble(m_symbol, SYMBOL_POINT);
 
       // ── PHASE 1: Detect compression ────────────────────────────────
