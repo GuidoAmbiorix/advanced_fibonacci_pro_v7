@@ -241,12 +241,12 @@ public:
 
       if(rr.regime == REGIME_RANGING)
       {
-         ctx.mrSignal      = m_mr.Analyze(maxSpreadPoints);
+         ctx.mrSignal      = m_mr.Analyze();
          ctx.mrSignalValid = ctx.mrSignal.valid;
       }
       else if(rr.regime == REGIME_VOLATILE || rr.regime == REGIME_TREND_WEAK)
       {
-         ctx.volSignal      = m_vol.Analyze(maxSpreadPoints);
+         ctx.volSignal      = m_vol.Analyze();
          ctx.volSignalValid = ctx.volSignal.valid;
       }
 
