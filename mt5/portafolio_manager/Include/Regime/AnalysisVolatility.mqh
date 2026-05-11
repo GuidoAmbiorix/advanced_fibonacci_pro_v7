@@ -95,7 +95,7 @@ public:
    //+------------------------------------------------------------------+
    //| Call on each new bar. Returns signal if breakout detected.        |
    //+------------------------------------------------------------------+
-   VolSignal Analyze(double maxSpreadPoints)
+   VolSignal Analyze()
    {
       VolSignal sig;
       sig.valid       = false;
