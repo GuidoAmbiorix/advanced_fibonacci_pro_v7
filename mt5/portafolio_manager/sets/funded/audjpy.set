@@ -1,14 +1,13 @@
-; AUDJPY — AGGRESSIVE ENSEMBLE SWARM
-; Risk: 0.05% | Target: 2R avg + Escalator
+; AUDJPY — SNIPER AGGRESSIVE (0.20 LOTS)
 InpMagicNumber=200002
-InpMinConfluenceEntry=16
-InpMaxLotsPerTrade=0.05
-InpRiskBase=0.05
+InpMinConfluenceEntry=20.0
+InpMaxLotsPerTrade=0.20
+InpRiskBase=0.20
 InpKZRegimeAware=true
-InpEsc_FirstR=1.2
-InpEsc_StepR=0.8
-InpEsc_BaseHarvest=50.0
-InpEsc_MaxStages=5
+InpEsc_FirstR=0.8
+InpEsc_StepR=0.5
+InpEsc_BaseHarvest=60.0
+InpEsc_MaxStages=3
 InpUseHMM=true
 InpUseMacroSentiment=true
 InpUseMTF=true
@@ -16,6 +15,8 @@ InpMTF=16408
 InpMTF_EMAPeriod=50
 InpTickThrottleSeconds=10
 InpUseCorrelationFilter=true
-InpMaxCurrencyExposure=0.03
+InpMaxCurrencyExposure=0.20
 InpMaxSpreadPoints=35
-InpTrailATR_Mult=2.5
+InpTrailATR_Mult=2.0
+InpATR_Mult_SL=2.0
+InpSMC_MinImpulseATR=1.5

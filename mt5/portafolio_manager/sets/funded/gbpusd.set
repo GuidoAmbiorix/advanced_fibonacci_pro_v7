@@ -1,8 +1,8 @@
-; GBPUSD — ALL-IN AGGRESSIVE
+; GBPUSD — SNIPER AGGRESSIVE (0.20 LOTS)
 InpMagicNumber=200012
 InpMinConfluenceEntry=20.0
-InpMaxLotsPerTrade=0.10
-InpRiskBase=0.10
+InpMaxLotsPerTrade=0.20
+InpRiskBase=0.20
 InpKZRegimeAware=true
 InpEsc_FirstR=0.8
 InpEsc_StepR=0.5
@@ -15,4 +15,4 @@ InpMTF=16408
 InpMTF_EMAPeriod=50
 InpTickThrottleSeconds=10
 InpUseCorrelationFilter=true
-InpMaxCurrencyExposure=0.05
+InpMaxCurrencyExposure=0.20
