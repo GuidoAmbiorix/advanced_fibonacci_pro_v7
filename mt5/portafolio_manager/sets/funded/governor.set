@@ -1,20 +1,19 @@
-; GOVERNOR CONFIG — FUNDED ACCOUNT SAFETY FIRST
-; Daily DD: 3% Max | Total DD: 6% Max
+; GOVERNOR CONFIG — ALL-IN SAFETY
 InpGov_Enabled=true
-InpDailyMaxDD=3.5
+InpDailyMaxDD=2.8
 InpWeeklyMaxDD=6.0
-InpGov_DD_Reduce=1.5
-InpGov_DD_Pause=3.5
+InpGov_DD_Reduce=1.2
+InpGov_DD_Pause=2.8
 InpGov_ReducedMult=0.5
 InpUseCorrelationFilter=true
-InpMaxCurrencyExposure=0.03
+InpMaxCurrencyExposure=0.05
 InpMaxConsecutiveLosses=2
-InpMaxDailyTrades=3
+InpMaxDailyTrades=5
 InpUseReversalFilter=true
-InpReversalCooldownMinutes=120
+InpReversalCooldownMinutes=60
 InpUseSessionGovernor=true
 InpMaxTradesPerSession=1
-InpTradeCooldownMinutes=120
+InpTradeCooldownMinutes=60
 InpCloseIntradayProfits=false
 InpEndOfDayHour=21
 InpFridayCloseHour=20

@@ -1,21 +1,18 @@
-; EURUSD — SNIPER MODE
+; EURUSD — ALL-IN AGGRESSIVE
 InpMagicNumber=200008
-InpMinConfluenceEntry=15.0
-InpMaxLotsPerTrade=0.05
-InpRiskBase=0.05
+InpMinConfluenceEntry=22.0
+InpMaxLotsPerTrade=0.10
+InpRiskBase=0.10
 InpKZRegimeAware=true
-InpEsc_FirstR=1.2
-InpEsc_StepR=0.8
-InpEsc_BaseHarvest=50.0
-InpEsc_MaxStages=2
+InpEsc_FirstR=0.8
+InpEsc_StepR=0.5
+InpEsc_BaseHarvest=60.0
+InpEsc_MaxStages=3
 InpUseHMM=true
 InpUseMacroSentiment=true
 InpUseMTF=true
 InpMTF=16408
 InpMTF_EMAPeriod=50
-InpTickThrottleSeconds=30
+InpTickThrottleSeconds=10
 InpUseCorrelationFilter=true
-InpMaxCurrencyExposure=0.01
-InpMaxSameCurrency=1
-InpATR_Mult_SL=2.0
-InpSMC_MinImpulseATR=1.5
+InpMaxCurrencyExposure=0.05
