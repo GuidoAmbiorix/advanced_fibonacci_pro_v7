@@ -1,9 +1,9 @@
-; EURUSD — SNIPER STRICT SESSION
+; EURUSD — SNIPER ULTRA AGGRESSIVE (0.25 LOTS)
 InpMagicNumber=200008
 InpMinConfluenceEntry=20.0
-InpMaxLotsPerTrade=0.20
-InpRiskBase=0.20
-InpKZRegimeAware=false ; *** STRICT SESSION MODE: BYPASS DISABLED ***
+InpMaxLotsPerTrade=0.25
+InpRiskBase=0.25
+InpKZRegimeAware=false
 InpEsc_FirstR=0.8
 InpEsc_StepR=0.5
 InpEsc_BaseHarvest=60.0
@@ -15,4 +15,4 @@ InpMTF=16408
 InpMTF_EMAPeriod=50
 InpTickThrottleSeconds=10
 InpUseCorrelationFilter=true
-InpMaxCurrencyExposure=0.20
+InpMaxCurrencyExposure=0.25
