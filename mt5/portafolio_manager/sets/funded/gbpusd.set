@@ -1,21 +1,21 @@
-; GBPUSD — AGGRESSIVE ENSEMBLE SWARM
+; GBPUSD — SNIPER MODE
 InpMagicNumber=200012
-InpMinConfluenceEntry=16
+InpMinConfluenceEntry=15.0
 InpMaxLotsPerTrade=0.05
 InpRiskBase=0.05
 InpKZRegimeAware=true
 InpEsc_FirstR=1.2
 InpEsc_StepR=0.8
 InpEsc_BaseHarvest=50.0
-InpEsc_MaxStages=5
+InpEsc_MaxStages=2
 InpUseHMM=true
 InpUseMacroSentiment=true
 InpUseMTF=true
 InpMTF=16408
 InpMTF_EMAPeriod=50
-InpTickThrottleSeconds=10
+InpTickThrottleSeconds=30
 InpUseCorrelationFilter=true
-InpMaxCurrencyExposure=0.03
+InpMaxCurrencyExposure=0.01
+InpMaxSameCurrency=1
+InpATR_Mult_SL=2.0
 InpSMC_MinImpulseATR=1.5
-InpMTF_Weight=0.5
-
