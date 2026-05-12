@@ -1,9 +1,9 @@
-; USDJPY — SNIPER AGGRESSIVE (0.20 LOTS)
+; USDJPY — SNIPER STRICT SESSION
 InpMagicNumber=200015
 InpMinConfluenceEntry=20.0
 InpMaxLotsPerTrade=0.20
 InpRiskBase=0.20
-InpKZRegimeAware=true
+InpKZRegimeAware=false ; *** STRICT SESSION MODE: BYPASS DISABLED ***
 InpEsc_FirstR=0.8
 InpEsc_StepR=0.5
 InpEsc_BaseHarvest=60.0
