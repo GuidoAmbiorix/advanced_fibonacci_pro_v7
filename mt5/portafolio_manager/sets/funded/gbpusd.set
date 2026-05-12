@@ -1,6 +1,6 @@
 ; GBPUSD — ALL-IN AGGRESSIVE
 InpMagicNumber=200012
-InpMinConfluenceEntry=22.0
+InpMinConfluenceEntry=20.0
 InpMaxLotsPerTrade=0.10
 InpRiskBase=0.10
 InpKZRegimeAware=true
