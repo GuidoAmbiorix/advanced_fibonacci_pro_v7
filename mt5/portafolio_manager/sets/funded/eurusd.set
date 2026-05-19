@@ -1,6 +1,6 @@
 ; EURUSD — SNIPER ULTRA AGGRESSIVE (0.25 LOTS)
 InpMagicNumber=200008
-InpMinConfluenceEntry=20.0
+InpMinConfluenceEntry=18.0
 InpMaxLotsPerTrade=1.00
 InpRiskBase=0.83
 InpKZRegimeAware=false
