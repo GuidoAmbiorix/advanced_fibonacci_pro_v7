@@ -3,8 +3,8 @@
 ; Gold: highest ICT/SMC structure, DXY-driven, H4 institutional
 InpMagicNumber=200016
 InpMinConfluenceEntry=18.0
-InpMaxLotsPerTrade=1.00
-InpRiskBase=0.83
+InpMaxLotsPerTrade=2.00
+InpRiskBase=1.67
 InpKZRegimeAware=false
 InpEsc_FirstR=0.8
 InpEsc_StepR=0.5
@@ -25,5 +25,8 @@ InpMaxSpreadVolatile=300
 InpSMC_MinImpulseATR=2.0
 InpTrailATR_Mult=2.5
 InpATR_Mult_SL=2.0
-InpUseKillzoneFilter=false
+InpUseKillzoneFilter=true
+InpMaxPositions=1
+InpEnableLondonOpenKZ=true
+InpEnableNYKZ=true
 

@@ -1,8 +1,8 @@
 ; USDJPY — SNIPER ULTRA AGGRESSIVE (0.25 LOTS)
 InpMagicNumber=200015
 InpMinConfluenceEntry=18.0
-InpMaxLotsPerTrade=1.00
-InpRiskBase=0.83
+InpMaxLotsPerTrade=2.00
+InpRiskBase=1.67
 InpKZRegimeAware=false
 InpEsc_FirstR=0.8
 InpEsc_StepR=0.5
@@ -20,5 +20,8 @@ InpMaxSpreadPoints=35
 InpTrailATR_Mult=2.0
 InpATR_Mult_SL=2.0
 InpSMC_MinImpulseATR=1.5
-InpUseKillzoneFilter=false
+InpUseKillzoneFilter=true
+InpMaxPositions=1
+InpEnableLondonOpenKZ=true
+InpEnableNYKZ=true
 

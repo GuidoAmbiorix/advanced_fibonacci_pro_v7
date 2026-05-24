@@ -3,8 +3,8 @@
 ; Risk: $100/trade | 0.83% x 1.5 ELITE = ~$75-100
 InpMagicNumber=200011
 InpMinConfluenceEntry=18.0
-InpMaxLotsPerTrade=1.00
-InpRiskBase=0.83
+InpMaxLotsPerTrade=2.00
+InpRiskBase=1.67
 InpKZRegimeAware=false
 InpEsc_FirstR=0.8
 InpEsc_StepR=0.5
@@ -27,5 +27,8 @@ InpATR_Mult_SL=2.0
 ; GBP-specific: stronger SMC impulse required
 InpSMC_MinImpulseATR=1.5
 InpMTF_Weight=0.5
-InpUseKillzoneFilter=false
+InpUseKillzoneFilter=true
+InpMaxPositions=1
+InpEnableLondonOpenKZ=true
+InpEnableNYKZ=true
 
