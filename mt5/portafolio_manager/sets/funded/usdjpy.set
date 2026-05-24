@@ -20,3 +20,5 @@ InpMaxSpreadPoints=35
 InpTrailATR_Mult=2.0
 InpATR_Mult_SL=2.0
 InpSMC_MinImpulseATR=1.5
+InpUseKillzoneFilter=false
+

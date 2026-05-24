@@ -25,3 +25,5 @@ InpMaxSpreadVolatile=500
 InpSMC_MinImpulseATR=2.5
 InpTrailATR_Mult=3.0
 InpATR_Mult_SL=2.5
+InpUseKillzoneFilter=false
+

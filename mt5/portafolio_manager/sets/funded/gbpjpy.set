@@ -27,3 +27,5 @@ InpATR_Mult_SL=2.0
 ; GBP-specific: stronger SMC impulse required
 InpSMC_MinImpulseATR=1.5
 InpMTF_Weight=0.5
+InpUseKillzoneFilter=false
+

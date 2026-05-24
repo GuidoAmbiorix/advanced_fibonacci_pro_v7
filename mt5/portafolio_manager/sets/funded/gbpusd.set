@@ -16,3 +16,5 @@ InpMTF_EMAPeriod=50
 InpTickThrottleSeconds=10
 InpUseCorrelationFilter=true
 InpMaxCurrencyExposure=0.25
+InpUseKillzoneFilter=false
+
