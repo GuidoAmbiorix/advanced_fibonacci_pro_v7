@@ -4012,6 +4012,14 @@ void UpdateDashboard()
    if(InpUseNewsFilter && !newsFilter.IsTradingAllowed()) tradingStatus = "NEWS BLOCKED";
    if(InpUseKelly && !kellySizer.IsTradingAllowed()) tradingStatus = "DD LIMIT";
    if(InpUseKillzoneFilter && !CheckKillzone()) tradingStatus = "KILLZONE CLOSED";
+   if(InpUseTimeFilter)
+   {
+      MqlDateTime dtd; TimeToStruct(TimeCurrent(), dtd);
+      bool inW = (InpTradeStartHour < InpTradeEndHour)
+                 ? (dtd.hour >= InpTradeStartHour && dtd.hour < InpTradeEndHour)
+                 : (dtd.hour >= InpTradeStartHour || dtd.hour < InpTradeEndHour);
+      if(!inW) tradingStatus = "TIME WINDOW CLOSED (" + IntegerToString(InpTradeStartHour) + ":00-" + IntegerToString(InpTradeEndHour) + ":00)";
+   }
 
    string kzStatus = "DISABLED";
    if(InpUseKillzoneFilter)
