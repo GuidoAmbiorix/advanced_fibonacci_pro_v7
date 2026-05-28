@@ -2,7 +2,7 @@
 ; $6000 | Daily DD 3%=$180 | Risk $150/trade | Buffer $30
 InpMagicMin=200001
 InpMagicMax=200020
-InpDailyLossLimit=-160.0
+InpDailyLossLimit=-500.0
 InpMaxPortfolioDD_Pct=3.5
 InpReduceRiskAt_Pct=2.0
 InpCloseAllOnMaxDD=true
@@ -38,3 +38,4 @@ InpUseStaleTrade=true
 InpStaleBarLimit=6
 InpEnableVisualLevels=true
 InpTickThrottleSeconds=10
+

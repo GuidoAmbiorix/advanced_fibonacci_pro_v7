@@ -2,11 +2,11 @@
 ; EUR+JPY cross — strong Asian + London sessions.
 ; Risk: $100/trade | 0.83% x 1.5 ELITE = ~$75-100
 InpMagicNumber=200007
-InpMinConfluenceEntry=18.0
-InpMaxLotsPerTrade=2.00
-InpRiskBase=1.67
+InpMinConfluenceEntry=19.0
+InpMaxLotsPerTrade=5.00
+InpRiskBase=5.50
 InpKZRegimeAware=false
-InpEsc_FirstR=0.8
+InpEsc_FirstR=0.5
 InpEsc_StepR=0.5
 InpEsc_BaseHarvest=60.0
 InpEsc_MaxStages=3
@@ -28,4 +28,5 @@ InpUseKillzoneFilter=true
 InpMaxPositions=1
 InpEnableLondonOpenKZ=true
 InpEnableNYKZ=true
+
 
