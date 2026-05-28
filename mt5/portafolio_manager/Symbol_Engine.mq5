@@ -121,6 +121,7 @@ input group "======= RISK (Before Governor Scaling) ======="
 input double            InpRiskBase = 0.25;
 input double            InpMaxRisk = 0.75;               // Maximum Risk % (Kelly Limit)
 input double            InpMaxLotsPerTrade = 0.5;        // Max Lots Per Trade
+input double            InpFixedLots = 0.0;              // Fixed Lot Size (0=usar riesgo %, >0=fijo siempre)
 input bool              InpEnableMarginCheck = true;     // Validate Margin Before Opening
 
 input group "======= TAKE PROFIT ======="
@@ -253,6 +254,11 @@ input bool              InpNotifyKillzoneOpen = true;     // Notify on Killzone 
 input bool              InpCloseOnKillzoneEnd = false;    // Close trades when their killzone ends
 input int               InpKZBEMinutesBefore = 15;        // Mins before KZ end to force breakeven (0=off)
 input double            InpKZBEMinProfitR    = 0.1;       // Min profit R required to force breakeven
+
+input group "======= TIME WINDOW ======="
+input bool              InpUseTimeFilter    = false;      // Operar solo dentro de ventana horaria (ignora killzones)
+input int               InpTradeStartHour   = 0;          // Hora inicio (server time, 0=medianoche)
+input int               InpTradeEndHour     = 12;         // Hora fin (server time, 12=mediodia)
 
 input group "======= MOMENTUM EXIT ======="
 input bool              InpUseMomentumExit      = true;   // Detect & exit trades that lost momentum
@@ -1423,6 +1429,26 @@ void OnTick()
       return;
    }
 
+   // --- PRE-ENTRY FILTER: TIME WINDOW ---
+   if(InpUseTimeFilter)
+   {
+      MqlDateTime dt;
+      TimeToStruct(TimeCurrent(), dt);
+      bool inWindow = (InpTradeStartHour < InpTradeEndHour)
+                      ? (dt.hour >= InpTradeStartHour && dt.hour < InpTradeEndHour)
+                      : (dt.hour >= InpTradeStartHour || dt.hour < InpTradeEndHour);
+      if(!inWindow)
+      {
+         static datetime lastTWLog = 0;
+         if(TimeCurrent() - lastTWLog > 300)
+         {
+            Print("[BLOCKED] Outside time window (", InpTradeStartHour, ":00 - ", InpTradeEndHour, ":00) server time");
+            lastTWLog = TimeCurrent();
+         }
+         return;
+      }
+   }
+
    // --- PRE-ENTRY FILTER: KILLZONE CHECK ---
    if(InpUseKillzoneFilter)
    {
@@ -1642,6 +1668,17 @@ void OnTick()
           // For now, using simple daily limit as proxy or relying on Allocator
       }
 
+      // --- TIME WINDOW (inner check) ---
+      if(InpUseTimeFilter)
+      {
+         MqlDateTime dt2;
+         TimeToStruct(TimeCurrent(), dt2);
+         bool inW = (InpTradeStartHour < InpTradeEndHour)
+                    ? (dt2.hour >= InpTradeStartHour && dt2.hour < InpTradeEndHour)
+                    : (dt2.hour >= InpTradeStartHour || dt2.hour < InpTradeEndHour);
+         if(!inW) return;
+      }
+
       // --- KILLZONES ---
       if(InpUseKillzoneFilter)
       {
@@ -1711,7 +1748,7 @@ void OnTick()
       if(InpUseMacroSentiment)
          approvedRisk *= macroSentiment.GetRiskMultiplier();
 
-      if(approvedRisk <= 0.05)
+      if(approvedRisk <= 0.05 && InpFixedLots <= 0)
       {
          static datetime lastRiskLog = 0;
          if(TimeCurrent() - lastRiskLog > 60)
@@ -2063,10 +2100,10 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
    double ts = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
    double minL = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
    
-   if (tv > 0 && ts > 0)
+   if (tv > 0 && ts > 0 && InpFixedLots <= 0)
    {
        double minLotRiskDollar = (slDist / ts) * tv * minL;
-       
+
        if (minLotRiskDollar > maxRiskDollar && maxRiskDollar > 0)
        {
           // Reject trade: minimum lot would exceed allowed risk R do NOT tighten SL (creates unrealistic stops)
@@ -3848,6 +3885,16 @@ int CountPositions()
 
 double CalculateLotSize(double slDist, double riskPct)
 {
+   // FIXED LOTS MODE: bypass all risk calculations
+   if(InpFixedLots > 0)
+   {
+      double step = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
+      double minL = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+      double maxL = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
+      double lots = MathMin(MathMax(InpFixedLots, minL), maxL);
+      return MathFloor(lots / step + 0.000001) * step;
+   }
+
    // OPTIMIZATION: Validate inputs first
    if(slDist <= 0 || riskPct <= 0)
    {

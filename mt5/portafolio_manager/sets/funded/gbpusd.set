@@ -1,7 +1,8 @@
-; GBPUSD — SNIPER ULTRA AGGRESSIVE (0.25 LOTS)
+; GBPUSD — SNIPER FIXED LOTS 2.00
 InpMagicNumber=200012
 InpMinConfluenceEntry=19.0
 InpMaxLotsPerTrade=5.00
+InpFixedLots=2.00
 InpRiskBase=5.50
 InpKZRegimeAware=false
 InpEsc_FirstR=0.5
@@ -16,9 +17,10 @@ InpMTF_EMAPeriod=50
 InpTickThrottleSeconds=10
 InpUseCorrelationFilter=true
 InpMaxCurrencyExposure=0.25
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
+InpUseTimeFilter=true
+InpTradeStartHour=0
+InpTradeEndHour=12
 InpMaxPositions=1
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
 
 

@@ -27,9 +27,11 @@ InpATR_Mult_SL=2.0
 ; GBP-specific: stronger SMC impulse required
 InpSMC_MinImpulseATR=1.5
 InpMTF_Weight=0.5
-InpUseKillzoneFilter=true
+InpFixedLots=0.45
+InpUseKillzoneFilter=false
+InpUseTimeFilter=true
+InpTradeStartHour=0
+InpTradeEndHour=12
 InpMaxPositions=1
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
 
 

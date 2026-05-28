@@ -24,9 +24,11 @@ InpMaxSpreadRanging=60
 InpMaxSpreadVolatile=100
 InpTrailATR_Mult=2.5
 InpATR_Mult_SL=2.0
-InpUseKillzoneFilter=true
+InpFixedLots=0.55
+InpUseKillzoneFilter=false
+InpUseTimeFilter=true
+InpTradeStartHour=0
+InpTradeEndHour=12
 InpMaxPositions=1
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
 
 
