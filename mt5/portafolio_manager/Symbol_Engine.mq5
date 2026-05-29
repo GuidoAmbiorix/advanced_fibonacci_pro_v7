@@ -256,9 +256,10 @@ input int               InpKZBEMinutesBefore = 15;        // Mins before KZ end 
 input double            InpKZBEMinProfitR    = 0.1;       // Min profit R required to force breakeven
 
 input group "======= TIME WINDOW ======="
-input bool              InpUseTimeFilter    = false;      // Operar solo dentro de ventana horaria (ignora killzones)
-input int               InpTradeStartHour   = 0;          // Hora inicio (server time, 0=medianoche)
-input int               InpTradeEndHour     = 12;         // Hora fin (server time, 12=mediodia)
+input bool              InpUseTimeFilter    = false;      // Operar solo dentro de ventana horaria
+input int               InpTradeStartHour   = 0;          // Hora inicio (hora LOCAL del usuario)
+input int               InpTradeEndHour     = 12;         // Hora fin (hora LOCAL del usuario)
+input int               InpLocalUTCOffset   = -4;         // Offset UTC del usuario (ej: -4 Rep. Dominicana)
 
 input group "======= MOMENTUM EXIT ======="
 input bool              InpUseMomentumExit      = true;   // Detect & exit trades that lost momentum
@@ -1434,15 +1435,17 @@ void OnTick()
    {
       MqlDateTime dt;
       TimeToStruct(TimeCurrent(), dt);
+      int localHour = ((dt.hour - InpBrokerUTCOffset + InpLocalUTCOffset) % 24 + 24) % 24;
       bool inWindow = (InpTradeStartHour < InpTradeEndHour)
-                      ? (dt.hour >= InpTradeStartHour && dt.hour < InpTradeEndHour)
-                      : (dt.hour >= InpTradeStartHour || dt.hour < InpTradeEndHour);
+                      ? (localHour >= InpTradeStartHour && localHour < InpTradeEndHour)
+                      : (localHour >= InpTradeStartHour || localHour < InpTradeEndHour);
       if(!inWindow)
       {
          static datetime lastTWLog = 0;
          if(TimeCurrent() - lastTWLog > 300)
          {
-            Print("[BLOCKED] Outside time window (", InpTradeStartHour, ":00 - ", InpTradeEndHour, ":00) server time");
+            Print("[BLOCKED] Outside time window (", InpTradeStartHour, ":00 - ", InpTradeEndHour,
+                  ":00 LOCAL) | local=", localHour, "h | server=", dt.hour, "h");
             lastTWLog = TimeCurrent();
          }
          return;
@@ -1673,9 +1676,10 @@ void OnTick()
       {
          MqlDateTime dt2;
          TimeToStruct(TimeCurrent(), dt2);
+         int localH2 = ((dt2.hour - InpBrokerUTCOffset + InpLocalUTCOffset) % 24 + 24) % 24;
          bool inW = (InpTradeStartHour < InpTradeEndHour)
-                    ? (dt2.hour >= InpTradeStartHour && dt2.hour < InpTradeEndHour)
-                    : (dt2.hour >= InpTradeStartHour || dt2.hour < InpTradeEndHour);
+                    ? (localH2 >= InpTradeStartHour && localH2 < InpTradeEndHour)
+                    : (localH2 >= InpTradeStartHour || localH2 < InpTradeEndHour);
          if(!inW) return;
       }
 
@@ -4015,10 +4019,13 @@ void UpdateDashboard()
    if(InpUseTimeFilter)
    {
       MqlDateTime dtd; TimeToStruct(TimeCurrent(), dtd);
+      int localHd = ((dtd.hour - InpBrokerUTCOffset + InpLocalUTCOffset) % 24 + 24) % 24;
       bool inW = (InpTradeStartHour < InpTradeEndHour)
-                 ? (dtd.hour >= InpTradeStartHour && dtd.hour < InpTradeEndHour)
-                 : (dtd.hour >= InpTradeStartHour || dtd.hour < InpTradeEndHour);
-      if(!inW) tradingStatus = "TIME WINDOW CLOSED (" + IntegerToString(InpTradeStartHour) + ":00-" + IntegerToString(InpTradeEndHour) + ":00)";
+                 ? (localHd >= InpTradeStartHour && localHd < InpTradeEndHour)
+                 : (localHd >= InpTradeStartHour || localHd < InpTradeEndHour);
+      if(!inW) tradingStatus = "TIME WINDOW CLOSED | local=" + IntegerToString(localHd) +
+                               "h (" + IntegerToString(InpTradeStartHour) + ":00-" +
+                               IntegerToString(InpTradeEndHour) + ":00 LOCAL)";
    }
 
    string kzStatus = "DISABLED";
