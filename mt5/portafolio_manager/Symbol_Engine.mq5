@@ -163,6 +163,15 @@ input double            InpTimeStaleMins = 240.0;          // Time-decay: minute
 input double            InpTimeStaleTight1 = 0.8;          // Time-decay: moderate tightening
 input double            InpTimeStaleTight2 = 0.65;         // Time-decay: aggressive tightening
 
+input group "======= PIP LADDER TRAIL ======="
+input bool              InpPipLadder    = false;           // Auto-tighten trail at pip profit thresholds
+input int               InpTightPips1   = 15;              // Peldano 1: pips de ganancia
+input double            InpTightFactor1 = 0.75;            // Peldano 1: multiplicador del trail
+input int               InpTightPips2   = 25;              // Peldano 2: pips de ganancia
+input double            InpTightFactor2 = 0.55;            // Peldano 2: multiplicador del trail
+input int               InpTightPips3   = 40;              // Peldano 3: pips de ganancia
+input double            InpTightFactor3 = 0.35;            // Peldano 3: multiplicador del trail
+
 input group "======= SCALE-IN PYRAMID ======="
 input bool              InpPyr_Enable = true;             // Enable pyramid scale-in on winners
 input int               InpPyr_Frequency = 3;             // Scale in every Nth stage
@@ -3239,10 +3248,39 @@ void ManagePositions()
                    }
                 }
 
+                // Step 7: PIP LADDER TRAIL — auto-tighten at explicit pip thresholds
+                if(InpPipLadder)
+                {
+                   double profitPips = (pType == POSITION_TYPE_BUY)
+                                       ? (curr - open) / (_Point * 10)
+                                       : (open - curr) / (_Point * 10);
+                   if(profitPips >= InpTightPips3)
+                   {
+                      dynMult *= InpTightFactor3;
+                      static datetime lastLadder3Log = 0;
+                      if(TimeCurrent() - lastLadder3Log > 300)
+                      { Print("[LADDER P3] ", DoubleToString(profitPips,1), "p >= ", InpTightPips3, "p → trail×", InpTightFactor3); lastLadder3Log = TimeCurrent(); }
+                   }
+                   else if(profitPips >= InpTightPips2)
+                   {
+                      dynMult *= InpTightFactor2;
+                      static datetime lastLadder2Log = 0;
+                      if(TimeCurrent() - lastLadder2Log > 300)
+                      { Print("[LADDER P2] ", DoubleToString(profitPips,1), "p >= ", InpTightPips2, "p → trail×", InpTightFactor2); lastLadder2Log = TimeCurrent(); }
+                   }
+                   else if(profitPips >= InpTightPips1)
+                   {
+                      dynMult *= InpTightFactor1;
+                      static datetime lastLadder1Log = 0;
+                      if(TimeCurrent() - lastLadder1Log > 300)
+                      { Print("[LADDER P1] ", DoubleToString(profitPips,1), "p >= ", InpTightPips1, "p → trail×", InpTightFactor1); lastLadder1Log = TimeCurrent(); }
+                   }
+                }
+
                 // Re-apply floor after all adjustments
                 dynMult = MathMax(dynMult, InpTrailMinMult * 0.5); // Allow tighter than base floor for time-decay
 
-                // Step 6: Dynamic floor price (trail behind current price)
+                // Dynamic floor price (trail behind current price)
                 double dynFloor = (pType == POSITION_TYPE_BUY)
                                   ? curr - (atrVal * dynMult)
                                   : curr + (atrVal * dynMult);

@@ -1,8 +1,8 @@
-; USDJPY — SNIPER FIXED LOTS 0.80
+; USDJPY — SNIPER PATIENT $75/trade
 InpMagicNumber=200015
 InpMinConfluenceEntry=19.0
 InpMaxLotsPerTrade=5.00
-InpFixedLots=0.80
+InpFixedLots=0.25
 InpRiskBase=5.50
 InpKZRegimeAware=false
 InpEsc_FirstR=0.5
@@ -25,6 +25,16 @@ InpMaxSpreadPoints=35
 InpTrailATR_Mult=2.0
 InpATR_Mult_SL=2.0
 InpSMC_MinImpulseATR=1.5
+InpTrailDecayRate=0.50
+InpTrailMinMult=0.35
+InpTimeStaleMins=120.0
+InpPipLadder=true
+InpTightPips1=15
+InpTightFactor1=0.75
+InpTightPips2=25
+InpTightFactor2=0.55
+InpTightPips3=40
+InpTightFactor3=0.35
 InpUseKillzoneFilter=false
 InpUseTimeFilter=true
 InpTradeStartHour=0

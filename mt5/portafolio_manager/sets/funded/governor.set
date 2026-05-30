@@ -1,15 +1,15 @@
-; GOVERNOR CONFIG — SNIPER MODE (7 pairs, 1 position cada uno)
-; $6000 | Daily DD 3%=$180 | Risk $150/trade | Buffer $30
+; GOVERNOR CONFIG — SNIPER PATIENT (5 pairs, $75/trade)
+; $6000 | Daily DD 3%=$180 | Risk $75/trade | Buffer $30 | Stop at $150
 InpMagicMin=200001
 InpMagicMax=200020
-InpDailyLossLimit=-500.0
-InpMaxPortfolioDD_Pct=3.5
+InpDailyLossLimit=-150.0
+InpMaxPortfolioDD_Pct=2.5
 InpReduceRiskAt_Pct=2.0
 InpCloseAllOnMaxDD=true
 InpCloseOnDailyLoss=true
 InpMaxSameCurrency=2
 InpCloseCorrelOnBreech=false
-InpMaxOpenPositions=7
+InpMaxOpenPositions=3
 InpMaxDailyTrades=14
 InpMaxWeeklyTrades=40
 InpFridayClose=true
