@@ -1446,8 +1446,8 @@ void OnTick()
       TimeToStruct(TimeCurrent(), dt);
       int localHour = (dt.hour + InpServerToLocalOffset + 24) % 24;
       bool inWindow = (InpTradeStartHour < InpTradeEndHour)
-                      ? (localHour >= InpTradeStartHour && localHour < InpTradeEndHour)
-                      : (localHour >= InpTradeStartHour || localHour < InpTradeEndHour);
+                      ? (localHour >= InpTradeStartHour && localHour <= InpTradeEndHour)
+                      : (localHour >= InpTradeStartHour || localHour <= InpTradeEndHour);
       if(!inWindow)
       {
          static datetime lastTWLog = 0;
@@ -1687,8 +1687,8 @@ void OnTick()
          TimeToStruct(TimeCurrent(), dt2);
          int localH2 = (dt2.hour + InpServerToLocalOffset + 24) % 24;
          bool inW = (InpTradeStartHour < InpTradeEndHour)
-                    ? (localH2 >= InpTradeStartHour && localH2 < InpTradeEndHour)
-                    : (localH2 >= InpTradeStartHour || localH2 < InpTradeEndHour);
+                    ? (localH2 >= InpTradeStartHour && localH2 <= InpTradeEndHour)
+                    : (localH2 >= InpTradeStartHour || localH2 <= InpTradeEndHour);
          if(!inW) return;
       }
 
@@ -4059,8 +4059,8 @@ void UpdateDashboard()
       MqlDateTime dtd; TimeToStruct(TimeCurrent(), dtd);
       int localHd = (dtd.hour + InpServerToLocalOffset + 24) % 24;
       bool inW = (InpTradeStartHour < InpTradeEndHour)
-                 ? (localHd >= InpTradeStartHour && localHd < InpTradeEndHour)
-                 : (localHd >= InpTradeStartHour || localHd < InpTradeEndHour);
+                 ? (localHd >= InpTradeStartHour && localHd <= InpTradeEndHour)
+                 : (localHd >= InpTradeStartHour || localHd <= InpTradeEndHour);
       if(!inW) tradingStatus = "TIME WINDOW CLOSED | local=" + IntegerToString(localHd) +
                                "h (" + IntegerToString(InpTradeStartHour) + ":00-" +
                                IntegerToString(InpTradeEndHour) + ":00 LOCAL)";
