@@ -1,0 +1,39 @@
+; GOVERNOR — MARLON AGRESIVO
+; DD Diario max 5% | DD Total max 10% | Risk $20/trade
+; Para de operar si pierde $60 en el dia (3 trades x $20)
+InpMagicMin=300001
+InpMagicMax=300020
+InpDailyLossLimit=-60.0
+InpMaxPortfolioDD_Pct=9.0
+InpReduceRiskAt_Pct=4.0
+InpCloseAllOnMaxDD=true
+InpCloseOnDailyLoss=true
+InpMaxSameCurrency=2
+InpCloseCorrelOnBreech=false
+InpMaxOpenPositions=5
+InpMaxDailyTrades=20
+InpMaxWeeklyTrades=60
+InpFridayClose=true
+InpFridayCloseHour=20
+InpFridayBlockHours=3
+InpSymbolCooldownHours=1
+InpConsecLossReduce=4
+InpConsecLossPause=8
+InpRefreshSeconds=5
+InpGov_Enabled=true
+InpDailyMaxDD=4.5
+InpWeeklyMaxDD=9.0
+InpGov_DD_Reduce=3.0
+InpGov_DD_Pause=4.5
+InpGov_ReducedMult=0.5
+InpMaxConsecutiveLosses=4
+InpUseReversalFilter=false
+InpUseSessionGovernor=false
+InpMaxTradesPerSession=5
+InpTradeCooldownMinutes=15
+InpCloseIntradayProfits=false
+InpEndOfDayHour=21
+InpUseStaleTrade=true
+InpStaleBarLimit=6
+InpEnableVisualLevels=true
+InpTickThrottleSeconds=10

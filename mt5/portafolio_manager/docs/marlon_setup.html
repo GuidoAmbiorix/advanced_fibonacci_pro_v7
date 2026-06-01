@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marlon Setup Guide — Advanced Fibonacci Pro v7</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --accent: #f0a500;
+    --accent2: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 15px; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%); border-bottom: 1px solid var(--border); padding: 32px 40px; }
+  .header h1 { font-size: 28px; color: var(--accent); letter-spacing: -0.5px; }
+  .header p { color: var(--muted); margin-top: 6px; font-size: 14px; }
+  .badge { display: inline-block; background: var(--accent); color: #000; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 10px; vertical-align: middle; }
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+  h2 { color: var(--accent2); font-size: 20px; margin: 36px 0 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  h3 { color: var(--text); font-size: 15px; font-weight: 600; margin: 20px 0 8px; }
+  p { color: var(--text); margin-bottom: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin-bottom: 20px; }
+  .card.warning { border-color: var(--red); }
+  .card.success { border-color: var(--green); }
+  .card.info { border-color: var(--accent2); }
+  .step { display: flex; gap: 16px; margin-bottom: 20px; }
+  .step-num { background: var(--accent); color: #000; font-weight: 700; font-size: 13px; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .step-body h3 { margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th { background: #21262d; color: var(--accent); text-align: left; padding: 10px 14px; border: 1px solid var(--border); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 9px 14px; border: 1px solid var(--border); color: var(--text); }
+  tr:nth-child(even) td { background: #0d1117; }
+  code { background: #21262d; color: #e6b86a; padding: 2px 6px; border-radius: 4px; font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 13px; }
+  .code-block { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 16px; font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 13px; line-height: 1.7; overflow-x: auto; margin: 12px 0; white-space: pre; }
+  .code-block .comment { color: #8b949e; }
+  .code-block .key { color: #79c0ff; }
+  .code-block .val { color: #a5d6ff; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+  .tag.green { background: rgba(63,185,80,0.15); color: var(--green); }
+  .tag.red { background: rgba(248,81,73,0.15); color: var(--red); }
+  .tag.yellow { background: rgba(240,165,0,0.15); color: var(--accent); }
+  ul { padding-left: 20px; margin-bottom: 12px; }
+  li { margin-bottom: 6px; color: var(--text); }
+  .pair-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin: 16px 0; }
+  .pair-card { background: #21262d; border: 1px solid var(--border); border-radius: 6px; padding: 14px; text-align: center; }
+  .pair-card .symbol { font-size: 16px; font-weight: 700; color: var(--accent); }
+  .pair-card .magic { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .pair-card .lots { font-size: 13px; color: var(--green); margin-top: 4px; font-weight: 600; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  .risk-bar { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+  .risk-bar .label { min-width: 120px; font-size: 13px; color: var(--muted); }
+  .risk-bar .bar-wrap { flex: 1; background: #21262d; border-radius: 4px; height: 8px; }
+  .risk-bar .bar-fill { height: 8px; border-radius: 4px; }
+  .risk-bar .value { min-width: 50px; text-align: right; font-size: 13px; font-weight: 600; }
+  footer { border-top: 1px solid var(--border); padding: 24px 40px; color: var(--muted); font-size: 12px; text-align: center; margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Marlon Setup Guide <span class="badge">AGRESIVO</span></h1>
+  <p>Advanced Fibonacci Pro v7 &nbsp;|&nbsp; 5 pares &nbsp;|&nbsp; $20 por operacion &nbsp;|&nbsp; DD Diario 5% / Total 10%</p>
+</div>
+
+<div class="container">
+
+  <!-- OVERVIEW -->
+  <h2>Resumen del Setup</h2>
+  <div class="card info">
+    <p>Este perfil esta disenado para <strong>Marlon</strong> con un enfoque agresivo pero controlado. Se opera con <strong>lote fijo de 0.10</strong> en los 5 pares seleccionados, sin filtro de horario, y con el Governor configurado para proteger la cuenta ante drawdown excesivo.</p>
+  </div>
+
+  <div class="pair-grid">
+    <div class="pair-card">
+      <div class="symbol">USDCHF</div>
+      <div class="magic">Magic: 300001</div>
+      <div class="lots">0.10 lots</div>
+    </div>
+    <div class="pair-card">
+      <div class="symbol">USDJPY</div>
+      <div class="magic">Magic: 300002</div>
+      <div class="lots">0.10 lots</div>
+    </div>
+    <div class="pair-card">
+      <div class="symbol">AUDJPY</div>
+      <div class="magic">Magic: 300003</div>
+      <div class="lots">0.10 lots</div>
+    </div>
+    <div class="pair-card">
+      <div class="symbol">EURUSD</div>
+      <div class="magic">Magic: 300004</div>
+      <div class="lots">0.10 lots</div>
+    </div>
+    <div class="pair-card">
+      <div class="symbol">EURJPY</div>
+      <div class="magic">Magic: 300005</div>
+      <div class="lots">0.10 lots</div>
+    </div>
+  </div>
+
+  <!-- RISK SUMMARY -->
+  <h2>Limites de Riesgo</h2>
+  <div class="card">
+    <div class="risk-bar">
+      <span class="label">Riesgo por trade</span>
+      <div class="bar-wrap"><div class="bar-fill" style="width:20%; background: var(--green);"></div></div>
+      <span class="value" style="color:var(--green)">$20</span>
+    </div>
+    <div class="risk-bar">
+      <span class="label">DD Diario max</span>
+      <div class="bar-wrap"><div class="bar-fill" style="width:50%; background: var(--accent);"></div></div>
+      <span class="value" style="color:var(--accent)">5% ($60)</span>
+    </div>
+    <div class="risk-bar">
+      <span class="label">DD Total max</span>
+      <div class="bar-wrap"><div class="bar-fill" style="width:90%; background: var(--red);"></div></div>
+      <span class="value" style="color:var(--red)">10% ($120)</span>
+    </div>
+    <div class="risk-bar">
+      <span class="label">Trades diarios max</span>
+      <div class="bar-wrap"><div class="bar-fill" style="width:40%; background: var(--accent2);"></div></div>
+      <span class="value" style="color:var(--accent2)">20</span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- INSTALLATION STEPS -->
+  <h2>Como Instalar los Sets</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h3>Ubicar la carpeta de sets</h3>
+      <p>Los archivos <code>.set</code> estan en:</p>
+      <div class="code-block">sets/marlon/
+  governor.set
+  usdchf.set
+  usdjpy.set
+  audjpy.set
+  eurusd.set
+  eurjpy.set</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h3>Cargar el Governor primero</h3>
+      <p>Abre MetaTrader 5. Ve a <strong>Navigator → Expert Advisors → Portfolio_Governor</strong>.</p>
+      <p>Arrastralo a cualquier grafico (recomendado: EURUSD H1 separado). En el dialogo de parametros, haz clic en <strong>Load</strong> y selecciona <code>governor.set</code>.</p>
+      <div class="card warning">
+        <strong>IMPORTANTE:</strong> El Governor DEBE estar activo antes de los Symbol_Engine. El Governor es el guardian que cierra todo si se supera el DD diario o total.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h3>Cargar Symbol_Engine en cada par</h3>
+      <p>Para cada par, abre el grafico en <strong>H4</strong> y arrastra el EA <strong>Symbol_Engine</strong>. En el dialogo, haz clic en <strong>Load</strong> y selecciona el <code>.set</code> correspondiente:</p>
+      <table>
+        <thead>
+          <tr><th>Par</th><th>Timeframe</th><th>Set File</th><th>Magic</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>USDCHF</td><td>H4</td><td><code>usdchf.set</code></td><td>300001</td></tr>
+          <tr><td>USDJPY</td><td>H4</td><td><code>usdjpy.set</code></td><td>300002</td></tr>
+          <tr><td>AUDJPY</td><td>H4</td><td><code>audjpy.set</code></td><td>300003</td></tr>
+          <tr><td>EURUSD</td><td>H4</td><td><code>eurusd.set</code></td><td>300004</td></tr>
+          <tr><td>EURJPY</td><td>H4</td><td><code>eurjpy.set</code></td><td>300005</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h3>Verificar que el EA esta activo</h3>
+      <p>En la esquina superior derecha de cada grafico debe aparecer el icono del EA en <span class="tag green">verde</span>. Si esta en <span class="tag red">rojo</span>, ve a <strong>Tools → Options → Expert Advisors</strong> y activa "Allow automated trading".</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <h3>Confirmar parametros en el dashboard</h3>
+      <p>El EA muestra un dashboard en cada grafico. Verifica:</p>
+      <ul>
+        <li>Estado: <span class="tag green">ACTIVE</span> (no BLOCKED)</li>
+        <li>Magic number coincide con la tabla</li>
+        <li>Lots: <code>0.10</code></li>
+        <li>No hay mensaje de "Governor blocked"</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- GOVERNOR CONFIG -->
+  <h2>Configuracion del Governor</h2>
+  <div class="card">
+    <div class="code-block"><span class="comment">; GOVERNOR — MARLON AGRESIVO</span>
+<span class="comment">; DD Diario max 5% | DD Total max 10% | Risk $20/trade</span>
+<span class="key">InpMagicMin</span>=<span class="val">300001</span>       <span class="comment">; rango magic de los Symbol_Engine</span>
+<span class="key">InpMagicMax</span>=<span class="val">300020</span>
+<span class="key">InpDailyLossLimit</span>=<span class="val">-60.0</span>    <span class="comment">; para si pierde $60 en el dia (3 trades)</span>
+<span class="key">InpMaxPortfolioDD_Pct</span>=<span class="val">9.0</span>  <span class="comment">; cierra todo al 9% DD total</span>
+<span class="key">InpDailyMaxDD</span>=<span class="val">4.5</span>          <span class="comment">; reduce riesgo al 4.5% DD diario</span>
+<span class="key">InpWeeklyMaxDD</span>=<span class="val">9.0</span>         <span class="comment">; limite semanal</span>
+<span class="key">InpMaxOpenPositions</span>=<span class="val">5</span>      <span class="comment">; maximo 5 posiciones abiertas</span>
+<span class="key">InpSymbolCooldownHours</span>=<span class="val">1</span>   <span class="comment">; 1h cooldown por par tras cerrar</span>
+<span class="key">InpConsecLossReduce</span>=<span class="val">4</span>      <span class="comment">; reduce riesgo tras 4 perdidas seguidas</span>
+<span class="key">InpConsecLossPause</span>=<span class="val">8</span>       <span class="comment">; pausa operaciones tras 8 perdidas</span></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- STRATEGY FEATURES -->
+  <h2>Funciones Activas del EA</h2>
+
+  <h3>Escalador Sniper (15 etapas)</h3>
+  <div class="card">
+    <p>El EA cierra parcialmente la posicion en pasos iguales de <strong>0.3R</strong> (R = riesgo inicial). Al alcanzar cada etapa, cosecha el <strong>50%</strong> del profit acumulado y mueve el stop loss al punto anterior.</p>
+    <table>
+      <thead><tr><th>Etapa</th><th>Profit (R)</th><th>Harvest</th><th>SL se mueve a</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>0.5R</td><td>50%</td><td>Breakeven</td></tr>
+        <tr><td>2</td><td>0.8R</td><td>50%</td><td>Etapa 1</td></tr>
+        <tr><td>3</td><td>1.1R</td><td>50%</td><td>Etapa 2</td></tr>
+        <tr><td>...</td><td>+0.3R</td><td>50%</td><td>Etapa anterior</td></tr>
+        <tr><td>15</td><td>4.7R</td><td>50%</td><td>Etapa 14</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Pip Ladder Trail</h3>
+  <div class="card">
+    <p>Cuando el precio alcanza ciertos pips de ganancia, el trailing stop se <strong>aprieta automaticamente</strong>:</p>
+    <table>
+      <thead><tr><th>Umbral (pips)</th><th>Factor de apriete</th><th>Efecto</th></tr></thead>
+      <tbody>
+        <tr><td>18+ pips</td><td>x0.75</td><td>Trail moderadamente mas cerca</td></tr>
+        <tr><td>30+ pips</td><td>x0.55</td><td>Trail bastante mas cerca</td></tr>
+        <tr><td>50+ pips</td><td>x0.35</td><td>Trail muy ajustado, asegura ganancia</td></tr>
+      </tbody>
+    </table>
+    <p style="color:var(--muted); font-size:13px;">Valores para AUDJPY/EURJPY. USDJPY/EURUSD usan 15/25/40 pips.</p>
+  </div>
+
+  <h3>Filtros de Entrada</h3>
+  <div class="card">
+    <table>
+      <thead><tr><th>Filtro</th><th>Estado</th><th>Descripcion</th></tr></thead>
+      <tbody>
+        <tr><td>Confluencia minima</td><td><span class="tag green">ACTIVO</span></td><td>Score minimo 17/30+ para entrar</td></tr>
+        <tr><td>HMM (regimen de mercado)</td><td><span class="tag green">ACTIVO</span></td><td>Bloquea entradas en VOLATILE/CHAOS</td></tr>
+        <tr><td>Macro Sentiment</td><td><span class="tag green">ACTIVO</span></td><td>Analiza DXY y VIX</td></tr>
+        <tr><td>MTF (multi-timeframe)</td><td><span class="tag green">ACTIVO</span></td><td>Confirma tendencia en W1/D1/H4</td></tr>
+        <tr><td>Correlacion de pares</td><td><span class="tag green">ACTIVO</span></td><td>Evita sobreexposicion a misma divisa</td></tr>
+        <tr><td>Filtro de horario</td><td><span class="tag red">INACTIVO</span></td><td>Opera las 24h</td></tr>
+        <tr><td>Kill Zones</td><td><span class="tag red">INACTIVO</span></td><td>Sin restriccion de sesion</td></tr>
+        <tr><td>Spread filter</td><td><span class="tag green">ACTIVO</span></td><td>Bloquea si spread es excesivo</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- FAQ -->
+  <h2>Preguntas Frecuentes</h2>
+
+  <div class="card">
+    <h3>El EA no abre trades, que reviso?</h3>
+    <ul>
+      <li>Verifica que el Governor no haya alcanzado el limite diario</li>
+      <li>Revisa el Journal del EA en MetaTrader (pestaña <strong>Experts</strong>)</li>
+      <li>Confirma que el spread actual no supera el maximo configurado</li>
+      <li>Asegurate de que el score de confluencia no sea menor a 17</li>
+      <li>El regimen de mercado puede ser VOLATILE — el EA esperara hasta TREND/RANGING</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>El EA cerro todas las posiciones, por que?</h3>
+    <p>El Governor detecto uno de estos limites:</p>
+    <ul>
+      <li>Perdida diaria llego a <strong>$60</strong> (3 trades perdidos)</li>
+      <li>DD total llego al <strong>9%</strong> del balance</li>
+      <li>8 perdidas consecutivas (pausa automatica)</li>
+    </ul>
+    <p>Las operaciones se reanudan automaticamente al dia siguiente.</p>
+  </div>
+
+  <div class="card">
+    <h3>Como cambiar el riesgo por trade?</h3>
+    <p>El riesgo esta fijado por <code>InpFixedLots=0.10</code>. Para cambiarlo:</p>
+    <ol style="padding-left:20px; margin-top:8px;">
+      <li>Cierra el EA en el grafico</li>
+      <li>Abre el <code>.set</code> correspondiente en un editor de texto</li>
+      <li>Cambia <code>InpFixedLots</code> al valor deseado</li>
+      <li>Guarda y recarga el set en el EA</li>
+    </ol>
+    <p style="color:var(--muted); font-size:13px;">Referencia: 0.10 lots en EURUSD ≈ $10 por cada 10 pips</p>
+  </div>
+
+  <div class="card">
+    <h3>Que Magic Numbers uso?</h3>
+    <p>El Governor monitorea el rango <code>300001–300020</code>. Cada Symbol_Engine tiene un magic unico dentro de ese rango. <strong>No cambies los magic numbers</strong> sin actualizar el governor.set.</p>
+  </div>
+
+  <hr class="divider">
+
+  <h2>Notas Finales</h2>
+  <div class="card success">
+    <ul>
+      <li>Opera los 5 pares simultameamente — la correlacion entre pares esta controlada por el filtro interno</li>
+      <li>El cooldown de 1 hora por par evita sobre-trading despues de un cierre</li>
+      <li>El EA usa lote fijo — el calculo de riesgo porcentual esta desactivado</li>
+      <li>El score de 17 es agresivo. Para un modo mas conservador sube a 19</li>
+      <li>Revisa el diario de trades cada semana para ajustar segun performance</li>
+    </ul>
+  </div>
+
+</div>
+
+<footer>
+  Advanced Fibonacci Pro v7 &nbsp;|&nbsp; Sets: marlon/ &nbsp;|&nbsp; Generado: 2026-06-01
+</footer>
+
+</body>
+</html>
