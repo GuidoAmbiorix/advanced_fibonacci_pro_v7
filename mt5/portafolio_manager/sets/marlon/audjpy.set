@@ -1,6 +1,6 @@
 ; AUDJPY — MARLON AGRESIVO $20/trade
 InpMagicNumber=300003
-InpMinConfluenceEntry=17.0
+InpMinConfluenceEntry=18.0
 InpMaxLotsPerTrade=5.00
 InpFixedLots=0.10
 InpRiskBase=5.50
