@@ -265,10 +265,10 @@ input int               InpKZBEMinutesBefore = 15;        // Mins before KZ end 
 input double            InpKZBEMinProfitR    = 0.1;       // Min profit R required to force breakeven
 
 input group "======= TIME WINDOW ======="
-input bool              InpUseTimeFilter    = false;      // Operar solo dentro de ventana horaria
-input int               InpTradeStartHour   = 0;          // Hora inicio (hora LOCAL del usuario)
-input int               InpTradeEndHour     = 12;         // Hora fin (hora LOCAL del usuario)
-input int               InpLocalUTCOffset   = -4;         // Offset UTC del usuario (ej: -4 Rep. Dominicana)
+input bool              InpUseTimeFilter        = false;  // Operar solo dentro de ventana horaria
+input int               InpTradeStartHour       = 0;      // Hora inicio (hora LOCAL del usuario)
+input int               InpTradeEndHour         = 12;     // Hora fin (hora LOCAL del usuario)
+input int               InpServerToLocalOffset  = 7;      // Server → Local: si server=5h y local=12h, poner 7
 
 input group "======= MOMENTUM EXIT ======="
 input bool              InpUseMomentumExit      = true;   // Detect & exit trades that lost momentum
@@ -1444,7 +1444,7 @@ void OnTick()
    {
       MqlDateTime dt;
       TimeToStruct(TimeCurrent(), dt);
-      int localHour = ((dt.hour - InpBrokerUTCOffset + InpLocalUTCOffset) % 24 + 24) % 24;
+      int localHour = (dt.hour + InpServerToLocalOffset + 24) % 24;
       bool inWindow = (InpTradeStartHour < InpTradeEndHour)
                       ? (localHour >= InpTradeStartHour && localHour < InpTradeEndHour)
                       : (localHour >= InpTradeStartHour || localHour < InpTradeEndHour);
@@ -1685,7 +1685,7 @@ void OnTick()
       {
          MqlDateTime dt2;
          TimeToStruct(TimeCurrent(), dt2);
-         int localH2 = ((dt2.hour - InpBrokerUTCOffset + InpLocalUTCOffset) % 24 + 24) % 24;
+         int localH2 = (dt2.hour + InpServerToLocalOffset + 24) % 24;
          bool inW = (InpTradeStartHour < InpTradeEndHour)
                     ? (localH2 >= InpTradeStartHour && localH2 < InpTradeEndHour)
                     : (localH2 >= InpTradeStartHour || localH2 < InpTradeEndHour);
@@ -4057,7 +4057,7 @@ void UpdateDashboard()
    if(InpUseTimeFilter)
    {
       MqlDateTime dtd; TimeToStruct(TimeCurrent(), dtd);
-      int localHd = ((dtd.hour - InpBrokerUTCOffset + InpLocalUTCOffset) % 24 + 24) % 24;
+      int localHd = (dtd.hour + InpServerToLocalOffset + 24) % 24;
       bool inW = (InpTradeStartHour < InpTradeEndHour)
                  ? (localHd >= InpTradeStartHour && localHd < InpTradeEndHour)
                  : (localHd >= InpTradeStartHour || localHd < InpTradeEndHour);

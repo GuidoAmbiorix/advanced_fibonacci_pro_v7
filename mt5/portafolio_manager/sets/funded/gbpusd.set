@@ -35,7 +35,7 @@ InpUseKillzoneFilter=false
 InpUseTimeFilter=true
 InpTradeStartHour=0
 InpTradeEndHour=12
-InpLocalUTCOffset=-4
+InpServerToLocalOffset=7
 InpMaxPositions=1
 
 
