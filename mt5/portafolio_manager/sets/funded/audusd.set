@@ -1,9 +1,9 @@
-; EURJPY — GOLD SNIPER PORTFOLIO (FUNDED)
-; EUR+JPY cross — strong Asian + London sessions.
-; Risk: $100/trade | 0.83% x 1.5 ELITE = ~$75-100
-InpMagicNumber=200007
+; AUDUSD — FUNDED SNIPER $75/trade
+; AUD exposure — H4 SMC limpio, sin correlacion JPY/GBP
+InpMagicNumber=200002
 InpMinConfluenceEntry=19.0
 InpMaxLotsPerTrade=5.00
+InpFixedLots=0.50
 InpRiskBase=5.50
 InpKZRegimeAware=false
 InpEsc_FirstR=0.3
@@ -22,22 +22,16 @@ InpMTF_EMAPeriod=50
 InpTickThrottleSeconds=10
 InpUseCorrelationFilter=true
 InpMaxCurrencyExposure=0.25
-; JPY-specific: wider spread + larger trail
-InpMaxSpreadPoints=60
-InpMaxSpreadRanging=60
-InpMaxSpreadVolatile=100
-InpTrailATR_Mult=2.5
-InpATR_Mult_SL=2.0
-InpFixedLots=0.20
+InpMaxSpreadPoints=35
 InpTrailDecayRate=0.50
 InpTrailMinMult=0.35
 InpTimeStaleMins=120.0
 InpPipLadder=true
-InpTightPips1=18
+InpTightPips1=15
 InpTightFactor1=0.75
-InpTightPips2=30
+InpTightPips2=25
 InpTightFactor2=0.55
-InpTightPips3=50
+InpTightPips3=40
 InpTightFactor3=0.35
 InpUseKillzoneFilter=false
 InpUseTimeFilter=true
@@ -45,5 +39,3 @@ InpTradeStartHour=0
 InpTradeEndHour=12
 InpServerToLocalOffset=-1
 InpMaxPositions=1
-
-
