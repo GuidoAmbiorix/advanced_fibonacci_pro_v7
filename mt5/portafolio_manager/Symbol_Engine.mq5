@@ -271,7 +271,9 @@ input int               InpTradeEndHour         = 12;     // Hora fin (hora LOCA
 input int               InpServerToLocalOffset  = 7;      // Server → Local: si server=5h y local=12h, poner 7
 
 input group "======= INSTANT BREAKEVEN ======="
-input bool              InpInstantBreakeven     = false;  // Move SL to entry immediately after open
+input bool              InpInstantBreakeven     = false;  // Move SL to entry immediately after open (EA trades only)
+input bool              InpUniversalBE          = false;  // Monitor ALL positions (incl. manual) for breakeven
+input double            InpUniversalBE_Pips     = 5.0;   // Pips in profit to trigger universal breakeven
 
 input group "======= MOMENTUM EXIT ======="
 input bool              InpUseMomentumExit      = true;   // Detect & exit trades that lost momentum
@@ -1239,6 +1241,7 @@ void OnTick()
       }
    }
 
+   CheckUniversalBreakeven();
    ManagePositions();
 
    // Update visual debugging lines
@@ -2710,6 +2713,44 @@ bool CheckMomentumExit(ulong ticket, int sIdx, long pType, double open, double c
 
 //+------------------------------------------------------------------+
 //| Manage Positions                                                  |
+//+------------------------------------------------------------------+
+//| UNIVERSAL BREAKEVEN: protect all open positions on this symbol   |
+//| Covers EA trades AND manual trades (magic number independent)    |
+//+------------------------------------------------------------------+
+void CheckUniversalBreakeven()
+{
+   if(!InpUniversalBE) return;
+
+   double pipSize = symbolInfo.Point() * (symbolInfo.Digits() == 3 || symbolInfo.Digits() == 5 ? 10 : 1);
+   double triggerDist = InpUniversalBE_Pips * pipSize;
+
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      if(!position.SelectByIndex(i)) continue;
+      if(position.Symbol() != _Symbol) continue;
+
+      double entryPx  = position.PriceOpen();
+      double currentSL = position.StopLoss();
+      double bid      = symbolInfo.Bid();
+      double ask      = symbolInfo.Ask();
+
+      // Skip if SL is already at or beyond entry (already protected)
+      bool isBuy  = (position.PositionType() == POSITION_TYPE_BUY);
+      if(isBuy  && currentSL >= entryPx) continue;
+      if(!isBuy && currentSL <= entryPx && currentSL > 0) continue;
+
+      // Check if profit >= trigger pips
+      double profit = isBuy ? (bid - entryPx) : (entryPx - ask);
+      if(profit < triggerDist) continue;
+
+      // Move SL to entry
+      if(trade.PositionModify(position.Ticket(), entryPx, position.TakeProfit()))
+         Print("[UBE] Breakeven set for #", position.Ticket(), " (", position.Symbol(), ") entry=", DoubleToString(entryPx, (int)symbolInfo.Digits()));
+      else
+         Print("[UBE] Failed #", position.Ticket(), " err=", GetLastError());
+   }
+}
+
 //+------------------------------------------------------------------+
 void ManagePositions()
 {
