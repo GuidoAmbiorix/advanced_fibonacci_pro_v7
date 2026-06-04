@@ -273,7 +273,7 @@ input int               InpServerToLocalOffset  = 7;      // Server → Local: s
 input group "======= INSTANT BREAKEVEN ======="
 input bool              InpInstantBreakeven     = false;  // Move SL to entry immediately after open (EA trades only)
 input bool              InpUniversalBE          = false;  // Monitor ALL positions (incl. manual) for breakeven
-input double            InpUniversalBE_Pips     = 5.0;   // Pips in profit to trigger universal breakeven
+input double            InpUniversalBE_Pips     = 0.1;   // Pips in profit to trigger universal breakeven (0.1 = immediate)
 
 input group "======= MOMENTUM EXIT ======="
 input bool              InpUseMomentumExit      = true;   // Detect & exit trades that lost momentum
