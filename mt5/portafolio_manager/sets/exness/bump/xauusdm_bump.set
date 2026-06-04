@@ -1,0 +1,51 @@
+; XAUUSDm — BUMP MODE AGGRESSIVE | Gold moves fast, catch every spike
+; Most aggressive set: lowest confluence, widest spread tolerance
+InpMagicNumber=500020
+InpBrokerUTCOffset=0
+InpMinConfluenceEntry=10.0
+InpMaxLotsPerTrade=0.01
+InpFixedLots=0.01
+InpRiskBase=0.50
+InpDirection=0
+; --- FILTERS (off — gold moves on its own) ---
+InpUseKillzoneFilter=false
+InpUseTimeFilter=false
+InpUseMTF=false
+InpUseHMM=false
+InpUseMacroSentiment=false
+InpUseCorrelationFilter=false
+InpUseDXYConflict=false
+InpKZRegimeAware=false
+; --- NEWS ---
+InpUseNewsFilter=true
+InpNewsMinutesBefore=30
+InpNewsMinutesAfter=30
+InpEnableVolatilityFilter=true
+InpVolatilityThreshold=4.0
+InpVolatilitySpikeCooldown=10
+; --- INSTANT BE + TRAIL (spread-aware auto-adjusts for gold ~3pip spread) ---
+InpInstantBreakeven=true
+InpUniversalBE=true
+InpUniversalBE_Pips=0.1
+InpUniversalTrail_Pips=2.0
+; --- SPREAD (gold Standard: 200-400 pts) ---
+InpMaxSpreadPoints=300
+InpMaxSpreadRanging=200
+InpMaxSpreadVolatile=500
+; --- SL/TRAIL (gold needs room) ---
+InpATR_Mult_SL=1.5
+InpTrailATR_Mult=1.5
+InpSMC_MinImpulseATR=1.2
+InpTrailDecayRate=0.50
+InpTrailMinMult=0.30
+; --- ESCALATOR ---
+InpEsc_FirstR=0.05
+InpEsc_FirstSL_R=0.02
+InpEsc_StepR=0.10
+InpEsc_BaseHarvest=90.0
+InpEsc_MaxStages=5
+; --- MISC ---
+InpTimeStaleMins=2.0
+InpTickThrottleSeconds=1
+InpMaxPositions=1
+InpPipLadder=false

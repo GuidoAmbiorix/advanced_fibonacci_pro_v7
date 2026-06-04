@@ -1,0 +1,50 @@
+; EURUSDm — BUMP MODE | Catch any impulse, trail out
+; No killzones, low confluence, InstantBE + tight trail does the work
+InpMagicNumber=500008
+InpBrokerUTCOffset=0
+InpMinConfluenceEntry=13.0
+InpMaxLotsPerTrade=0.01
+InpFixedLots=0.01
+InpRiskBase=0.50
+InpDirection=0
+; --- FILTERS (minimal) ---
+InpUseKillzoneFilter=false
+InpUseTimeFilter=false
+InpUseMTF=false
+InpUseHMM=false
+InpUseMacroSentiment=false
+InpUseCorrelationFilter=false
+InpKZRegimeAware=false
+; --- NEWS (always respect) ---
+InpUseNewsFilter=true
+InpNewsMinutesBefore=30
+InpNewsMinutesAfter=30
+InpEnableVolatilityFilter=true
+InpVolatilityThreshold=3.0
+InpVolatilitySpikeCooldown=15
+; --- INSTANT BE + TRAIL (the engine) ---
+InpInstantBreakeven=true
+InpUniversalBE=true
+InpUniversalBE_Pips=0.1
+InpUniversalTrail_Pips=0.5
+; --- SPREAD ---
+InpMaxSpreadPoints=12
+InpMaxSpreadRanging=12
+InpMaxSpreadVolatile=20
+; --- SL/TRAIL (tight, BE takes over immediately) ---
+InpATR_Mult_SL=0.8
+InpTrailATR_Mult=1.0
+InpSMC_MinImpulseATR=1.0
+InpTrailDecayRate=0.50
+InpTrailMinMult=0.30
+; --- ESCALATOR (fast) ---
+InpEsc_FirstR=0.05
+InpEsc_FirstSL_R=0.02
+InpEsc_StepR=0.10
+InpEsc_BaseHarvest=90.0
+InpEsc_MaxStages=5
+; --- MISC ---
+InpTimeStaleMins=3.0
+InpTickThrottleSeconds=1
+InpMaxPositions=1
+InpPipLadder=false
