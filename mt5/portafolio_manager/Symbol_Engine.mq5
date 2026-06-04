@@ -2722,11 +2722,17 @@ void CheckUniversalBreakeven()
 {
    if(!InpUniversalBE) return;
 
-   double pipSize     = symbolInfo.Point() * (symbolInfo.Digits() == 3 || symbolInfo.Digits() == 5 ? 10 : 1);
-   double triggerDist = InpUniversalBE_Pips   * pipSize;
-   double trailDist   = InpUniversalTrail_Pips * pipSize;
-   double bid         = symbolInfo.Bid();
-   double ask         = symbolInfo.Ask();
+   double pipSize  = symbolInfo.Point() * (symbolInfo.Digits() == 3 || symbolInfo.Digits() == 5 ? 10 : 1);
+   double bid      = symbolInfo.Bid();
+   double ask      = symbolInfo.Ask();
+   double spread   = ask - bid;  // live spread in price units
+
+   // Trail must be >= 1.5x live spread to survive spread fluctuations
+   // InpUniversalTrail_Pips is the user minimum — spread wins if wider
+   double trailDist   = MathMax(InpUniversalTrail_Pips * pipSize, spread * 1.5);
+
+   // Activate only after at least 1 full spread of real profit
+   double triggerDist = MathMax(InpUniversalBE_Pips * pipSize, spread);
 
    for(int i = PositionsTotal() - 1; i >= 0; i--)
    {
@@ -2737,34 +2743,36 @@ void CheckUniversalBreakeven()
       double currentSL = position.StopLoss();
       bool   isBuy     = (position.PositionType() == POSITION_TYPE_BUY);
 
-      // Check if profit >= trigger threshold to activate
+      // Real profit net of spread (what you'd pocket if closed right now)
       double profit = isBuy ? (bid - entryPx) : (entryPx - ask);
       if(profit < triggerDist) continue;
 
-      // Desired SL: price - trail buffer, but never below entry (ratchet only forward)
+      // Desired SL: glued to price minus trail, never below entry (ratchet forward only)
       double desiredSL;
       if(isBuy)
       {
          desiredSL = bid - trailDist;
-         if(desiredSL < entryPx) desiredSL = entryPx;   // floor = entry
-         if(desiredSL <= currentSL) continue;            // only move forward
+         if(desiredSL < entryPx) desiredSL = entryPx;
+         if(desiredSL <= currentSL) continue;
       }
       else
       {
          desiredSL = ask + trailDist;
-         if(desiredSL > entryPx) desiredSL = entryPx;   // ceiling = entry
-         if(currentSL > 0 && desiredSL >= currentSL) continue; // only move forward
+         if(desiredSL > entryPx) desiredSL = entryPx;
+         if(currentSL > 0 && desiredSL >= currentSL) continue;
       }
 
       desiredSL = NormalizeDouble(desiredSL, (int)symbolInfo.Digits());
 
       if(trade.PositionModify(position.Ticket(), desiredSL, position.TakeProfit()))
       {
-         // Silent update — only log meaningful jumps to avoid log spam
          static double lastLoggedSL = 0;
          if(MathAbs(desiredSL - lastLoggedSL) >= pipSize)
          {
-            Print("[UBE] Trail SL #", position.Ticket(), " → ", DoubleToString(desiredSL, (int)symbolInfo.Digits()));
+            Print("[UBE] Trail #", position.Ticket(),
+                  " SL→", DoubleToString(desiredSL, (int)symbolInfo.Digits()),
+                  " spread=", DoubleToString(spread / pipSize, 1), "p",
+                  " trail=", DoubleToString(trailDist / pipSize, 1), "p");
             lastLoggedSL = desiredSL;
          }
       }
