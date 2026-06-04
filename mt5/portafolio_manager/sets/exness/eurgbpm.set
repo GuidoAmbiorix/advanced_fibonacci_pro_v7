@@ -1,7 +1,7 @@
-; EURUSDm — SCALPING M15 | Exness Standard | 0.01 lots
-; Sessions: London Open + NY + London Close (best liquidity)
-; Spread Standard: 0.2-0.8 pip
-InpMagicNumber=400008
+; EURGBPm — SCALPING M15 | Exness Standard | 0.01 lots
+; Sessions: London Open + London Close (ambas monedas europeas, pico London)
+; Spread Standard: 0.5-1.2 pip
+InpMagicNumber=400009
 InpBrokerUTCOffset=0
 InpMinConfluenceEntry=18.0
 InpMaxLotsPerTrade=0.01
@@ -13,13 +13,13 @@ InpUseKillzoneFilter=true
 InpKZRegimeAware=false
 InpEnableAsianKZ=false
 InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
+InpEnableNYKZ=false
 InpEnableLondonCloseKZ=true
 InpNotifyKillzoneOpen=true
 InpCloseOnKillzoneEnd=true
 InpKZBEMinutesBefore=10
 InpKZBEMinProfitR=0.1
-; --- TIME WINDOW (disabled — killzones only) ---
+; --- TIME WINDOW (disabled) ---
 InpUseTimeFilter=false
 ; --- INSTANT BREAKEVEN + TRAIL ---
 InpInstantBreakeven=true
@@ -27,10 +27,10 @@ InpUniversalBE=true
 InpUniversalBE_Pips=0.1
 InpUniversalTrail_Pips=1.0
 ; --- SPREAD ---
-InpMaxSpreadPoints=15
-InpMaxSpreadRanging=15
-InpMaxSpreadVolatile=25
-; --- ESCALATOR (fast harvest) ---
+InpMaxSpreadPoints=20
+InpMaxSpreadRanging=20
+InpMaxSpreadVolatile=35
+; --- ESCALATOR ---
 InpEsc_FirstR=0.05
 InpEsc_FirstSL_R=0.02
 InpEsc_StepR=0.10
@@ -54,7 +54,7 @@ InpMTF_EMAPeriod=50
 InpTickThrottleSeconds=5
 InpUseCorrelationFilter=true
 InpMaxCurrencyExposure=0.25
-; --- PIP LADDER (scalping M15) ---
+; --- PIP LADDER ---
 InpPipLadder=true
 InpTightPips1=5
 InpTightFactor1=0.80

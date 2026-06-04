@@ -1,7 +1,7 @@
-; EURUSDm — SCALPING M15 | Exness Standard | 0.01 lots
-; Sessions: London Open + NY + London Close (best liquidity)
-; Spread Standard: 0.2-0.8 pip
-InpMagicNumber=400008
+; AUDJPYm — SCALPING M15 | Exness Standard | 0.01 lots
+; Sessions: Asian + London Open (risk sentiment, sesion Asia domina)
+; Spread Standard: 0.8-1.8 pip
+InpMagicNumber=400010
 InpBrokerUTCOffset=0
 InpMinConfluenceEntry=18.0
 InpMaxLotsPerTrade=0.01
@@ -11,26 +11,26 @@ InpDirection=0
 ; --- KILLZONES ---
 InpUseKillzoneFilter=true
 InpKZRegimeAware=false
-InpEnableAsianKZ=false
+InpEnableAsianKZ=true
 InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
-InpEnableLondonCloseKZ=true
+InpEnableNYKZ=false
+InpEnableLondonCloseKZ=false
 InpNotifyKillzoneOpen=true
 InpCloseOnKillzoneEnd=true
 InpKZBEMinutesBefore=10
 InpKZBEMinProfitR=0.1
-; --- TIME WINDOW (disabled — killzones only) ---
+; --- TIME WINDOW (disabled) ---
 InpUseTimeFilter=false
 ; --- INSTANT BREAKEVEN + TRAIL ---
 InpInstantBreakeven=true
 InpUniversalBE=true
 InpUniversalBE_Pips=0.1
 InpUniversalTrail_Pips=1.0
-; --- SPREAD ---
-InpMaxSpreadPoints=15
-InpMaxSpreadRanging=15
-InpMaxSpreadVolatile=25
-; --- ESCALATOR (fast harvest) ---
+; --- SPREAD (AUD/JPY cross = wider) ---
+InpMaxSpreadPoints=25
+InpMaxSpreadRanging=25
+InpMaxSpreadVolatile=40
+; --- ESCALATOR ---
 InpEsc_FirstR=0.05
 InpEsc_FirstSL_R=0.02
 InpEsc_StepR=0.10
@@ -39,10 +39,11 @@ InpEsc_BaseHarvest=90.0
 InpEsc_HarvestDecay=1.0
 InpEsc_MinHarvest=20.0
 InpEsc_MaxStages=10
-; --- TRAIL/SL ---
-InpTrailATR_Mult=1.2
-InpATR_Mult_SL=1.0
-InpSMC_MinImpulseATR=1.2
+; --- TRAIL/SL (cross = wider) ---
+InpTrailATR_Mult=1.5
+InpATR_Mult_SL=1.2
+InpSMC_MinImpulseATR=1.3
+InpMTF_Weight=0.5
 InpTrailDecayRate=0.50
 InpTrailMinMult=0.30
 ; --- FILTERS ---
@@ -54,13 +55,13 @@ InpMTF_EMAPeriod=50
 InpTickThrottleSeconds=5
 InpUseCorrelationFilter=true
 InpMaxCurrencyExposure=0.25
-; --- PIP LADDER (scalping M15) ---
+; --- PIP LADDER (cross = wider) ---
 InpPipLadder=true
-InpTightPips1=5
+InpTightPips1=6
 InpTightFactor1=0.80
-InpTightPips2=8
+InpTightPips2=10
 InpTightFactor2=0.60
-InpTightPips3=12
+InpTightPips3=15
 InpTightFactor3=0.40
 ; --- MISC ---
 InpTimeStaleMins=15.0
