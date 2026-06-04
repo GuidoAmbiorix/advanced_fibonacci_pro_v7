@@ -37,7 +37,7 @@ InpUniversalBE_Pips=0.1
 InpUniversalTrail_Pips=1.0
 ; --- SPREAD (cross = wider) ---
 InpMaxSpreadPoints=25
-InpMaxSpreadRanging=25
+InpMaxSpreadRanging=300
 InpMaxSpreadVolatile=45
 ; --- SL/TRAIL ---
 InpATR_Mult_SL=1.0

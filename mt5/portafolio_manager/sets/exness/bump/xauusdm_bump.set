@@ -38,7 +38,7 @@ InpUniversalBE_Pips=0.1
 InpUniversalTrail_Pips=2.0
 ; --- SPREAD (gold Standard: 200-400 pts) ---
 InpMaxSpreadPoints=300
-InpMaxSpreadRanging=200
+InpMaxSpreadRanging=300
 InpMaxSpreadVolatile=500
 ; --- SL/TRAIL (gold needs room) ---
 InpATR_Mult_SL=1.5
