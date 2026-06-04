@@ -1,0 +1,47 @@
+; XAUUSDm — EXNESS INSTANT BREAKEVEN (M15)
+; 0.01 lots | Instant BE | Gold needs wider params on M15
+InpMagicNumber=300020
+InpMinConfluenceEntry=17.0
+InpMaxLotsPerTrade=0.01
+InpFixedLots=0.01
+InpRiskBase=0.10
+InpKZRegimeAware=false
+InpEsc_FirstR=0.10
+InpEsc_FirstSL_R=0.02
+InpEsc_StepR=0.15
+InpEsc_GrowthFactor=1.0
+InpEsc_BaseHarvest=75.0
+InpEsc_HarvestDecay=1.0
+InpEsc_MinHarvest=10.0
+InpEsc_MaxStages=15
+InpUseHMM=true
+InpUseMacroSentiment=true
+InpUseMTF=true
+InpMTF=16408
+InpMTF_EMAPeriod=50
+InpTickThrottleSeconds=5
+InpUseCorrelationFilter=false
+InpMaxCurrencyExposure=0.25
+; Gold: spread 200-400 pts on Exness
+InpMaxSpreadPoints=300
+InpMaxSpreadRanging=200
+InpMaxSpreadVolatile=500
+InpTrailATR_Mult=2.0
+InpATR_Mult_SL=2.0
+InpSMC_MinImpulseATR=1.5
+InpUseDXYConflict=false
+InpTrailDecayRate=0.50
+InpTrailMinMult=0.30
+InpTimeStaleMins=60.0
+InpPipLadder=true
+; Gold M15: pips in $0.10 units
+InpTightPips1=80
+InpTightFactor1=0.80
+InpTightPips2=150
+InpTightFactor2=0.60
+InpTightPips3=250
+InpTightFactor3=0.40
+InpInstantBreakeven=true
+InpUseKillzoneFilter=false
+InpUseTimeFilter=false
+InpMaxPositions=1

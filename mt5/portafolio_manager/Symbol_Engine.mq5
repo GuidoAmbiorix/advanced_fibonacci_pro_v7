@@ -270,6 +270,9 @@ input int               InpTradeStartHour       = 0;      // Hora inicio (hora L
 input int               InpTradeEndHour         = 12;     // Hora fin (hora LOCAL del usuario)
 input int               InpServerToLocalOffset  = 7;      // Server → Local: si server=5h y local=12h, poner 7
 
+input group "======= INSTANT BREAKEVEN ======="
+input bool              InpInstantBreakeven     = false;  // Move SL to entry immediately after open
+
 input group "======= MOMENTUM EXIT ======="
 input bool              InpUseMomentumExit      = true;   // Detect & exit trades that lost momentum
 input int               InpMomADX_Period        = 14;     // ADX period for momentum measurement
@@ -2271,7 +2274,21 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
          g_lastSellTime = TimeCurrent();
 
       g_tradesExecuted++;  // Performance monitoring
- 
+
+      // INSTANT BREAKEVEN: Move SL to entry immediately after open
+      if(InpInstantBreakeven && ticket > 0)
+      {
+         Sleep(300);
+         if(PositionSelectByTicket(ticket))
+         {
+            double entryPx = PositionGetDouble(POSITION_PRICE_OPEN);
+            if(trade.PositionModify(ticket, entryPx, 0))
+               Print("[IB] Instant Breakeven — SL moved to entry: ", DoubleToString(entryPx, (int)symbolInfo.Digits()));
+            else
+               Print("[IB] Warning: Could not move SL to entry, err=", GetLastError());
+         }
+      }
+
        // SEND MOBILE NOTIFICATION
        if(InpEnableMobileAlerts)
        {

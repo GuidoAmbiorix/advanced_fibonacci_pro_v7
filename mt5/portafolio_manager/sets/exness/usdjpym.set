@@ -1,0 +1,45 @@
+; USDJPYm — EXNESS INSTANT BREAKEVEN (M15)
+; 0.01 lots | Instant BE | ~zero risk after entry
+InpMagicNumber=300015
+InpMinConfluenceEntry=19.0
+InpMaxLotsPerTrade=0.01
+InpFixedLots=0.01
+InpRiskBase=0.10
+InpKZRegimeAware=false
+InpEsc_FirstR=0.10
+InpEsc_FirstSL_R=0.02
+InpEsc_StepR=0.15
+InpEsc_GrowthFactor=1.0
+InpEsc_BaseHarvest=75.0
+InpEsc_HarvestDecay=1.0
+InpEsc_MinHarvest=10.0
+InpEsc_MaxStages=15
+InpUseHMM=true
+InpUseMacroSentiment=true
+InpUseMTF=true
+InpMTF=16408
+InpMTF_EMAPeriod=50
+InpTickThrottleSeconds=5
+InpUseCorrelationFilter=true
+InpMaxCurrencyExposure=0.25
+; JPY: spread in points (5-digit broker)
+InpMaxSpreadPoints=25
+InpMaxSpreadRanging=25
+InpMaxSpreadVolatile=50
+InpTrailATR_Mult=1.5
+InpATR_Mult_SL=1.2
+InpSMC_MinImpulseATR=1.5
+InpTrailDecayRate=0.50
+InpTrailMinMult=0.30
+InpTimeStaleMins=60.0
+InpPipLadder=true
+InpTightPips1=5
+InpTightFactor1=0.80
+InpTightPips2=10
+InpTightFactor2=0.60
+InpTightPips3=18
+InpTightFactor3=0.40
+InpInstantBreakeven=true
+InpUseKillzoneFilter=false
+InpUseTimeFilter=false
+InpMaxPositions=1

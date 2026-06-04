@@ -57,9 +57,18 @@ string StripBrokerSuffix(string symbol)
    return NormalizeSymbol(symbol);
 }
 
-// Legacy: returns symbol as-is (no suffix needed for standard accounts)
+// Returns baseSymbol with the broker suffix auto-detected from the current chart symbol.
+// Example: chart is "EURUSDm" → suffix="m" → BrokerSymbol("GBPUSD") returns "GBPUSDm"
 string BrokerSymbol(string baseSymbol)
 {
+   string normalized = NormalizeSymbol(_Symbol);          // e.g. "EURUSD"
+   int    baseLen    = StringLen(normalized);             // 6
+   int    actualLen  = StringLen(_Symbol);                // e.g. 7 for "EURUSDm"
+   if(actualLen > baseLen)
+   {
+      string suffix = StringSubstr(_Symbol, baseLen, actualLen - baseLen); // "m"
+      return baseSymbol + suffix;
+   }
    return baseSymbol;
 }
 

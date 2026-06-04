@@ -1,0 +1,12 @@
+; GOVERNOR — EXNESS (4 pairs: EURUSDm, GBPUSDm, USDJPYm, XAUUSDm)
+; Portfolio-level risk guardian
+InpMaxTotalExposure=2.0
+InpMaxDrawdownPct=3.0
+InpMaxDailyLossPct=1.5
+InpMinProfitFactor=0.8
+InpLookbackTrades=20
+InpRiskScaleDown=0.5
+InpRiskScaleUp=1.0
+InpGovernorTickSeconds=30
+InpEnableGovernorAlerts=true
+InpEnableRankingSystem=false
