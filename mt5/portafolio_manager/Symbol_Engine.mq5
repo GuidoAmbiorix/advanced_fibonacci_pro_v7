@@ -514,10 +514,9 @@ int OnInit()
    if(!symbolInfo.Name(_Symbol)) return INIT_FAILED;
    symbolInfo.RefreshRates();
 
-   // Timeframe recommendation (H4 is optimal; EA works on any TF but is calibrated for H4)
-   if(_Period != PERIOD_H4)
-      Print("[WARN] Recommended timeframe is H4. Current: ", EnumToString(_Period),
-            ". EA will run but parameters are calibrated for H4.");
+   // Timeframe info (EA supports M15 for scalping and H4 for swing)
+   Print("[INFO] Timeframe: ", EnumToString(_Period),
+         (_Period == PERIOD_M15 ? " — Scalping mode" : (_Period == PERIOD_H4 ? " — Swing mode" : " — Custom")));
 
    trade.SetExpertMagicNumber(InpMagicNumber);
    trade.SetDeviationInPoints(10);
