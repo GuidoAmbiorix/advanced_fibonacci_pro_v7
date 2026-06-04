@@ -25,6 +25,7 @@ InpVolatilityThreshold=4.0
 InpVolatilitySpikeCooldown=0
 ; --- KELLY (off — fixed lots, no DD gate) ---
 InpUseKelly=false
+InpMaxDailyTrades=0
 ; --- COOLDOWNS (all off — gold re-enters immediately) ---
 InpTradeCooldownMinutes=0
 InpLossCooldownMinutes=0
