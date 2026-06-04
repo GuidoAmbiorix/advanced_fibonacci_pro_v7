@@ -2727,9 +2727,9 @@ void CheckUniversalBreakeven()
    double ask      = symbolInfo.Ask();
    double spread   = ask - bid;  // live spread in price units
 
-   // Trail must be >= 1.5x live spread to survive spread fluctuations
-   // InpUniversalTrail_Pips is the user minimum — spread wins if wider
-   double trailDist   = MathMax(InpUniversalTrail_Pips * pipSize, spread * 1.5);
+   // Trail: 1.1x spread — aggressively close to price, just above spread noise
+   // InpUniversalTrail_Pips sets the minimum — spread wins if wider
+   double trailDist   = MathMax(InpUniversalTrail_Pips * pipSize, spread * 1.1);
 
    // Activate only after at least 1 full spread of real profit
    double triggerDist = MathMax(InpUniversalBE_Pips * pipSize, spread);
