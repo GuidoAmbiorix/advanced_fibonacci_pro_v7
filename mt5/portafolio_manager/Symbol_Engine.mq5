@@ -223,6 +223,7 @@ input group "======= VOLATILITY SPIKE PROTECTION ======="
 input bool              InpEnableVolatilityFilter = true; // Enable Flash Crash Detection
 input double            InpVolatilityThreshold = 3.0;     // Volatility Spike Threshold (ATR multiplier)
 input int               InpVolatilitySpikeCooldown = 15;  // Cooldown After Spike (minutes)
+input bool              InpDisableFailsafe = false;        // Disable spread/circuit-breaker failsafe (bump mode)
 
 input group "======= KELLY POSITION SIZING ======="
 input bool              InpUseKelly = true;               // Enable Kelly Sizing
@@ -836,7 +837,7 @@ void OnTimer()
          reason = "CRISIS_REGIME";
       else if(g_consecutiveLosses >= InpMaxConsecutiveLosses && InpMaxConsecutiveLosses > 0)
          reason = "LOSS_STREAK(" + IntegerToString(g_consecutiveLosses) + ")";
-      else if(!failSafe.IsExecutionSafe())
+      else if(!InpDisableFailsafe && !failSafe.IsExecutionSafe())
          reason = "FAILSAFE_BLOCKED";
       else if(!killSwitch.IsEnabled())
          reason = "KILL_SWITCH(" + killSwitch.GetStatus() + ")";
@@ -1360,7 +1361,7 @@ void OnTick()
             " Harvest=", DoubleToString(g_escCfg.baseHarvest, 0), "%");
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---
-   if(!failSafe.IsExecutionSafe())
+   if(!InpDisableFailsafe && !failSafe.IsExecutionSafe())
    {
       static datetime lastFSLog = 0;
       if(TimeCurrent() - lastFSLog > 60)

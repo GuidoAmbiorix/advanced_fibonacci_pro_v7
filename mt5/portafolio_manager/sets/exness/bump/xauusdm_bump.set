@@ -49,3 +49,4 @@ InpTimeStaleMins=2.0
 InpTickThrottleSeconds=1
 InpMaxPositions=1
 InpPipLadder=false
+InpDisableFailsafe=true
