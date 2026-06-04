@@ -58,3 +58,4 @@ InpTickThrottleSeconds=1
 InpMaxPositions=1
 InpPipLadder=false
 InpDisableFailsafe=true
+InpDisablePullbackFilter=true

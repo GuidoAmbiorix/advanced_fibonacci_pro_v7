@@ -291,6 +291,7 @@ input group "======= SESSION GOVERNOR ======="
 input bool              InpUseSessionGovernor = true;     // Enable Session Governor
 input int               InpMaxTradesPerSession = 3;       // Max Trades Per Session
 input int               InpTradeCooldownMinutes = 30;     // Cooldown Between Trades
+input bool              InpDisablePullbackFilter = false; // Disable post-win pullback requirement (bump mode)
 input bool              InpCloseIntradayProfits = true;   // Close Profitable Trades at EOD (H1 Intraday)
 input int               InpEndOfDayHour = 22;             // EOD Hour (Broker Time, typically 22:00 or 23:00)
 input bool              InpResetKillSwitch = false;       // RESET Kill Switch hard lock (toggle ON to unlock)
@@ -1903,7 +1904,7 @@ void OnTick()
 
           // ── PULLBACK VALIDATION: No chasing after winning trade ────────
           // Require at least 0.382 ATR retracement before re-entering same direction
-          if(g_lastTradeWasWin && g_lastTradeCloseTime > 0 && g_ATR > 0)
+          if(!InpDisablePullbackFilter && g_lastTradeWasWin && g_lastTradeCloseTime > 0 && g_ATR > 0)
           {
              int secSinceClose = (int)(TimeCurrent() - g_lastTradeCloseTime);
              if(secSinceClose < PeriodSeconds(PERIOD_H4) * 6)
