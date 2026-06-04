@@ -2,7 +2,7 @@
 ; Most aggressive set: lowest confluence, widest spread tolerance
 InpMagicNumber=500020
 InpBrokerUTCOffset=0
-InpMinConfluenceEntry=10.0
+InpMinConfluenceEntry=14.0
 InpMaxLotsPerTrade=0.01
 InpFixedLots=0.01
 InpRiskBase=0.50
