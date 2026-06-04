@@ -22,7 +22,12 @@ InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
 InpEnableVolatilityFilter=true
 InpVolatilityThreshold=4.0
-InpVolatilitySpikeCooldown=10
+InpVolatilitySpikeCooldown=0
+; --- COOLDOWNS (all off — gold re-enters immediately) ---
+InpTradeCooldownMinutes=0
+InpLossCooldownMinutes=0
+InpReversalCooldownMinutes=0
+InpSymbolCooldown=0
 ; --- INSTANT BE + TRAIL (spread-aware auto-adjusts for gold ~3pip spread) ---
 InpInstantBreakeven=true
 InpUniversalBE=true
