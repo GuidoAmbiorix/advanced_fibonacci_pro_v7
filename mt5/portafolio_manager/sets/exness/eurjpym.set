@@ -66,3 +66,11 @@ InpTightFactor3=0.40
 ; --- MISC ---
 InpTimeStaleMins=15.0
 InpMaxPositions=1
+
+; --- NEWS FILTER ---
+InpUseNewsFilter=true
+InpNewsMinutesBefore=30
+InpNewsMinutesAfter=30
+InpEnableVolatilityFilter=true
+InpVolatilityThreshold=3.0
+InpVolatilitySpikeCooldown=15
