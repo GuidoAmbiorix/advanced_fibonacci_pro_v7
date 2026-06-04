@@ -272,8 +272,9 @@ input int               InpServerToLocalOffset  = 7;      // Server → Local: s
 
 input group "======= INSTANT BREAKEVEN ======="
 input bool              InpInstantBreakeven     = false;  // Move SL to entry immediately after open (EA trades only)
-input bool              InpUniversalBE          = false;  // Monitor ALL positions (incl. manual) for breakeven
-input double            InpUniversalBE_Pips     = 0.1;   // Pips in profit to trigger universal breakeven (0.1 = immediate)
+input bool              InpUniversalBE          = false;  // Monitor ALL positions (incl. manual) — trail SL glued to price
+input double            InpUniversalBE_Pips     = 0.1;   // Pips in profit to activate (0.1 = immediate)
+input double            InpUniversalTrail_Pips  = 1.0;   // Pips behind price to keep SL (spread buffer)
 
 input group "======= MOMENTUM EXIT ======="
 input bool              InpUseMomentumExit      = true;   // Detect & exit trades that lost momentum
@@ -2721,33 +2722,52 @@ void CheckUniversalBreakeven()
 {
    if(!InpUniversalBE) return;
 
-   double pipSize = symbolInfo.Point() * (symbolInfo.Digits() == 3 || symbolInfo.Digits() == 5 ? 10 : 1);
-   double triggerDist = InpUniversalBE_Pips * pipSize;
+   double pipSize     = symbolInfo.Point() * (symbolInfo.Digits() == 3 || symbolInfo.Digits() == 5 ? 10 : 1);
+   double triggerDist = InpUniversalBE_Pips   * pipSize;
+   double trailDist   = InpUniversalTrail_Pips * pipSize;
+   double bid         = symbolInfo.Bid();
+   double ask         = symbolInfo.Ask();
 
    for(int i = PositionsTotal() - 1; i >= 0; i--)
    {
       if(!position.SelectByIndex(i)) continue;
       if(position.Symbol() != _Symbol) continue;
 
-      double entryPx  = position.PriceOpen();
+      double entryPx   = position.PriceOpen();
       double currentSL = position.StopLoss();
-      double bid      = symbolInfo.Bid();
-      double ask      = symbolInfo.Ask();
+      bool   isBuy     = (position.PositionType() == POSITION_TYPE_BUY);
 
-      // Skip if SL is already at or beyond entry (already protected)
-      bool isBuy  = (position.PositionType() == POSITION_TYPE_BUY);
-      if(isBuy  && currentSL >= entryPx) continue;
-      if(!isBuy && currentSL <= entryPx && currentSL > 0) continue;
-
-      // Check if profit >= trigger pips
+      // Check if profit >= trigger threshold to activate
       double profit = isBuy ? (bid - entryPx) : (entryPx - ask);
       if(profit < triggerDist) continue;
 
-      // Move SL to entry
-      if(trade.PositionModify(position.Ticket(), entryPx, position.TakeProfit()))
-         Print("[UBE] Breakeven set for #", position.Ticket(), " (", position.Symbol(), ") entry=", DoubleToString(entryPx, (int)symbolInfo.Digits()));
+      // Desired SL: price - trail buffer, but never below entry (ratchet only forward)
+      double desiredSL;
+      if(isBuy)
+      {
+         desiredSL = bid - trailDist;
+         if(desiredSL < entryPx) desiredSL = entryPx;   // floor = entry
+         if(desiredSL <= currentSL) continue;            // only move forward
+      }
       else
-         Print("[UBE] Failed #", position.Ticket(), " err=", GetLastError());
+      {
+         desiredSL = ask + trailDist;
+         if(desiredSL > entryPx) desiredSL = entryPx;   // ceiling = entry
+         if(currentSL > 0 && desiredSL >= currentSL) continue; // only move forward
+      }
+
+      desiredSL = NormalizeDouble(desiredSL, (int)symbolInfo.Digits());
+
+      if(trade.PositionModify(position.Ticket(), desiredSL, position.TakeProfit()))
+      {
+         // Silent update — only log meaningful jumps to avoid log spam
+         static double lastLoggedSL = 0;
+         if(MathAbs(desiredSL - lastLoggedSL) >= pipSize)
+         {
+            Print("[UBE] Trail SL #", position.Ticket(), " → ", DoubleToString(desiredSL, (int)symbolInfo.Digits()));
+            lastLoggedSL = desiredSL;
+         }
+      }
    }
 }
 
