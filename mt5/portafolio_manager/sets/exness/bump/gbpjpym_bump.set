@@ -1,5 +1,5 @@
-; EURUSDm — BUMP MODE | Most liquid, catch every impulse
-InpMagicNumber=500008
+; GBPJPYm — BUMP MODE | Beast cross, 200+ pip days, massive bumps
+InpMagicNumber=500016
 InpBrokerUTCOffset=0
 InpMinConfluenceEntry=14.0
 InpMaxLotsPerTrade=0.01
@@ -20,7 +20,7 @@ InpUseNewsFilter=true
 InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
 InpEnableVolatilityFilter=true
-InpVolatilityThreshold=3.0
+InpVolatilityThreshold=3.5
 InpVolatilitySpikeCooldown=0
 ; --- KELLY (off) ---
 InpUseKelly=false
@@ -30,19 +30,19 @@ InpLossCooldownMinutes=0
 InpReversalCooldownMinutes=0
 InpSymbolCooldown=0
 InpMaxDailyTrades=0
-; --- INSTANT BE + TRAIL ---
+; --- INSTANT BE + TRAIL (cross needs more room) ---
 InpInstantBreakeven=true
 InpUniversalBE=true
 InpUniversalBE_Pips=0.1
-InpUniversalTrail_Pips=0.5
-; --- SPREAD ---
-InpMaxSpreadPoints=12
-InpMaxSpreadRanging=12
-InpMaxSpreadVolatile=20
+InpUniversalTrail_Pips=1.0
+; --- SPREAD (cross = wider) ---
+InpMaxSpreadPoints=25
+InpMaxSpreadRanging=25
+InpMaxSpreadVolatile=45
 ; --- SL/TRAIL ---
-InpATR_Mult_SL=0.8
-InpTrailATR_Mult=1.0
-InpSMC_MinImpulseATR=1.0
+InpATR_Mult_SL=1.0
+InpTrailATR_Mult=1.2
+InpSMC_MinImpulseATR=1.2
 InpTrailDecayRate=0.50
 InpTrailMinMult=0.30
 ; --- ESCALATOR ---

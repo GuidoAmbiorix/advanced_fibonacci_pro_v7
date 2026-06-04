@@ -1,18 +1,19 @@
-; GBPUSDm — BUMP MODE | Catch any impulse, trail out
+; GBPUSDm — BUMP MODE | Volatile major, sharp impulses
 InpMagicNumber=500012
 InpBrokerUTCOffset=0
-InpMinConfluenceEntry=13.0
+InpMinConfluenceEntry=14.0
 InpMaxLotsPerTrade=0.01
 InpFixedLots=0.01
 InpRiskBase=0.50
 InpDirection=0
-; --- FILTERS (minimal) ---
+; --- FILTERS (all off) ---
 InpUseKillzoneFilter=false
 InpUseTimeFilter=false
 InpUseMTF=false
 InpUseHMM=false
 InpUseMacroSentiment=false
 InpUseCorrelationFilter=false
+InpUseDXYConflict=false
 InpKZRegimeAware=false
 ; --- NEWS ---
 InpUseNewsFilter=true
@@ -20,13 +21,21 @@ InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
 InpEnableVolatilityFilter=true
 InpVolatilityThreshold=3.0
-InpVolatilitySpikeCooldown=15
+InpVolatilitySpikeCooldown=0
+; --- KELLY (off) ---
+InpUseKelly=false
+; --- COOLDOWNS (all off) ---
+InpTradeCooldownMinutes=0
+InpLossCooldownMinutes=0
+InpReversalCooldownMinutes=0
+InpSymbolCooldown=0
+InpMaxDailyTrades=0
 ; --- INSTANT BE + TRAIL ---
 InpInstantBreakeven=true
 InpUniversalBE=true
 InpUniversalBE_Pips=0.1
-InpUniversalTrail_Pips=0.5
-; --- SPREAD (GBP slightly wider) ---
+InpUniversalTrail_Pips=0.7
+; --- SPREAD ---
 InpMaxSpreadPoints=18
 InpMaxSpreadRanging=18
 InpMaxSpreadVolatile=30
@@ -48,3 +57,4 @@ InpTickThrottleSeconds=1
 InpMaxPositions=1
 InpPipLadder=false
 InpDisableFailsafe=true
+InpDisablePullbackFilter=true

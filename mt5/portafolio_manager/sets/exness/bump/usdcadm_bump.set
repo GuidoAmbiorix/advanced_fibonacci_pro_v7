@@ -1,5 +1,5 @@
-; EURUSDm — BUMP MODE | Most liquid, catch every impulse
-InpMagicNumber=500008
+; USDCADm — BUMP MODE | Oil-correlated, strong directional moves
+InpMagicNumber=500003
 InpBrokerUTCOffset=0
 InpMinConfluenceEntry=14.0
 InpMaxLotsPerTrade=0.01
@@ -34,11 +34,11 @@ InpMaxDailyTrades=0
 InpInstantBreakeven=true
 InpUniversalBE=true
 InpUniversalBE_Pips=0.1
-InpUniversalTrail_Pips=0.5
+InpUniversalTrail_Pips=0.7
 ; --- SPREAD ---
-InpMaxSpreadPoints=12
-InpMaxSpreadRanging=12
-InpMaxSpreadVolatile=20
+InpMaxSpreadPoints=20
+InpMaxSpreadRanging=20
+InpMaxSpreadVolatile=35
 ; --- SL/TRAIL ---
 InpATR_Mult_SL=0.8
 InpTrailATR_Mult=1.0

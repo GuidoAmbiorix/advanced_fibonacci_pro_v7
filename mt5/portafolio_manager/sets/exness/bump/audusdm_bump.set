@@ -1,5 +1,5 @@
-; EURUSDm — BUMP MODE | Most liquid, catch every impulse
-InpMagicNumber=500008
+; AUDUSDm — BUMP MODE | Commodity-linked, clean structure
+InpMagicNumber=500002
 InpBrokerUTCOffset=0
 InpMinConfluenceEntry=14.0
 InpMaxLotsPerTrade=0.01
@@ -36,9 +36,9 @@ InpUniversalBE=true
 InpUniversalBE_Pips=0.1
 InpUniversalTrail_Pips=0.5
 ; --- SPREAD ---
-InpMaxSpreadPoints=12
-InpMaxSpreadRanging=12
-InpMaxSpreadVolatile=20
+InpMaxSpreadPoints=15
+InpMaxSpreadRanging=15
+InpMaxSpreadVolatile=25
 ; --- SL/TRAIL ---
 InpATR_Mult_SL=0.8
 InpTrailATR_Mult=1.0
