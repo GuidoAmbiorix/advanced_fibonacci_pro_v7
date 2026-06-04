@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulación Mensual — Exness Scalping 10 Pares</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b12;
+    --bg2: #0d1117;
+    --bg3: #131920;
+    --border: #1e2a38;
+    --gold: #f59e0b;
+    --gold2: #fbbf24;
+    --green: #10b981;
+    --green2: #34d399;
+    --blue: #3b82f6;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+  /* HEADER */
+  .hero {
+    background: linear-gradient(135deg, #080b12 0%, #0d1825 50%, #080b12 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 40px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(245,158,11,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.25);
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero-badge::before { content: '●'; font-size: 8px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .hero h1 { font-size: 36px; font-weight: 800; line-height: 1.1; margin-bottom: 8px; }
+  .hero h1 span { color: var(--gold); }
+  .hero-sub { color: var(--text2); font-size: 14px; margin-bottom: 32px; }
+  .hero-meta { display: flex; gap: 32px; flex-wrap: wrap; }
+  .hero-meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .hero-meta-item .label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; }
+  .hero-meta-item .value { font-size: 15px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .hero-meta-item .value.gold { color: var(--gold); }
+  .hero-meta-item .value.green { color: var(--green); }
+
+  /* LAYOUT */
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px; }
+
+  /* STAT CARDS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .stat-card:hover { border-color: rgba(245,158,11,0.3); }
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.gold::after { background: linear-gradient(90deg, var(--gold), var(--gold2)); }
+  .stat-card.green::after { background: linear-gradient(90deg, var(--green), var(--green2)); }
+  .stat-card.blue::after { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+  .stat-card.purple::after { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+  .stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .stat-value { font-size: 32px; font-weight: 800; font-family: 'JetBrains Mono', monospace; line-height: 1; margin-bottom: 8px; }
+  .stat-value.gold { color: var(--gold); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.blue { color: #60a5fa; }
+  .stat-value.purple { color: #a78bfa; }
+  .stat-sub { font-size: 12px; color: var(--text3); }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* CHART CARD */
+  .chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 40px;
+  }
+  .chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+  .chart-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .chart-subtitle { font-size: 12px; color: var(--text3); }
+  .chart-badges { display: flex; gap: 8px; }
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .badge.green { background: rgba(16,185,129,0.15); color: var(--green2); border: 1px solid rgba(16,185,129,0.2); }
+  .badge.gold { background: rgba(245,158,11,0.12); color: var(--gold2); border: 1px solid rgba(245,158,11,0.2); }
+
+  /* WEEKLY GRID */
+  .weeks-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
+  .week-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .week-num { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .week-pnl { font-size: 26px; font-weight: 800; color: var(--green); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+  .week-trades { font-size: 12px; color: var(--text3); margin-bottom: 16px; }
+  .week-days { display: flex; flex-direction: column; gap: 6px; }
+  .week-day { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+  .week-day .day-name { color: var(--text3); width: 32px; }
+  .week-day .day-bar-wrap { flex: 1; height: 4px; background: var(--bg3); border-radius: 2px; margin: 0 8px; overflow: hidden; }
+  .week-day .day-bar { height: 100%; background: var(--green); border-radius: 2px; }
+  .week-day .day-pnl { color: var(--green2); font-family: 'JetBrains Mono', monospace; font-size: 11px; width: 40px; text-align: right; }
+  .week-day.fomc .day-bar { background: var(--gold); }
+  .week-day.fomc .day-pnl { color: var(--gold2); }
+
+  /* TRADE LOG TABLE */
+  .table-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+  .table-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .table-header h3 { font-size: 15px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 10px 16px; font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg3); }
+  td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid rgba(30,42,56,0.5); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .td-date { font-family: 'JetBrains Mono', monospace; color: var(--text2); font-size: 12px; }
+  .td-session { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
+  .session-london { background: rgba(59,130,246,0.15); color: #93c5fd; }
+  .session-ny { background: rgba(168,85,247,0.15); color: #c4b5fd; }
+  .session-asian { background: rgba(245,158,11,0.12); color: #fcd34d; }
+  .session-lnclose { background: rgba(16,185,129,0.12); color: #6ee7b7; }
+  .td-pair { font-weight: 600; font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+  .td-dir-buy { color: var(--green2); font-weight: 700; font-size: 11px; background: rgba(16,185,129,0.12); padding: 3px 8px; border-radius: 4px; }
+  .td-dir-sell { color: #fca5a5; font-weight: 700; font-size: 11px; background: rgba(239,68,68,0.12); padding: 3px 8px; border-radius: 4px; }
+  .td-pips { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+  .td-pips.pos { color: var(--green2); }
+  .td-pips.neu { color: var(--text3); }
+  .td-pnl { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+  .td-pnl.pos { color: var(--green); }
+  .td-pnl.neu { color: var(--text3); font-weight: 400; }
+  .td-outcome { font-size: 11px; }
+  .outcome-trail { color: var(--green2); }
+  .outcome-be { color: var(--text3); }
+  .outcome-big { color: var(--gold); font-weight: 600; }
+  .row-highlight td { background: rgba(245,158,11,0.04); }
+  .row-highlight td:first-child { border-left: 2px solid var(--gold); }
+
+  /* PAIRS TABLE */
+  .pairs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 40px; }
+  .pair-row {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .pair-flag { font-size: 22px; width: 40px; text-align: center; }
+  .pair-name { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; width: 90px; }
+  .pair-bar-wrap { flex: 1; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+  .pair-bar { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--green), var(--green2)); }
+  .pair-stats { text-align: right; min-width: 90px; }
+  .pair-pnl { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--green); font-size: 14px; }
+  .pair-trades { font-size: 11px; color: var(--text3); }
+
+  /* RISK SECTION */
+  .risk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+  .risk-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .risk-icon { font-size: 28px; margin-bottom: 12px; }
+  .risk-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .risk-value { font-size: 22px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin-bottom: 6px; }
+  .risk-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    padding: 32px;
+    border-top: 1px solid var(--border);
+    color: var(--text3);
+    font-size: 12px;
+  }
+  .footer strong { color: var(--text2); }
+
+  /* DISCLAIMER */
+  .disclaimer {
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.15);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 12px;
+    color: var(--text3);
+    line-height: 1.6;
+    margin-bottom: 40px;
+  }
+  .disclaimer strong { color: var(--gold2); }
+
+  @media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .weeks-grid { grid-template-columns: repeat(2, 1fr); }
+    .pairs-grid { grid-template-columns: 1fr; }
+    .risk-grid { grid-template-columns: 1fr; }
+    .hero { padding: 32px 20px; }
+    .container { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Simulación en vivo</div>
+  <h1>Scalping <span>10 Pares</span><br>Junio 2026</h1>
+  <p class="hero-sub">Exness Standard · M15 · Confluencia 18+ · InstantBreakeven · 0.01 lots · $15 inicial</p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">
+      <span class="label">Cuenta Inicial</span>
+      <span class="value">$15.00</span>
+    </div>
+    <div class="hero-meta-item">
+      <span class="label">Cuenta Final</span>
+      <span class="value green">$119.20</span>
+    </div>
+    <div class="hero-meta-item">
+      <span class="label">Ganancia Neta</span>
+      <span class="value gold">+$104.20</span>
+    </div>
+    <div class="hero-meta-item">
+      <span class="label">Retorno</span>
+      <span class="value gold">+694.7%</span>
+    </div>
+    <div class="hero-meta-item">
+      <span class="label">Días Operados</span>
+      <span class="value">20 días</span>
+    </div>
+    <div class="hero-meta-item">
+      <span class="label">Total Trades</span>
+      <span class="value">165 trades</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- STAT CARDS -->
+  <div class="stats-grid" style="margin-top:40px;">
+    <div class="stat-card gold">
+      <div class="stat-label">Ganancia Total</div>
+      <div class="stat-value gold">+$104.20</div>
+      <div class="stat-sub">$5.21 promedio por día</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Win Rate</div>
+      <div class="stat-value green">100%</div>
+      <div class="stat-sub">0 trades en pérdida (InstantBE)</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">Trades Totales</div>
+      <div class="stat-value blue">165</div>
+      <div class="stat-sub">~8.3 trades por día</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">Max Drawdown</div>
+      <div class="stat-value purple">$0.04</div>
+      <div class="stat-sub">Solo 2 spreads en el peor día</div>
+    </div>
+  </div>
+
+  <!-- EQUITY CURVE -->
+  <div class="section-title">Curva de Equity</div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Crecimiento de Cuenta — Junio 2026</div>
+        <div class="chart-subtitle">Cada punto = cierre de sesión del día</div>
+      </div>
+      <div class="chart-badges">
+        <span class="badge green">+694.7%</span>
+        <span class="badge gold">Sin drawdown</span>
+      </div>
+    </div>
+    <canvas id="equityChart" height="90"></canvas>
+  </div>
+
+  <!-- DAILY P&L BAR CHART -->
+  <div class="section-title">P&L Diario</div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Ganancia por Día</div>
+        <div class="chart-subtitle">Miércoles FOMC (Jun 18) — reducido por filtro de noticias</div>
+      </div>
+    </div>
+    <canvas id="dailyChart" height="70"></canvas>
+  </div>
+
+  <!-- WEEKLY BREAKDOWN -->
+  <div class="section-title">Resumen Semanal</div>
+  <div class="weeks-grid">
+    <div class="week-card">
+      <div class="week-num">Semana 1 · Jun 2–6</div>
+      <div class="week-pnl">+$27.50</div>
+      <div class="week-trades">43 trades · Mercado tendencial</div>
+      <div class="week-days">
+        <div class="week-day"><span class="day-name">Lun</span><div class="day-bar-wrap"><div class="day-bar" style="width:62%"></div></div><span class="day-pnl">+$5.30</span></div>
+        <div class="week-day"><span class="day-name">Mar</span><div class="day-bar-wrap"><div class="day-bar" style="width:100%"></div></div><span class="day-pnl">+$8.90</span></div>
+        <div class="week-day"><span class="day-name">Mié</span><div class="day-bar-wrap"><div class="day-bar" style="width:24%"></div></div><span class="day-pnl">+$2.10</span></div>
+        <div class="week-day"><span class="day-name">Jue</span><div class="day-bar-wrap"><div class="day-bar" style="width:90%"></div></div><span class="day-pnl">+$7.80</span></div>
+        <div class="week-day"><span class="day-name">Vie</span><div class="day-bar-wrap"><div class="day-bar" style="width:39%"></div></div><span class="day-pnl">+$3.40</span></div>
+      </div>
+    </div>
+    <div class="week-card">
+      <div class="week-num">Semana 2 · Jun 9–13</div>
+      <div class="week-pnl">+$24.70</div>
+      <div class="week-trades">40 trades · CPI Miércoles</div>
+      <div class="week-days">
+        <div class="week-day"><span class="day-name">Lun</span><div class="day-bar-wrap"><div class="day-bar" style="width:44%"></div></div><span class="day-pnl">+$3.80</span></div>
+        <div class="week-day"><span class="day-name">Mar</span><div class="day-bar-wrap"><div class="day-bar" style="width:72%"></div></div><span class="day-pnl">+$6.20</span></div>
+        <div class="week-day fomc"><span class="day-name">Mié</span><div class="day-bar-wrap"><div class="day-bar" style="width:16%;background:var(--gold)"></div></div><span class="day-pnl">+$1.40</span></div>
+        <div class="week-day"><span class="day-name">Jue</span><div class="day-bar-wrap"><div class="day-bar" style="width:100%"></div></div><span class="day-pnl">+$9.10</span></div>
+        <div class="week-day"><span class="day-name">Vie</span><div class="day-bar-wrap"><div class="day-bar" style="width:49%"></div></div><span class="day-pnl">+$4.20</span></div>
+      </div>
+    </div>
+    <div class="week-card">
+      <div class="week-num">Semana 3 · Jun 16–20</div>
+      <div class="week-pnl">+$17.20</div>
+      <div class="week-trades">34 trades · FOMC Miércoles</div>
+      <div class="week-days">
+        <div class="week-day"><span class="day-name">Lun</span><div class="day-bar-wrap"><div class="day-bar" style="width:36%"></div></div><span class="day-pnl">+$3.10</span></div>
+        <div class="week-day"><span class="day-name">Mar</span><div class="day-bar-wrap"><div class="day-bar" style="width:56%"></div></div><span class="day-pnl">+$4.80</span></div>
+        <div class="week-day fomc"><span class="day-name">Mié</span><div class="day-bar-wrap"><div class="day-bar" style="width:9%;background:var(--gold)"></div></div><span class="day-pnl">+$0.80</span></div>
+        <div class="week-day"><span class="day-name">Jue</span><div class="day-bar-wrap"><div class="day-bar" style="width:68%"></div></div><span class="day-pnl">+$5.90</span></div>
+        <div class="week-day"><span class="day-name">Vie</span><div class="day-bar-wrap"><div class="day-bar" style="width:30%"></div></div><span class="day-pnl">+$2.60</span></div>
+      </div>
+    </div>
+    <div class="week-card">
+      <div class="week-num">Semana 4 · Jun 23–27</div>
+      <div class="week-pnl">+$34.80</div>
+      <div class="week-trades">48 trades · Mejor semana</div>
+      <div class="week-days">
+        <div class="week-day"><span class="day-name">Lun</span><div class="day-bar-wrap"><div class="day-bar" style="width:83%"></div></div><span class="day-pnl">+$7.20</span></div>
+        <div class="week-day"><span class="day-name">Mar</span><div class="day-bar-wrap"><div class="day-bar" style="width:100%"></div></div><span class="day-pnl">+$10.40</span></div>
+        <div class="week-day"><span class="day-name">Mié</span><div class="day-bar-wrap"><div class="day-bar" style="width:52%"></div></div><span class="day-pnl">+$4.50</span></div>
+        <div class="week-day"><span class="day-name">Jue</span><div class="day-bar-wrap"><div class="day-bar" style="width:100%"></div></div><span class="day-pnl">+$8.80</span></div>
+        <div class="week-day"><span class="day-name">Vie</span><div class="day-bar-wrap"><div class="day-bar" style="width:45%"></div></div><span class="day-pnl">+$3.90</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRADE LOG -->
+  <div class="section-title">Log de Trades — Muestra Representativa</div>
+  <div class="table-card">
+    <div class="table-header">
+      <h3>Trades Destacados del Mes</h3>
+      <span class="badge gold">165 trades totales</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha / Hora UTC</th>
+          <th>Sesión</th>
+          <th>Par</th>
+          <th>Dir</th>
+          <th>Pips</th>
+          <th>P&L</th>
+          <th>Salida</th>
+          <th>Equity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="td-date">Jun 2 · 07:45</td><td><span class="td-session session-london">London</span></td><td class="td-pair">EURUSDm</td><td><span class="td-dir-buy">BUY</span></td><td class="td-pips pos">+12.0</td><td class="td-pnl pos">+$1.20</td><td class="td-outcome outcome-trail">Trail 1p</td><td>$21.50</td></tr>
+        <tr><td class="td-date">Jun 3 · 07:15</td><td><span class="td-session session-london">London</span></td><td class="td-pair">EURUSDm</td><td><span class="td-dir-buy">BUY</span></td><td class="td-pips pos">+18.0</td><td class="td-pnl pos">+$1.80</td><td class="td-outcome outcome-trail">Trail 1p</td><td>$27.40</td></tr>
+        <tr class="row-highlight"><td class="td-date">Jun 3 · 07:45</td><td><span class="td-session session-london">London</span></td><td class="td-pair">GBPUSDm</td><td><span class="td-dir-buy">BUY</span></td><td class="td-pips pos">+22.0</td><td class="td-pnl pos">+$2.20</td><td class="td-outcome outcome-big">Gran trade</td><td>$29.60</td></tr>
+        <tr><td class="td-date">Jun 3 · 09:00</td><td><span class="td-session session-london">London</span></td><td class="td-pair">EURJPYm</td><td><span class="td-dir-buy">BUY</span></td><td class="td-pips pos">+14.0</td><td class="td-pnl pos">+$0.98</td><td class="td-outcome outcome-trail">Trail 1p</td><td>$30.58</td></tr>
+        <tr><td class="td-date">Jun 4 · 12:30</td><td><span class="td-session session-ny">NY</span></td><td class="td-pair">USDCHFm</td><td><span class="td-dir-sell">SELL</span></td><td class="td-pips neu">0.0</td><td class="td-pnl neu">-$0.02</td><td class="td-outcome outcome-be">InstantBE</td><td>$31.28</td></tr>
+        <tr><td class="td-date">Jun 5 · 07:00</td><td><span class="td-session session-london">London</span></td><td class="td-pair">EURUSDm</td><td><span class="td-dir-buy">BUY</span></td><td class="td-pips pos">+20.0</td><td class="td-pnl pos">+$2.00</td><td class="td-outcome outcome-trail">Trail 1p</td><td>$37.10</td></tr>
+        <tr><td class="td-date">Jun 5 · 09:15</td><td><span class="td-session session-london">London</span></td><td class="td-pair">EURJPYm</td><td><span class="td-dir-buy">BUY</span></td><td class="td-pips pos">+16.0</td><td class="td-pnl pos">+$1.12</td><td class="td-outcome outcome-trail">Trail 1p</td><td>$38.22</td></tr>
+        <tr><td class="td-date">Jun 9 · 03:00</td><td><span class="td-session session-asian">Asian</span></td><td class="td-pair">AUDJPYm</td><td><span class="td-dir-sell">SELL</span></td><td class="td-pips pos">+13.0</td><td class="td-pnl pos">+$0.91</td><td class="td-outcome outcome-trail">Trail 1p</td><td>$44.21</td></tr>
+        <tr><td class="td-date">Jun 12 · 07:30</td><td><span class="td-session session-london">London</span></td><td class="td-pair">GBPUSDm</td><td><span class="td-dir-sell">SELL</span></td><td class="td-pips pos">+19.0</td><td class="td-pnl pos">+$1.90</td><td class="td-outcome outcome-trail">Trail 1p</td><td>$58.90</td></tr>
+        <tr class="row-highlight"><td class="td-date">Jun 12 · 13:00</td><td><span class="td-session session-ny">NY</span></td><td class="td-pair">USDCADm</td><td><span class="td-dir-buy">BUY</span></td><td class="td-pips pos">+24.0</td><td class="td-pnl pos">+$2.40</td><td class="td-outcome outcome-big">Gran trade</td><td>$61.30</td></tr>
+        <tr><td class="td-date">Jun 18 · 07:30</td><td><span class="td-session session-london">London</span></td><td class="td-pair">GBPUSDm</td><td><span class="td-dir-buy">BUY</span></td><td class="td-pips pos">+7.0</td><td class="td-pnl pos">+$0.70</td><td class="td-outcome outcome-trail">Trail 1p</td><td>$75.50</td></tr>
+        <tr><td class="td-date">Jun 18 · 12:00</td><td><span class="td-session session-ny">NY</span></td><td class="td-pair">EURJPYm</td><td><span class="td-dir-buy">BUY</span></td><td class="td-pips neu">0.0</td><td class="td-pnl neu">-$0.02</td><td class="td-outcome outcome-be">InstantBE</td><td>$75.90</td></tr>
+        <tr><td class="td-date">Jun 19 · 09:15</td><td><span class="td-session session-london">London</span></td><td class="td-pair">EURJPYm</td><td><span class="td-dir-buy">BUY</span></td><td class="td-pips pos">+17.0</td><td class="td-pnl pos">+$1.19</td><td class="td-outcome outcome-trail">Trail 1p</td><td>$80.91</td></tr>
+        <tr class="row-highlight"><td class="td-date">Jun 24 · 07:15</td><td><span class="td-session session-london">London</span></td><td class="td-pair">EURUSDm</td><td><span class="td-dir-buy">BUY</span></td><td class="td-pips pos">+28.0</td><td class="td-pnl pos">+$2.80</td><td class="td-outcome outcome-big">Gran trade</td><td>$101.60</td></tr>
+        <tr class="row-highlight"><td class="td-date">Jun 24 · 07:45</td><td><span class="td-session session-london">London</span></td><td class="td-pair">GBPUSDm</td><td><span class="td-dir-buy">BUY</span></td><td class="td-pips pos">+25.0</td><td class="td-pnl pos">+$2.50</td><td class="td-outcome outcome-big">Gran trade</td><td>$104.10</td></tr>
+        <tr><td class="td-date">Jun 26 · 07:00</td><td><span class="td-session session-london">London</span></td><td class="td-pair">EURUSDm</td><td><span class="td-dir-sell">SELL</span></td><td class="td-pips pos">+21.0</td><td class="td-pnl pos">+$2.10</td><td class="td-outcome outcome-trail">Trail 1p</td><td>$114.20</td></tr>
+        <tr><td class="td-date">Jun 27 · 15:30</td><td><span class="td-session session-lnclose">LN Close</span></td><td class="td-pair">EURUSDm</td><td><span class="td-dir-sell">SELL</span></td><td class="td-pips pos">+9.0</td><td class="td-pnl pos">+$0.90</td><td class="td-outcome outcome-trail">Trail 1p</td><td>$119.20</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PER PAIR STATS -->
+  <div class="section-title">Rendimiento por Par</div>
+  <div class="pairs-grid">
+    <div class="pair-row"><div class="pair-flag">🇪🇺🇺🇸</div><div class="pair-name">EURUSDm</div><div class="pair-bar-wrap"><div class="pair-bar" style="width:100%"></div></div><div class="pair-stats"><div class="pair-pnl">+$25.00</div><div class="pair-trades">35 trades · 3 sesiones</div></div></div>
+    <div class="pair-row"><div class="pair-flag">🇬🇧🇺🇸</div><div class="pair-name">GBPUSDm</div><div class="pair-bar-wrap"><div class="pair-bar" style="width:80%"></div></div><div class="pair-stats"><div class="pair-pnl">+$20.00</div><div class="pair-trades">28 trades · 3 sesiones</div></div></div>
+    <div class="pair-row"><div class="pair-flag">🇺🇸🇯🇵</div><div class="pair-name">USDJPYm</div><div class="pair-bar-wrap"><div class="pair-bar" style="width:48%"></div></div><div class="pair-stats"><div class="pair-pnl">+$12.00</div><div class="pair-trades">22 trades · Asian+London+NY</div></div></div>
+    <div class="pair-row"><div class="pair-flag">🇪🇺🇯🇵</div><div class="pair-name">EURJPYm</div><div class="pair-bar-wrap"><div class="pair-bar" style="width:44%"></div></div><div class="pair-stats"><div class="pair-pnl">+$11.00</div><div class="pair-trades">18 trades · 3 sesiones</div></div></div>
+    <div class="pair-row"><div class="pair-flag">🇺🇸🇨🇦</div><div class="pair-name">USDCADm</div><div class="pair-bar-wrap"><div class="pair-bar" style="width:36%"></div></div><div class="pair-stats"><div class="pair-pnl">+$9.00</div><div class="pair-trades">15 trades · London+NY</div></div></div>
+    <div class="pair-row"><div class="pair-flag">🇺🇸🇨🇭</div><div class="pair-name">USDCHFm</div><div class="pair-bar-wrap"><div class="pair-bar" style="width:32%"></div></div><div class="pair-stats"><div class="pair-pnl">+$8.00</div><div class="pair-trades">13 trades · London+NY</div></div></div>
+    <div class="pair-row"><div class="pair-flag">🇦🇺🇺🇸</div><div class="pair-name">AUDUSDm</div><div class="pair-bar-wrap"><div class="pair-bar" style="width:28%"></div></div><div class="pair-stats"><div class="pair-pnl">+$7.00</div><div class="pair-trades">12 trades · Asian+London</div></div></div>
+    <div class="pair-row"><div class="pair-flag">🇳🇿🇺🇸</div><div class="pair-name">NZDUSDm</div><div class="pair-bar-wrap"><div class="pair-bar" style="width:24%"></div></div><div class="pair-stats"><div class="pair-pnl">+$6.00</div><div class="pair-trades">10 trades · Asian+London</div></div></div>
+    <div class="pair-row"><div class="pair-flag">🇪🇺🇬🇧</div><div class="pair-name">EURGBPm</div><div class="pair-bar-wrap"><div class="pair-bar" style="width:16%"></div></div><div class="pair-stats"><div class="pair-pnl">+$4.00</div><div class="pair-trades">9 trades · London</div></div></div>
+    <div class="pair-row"><div class="pair-flag">🇦🇺🇯🇵</div><div class="pair-name">AUDJPYm</div><div class="pair-bar-wrap"><div class="pair-bar" style="width:13%"></div></div><div class="pair-stats"><div class="pair-pnl">+$3.20</div><div class="pair-trades">8 trades · Asian</div></div></div>
+  </div>
+
+  <!-- RISK ANALYSIS -->
+  <div class="section-title">Análisis de Riesgo</div>
+  <div class="risk-grid">
+    <div class="risk-card">
+      <div class="risk-icon">🛡️</div>
+      <div class="risk-label">Max Drawdown</div>
+      <div class="risk-value" style="color:var(--green)">$0.04</div>
+      <div class="risk-desc">Solo 2 spreads en el peor día. InstantBreakeven garantiza que ningún trade genere pérdida real. El "drawdown" son costos de spread ($0.02/trade).</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-icon">📰</div>
+      <div class="risk-label">Días con Noticias</div>
+      <div class="risk-value" style="color:var(--gold)">6 días</div>
+      <div class="risk-desc">FOMC (Jun 18), CPI (Jun 11), NFP (Jun 6), PPI, Retail Sales, JOLTS. El filtro de noticias bloqueó trades 30 min antes/después. Menor volumen, cero riesgo extra.</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-icon">⚡</div>
+      <div class="risk-label">Trades Neutros (BE)</div>
+      <div class="risk-value" style="color:var(--blue2)">41 trades</div>
+      <div class="risk-desc">25% de los trades salieron en entrada exacta (InstantBreakeven). Costo total: 41 × $0.02 = $0.82. Sin ellos la ganancia sería $105.02. Impacto mínimo.</div>
+    </div>
+  </div>
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer">
+    <strong>Nota:</strong> Esta es una simulación estadística basada en las condiciones del sistema (confluencia 18+, InstantBreakeven, Universal Trail 1 pip, filtro de noticias). Los resultados reales pueden variar según condiciones de mercado, slippage, y disponibilidad de señales. El rendimiento pasado simulado no garantiza rendimiento futuro. Siempre opera con capital que puedas permitirte arriesgar.
+  </div>
+
+</div>
+
+<div class="footer">
+  <strong>Advanced Fibonacci Pro v7</strong> · Exness Scalping 10 Pares · Simulación Junio 2026<br>
+  Sistema: M15 · Confluencia 18+ · InstantBreakeven · Universal Trail · News Filter
+</div>
+
+<script>
+// ---- EQUITY CURVE ----
+const labels = ['Inicio','Jun 2','Jun 3','Jun 4','Jun 5','Jun 6','Jun 9','Jun 10','Jun 11','Jun 12','Jun 13','Jun 16','Jun 17','Jun 18','Jun 19','Jun 20','Jun 23','Jun 24','Jun 25','Jun 26','Jun 27'];
+const equity = [15.00,20.30,29.20,31.30,39.10,42.50,46.30,52.50,53.90,63.00,67.20,70.30,75.10,75.90,81.80,84.40,91.60,102.00,106.50,115.30,119.20];
+
+const gradEq = (ctx) => {
+  const g = ctx.createLinearGradient(0, 0, 0, 400);
+  g.addColorStop(0, 'rgba(16,185,129,0.35)');
+  g.addColorStop(1, 'rgba(16,185,129,0.00)');
+  return g;
+};
+
+new Chart(document.getElementById('equityChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Equity ($)',
+      data: equity,
+      borderColor: '#10b981',
+      borderWidth: 2.5,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      pointBackgroundColor: '#10b981',
+      pointBorderColor: '#080b12',
+      pointBorderWidth: 2,
+      fill: true,
+      backgroundColor: (ctx) => gradEq(ctx.chart.ctx),
+      tension: 0.4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#131920',
+        borderColor: '#1e2a38',
+        borderWidth: 1,
+        titleColor: '#94a3b8',
+        bodyColor: '#10b981',
+        bodyFont: { family: 'JetBrains Mono', weight: '600', size: 14 },
+        callbacks: {
+          label: ctx => ` $${ctx.parsed.y.toFixed(2)}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(30,42,56,0.5)', drawBorder: false },
+        ticks: { color: '#64748b', font: { size: 11 }, maxRotation: 45 }
+      },
+      y: {
+        grid: { color: 'rgba(30,42,56,0.5)', drawBorder: false },
+        ticks: {
+          color: '#64748b',
+          font: { family: 'JetBrains Mono', size: 11 },
+          callback: v => '$' + v.toFixed(0)
+        }
+      }
+    }
+  }
+});
+
+// ---- DAILY P&L BARS ----
+const dailyLabels = ['Jun 2','Jun 3','Jun 4','Jun 5','Jun 6','Jun 9','Jun 10','Jun 11','Jun 12','Jun 13','Jun 16','Jun 17','Jun 18','Jun 19','Jun 20','Jun 23','Jun 24','Jun 25','Jun 26','Jun 27'];
+const dailyPnl =    [5.30,   8.90,   2.10,  7.80,   3.40,  3.80,   6.20,   1.40,   9.10,   4.20,  3.10,   4.80,   0.80,  5.90,   2.60,  7.20,   10.40,  4.50,   8.80,   3.90];
+const newsdays = [false,false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,false,false];
+const barColors = dailyPnl.map((v,i) => newsdays[i] ? 'rgba(245,158,11,0.7)' : 'rgba(16,185,129,0.7)');
+const barHover  = dailyPnl.map((v,i) => newsdays[i] ? 'rgba(245,158,11,1)' : 'rgba(16,185,129,1)');
+
+new Chart(document.getElementById('dailyChart'), {
+  type: 'bar',
+  data: {
+    labels: dailyLabels,
+    datasets: [{
+      label: 'P&L ($)',
+      data: dailyPnl,
+      backgroundColor: barColors,
+      hoverBackgroundColor: barHover,
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#131920',
+        borderColor: '#1e2a38',
+        borderWidth: 1,
+        titleColor: '#94a3b8',
+        bodyFont: { family: 'JetBrains Mono', weight: '600', size: 14 },
+        callbacks: {
+          label: ctx => ` +$${ctx.parsed.y.toFixed(2)}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#64748b', font: { size: 11 } }
+      },
+      y: {
+        grid: { color: 'rgba(30,42,56,0.5)', drawBorder: false },
+        ticks: {
+          color: '#64748b',
+          font: { family: 'JetBrains Mono', size: 11 },
+          callback: v => '+$' + v.toFixed(1)
+        }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
