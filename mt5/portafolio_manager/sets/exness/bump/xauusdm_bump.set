@@ -17,7 +17,7 @@ InpUseCorrelationFilter=false
 InpUseDXYConflict=false
 InpKZRegimeAware=false
 ; --- NEWS ---
-InpUseNewsFilter=true
+InpUseNewsFilter=false
 InpNewsMinutesBefore=30
 InpNewsMinutesAfter=30
 InpEnableVolatilityFilter=true
@@ -58,4 +58,5 @@ InpTickThrottleSeconds=1
 InpMaxPositions=1
 InpPipLadder=false
 InpDisableFailsafe=true
+InpGov_Enabled=false
 InpDisablePullbackFilter=true
