@@ -63,3 +63,4 @@ InpMaxConsecutiveLosses=0
 InpEnableAdaptiveFilters=false
 InpUseH1Trigger=false
 InpDisablePullbackFilter=true
+InpResetKillSwitch=true
