@@ -10,90 +10,101 @@
 #property strict
 
 //+------------------------------------------------------------------+
-//| Breaker Blocks (Simplified: Structure Retest)                    |
+//| CHoCH — Change of Character (replaces simplified Breaker Blocks) |
+//| Detects confirmed structural break: a bar that CLOSES beyond     |
+//| the last validated swing point, or a retest of the broken level. |
 //+------------------------------------------------------------------+
 class CBreakerBlocks
 {
 public:
    double GetBreakerScore(int direction, double atr)
    {
-      // LOGIC: Did we break a swing, then return to it?
-      // Use iHighest/iLowest to find recent structure
-      int swingLookback = 20;
-      int highest = iHighest(_Symbol, PERIOD_CURRENT, MODE_HIGH, swingLookback, 5);
-      int lowest = iLowest(_Symbol, PERIOD_CURRENT, MODE_LOW, swingLookback, 5);
-      
-      if(highest < 0 || lowest < 0) return 0.0;
-      
-      double highVal = iHigh(_Symbol, PERIOD_CURRENT, highest);
-      double lowVal = iLow(_Symbol, PERIOD_CURRENT, lowest);
-      double currPrice = iClose(_Symbol, PERIOD_CURRENT, 0);
-      
-      // Bearish Breaker: Price broke BELOW a Low, then returned UP to it?
-      // Proxy: Price is near recent High (Support turned Res) or Low (Res turned Support)
-      
-      double tolerance = atr * 0.5;
-      
-      if(direction == 1) // Buy: Retesting old High (Bullish Breaker)
+      int lookback = 20;
+
+      if(direction == 1) // Bullish CHoCH: last closed bar closed ABOVE recent swing high
       {
-         // Check if we are near the recent high
-         if(MathAbs(currPrice - highVal) < tolerance) return 0.5;
+         // Skip bar 0 (forming) and bar 1 (the closed trigger bar); look for swing from bar 2+
+         int highestBar = iHighest(_Symbol, PERIOD_CURRENT, MODE_HIGH, lookback, 2);
+         if(highestBar < 0) return 0.0;
+         double swingHigh  = iHigh(_Symbol, PERIOD_CURRENT, highestBar);
+         double lastClose  = iClose(_Symbol, PERIOD_CURRENT, 1); // last confirmed closed bar
+
+         // Confirmed CHoCH: closed above the swing high
+         if(lastClose > swingHigh) return 1.0;
+
+         // Retest: price is testing the broken level from above (second-chance entry)
+         double currPrice  = iClose(_Symbol, PERIOD_CURRENT, 0);
+         double tolerance  = atr * 0.30;
+         if(currPrice >= swingHigh - tolerance && currPrice <= swingHigh + tolerance &&
+            lastClose > swingHigh)
+            return 0.7;
       }
-      else // Sell: Retesting old Low (Bearish Breaker)
+      else // Bearish CHoCH: last closed bar closed BELOW recent swing low
       {
-         // Check if we are near the recent low
-         if(MathAbs(currPrice - lowVal) < tolerance) return 0.5;
+         int lowestBar = iLowest(_Symbol, PERIOD_CURRENT, MODE_LOW, lookback, 2);
+         if(lowestBar < 0) return 0.0;
+         double swingLow   = iLow(_Symbol, PERIOD_CURRENT, lowestBar);
+         double lastClose  = iClose(_Symbol, PERIOD_CURRENT, 1);
+
+         if(lastClose < swingLow) return 1.0;
+
+         double currPrice  = iClose(_Symbol, PERIOD_CURRENT, 0);
+         double tolerance  = atr * 0.30;
+         if(currPrice >= swingLow - tolerance && currPrice <= swingLow + tolerance &&
+            lastClose < swingLow)
+            return 0.7;
       }
 
-      return 0.0; 
-   }
-};
-
-//+------------------------------------------------------------------+
-//| Macro Windows                                                    |
-//+------------------------------------------------------------------+
-class CMacroWindows
-{
-public:
-   double GetMacroScore()
-   {
-      // Silver Bullet Windows (NY Time)
-      // 10:00 - 11:00 AM (London Close/NY AM)
-      // 03:00 - 04:00 PM (NY PM)
-      
-      MqlDateTime dt;
-      TimeCurrent(dt);
-      
-      // Assuming Server Time is UTC+2 or similar (offset required)
-      // Lets check generic "Volatile Hours": 8-11 and 13-16 Server time roughly
-      if((dt.hour >= 9 && dt.hour <= 11) || (dt.hour >= 15 && dt.hour <= 17))
-      {
-         return 0.5; // Active window bonus
-      }
       return 0.0;
    }
 };
 
 //+------------------------------------------------------------------+
-//| Power Of 3 (Accumulation-Manipulation-Distribution)              |
+//| Macro Windows — uses live killzone state instead of hardcoded    |
+//| UTC hours. If an active killzone is open we are inside a         |
+//| high-probability institutional time window.                      |
+//+------------------------------------------------------------------+
+class CMacroWindows
+{
+public:
+   double GetMacroScore(bool kzActive = false)
+   {
+      return kzActive ? 0.5 : 0.0;
+   }
+};
+
+//+------------------------------------------------------------------+
+//| Session Phase Score (AMD — replaces stub Power of 3)             |
+//| Detects ICT Accumulation → Manipulation → Distribution pattern:  |
+//|  Accumulation: 3+ small-body bars (range compression)            |
+//|  Manipulation: impulse bar (displacement) after compression      |
+//| Only meaningful inside an active killzone session.               |
 //+------------------------------------------------------------------+
 class CPowerOf3
 {
 public:
-   double GetPhaseScore(double atr)
+   double GetPhaseScore(double atr, bool kzActive = false)
    {
-      // Logic: Low Volatility (Accumulation) -> Impulse (Manipulation/Exp)
-      // AMD Proxy: High relative volume + Large range bar = Expansion/Manipulation phase
-      
-      // Simple Proxy: Do we have a breakout bar?
-      double open = iOpen(_Symbol, PERIOD_CURRENT, 0);
-      double close = iClose(_Symbol, PERIOD_CURRENT, 0);
-      double body = MathAbs(close - open);
-      
-      if(body > atr * 0.8) // Large body
+      if(!kzActive) return 0.0; // AMD only meaningful in active session window
+
+      if(atr <= 0) return 0.0;
+
+      // Step 1: Confirm accumulation phase — 3 prior closed bars all small-body
+      bool accumulated = true;
+      for(int i = 2; i <= 4; i++) // bars 2,3,4 (all fully closed)
       {
-         return 0.5; 
+         double o = iOpen(_Symbol,  PERIOD_CURRENT, i);
+         double c = iClose(_Symbol, PERIOD_CURRENT, i);
+         if(MathAbs(c - o) > atr * 0.45) { accumulated = false; break; }
       }
+      if(!accumulated) return 0.0;
+
+      // Step 2: Confirm displacement on last closed bar (manipulation/distribution)
+      double lastO = iOpen(_Symbol,  PERIOD_CURRENT, 1);
+      double lastC = iClose(_Symbol, PERIOD_CURRENT, 1);
+      if(MathAbs(lastC - lastO) >= atr * 0.90)
+         return 0.8; // AMD in-session confirmed
+
       return 0.0;
    }
 };
