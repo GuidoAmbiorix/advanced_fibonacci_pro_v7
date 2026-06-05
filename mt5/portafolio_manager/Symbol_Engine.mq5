@@ -2291,9 +2291,10 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
             double existingTP = PositionGetDouble(POSITION_TP);
             bool   isBuyIB   = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY);
             double currentPx  = isBuyIB ? symbolInfo.Bid() : symbolInfo.Ask();
-            long   minStop    = symbolInfo.StopsLevel();
+            // MQL5 best practice: minDist = (STOPS_LEVEL + SPREAD) * Point
+            long   minStop    = symbolInfo.StopsLevel() + symbolInfo.Spread();
             double minDist    = minStop * symbolInfo.Point();
-            // Only set SL to entry if price has moved enough away from entry
+            // Only set SL to entry if price has moved far enough from entry
             bool canSet = isBuyIB ? (currentPx >= entryPx + minDist) : (currentPx <= entryPx - minDist);
             if(canSet)
             {
