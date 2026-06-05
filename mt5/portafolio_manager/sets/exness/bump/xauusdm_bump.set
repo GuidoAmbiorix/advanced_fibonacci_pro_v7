@@ -2,7 +2,7 @@
 InpMagicNumber=500020
 InpBrokerUTCOffset=0
 InpMinConfluenceEntry=12.0
-InpDominanceThreshold=5.0
+InpDominanceThreshold=8.0
 InpMaxLotsPerTrade=0.01
 InpFixedLots=0.01
 InpRiskBase=0.50
