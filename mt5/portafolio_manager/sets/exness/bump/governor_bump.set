@@ -1,0 +1,42 @@
+; GOVERNOR — BUMP MODE | 5 pares rapidos | Cuenta $15+
+; Pares: XAUUSDm(500020) GBPJPYm(500016) GBPUSDm(500012) EURJPYm(500007) AUDJPYm(500010)
+; Cargarlo en UN chart separado (cualquier par, ej. EURUSD)
+InpMagicMin=500007
+InpMagicMax=500020
+; --- DAILY P&L ---
+InpDailyProfitTarget=0.0
+InpDailyLossLimit=-1.50
+InpPauseOnProfitTarget=false
+InpCloseOnDailyLoss=true
+; --- PORTFOLIO DD ---
+InpMaxPortfolioDD_Pct=15.0
+InpReduceRiskAt_Pct=8.0
+InpCloseAllOnMaxDD=true
+; --- CORRELATION (off — bump pairs move independently) ---
+InpUseCorrelFilter=false
+InpMaxSameCurrency=5
+InpCloseCorrelOnBreech=false
+; --- INSTITUTIONAL SAFETY ---
+InpEquityVelocityLimit=10.0
+InpGlobalVolatileLimit=5
+; --- FRIDAY CLOSE ---
+InpFridayClose=true
+InpFridayCloseHour=20
+InpFridayCloseMinute=0
+; --- DISPLAY ---
+InpShowDashboard=true
+InpRefreshSeconds=5
+; --- COOLDOWN ---
+InpFridayBlockHours=2
+InpSymbolCooldownHours=0
+; --- LIMITES ---
+InpMaxOpenPositions=5
+InpMaxDailyTrades=0
+InpMaxWeeklyTrades=0
+; --- RACHA PERDIDAS ---
+InpConsecLossReduce=6
+InpConsecLossPause=12
+; --- EQUITY CURVE ---
+InpUseEqCurve=false
+InpEqCurvePeriod=20
+InpEqCurveReductMult=0.6

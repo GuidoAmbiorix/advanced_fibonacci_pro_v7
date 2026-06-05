@@ -61,10 +61,7 @@ InpEsc_StepR=0.10
 InpEsc_BaseHarvest=90.0
 InpEsc_MaxStages=5
 ; --- GOVERNOR ---
-InpGov_Enabled=true
-InpGov_DailyMaxDD=8.0
-InpGov_DD_Reduce=12.0
-InpGov_DD_Pause=20.0
+InpGov_Enabled=false
 ; --- MISC ---
 InpTimeStaleMins=3.0
 InpTickThrottleSeconds=1
