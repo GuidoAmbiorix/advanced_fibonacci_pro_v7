@@ -2872,7 +2872,7 @@ void ManagePositions()
              double rOutcome = (profitMoney > 0) ? 1.0 : -1.0;
              if(profitMoney < 0 && MathAbs(profitMoney) > account.Balance()*0.02) rOutcome = -2.0;
 
-             killSwitch.OnTradeClosed(rOutcome);
+             if(!InpBumpMode) killSwitch.OnTradeClosed(rOutcome);
 
              // FIX: Update adaptive filter rolling window (Phase 5)
              if(InpEnableAdaptiveFilters)
@@ -3527,7 +3527,7 @@ void OnTrade()
 
 
        // Update modules (backup in case ManagePositions missed it)
-       killSwitch.OnTradeClosed(rOutcome);
+       if(!InpBumpMode) killSwitch.OnTradeClosed(rOutcome);
        learning.OnTradeClosed(ticket);
 
        // Update Kelly sizer
