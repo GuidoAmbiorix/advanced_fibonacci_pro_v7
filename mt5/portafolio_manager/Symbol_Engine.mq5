@@ -61,6 +61,10 @@ CPatternMemory      patternMemory;
 // Visual Debugging
 #include "Include\VisualDebug.mqh"
 
+// Stability Layer
+#include "Include\EquityGuard.mqh"
+#include "Include\SessionVWAP.mqh"
+
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
 //+------------------------------------------------------------------+
@@ -223,7 +227,6 @@ input group "======= VOLATILITY SPIKE PROTECTION ======="
 input bool              InpEnableVolatilityFilter = true; // Enable Flash Crash Detection
 input double            InpVolatilityThreshold = 3.0;     // Volatility Spike Threshold (ATR multiplier)
 input int               InpVolatilitySpikeCooldown = 15;  // Cooldown After Spike (minutes)
-input bool              InpDisableFailsafe = false;        // Disable spread/circuit-breaker failsafe (bump mode)
 
 input group "======= KELLY POSITION SIZING ======="
 input bool              InpUseKelly = true;               // Enable Kelly Sizing
@@ -291,11 +294,15 @@ input group "======= SESSION GOVERNOR ======="
 input bool              InpUseSessionGovernor = true;     // Enable Session Governor
 input int               InpMaxTradesPerSession = 3;       // Max Trades Per Session
 input int               InpTradeCooldownMinutes = 30;     // Cooldown Between Trades
-input bool              InpDisablePullbackFilter = false; // Disable post-win pullback requirement (bump mode)
-input bool              InpBumpMode = false;             // BUMP MODE: bypass crisis/RSI/EMA/ASMA/PreFriday/AdaptiveFilters
 input bool              InpCloseIntradayProfits = true;   // Close Profitable Trades at EOD (H1 Intraday)
 input int               InpEndOfDayHour = 22;             // EOD Hour (Broker Time, typically 22:00 or 23:00)
 input bool              InpResetKillSwitch = false;       // RESET Kill Switch hard lock (toggle ON to unlock)
+
+input group "======= EQUITY GUARD (Anti-Greed) ======="
+input double            InpDailyProfitCapPct  = 2.0;  // Pause new entries if daily gain >= this % (0=off)
+input double            InpEquityTrailPct     = 0.40; // Protect (1-X)% of weekly gains from peak equity
+input int               InpHotStreakBonus     = 3;    // Extra confluence pts required after 3+ consec wins
+input double            InpADR_MaxConsumed    = 0.80; // Block entries if X% of avg daily range consumed (0=off)
 
 input group "======= REGIME UPGRADES ======="
 input bool InpUseRollingMode = true;  // U1: Rolling mode buffer (20-bar anti-whipsaw)
@@ -397,6 +404,11 @@ double g_dailyLossR = 0;
 int    g_consecutiveLosses = 0;
 int    g_dailyTradesCount = 0;  // FIX: Track daily trades to prevent overtrading
 datetime g_lastResetDate = 0;
+
+// Stability layer objects
+CEquityGuard equityGuard;
+CSessionVWAP sessionVWAP;
+bool         g_isKZActive = false; // Killzone active — computed before confluence score
 
 // PULLBACK VALIDATION: Track last closed trade for re-entry filter
 int      g_lastTradeDir = 0;           // direction of last closed trade (1=buy, -1=sell)
@@ -634,6 +646,11 @@ int OnInit()
    if(InpUseMacroSentiment)
       macroSentiment.Init(PERIOD_H4);
 
+   // Initialize stability layer
+   equityGuard.Init(account.Balance(), InpDailyProfitCapPct, InpEquityTrailPct, InpHotStreakBonus);
+   sessionVWAP.Init(_Symbol);
+   Print("[OK] EquityGuard initialized | DailyCap=", InpDailyProfitCapPct, "% Trail=", InpEquityTrailPct, " HotStreak=+", InpHotStreakBonus);
+
    // Initialize Currency Exposure tracker
    if(InpMaxCurrencyExposure > 0)
       currencyExposure.Init(InpMagicNumber);
@@ -839,7 +856,7 @@ void OnTimer()
          reason = "CRISIS_REGIME";
       else if(g_consecutiveLosses >= InpMaxConsecutiveLosses && InpMaxConsecutiveLosses > 0)
          reason = "LOSS_STREAK(" + IntegerToString(g_consecutiveLosses) + ")";
-      else if(!InpDisableFailsafe && !failSafe.IsExecutionSafe())
+      else if(!failSafe.IsExecutionSafe())
          reason = "FAILSAFE_BLOCKED";
       else if(!killSwitch.IsEnabled())
          reason = "KILL_SWITCH(" + killSwitch.GetStatus() + ")";
@@ -989,6 +1006,15 @@ void ResetDailyLossIfNewDay()
       g_dailyTradesCount = 0;
       g_fridayCloseExecuted = false;
       g_lastResetDate = currentDate;
+
+      // EquityGuard daily reset
+      equityGuard.OnDayStart(account.Balance());
+      // EquityGuard weekly reset on Monday
+      if(dt.day_of_week == 1)
+      {
+         equityGuard.OnWeekStart(account.Balance());
+         Print("[EQUITY_GUARD] Monday reset — weekHigh anchor = ", DoubleToString(account.Balance(), 2));
+      }
    }
 }
 
@@ -1296,6 +1322,11 @@ void OnTick()
    }
    // g_currentRegime check moved down to allow score calculation for visibility
 
+   // --- PRE-SCORE: update live context used by confluence modules ---
+   g_isKZActive = !InpUseKillzoneFilter || CheckKillzone();
+   equityGuard.UpdateWeekHigh(account.Equity());
+   sessionVWAP.Update();
+
    // --- THROTTLED CONFLUENCE CALCULATION ---
    // Recalculate confluence scores based on throttle (not just on new bar)
    // Preserve previous cycle for velocity calculation
@@ -1307,7 +1338,7 @@ void OnTick()
 
    // --- SIGNAL DOMINANCE FILTER ---
    // Skip in RANGING/VOLATILE: buy≈sell is normal when market has no clear bias
-   bool dominanceApplies = InpBumpMode || (g_currentRegime == REGIME_TREND_STRONG || g_currentRegime == REGIME_TREND_WEAK);
+   bool dominanceApplies = (g_currentRegime == REGIME_TREND_STRONG || g_currentRegime == REGIME_TREND_WEAK);
    if(InpDominanceThreshold > 0 && dominanceApplies)
    {
       double delta = MathAbs(g_cachedBuyScore - g_cachedSellScore);
@@ -1337,9 +1368,8 @@ void OnTick()
       GlobalVariableSet(GV_BAROPEN_PREFIX + _Symbol, (double)currentBar);
       GlobalVariableSet(GV_PERIOD_PREFIX + _Symbol, (double)PeriodSeconds(InpMTF));
       
-      // Killzone Status
-      bool isKZOpen = !InpUseKillzoneFilter || CheckKillzone();
-      GlobalVariableSet(GV_KZ_PREFIX + _Symbol, isKZOpen ? 1.0 : 0.0);
+      // Killzone Status (g_isKZActive already computed before confluence score)
+      GlobalVariableSet(GV_KZ_PREFIX + _Symbol, g_isKZActive ? 1.0 : 0.0);
 
       // ATR publish R required by RankManager for volatility-normalized adjScore
       GlobalVariableSet("PG_ATR_" + _Symbol, g_ATR);
@@ -1363,7 +1393,7 @@ void OnTick()
             " Harvest=", DoubleToString(g_escCfg.baseHarvest, 0), "%");
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---
-   if(!InpDisableFailsafe && !failSafe.IsExecutionSafe())
+   if(!failSafe.IsExecutionSafe())
    {
       static datetime lastFSLog = 0;
       if(TimeCurrent() - lastFSLog > 60)
@@ -1556,10 +1586,10 @@ void OnTick()
 
    // === TRADING FILTERS START HERE ===
    
-   if(!InpBumpMode && !g_regimeCtx.allowEntries) return;  // CRISIS regime: no new entries
+   if(!g_regimeCtx.allowEntries) return;  // CRISIS regime: no new entries
 
    // --- GOVERNOR v2: PRE-FRIDAY BLOCK ---
-   if(!InpBumpMode && GlobalVariableCheck(GV_PREFRIDAY_BLOCK) && GlobalVariableGet(GV_PREFRIDAY_BLOCK) > 0.5)
+   if(GlobalVariableCheck(GV_PREFRIDAY_BLOCK) && GlobalVariableGet(GV_PREFRIDAY_BLOCK) > 0.5)
    {
       static datetime lastPFLog = 0;
       if(TimeCurrent() - lastPFLog > 300)
@@ -1590,10 +1620,50 @@ void OnTick()
    // PRE-ENTRY FILTERS (Quick Exits for Performance)
    if(!CheckSpread(true)) return;
 
+   // --- ADR FILTER: block entries when daily range already consumed ---
+   if(InpADR_MaxConsumed > 0)
+   {
+      double adrSum = 0;
+      for(int _d = 1; _d <= 14; _d++)
+         adrSum += iHigh(_Symbol, PERIOD_D1, _d) - iLow(_Symbol, PERIOD_D1, _d);
+      double adr14 = adrSum / 14.0;
+      if(adr14 > 0)
+      {
+         double todayRange = iHigh(_Symbol, PERIOD_D1, 0) - iLow(_Symbol, PERIOD_D1, 0);
+         double consumed   = todayRange / adr14;
+         if(consumed >= InpADR_MaxConsumed)
+         {
+            static datetime lastADRLog = 0;
+            if(TimeCurrent() - lastADRLog > 300)
+            {
+               Print("[BLOCKED] ADR_FILTER: ", DoubleToString(consumed * 100.0, 1),
+                     "% of avg daily range consumed (limit ", DoubleToString(InpADR_MaxConsumed * 100.0, 0), "%)");
+               lastADRLog = TimeCurrent();
+            }
+            return;
+         }
+      }
+   }
+
+   // --- EQUITY GUARD: daily profit cap + equity trail ---
+   {
+      string egReason = "";
+      if(!equityGuard.CanEnterNewTrade(account.Balance(), account.Equity(), egReason))
+      {
+         static datetime lastEGLog = 0;
+         if(TimeCurrent() - lastEGLog > 300)
+         {
+            Print(egReason);
+            lastEGLog = TimeCurrent();
+         }
+         return;
+      }
+   }
+
    // RSI Compression Filter — only for trend regimes
    // In RANGING/VOLATILE: RSI near 50 is normal, MR entries need RSI at extremes (handled by MR module)
    bool isTrendRegime = (g_currentRegime == REGIME_TREND_STRONG || g_currentRegime == REGIME_TREND_WEAK);
-   if(!InpBumpMode && isTrendRegime && g_RSI > 48 && g_RSI < 52)
+   if(isTrendRegime && g_RSI > 48 && g_RSI < 52)
    {
       static datetime lastRSIWarning = 0;
       if(TimeCurrent() - lastRSIWarning > 300)
@@ -1606,7 +1676,7 @@ void OnTick()
 
    // EMA Proximity Filter — only for trend regimes
    // In RANGING/VOLATILE: price oscillates around EMA by design — filter not applicable
-   if(!InpBumpMode && isTrendRegime)
+   if(isTrendRegime)
    {
       double emaDistance = MathAbs(symbolInfo.Bid() - g_EMA);
       double minDistance = g_ATR * 0.35;
@@ -1820,7 +1890,7 @@ void OnTick()
                 break;
           }
 
-          if(!InpBumpMode && asmaBlock)
+          if(asmaBlock)
           {
              static datetime lastASMALog = 0;
              if(TimeCurrent() - lastASMALog > 300)
@@ -1861,6 +1931,38 @@ void OnTick()
              }
           }
 
+          // Phase 2: Hot streak — after 3+ consecutive wins, require more confluence (anti-euforia)
+          int streakBonus = equityGuard.GetHotStreakBonus();
+          if(streakBonus > 0)
+          {
+             minEntry += streakBonus;
+             static datetime lastStreakLog = 0;
+             if(TimeCurrent() - lastStreakLog > 300)
+             {
+                Print("[HOT_STREAK] ", equityGuard.GetConsecutiveWins(), " consec wins → threshold +",
+                      streakBonus, " = ", DoubleToString(minEntry, 1));
+                lastStreakLog = TimeCurrent();
+             }
+          }
+
+          // Phase 6: Learning threshold — if win rate < 45% in current regime, be more selective
+          if(InpEnableLearning && performanceAnalyzer.IsLearningActive())
+          {
+             ContextStats regStats = performanceAnalyzer.GetStatsByRegime(g_currentRegime);
+             if(regStats.tradeCount >= 20 && regStats.winRate < 0.45)
+             {
+                minEntry += 4.0;
+                static datetime lastLowWRLog = 0;
+                if(TimeCurrent() - lastLowWRLog > 600)
+                {
+                   Print("[LEARNING] Low win rate (", DoubleToString(regStats.winRate * 100.0, 0),
+                         "%) in ", g_regimeCtx.regimeLabel, " (", regStats.tradeCount,
+                         " trades) — threshold raised +4 → ", DoubleToString(minEntry, 1));
+                   lastLowWRLog = TimeCurrent();
+                }
+             }
+          }
+
           // Diagnostic: show score vs threshold every 5 min when not trading
           static datetime lastScoreLog = 0;
           if(TimeCurrent() - lastScoreLog > 300)
@@ -1869,7 +1971,7 @@ void OnTick()
                    " | Buy=", DoubleToString(buyScore, 1),
                    " Sell=", DoubleToString(sellScore, 1),
                    " minEntry=", DoubleToString(minEntry, 1),
-                   " risk=", DoubleToString(approvedRisk, 4),
+                   " streak=", equityGuard.GetConsecutiveWins(),
                    " regime=", g_regimeCtx.regimeLabel,
                    " dir=", InpDirection);
              lastScoreLog = TimeCurrent();
@@ -1905,7 +2007,7 @@ void OnTick()
 
           // ── PULLBACK VALIDATION: No chasing after winning trade ────────
           // Require at least 0.382 ATR retracement before re-entering same direction
-          if(!InpDisablePullbackFilter && g_lastTradeWasWin && g_lastTradeCloseTime > 0 && g_ATR > 0)
+          if(g_lastTradeWasWin && g_lastTradeCloseTime > 0 && g_ATR > 0)
           {
              int secSinceClose = (int)(TimeCurrent() - g_lastTradeCloseTime);
              if(secSinceClose < PeriodSeconds(PERIOD_H4) * 6)
@@ -2872,7 +2974,7 @@ void ManagePositions()
              double rOutcome = (profitMoney > 0) ? 1.0 : -1.0;
              if(profitMoney < 0 && MathAbs(profitMoney) > account.Balance()*0.02) rOutcome = -2.0;
 
-             if(!InpBumpMode) killSwitch.OnTradeClosed(rOutcome);
+             killSwitch.OnTradeClosed(rOutcome);
 
              // FIX: Update adaptive filter rolling window (Phase 5)
              if(InpEnableAdaptiveFilters)
@@ -2902,6 +3004,8 @@ void ManagePositions()
                 g_consecutiveLosses = 0;
                 GlobalVariableSet("PG_ConsecLoss_" + _Symbol, 0); // Persist reset across restarts
              }
+             // Notify EquityGuard (consecutive wins tracking)
+             equityGuard.OnTradeClose(profitMoney > 0);
              // Track last trade result for pullback validation (P3)
              g_lastTradeDir = g_entryDirection;
              g_lastTradeWasWin = (profitMoney > 0);
@@ -3527,7 +3631,7 @@ void OnTrade()
 
 
        // Update modules (backup in case ManagePositions missed it)
-       if(!InpBumpMode) killSwitch.OnTradeClosed(rOutcome);
+       killSwitch.OnTradeClosed(rOutcome);
        learning.OnTradeClosed(ticket);
 
        // Update Kelly sizer
@@ -3747,8 +3851,8 @@ double CalculateConfluenceScore(int direction)
        score += smcFVG.GetConfluenceScore(direction) * 2.0;
        
        // Advanced ICT Concepts
-       score += breakerBlocks.GetBreakerScore(direction, g_ATR) * 3.0;
-       score += powerOf3.GetPhaseScore(g_ATR) * 3.0;
+       score += breakerBlocks.GetBreakerScore(direction, g_ATR) * 3.0;  // CHoCH confirmed
+       score += powerOf3.GetPhaseScore(g_ATR, g_isKZActive) * 3.0;    // AMD in-session
    }
 
 
@@ -3768,6 +3872,12 @@ double CalculateConfluenceScore(int direction)
 
    // Wyckoff - 2.0 pts
    score += wyckoff.GetWyckoffScore(direction, g_ATR) * 2.0;
+
+   // Session VWAP Anchor — 2.0 pts (institutional fair value reference)
+   score += sessionVWAP.GetConfluenceScore(direction, currentPrice, g_ATR);
+
+   // Macro Windows — 0.5 pts (active session bonus, now reads live KZ state)
+   score += macroWindows.GetMacroScore(g_isKZActive);
 
    // ============ 4.5. METALS ANALYSIS (Metals Only, -5 to +6 pts) ============
 

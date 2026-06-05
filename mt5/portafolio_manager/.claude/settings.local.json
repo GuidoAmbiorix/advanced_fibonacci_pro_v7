@@ -74,7 +74,8 @@
       "Bash(python -c \"import reportlab; print\\(''ok''\\)\")",
       "Bash(python -c \"import docx; print\\(''ok''\\)\")",
       "Bash(mkdir -p \"C:\\\\Users\\\\Ing Guido\\\\Desktop\\\\advanced_fibonacci_pro_v7\\\\mt5\\\\portafolio_manager\\\\sets\\\\marlon\")",
-      "Bash(mkdir -p \"C:\\\\Users\\\\Ing Guido\\\\Desktop\\\\advanced_fibonacci_pro_v7\\\\mt5\\\\portafolio_manager\\\\docs\")"
+      "Bash(mkdir -p \"C:\\\\Users\\\\Ing Guido\\\\Desktop\\\\advanced_fibonacci_pro_v7\\\\mt5\\\\portafolio_manager\\\\docs\")",
+      "WebFetch(domain:get.exness.help)"
     ]
   }
 }
