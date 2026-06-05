@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "mql5-docs": {
+      "command": "uv",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "src.mql5_mcp_server"
+      ]
+    }
+  }
+}

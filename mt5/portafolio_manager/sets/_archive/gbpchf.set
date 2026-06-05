@@ -1,0 +1,154 @@
+; GBPCHF - H1 Timeframe - GOAT Instant Funding Pro
+; Account: $6,000 Virtual | Phase 1: 4% Target, 5% Max DD, 3% Daily DD
+; Strategy: Conservative Risk (0.2%), H1 Swing Trading, Smart Trailing
+; Confluence: 15 (ELITE setups), TP Cap 4R, Partial TP 1.0R/50%
+; NOTE: GBPCHF volatile but very trending - excellent for H1
+
+InpMagicNumber=100009
+InpDirection=0
+InpBrokerUTCOffset=2
+
+;═══════ KILLZONES ═══════
+InpUseKillzoneFilter=true
+InpEnableAsianKZ=false
+InpEnableLondonOpenKZ=true
+; GBPCHF: Very active London
+InpEnableNYKZ=true
+InpEnableLondonCloseKZ=false
+
+;═══════ FIBONACCI ═══════
+InpSwingLookback=35
+InpFibLevelLow=0.618
+InpFibLevelHigh=0.786
+InpZoneTolerance=0.25
+
+;═══════ DISPLACEMENT ═══════
+InpUseDisplacement=true
+InpDisplacementATR=1.5
+InpDisplacementLookback=8
+
+;═══════ RSI ═══════
+InpRSI_Period=14
+InpRSI_Oversold=30
+InpRSI_Overbought=70
+InpRSI_Momentum=true
+
+;═══════ TREND ═══════
+InpEMA_Period=200
+InpUseTrendFilter=true
+InpEMA_MinSlope=0.10
+
+;═══════ CHOP FILTER ═══════
+InpUseChopFilter=true
+InpChopThreshold=0.75
+InpATR_MA_Period=20
+
+;═══════ CONFLUENCE ═══════
+InpMinConfluenceEntry=15
+InpDominanceThreshold=2.0
+InpEnableAddOns=false
+InpMaxPositions=1
+
+;═══════ RISK (Before Governor Scaling) ═══════
+InpRiskBase=0.2
+InpRiskAddOn1=0.0
+InpRiskAddOn2=0.0
+InpMaxRisk=0.5
+InpMaxLotsPerTrade=5.0
+InpEnableMarginCheck=true
+
+;═══════ TAKE PROFIT ═══════
+InpTPMode=2
+InpFixedTP_R=3.0
+InpMinTP_R=2.0
+InpMaxTP_R=4.0
+InpTPUseLearnedMFE=true
+
+;═══════ TRAILING STOP ═══════
+InpTrailingMode=1
+InpTrailType=1
+InpTrailStepATR=0.5
+
+;═══════ VOLATILITY FILTER ═══════
+InpMinVolatilityPips=9.0
+; GBPCHF: Higher volatility
+InpMaxVolatilityFactor=3.0
+InpVolatilityTP_Mult=3.0
+
+;═══════ PARTIAL TP & TRAILING (H1 OPTIMIZED) ═══════
+InpPartialTP_R=1.0
+InpPartialClosePercent=50.0
+InpBE_Threshold_R=0.5
+InpTrailStart_R=0.5
+InpTrailATR_Mult=1.05
+; GBPCHF: Slightly wider trail due to volatility
+InpTrailDecayRate=0.25
+InpTrailMinMult=0.62
+; GBPCHF: Higher minimum
+InpTrailRegimeAware=true
+InpTrailMinBufferATR=0.42
+
+;═══════ SPREAD ═══════
+InpMaxSpreadPoints=45
+; GBPCHF: Moderate-wide spread (3-4 pips)
+
+;═══════ SMC - SMART MONEY CONCEPTS ═══════
+InpUseSMC=true
+InpSMC_SwingLookback=25
+InpSMC_MinImpulseATR=2.0
+InpSMC_MinFVG_ATR=0.5
+
+;═══════ MULTI-TIMEFRAME ═══════
+InpUseMTF=true
+InpHTF=16408
+InpMTF=16388
+InpMTF_EMAPeriod=50
+
+;═══════ NEWS FILTER ═══════
+InpUseNewsFilter=true
+InpNewsMinutesBefore=30
+InpNewsMinutesAfter=30
+
+;═══════ VOLATILITY SPIKE PROTECTION ═══════
+InpEnableVolatilityFilter=true
+InpVolatilityThreshold=3.2
+; GBPCHF: Higher spike threshold
+InpVolatilitySpikeCooldown=15
+
+;═══════ KELLY POSITION SIZING ═══════
+InpUseKelly=true
+InpKellyFraction=0.5
+InpDailyMaxDD=3.0
+InpWeeklyMaxDD=4.0
+InpDailyTarget=0.0
+
+;═══════ LEARNING & ADAPTATION ═══════
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+InpMinTradesForLearning=50
+
+;═══════ ADAPTIVE BEHAVIOR ═══════
+InpEnableAdaptiveRisk=false
+InpEnableAdaptiveExits=false
+InpEnableAdaptiveFilters=true
+
+;═══════ PORTFOLIO PROTECTION ═══════
+InpUseCorrelationFilter=true
+InpDailyMaxLoss_R=15.0
+InpLossCooldownMinutes=30
+InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=5
+InpUseReversalFilter=true
+InpReversalCooldownMinutes=15
+
+;═══════ SESSION GOVERNOR ═══════
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=3
+InpTradeCooldownMinutes=30
+InpCloseIntradayProfits=false
+InpEndOfDayHour=22
+
+;═══════ VISUAL DEBUGGING ═══════
+InpEnableVisualLevels=true
+InpTickThrottleSeconds=60

@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marlon — Setup Guide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --bg:       #060810;
+  --bg2:      #0c0f1a;
+  --surface:  #111520;
+  --surface2: #181d2e;
+  --border:   #1e2538;
+  --border2:  #2a3350;
+  --gold:     #f5a623;
+  --gold2:    #ffcc60;
+  --blue:     #4f8ef7;
+  --blue2:    #7eb3ff;
+  --green:    #30d158;
+  --green2:   #6ee89e;
+  --red:      #ff453a;
+  --purple:   #bf5af2;
+  --text:     #dde3f5;
+  --muted:    #6b7594;
+  --muted2:   #8a96b8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+
+/* ── HERO ─────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px 48px 48px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 80% at 80% 50%, rgba(79,142,247,.12) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 10% 20%, rgba(245,166,35,.08) 0%, transparent 60%),
+    linear-gradient(180deg, #0a0e1a 0%, var(--bg) 100%);
+}
+
+.hero-content { position: relative; z-index: 1; max-width: 820px; }
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245,166,35,.1);
+  border: 1px solid rgba(245,166,35,.25);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.hero-eyebrow::before { content: '●'; font-size: 8px; animation: pulse 2s infinite; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.hero h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.hero h1 span { color: var(--gold); }
+
+.hero-sub {
+  margin-top: 12px;
+  font-size: 15px;
+  color: var(--muted2);
+  max-width: 560px;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 32px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+
+.hstat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hstat-val {
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.hstat-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.page { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
+
+/* ── SECTION TITLES ─────────────────────────────────────── */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 56px 0 24px;
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border2) 0%, transparent 100%);
+}
+
+.section-title .icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.icon-gold { background: rgba(245,166,35,.15); }
+.icon-blue { background: rgba(79,142,247,.15); }
+.icon-green { background: rgba(48,209,88,.15); }
+.icon-purple { background: rgba(191,90,242,.15); }
+
+/* ── PAIR CARDS ─────────────────────────────────────────── */
+.pair-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+@media(max-width:700px){ .pair-grid { grid-template-columns: repeat(3,1fr); } }
+
+.pair-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 14px;
+  text-align: center;
+  transition: border-color .2s, transform .2s;
+  cursor: default;
+}
+
+.pair-card:hover {
+  border-color: var(--gold);
+  transform: translateY(-3px);
+}
+
+.pair-flag { font-size: 22px; margin-bottom: 8px; }
+
+.pair-symbol {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.pair-magic {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.pair-lots {
+  display: inline-block;
+  margin-top: 10px;
+  background: rgba(48,209,88,.12);
+  border: 1px solid rgba(48,209,88,.25);
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 20px;
+}
+
+/* ── RISK METERS ─────────────────────────────────────────── */
+.risk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+@media(max-width:600px){ .risk-grid { grid-template-columns: 1fr; } }
+
+.risk-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+}
+
+.risk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.risk-label { font-size: 12px; color: var(--muted2); font-weight: 500; }
+.risk-val { font-size: 22px; font-weight: 800; }
+
+.bar-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width .8s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── STEPS ─────────────────────────────────────────────── */
+.steps { display: flex; flex-direction: column; gap: 4px; }
+
+.step {
+  display: flex;
+  gap: 0;
+  position: relative;
+}
+
+.step-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 48px;
+  flex-shrink: 0;
+}
+
+.step-num {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold) 0%, #e08c00 100%);
+  color: #000;
+  font-weight: 800;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 20px rgba(245,166,35,.3);
+  position: relative;
+  z-index: 1;
+}
+
+.step-line {
+  flex: 1;
+  width: 2px;
+  background: linear-gradient(180deg, var(--gold) 0%, var(--border) 100%);
+  margin: 4px 0;
+  min-height: 24px;
+}
+
+.step:last-child .step-line { display: none; }
+
+.step-body {
+  flex: 1;
+  padding: 6px 0 32px 20px;
+}
+
+.step-body h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.step-body p { color: var(--muted2); margin-bottom: 10px; font-size: 14px; }
+
+/* ── CALLOUT ─────────────────────────────────────────────── */
+.callout {
+  display: flex;
+  gap: 14px;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 12px 0;
+  font-size: 13px;
+}
+
+.callout-warn {
+  background: rgba(255,69,58,.08);
+  border: 1px solid rgba(255,69,58,.25);
+  color: #ffb3b0;
+}
+
+.callout-info {
+  background: rgba(79,142,247,.08);
+  border: 1px solid rgba(79,142,247,.25);
+  color: var(--blue2);
+}
+
+.callout-success {
+  background: rgba(48,209,88,.08);
+  border: 1px solid rgba(48,209,88,.25);
+  color: var(--green2);
+}
+
+.callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.callout strong { color: inherit; }
+
+/* ── TABLE ─────────────────────────────────────────────── */
+.table-wrap {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 14px 0;
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+th {
+  background: var(--surface2);
+  color: var(--muted2);
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+td {
+  padding: 11px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+}
+
+tr:hover td { background: rgba(255,255,255,.02); }
+
+/* ── CODE ─────────────────────────────────────────────── */
+code {
+  background: var(--surface2);
+  color: var(--gold2);
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.code-block {
+  background: #07090f;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-x: auto;
+  margin: 14px 0;
+  white-space: pre;
+}
+
+.cm { color: #4a5380; }
+.ck { color: #79c0ff; }
+.cv { color: #a5d6ff; }
+.cs { color: var(--muted); }
+
+/* ── TAGS ─────────────────────────────────────────────── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.tag::before { content: '●'; font-size: 7px; }
+
+.tag-green { background: rgba(48,209,88,.12); color: var(--green); border: 1px solid rgba(48,209,88,.25); }
+.tag-red { background: rgba(255,69,58,.12); color: var(--red); border: 1px solid rgba(255,69,58,.25); }
+.tag-gold { background: rgba(245,166,35,.12); color: var(--gold); border: 1px solid rgba(245,166,35,.25); }
+.tag-blue { background: rgba(79,142,247,.12); color: var(--blue2); border: 1px solid rgba(79,142,247,.25); }
+
+/* ── ESCALATOR VIZ ─────────────────────────────────────── */
+.esc-track {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 80px;
+  margin: 20px 0 8px;
+}
+
+.esc-bar {
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, var(--gold) 0%, rgba(245,166,35,.3) 100%);
+  position: relative;
+  transition: opacity .2s;
+  min-width: 0;
+}
+
+.esc-bar:hover { opacity: .8; }
+
+.esc-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ── FEATURE CHIPS ─────────────────────────────────────── */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media(max-width:600px){ .feature-grid { grid-template-columns: 1fr; } }
+
+.feature-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.chip-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.chip-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+.chip-desc { font-size: 12px; color: var(--muted2); line-height: 1.5; }
+
+/* ── FAQ ─────────────────────────────────────────────── */
+.faq { display: flex; flex-direction: column; gap: 12px; }
+
+.faq-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+
+.faq-q {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.faq-q::before {
+  content: 'Q';
+  background: rgba(79,142,247,.15);
+  color: var(--blue2);
+  font-size: 11px;
+  font-weight: 800;
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.faq-a { font-size: 13px; color: var(--muted2); }
+
+ul.faq-list { padding-left: 18px; }
+ul.faq-list li { margin-bottom: 5px; color: var(--muted2); font-size: 13px; }
+
+/* ── FOOTER ─────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 28px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.footer-brand { color: var(--gold); font-weight: 700; }
+
+/* ── SCROLLBAR ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════ HERO ══════════════════════ -->
+<div class="hero">
+  <div class="hero-content">
+    <div class="hero-eyebrow">Advanced Fibonacci Pro v7 &nbsp;·&nbsp; Perfil Marlon</div>
+    <h1>Setup Guide <span>Agresivo</span></h1>
+    <p class="hero-sub">Guia completa para configurar los 5 Expert Advisors y el Governor en MetaTrader 5.</p>
+    <div class="hero-stats">
+      <div class="hstat">
+        <span class="hstat-val" style="color:var(--green)">$20</span>
+        <span class="hstat-label">Riesgo / trade</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-val" style="color:var(--gold)">5%</span>
+        <span class="hstat-label">DD Diario max</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-val" style="color:var(--red)">10%</span>
+        <span class="hstat-label">DD Total max</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-val" style="color:var(--blue2)">5</span>
+        <span class="hstat-label">Pares activos</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-val" style="color:var(--purple)">18</span>
+        <span class="hstat-label">Score minimo</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ══════ PARES ══════ -->
+  <div class="section-title">
+    <div class="icon icon-gold">📊</div>
+    Pares configurados
+  </div>
+
+  <div class="pair-grid">
+    <div class="pair-card">
+      <div class="pair-flag">🇺🇸🇨🇭</div>
+      <div class="pair-symbol">USDCHF</div>
+      <div class="pair-magic">#300001</div>
+      <div class="pair-lots">0.10 lots</div>
+    </div>
+    <div class="pair-card">
+      <div class="pair-flag">🇺🇸🇯🇵</div>
+      <div class="pair-symbol">USDJPY</div>
+      <div class="pair-magic">#300002</div>
+      <div class="pair-lots">0.10 lots</div>
+    </div>
+    <div class="pair-card">
+      <div class="pair-flag">🇦🇺🇯🇵</div>
+      <div class="pair-symbol">AUDJPY</div>
+      <div class="pair-magic">#300003</div>
+      <div class="pair-lots">0.10 lots</div>
+    </div>
+    <div class="pair-card">
+      <div class="pair-flag">🇪🇺🇺🇸</div>
+      <div class="pair-symbol">EURUSD</div>
+      <div class="pair-magic">#300004</div>
+      <div class="pair-lots">0.10 lots</div>
+    </div>
+    <div class="pair-card">
+      <div class="pair-flag">🇪🇺🇯🇵</div>
+      <div class="pair-symbol">EURJPY</div>
+      <div class="pair-magic">#300005</div>
+      <div class="pair-lots">0.10 lots</div>
+    </div>
+  </div>
+
+  <!-- ══════ LIMITES DE RIESGO ══════ -->
+  <div class="section-title">
+    <div class="icon icon-gold">🛡️</div>
+    Limites de riesgo
+  </div>
+
+  <div class="risk-grid">
+    <div class="risk-item">
+      <div class="risk-header">
+        <span class="risk-label">Riesgo por trade</span>
+        <span class="risk-val" style="color:var(--green)">$20</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:15%;background:var(--green)"></div></div>
+    </div>
+    <div class="risk-item">
+      <div class="risk-header">
+        <span class="risk-label">Perdida diaria max</span>
+        <span class="risk-val" style="color:var(--gold)">$60</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:45%;background:var(--gold)"></div></div>
+    </div>
+    <div class="risk-item">
+      <div class="risk-header">
+        <span class="risk-label">DD Diario max</span>
+        <span class="risk-val" style="color:var(--gold)">5%</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--gold)"></div></div>
+    </div>
+    <div class="risk-item">
+      <div class="risk-header">
+        <span class="risk-label">DD Total max</span>
+        <span class="risk-val" style="color:var(--red)">10%</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:85%;background:var(--red)"></div></div>
+    </div>
+  </div>
+
+  <!-- ══════ INSTALACION ══════ -->
+  <div class="section-title">
+    <div class="icon icon-blue">⚡</div>
+    Como configurar en MetaTrader 5
+  </div>
+
+  <div class="steps">
+
+    <!-- STEP 1 -->
+    <div class="step">
+      <div class="step-left">
+        <div class="step-num">1</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <h3>Cargar el Governor primero — siempre primero</h3>
+        <p>El Governor es el controlador de riesgo global. Debe estar activo <strong>antes</strong> de cualquier Symbol_Engine.</p>
+
+        <div class="callout callout-warn">
+          <div class="callout-icon">⚠️</div>
+          <div>Sin el Governor activo, el sistema puede superar el limite de drawdown sin control. Cargalo siempre primero.</div>
+        </div>
+
+        <div style="margin-top:14px; font-size:14px; color:var(--muted2);">
+          <strong style="color:#fff;">Pasos:</strong><br><br>
+          1. En el panel <strong>Navigator</strong> (Ctrl+N) busca <code>Portfolio_Governor</code><br>
+          2. Arrastralo a un grafico separado — recomendado <code>EURUSD H1</code><br>
+          3. En el dialogo de parametros haz clic en el boton <strong style="color:var(--gold)">Load</strong><br>
+          4. Selecciona el archivo <code>sets/marlon/governor.set</code><br>
+          5. Haz clic en <strong>OK</strong>
+        </div>
+
+        <div class="callout callout-info" style="margin-top:14px;">
+          <div class="callout-icon">💡</div>
+          <div>El icono del EA en la esquina del grafico debe quedar en color <strong>verde</strong>. Si esta rojo, ve a <em>Tools → Options → Expert Advisors</em> y activa "Allow automated trading".</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step">
+      <div class="step-left">
+        <div class="step-num">2</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <h3>Abrir 5 graficos en H4 — uno por par</h3>
+        <p>Cada par necesita su propio grafico en <strong>H4</strong>. Sigue este orden exacto:</p>
+
+        <div class="table-wrap" style="margin-top:14px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Grafico a abrir</th>
+                <th>Timeframe</th>
+                <th>Set a cargar</th>
+                <th>Magic #</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>USDCHF</strong></td>
+                <td><code>H4</code></td>
+                <td><code>usdchf.set</code></td>
+                <td style="color:var(--muted); font-family:'JetBrains Mono',monospace">300001</td>
+              </tr>
+              <tr>
+                <td><strong>USDJPY</strong></td>
+                <td><code>H4</code></td>
+                <td><code>usdjpy.set</code></td>
+                <td style="color:var(--muted); font-family:'JetBrains Mono',monospace">300002</td>
+              </tr>
+              <tr>
+                <td><strong>AUDJPY</strong></td>
+                <td><code>H4</code></td>
+                <td><code>audjpy.set</code></td>
+                <td style="color:var(--muted); font-family:'JetBrains Mono',monospace">300003</td>
+              </tr>
+              <tr>
+                <td><strong>EURUSD</strong></td>
+                <td><code>H4</code></td>
+                <td><code>eurusd.set</code></td>
+                <td style="color:var(--muted); font-family:'JetBrains Mono',monospace">300004</td>
+              </tr>
+              <tr>
+                <td><strong>EURJPY</strong></td>
+                <td><code>H4</code></td>
+                <td><code>eurjpy.set</code></td>
+                <td style="color:var(--muted); font-family:'JetBrains Mono',monospace">300005</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step">
+      <div class="step-left">
+        <div class="step-num">3</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <h3>Arrastrar Symbol_Engine a cada grafico</h3>
+        <p>Repite este proceso exacto en <strong>cada uno</strong> de los 5 graficos:</p>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:4px;">
+          <div class="callout callout-info">
+            <div class="callout-icon">①</div>
+            <div>En el <strong>Navigator</strong>, localiza <code>Symbol_Engine</code> bajo Expert Advisors</div>
+          </div>
+          <div class="callout callout-info">
+            <div class="callout-icon">②</div>
+            <div>Arrastra el EA al grafico del par correspondiente (ej: EURUSD H4)</div>
+          </div>
+          <div class="callout callout-info">
+            <div class="callout-icon">③</div>
+            <div>Se abre el dialogo de parametros — haz clic en el boton <strong>Load</strong> (parte inferior izquierda)</div>
+          </div>
+          <div class="callout callout-info">
+            <div class="callout-icon">④</div>
+            <div>Navega a la carpeta <code>sets/marlon/</code> y selecciona el <code>.set</code> del par (ej: <code>eurusd.set</code>)</div>
+          </div>
+          <div class="callout callout-success">
+            <div class="callout-icon">⑤</div>
+            <div>Haz clic en <strong>OK</strong>. El EA queda activo. El icono debe ser <strong>verde</strong>.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step">
+      <div class="step-left">
+        <div class="step-num">4</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <h3>Verificar el dashboard de cada EA</h3>
+        <p>Cada grafico muestra un panel de estado. Confirma que todo este correcto:</p>
+
+        <div class="table-wrap" style="margin-top:10px;">
+          <table>
+            <thead>
+              <tr><th>Campo en el dashboard</th><th>Valor esperado</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Estado</td>
+                <td><span class="tag tag-green">ACTIVE</span></td>
+              </tr>
+              <tr>
+                <td>Lots</td>
+                <td><code>0.10</code></td>
+              </tr>
+              <tr>
+                <td>Magic Number</td>
+                <td>Debe coincidir con la tabla del Paso 2</td>
+              </tr>
+              <tr>
+                <td>Governor</td>
+                <td><span class="tag tag-green">CONNECTED</span> (no BLOCKED)</td>
+              </tr>
+              <tr>
+                <td>Timefilter</td>
+                <td><span class="tag tag-red">OFF</span> — opera las 24h</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout-warn" style="margin-top:12px;">
+          <div class="callout-icon">⚠️</div>
+          <div>Si el estado muestra <strong>BLOCKED</strong>, revisa la pestana <em>Experts</em> en el terminal de MT5 para ver el motivo exacto.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step">
+      <div class="step-left">
+        <div class="step-num">5</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <h3>Sistema listo — no tocar nada mas</h3>
+        <p>Una vez que los 6 EAs esten activos (1 Governor + 5 Symbol_Engine), el sistema opera de forma completamente automatica. No es necesario intervenir manualmente.</p>
+
+        <div class="callout callout-success">
+          <div class="callout-icon">✅</div>
+          <div>El Governor detiene todas las operaciones automaticamente al alcanzar el limite de DD diario ($60) o total (9%). Al dia siguiente se reanuda solo.</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /steps -->
+
+
+  <!-- ══════ GOVERNOR CONFIG ══════ -->
+  <div class="section-title">
+    <div class="icon icon-purple">🔐</div>
+    Configuracion del Governor
+  </div>
+
+  <div class="code-block"><span class="cm">; ══════════════════════════════════════════════</span>
+<span class="cm">; GOVERNOR — MARLON AGRESIVO</span>
+<span class="cm">; DD Diario max 5% | DD Total max 10% | $20/trade</span>
+<span class="cm">; ══════════════════════════════════════════════</span>
+
+<span class="ck">InpMagicMin</span>           = <span class="cv">300001</span>   <span class="cs">; rango inicio — Symbol_Engine de Marlon</span>
+<span class="ck">InpMagicMax</span>           = <span class="cv">300020</span>   <span class="cs">; rango fin</span>
+
+<span class="ck">InpDailyLossLimit</span>     = <span class="cv">-60.0</span>    <span class="cs">; para si pierde $60 en el dia (3 trades x $20)</span>
+<span class="ck">InpMaxPortfolioDD_Pct</span> = <span class="cv">9.0</span>      <span class="cs">; cierra todo al 9% DD del balance total</span>
+<span class="ck">InpDailyMaxDD</span>         = <span class="cv">4.5</span>      <span class="cs">; reduce riesgo al alcanzar 4.5% DD diario</span>
+<span class="ck">InpWeeklyMaxDD</span>        = <span class="cv">9.0</span>      <span class="cs">; limite semanal de drawdown</span>
+
+<span class="ck">InpMaxOpenPositions</span>   = <span class="cv">5</span>        <span class="cs">; max 5 trades abiertos al mismo tiempo</span>
+<span class="ck">InpMaxDailyTrades</span>     = <span class="cv">20</span>       <span class="cs">; max operaciones por dia</span>
+<span class="ck">InpSymbolCooldownHours</span>= <span class="cv">1</span>        <span class="cs">; 1h de pausa por par tras cerrar trade</span>
+<span class="ck">InpConsecLossReduce</span>   = <span class="cv">4</span>        <span class="cs">; reduce riesgo tras 4 perdidas consecutivas</span>
+<span class="ck">InpConsecLossPause</span>    = <span class="cv">8</span>        <span class="cs">; pausa total tras 8 perdidas consecutivas</span></div>
+
+
+  <!-- ══════ FUNCIONES DEL EA ══════ -->
+  <div class="section-title">
+    <div class="icon icon-green">⚙️</div>
+    Funciones activas del EA
+  </div>
+
+  <div class="feature-grid">
+    <div class="feature-chip">
+      <div class="chip-icon icon-gold">🎯</div>
+      <div>
+        <div class="chip-title">Escalador Sniper — 15 etapas</div>
+        <div class="chip-desc">Cierra parcialmente cada 0.3R de ganancia cosechando el 50%. Mueve el SL a la etapa anterior en cada paso.</div>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <div class="chip-icon icon-blue">📐</div>
+      <div>
+        <div class="chip-title">Pip Ladder Trail</div>
+        <div class="chip-desc">Aprieta el trailing stop automaticamente al alcanzar 18, 30 y 50 pips de ganancia para asegurar profit.</div>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <div class="chip-icon icon-purple">🧠</div>
+      <div>
+        <div class="chip-title">HMM — Regimen de mercado</div>
+        <div class="chip-desc">Detecta si el mercado es TREND, RANGING, VOLATILE o CHAOS. Bloquea entradas en regimenes desfavorables.</div>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <div class="chip-icon icon-green">📡</div>
+      <div>
+        <div class="chip-title">Multi-Timeframe (MTF)</div>
+        <div class="chip-desc">Confirma la tendencia en W1, D1 y H4 antes de entrar. Penaliza el score si hay contradiccion.</div>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <div class="chip-icon icon-gold">🌍</div>
+      <div>
+        <div class="chip-title">Macro Sentiment</div>
+        <div class="chip-desc">Analiza DXY y VIX para filtrar entradas contra el sentimiento macro del mercado.</div>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <div class="chip-icon icon-blue">🔗</div>
+      <div>
+        <div class="chip-title">Correlacion de pares</div>
+        <div class="chip-desc">Limita la exposicion a la misma divisa base para evitar riesgo acumulado en pares correlacionados.</div>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <div class="chip-icon icon-green">📊</div>
+      <div>
+        <div class="chip-title">Score de confluencia — min 18</div>
+        <div class="chip-desc">Sistema de puntuacion de 0 a 30+. Solo entra si el score supera 18 (SMC + RSI + ATR + regimen).</div>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <div class="chip-icon" style="background:rgba(255,69,58,.12);">⏰</div>
+      <div>
+        <div class="chip-title">Sin filtro de horario</div>
+        <div class="chip-desc">El EA opera las 24 horas. InpUseTimeFilter=false. No hay restriccion por sesion de mercado.</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════ ESCALATOR VIZ ══════ -->
+  <div class="section-title">
+    <div class="icon icon-gold">📈</div>
+    Escalador Sniper — como funciona
+  </div>
+
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px;">
+    <p style="font-size:13px; color:var(--muted2); margin-bottom:20px;">Cada barra representa una etapa. Al alcanzar ese nivel de profit, el EA vende el 50% restante y sube el SL.</p>
+
+    <div class="esc-track">
+      <div class="esc-bar" style="height:7%"  title="Etapa 1 — 0.5R"></div>
+      <div class="esc-bar" style="height:13%" title="Etapa 2 — 0.8R"></div>
+      <div class="esc-bar" style="height:19%" title="Etapa 3 — 1.1R"></div>
+      <div class="esc-bar" style="height:25%" title="Etapa 4 — 1.4R"></div>
+      <div class="esc-bar" style="height:31%" title="Etapa 5 — 1.7R"></div>
+      <div class="esc-bar" style="height:37%" title="Etapa 6 — 2.0R"></div>
+      <div class="esc-bar" style="height:43%" title="Etapa 7 — 2.3R"></div>
+      <div class="esc-bar" style="height:49%" title="Etapa 8 — 2.6R"></div>
+      <div class="esc-bar" style="height:55%" title="Etapa 9 — 2.9R"></div>
+      <div class="esc-bar" style="height:61%" title="Etapa 10 — 3.2R"></div>
+      <div class="esc-bar" style="height:67%" title="Etapa 11 — 3.5R"></div>
+      <div class="esc-bar" style="height:73%" title="Etapa 12 — 3.8R"></div>
+      <div class="esc-bar" style="height:79%" title="Etapa 13 — 4.1R"></div>
+      <div class="esc-bar" style="height:88%" title="Etapa 14 — 4.4R"></div>
+      <div class="esc-bar" style="height:100%;background:linear-gradient(180deg,#ffcc60 0%,var(--gold) 100%)" title="Etapa 15 — 4.7R"></div>
+    </div>
+    <div class="esc-label">
+      <span>Etapa 1 — 0.5R</span>
+      <span style="color:var(--gold); font-weight:700;">Etapa 15 — 4.7R ★</span>
+    </div>
+
+    <div style="display:flex; gap:12px; margin-top:20px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:160px; background:var(--bg2); border-radius:10px; padding:14px 16px; border:1px solid var(--border);">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">HARVEST por etapa</div>
+        <div style="font-size:22px; font-weight:800; color:var(--green);">50%</div>
+      </div>
+      <div style="flex:1; min-width:160px; background:var(--bg2); border-radius:10px; padding:14px 16px; border:1px solid var(--border);">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">Paso entre etapas</div>
+        <div style="font-size:22px; font-weight:800; color:var(--gold);">0.3R</div>
+      </div>
+      <div style="flex:1; min-width:160px; background:var(--bg2); border-radius:10px; padding:14px 16px; border:1px solid var(--border);">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">Primera cosecha</div>
+        <div style="font-size:22px; font-weight:800; color:var(--blue2);">0.5R</div>
+      </div>
+      <div style="flex:1; min-width:160px; background:var(--bg2); border-radius:10px; padding:14px 16px; border:1px solid var(--border);">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">Etapas totales</div>
+        <div style="font-size:22px; font-weight:800; color:var(--purple);">15</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════ FAQ ══════ -->
+  <div class="section-title">
+    <div class="icon icon-blue">❓</div>
+    Preguntas frecuentes
+  </div>
+
+  <div class="faq">
+    <div class="faq-item">
+      <div class="faq-q">El EA no abre trades — que reviso?</div>
+      <div class="faq-a">
+        <ul class="faq-list">
+          <li>El Governor puede haber alcanzado el limite diario de $60. Revisa su panel.</li>
+          <li>El score de confluencia puede no superar 18. El mercado puede estar en regimen VOLATILE.</li>
+          <li>El spread puede ser mayor al maximo permitido en ese momento.</li>
+          <li>Revisa la pestana <strong>Experts</strong> en MT5 — ahi aparece el motivo exacto del bloqueo.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">El EA cerro todas las posiciones de golpe</div>
+      <div class="faq-a">
+        El Governor detecto uno de estos limites:<br><br>
+        <ul class="faq-list">
+          <li>Perdida diaria llego a <strong>$60</strong> (3 trades a $20 cada uno)</li>
+          <li>Drawdown total llego al <strong>9%</strong> del balance</li>
+          <li>8 perdidas consecutivas — pausa automatica de proteccion</li>
+        </ul>
+        <br>Las operaciones se reanudan automaticamente al inicio del siguiente dia.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Como cambio el lote fijo de $20 a otro riesgo?</div>
+      <div class="faq-a">
+        Edita el parametro <code>InpFixedLots</code> en el <code>.set</code> del par. Referencia rapida:<br><br>
+        <ul class="faq-list">
+          <li><code>0.10</code> lots → aprox <strong>$10</strong> por cada 10 pips (EURUSD)</li>
+          <li><code>0.20</code> lots → aprox <strong>$20</strong> por cada 10 pips</li>
+          <li><code>0.50</code> lots → aprox <strong>$50</strong> por cada 10 pips</li>
+        </ul>
+        <br>Recarga el set en el EA despues de guardar el archivo.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Puedo cambiar los magic numbers?</div>
+      <div class="faq-a">
+        <strong>No cambies los magic numbers</strong> sin actualizar tambien el <code>governor.set</code>. El Governor monitorea el rango <code>300001–300020</code>. Si cambias el magic de un Symbol_Engine a un numero fuera de ese rango, el Governor no lo controlara.
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<footer>
+  <div><span class="footer-brand">Advanced Fibonacci Pro v7</span> &nbsp;·&nbsp; Sets: <code>marlon/</code></div>
+  <div>Generado: 2026-06-01 &nbsp;·&nbsp; InpMinConfluenceEntry=18 &nbsp;·&nbsp; InpFixedLots=0.10</div>
+</footer>
+
+</body>
+</html>
