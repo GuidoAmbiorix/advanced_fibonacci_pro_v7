@@ -292,6 +292,7 @@ input bool              InpUseSessionGovernor = true;     // Enable Session Gove
 input int               InpMaxTradesPerSession = 3;       // Max Trades Per Session
 input int               InpTradeCooldownMinutes = 30;     // Cooldown Between Trades
 input bool              InpDisablePullbackFilter = false; // Disable post-win pullback requirement (bump mode)
+input bool              InpBumpMode = false;             // BUMP MODE: bypass crisis/RSI/EMA/ASMA/PreFriday/AdaptiveFilters
 input bool              InpCloseIntradayProfits = true;   // Close Profitable Trades at EOD (H1 Intraday)
 input int               InpEndOfDayHour = 22;             // EOD Hour (Broker Time, typically 22:00 or 23:00)
 input bool              InpResetKillSwitch = false;       // RESET Kill Switch hard lock (toggle ON to unlock)
@@ -1555,10 +1556,10 @@ void OnTick()
 
    // === TRADING FILTERS START HERE ===
    
-   if(!g_regimeCtx.allowEntries) return;  // CRISIS regime: no new entries
+   if(!InpBumpMode && !g_regimeCtx.allowEntries) return;  // CRISIS regime: no new entries
 
    // --- GOVERNOR v2: PRE-FRIDAY BLOCK ---
-   if(GlobalVariableCheck(GV_PREFRIDAY_BLOCK) && GlobalVariableGet(GV_PREFRIDAY_BLOCK) > 0.5)
+   if(!InpBumpMode && GlobalVariableCheck(GV_PREFRIDAY_BLOCK) && GlobalVariableGet(GV_PREFRIDAY_BLOCK) > 0.5)
    {
       static datetime lastPFLog = 0;
       if(TimeCurrent() - lastPFLog > 300)
@@ -1592,7 +1593,7 @@ void OnTick()
    // RSI Compression Filter — only for trend regimes
    // In RANGING/VOLATILE: RSI near 50 is normal, MR entries need RSI at extremes (handled by MR module)
    bool isTrendRegime = (g_currentRegime == REGIME_TREND_STRONG || g_currentRegime == REGIME_TREND_WEAK);
-   if(isTrendRegime && g_RSI > 48 && g_RSI < 52)
+   if(!InpBumpMode && isTrendRegime && g_RSI > 48 && g_RSI < 52)
    {
       static datetime lastRSIWarning = 0;
       if(TimeCurrent() - lastRSIWarning > 300)
@@ -1605,7 +1606,7 @@ void OnTick()
 
    // EMA Proximity Filter — only for trend regimes
    // In RANGING/VOLATILE: price oscillates around EMA by design — filter not applicable
-   if(isTrendRegime)
+   if(!InpBumpMode && isTrendRegime)
    {
       double emaDistance = MathAbs(symbolInfo.Bid() - g_EMA);
       double minDistance = g_ATR * 0.35;
@@ -1819,7 +1820,7 @@ void OnTick()
                 break;
           }
 
-          if(asmaBlock)
+          if(!InpBumpMode && asmaBlock)
           {
              static datetime lastASMALog = 0;
              if(TimeCurrent() - lastASMALog > 300)
