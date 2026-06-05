@@ -1,0 +1,60 @@
+; GOVERNOR — FundingPips Zero $5,000 Challenge
+; Philosophy: Cold, calculated, protect the account above all else.
+; Rules: 5% trailing DD ($250), 3% daily loss ($150), no weekend holding.
+; Magic range: 100031-100035 (5 pairs: XAUUSD, GBPJPY, GBPUSD, EURJPY, AUDJPY)
+
+InpMagicMin=100031
+InpMagicMax=100035
+
+;═══════ DAILY P&L CONTROL ═══════
+; 3% daily loss = $150. Use $130 as governor limit (buffer before prop firm trigger).
+InpDailyProfitTarget=0.0
+InpDailyLossLimit=-130.0
+InpPauseOnProfitTarget=false
+InpCloseOnDailyLoss=true
+
+;═══════ PORTFOLIO DRAWDOWN ═══════
+; 5% trailing DD = $250. Governor triggers at 4.0% — leaves $50 buffer for slippage.
+InpMaxPortfolioDD_Pct=4.0
+InpReduceRiskAt_Pct=2.0
+InpCloseAllOnMaxDD=true
+
+;═══════ CORRELATION FILTER ═══════
+; JPY pairs can correlate — cap at 2 same-currency positions.
+InpUseCorrelFilter=true
+InpMaxSameCurrency=2
+InpCloseCorrelOnBreech=false
+
+;═══════ INSTITUTIONAL SAFETY ═══════
+InpEquityVelocityLimit=0.5
+InpGlobalVolatileLimit=2
+
+;═══════ FRIDAY CLOSE ═══════
+; UTC+2 broker: 21:00 UTC = 23:00 broker. Close ALL before weekend.
+InpFridayClose=true
+InpFridayCloseHour=23
+InpFridayCloseMinute=0
+
+;═══════ DISPLAY ═══════
+InpShowDashboard=true
+InpRefreshSeconds=5
+
+;═══════ TIEMPO Y COOLDOWN ═══════
+InpFridayBlockHours=2
+InpSymbolCooldownHours=4
+
+;═══════ LÍMITES DE OPERACIÓN ═══════
+; 5 symbols × 1 position each = max 5. Strict daily trade limit for quality.
+InpMaxOpenPositions=5
+InpMaxDailyTrades=10
+InpMaxWeeklyTrades=25
+
+;═══════ RACHA DE PÉRDIDAS ═══════
+; Conservative: reduce risk at 2 consecutive losses, halt at 4.
+InpConsecLossReduce=2
+InpConsecLossPause=4
+
+;═══════ EQUITY CURVE FILTER ═══════
+InpUseEqCurve=true
+InpEqCurvePeriod=20
+InpEqCurveReductMult=0.5

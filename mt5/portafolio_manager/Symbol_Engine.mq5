@@ -64,6 +64,7 @@ CPatternMemory      patternMemory;
 // Stability Layer
 #include "Include\EquityGuard.mqh"
 #include "Include\SessionVWAP.mqh"
+#include "Include\PropFirmCompliance.mqh"
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
@@ -304,6 +305,12 @@ input double            InpEquityTrailPct     = 0.40; // Protect (1-X)% of weekl
 input int               InpHotStreakBonus     = 3;    // Extra confluence pts required after 3+ consec wins
 input double            InpADR_MaxConsumed    = 0.80; // Block entries if X% of avg daily range consumed (0=off)
 
+input group "======= PROP FIRM COMPLIANCE (FundingPips Zero) ======="
+input bool   InpPFC_Enabled        = false; // Enable prop firm compliance layer
+input double InpPFC_FloatLossLimit = 42.0;  // Emergency close if total floating P/L <= -$X (0=off)
+input double InpPFC_ConsistencyPct = 0.15;  // Block entries if today's profit >= X% of month (0=off)
+input int    InpPFC_FridayUTCHour  = 21;    // Force close all positions on Friday at this UTC hour (0=off)
+
 input group "======= REGIME UPGRADES ======="
 input bool InpUseRollingMode = true;  // U1: Rolling mode buffer (20-bar anti-whipsaw)
 input bool InpUseERFractal   = true;  // U2: ER + Fractal Index voting signals
@@ -406,9 +413,10 @@ int    g_dailyTradesCount = 0;  // FIX: Track daily trades to prevent overtradin
 datetime g_lastResetDate = 0;
 
 // Stability layer objects
-CEquityGuard equityGuard;
-CSessionVWAP sessionVWAP;
-bool         g_isKZActive = false; // Killzone active — computed before confluence score
+CEquityGuard         equityGuard;
+CSessionVWAP         sessionVWAP;
+CPropFirmCompliance  pfCompliance;
+bool                 g_isKZActive = false; // Killzone active — computed before confluence score
 
 // PULLBACK VALIDATION: Track last closed trade for re-entry filter
 int      g_lastTradeDir = 0;           // direction of last closed trade (1=buy, -1=sell)
@@ -649,7 +657,12 @@ int OnInit()
    // Initialize stability layer
    equityGuard.Init(account.Balance(), InpDailyProfitCapPct, InpEquityTrailPct, InpHotStreakBonus);
    sessionVWAP.Init(_Symbol);
+   pfCompliance.Init(InpPFC_Enabled, InpPFC_FloatLossLimit, InpPFC_ConsistencyPct,
+                     InpPFC_FridayUTCHour, InpMagicNumber, InpBrokerUTCOffset);
    Print("[OK] EquityGuard initialized | DailyCap=", InpDailyProfitCapPct, "% Trail=", InpEquityTrailPct, " HotStreak=+", InpHotStreakBonus);
+   if(InpPFC_Enabled)
+      Print("[OK] PropFirmCompliance active | FloatLimit=-$", InpPFC_FloatLossLimit,
+            " Consistency=", InpPFC_ConsistencyPct*100, "% FridayUTC=", InpPFC_FridayUTCHour, ":00");
 
    // Initialize Currency Exposure tracker
    if(InpMaxCurrencyExposure > 0)
@@ -1244,6 +1257,34 @@ void OnTick()
       }
    }
 
+   // --- PROP FIRM COMPLIANCE: Floating loss emergency close + Friday UTC force close ---
+   if(InpPFC_Enabled)
+   {
+      double totalFloat = 0;
+      if(pfCompliance.CheckFloatingLoss(totalFloat))
+      {
+         Print("[PF_COMPLIANCE] EMERGENCY CLOSE: floating P/L = $", DoubleToString(totalFloat, 2),
+               " exceeded hard stop -$", DoubleToString(InpPFC_FloatLossLimit, 2), ". Closing all.");
+         for(int i = PositionsTotal() - 1; i >= 0; i--)
+            if(position.SelectByIndex(i) && position.Symbol() == _Symbol && position.Magic() == InpMagicNumber)
+               trade.PositionClose(position.Ticket());
+         return;
+      }
+      if(pfCompliance.IsFridayCloseTime())
+      {
+         static bool pfFridayClosed = false;
+         if(!pfFridayClosed)
+         {
+            Print("[PF_COMPLIANCE] Friday UTC ", InpPFC_FridayUTCHour, ":00 reached — force closing all positions.");
+            pfFridayClosed = true;
+         }
+         for(int i = PositionsTotal() - 1; i >= 0; i--)
+            if(position.SelectByIndex(i) && position.Symbol() == _Symbol && position.Magic() == InpMagicNumber)
+               trade.PositionClose(position.Ticket());
+         return;
+      }
+   }
+
    // --- EOD INTRADAY CLOSE GUARD ---
    if(InpCloseIntradayProfits && g_positionCount > 0)
    {
@@ -1655,6 +1696,22 @@ void OnTick()
          {
             Print(egReason);
             lastEGLog = TimeCurrent();
+         }
+         return;
+      }
+   }
+
+   // --- PROP FIRM COMPLIANCE: Consistency rule (best day ≤ 15% of month total) ---
+   if(InpPFC_Enabled && InpPFC_ConsistencyPct > 0)
+   {
+      string pfReason = "";
+      if(pfCompliance.IsConsistencyViolated(pfReason))
+      {
+         static datetime lastPFLog = 0;
+         if(TimeCurrent() - lastPFLog > 300)
+         {
+            Print(pfReason);
+            lastPFLog = TimeCurrent();
          }
          return;
       }

@@ -1,0 +1,230 @@
+; GBPJPY — FundingPips Zero $5,000 Challenge
+; Timeframe: H4 | Lots: 0.01 fixed | Target: 70-80% WR
+; GBPJPY: high volatility pair — tight spread control, wider ATR thresholds.
+; FundingPips: 5% trailing DD, 3% daily loss, no weekend, 1% float limit, 15% consistency.
+
+InpMagicNumber=100032
+InpDirection=0
+InpBrokerUTCOffset=2
+
+;═══════ KILLZONES ═══════
+; London + NY — GBPJPY moves strongly on London open and NY overlap.
+InpUseKillzoneFilter=true
+InpEnableAsianKZ=false
+InpEnableLondonOpenKZ=true
+InpEnableNYKZ=true
+InpEnableLondonCloseKZ=false
+InpCloseOnKillzoneEnd=false
+InpKZBEMinutesBefore=0
+InpKZBEMinProfitR=0.0
+InpNotifyKillzoneOpen=true
+
+;═══════ MOMENTUM EXIT ═══════
+InpUseMomentumExit=true
+InpMomADX_Period=14
+InpMomADX_Threshold=25.0
+InpMomATR_CollapseRatio=0.55
+InpMomBarsNoProgress=6
+InpMomProgressATR=0.25
+InpMomSignalsToExit=2
+InpMomRecoveryMinScore=2
+
+;═══════ FIBONACCI ═══════
+InpSwingLookback=24
+InpFibLevelLow=0.618
+InpFibLevelHigh=0.786
+InpZoneTolerance=0.28
+
+;═══════ DISPLACEMENT ═══════
+InpUseDisplacement=true
+InpDisplacementATR=1.3
+InpDisplacementLookback=5
+
+;═══════ RSI ═══════
+InpRSI_Period=14
+InpRSI_Oversold=35
+InpRSI_Overbought=65
+InpRSI_Momentum=true
+
+;═══════ TREND ═══════
+InpEMA_Period=200
+InpUseTrendFilter=true
+InpEMA_MinSlope=0.10
+
+;═══════ CHOP FILTER ═══════
+InpUseChopFilter=true
+InpChopThreshold=0.68
+InpATR_MA_Period=20
+
+;═══════ CONFLUENCE ═══════
+; FX crosses: confluence=16, dominance=8.
+InpMinConfluenceEntry=16
+InpDominanceThreshold=8.0
+InpMaxPositions=1
+
+;═══════ RISK ═══════
+InpFixedLots=0.01
+InpRiskBase=0.2
+InpMaxRisk=0.3
+InpMaxLotsPerTrade=0.01
+InpEnableMarginCheck=true
+
+;═══════ TAKE PROFIT ═══════
+InpTPMode=2
+InpFixedTP_R=2.0
+InpMinTP_R=2.0
+InpMaxTP_R=4.0
+InpTPUseLearnedMFE=false
+
+;═══════ TRAILING STOP ═══════
+InpTrailingMode=1
+InpTrailType=1
+InpTrailStepATR=0.45
+
+;═══════ VOLATILITY FILTER ═══════
+; GBPJPY: high pip range — wider volatility tolerance.
+InpMinVolatilityPips=15.0
+InpMaxVolatilityFactor=3.0
+InpVolatilityTP_Mult=2.5
+
+;═══════ PARTIAL TP & TRAILING ═══════
+InpPartialTP_R=0.70
+InpPartialClosePercent=40.0
+InpBE_Threshold_R=0.20
+InpTrailStart_R=0.25
+InpTrailATR_Mult=1.40
+InpTrailDecayRate=0.28
+InpTrailMinMult=0.45
+InpTrailRegimeAware=true
+InpTrailMinBufferATR=0.14
+
+;═══════ INFINITE ESCALATOR ═══════
+InpEsc_FirstR=0.50
+InpEsc_FirstSL_R=-0.01
+InpEsc_StepR=0.25
+InpEsc_GrowthFactor=1.50
+InpEsc_BaseHarvest=32.0
+InpEsc_HarvestDecay=0.38
+InpEsc_MinHarvest=10.0
+InpEsc_MaxStages=20
+InpRunnerTrailTight=0.93
+InpTimeStaleMins=120.0
+InpTimeStaleTight1=0.92
+InpTimeStaleTight2=0.82
+
+;═══════ PIP LADDER TRAIL ═══════
+InpPipLadder=false
+
+;═══════ SCALE-IN PYRAMID ═══════
+InpPyr_Enable=false
+InpPyr_Frequency=3
+InpPyr_FirstRiskPct=0.10
+InpPyr_RiskDecay=0.70
+InpPyr_MinRiskPct=0.03
+InpPyr_MaxAddOns=1
+InpPyr_MinProfitR=2.0
+InpAgg_MaxTotalRisk=0.3
+InpAgg_MaxPositions=1
+
+;═══════ ADAPTIVE ESCALATOR ═══════
+InpAdaptiveEscalator=true
+InpScoreAdaptFactor=0.08
+InpRegimeHarvest=true
+InpMFECalibration=false
+InpMomentumTrail=true
+InpChaosEmergencyLock=true
+InpFridayCloseHour=23
+
+;═══════ STALE TRADE EXIT ═══════
+InpUseStaleTrade=true
+InpStaleBarLimit=6
+
+;═══════ SPREAD ═══════
+; GBPJPY: wider spread tolerance.
+InpMaxSpreadPoints=80
+InpMaxSpreadRanging=60
+InpMaxSpreadVolatile=120
+
+;═══════ SMC ═══════
+InpUseSMC=true
+InpSMC_SwingLookback=24
+InpSMC_MinImpulseATR=1.5
+InpSMC_MinFVG_ATR=0.4
+
+;═══════ MULTI-TIMEFRAME ═══════
+InpUseMTF=true
+InpHTF=49153
+InpMTF=16408
+InpMTF_EMAPeriod=50
+
+;═══════ NEWS FILTER ═══════
+InpUseNewsFilter=true
+InpNewsMinutesBefore=15
+InpNewsMinutesAfter=15
+
+;═══════ VOLATILITY SPIKE PROTECTION ═══════
+InpEnableVolatilityFilter=true
+InpVolatilityThreshold=3.0
+InpVolatilitySpikeCooldown=30
+
+;═══════ KELLY ═══════
+InpUseKelly=false
+InpKellyFraction=0.5
+InpDailyMaxDD=2.5
+InpWeeklyMaxDD=4.0
+InpDailyTarget=0.0
+
+;═══════ LEARNING ═══════
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=180
+InpMinTradesForLearning=30
+
+;═══════ ADAPTIVE BEHAVIOR ═══════
+InpEnableAdaptiveRisk=false
+InpEnableAdaptiveExits=true
+InpEnableAdaptiveFilters=true
+
+;═══════ PORTFOLIO PROTECTION ═══════
+InpUseCorrelationFilter=false
+InpDailyMaxLoss_R=2.0
+InpLossCooldownMinutes=240
+InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=3
+InpUseReversalFilter=true
+InpReversalCooldownMinutes=120
+
+;═══════ SESSION GOVERNOR ═══════
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=1
+InpTradeCooldownMinutes=90
+InpCloseIntradayProfits=false
+InpEndOfDayHour=22
+
+;═══════ EQUITY GUARD (Anti-Greed) ═══════
+InpDailyProfitCapPct=2.0
+InpEquityTrailPct=0.40
+InpHotStreakBonus=3
+InpADR_MaxConsumed=0.80
+
+;═══════ PROP FIRM COMPLIANCE ═══════
+InpPFC_Enabled=true
+InpPFC_FloatLossLimit=42.0
+InpPFC_ConsistencyPct=0.15
+InpPFC_FridayUTCHour=21
+
+;═══════ GOVERNOR (per-symbol backup) ═══════
+InpGov_Enabled=true
+InpGov_DD_Reduce=2.0
+InpGov_DD_Pause=4.0
+InpGov_ReducedMult=0.5
+InpGov_DailyMaxDD=2.0
+
+;═══════ VISUAL / REGIME ═══════
+InpEnableVisualLevels=true
+InpTickThrottleSeconds=30
+InpUseRollingMode=true
+InpSymbolCooldown=4
+InpUseH1Trigger=true
+InpUseVolTarget=true
+InpUseHMM=true
