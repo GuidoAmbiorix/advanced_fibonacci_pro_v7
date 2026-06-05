@@ -1,13 +1,13 @@
-; XAUUSDm — BUMP MODE AGGRESSIVE | Gold moves fast, catch every spike
-; Most aggressive set: lowest confluence, widest spread tolerance
+; XAUUSDm — BUMP MODE | Gold fast impulses
 InpMagicNumber=500020
 InpBrokerUTCOffset=0
 InpMinConfluenceEntry=12.0
+InpDominanceThreshold=5.0
 InpMaxLotsPerTrade=0.01
 InpFixedLots=0.01
 InpRiskBase=0.50
 InpDirection=0
-; --- FILTERS (off — gold moves on its own) ---
+; --- FILTERS (all off) ---
 InpUseKillzoneFilter=false
 InpUseTimeFilter=false
 InpUseMTF=false
@@ -18,20 +18,21 @@ InpUseDXYConflict=false
 InpKZRegimeAware=false
 ; --- NEWS ---
 InpUseNewsFilter=false
-InpNewsMinutesBefore=30
-InpNewsMinutesAfter=30
+; --- VOLATILITY ---
 InpEnableVolatilityFilter=true
 InpVolatilityThreshold=4.0
-InpVolatilitySpikeCooldown=0
-; --- KELLY (off — fixed lots, no DD gate) ---
+InpVolatilitySpikeCooldown=5
+; --- KELLY (off) ---
 InpUseKelly=false
-InpMaxDailyTrades=0
-; --- COOLDOWNS (all off — gold re-enters immediately) ---
+; --- COOLDOWNS (all off) ---
 InpTradeCooldownMinutes=0
 InpLossCooldownMinutes=0
 InpReversalCooldownMinutes=0
 InpSymbolCooldown=0
-; --- INSTANT BE + TRAIL (spread-aware auto-adjusts for gold ~3pip spread) ---
+InpMaxDailyTrades=0
+; --- CONSECUTIVE LOSSES (3 = pause 30m) ---
+InpMaxConsecutiveLosses=3
+; --- INSTANT BE + TRAIL ---
 InpInstantBreakeven=true
 InpUniversalBE=true
 InpUniversalBE_Pips=0.1
@@ -40,7 +41,7 @@ InpUniversalTrail_Pips=2.0
 InpMaxSpreadPoints=300
 InpMaxSpreadRanging=300
 InpMaxSpreadVolatile=500
-; --- SL/TRAIL (gold needs room) ---
+; --- SL/TRAIL ---
 InpATR_Mult_SL=1.5
 InpTrailATR_Mult=1.5
 InpSMC_MinImpulseATR=1.2
@@ -52,16 +53,20 @@ InpEsc_FirstSL_R=0.02
 InpEsc_StepR=0.10
 InpEsc_BaseHarvest=90.0
 InpEsc_MaxStages=5
+; --- GOVERNOR (daily 8% DD = ~$1.20 on $15) ---
+InpGov_Enabled=true
+InpGov_DailyMaxDD=8.0
+InpGov_DD_Reduce=12.0
+InpGov_DD_Pause=20.0
 ; --- MISC ---
 InpTimeStaleMins=2.0
 InpTickThrottleSeconds=1
 InpMaxPositions=1
 InpPipLadder=false
 InpDisableFailsafe=true
-InpGov_Enabled=false
+InpDisablePullbackFilter=true
 InpBumpMode=true
-InpMaxConsecutiveLosses=0
+InpMaxConsecutiveLosses=3
 InpEnableAdaptiveFilters=false
 InpUseH1Trigger=false
-InpDisablePullbackFilter=true
 InpResetKillSwitch=true

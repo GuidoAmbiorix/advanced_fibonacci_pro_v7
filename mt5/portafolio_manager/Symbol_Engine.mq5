@@ -1307,7 +1307,7 @@ void OnTick()
 
    // --- SIGNAL DOMINANCE FILTER ---
    // Skip in RANGING/VOLATILE: buy≈sell is normal when market has no clear bias
-   bool dominanceApplies = (g_currentRegime == REGIME_TREND_STRONG || g_currentRegime == REGIME_TREND_WEAK);
+   bool dominanceApplies = InpBumpMode || (g_currentRegime == REGIME_TREND_STRONG || g_currentRegime == REGIME_TREND_WEAK);
    if(InpDominanceThreshold > 0 && dominanceApplies)
    {
       double delta = MathAbs(g_cachedBuyScore - g_cachedSellScore);

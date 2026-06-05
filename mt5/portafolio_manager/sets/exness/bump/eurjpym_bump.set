@@ -1,7 +1,8 @@
-; EURJPYm — BUMP MODE | Volatile cross, risk-sentiment driven spikes
+; EURJPYm — BUMP MODE | Risk-sentiment spikes
 InpMagicNumber=500007
 InpBrokerUTCOffset=0
 InpMinConfluenceEntry=14.0
+InpDominanceThreshold=5.0
 InpMaxLotsPerTrade=0.01
 InpFixedLots=0.01
 InpRiskBase=0.50
@@ -17,11 +18,10 @@ InpUseDXYConflict=false
 InpKZRegimeAware=false
 ; --- NEWS ---
 InpUseNewsFilter=false
-InpNewsMinutesBefore=30
-InpNewsMinutesAfter=30
+; --- VOLATILITY ---
 InpEnableVolatilityFilter=true
 InpVolatilityThreshold=3.5
-InpVolatilitySpikeCooldown=0
+InpVolatilitySpikeCooldown=5
 ; --- KELLY (off) ---
 InpUseKelly=false
 ; --- COOLDOWNS (all off) ---
@@ -30,6 +30,8 @@ InpLossCooldownMinutes=0
 InpReversalCooldownMinutes=0
 InpSymbolCooldown=0
 InpMaxDailyTrades=0
+; --- CONSECUTIVE LOSSES ---
+InpMaxConsecutiveLosses=3
 ; --- INSTANT BE + TRAIL ---
 InpInstantBreakeven=true
 InpUniversalBE=true
@@ -51,16 +53,19 @@ InpEsc_FirstSL_R=0.02
 InpEsc_StepR=0.10
 InpEsc_BaseHarvest=90.0
 InpEsc_MaxStages=5
+; --- GOVERNOR ---
+InpGov_Enabled=true
+InpGov_DailyMaxDD=8.0
+InpGov_DD_Reduce=12.0
+InpGov_DD_Pause=20.0
 ; --- MISC ---
 InpTimeStaleMins=3.0
 InpTickThrottleSeconds=1
 InpMaxPositions=1
 InpPipLadder=false
 InpDisableFailsafe=true
-InpGov_Enabled=false
+InpDisablePullbackFilter=true
 InpBumpMode=true
-InpMaxConsecutiveLosses=0
 InpEnableAdaptiveFilters=false
 InpUseH1Trigger=false
-InpDisablePullbackFilter=true
 InpResetKillSwitch=true
