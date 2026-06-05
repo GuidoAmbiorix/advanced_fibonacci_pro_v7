@@ -7,15 +7,22 @@ InpMaxLotsPerTrade=0.01
 InpFixedLots=0.01
 InpRiskBase=0.50
 InpDirection=0
-; --- FILTERS (all off) ---
-InpUseKillzoneFilter=false
+; --- KILLZONES (London + NY) ---
+InpUseKillzoneFilter=true
+InpKZRegimeAware=false
+InpEnableAsianKZ=false
+InpEnableLondonOpenKZ=true
+InpEnableNYKZ=true
+InpEnableLondonCloseKZ=false
+InpCloseOnKillzoneEnd=true
+InpKZBEMinutesBefore=10
+; --- OTHER FILTERS (off) ---
 InpUseTimeFilter=false
 InpUseMTF=false
 InpUseHMM=false
 InpUseMacroSentiment=false
 InpUseCorrelationFilter=false
 InpUseDXYConflict=false
-InpKZRegimeAware=false
 ; --- NEWS ---
 InpUseNewsFilter=false
 ; --- VOLATILITY ---
