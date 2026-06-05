@@ -1,7 +1,7 @@
 ; USDJPYm — BUMP MODE | Liquid, sharp rate-driven moves
 InpMagicNumber=500015
 InpBrokerUTCOffset=0
-InpMinConfluenceEntry=14.0
+InpMinConfluenceEntry=16.0
 InpMaxLotsPerTrade=0.01
 InpFixedLots=0.01
 InpRiskBase=0.50

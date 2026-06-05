@@ -1,7 +1,7 @@
 ; USDCADm — BUMP MODE | Oil-correlated, strong directional moves
 InpMagicNumber=500003
 InpBrokerUTCOffset=0
-InpMinConfluenceEntry=14.0
+InpMinConfluenceEntry=16.0
 InpMaxLotsPerTrade=0.01
 InpFixedLots=0.01
 InpRiskBase=0.50
