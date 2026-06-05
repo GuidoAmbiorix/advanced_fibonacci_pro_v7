@@ -2287,11 +2287,21 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
          Sleep(300);
          if(PositionSelectByTicket(ticket))
          {
-            double entryPx = PositionGetDouble(POSITION_PRICE_OPEN);
-            if(trade.PositionModify(ticket, entryPx, 0))
-               Print("[IB] Instant Breakeven — SL moved to entry: ", DoubleToString(entryPx, (int)symbolInfo.Digits()));
-            else
-               Print("[IB] Warning: Could not move SL to entry, err=", GetLastError());
+            double entryPx  = PositionGetDouble(POSITION_PRICE_OPEN);
+            double existingTP = PositionGetDouble(POSITION_TP);
+            bool   isBuyIB   = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY);
+            double currentPx  = isBuyIB ? symbolInfo.Bid() : symbolInfo.Ask();
+            long   minStop    = symbolInfo.StopsLevel();
+            double minDist    = minStop * symbolInfo.Point();
+            // Only set SL to entry if price has moved enough away from entry
+            bool canSet = isBuyIB ? (currentPx >= entryPx + minDist) : (currentPx <= entryPx - minDist);
+            if(canSet)
+            {
+               if(trade.PositionModify(ticket, entryPx, existingTP))
+                  Print("[IB] Instant Breakeven — SL→entry: ", DoubleToString(entryPx, (int)symbolInfo.Digits()));
+               else
+                  Print("[IB] Warning: Could not move SL to entry, err=", GetLastError());
+            }
          }
       }
 
