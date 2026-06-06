@@ -1,26 +1,30 @@
-; GOVERNOR — FundingPips Zero $5,000 Challenge
+; GOVERNOR — Cuenta Propia $50 · Exness · H4 Conservador
 ; Philosophy: Cold, calculated, protect the account above all else.
-; Rules: 5% trailing DD ($250), 3% daily loss ($150), no weekend holding.
-; Magic range: 100031-100035 (5 pairs: XAUUSD, GBPJPY, GBPUSD, EURJPY, AUDJPY)
+; Sin reglas propfirm — límites propios para cuenta de $50.
+; XAUUSD: 36% riesgo/trade — necesita control estricto del governor.
+; Magic range: 100031-100035 (5 pares: XAUUSD, GBPJPY, GBPUSD, EURJPY, AUDJPY)
 
 InpMagicMin=100031
 InpMagicMax=100035
 
 ;═══════ DAILY P&L CONTROL ═══════
-; 3% daily loss = $150. Use $130 as governor limit (buffer before prop firm trigger).
+; 10% daily loss máximo = $5. Governor dispara a $4.50 (buffer antes del límite).
+; Con XAUUSD un solo SL hit = -$18, por eso el límite diario NO evita ese caso
+; individual — el governor protege el día completo, no el trade individual.
 InpDailyProfitTarget=0.0
-InpDailyLossLimit=-130.0
+InpDailyLossLimit=-4.50
 InpPauseOnProfitTarget=false
 InpCloseOnDailyLoss=true
 
 ;═══════ PORTFOLIO DRAWDOWN ═══════
-; 5% trailing DD = $250. Governor triggers at 4.0% — leaves $50 buffer for slippage.
-InpMaxPortfolioDD_Pct=4.0
-InpReduceRiskAt_Pct=2.0
+; Sin propfirm DD rule. Auto-protección: cierre total al 15% DD ($7.50).
+; Reduce riesgo al 8% DD ($4.00) — da margen para recuperar antes del cierre.
+InpMaxPortfolioDD_Pct=15.0
+InpReduceRiskAt_Pct=8.0
 InpCloseAllOnMaxDD=true
 
 ;═══════ CORRELATION FILTER ═══════
-; JPY pairs can correlate — cap at 2 same-currency positions.
+; JPY pairs pueden correlacionar — máx 2 posiciones en la misma divisa.
 InpUseCorrelFilter=true
 InpMaxSameCurrency=2
 InpCloseCorrelOnBreech=false
@@ -30,7 +34,7 @@ InpEquityVelocityLimit=0.5
 InpGlobalVolatileLimit=2
 
 ;═══════ FRIDAY CLOSE ═══════
-; UTC+2 broker: 21:00 UTC = 23:00 broker. Close ALL before weekend.
+; UTC+2 broker: 21:00 UTC = 23:00 broker. Cerrar TODO antes del fin de semana.
 InpFridayClose=true
 InpFridayCloseHour=23
 InpFridayCloseMinute=0
@@ -44,15 +48,15 @@ InpFridayBlockHours=2
 InpSymbolCooldownHours=4
 
 ;═══════ LÍMITES DE OPERACIÓN ═══════
-; 5 symbols × 1 position each = max 5. Strict daily trade limit for quality.
+; H4 conservador: máx 5 trades/día (1 por par), 15 semanales.
 InpMaxOpenPositions=5
-InpMaxDailyTrades=10
-InpMaxWeeklyTrades=25
+InpMaxDailyTrades=5
+InpMaxWeeklyTrades=15
 
 ;═══════ RACHA DE PÉRDIDAS ═══════
-; Conservative: reduce risk at 2 consecutive losses, halt at 4.
+; Cuenta pequeña: reducir riesgo en 2 pérdidas seguidas, pausar en 3.
 InpConsecLossReduce=2
-InpConsecLossPause=4
+InpConsecLossPause=3
 
 ;═══════ EQUITY CURVE FILTER ═══════
 InpUseEqCurve=true
