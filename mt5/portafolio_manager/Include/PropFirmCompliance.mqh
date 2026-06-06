@@ -56,7 +56,7 @@ public:
       totalFloat = 0;
       for(int i = PositionsTotal() - 1; i >= 0; i--)
       {
-         if(!PositionSelectByIndex(i)) continue;
+         if(PositionGetSymbol(i) == "") continue;
          if(PositionGetInteger(POSITION_MAGIC) != m_magicNumber) continue;
          totalFloat += PositionGetDouble(POSITION_PROFIT)
                      + PositionGetDouble(POSITION_SWAP);

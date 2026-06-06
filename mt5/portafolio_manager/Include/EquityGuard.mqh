@@ -115,6 +115,11 @@ public:
    int  GetConsecutiveWins()    { return m_consecutiveWins; }
    double GetDayStartBalance()  { return m_dayStartBalance; }
    double GetWeekHighEquity()   { return m_weekHighEquity; }
+
+   // Restore state after EA restart (loaded from DB)
+   void SetConsecutiveWins(int n)    { m_consecutiveWins = MathMax(0, n); }
+   void SetDayStartBalance(double b) { if(b > 0) m_dayStartBalance = b; }
+   void SetWeekHighEquity(double e)  { if(e > 0) m_weekHighEquity  = e; }
 };
 
 #endif

@@ -66,6 +66,8 @@ CPatternMemory      patternMemory;
 #include "Include\SessionVWAP.mqh"
 #include "Include\PropFirmCompliance.mqh"
 #include "Include\ConfluenceGates.mqh"
+#include "Include\Learning\ScoreIntelligence.mqh"
+#include "Include\Learning\MFECalibration.mqh"
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
@@ -417,6 +419,13 @@ datetime g_lastResetDate = 0;
 CEquityGuard         equityGuard;
 CSessionVWAP         sessionVWAP;
 CPropFirmCompliance  pfCompliance;
+CScoreIntelligence   scoreIntel;           // Module 3: DB-calibrated score threshold
+CMFECalibration      mfeCalib;             // Module 4: DB-calibrated MFE multiplier
+
+// Module 5: daily performance counters for DailySnapshot
+int    g_dailyWins  = 0;
+double g_dailyTotalR = 0;
+
 bool                 g_isKZActive = false; // Killzone active — computed before confluence score
 
 // PULLBACK VALIDATION: Track last closed trade for re-entry filter
@@ -674,6 +683,23 @@ int OnInit()
    {
       if(!dbManager.Init())
          Print("Warning: Database Manager initialization failed");
+      else
+      {
+         // Module 1: Restore runtime state from DB after restart
+         double savedWins      = dbManager.LoadRuntimeState("equity_consec_wins",  0.0);
+         double savedDayBal    = dbManager.LoadRuntimeState("equity_day_balance",  0.0);
+         double savedWeekHigh  = dbManager.LoadRuntimeState("equity_week_high",    0.0);
+         if(savedWins    > 0) equityGuard.SetConsecutiveWins((int)savedWins);
+         if(savedDayBal  > 0) equityGuard.SetDayStartBalance(savedDayBal);
+         if(savedWeekHigh > 0) equityGuard.SetWeekHighEquity(savedWeekHigh);
+         if(savedWins > 0 || savedDayBal > 0)
+            PrintFormat("[DB] State restored: wins=%d dayBal=%.2f weekHigh=%.2f",
+                        (int)savedWins, savedDayBal, savedWeekHigh);
+
+         // Module 3 + 4: Init learning modules
+         scoreIntel.Init(&dbManager, InpMinConfluenceEntry);
+         mfeCalib.Init(&dbManager);
+      }
    }
 
    // Initialize Performance Analyzer
@@ -1013,8 +1039,23 @@ void ResetDailyLossIfNewDay()
       {
          Print("[DAILY] Reset: Day R=", DoubleToString(g_dailyLossR, 2), " | Trades: ", g_dailyTradesCount);
          ExportDailyPerformance(g_dailyTradesCount, g_dailyLossR);
+
+         // Module 5: log DailySnapshot to DB before resetting counters
+         if(InpEnableLearning && InpLogTradesToFile && !MQLInfoInteger(MQL_TESTER))
+         {
+            string kzLabel = (g_isKZActive ? "KZ_ACTIVE" : "OFF_SESSION");
+            dbManager.LogDailySnapshot(
+               dt.day_of_week, kzLabel, g_regimeCtx.regimeLabel,
+               g_dailyTradesCount, g_dailyWins, g_dailyTotalR, account.Equity());
+
+            // Module 3 + 4: refresh DB-calibrated score/MFE thresholds daily
+            scoreIntel.Update();
+            mfeCalib.Update();
+         }
       }
-      g_dailyLossR = 0;
+      g_dailyLossR   = 0;
+      g_dailyWins    = 0;
+      g_dailyTotalR  = 0;
       g_consecutiveLosses = 0;
       GlobalVariableSet("PG_ConsecLoss_" + _Symbol, 0);
       g_dailyTradesCount = 0;
@@ -1361,6 +1402,13 @@ void OnTick()
       // CRISIS: disable escalator but keep struct populated safely
       g_escCfg.enabled    = false;
       g_escCfg.maxStages  = 0;
+   }
+   // Module 4: Apply MFE calibration to escalator firstR (±30% based on DB avg MFE_R)
+   if(g_escCfg.enabled && InpEnableLearning && !MQLInfoInteger(MQL_TESTER))
+   {
+      double mfeMult = mfeCalib.GetCalibrationMultiplier(g_currentRegime);
+      if(mfeMult != 1.0)
+         g_escCfg.firstR = MathMax(0.20, g_escCfg.firstR * mfeMult);
    }
    // g_currentRegime check moved down to allow score calculation for visibility
 
@@ -1978,6 +2026,14 @@ void OnTick()
 
           // Dynamic threshold: base from .set + regime adjustment
           double minEntry = (double)g_regimeCtx.minConfluence;
+
+          // Module 3: Override with DB-calibrated minimum if score intelligence has data
+          if(InpEnableLearning && !MQLInfoInteger(MQL_TESTER))
+          {
+             int dbMin = scoreIntel.GetAdjustedMinScore(g_currentRegime);
+             if(dbMin != InpMinConfluenceEntry)  // only override when DB has a different answer
+                minEntry = MathMax(minEntry, (double)dbMin);
+          }
 
           // TRANSITION: fresh regime (< 4 bars) = structure rebuilding → require more confluence
           // Prevents premature entries immediately after a regime flip
@@ -3058,7 +3114,9 @@ void ManagePositions()
              }
 
              // Track Daily Loss for Circuit Breaker
-             g_dailyLossR += profitR;
+             g_dailyLossR  += profitR;
+             g_dailyTotalR += profitR;
+             if(profitMoney > 0) g_dailyWins++;
              if(profitMoney < 0)
              {
                 g_lastLossTime = TimeCurrent();  // Track last loss time for cooldown
@@ -3081,6 +3139,13 @@ void ManagePositions()
              }
              // Notify EquityGuard (consecutive wins tracking)
              equityGuard.OnTradeClose(profitMoney > 0);
+             // Module 1: Persist EquityGuard state to DB for restart recovery
+             if(InpEnableLearning && InpLogTradesToFile && !MQLInfoInteger(MQL_TESTER))
+             {
+                dbManager.SaveRuntimeState("equity_consec_wins",  equityGuard.GetConsecutiveWins());
+                dbManager.SaveRuntimeState("equity_day_balance",  equityGuard.GetDayStartBalance());
+                dbManager.SaveRuntimeState("equity_week_high",    equityGuard.GetWeekHighEquity());
+             }
              // Track last trade result for pullback validation (P3)
              g_lastTradeDir = g_entryDirection;
              g_lastTradeWasWin = (profitMoney > 0);
@@ -3868,6 +3933,10 @@ double CalculateConfluenceScore(int direction)
          {
             Print(gr.blockedBy);
             lastGateLog = TimeCurrent();
+            // Module 2: Log gate block to DB for calibration analytics
+            if(InpEnableLearning && InpLogTradesToFile && !MQLInfoInteger(MQL_TESTER))
+               dbManager.LogGateBlock(_Symbol, direction, g_regimeCtx.regimeLabel,
+                                      gr.blockedBy, gr.gatesPassed, gr.gatesRequired);
          }
          return 0;
       }

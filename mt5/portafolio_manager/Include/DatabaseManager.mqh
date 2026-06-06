@@ -188,6 +188,8 @@ public:
       if(s == "RANGING"     || s == "RANGE")  return REGIME_RANGING;
       if(s == "VOLATILE")                     return REGIME_VOLATILE;
       if(s == "CRISIS")                       return REGIME_CRISIS;
+      if(s == "CHOPPY")                       return REGIME_CHOPPY;
+      if(s == "SQUEEZE")                      return REGIME_SQUEEZE;
       return REGIME_UNKNOWN;
    }
    
@@ -527,6 +529,121 @@ public:
       return true;
    }
 
+   //+------------------------------------------------------------------+
+   //| Aliases for state persistence (Module 1)                         |
+   //+------------------------------------------------------------------+
+   bool   SaveRuntimeState(string key, double val, string sval = "") { return SetState(key, val, sval); }
+   double LoadRuntimeState(string key, double def = 0.0)             { return GetStateNum(key, def); }
+
+   //+------------------------------------------------------------------+
+   //| Log Gate Block (Module 2)                                        |
+   //+------------------------------------------------------------------+
+   bool LogGateBlock(string symbol, int direction, string regime,
+                     string gateFailed, int gatesPassed, int gatesRequired)
+   {
+      if(!m_isOpen) return false;
+      string query = StringFormat(
+         "INSERT INTO GateLog (time, symbol, direction, regime, gate_failed, gates_passed, gates_required) "
+         "VALUES (%I64d, '%s', %d, '%s', '%s', %d, %d);",
+         (long)TimeCurrent(), symbol, direction, regime, gateFailed, gatesPassed, gatesRequired);
+      return Execute(query);
+   }
+
+   //+------------------------------------------------------------------+
+   //| Query score→WR stats per regime (Module 3)                       |
+   //| Returns true if at least minTrades found; fills outMinScore      |
+   //+------------------------------------------------------------------+
+   bool GetScoreStats(string regime, int minTrades, double &outMinScore, double &outWinRate)
+   {
+      if(!m_isOpen) return false;
+      outMinScore = 0; outWinRate = 0;
+
+      // Find the score bucket (floor to nearest 2) where WR >= 55%
+      // Bucketed by CAST(confluence_score/2)*2 — groups scores [0-2), [2-4), etc.
+      string q = StringFormat(
+         "SELECT CAST(confluence_score/2)*2 AS bucket, "
+         "COUNT(*) AS cnt, "
+         "SUM(CASE WHEN profit > 0 THEN 1 ELSE 0 END)*1.0/COUNT(*) AS wr "
+         "FROM Trades "
+         "WHERE regime='%s' AND close_time > 0 "
+         "GROUP BY bucket HAVING cnt >= %d AND wr >= 0.55 "
+         "ORDER BY wr DESC LIMIT 1;",
+         regime, minTrades);
+
+      int req = DatabasePrepare(m_dbHandle, q);
+      if(req == INVALID_HANDLE) return false;
+
+      bool found = false;
+      if(DatabaseRead(req))
+      {
+         double bucket = 0, wr = 0;
+         DatabaseColumnDouble(req, 0, bucket);
+         DatabaseColumnDouble(req, 2, wr);
+         outMinScore = bucket;
+         outWinRate  = wr;
+         found = true;
+      }
+      DatabaseFinalize(req);
+      return found;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Query avg MFE_R per regime (Module 4)                            |
+   //+------------------------------------------------------------------+
+   bool GetMFEStats(string regime, double &outAvgMFE_R)
+   {
+      if(!m_isOpen) return false;
+      outAvgMFE_R = 0;
+
+      // mfe is stored as price distance; we approximate R = mfe / (entry_price - sl)
+      string q = StringFormat(
+         "SELECT AVG(CASE WHEN (entry_price - sl) != 0 "
+         "THEN mfe / ABS(entry_price - sl) ELSE 0 END) AS avg_mfe_r "
+         "FROM Trades "
+         "WHERE regime='%s' AND close_time > 0 AND mfe > 0 AND sl != 0;",
+         regime);
+
+      int req = DatabasePrepare(m_dbHandle, q);
+      if(req == INVALID_HANDLE) return false;
+
+      bool found = false;
+      if(DatabaseRead(req))
+      {
+         DatabaseColumnDouble(req, 0, outAvgMFE_R);
+         found = (outAvgMFE_R > 0);
+      }
+      DatabaseFinalize(req);
+      return found;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Log Daily Session Snapshot (Module 5)                            |
+   //+------------------------------------------------------------------+
+   bool LogDailySnapshot(int dayOfWeek, string killzone, string regime,
+                         int trades, int wins, double totalR, double equityEnd)
+   {
+      if(!m_isOpen) return false;
+      string q = StringFormat(
+         "INSERT INTO DailySnapshot "
+         "(date, day_of_week, killzone, regime, trades, wins, total_r, equity_end) "
+         "VALUES (%I64d, %d, '%s', '%s', %d, %d, %.4f, %.2f);",
+         (long)TimeCurrent(), dayOfWeek, killzone, regime, trades, wins, totalR, equityEnd);
+      return Execute(q);
+   }
+
+   //+------------------------------------------------------------------+
+   //| Update regime_at_exit + gates_passed on trade close              |
+   //+------------------------------------------------------------------+
+   bool UpdateTradeExit(ulong ticket, string regimeAtExit, int gatesPassed, double equityAtEntry = 0)
+   {
+      if(!m_isOpen) return false;
+      string q = StringFormat(
+         "UPDATE Trades SET regime_at_exit='%s', gates_passed=%d, equity_at_entry=%.2f "
+         "WHERE ticket=%I64u;",
+         regimeAtExit, gatesPassed, equityAtEntry, ticket);
+      return Execute(q);
+   }
+
 private:
    //+------------------------------------------------------------------+
    //| Create Schema                                                     |
@@ -588,6 +705,40 @@ private:
          ");";
 
       if(!Execute(sqlState)) return false;
+
+      // 4. GateLog Table — tracks which gates block entries per regime
+      string sqlGateLog =
+         "CREATE TABLE IF NOT EXISTS GateLog ("
+         "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+         "time INTEGER,"
+         "symbol TEXT,"
+         "direction INTEGER,"
+         "regime TEXT,"
+         "gate_failed TEXT,"
+         "gates_passed INTEGER,"
+         "gates_required INTEGER"
+         ");";
+      if(!Execute(sqlGateLog)) return false;
+
+      // 5. DailySnapshot Table — session performance heatmap
+      string sqlSnapshot =
+         "CREATE TABLE IF NOT EXISTS DailySnapshot ("
+         "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+         "date INTEGER,"
+         "day_of_week INTEGER,"
+         "killzone TEXT,"
+         "regime TEXT,"
+         "trades INTEGER,"
+         "wins INTEGER,"
+         "total_r REAL,"
+         "equity_end REAL"
+         ");";
+      if(!Execute(sqlSnapshot)) return false;
+
+      // Schema migrations — add new columns to Trades if not present (ignore error if they exist)
+      Execute("ALTER TABLE Trades ADD COLUMN regime_at_exit TEXT DEFAULT 'UNKNOWN';");
+      Execute("ALTER TABLE Trades ADD COLUMN gates_passed INTEGER DEFAULT 0;");
+      Execute("ALTER TABLE Trades ADD COLUMN equity_at_entry REAL DEFAULT 0;");
 
       return true;
    }
