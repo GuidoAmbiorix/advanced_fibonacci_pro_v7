@@ -310,10 +310,11 @@ input int               InpHotStreakBonus     = 3;    // Extra confluence pts re
 input double            InpADR_MaxConsumed    = 0.80; // Block entries if X% of avg daily range consumed (0=off)
 
 input group "======= PROP FIRM COMPLIANCE (FundingPips Zero) ======="
-input bool   InpPFC_Enabled        = false; // Enable prop firm compliance layer
-input double InpPFC_FloatLossLimit = 42.0;  // Emergency close if total floating P/L <= -$X (0=off)
-input double InpPFC_ConsistencyPct = 0.15;  // Block entries if today's profit >= X% of month (0=off)
-input int    InpPFC_FridayUTCHour  = 21;    // Force close all positions on Friday at this UTC hour (0=off)
+input bool   InpPFC_Enabled          = false; // Enable prop firm compliance layer
+input double InpPFC_FloatLossLimit   = 42.0;  // Emergency close if total floating P/L <= -$X (0=off)
+input double InpPFC_ConsistencyPct   = 0.15;  // Block entries if today's profit >= X% of month (0=off)
+input double InpPFC_DailyLossMaxPct  = 3.0;   // Daily loss limit % of day-start balance (closed+floating)
+input int    InpPFC_FridayUTCHour    = 21;    // Force close all positions on Friday at this UTC hour (0=off)
 
 input group "======= REGIME UPGRADES ======="
 input bool InpUseRollingMode = true;  // U1: Rolling mode buffer (20-bar anti-whipsaw)
@@ -670,11 +671,13 @@ int OnInit()
    equityGuard.Init(account.Balance(), InpDailyProfitCapPct, InpEquityTrailPct, InpHotStreakBonus);
    sessionVWAP.Init(_Symbol);
    pfCompliance.Init(InpPFC_Enabled, InpPFC_FloatLossLimit, InpPFC_ConsistencyPct,
-                     InpPFC_FridayUTCHour, InpMagicNumber, InpBrokerUTCOffset);
+                     InpPFC_FridayUTCHour, InpMagicNumber, InpBrokerUTCOffset,
+                     0.02, InpPFC_DailyLossMaxPct);
    Print("[OK] EquityGuard initialized | DailyCap=", InpDailyProfitCapPct, "% Trail=", InpEquityTrailPct, " HotStreak=+", InpHotStreakBonus);
    if(InpPFC_Enabled)
       Print("[OK] PropFirmCompliance active | FloatLimit=-$", InpPFC_FloatLossLimit,
-            " Consistency=", InpPFC_ConsistencyPct*100, "% FridayUTC=", InpPFC_FridayUTCHour, ":00");
+            " Consistency=", InpPFC_ConsistencyPct*100, "% DailyDD=", InpPFC_DailyLossMaxPct,
+            "% FridayUTC=", InpPFC_FridayUTCHour, ":00");
 
    // Initialize Currency Exposure tracker
    if(InpMaxCurrencyExposure > 0)
@@ -691,12 +694,14 @@ int OnInit()
          double savedWins      = dbManager.LoadRuntimeState("equity_consec_wins",  0.0);
          double savedDayBal    = dbManager.LoadRuntimeState("equity_day_balance",  0.0);
          double savedWeekHigh  = dbManager.LoadRuntimeState("equity_week_high",    0.0);
+         double savedAllPeak   = dbManager.LoadRuntimeState("equity_all_time_peak", 0.0);
          if(savedWins    > 0) equityGuard.SetConsecutiveWins((int)savedWins);
          if(savedDayBal  > 0) equityGuard.SetDayStartBalance(savedDayBal);
          if(savedWeekHigh > 0) equityGuard.SetWeekHighEquity(savedWeekHigh);
+         if(savedAllPeak  > 0) equityGuard.SetAllTimePeak(savedAllPeak);
          if(savedWins > 0 || savedDayBal > 0)
-            PrintFormat("[DB] State restored: wins=%d dayBal=%.2f weekHigh=%.2f",
-                        (int)savedWins, savedDayBal, savedWeekHigh);
+            PrintFormat("[DB] State restored: wins=%d dayBal=%.2f weekHigh=%.2f allPeak=%.2f",
+                        (int)savedWins, savedDayBal, savedWeekHigh, savedAllPeak);
 
          // Module 3, 4, 6: Init learning modules
          scoreIntel.Init(&dbManager, InpMinConfluenceEntry);
@@ -1055,6 +1060,13 @@ void ResetDailyLossIfNewDay()
             scoreIntel.Update();
             mfeCalib.Update();
             kzIntel.Update();   // also prints GateLog digest
+
+            // PFC activity warning — alert if no trade in 25+ days (breach at 30)
+            pfCompliance.CheckActivityWarning(25);
+
+            // PFC payout eligibility — FundingPips needs ≥7 active days per 30-day cycle
+            int activeDays = dbManager.GetActiveTradingDays(30);
+            pfCompliance.CheckPayoutEligibility(activeDays, 7);
          }
       }
       g_dailyLossR   = 0;
@@ -1356,9 +1368,10 @@ void OnTick()
       }
    }
 
-   // --- PROP FIRM COMPLIANCE: Floating loss emergency close ---
+   // --- PROP FIRM COMPLIANCE: Floating loss + Daily 3% + Activity warning ---
    if(InpPFC_Enabled)
    {
+      // 1. Floating 1% emergency close
       double totalFloat = 0;
       if(pfCompliance.CheckFloatingLoss(totalFloat))
       {
@@ -1369,6 +1382,59 @@ void OnTick()
                trade.PositionClose(position.Ticket());
          return;
       }
+
+      // 2. Daily 3% breach (closed + floating combined) — FundingPips hard rule
+      string dailyReason = "";
+      if(pfCompliance.IsDailyLossBreached(equityGuard.GetDayStartBalance(), dailyReason))
+      {
+         Print(dailyReason);
+         for(int i = PositionsTotal() - 1; i >= 0; i--)
+            if(position.SelectByIndex(i) && position.Symbol() == _Symbol && position.Magic() == InpMagicNumber)
+               trade.PositionClose(position.Ticket());
+         return;
+      }
+
+      // 3. Trailing DD from all-time equity peak (5% — FundingPips hard rule)
+      string trailReason = "";
+      if(pfCompliance.CheckTrailingDD(equityGuard.GetAllTimePeak(), trailReason))
+      {
+         Print(trailReason);
+         for(int i = PositionsTotal() - 1; i >= 0; i--)
+            if(position.SelectByIndex(i) && position.Symbol() == _Symbol && position.Magic() == InpMagicNumber)
+               trade.PositionClose(position.Ticket());
+         return;
+      }
+   }
+
+   // --- NEWS WINDOW: Close all positions when high-impact news window opens ---
+   // FundingPips: holding positions during ±10 min of high-impact news = hard breach
+   if(InpUseNewsFilter && InpPFC_Enabled)
+   {
+      static bool g_inNewsWindow = false;
+      bool windowNow = !newsFilter.IsTradingAllowed();
+
+      if(windowNow && !g_inNewsWindow)
+      {
+         // Just entered a news window — close all open positions immediately
+         g_inNewsWindow = true;
+         int openPos = 0;
+         for(int i = PositionsTotal() - 1; i >= 0; i--)
+         {
+            if(position.SelectByIndex(i) && position.Symbol() == _Symbol && position.Magic() == InpMagicNumber)
+            {
+               trade.PositionClose(position.Ticket());
+               openPos++;
+            }
+         }
+         if(openPos > 0)
+            PrintFormat("[NEWS] High-impact news window opened — closed %d position(s). No holds during news.", openPos);
+         else
+            Print("[NEWS] High-impact news window active — no positions to close.");
+      }
+      else if(!windowNow)
+         g_inNewsWindow = false;
+
+      if(windowNow) return; // Block all activity during window
    }
 
    // --- EOD INTRADAY CLOSE GUARD ---
@@ -3204,9 +3270,10 @@ void ManagePositions()
              // Module 1: Persist EquityGuard state to DB for restart recovery
              if(InpEnableLearning && InpLogTradesToFile && !MQLInfoInteger(MQL_TESTER))
              {
-                dbManager.SaveRuntimeState("equity_consec_wins",  equityGuard.GetConsecutiveWins());
-                dbManager.SaveRuntimeState("equity_day_balance",  equityGuard.GetDayStartBalance());
-                dbManager.SaveRuntimeState("equity_week_high",    equityGuard.GetWeekHighEquity());
+                dbManager.SaveRuntimeState("equity_consec_wins",   equityGuard.GetConsecutiveWins());
+                dbManager.SaveRuntimeState("equity_day_balance",   equityGuard.GetDayStartBalance());
+                dbManager.SaveRuntimeState("equity_week_high",     equityGuard.GetWeekHighEquity());
+                dbManager.SaveRuntimeState("equity_all_time_peak", equityGuard.GetAllTimePeak());
              }
              // Track last trade result for pullback validation (P3)
              g_lastTradeDir = g_entryDirection;

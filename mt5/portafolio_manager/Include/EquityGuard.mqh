@@ -11,6 +11,7 @@ class CEquityGuard
 private:
    double   m_dayStartBalance;    // Balance at start of trading day
    double   m_weekHighEquity;     // Highest equity seen this week
+   double   m_allTimePeak;        // Highest equity ever seen — never resets (FundingPips 5% trailing DD)
    double   m_initBalance;        // Balance at EA init (week anchor)
    int      m_consecutiveWins;    // Consecutive winning trades
    bool     m_initialized;
@@ -25,6 +26,7 @@ public:
    {
       m_dayStartBalance   = 0;
       m_weekHighEquity    = 0;
+      m_allTimePeak       = 0;
       m_initBalance       = 0;
       m_consecutiveWins   = 0;
       m_initialized       = false;
@@ -38,6 +40,7 @@ public:
       m_initBalance       = startBalance;
       m_dayStartBalance   = startBalance;
       m_weekHighEquity    = startBalance;
+      if(m_allTimePeak < startBalance) m_allTimePeak = startBalance; // Init only if not restored from DB
       m_dailyProfitCapPct = dailyProfitCapPct;
       m_equityTrailPct    = equityTrailPct;
       m_hotStreakBonus    = hotStreakBonus;
@@ -57,10 +60,11 @@ public:
       m_weekHighEquity = balance;
    }
 
-   // Call every scan tick to keep weekHigh updated
+   // Call every scan tick to keep weekHigh and all-time peak updated
    void UpdateWeekHigh(double equity)
    {
       if(equity > m_weekHighEquity) m_weekHighEquity = equity;
+      if(equity > m_allTimePeak)    m_allTimePeak    = equity;
    }
 
    // Call after every trade closes
@@ -115,11 +119,13 @@ public:
    int  GetConsecutiveWins()    { return m_consecutiveWins; }
    double GetDayStartBalance()  { return m_dayStartBalance; }
    double GetWeekHighEquity()   { return m_weekHighEquity; }
+   double GetAllTimePeak()      { return m_allTimePeak; }
 
    // Restore state after EA restart (loaded from DB)
    void SetConsecutiveWins(int n)    { m_consecutiveWins = MathMax(0, n); }
    void SetDayStartBalance(double b) { if(b > 0) m_dayStartBalance = b; }
    void SetWeekHighEquity(double e)  { if(e > 0) m_weekHighEquity  = e; }
+   void SetAllTimePeak(double p)     { if(p > 0) m_allTimePeak     = p; }
 };
 
 #endif

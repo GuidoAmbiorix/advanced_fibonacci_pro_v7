@@ -207,6 +207,7 @@ InpADR_MaxConsumed=0.80
 InpPFC_Enabled=true
 InpPFC_FloatLossLimit=42.0
 InpPFC_ConsistencyPct=0.15
+InpPFC_DailyLossMaxPct=3.0
 InpPFC_FridayUTCHour=21
 
 ;═══════ GOVERNOR (per-symbol backup) ═══════

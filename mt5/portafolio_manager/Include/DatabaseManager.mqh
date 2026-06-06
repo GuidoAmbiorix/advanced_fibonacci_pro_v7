@@ -752,6 +752,28 @@ public:
       return found;
    }
 
+   //+------------------------------------------------------------------+
+   //| Count distinct active trading days in DailySnapshot              |
+   //| (days with at least 1 trade in the last lookbackDays days).     |
+   //| Used for FundingPips payout eligibility: need ≥7 in 30 days.   |
+   //+------------------------------------------------------------------+
+   int GetActiveTradingDays(int lookbackDays = 30)
+   {
+      if(!m_isOpen) return 0;
+      datetime fromTime = TimeCurrent() - (datetime)(lookbackDays * 86400);
+      // Group by day number (date/86400) to get distinct calendar days
+      string q = StringFormat(
+         "SELECT COUNT(DISTINCT date/86400) FROM DailySnapshot "
+         "WHERE date >= %I64d AND trades > 0;",
+         (long)fromTime);
+      int req = DatabasePrepare(m_dbHandle, q);
+      if(req == INVALID_HANDLE) return 0;
+      long cnt = 0;
+      if(DatabaseRead(req)) DatabaseColumnLong(req, 0, cnt);
+      DatabaseFinalize(req);
+      return (int)cnt;
+   }
+
 private:
    //+------------------------------------------------------------------+
    //| Create Schema                                                     |

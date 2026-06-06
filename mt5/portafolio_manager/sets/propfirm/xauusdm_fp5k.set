@@ -214,10 +214,11 @@ InpHotStreakBonus=3
 InpADR_MaxConsumed=0.80
 
 ;═══════ PROP FIRM COMPLIANCE ═══════
-; FundingPips Zero: 1% float=$50, use $42 limit. 15% consistency. Friday UTC 21:00.
+; FundingPips Zero: 1% float=$50, use $42 limit. 15% consistency. Friday UTC 21:00. 3% daily loss.
 InpPFC_Enabled=true
 InpPFC_FloatLossLimit=42.0
 InpPFC_ConsistencyPct=0.15
+InpPFC_DailyLossMaxPct=3.0
 InpPFC_FridayUTCHour=21
 
 ;═══════ GOVERNOR (per-symbol backup) ═══════
