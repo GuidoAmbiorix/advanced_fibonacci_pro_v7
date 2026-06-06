@@ -68,6 +68,7 @@ CPatternMemory      patternMemory;
 #include "Include\ConfluenceGates.mqh"
 #include "Include\Learning\ScoreIntelligence.mqh"
 #include "Include\Learning\MFECalibration.mqh"
+#include "Include\Learning\KillzoneIntelligence.mqh"
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
@@ -420,7 +421,8 @@ CEquityGuard         equityGuard;
 CSessionVWAP         sessionVWAP;
 CPropFirmCompliance  pfCompliance;
 CScoreIntelligence   scoreIntel;           // Module 3: DB-calibrated score threshold
-CMFECalibration      mfeCalib;             // Module 4: DB-calibrated MFE multiplier
+CMFECalibration      mfeCalib;             // Module 4: DB-calibrated MFE + SL multiplier
+CKillzoneIntelligence kzIntel;            // Module 6: DB-calibrated KZ threshold modifier
 
 // Module 5: daily performance counters for DailySnapshot
 int    g_dailyWins  = 0;
@@ -696,9 +698,10 @@ int OnInit()
             PrintFormat("[DB] State restored: wins=%d dayBal=%.2f weekHigh=%.2f",
                         (int)savedWins, savedDayBal, savedWeekHigh);
 
-         // Module 3 + 4: Init learning modules
+         // Module 3, 4, 6: Init learning modules
          scoreIntel.Init(&dbManager, InpMinConfluenceEntry);
          mfeCalib.Init(&dbManager);
+         kzIntel.Init(&dbManager);
       }
    }
 
@@ -1048,9 +1051,10 @@ void ResetDailyLossIfNewDay()
                dt.day_of_week, kzLabel, g_regimeCtx.regimeLabel,
                g_dailyTradesCount, g_dailyWins, g_dailyTotalR, account.Equity());
 
-            // Module 3 + 4: refresh DB-calibrated score/MFE thresholds daily
+            // Module 3, 4, 6: refresh DB-calibrated thresholds daily
             scoreIntel.Update();
             mfeCalib.Update();
+            kzIntel.Update();   // also prints GateLog digest
          }
       }
       g_dailyLossR   = 0;
@@ -2035,6 +2039,15 @@ void OnTick()
                 minEntry = MathMax(minEntry, (double)dbMin);
           }
 
+          // Module 6: Killzone-aware modifier — raise/lower threshold per session WR history
+          if(InpEnableLearning && !MQLInfoInteger(MQL_TESTER))
+          {
+             ENUM_KILLZONE activeKZ = GetActiveKillzone();
+             int kzMod = kzIntel.GetThresholdModifier(g_currentRegime, activeKZ);
+             if(kzMod != 0)
+                minEntry += kzMod;
+          }
+
           // TRANSITION: fresh regime (< 4 bars) = structure rebuilding → require more confluence
           // Prevents premature entries immediately after a regime flip
           if(g_regimeCtx.regimePersistenceBars < 4 &&
@@ -2341,6 +2354,15 @@ bool ExecuteTrade(ENUM_ORDER_TYPE type, double riskPct, string label, ENTRY_QUAL
 
    // Adaptive SL
    double slDist = (quality == EQ_ELITE) ? g_ATR * 2.2 : (quality == EQ_STRONG ? g_ATR * 1.8 : g_ATR * 1.2);
+
+   // Module 4 (MAE): Calibrate SL distance from historical MAE data
+   // Tightens SL when trades historically recover quickly; widens when they need room
+   if(InpEnableLearning && !MQLInfoInteger(MQL_TESTER))
+   {
+      double slMult = mfeCalib.GetSLMultiplier(g_currentRegime);
+      if(slMult != 1.0)
+         slDist *= slMult;
+   }
 
    double stopsLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
    if(slDist < stopsLevel + 10 * _Point) slDist = stopsLevel + 10 * _Point;

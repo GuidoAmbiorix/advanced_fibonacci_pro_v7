@@ -644,6 +644,114 @@ public:
       return Execute(q);
    }
 
+   //+------------------------------------------------------------------+
+   //| Query avg MAE_R per regime — for SL calibration                  |
+   //+------------------------------------------------------------------+
+   bool GetMAEStats(string regime, double &outAvgMAE_R)
+   {
+      if(!m_isOpen) return false;
+      outAvgMAE_R = 0;
+      string q = StringFormat(
+         "SELECT AVG(CASE WHEN ABS(entry_price - sl) > 0 "
+         "THEN mae / ABS(entry_price - sl) ELSE 0 END) "
+         "FROM Trades "
+         "WHERE regime='%s' AND close_time > 0 AND mae > 0 AND sl != 0;",
+         regime);
+      int req = DatabasePrepare(m_dbHandle, q);
+      if(req == INVALID_HANDLE) return false;
+      bool found = false;
+      if(DatabaseRead(req)) { DatabaseColumnDouble(req, 0, outAvgMAE_R); found = (outAvgMAE_R > 0); }
+      DatabaseFinalize(req);
+      return found;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Query WR per (regime, killzone) — for session threshold filter   |
+   //+------------------------------------------------------------------+
+   bool GetKillzoneWR(string regime, string killzone, int minTrades,
+                      double &outWR, int &outCount)
+   {
+      if(!m_isOpen) return false;
+      outWR = 0; outCount = 0;
+      string q = StringFormat(
+         "SELECT COUNT(*) AS cnt, "
+         "SUM(CASE WHEN profit > 0 THEN 1 ELSE 0 END)*1.0/COUNT(*) AS wr "
+         "FROM Trades "
+         "WHERE regime='%s' AND killzone='%s' AND close_time > 0;",
+         regime, killzone);
+      int req = DatabasePrepare(m_dbHandle, q);
+      if(req == INVALID_HANDLE) return false;
+      bool found = false;
+      if(DatabaseRead(req))
+      {
+         long cnt = 0;
+         DatabaseColumnLong(req, 0, cnt);
+         outCount = (int)cnt;
+         if(outCount >= minTrades) { DatabaseColumnDouble(req, 1, outWR); found = true; }
+      }
+      DatabaseFinalize(req);
+      return found;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Query top blocking gate per regime from GateLog                  |
+   //+------------------------------------------------------------------+
+   bool GetTopGateBlock(string regime, string &outGateName, double &outBlockPct)
+   {
+      if(!m_isOpen) return false;
+      outGateName = ""; outBlockPct = 0;
+
+      // Total blocks for this regime
+      string qTotal = StringFormat(
+         "SELECT COUNT(*) FROM GateLog WHERE regime='%s';", regime);
+      int rTotal = DatabasePrepare(m_dbHandle, qTotal);
+      if(rTotal == INVALID_HANDLE) return false;
+      long total = 0;
+      if(DatabaseRead(rTotal)) DatabaseColumnLong(rTotal, 0, total);
+      DatabaseFinalize(rTotal);
+      if(total == 0) return false;
+
+      // Top gate
+      string qTop = StringFormat(
+         "SELECT gate_failed, COUNT(*) AS cnt FROM GateLog "
+         "WHERE regime='%s' GROUP BY gate_failed ORDER BY cnt DESC LIMIT 1;", regime);
+      int rTop = DatabasePrepare(m_dbHandle, qTop);
+      if(rTop == INVALID_HANDLE) return false;
+      bool found = false;
+      if(DatabaseRead(rTop))
+      {
+         long topCnt = 0;
+         DatabaseColumnText(rTop, 0, outGateName);
+         DatabaseColumnLong(rTop, 1, topCnt);
+         outBlockPct = (total > 0) ? (double)topCnt / (double)total * 100.0 : 0;
+         found = true;
+      }
+      DatabaseFinalize(rTop);
+      return found;
+   }
+
+   //+------------------------------------------------------------------+
+   //| Query avg profit R by exit type per regime                       |
+   //+------------------------------------------------------------------+
+   bool GetExitTypeAvgR(string regime, string exitType, double &outAvgR)
+   {
+      if(!m_isOpen) return false;
+      outAvgR = 0;
+      string q = StringFormat(
+         "SELECT AVG(CASE WHEN ABS(entry_price - sl) > 0 "
+         "THEN (close_price - entry_price) * (1 - 2*type) / ABS(entry_price - sl) "
+         "ELSE 0 END) "
+         "FROM Trades "
+         "WHERE regime='%s' AND exit_reason='%s' AND close_time > 0 AND sl != 0;",
+         regime, exitType);
+      int req = DatabasePrepare(m_dbHandle, q);
+      if(req == INVALID_HANDLE) return false;
+      bool found = false;
+      if(DatabaseRead(req)) { DatabaseColumnDouble(req, 0, outAvgR); found = true; }
+      DatabaseFinalize(req);
+      return found;
+   }
+
 private:
    //+------------------------------------------------------------------+
    //| Create Schema                                                     |
