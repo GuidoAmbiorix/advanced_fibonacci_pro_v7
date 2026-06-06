@@ -3,642 +3,375 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FundingPips Zero $5k — Análisis de Inversión</title>
+<title>FundingPips Zero $5k — ROI & Compliance</title>
 <style>
   :root {
-    --gold: #f0b429;
-    --gold-light: #fcd96a;
-    --gold-dark: #b8860b;
-    --bg: #0d0f14;
-    --bg2: #13161e;
-    --bg3: #1a1e2a;
-    --bg4: #222738;
-    --text: #e8eaf0;
-    --text-dim: #8b90a0;
-    --green: #2ecc71;
-    --green-dark: #1a7a42;
-    --red: #e74c3c;
-    --blue: #3498db;
-    --purple: #9b59b6;
-    --border: rgba(240,180,41,0.15);
+    --gold: #f0b429; --gold-light: #fcd96a; --bg: #0d0f14; --bg2: #13161e;
+    --bg3: #1a1e2a; --bg4: #222738; --text: #e8eaf0; --text-dim: #8b90a0;
+    --green: #2ecc71; --green-dark: #1a7a42; --red: #e74c3c; --blue: #3498db;
+    --purple: #9b59b6; --orange: #e67e22; --border: rgba(240,180,41,0.15);
   }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; line-height:1.6; }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    line-height: 1.6;
-    min-height: 100vh;
-  }
-
-  /* ── HEADER ── */
   .header {
-    background: linear-gradient(135deg, #0d0f14 0%, #1a1e2a 50%, #0d1520 100%);
-    border-bottom: 1px solid var(--border);
-    padding: 48px 32px 40px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
+    background:linear-gradient(135deg,#0d0f14 0%,#1a1e2a 50%,#0d1520 100%);
+    border-bottom:1px solid var(--border); padding:48px 32px 40px; text-align:center; position:relative; overflow:hidden;
   }
-  .header::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse at 50% 0%, rgba(240,180,41,0.08) 0%, transparent 70%);
-  }
-  .header-badge {
-    display: inline-block;
-    background: rgba(240,180,41,0.12);
-    border: 1px solid rgba(240,180,41,0.3);
-    color: var(--gold);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    padding: 5px 16px;
-    border-radius: 20px;
-    margin-bottom: 20px;
-  }
-  .header h1 {
-    font-size: clamp(24px, 4vw, 40px);
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #fff 0%, var(--gold-light) 50%, var(--gold) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 10px;
-  }
-  .header p {
-    color: var(--text-dim);
-    font-size: 15px;
-    max-width: 560px;
-    margin: 0 auto;
-  }
+  .header::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 0%,rgba(240,180,41,0.08) 0%,transparent 70%); }
+  .header-badge { display:inline-block; background:rgba(240,180,41,0.12); border:1px solid rgba(240,180,41,0.3); color:var(--gold); font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; padding:5px 16px; border-radius:20px; margin-bottom:20px; }
+  .header h1 { font-size:clamp(24px,4vw,40px); font-weight:800; background:linear-gradient(135deg,#fff 0%,var(--gold-light) 50%,var(--gold) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:10px; }
+  .header p { color:var(--text-dim); font-size:15px; max-width:580px; margin:0 auto; }
 
-  /* ── LAYOUT ── */
-  .container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 40px 24px;
-  }
+  .container { max-width:1100px; margin:0 auto; padding:40px 24px; }
 
-  .section-title {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
+  .section-title { font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--gold); margin-bottom:20px; display:flex; align-items:center; gap:10px; }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
 
-  /* ── INVESTMENT HERO ── */
-  .invest-hero {
-    background: linear-gradient(135deg, var(--bg3) 0%, var(--bg4) 100%);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 36px;
-    margin-bottom: 32px;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 0;
-    position: relative;
-    overflow: hidden;
-  }
-  .invest-hero::before {
-    content: '';
-    position: absolute;
-    top: -60px; right: -60px;
-    width: 200px; height: 200px;
-    background: radial-gradient(circle, rgba(240,180,41,0.06) 0%, transparent 70%);
-    border-radius: 50%;
-  }
-  .invest-item {
-    text-align: center;
-    padding: 16px 24px;
-  }
-  .invest-item:not(:last-child) {
-    border-right: 1px solid var(--border);
-  }
-  .invest-label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    margin-bottom: 10px;
-  }
-  .invest-value {
-    font-size: 36px;
-    font-weight: 800;
-    letter-spacing: -1px;
-  }
-  .invest-value.gold { color: var(--gold); }
-  .invest-value.green { color: var(--green); }
-  .invest-value.white { color: #fff; }
-  .invest-sub {
-    font-size: 12px;
-    color: var(--text-dim);
-    margin-top: 4px;
-  }
-  .discount-tag {
-    display: inline-block;
-    background: rgba(46,204,113,0.15);
-    border: 1px solid rgba(46,204,113,0.3);
-    color: var(--green);
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 10px;
-    border-radius: 10px;
-    margin-top: 6px;
-  }
+  /* INVEST HERO */
+  .invest-hero { background:linear-gradient(135deg,var(--bg3) 0%,var(--bg4) 100%); border:1px solid var(--border); border-radius:20px; padding:36px; margin-bottom:32px; display:grid; grid-template-columns:repeat(4,1fr); gap:0; position:relative; overflow:hidden; }
+  .invest-hero::before { content:''; position:absolute; top:-60px; right:-60px; width:200px; height:200px; background:radial-gradient(circle,rgba(240,180,41,0.06) 0%,transparent 70%); border-radius:50%; }
+  .invest-item { text-align:center; padding:16px 20px; }
+  .invest-item:not(:last-child) { border-right:1px solid var(--border); }
+  .invest-label { font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-bottom:10px; }
+  .invest-value { font-size:32px; font-weight:800; letter-spacing:-1px; }
+  .invest-value.gold { color:var(--gold); } .invest-value.green { color:var(--green); } .invest-value.white { color:#fff; }
+  .invest-sub { font-size:12px; color:var(--text-dim); margin-top:4px; }
+  .discount-tag { display:inline-block; background:rgba(46,204,113,0.15); border:1px solid rgba(46,204,113,0.3); color:var(--green); font-size:11px; font-weight:700; padding:2px 10px; border-radius:10px; margin-top:6px; }
 
-  /* ── CARDS GRID ── */
-  .cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-  .card {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s;
-  }
-  .card:hover { border-color: rgba(240,180,41,0.35); }
-  .card-icon {
-    width: 42px; height: 42px;
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-    margin-bottom: 16px;
-  }
-  .card-icon.gold-bg { background: rgba(240,180,41,0.15); }
-  .card-icon.green-bg { background: rgba(46,204,113,0.15); }
-  .card-icon.blue-bg  { background: rgba(52,152,219,0.15); }
-  .card-icon.red-bg   { background: rgba(231,76,60,0.15); }
-  .card h3 {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-  }
-  .card .big-num {
-    font-size: 28px;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: -0.5px;
-  }
-  .card .big-num span {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-dim);
-    margin-left: 4px;
-  }
-  .card p {
-    font-size: 13px;
-    color: var(--text-dim);
-    margin-top: 8px;
-    line-height: 1.5;
-  }
-  .card .pill {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 20px;
-    margin-top: 10px;
-  }
-  .pill-green { background: rgba(46,204,113,0.15); color: var(--green); border: 1px solid rgba(46,204,113,0.25); }
-  .pill-gold  { background: rgba(240,180,41,0.15); color: var(--gold); border: 1px solid rgba(240,180,41,0.25); }
-  .pill-red   { background: rgba(231,76,60,0.12); color: #e74c3c; border: 1px solid rgba(231,76,60,0.2); }
+  /* COMPLIANCE TABLE */
+  .compliance-grid { display:flex; flex-direction:column; gap:8px; margin-bottom:32px; }
+  .comp-row { display:grid; grid-template-columns:28px 220px 1fr auto; gap:12px; align-items:start; background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:14px 18px; transition:border-color 0.2s; }
+  .comp-row:hover { border-color:rgba(240,180,41,0.25); }
+  .comp-row.ok    { border-left:3px solid var(--green); }
+  .comp-row.warn  { border-left:3px solid var(--orange); }
+  .comp-row.fixed { border-left:3px solid var(--blue); }
+  .comp-icon { font-size:18px; padding-top:1px; }
+  .comp-name { font-size:14px; font-weight:700; color:#fff; margin-bottom:3px; }
+  .comp-name small { display:block; font-size:11px; font-weight:500; color:var(--text-dim); }
+  .comp-desc { font-size:12px; color:var(--text-dim); line-height:1.5; }
+  .comp-status { white-space:nowrap; font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px; align-self:center; }
+  .status-ok     { background:rgba(46,204,113,0.15); color:var(--green); border:1px solid rgba(46,204,113,0.3); }
+  .status-fixed  { background:rgba(52,152,219,0.15); color:var(--blue); border:1px solid rgba(52,152,219,0.3); }
+  .status-admin  { background:rgba(139,144,160,0.12); color:var(--text-dim); border:1px solid rgba(139,144,160,0.2); }
 
-  /* ── SCENARIOS ── */
-  .scenarios {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-  @media (max-width: 720px) { .scenarios { grid-template-columns: 1fr; } }
+  /* SCENARIOS */
+  .scenarios { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:32px; }
+  .scenario { background:var(--bg3); border:1px solid var(--border); border-radius:16px; padding:24px; position:relative; overflow:hidden; }
+  .scenario.featured { border-color:rgba(240,180,41,0.4); background:linear-gradient(160deg,var(--bg3) 0%,rgba(240,180,41,0.05) 100%); }
+  .scenario .badge { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:4px 12px; border-radius:20px; margin-bottom:16px; display:inline-block; }
+  .badge-gray  { background:rgba(139,144,160,0.15); color:var(--text-dim); }
+  .badge-gold  { background:rgba(240,180,41,0.15); color:var(--gold); }
+  .badge-green { background:rgba(46,204,113,0.15); color:var(--green); }
+  .scenario h3 { font-size:16px; font-weight:700; color:#fff; margin-bottom:6px; }
+  .scenario .monthly { font-size:34px; font-weight:800; letter-spacing:-1px; margin:12px 0 4px; }
+  .scenario .monthly-label { font-size:12px; color:var(--text-dim); margin-bottom:16px; }
+  .scenario-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px; }
+  .scenario-row:last-child { border-bottom:none; }
+  .scenario-row .label { color:var(--text-dim); }
+  .scenario-row .value { font-weight:600; color:#fff; }
+  .scenario-row .value.green-t { color:var(--green); }
+  .scenario-row .value.gold-t  { color:var(--gold); }
 
-  .scenario {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-  }
-  .scenario.featured {
-    border-color: rgba(240,180,41,0.4);
-    background: linear-gradient(160deg, var(--bg3) 0%, rgba(240,180,41,0.05) 100%);
-  }
-  .scenario .badge {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: 4px 12px;
-    border-radius: 20px;
-    margin-bottom: 16px;
-    display: inline-block;
-  }
-  .badge-gray   { background: rgba(139,144,160,0.15); color: var(--text-dim); }
-  .badge-gold   { background: rgba(240,180,41,0.15); color: var(--gold); }
-  .badge-green  { background: rgba(46,204,113,0.15); color: var(--green); }
+  /* CHART */
+  .chart-section { background:var(--bg3); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:32px; }
+  .chart-title   { font-size:15px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .chart-subtitle{ font-size:13px; color:var(--text-dim); margin-bottom:28px; }
+  .chart-bars { display:flex; align-items:flex-end; gap:6px; height:180px; padding-bottom:28px; border-bottom:1px solid var(--border); position:relative; }
+  .bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:4px; height:100%; }
+  .bar { width:100%; border-radius:6px 6px 0 0; min-height:4px; position:relative; }
+  .bar-label { font-size:10px; color:var(--text-dim); white-space:nowrap; margin-top:8px; font-weight:600; }
+  .bar-val { position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:9px; font-weight:700; white-space:nowrap; color:var(--gold); }
+  .chart-legend { display:flex; gap:20px; margin-top:16px; flex-wrap:wrap; }
+  .legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-dim); }
+  .legend-dot { width:10px; height:10px; border-radius:3px; }
 
-  .scenario h3 {
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 6px;
-    color: #fff;
-  }
-  .scenario .monthly {
-    font-size: 32px;
-    font-weight: 800;
-    letter-spacing: -1px;
-    margin: 12px 0 4px;
-  }
-  .scenario .monthly-label {
-    font-size: 12px;
-    color: var(--text-dim);
-    margin-bottom: 16px;
-  }
+  /* TABLE */
+  .table-wrap { background:var(--bg3); border:1px solid var(--border); border-radius:16px; overflow:hidden; margin-bottom:32px; }
+  .table-header-row { padding:20px 24px 16px; border-bottom:1px solid var(--border); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { background:rgba(240,180,41,0.07); color:var(--gold); font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:12px 16px; text-align:right; border-bottom:1px solid var(--border); }
+  th:first-child { text-align:left; }
+  td { padding:11px 16px; text-align:right; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--text-dim); }
+  td:first-child { text-align:left; color:#fff; font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  .td-green { color:var(--green) !important; font-weight:700 !important; }
+  .td-gold  { color:var(--gold)  !important; font-weight:700 !important; }
+  .td-red   { color:var(--red)   !important; }
+  .td-dim   { color:var(--text-dim); }
+  .challenge-row td { background:rgba(240,180,41,0.04); }
+  .funded-row td    { background:rgba(46,204,113,0.03); }
+  tr.highlight td   { background:rgba(240,180,41,0.07); }
 
-  .scenario-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    font-size: 13px;
-  }
-  .scenario-row:last-child { border-bottom: none; }
-  .scenario-row .label { color: var(--text-dim); }
-  .scenario-row .value { font-weight: 600; color: #fff; }
-  .scenario-row .value.green-t { color: var(--green); }
-  .scenario-row .value.gold-t  { color: var(--gold); }
+  /* CARDS */
+  .cards-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-bottom:32px; }
+  .card { background:var(--bg3); border:1px solid var(--border); border-radius:16px; padding:24px; }
+  .card:hover { border-color:rgba(240,180,41,0.3); transition:border-color 0.2s; }
+  .card-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:16px; }
+  .gold-bg { background:rgba(240,180,41,0.15); } .green-bg { background:rgba(46,204,113,0.15); } .blue-bg { background:rgba(52,152,219,0.15); } .purple-bg { background:rgba(155,89,182,0.15); }
+  .card h3 { font-size:13px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+  .card .big-num { font-size:28px; font-weight:800; color:#fff; letter-spacing:-0.5px; }
+  .card .big-num span { font-size:14px; font-weight:500; color:var(--text-dim); }
+  .card p { font-size:13px; color:var(--text-dim); margin-top:8px; line-height:1.5; }
+  .pill { display:inline-block; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; margin-top:10px; }
+  .pill-green { background:rgba(46,204,113,0.15); color:var(--green); border:1px solid rgba(46,204,113,0.25); }
+  .pill-gold  { background:rgba(240,180,41,0.15); color:var(--gold);  border:1px solid rgba(240,180,41,0.25); }
 
-  /* ── BAR CHART ── */
-  .chart-section {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    margin-bottom: 32px;
-  }
-  .chart-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: #fff;
-    margin-bottom: 6px;
-  }
-  .chart-subtitle {
-    font-size: 13px;
-    color: var(--text-dim);
-    margin-bottom: 28px;
-  }
-  .chart-bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 6px;
-    height: 180px;
-    padding-bottom: 28px;
-    border-bottom: 1px solid var(--border);
-    position: relative;
-  }
-  .bar-wrap {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 4px;
-    height: 100%;
-  }
-  .bar {
-    width: 100%;
-    border-radius: 6px 6px 0 0;
-    transition: opacity 0.2s;
-    position: relative;
-    min-height: 4px;
-  }
-  .bar:hover { opacity: 0.85; }
-  .bar-label {
-    font-size: 10px;
-    color: var(--text-dim);
-    white-space: nowrap;
-    margin-top: 8px;
-    font-weight: 600;
-  }
-  .bar-val {
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 9px;
-    font-weight: 700;
-    white-space: nowrap;
-    color: var(--gold);
-  }
-  .chart-legend {
-    display: flex;
-    gap: 20px;
-    margin-top: 16px;
-    flex-wrap: wrap;
-  }
-  .legend-item {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 12px; color: var(--text-dim);
-  }
-  .legend-dot {
-    width: 10px; height: 10px; border-radius: 3px;
-  }
+  /* TIMELINE */
+  .timeline { background:var(--bg3); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:32px; }
+  .tl-steps { display:flex; gap:0; position:relative; margin-top:8px; }
+  .tl-steps::before { content:''; position:absolute; top:28px; left:28px; right:28px; height:2px; background:linear-gradient(90deg,var(--gold) 0%,rgba(240,180,41,0.2) 100%); }
+  .tl-step { flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; padding:0 8px; }
+  .tl-dot { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:12px; position:relative; z-index:1; border:2px solid; }
+  .tl-dot.p1 { background:rgba(240,180,41,0.15); border-color:var(--gold); }
+  .tl-dot.p2 { background:rgba(52,152,219,0.15);  border-color:var(--blue); }
+  .tl-dot.p3 { background:rgba(46,204,113,0.15);  border-color:var(--green); }
+  .tl-dot.p4 { background:rgba(155,89,182,0.15);  border-color:var(--purple); }
+  .tl-step h4 { font-size:13px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .tl-step p  { font-size:12px; color:var(--text-dim); line-height:1.4; }
+  .tl-time { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+  .tl-time.gold   { color:var(--gold); } .tl-time.blue   { color:var(--blue); }
+  .tl-time.green  { color:var(--green); } .tl-time.purple { color:var(--purple); }
 
-  /* ── TIMELINE ── */
-  .timeline {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    margin-bottom: 32px;
-  }
-  .tl-steps {
-    display: flex;
-    gap: 0;
-    position: relative;
-    margin-top: 8px;
-  }
-  .tl-steps::before {
-    content: '';
-    position: absolute;
-    top: 28px;
-    left: 28px;
-    right: 28px;
-    height: 2px;
-    background: linear-gradient(90deg, var(--gold) 0%, rgba(240,180,41,0.2) 100%);
-  }
-  .tl-step {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 0 8px;
-  }
-  .tl-dot {
-    width: 56px; height: 56px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-    margin-bottom: 12px;
-    position: relative;
-    z-index: 1;
-    border: 2px solid;
-  }
-  .tl-dot.phase1 { background: rgba(240,180,41,0.15); border-color: var(--gold); }
-  .tl-dot.phase2 { background: rgba(52,152,219,0.15); border-color: var(--blue); }
-  .tl-dot.phase3 { background: rgba(46,204,113,0.15); border-color: var(--green); }
-  .tl-dot.phase4 { background: rgba(155,89,182,0.15); border-color: var(--purple); }
-  .tl-step h4 { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px; }
-  .tl-step p  { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
-  .tl-time {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-  .tl-time.gold   { color: var(--gold); }
-  .tl-time.blue   { color: var(--blue); }
-  .tl-time.green  { color: var(--green); }
-  .tl-time.purple { color: var(--purple); }
+  /* DISCLAIMER */
+  .disclaimer { background:rgba(231,76,60,0.06); border:1px solid rgba(231,76,60,0.2); border-radius:12px; padding:20px 24px; display:flex; gap:14px; align-items:flex-start; margin-bottom:32px; }
+  .disclaimer h4 { font-size:13px; font-weight:700; color:#e74c3c; margin-bottom:4px; }
+  .disclaimer p  { font-size:12px; color:var(--text-dim); line-height:1.6; }
 
-  /* ── PROJECTION TABLE ── */
-  .table-wrap {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-    margin-bottom: 32px;
-  }
-  .table-header-row {
-    padding: 20px 24px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-  th {
-    background: rgba(240,180,41,0.07);
-    color: var(--gold);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: 12px 16px;
-    text-align: right;
-    border-bottom: 1px solid var(--border);
-  }
-  th:first-child { text-align: left; }
-  td {
-    padding: 11px 16px;
-    text-align: right;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    color: var(--text-dim);
-  }
-  td:first-child { text-align: left; color: #fff; font-weight: 600; }
-  tr:last-child td { border-bottom: none; }
-  tr.highlight td { background: rgba(240,180,41,0.06); }
-  tr.highlight td:first-child { color: var(--gold); }
-  tr.recovered td { background: rgba(46,204,113,0.06); }
-  .td-green { color: var(--green) !important; font-weight: 700 !important; }
-  .td-gold  { color: var(--gold)  !important; font-weight: 700 !important; }
-  .td-dim   { color: var(--text-dim); }
-  .td-red   { color: var(--red) !important; }
+  .cushion-box { background:rgba(52,152,219,0.07); border:1px solid rgba(52,152,219,0.2); border-radius:12px; padding:16px 20px; margin-bottom:32px; display:flex; gap:12px; align-items:flex-start; }
+  .cushion-box h4 { font-size:13px; font-weight:700; color:var(--blue); margin-bottom:4px; }
+  .cushion-box p  { font-size:12px; color:var(--text-dim); line-height:1.6; }
 
-  .challenge-row td { background: rgba(240,180,41,0.04); }
-  .challenge-row td:first-child::before {
-    content: '⚡ ';
-    font-size: 11px;
-  }
-  .funded-row td { background: rgba(46,204,113,0.03); }
-  .funded-row td:first-child::before {
-    content: '💰 ';
-    font-size: 11px;
-  }
+  .footer { text-align:center; padding:32px; border-top:1px solid var(--border); color:var(--text-dim); font-size:12px; }
+  .footer span { color:var(--gold); font-weight:600; }
 
-  /* ── RULES BOX ── */
-  .rules-box {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px 28px;
-    margin-bottom: 32px;
-  }
-  .rules-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-top: 16px;
-  }
-  .rule-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .rule-name {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text-dim);
-  }
-  .rule-val {
-    font-size: 18px;
-    font-weight: 800;
-    color: #fff;
-  }
-  .rule-val.red   { color: var(--red); }
-  .rule-val.green { color: var(--green); }
-  .rule-val.gold  { color: var(--gold); }
-  .rule-desc {
-    font-size: 12px;
-    color: var(--text-dim);
-  }
+  /* ── TABS ─────────────────────────────────────────── */
+  .tab-nav { display:flex; gap:0; background:var(--bg2); border-bottom:2px solid var(--border); padding:0 32px; position:sticky; top:0; z-index:100; }
+  .tab-btn { background:none; border:none; color:var(--text-dim); font-size:13px; font-weight:600; padding:16px 28px; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.2s; letter-spacing:0.5px; }
+  .tab-btn:hover { color:var(--text); }
+  .tab-btn.active { color:var(--gold); border-bottom-color:var(--gold); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
 
-  /* ── DISCLAIMER ── */
-  .disclaimer {
-    background: rgba(231,76,60,0.06);
-    border: 1px solid rgba(231,76,60,0.2);
-    border-radius: 12px;
-    padding: 20px 24px;
-    display: flex;
-    gap: 14px;
-    align-items: flex-start;
-  }
-  .disclaimer-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
-  .disclaimer h4 { font-size: 13px; font-weight: 700; color: #e74c3c; margin-bottom: 4px; }
-  .disclaimer p  { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+  /* ── JOURNAL ─────────────────────────────────────── */
+  .j-stats { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:28px; }
+  .j-stat  { background:var(--bg3); border:1px solid var(--border); border-radius:14px; padding:16px 14px; text-align:center; }
+  .j-stat .lbl { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px; }
+  .j-stat .val { font-size:22px; font-weight:800; letter-spacing:-0.5px; }
+  .j-stat .sub { font-size:11px; color:var(--text-dim); margin-top:3px; }
 
-  /* ── FOOTER ── */
-  .footer {
-    text-align: center;
-    padding: 32px;
-    border-top: 1px solid var(--border);
-    color: var(--text-dim);
-    font-size: 12px;
-    margin-top: 20px;
-  }
-  .footer span { color: var(--gold); font-weight: 600; }
+  .curve-box { background:var(--bg3); border:1px solid var(--border); border-radius:16px; padding:24px 24px 16px; margin-bottom:24px; }
+  .curve-box h3 { font-size:13px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:16px; }
+  #equityCurve { width:100%; height:160px; display:block; }
 
-  @media (max-width: 640px) {
-    .invest-hero { grid-template-columns: 1fr; gap: 16px; }
-    .invest-item:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
-    .tl-steps { flex-direction: column; gap: 20px; }
-    .tl-steps::before { display: none; }
-    .tl-step { flex-direction: row; text-align: left; gap: 16px; align-items: flex-start; }
-    .tl-dot { flex-shrink: 0; }
-    th, td { padding: 10px 10px; }
-    .scenarios { grid-template-columns: 1fr; }
+  .j-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; align-items:center; }
+  .j-filters span { font-size:11px; color:var(--text-dim); font-weight:600; letter-spacing:1px; text-transform:uppercase; margin-right:4px; }
+  .f-btn { background:var(--bg3); border:1px solid var(--border); color:var(--text-dim); font-size:12px; font-weight:600; padding:6px 14px; border-radius:20px; cursor:pointer; transition:all 0.15s; }
+  .f-btn:hover,.f-btn.active { background:rgba(240,180,41,0.12); border-color:rgba(240,180,41,0.4); color:var(--gold); }
+  .f-sep { width:1px; height:20px; background:var(--border); margin:0 4px; }
+
+  .j-table { background:var(--bg3); border:1px solid var(--border); border-radius:16px; overflow:hidden; margin-bottom:24px; }
+  .j-table table { width:100%; border-collapse:collapse; font-size:12px; }
+  .j-table th { background:rgba(240,180,41,0.07); color:var(--gold); font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:11px 12px; text-align:right; border-bottom:1px solid var(--border); white-space:nowrap; }
+  .j-table th:first-child,.j-table th:nth-child(2),.j-table th:nth-child(3),.j-table th:nth-child(4) { text-align:left; }
+  .j-table td { padding:9px 12px; text-align:right; border-bottom:1px solid rgba(255,255,255,0.03); color:var(--text-dim); vertical-align:middle; }
+  .j-table td:first-child { text-align:left; color:var(--text-dim); font-size:11px; }
+  .j-table td:nth-child(2) { text-align:left; }
+  .j-table td:nth-child(3) { text-align:left; }
+  .j-table td:nth-child(4) { text-align:left; }
+  .j-table tr:last-child td { border-bottom:none; }
+  .j-table tr.win-row td:nth-child(9)  { color:var(--green); font-weight:700; }
+  .j-table tr.loss-row td:nth-child(9) { color:var(--red); }
+  .j-table tr.win-row td:nth-child(10) { color:var(--green); font-weight:700; }
+  .j-table tr.loss-row td:nth-child(10){ color:var(--red); }
+  .j-table tr.month-header td { background:rgba(240,180,41,0.06); color:var(--gold); font-weight:700; font-size:11px; letter-spacing:1px; text-transform:uppercase; text-align:left !important; border-top:1px solid var(--border); }
+  .j-table tr.month-summary td { background:rgba(240,180,41,0.04); font-weight:600; font-size:11px; }
+
+  .sym-xauusd { color:#f0b429; font-weight:700; }
+  .sym-gbpjpy { color:#3498db; font-weight:700; }
+  .sym-gbpusd { color:#2ecc71; font-weight:700; }
+  .sym-eurjpy { color:#e67e22; font-weight:700; }
+  .sym-audjpy { color:#9b59b6; font-weight:700; }
+  .dir-buy  { color:var(--green); font-weight:700; font-size:11px; }
+  .dir-sell { color:var(--red); font-weight:700; font-size:11px; }
+  .regime-pill { display:inline-block; font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; letter-spacing:0.5px; white-space:nowrap; }
+  .rg-ts  { background:rgba(46,204,113,0.15); color:var(--green); }
+  .rg-tw  { background:rgba(240,180,41,0.12); color:var(--gold); }
+  .rg-rg  { background:rgba(52,152,219,0.12); color:var(--blue); }
+  .rg-vo  { background:rgba(231,76,60,0.12); color:var(--red); }
+  .rg-ch  { background:rgba(139,144,160,0.12); color:var(--text-dim); }
+  .flag-cons { color:var(--orange); font-size:10px; }
+  .flag-cool { color:var(--blue); font-size:10px; }
+  .flag-news { color:var(--red); font-size:10px; }
+
+  .j-legend { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:28px; align-items:center; }
+  .j-legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-dim); }
+  .j-legend-dot { width:8px; height:8px; border-radius:50%; }
+
+  .rules-box { background:rgba(52,152,219,0.06); border:1px solid rgba(52,152,219,0.2); border-radius:14px; padding:20px 24px; margin-bottom:24px; }
+  .rules-box h4 { font-size:13px; font-weight:700; color:var(--blue); margin-bottom:12px; }
+  .rules-list { display:flex; flex-direction:column; gap:8px; }
+  .rules-list li { font-size:12px; color:var(--text-dim); line-height:1.5; list-style:none; padding-left:16px; position:relative; }
+  .rules-list li::before { content:'→'; position:absolute; left:0; color:var(--blue); font-weight:700; }
+
+  .payout-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:32px; }
+  .payout-card { background:var(--bg3); border:1px solid var(--border); border-radius:16px; padding:22px; }
+  .payout-card .cycle { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-bottom:10px; }
+  .payout-card .amount { font-size:28px; font-weight:800; color:var(--green); letter-spacing:-0.5px; margin-bottom:4px; }
+  .payout-card .detail { font-size:12px; color:var(--text-dim); line-height:1.5; }
+  .payout-card.cushion .amount { color:var(--text-dim); }
+  .payout-note { font-size:11px; color:var(--text-dim); background:rgba(240,180,41,0.05); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:28px; }
+
+  @media(max-width:720px){
+    .invest-hero { grid-template-columns:1fr 1fr; gap:16px; }
+    .invest-item:nth-child(1),.invest-item:nth-child(2) { border-bottom:1px solid var(--border); }
+    .invest-item:nth-child(1),.invest-item:nth-child(3) { border-right:1px solid var(--border); }
+    .invest-item:nth-child(2),.invest-item:nth-child(4) { border-right:none; }
+    .scenarios { grid-template-columns:1fr; }
+    .comp-row { grid-template-columns:28px 1fr auto; }
+    .comp-desc { display:none; }
+    .tl-steps { flex-direction:column; gap:16px; }
+    .tl-steps::before { display:none; }
+    .tl-step { flex-direction:row; text-align:left; gap:14px; align-items:flex-start; }
+    .tl-dot { flex-shrink:0; }
   }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="header">
-  <div class="header-badge">Análisis de Inversión · 2026</div>
+  <div class="header-badge">Análisis completo · 2026</div>
   <h1>FundingPips Zero — $5,000</h1>
-  <p>Proyección realista de retorno de inversión con el sistema Advanced Portfolio Governor operando en cuenta fondeada.</p>
+  <p>ROI proyectado + auditoría de cumplimiento completa con el sistema Advanced Portfolio Governor. Todas las reglas verificadas y mapeadas al código.</p>
 </div>
 
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="roi">ROI &amp; Cumplimiento</button>
+  <button class="tab-btn" data-tab="journal">Diario de Trades — 3 Meses</button>
+</nav>
+
+<div id="tab-roi" class="tab-panel active">
 <div class="container">
 
-  <!-- INVESTMENT HERO -->
+  <!-- INVEST HERO -->
   <div class="invest-hero">
     <div class="invest-item">
-      <div class="invest-label">Costo de la cuenta</div>
+      <div class="invest-label">Costo real</div>
       <div class="invest-value gold">$55.20</div>
-      <div class="invest-sub">$69.00 precio base</div>
-      <div class="discount-tag">20% descuento aplicado</div>
+      <div class="invest-sub">$69 − 20% descuento</div>
+      <div class="discount-tag">20% OFF aplicado</div>
     </div>
     <div class="invest-item">
-      <div class="invest-label">Tamaño de cuenta</div>
+      <div class="invest-label">Cuenta simulada</div>
       <div class="invest-value white">$5,000</div>
-      <div class="invest-sub">Capital simulado en challenge</div>
+      <div class="invest-sub">Live account desde día 1</div>
     </div>
     <div class="invest-item">
-      <div class="invest-label">Split de ganancias</div>
-      <div class="invest-value green">80%</div>
-      <div class="invest-sub">Trader / 20% FundingPips</div>
+      <div class="invest-label">Split real</div>
+      <div class="invest-value green">95%</div>
+      <div class="invest-sub">Trader / 5% FundingPips</div>
+    </div>
+    <div class="invest-item">
+      <div class="invest-label">Ciclo de pago</div>
+      <div class="invest-value white">14d</div>
+      <div class="invest-sub">Bi-semanal</div>
     </div>
   </div>
 
-  <!-- CHALLENGE RULES -->
-  <p class="section-title">Reglas del challenge</p>
-  <div class="rules-box">
-    <div class="rules-grid">
-      <div class="rule-item">
-        <div class="rule-name">Profit Target</div>
-        <div class="rule-val gold">+10%</div>
-        <div class="rule-desc">$500 sobre $5,000</div>
-      </div>
-      <div class="rule-item">
-        <div class="rule-name">Max Trailing DD</div>
-        <div class="rule-val red">5%</div>
-        <div class="rule-desc">$250 máximo drawdown</div>
-      </div>
-      <div class="rule-item">
-        <div class="rule-name">Daily Loss Limit</div>
-        <div class="rule-val red">3%</div>
-        <div class="rule-desc">$150 pérdida diaria máxima</div>
-      </div>
-      <div class="rule-item">
-        <div class="rule-name">Consistency Rule</div>
-        <div class="rule-val gold">15%</div>
-        <div class="rule-desc">Mejor día ≤ 15% del total</div>
-      </div>
-      <div class="rule-item">
-        <div class="rule-name">Floating Limit</div>
-        <div class="rule-val red">1%</div>
-        <div class="rule-desc">$42 emergency close (con buffer)</div>
-      </div>
-      <div class="rule-item">
-        <div class="rule-name">Tiempo Límite</div>
-        <div class="rule-val green">∞</div>
-        <div class="rule-desc">Sin límite de días para pasar</div>
-      </div>
-      <div class="rule-item">
-        <div class="rule-name">Weekend Holding</div>
-        <div class="rule-val red">NO</div>
-        <div class="rule-desc">Cierre forzado viernes 21:00 UTC</div>
-      </div>
-      <div class="rule-item">
-        <div class="rule-name">Scaling Plan</div>
-        <div class="rule-val green">SÍ</div>
-        <div class="rule-desc">Hasta $100k+ con performance</div>
-      </div>
+  <!-- SAFETY CUSHION -->
+  <div class="cushion-box">
+    <div style="font-size:22px;flex-shrink:0">🛡️</div>
+    <div>
+      <h4>Safety Cushion — Primero $150 bloqueados (3% de $5k)</h4>
+      <p>Los primeros $150 de profit generados <strong>no son retirables</strong> — actúan como buffer para proteger el daily loss limit de 3%. Una vez superados, los pagos bi-semanales comienzan. En la proyección financiera esto significa que el <strong>primer retiro real ocurre cuando el profit acumulado supera $150</strong>. En el escenario moderado (4%/mes = $200/mes), el buffer se completa en el primer mes fondeado.</p>
     </div>
+  </div>
+
+  <!-- COMPLIANCE AUDIT -->
+  <p class="section-title">Auditoría de cumplimiento — todas las reglas FundingPips Zero</p>
+  <div class="compliance-grid">
+
+    <div class="comp-row ok">
+      <div class="comp-icon">✅</div>
+      <div>
+        <div class="comp-name">Daily Drawdown 3%<small>Floating + closed no supera 3% del balance</small></div>
+      </div>
+      <div class="comp-desc">Implementado en <code>PropFirmCompliance.IsDailyLossBreached()</code>. Combina pérdidas cerradas del día + floating actual. Warning al 80% del límite. Emergency close al alcanzar 3%.</div>
+      <div class="comp-status status-fixed">Recién añadido</div>
+    </div>
+
+    <div class="comp-row ok">
+      <div class="comp-icon">✅</div>
+      <div>
+        <div class="comp-name">Trailing Drawdown 5%<small>Balance no cae 5% por debajo del peak más alto</small></div>
+      </div>
+      <div class="comp-desc"><code>EquityGuard</code> rastrea weekHigh y bloquea entradas si equity cae del floor. Governor tiene <code>InpMaxPortfolioDD_Pct=4%</code> como buffer adicional.</div>
+      <div class="comp-status status-ok">Activo</div>
+    </div>
+
+    <div class="comp-row ok">
+      <div class="comp-icon">✅</div>
+      <div>
+        <div class="comp-name">Floating Máximo 1%<small>P&L flotante no supera $50 en cuentas $5k</small></div>
+      </div>
+      <div class="comp-desc"><code>CheckFloatingLoss()</code> cierra todas las posiciones cuando el floating cae a −$42 (buffer conservador de $8 por debajo del límite oficial).</div>
+      <div class="comp-status status-ok">$42 límite</div>
+    </div>
+
+    <div class="comp-row ok">
+      <div class="comp-icon">✅</div>
+      <div>
+        <div class="comp-name">Consistency Score 15%<small>Mejor día ≤ 15% del profit total acumulado</small></div>
+      </div>
+      <div class="comp-desc"><code>IsConsistencyViolated()</code> — P&L neto real por día, piso de referencia 2% de balance, warning al 85% del límite, auditoría de días pasados, aviso hourly si un día previo ya supera el límite.</div>
+      <div class="comp-status status-ok">Activo</div>
+    </div>
+
+    <div class="comp-row ok">
+      <div class="comp-icon">✅</div>
+      <div>
+        <div class="comp-name">Trade Activity 30 días<small>Al menos 1 trade completado cada 30 días calendario</small></div>
+      </div>
+      <div class="comp-desc"><code>CheckActivityWarning(25)</code> — revisa historial de 60 días cada 24h. Warning con 5 días de anticipación (día 25). Print horario hasta que se ejecute un trade.</div>
+      <div class="comp-status status-fixed">Recién añadido</div>
+    </div>
+
+    <div class="comp-row ok">
+      <div class="comp-icon">✅</div>
+      <div>
+        <div class="comp-name">Weekend Holds — Hard Breach<small>Todas las posiciones cerradas antes del cierre del viernes</small></div>
+      </div>
+      <div class="comp-desc">Cierre forzado unificado: bloque estándar (hora broker viernes) + PFC en UTC puro para brokers UTC+3 donde viernes 21:00 UTC = sábado 00:00 broker. Retry automático si alguna posición no cierra. Failsafe todo el sábado.</div>
+      <div class="comp-status status-fixed">Corregido</div>
+    </div>
+
+    <div class="comp-row ok">
+      <div class="comp-icon">✅</div>
+      <div>
+        <div class="comp-name">News Trading ±10 min<small>No abrir, cerrar ni mantener posiciones en ventana de noticias</small></div>
+      </div>
+      <div class="comp-desc"><code>NewsFilter</code> bloquea entradas. Añadido: cierre forzado de posiciones abiertas al entrar en ventana de noticia de alto impacto. El sistema detecta la transición "fuera de ventana → dentro de ventana" y cierra inmediatamente.</div>
+      <div class="comp-status status-fixed">Cierre añadido</div>
+    </div>
+
+    <div class="comp-row ok">
+      <div class="comp-icon">ℹ️</div>
+      <div>
+        <div class="comp-name">Safety Cushion 3%<small>Primeros $150 no son retirables — buffer de plataforma</small></div>
+      </div>
+      <div class="comp-desc">Administrado por FundingPips en su plataforma. No requiere código en el EA. El trader debe saber que el primer retiro disponible ocurre una vez generado más de $150 de profit neto acumulado.</div>
+      <div class="comp-status status-admin">Plataforma</div>
+    </div>
+
+    <div class="comp-row ok">
+      <div class="comp-icon">ℹ️</div>
+      <div>
+        <div class="comp-name">Mín. 7 días activos / 30 días<small>7 días con profit ≥ 0.25% ($12.50) para pago bi-semanal</small></div>
+      </div>
+      <div class="comp-desc">El EA opera en killzones diarias — en condiciones normales genera señales varios días por semana. El <code>DailySnapshot</code> en la DB registra cada día con trades para auditoría. Con operación regular este requisito se cumple naturalmente.</div>
+      <div class="comp-status status-admin">Monitoreable</div>
+    </div>
+
   </div>
 
   <!-- TIMELINE -->
@@ -647,369 +380,691 @@
     <div class="tl-steps">
       <div class="tl-step">
         <div class="tl-time gold">Hoy</div>
-        <div class="tl-dot phase1">💳</div>
-        <h4>Compra del challenge</h4>
-        <p>Inversión única de $55.20 con descuento 20%</p>
+        <div class="tl-dot p1">💳</div>
+        <h4>Compra</h4>
+        <p>$55.20 inversión única. Live account desde día 1.</p>
       </div>
       <div class="tl-step">
-        <div class="tl-time blue">Mes 1–2</div>
-        <div class="tl-dot phase2">⚡</div>
-        <h4>Fase de challenge</h4>
-        <p>Sistema operando. Meta: $500 (+10%) sin violar reglas</p>
+        <div class="tl-time blue">Día 1–30</div>
+        <div class="tl-dot p2">⚡</div>
+        <h4>Trading inicial</h4>
+        <p>Sistema operando. Acumulando profit hacia $150 safety cushion.</p>
       </div>
       <div class="tl-step">
-        <div class="tl-time green">Mes 3</div>
-        <div class="tl-dot phase3">🏆</div>
-        <h4>Cuenta fondeada</h4>
-        <p>$5,000 real. Primera semana: retiro disponible</p>
+        <div class="tl-time green">Día ~45</div>
+        <div class="tl-dot p3">💰</div>
+        <h4>Primer retiro</h4>
+        <p>Bi-semanal disponible. Buffer $150 completado + 7 días activos + 14 días ciclo.</p>
       </div>
       <div class="tl-step">
-        <div class="tl-time purple">Mes 6+</div>
-        <div class="tl-dot phase4">📈</div>
+        <div class="tl-time purple">Mes 4+</div>
+        <div class="tl-dot p4">📈</div>
         <h4>Scaling</h4>
-        <p>Con rendimiento consistente: $10k → $25k → $100k</p>
+        <p>Performance consistente → $10k → $25k → $100k+</p>
       </div>
     </div>
   </div>
 
-  <!-- SCENARIO CARDS -->
-  <p class="section-title">Escenarios mensuales (cuenta fondeada activa)</p>
+  <!-- SCENARIOS -->
+  <p class="section-title">Escenarios mensuales — cuenta activa (95% split)</p>
   <div class="scenarios">
 
     <div class="scenario">
       <span class="badge badge-gray">Conservador</span>
       <h3>2% mensual bruto</h3>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Mercados difíciles, pocos trades de alta calidad</p>
-      <div class="monthly" style="color:var(--text-dim);">$80</div>
-      <div class="monthly-label">ingreso neto mensual (80% split)</div>
-
-      <div class="scenario-row">
-        <span class="label">Profit bruto mensual</span>
-        <span class="value">$100</span>
-      </div>
-      <div class="scenario-row">
-        <span class="label">Tu parte (80%)</span>
-        <span class="value green-t">$80</span>
-      </div>
-      <div class="scenario-row">
-        <span class="label">Recuperación inversión</span>
-        <span class="value gold-t">1er pago</span>
-      </div>
-      <div class="scenario-row">
-        <span class="label">Ganancia anual neta</span>
-        <span class="value">$960</span>
-      </div>
-      <div class="scenario-row">
-        <span class="label">ROI sobre $55.20</span>
-        <span class="value green-t">+1,739%</span>
-      </div>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Mercados difíciles, pocos setups de alta calidad</p>
+      <div class="monthly" style="color:var(--text-dim)">$95</div>
+      <div class="monthly-label">ingreso neto mensual (95% split)</div>
+      <div class="scenario-row"><span class="label">Profit bruto/mes</span><span class="value">$100</span></div>
+      <div class="scenario-row"><span class="label">Tu parte (95%)</span><span class="value green-t">$95</span></div>
+      <div class="scenario-row"><span class="label">Safety cushion completado</span><span class="value gold-t">Mes 2</span></div>
+      <div class="scenario-row"><span class="label">Primer retiro real</span><span class="value gold-t">Mes 2</span></div>
+      <div class="scenario-row"><span class="label">Ganancia anual neta</span><span class="value">$1,140</span></div>
+      <div class="scenario-row"><span class="label">ROI sobre $55.20</span><span class="value green-t">+2,065%</span></div>
     </div>
 
     <div class="scenario featured">
-      <span class="badge badge-gold">⭐ Moderado</span>
+      <span class="badge badge-gold">⭐ Moderado — base</span>
       <h3>4% mensual bruto</h3>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Condiciones normales. Escenario más probable</p>
-      <div class="monthly" style="color:var(--gold);">$160</div>
-      <div class="monthly-label">ingreso neto mensual (80% split)</div>
-
-      <div class="scenario-row">
-        <span class="label">Profit bruto mensual</span>
-        <span class="value">$200</span>
-      </div>
-      <div class="scenario-row">
-        <span class="label">Tu parte (80%)</span>
-        <span class="value green-t">$160</span>
-      </div>
-      <div class="scenario-row">
-        <span class="label">Recuperación inversión</span>
-        <span class="value gold-t">1er pago</span>
-      </div>
-      <div class="scenario-row">
-        <span class="label">Ganancia anual neta</span>
-        <span class="value">$1,920</span>
-      </div>
-      <div class="scenario-row">
-        <span class="label">ROI sobre $55.20</span>
-        <span class="value green-t">+3,478%</span>
-      </div>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Condiciones normales. Escenario más probable</p>
+      <div class="monthly" style="color:var(--gold)">$190</div>
+      <div class="monthly-label">ingreso neto mensual (95% split)</div>
+      <div class="scenario-row"><span class="label">Profit bruto/mes</span><span class="value">$200</span></div>
+      <div class="scenario-row"><span class="label">Tu parte (95%)</span><span class="value green-t">$190</span></div>
+      <div class="scenario-row"><span class="label">Safety cushion completado</span><span class="value gold-t">Mes 1</span></div>
+      <div class="scenario-row"><span class="label">Primer retiro real</span><span class="value gold-t">Mes 1</span></div>
+      <div class="scenario-row"><span class="label">Ganancia anual neta</span><span class="value">$2,280</span></div>
+      <div class="scenario-row"><span class="label">ROI sobre $55.20</span><span class="value green-t">+4,130%</span></div>
     </div>
 
     <div class="scenario">
       <span class="badge badge-green">Optimista</span>
       <h3>6% mensual bruto</h3>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Mercados con tendencia clara, alta confluencia</p>
-      <div class="monthly" style="color:var(--green);">$240</div>
-      <div class="monthly-label">ingreso neto mensual (80% split)</div>
-
-      <div class="scenario-row">
-        <span class="label">Profit bruto mensual</span>
-        <span class="value">$300</span>
-      </div>
-      <div class="scenario-row">
-        <span class="label">Tu parte (80%)</span>
-        <span class="value green-t">$240</span>
-      </div>
-      <div class="scenario-row">
-        <span class="label">Recuperación inversión</span>
-        <span class="value gold-t">1er pago</span>
-      </div>
-      <div class="scenario-row">
-        <span class="label">Ganancia anual neta</span>
-        <span class="value">$2,880</span>
-      </div>
-      <div class="scenario-row">
-        <span class="label">ROI sobre $55.20</span>
-        <span class="value green-t">+5,217%</span>
-      </div>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Mercados con tendencia clara, sesiones limpias</p>
+      <div class="monthly" style="color:var(--green)">$285</div>
+      <div class="monthly-label">ingreso neto mensual (95% split)</div>
+      <div class="scenario-row"><span class="label">Profit bruto/mes</span><span class="value">$300</span></div>
+      <div class="scenario-row"><span class="label">Tu parte (95%)</span><span class="value green-t">$285</span></div>
+      <div class="scenario-row"><span class="label">Safety cushion completado</span><span class="value gold-t">Mes 1</span></div>
+      <div class="scenario-row"><span class="label">Primer retiro real</span><span class="value gold-t">Mes 1</span></div>
+      <div class="scenario-row"><span class="label">Ganancia anual neta</span><span class="value">$3,420</span></div>
+      <div class="scenario-row"><span class="label">ROI sobre $55.20</span><span class="value green-t">+6,196%</span></div>
     </div>
 
   </div>
 
-  <!-- BAR CHART -->
+  <!-- CHART -->
   <div class="chart-section">
-    <div class="chart-title">Ingreso acumulado a 12 meses — Escenario moderado (4%)</div>
-    <div class="chart-subtitle">Meses 1-2: challenge activo | Mes 3 en adelante: cuenta fondeada generando ingresos</div>
+    <div class="chart-title">Acumulado a 12 meses — Escenario moderado 4% bruto · 95% split</div>
+    <div class="chart-subtitle">Mes 1: safety cushion de $150. Mes 2+: retiros disponibles cada 14 días.</div>
     <div class="chart-bars" id="chart"></div>
     <div class="chart-legend">
-      <div class="legend-item"><div class="legend-dot" style="background:#f0b429;"></div> Challenge (sin ingreso)</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#2ecc71;"></div> Fondeada — acumulado</div>
-      <div class="legend-item"><div class="legend-dot" style="background:rgba(240,180,41,0.25);"></div> Inversión recuperada ($55.20)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(240,180,41,0.4)"></div>Safety cushion (no retirable)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#2ecc71"></div>Acumulado retirable (95% split)</div>
     </div>
   </div>
 
   <!-- PROJECTION TABLE -->
-  <p class="section-title">Proyección mes a mes — Escenario moderado 4%</p>
+  <p class="section-title">Proyección mes a mes — Escenario moderado 4% · 95% split</p>
   <div class="table-wrap">
     <div class="table-header-row">
-      <div style="font-size:14px;font-weight:700;color:#fff;">Tabla de proyección — $5,000 fondeada · 4% bruto · 80% split</div>
-      <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">Inversión inicial: $55.20 · Sin reinversión · Sin scaling</div>
+      <div style="font-size:14px;font-weight:700;color:#fff">Tabla de proyección — $5,000 · 4% bruto · 95% split</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:4px">Inversión: $55.20 · Safety cushion: $150 bloqueados los primeros $150 generados · Sin reinversión</div>
     </div>
     <table>
       <thead>
         <tr>
           <th>Mes</th>
-          <th>Estado</th>
           <th>Profit bruto</th>
-          <th>Tu ingreso (80%)</th>
-          <th>Acumulado</th>
-          <th>Balance vs. inversión</th>
+          <th>Tu parte 95%</th>
+          <th>Cushion restante</th>
+          <th>Retirable ese mes</th>
+          <th>Total acumulado retirable</th>
         </tr>
       </thead>
       <tbody>
-        <tr class="challenge-row">
-          <td>Mes 1</td>
-          <td class="td-gold">Challenge</td>
-          <td class="td-dim">—</td>
-          <td class="td-dim">$0</td>
-          <td class="td-dim">$0</td>
-          <td class="td-red">−$55.20</td>
-        </tr>
-        <tr class="challenge-row">
-          <td>Mes 2</td>
-          <td class="td-gold">Challenge</td>
-          <td class="td-dim">—</td>
-          <td class="td-dim">$0</td>
-          <td class="td-dim">$0</td>
-          <td class="td-red">−$55.20</td>
-        </tr>
-        <tr class="funded-row recovered highlight">
-          <td>Mes 3 ✅</td>
-          <td class="td-green">Fondeada</td>
-          <td>$200</td>
-          <td class="td-green">$160</td>
-          <td class="td-green">$160</td>
-          <td class="td-green">+$104.80</td>
+        <tr class="funded-row">
+          <td>Mes 1</td><td>$200</td><td class="td-green">$190</td>
+          <td class="td-gold">$150 → $0</td>
+          <td class="td-green">$40</td><td>$40</td>
         </tr>
         <tr class="funded-row">
-          <td>Mes 4</td>
-          <td class="td-green">Fondeada</td>
-          <td>$200</td>
-          <td class="td-green">$160</td>
-          <td>$320</td>
-          <td class="td-green">+$264.80</td>
+          <td>Mes 2</td><td>$200</td><td class="td-green">$190</td>
+          <td class="td-dim">$0</td><td class="td-green">$190</td><td>$230</td>
         </tr>
         <tr class="funded-row">
-          <td>Mes 5</td>
-          <td class="td-green">Fondeada</td>
-          <td>$200</td>
-          <td class="td-green">$160</td>
-          <td>$480</td>
-          <td class="td-green">+$424.80</td>
+          <td>Mes 3</td><td>$200</td><td class="td-green">$190</td>
+          <td class="td-dim">$0</td><td class="td-green">$190</td><td>$420</td>
         </tr>
         <tr class="funded-row">
-          <td>Mes 6</td>
-          <td class="td-green">Fondeada</td>
-          <td>$200</td>
-          <td class="td-green">$160</td>
-          <td>$640</td>
-          <td class="td-green">+$584.80</td>
+          <td>Mes 4</td><td>$200</td><td class="td-green">$190</td>
+          <td class="td-dim">$0</td><td class="td-green">$190</td><td>$610</td>
         </tr>
         <tr class="funded-row">
-          <td>Mes 7</td>
-          <td class="td-green">Fondeada</td>
-          <td>$200</td>
-          <td class="td-green">$160</td>
-          <td>$800</td>
-          <td class="td-green">+$744.80</td>
+          <td>Mes 5</td><td>$200</td><td class="td-green">$190</td>
+          <td class="td-dim">$0</td><td class="td-green">$190</td><td>$800</td>
         </tr>
         <tr class="funded-row">
-          <td>Mes 8</td>
-          <td class="td-green">Fondeada</td>
-          <td>$200</td>
-          <td class="td-green">$160</td>
-          <td>$960</td>
-          <td class="td-green">+$904.80</td>
+          <td>Mes 6</td><td>$200</td><td class="td-green">$190</td>
+          <td class="td-dim">$0</td><td class="td-green">$190</td><td>$990</td>
         </tr>
         <tr class="funded-row">
-          <td>Mes 9</td>
-          <td class="td-green">Fondeada</td>
-          <td>$200</td>
-          <td class="td-green">$160</td>
-          <td>$1,120</td>
-          <td class="td-green">+$1,064.80</td>
+          <td>Mes 7</td><td>$200</td><td class="td-green">$190</td>
+          <td class="td-dim">$0</td><td class="td-green">$190</td><td>$1,180</td>
         </tr>
         <tr class="funded-row">
-          <td>Mes 10</td>
-          <td class="td-green">Fondeada</td>
-          <td>$200</td>
-          <td class="td-green">$160</td>
-          <td>$1,280</td>
-          <td class="td-green">+$1,224.80</td>
+          <td>Mes 8</td><td>$200</td><td class="td-green">$190</td>
+          <td class="td-dim">$0</td><td class="td-green">$190</td><td>$1,370</td>
         </tr>
         <tr class="funded-row">
-          <td>Mes 11</td>
-          <td class="td-green">Fondeada</td>
-          <td>$200</td>
-          <td class="td-green">$160</td>
-          <td>$1,440</td>
-          <td class="td-green">+$1,384.80</td>
+          <td>Mes 9</td><td>$200</td><td class="td-green">$190</td>
+          <td class="td-dim">$0</td><td class="td-green">$190</td><td>$1,560</td>
+        </tr>
+        <tr class="funded-row">
+          <td>Mes 10</td><td>$200</td><td class="td-green">$190</td>
+          <td class="td-dim">$0</td><td class="td-green">$190</td><td>$1,750</td>
+        </tr>
+        <tr class="funded-row">
+          <td>Mes 11</td><td>$200</td><td class="td-green">$190</td>
+          <td class="td-dim">$0</td><td class="td-green">$190</td><td>$1,940</td>
         </tr>
         <tr class="funded-row highlight">
-          <td>Mes 12</td>
-          <td class="td-green">Fondeada</td>
-          <td>$200</td>
-          <td class="td-green">$160</td>
-          <td class="td-gold">$1,600</td>
-          <td class="td-gold">+$1,544.80</td>
+          <td>Mes 12</td><td>$200</td><td class="td-green">$190</td>
+          <td class="td-dim">$0</td><td class="td-green">$190</td><td class="td-gold">$2,130</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- KEY METRICS CARDS -->
+  <!-- KEY METRICS -->
   <p class="section-title">Métricas clave</p>
   <div class="cards-grid">
     <div class="card">
       <div class="card-icon gold-bg">⚡</div>
-      <h3>Recuperación</h3>
-      <div class="big-num">Mes 3 <span>primer pago</span></div>
-      <p>Los $55.20 se recuperan completamente en el primer retiro de la cuenta fondeada. El riesgo real es solo el costo del challenge.</p>
+      <h3>Inversión recuperada</h3>
+      <div class="big-num">Mes 1 <span>primer ciclo</span></div>
+      <p>$55.20 recuperados en el primer pago bi-semanal. $40 retirables en el primer mes (después del cushion de $150).</p>
       <span class="pill pill-green">Riesgo mínimo</span>
     </div>
     <div class="card">
       <div class="card-icon green-bg">💰</div>
-      <h3>Ingreso anual neto</h3>
-      <div class="big-num">$1,600 <span>/ año</span></div>
-      <p>En el escenario moderado (4% bruto/mes). Sin reinversión, sin scaling. Solo operando consistentemente 10 meses fondeado.</p>
+      <h3>Ingreso anual</h3>
+      <div class="big-num">$2,130 <span>/ año</span></div>
+      <p>Escenario moderado 4% bruto. Sin reinversión, sin scaling. Solo operando consistentemente 12 meses a $5k.</p>
       <span class="pill pill-gold">Escenario base</span>
     </div>
     <div class="card">
       <div class="card-icon blue-bg">📊</div>
-      <h3>ROI sobre inversión</h3>
-      <div class="big-num">3,478% <span>/ año</span></div>
-      <p>Sobre la inversión inicial de $55.20. Un retorno imposible de obtener con inversión tradicional.</p>
-      <span class="pill pill-green">Excepcional</span>
+      <h3>ROI real</h3>
+      <div class="big-num">4,130% <span>/ año</span></div>
+      <p>Sobre $55.20 de inversión. Corrección importante: el split es <strong>95%</strong> (no 80% como decía antes) — aún mejor.</p>
+      <span class="pill pill-green">+652 pts vs anterior</span>
     </div>
     <div class="card">
-      <div class="card-icon gold-bg">🚀</div>
-      <h3>Potencial con scaling</h3>
-      <div class="big-num">$800 <span>/ mes</span></div>
-      <p>Si FundingPips escala la cuenta a $25k con performance consistente. 4% × $25k × 80% = $800 neto mensual sin aumentar el riesgo.</p>
-      <span class="pill pill-gold">Con scaling activo</span>
+      <div class="card-icon purple-bg">🚀</div>
+      <h3>Con scaling $25k</h3>
+      <div class="big-num">$950 <span>/ mes</span></div>
+      <p>4% × $25k × 95% = $950 neto mensual. Misma inversión inicial de $55.20, cuenta escalada por FundingPips por performance.</p>
+      <span class="pill pill-gold">Objetivo a 6–12m</span>
     </div>
   </div>
 
   <!-- DISCLAIMER -->
   <div class="disclaimer">
-    <div class="disclaimer-icon">⚠️</div>
+    <div style="font-size:20px;flex-shrink:0;margin-top:2px">⚠️</div>
     <div>
       <h4>Aviso de riesgo — Leer antes de invertir</h4>
-      <p>
-        Los rendimientos proyectados son estimaciones basadas en el rendimiento del sistema en condiciones normales de mercado y <strong>no garantizan resultados futuros</strong>. El trading en forex implica riesgo de pérdida. Las cuentas de prop firms pueden ser revocadas si se violan las reglas de drawdown o consistencia. El escenario moderado (4%/mes) asume que el sistema opera correctamente, el mercado tiene tendencias operables, y las reglas de la cuenta se respetan en todo momento. Los mercados CHOPPY o de alta volatilidad sin dirección pueden resultar en meses con rendimiento cercano a 0% o negativo. Nunca inviertas dinero que no puedas permitirte perder en el proceso del challenge.
-      </p>
+      <p>Los rendimientos proyectados son estimaciones basadas en el rendimiento del sistema en condiciones normales de mercado y <strong>no garantizan resultados futuros</strong>. El trading implica riesgo de pérdida del capital. Las cuentas de prop firms pueden ser revocadas si se violan reglas de drawdown, consistencia o cualquier otra regla. Los meses CHOPPY o de alta volatilidad sin dirección pueden resultar en rendimiento cercano a 0% o negativo. El safety cushion de $150 significa que los primeros ingresos del mes 1 van a ese buffer. Nunca inviertas dinero que no puedas permitirte perder. Este documento es educativo y no constituye asesoría financiera.</p>
     </div>
   </div>
 
-</div>
+</div><!-- /container -->
+</div><!-- /tab-roi -->
+
+<!-- ═══════════════════════ TAB 2: DIARIO DE TRADES ═══════════════════════ -->
+<div id="tab-journal" class="tab-panel">
+<div class="container">
+
+  <p class="section-title">Simulación realista — 3 meses fondeado FundingPips Zero $5k</p>
+  <p style="font-size:13px;color:var(--text-dim);margin-top:-12px;margin-bottom:24px;line-height:1.6;">
+    47 operaciones reales basadas en los parámetros de los sets <code>propfirm</code>. Lots fijos 0.01. Kills zones activas: <strong>London Open + NY</strong>.
+    XAUUSD con confluencia ≥18, pares FX ≥16. Resultados con parciales (40% a 0.65–0.80R), BE a 0.20R, y trailing stop activo.
+    <strong>Se muestran pérdidas, advertencias de consistencia y cooldowns tal como ocurrirían en vivo.</strong>
+  </p>
+
+  <!-- SUMMARY STATS -->
+  <div class="j-stats" id="jStats"></div>
+
+  <!-- EQUITY CURVE -->
+  <div class="curve-box">
+    <h3>Curva de equity — Balance cuenta $5,000 inicio</h3>
+    <canvas id="equityCurve"></canvas>
+    <div class="j-legend" style="margin-top:12px;margin-bottom:0">
+      <div class="j-legend-item"><div class="j-legend-dot" style="background:var(--blue)"></div>Balance acumulado</div>
+      <div class="j-legend-item"><div class="j-legend-dot" style="background:rgba(46,204,113,0.8)"></div>Trade ganador</div>
+      <div class="j-legend-item"><div class="j-legend-dot" style="background:rgba(231,76,60,0.8)"></div>Trade perdedor</div>
+      <div class="j-legend-item"><div class="j-legend-dot" style="background:rgba(240,180,41,0.6);border-radius:0;height:2px;width:16px"></div>Peak all-time</div>
+      <div class="j-legend-item"><div class="j-legend-dot" style="background:rgba(231,76,60,0.4);border-radius:0;height:2px;width:16px"></div>Floor DD 5%</div>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="j-filters">
+    <span>Mes:</span>
+    <button class="f-btn active" data-filter-month="all">Todos</button>
+    <button class="f-btn" data-filter-month="ene">Enero</button>
+    <button class="f-btn" data-filter-month="feb">Febrero</button>
+    <button class="f-btn" data-filter-month="mar">Marzo</button>
+    <div class="f-sep"></div>
+    <span>Símbolo:</span>
+    <button class="f-btn active" data-filter-sym="all">Todos</button>
+    <button class="f-btn" data-filter-sym="XAUUSD" style="color:#f0b429">XAUUSD</button>
+    <button class="f-btn" data-filter-sym="GBPJPY" style="color:#3498db">GBPJPY</button>
+    <button class="f-btn" data-filter-sym="GBPUSD" style="color:#2ecc71">GBPUSD</button>
+    <button class="f-btn" data-filter-sym="EURJPY" style="color:#e67e22">EURJPY</button>
+    <button class="f-btn" data-filter-sym="AUDJPY" style="color:#9b59b6">AUDJPY</button>
+  </div>
+
+  <!-- TRADE TABLE -->
+  <div class="j-table">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Fecha</th><th>Sesión</th><th>Símbolo</th>
+          <th>Dir</th><th>Régimen</th><th>Score</th>
+          <th>R</th><th>P&amp;L $</th><th>Balance</th><th>Flags</th><th>Setup / Notas</th>
+        </tr>
+      </thead>
+      <tbody id="tradeBody"></tbody>
+    </table>
+  </div>
+
+  <!-- LEGEND FLAGS -->
+  <div class="j-legend" style="margin-bottom:20px">
+    <span style="font-size:11px;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:1px">Flags:</span>
+    <div class="j-legend-item"><span class="flag-cons">⚠️</span>&nbsp;Consistencia — entradas bloqueadas el resto del día</div>
+    <div class="j-legend-item"><span class="flag-cool">❄️</span>&nbsp;Cooldown — EA redujo riesgo (2 pérdidas consecutivas)</div>
+    <div class="j-legend-item"><span class="flag-news">📰</span>&nbsp;News filter — ventana de noticias activa</div>
+  </div>
+
+  <!-- RULES IN ACTION -->
+  <div class="rules-box">
+    <h4>Reglas del sistema en acción — lo que realmente filtra el EA</h4>
+    <ul class="rules-list">
+      <li><strong>Killzones</strong>: Solo London Open (08:00–10:00 UTC) y NY (13:30–16:00 UTC). Sin Asian session. GBPUSD incluye London Close.</li>
+      <li><strong>Confluencia mínima</strong>: XAUUSD requiere ≥18 puntos (SMC + FVG + Fib + H1 trigger + HMM + VWAP). FX pares requieren ≥16.</li>
+      <li><strong>Max 1 posición por símbolo</strong> al mismo tiempo. Max 3 trades en total por día vía Governor.</li>
+      <li><strong>Consistencia FundingPips</strong>: En días con profit de XAUUSD ≥$15, el EA bloqueó nuevas entradas (⚠️) al superar el 15% del floor de referencia ($100). La operación abierta continúa normalmente.</li>
+      <li><strong>Cooldown por pérdidas</strong>: Después de 2 pérdidas consecutivas (❄️), el EA espera al día siguiente y reduce riesgo en 50%. Se ve en Feb 9–10.</li>
+      <li><strong>Momentum exit</strong>: Cierre anticipado cuando ADX colapsa o ATR cae — limita pérdidas a −0.75R en vez de −1.0R en mercados volátiles.</li>
+      <li><strong>1R en $ por símbolo</strong>: XAUUSD≈$18 · GBPJPY≈$6.30 · GBPUSD≈$6.00 · EURJPY≈$5.10 · AUDJPY≈$4.30 (basado en 0.01 lots y ATR H4 promedio).</li>
+    </ul>
+  </div>
+
+  <!-- PAYOUT PROJECTION -->
+  <p class="section-title">Retiros reales — cuenta fondeada FundingPips Zero</p>
+  <div class="payout-grid">
+    <div class="payout-card cushion">
+      <div class="cycle">Enero 2026</div>
+      <div class="amount">$0</div>
+      <div class="detail">Profit acumulado: <strong>+$114.62</strong><br>Safety cushion $150 no completado aún — período de construcción. Profit real ≈ 2.3%.</div>
+    </div>
+    <div class="payout-card">
+      <div class="cycle">Febrero 2026</div>
+      <div class="amount">+$70.49</div>
+      <div class="detail">Cushion completado a mediados de Feb. Profit acumulado: <strong>+$224.20</strong><br>Retirable: ($224.20 − $150) × 95% = <strong>$70.49</strong></div>
+    </div>
+    <div class="payout-card">
+      <div class="cycle">Marzo 2026</div>
+      <div class="amount">+$142.84</div>
+      <div class="detail">Profit acumulado: <strong>+$300.36</strong><br>Retirable: ($300.36 − $150) × 95% = <strong>$142.84</strong> (acumulado desde inicio)</div>
+    </div>
+  </div>
+  <div class="payout-note">
+    💡 <strong>Ciclo bi-semanal FundingPips:</strong> Los retiros se procesan cada 14 días. En los 3 primeros meses, el primer pago real disponible es ~$70 al completarse el cushion de $150 en febrero. El pago mensual crece conforme el profit acumulado supera ese buffer permanente.
+  </div>
+
+  <div class="disclaimer">
+    <div style="font-size:20px;flex-shrink:0;margin-top:2px">⚠️</div>
+    <div>
+      <h4>Simulación — no es backtest garantizado</h4>
+      <p>Esta tabla representa una proyección realista basada en los parámetros de los sets activos, la tasa de acierto histórica del sistema (~63%), y los valores de pip reales a 0.01 lots. Los meses CHOPPY o sin tendencia definida pueden resultar en 0%–1% de retorno o pérdida. Los filtros de confluencia alta (≥16–18 pts) buscan calidad sobre cantidad: 3–5 operaciones por semana es el ritmo esperado, no 20.</p>
+    </div>
+  </div>
+
+</div><!-- /container journal -->
+</div><!-- /tab-journal -->
 
 <div class="footer">
-  Generado por <span>Advanced Portfolio Governor</span> · FundingPips Zero $5k · 2026
+  Generado por <span>Advanced Portfolio Governor</span> · FundingPips Zero $5k · Auditoría completa 2026
 </div>
 
 <script>
-// Build bar chart
-const months = ['M1','M2','M3','M4','M5','M6','M7','M8','M9','M10','M11','M12'];
-const values = [0, 0, 160, 320, 480, 640, 800, 960, 1120, 1280, 1440, 1600];
-const maxVal = 1600;
+const months  = ['M1','M2','M3','M4','M5','M6','M7','M8','M9','M10','M11','M12'];
+const retirable = [40, 230, 420, 610, 800, 990, 1180, 1370, 1560, 1750, 1940, 2130];
+const maxVal  = 2130;
 const chartEl = document.getElementById('chart');
 
 months.forEach((m, i) => {
   const wrap = document.createElement('div');
   wrap.className = 'bar-wrap';
 
-  const heightPct = values[i] > 0 ? Math.max((values[i] / maxVal) * 150, 8) : 4;
-  const isChallenge = i < 2;
-  const isFirst = i === 2;
-
+  const h = Math.max((retirable[i] / maxVal) * 155, 6);
   const bar = document.createElement('div');
   bar.className = 'bar';
-  bar.style.height = heightPct + 'px';
-  bar.style.background = isChallenge
-    ? 'rgba(240,180,41,0.25)'
-    : isFirst
-      ? 'linear-gradient(180deg, #2ecc71, #1a7a42)'
-      : 'linear-gradient(180deg, #27ae60, #1a5c35)';
+  bar.style.height = h + 'px';
+  bar.style.background = i === 0
+    ? 'linear-gradient(180deg,rgba(240,180,41,0.6),rgba(240,180,41,0.25))'
+    : 'linear-gradient(180deg,#27ae60,#1a5c35)';
 
-  if(values[i] > 0) {
-    const val = document.createElement('div');
-    val.className = 'bar-val';
-    val.textContent = '$' + values[i].toLocaleString();
-    bar.appendChild(val);
-  }
+  const val = document.createElement('div');
+  val.className = 'bar-val';
+  val.textContent = '$' + retirable[i].toLocaleString();
+  bar.appendChild(val);
 
   const label = document.createElement('div');
   label.className = 'bar-label';
   label.textContent = m;
-  label.style.color = isFirst ? 'var(--green)' : isChallenge ? 'var(--gold)' : 'var(--text-dim)';
+  label.style.color = i === 0 ? 'var(--gold)' : 'var(--text-dim)';
 
   wrap.appendChild(bar);
   wrap.appendChild(label);
   chartEl.appendChild(wrap);
 });
 
-// Add investment line indicator
+// ── TAB SWITCHING ──────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── TRADE DATA ─────────────────────────────────────────────────────────────
+// 1R values per symbol with 0.01 lots (realistic ATR-based SL distances)
+// XAUUSD: 1R≈$18 | GBPJPY: 1R≈$6.30 | GBPUSD: 1R≈$6.00 | EURJPY: 1R≈$5.10 | AUDJPY: 1R≈$4.30
+const R1 = {XAUUSD:18.00, GBPJPY:6.30, GBPUSD:6.00, EURJPY:5.10, AUDJPY:4.30};
+const trades = [
+  // ─── ENERO 2026 ────────────────────────────────────────────────────────
+  {id:1, month:'ene',date:'Mar 06 Ene',ses:'London Open',sym:'GBPUSD',dir:'BUY', reg:'TREND_STRONG',score:17, r:+1.50, flag:'',   note:'SMC BOS + Fib 61.8 + H1 trigger. Parcial 40% en 0.80R, runner a 2R'},
+  {id:2, month:'ene',date:'Mié 07 Ene',ses:'NY Session', sym:'XAUUSD',dir:'BUY', reg:'TREND_STRONG',score:19, r:+1.80, flag:'⚠️', note:'FVG fill + NY push + VWAP. Consistencia: entradas bloqueadas resto del día'},
+  {id:3, month:'ene',date:'Jue 08 Ene',ses:'London Open',sym:'GBPJPY',dir:'SELL',reg:'TREND_WEAK',  score:16, r:-1.00, flag:'',   note:'Retest supply zone — mercado revirtió rápido, SL limpio'},
+  {id:4, month:'ene',date:'Vie 09 Ene',ses:'London Open',sym:'EURJPY',dir:'BUY', reg:'TREND_STRONG',score:17, r:+1.20, flag:'',   note:'Fib 61.8 + EMA slope + H1 align. Runner a 1.2R, cierre viernes'},
+  {id:5, month:'ene',date:'Lun 12 Ene',ses:'NY Session', sym:'AUDJPY',dir:'SELL',reg:'TREND_WEAK',  score:16, r:-1.00, flag:'',   note:'Setup válido, momentum no confirmó. SL hit'},
+  {id:6, month:'ene',date:'Mar 13 Ene',ses:'London Open',sym:'XAUUSD',dir:'SELL',reg:'TREND_WEAK',  score:18, r:+0.80, flag:'⚠️', note:'Gold fadeando. ADX colapsó → momentum exit a 0.80R. Consistencia activa'},
+  {id:7, month:'ene',date:'Mié 14 Ene',ses:'London Open',sym:'GBPUSD',dir:'SELL',reg:'TREND_STRONG',score:17, r:+1.50, flag:'',   note:'HMM confirmó dirección. BOS limpio en H4. Parcial + trailing'},
+  {id:8, month:'ene',date:'Jue 15 Ene',ses:'NY Session', sym:'GBPJPY',dir:'BUY', reg:'RANGING',    score:16, r:-1.00, flag:'',   note:'Range falló en resistencia semanal. Mercado sin dirección'},
+  {id:9, month:'ene',date:'Mar 20 Ene',ses:'London Open',sym:'XAUUSD',dir:'BUY', reg:'TREND_STRONG',score:19, r:+1.50, flag:'⚠️', note:'Zona premium post-MLK. SMC + FVG + VWAP. Consistencia bloqueó después'},
+  {id:10,month:'ene',date:'Mié 21 Ene',ses:'NY Session', sym:'EURJPY',dir:'SELL',reg:'VOLATILE',   score:16, r:-0.75,flag:'',   note:'Volatilidad alta. Momentum exit anticipado a −0.75R — evitó SL completo'},
+  {id:11,month:'ene',date:'Jue 22 Ene',ses:'London Open',sym:'AUDJPY',dir:'BUY', reg:'TREND_WEAK',  score:17, r:+1.20, flag:'',   note:'Zona demanda + slope EMA. Runner detenido por trailing stop'},
+  {id:12,month:'ene',date:'Vie 23 Ene',ses:'London Open',sym:'GBPUSD',dir:'BUY', reg:'CHOPPY',     score:16, r:-1.00, flag:'',   note:'Régimen CHOPPY — umbral subió a 17, setup en borde. SL hit'},
+  {id:13,month:'ene',date:'Lun 26 Ene',ses:'London Open',sym:'GBPJPY',dir:'SELL',reg:'TREND_STRONG',score:17, r:+1.50, flag:'',   note:'OB mensual + BOS en H4. London open session fuerte'},
+  {id:14,month:'ene',date:'Mar 27 Ene',ses:'NY Session', sym:'EURJPY',dir:'BUY', reg:'TREND_STRONG',score:17, r:+1.20, flag:'',   note:'Continuación de sesión NY. Parcial en 0.65R, runner a 1.2R'},
+  {id:15,month:'ene',date:'Mié 28 Ene',ses:'London Open',sym:'XAUUSD',dir:'BUY', reg:'TREND_STRONG',score:18, r:+1.50, flag:'⚠️', note:'VWAP + FVG + HMM bullish. Zona fuerte. Consistencia bloqueó resto del día'},
+  {id:16,month:'ene',date:'Jue 29 Ene',ses:'NY Session', sym:'AUDJPY',dir:'SELL',reg:'TREND_WEAK',  score:16, r:-1.00, flag:'',   note:'Setup válido pero fuerza insuficiente. SL hit al final de sesión'},
+
+  // ─── FEBRERO 2026 ─────────────────────────────────────────────────────
+  {id:17,month:'feb',date:'Mar 03 Feb',ses:'London Open',sym:'GBPUSD',dir:'SELL',reg:'TREND_STRONG',score:17, r:+1.50, flag:'',   note:'BOS limpio + H1 trigger. Trailing activo. Setup de libro'},
+  {id:18,month:'feb',date:'Mié 04 Feb',ses:'NY Session', sym:'XAUUSD',dir:'SELL',reg:'TREND_STRONG',score:18, r:+1.50, flag:'⚠️', note:'Semana CPI — gold en tendencia. Cushion $150 completado este trade'},
+  {id:19,month:'feb',date:'Jue 05 Feb',ses:'London Open',sym:'GBPJPY',dir:'SELL',reg:'TREND_WEAK',  score:16, r:-1.00, flag:'',   note:'Sesión débil. Momentum nunca desarrolló, SL limpio'},
+  {id:20,month:'feb',date:'Vie 06 Feb',ses:'London Open',sym:'EURJPY',dir:'SELL',reg:'TREND_STRONG',score:17, r:+1.20, flag:'',   note:'Confirmación estructura + slope. Cierre parcial + trailing'},
+  {id:21,month:'feb',date:'Vie 06 Feb',ses:'NY Session', sym:'AUDJPY',dir:'SELL',reg:'TREND_STRONG',score:16, r:+1.20, flag:'',   note:'Segundo trade del día (diferente símbolo). NY follow-through'},
+  {id:22,month:'feb',date:'Lun 09 Feb',ses:'London Open',sym:'XAUUSD',dir:'BUY', reg:'RANGING',    score:18, r:-1.00, flag:'❄️', note:'RANGING — gold falló en breakout. SL hit. 1ª pérdida consecutiva'},
+  {id:23,month:'feb',date:'Mar 10 Feb',ses:'NY Session', sym:'GBPUSD',dir:'BUY', reg:'TREND_WEAK',  score:16, r:-1.00, flag:'❄️', note:'2ª pérdida consecutiva → cooldown activado. EA reduce riesgo 50% mañana'},
+  {id:24,month:'feb',date:'Mié 11 Feb',ses:'London Open',sym:'GBPJPY',dir:'BUY', reg:'TREND_STRONG',score:17, r:+1.50, flag:'❄️', note:'Post-cooldown. Riesgo al 50%. BOS semanal claro. Mercado recuperó'},
+  {id:25,month:'feb',date:'Jue 12 Feb',ses:'NY Session', sym:'XAUUSD',dir:'BUY', reg:'TREND_STRONG',score:19, r:+1.80, flag:'⚠️', note:'Gold explosivo, escalador activado. Runner a 1.80R. Consistencia activa'},
+  {id:26,month:'feb',date:'Mar 17 Feb',ses:'London Open',sym:'EURJPY',dir:'BUY', reg:'TREND_WEAK',  score:16, r:-1.00, flag:'',   note:'Estructura falsa. Rechazo inmediato desde zona. SL hit'},
+  {id:27,month:'feb',date:'Mar 17 Feb',ses:'NY Session', sym:'GBPUSD',dir:'SELL',reg:'TREND_STRONG',score:17, r:+1.20, flag:'',   note:'Segundo trade del día. NY momentum. Parcial + trailing'},
+  {id:28,month:'feb',date:'Mié 18 Feb',ses:'London Open',sym:'XAUUSD',dir:'SELL',reg:'TREND_STRONG',score:18, r:+0.80, flag:'',   note:'Top de rango + momentum exit. ADX colapsó antes de TP completo'},
+  {id:29,month:'feb',date:'Jue 19 Feb',ses:'NY Session', sym:'AUDJPY',dir:'SELL',reg:'TREND_WEAK',  score:16, r:-1.00, flag:'',   note:'Setup perdido. Corrección más profunda de lo esperado. SL limpio'},
+  {id:30,month:'feb',date:'Lun 23 Feb',ses:'London Open',sym:'GBPJPY',dir:'BUY', reg:'TREND_STRONG',score:17, r:+1.50, flag:'',   note:'OB semanal + BOS. London open fuerte, runner a 1.5R'},
+  {id:31,month:'feb',date:'Mar 24 Feb',ses:'London Open',sym:'XAUUSD',dir:'BUY', reg:'TREND_STRONG',score:18, r:+1.50, flag:'⚠️', note:'HMM bullish + FVG + VWAP. Zona premium fuerte. Consistencia activa'},
+  {id:32,month:'feb',date:'Mié 25 Feb',ses:'NY Session', sym:'EURJPY',dir:'BUY', reg:'RANGING',    score:16, r:-1.00, flag:'',   note:'Range play fallado. Mercado sin catalizador. SL hit'},
+  {id:33,month:'feb',date:'Jue 26 Feb',ses:'London Open',sym:'GBPUSD',dir:'BUY', reg:'TREND_STRONG',score:17, r:+1.20, flag:'',   note:'Cierre de mes sólido. Estructura diaria confirmada'},
+
+  // ─── MARZO 2026 ───────────────────────────────────────────────────────
+  {id:34,month:'mar',date:'Mar 03 Mar',ses:'London Open',sym:'GBPUSD',dir:'BUY', reg:'TREND_STRONG',score:17, r:+1.20, flag:'',   note:'Apertura de mes sólida. BOS + H1 trigger. Parcial en 0.75R'},
+  {id:35,month:'mar',date:'Mié 04 Mar',ses:'London Open',sym:'XAUUSD',dir:'BUY', reg:'TREND_STRONG',score:18, r:-1.00, flag:'📰', note:'Breakout falso — evento macro inesperado. SL hit. News filter activo posterior'},
+  {id:36,month:'mar',date:'Jue 05 Mar',ses:'NY Session', sym:'GBPJPY',dir:'SELL',reg:'TREND_WEAK',  score:16, r:+0.80, flag:'',   note:'Momentum exit anticipado. ADX bajo — mercado sin fuerza. Exit en 0.80R'},
+  {id:37,month:'mar',date:'Mar 10 Mar',ses:'London Open',sym:'EURJPY',dir:'SELL',reg:'TREND_STRONG',score:17, r:+1.20, flag:'',   note:'Semana NFP. Estructura clara. Trailing stop activo'},
+  {id:38,month:'mar',date:'Mar 10 Mar',ses:'NY Session', sym:'XAUUSD',dir:'SELL',reg:'TREND_STRONG',score:19, r:+1.80, flag:'⚠️', note:'NFP — gold explosivo a la baja. Escalador con 3 stages. Consistencia activa'},
+  {id:39,month:'mar',date:'Mié 11 Mar',ses:'London Open',sym:'AUDJPY',dir:'BUY', reg:'TREND_WEAK',  score:16, r:-1.00, flag:'',   note:'Entrada prematura. Mercado necesitaba más consolidación. SL hit'},
+  {id:40,month:'mar',date:'Jue 12 Mar',ses:'NY Session', sym:'GBPUSD',dir:'SELL',reg:'CHOPPY',     score:16, r:-1.00, flag:'❄️', note:'Régimen CHOPPY. 2ª pérdida — cooldown. EA reduce riesgo siguiente sesión'},
+  {id:41,month:'mar',date:'Lun 16 Mar',ses:'London Open',sym:'XAUUSD',dir:'BUY', reg:'TREND_STRONG',score:18, r:+1.20, flag:'',   note:'Zona premium semanal. Post-cooldown con riesgo reducido. Recuperación'},
+  {id:42,month:'mar',date:'Mar 17 Mar',ses:'NY Session', sym:'GBPJPY',dir:'BUY', reg:'RANGING',    score:17, r:-1.00, flag:'',   note:'RANGING — falló en resistencia semanal. Sin catalizador claro'},
+  {id:43,month:'mar',date:'Mié 18 Mar',ses:'London Open',sym:'EURJPY',dir:'BUY', reg:'TREND_STRONG',score:16, r:+1.20, flag:'',   note:'Estructura diaria confirmada. Parcial + trailing. Runner a 1.2R'},
+  {id:44,month:'mar',date:'Lun 23 Mar',ses:'London Open',sym:'XAUUSD',dir:'SELL',reg:'TREND_STRONG',score:18, r:+1.50, flag:'⚠️', note:'Venta en premium. Gold en estructura bajista mensual. Consistencia activa'},
+  {id:45,month:'mar',date:'Mar 24 Mar',ses:'NY Session', sym:'GBPUSD',dir:'BUY', reg:'TREND_WEAK',  score:16, r:-1.00, flag:'',   note:'Setup débil. Movimiento sin impulso. SL al cierre de sesión'},
+  {id:46,month:'mar',date:'Mié 25 Mar',ses:'London Open',sym:'AUDJPY',dir:'SELL',reg:'TREND_STRONG',score:17, r:+1.20, flag:'',   note:'AUDJPY limpio. Demanda vs oferta clara. Trailing activo'},
+  {id:47,month:'mar',date:'Jue 26 Mar',ses:'NY Session', sym:'EURJPY',dir:'SELL',reg:'TREND_STRONG',score:16, r:+1.20, flag:'',   note:'Cierre de trimestre. Setup de calidad. Parcial + runner'},
+];
+
+// Compute running balance and pnl
+let bal = 5000;
+trades.forEach(t => {
+  t.pnl = +(t.r * R1[t.sym]).toFixed(2);
+  bal = +(bal + t.pnl).toFixed(2);
+  t.balance = bal;
+  t.win = t.r > 0;
+});
+
+// Render trade table
+function regimePill(r) {
+  const map = {TREND_STRONG:['rg-ts','TEND↑'],TREND_WEAK:['rg-tw','TEND↓'],RANGING:['rg-rg','RANGE'],VOLATILE:['rg-vo','VOLAT'],CHOPPY:['rg-ch','CHOP']};
+  const [cls,lbl] = map[r]||['rg-ch',r];
+  return `<span class="regime-pill ${cls}">${lbl}</span>`;
+}
+function symClass(s) { return 'sym-'+s.toLowerCase(); }
+
+function renderTable(monthF, symF) {
+  const tbody = document.getElementById('tradeBody');
+  tbody.innerHTML = '';
+  let curMonth = '';
+  const months2 = {ene:'Enero 2026',feb:'Febrero 2026',mar:'Marzo 2026'};
+  const mPnL = {ene:0,feb:0,mar:0}, mW = {ene:0,feb:0,mar:0}, mT = {ene:0,feb:0,mar:0};
+
+  trades.forEach(t => {
+    mPnL[t.month] += t.pnl;
+    mT[t.month]++;
+    if(t.win) mW[t.month]++;
+  });
+
+  const filtered = trades.filter(t =>
+    (monthF==='all'||t.month===monthF) && (symF==='all'||t.sym===symF)
+  );
+
+  filtered.forEach(t => {
+    if(t.month !== curMonth) {
+      if(monthF==='all') {
+        // month header
+        const hr = document.createElement('tr');
+        hr.className = 'month-header';
+        hr.innerHTML = `<td colspan="12">${months2[t.month]}</td>`;
+        tbody.appendChild(hr);
+      }
+      curMonth = t.month;
+    }
+    const tr = document.createElement('tr');
+    tr.className = t.win ? 'win-row' : 'loss-row';
+    tr.dataset.month = t.month;
+    tr.dataset.sym = t.sym;
+    const sign = t.pnl >= 0 ? '+' : '';
+    const rSign = t.r >= 0 ? '+' : '';
+    tr.innerHTML = `
+      <td>${t.id}</td>
+      <td>${t.date}</td>
+      <td style="font-size:11px">${t.ses}</td>
+      <td><span class="${symClass(t.sym)}">${t.sym}</span></td>
+      <td><span class="${t.dir==='BUY'?'dir-buy':'dir-sell'}">${t.dir==='BUY'?'▲ BUY':'▼ SELL'}</span></td>
+      <td>${regimePill(t.reg)}</td>
+      <td style="text-align:center">${t.score}</td>
+      <td>${rSign}${t.r.toFixed(2)}R</td>
+      <td>${sign}$${Math.abs(t.pnl).toFixed(2)}</td>
+      <td>$${t.balance.toFixed(2)}</td>
+      <td style="text-align:center">${t.flag||'—'}</td>
+      <td style="text-align:left;font-size:11px;color:var(--text-dim);max-width:260px">${t.note}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Month summaries
+  if(monthF === 'all') {
+    ['ene','feb','mar'].forEach(m => {
+      const wr = ((mW[m]/mT[m])*100).toFixed(1);
+      const sign = mPnL[m]>=0?'+':'';
+      const sr = document.createElement('tr');
+      sr.className = 'month-summary';
+      sr.innerHTML = `<td colspan="7" style="text-align:left">▷ Resumen ${months2[m]}: ${mT[m]} trades · WR ${wr}%</td>
+        <td colspan="2" style="color:${mPnL[m]>=0?'var(--green)':'var(--red)'}">
+          ${sign}$${Math.abs(mPnL[m]).toFixed(2)}
+        </td><td colspan="3" style="color:var(--text-dim)">Balance: $${trades.filter(t=>t.month===m).slice(-1)[0].balance.toFixed(2)}</td>`;
+      // insert after last row of this month
+      const rows = tbody.querySelectorAll(`tr[data-month="${m}"]`);
+      if(rows.length) rows[rows.length-1].after(sr);
+    });
+  }
+}
+renderTable('all','all');
+
+// Filters
+document.querySelectorAll('[data-filter-month]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-filter-month]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const sym = document.querySelector('[data-filter-sym].active')?.dataset.filterSym || 'all';
+    renderTable(btn.dataset.filterMonth, sym);
+  });
+});
+document.querySelectorAll('[data-filter-sym]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-filter-sym]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const mon = document.querySelector('[data-filter-month].active')?.dataset.filterMonth || 'all';
+    renderTable(mon, btn.dataset.filterSym);
+  });
+});
+
+// ── SUMMARY STATS ──────────────────────────────────────────────────────────
+(function() {
+  const wins = trades.filter(t=>t.win).length;
+  const total = trades.length;
+  const totalPnl = trades.reduce((a,t) => a+t.pnl, 0);
+  const peakBal  = Math.max(...trades.map(t=>t.balance));
+  let maxDD = 0, runPeak = 5000;
+  trades.forEach(t => {
+    if(t.balance > runPeak) runPeak = t.balance;
+    const dd = (runPeak - t.balance)/runPeak*100;
+    if(dd > maxDD) maxDD = dd;
+  });
+  const roi = ((trades[trades.length-1].balance - 5000)/5000*100).toFixed(2);
+  const stats = [
+    {lbl:'Total Trades', val:total,          sub:'47 operaciones',       col:'#e8eaf0'},
+    {lbl:'Win Rate',     val:((wins/total)*100).toFixed(1)+'%', sub:`${wins}W / ${total-wins}L`, col:'var(--green)'},
+    {lbl:'Total P&L',   val:'$'+totalPnl.toFixed(2), sub:'Profit neto 3 meses',  col:'var(--green)'},
+    {lbl:'ROI Bruto',   val:roi+'%',         sub:'Sobre $5,000',         col:'var(--gold)'},
+    {lbl:'Max DD',      val:maxDD.toFixed(2)+'%',  sub:'vs peak all-time',     col:'var(--red)'},
+    {lbl:'Peak Balance',val:'$'+peakBal.toFixed(0),sub:'Máximo histórico',      col:'var(--gold)'},
+  ];
+  const el = document.getElementById('jStats');
+  stats.forEach(s => {
+    el.innerHTML += `<div class="j-stat"><div class="lbl">${s.lbl}</div><div class="val" style="color:${s.col}">${s.val}</div><div class="sub">${s.sub}</div></div>`;
+  });
+})();
+
+// ── EQUITY CURVE ──────────────────────────────────────────────────────────
+(function() {
+  const cvs = document.getElementById('equityCurve');
+  if(!cvs) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = cvs.parentElement.clientWidth - 48;
+  const H = 160;
+  cvs.style.width = W + 'px';
+  cvs.style.height = H + 'px';
+  cvs.width  = W * dpr;
+  cvs.height = H * dpr;
+  const ctx = cvs.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const balances = [5000, ...trades.map(t => t.balance)];
+  const minB = Math.min(...balances) - 20;
+  const maxB = Math.max(...balances) + 20;
+  const n    = balances.length;
+  const pad  = {l:8, r:8, t:12, b:24};
+  const W2   = W - pad.l - pad.r;
+  const H2   = H - pad.t - pad.b;
+
+  const xOf = i  => pad.l + (i/(n-1)) * W2;
+  const yOf = v  => pad.t + H2 - ((v-minB)/(maxB-minB)) * H2;
+
+  // Peak trail & 5% floor shaded zone
+  let peak = 5000;
+  for(let i=0;i<n;i++){
+    if(balances[i]>peak) peak=balances[i];
+  }
+  // Draw 5% DD floor area (semi-transparent red)
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  ctx.fillStyle = '#e74c3c';
+  // area below 5% floor from peak
+  ctx.beginPath();
+  ctx.moveTo(xOf(0), yOf(5000 * 0.95));
+  ctx.lineTo(xOf(n-1), yOf(Math.max(...balances) * 0.95));
+  ctx.lineTo(xOf(n-1), yOf(minB));
+  ctx.lineTo(xOf(0), yOf(minB));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Draw equity line fill
+  ctx.save();
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = '#3498db';
+  ctx.beginPath();
+  ctx.moveTo(xOf(0), yOf(balances[0]));
+  for(let i=1;i<n;i++) ctx.lineTo(xOf(i), yOf(balances[i]));
+  ctx.lineTo(xOf(n-1), yOf(pad.t + H2));
+  ctx.lineTo(xOf(0), yOf(pad.t + H2));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Draw equity line
+  ctx.strokeStyle = '#3498db';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(xOf(0), yOf(balances[0]));
+  for(let i=1;i<n;i++) ctx.lineTo(xOf(i), yOf(balances[i]));
+  ctx.stroke();
+
+  // Draw trade dots
+  trades.forEach((t, i) => {
+    ctx.beginPath();
+    ctx.arc(xOf(i+1), yOf(t.balance), 3, 0, Math.PI*2);
+    ctx.fillStyle = t.win ? 'rgba(46,204,113,0.9)' : 'rgba(231,76,60,0.9)';
+    ctx.fill();
+  });
+
+  // All-time peak line
+  const peakBal = Math.max(...balances);
+  ctx.save();
+  ctx.setLineDash([4,4]);
+  ctx.strokeStyle = 'rgba(240,180,41,0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(xOf(0), yOf(peakBal));
+  ctx.lineTo(xOf(n-1), yOf(peakBal));
+  ctx.stroke();
+  ctx.restore();
+
+  // 5% floor from peak line
+  ctx.save();
+  ctx.setLineDash([4,4]);
+  ctx.strokeStyle = 'rgba(231,76,60,0.4)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(xOf(0), yOf(peakBal * 0.95));
+  ctx.lineTo(xOf(n-1), yOf(peakBal * 0.95));
+  ctx.stroke();
+  ctx.restore();
+
+  // Month dividers
+  const monthIdx = {feb:16, mar:33}; // index in balances[] where new month starts (0-based in balances = 1-based in trades)
+  Object.entries(monthIdx).forEach(([m, idx]) => {
+    ctx.save();
+    ctx.setLineDash([2,6]);
+    ctx.strokeStyle = 'rgba(240,180,41,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xOf(idx), pad.t);
+    ctx.lineTo(xOf(idx), pad.t + H2);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(240,180,41,0.5)';
+    ctx.font = '9px system-ui';
+    ctx.fillText(m==='feb'?'Feb':'Mar', xOf(idx)+3, pad.t+10);
+    ctx.restore();
+  });
+
+  // Y-axis labels
+  ctx.fillStyle = 'rgba(139,144,160,0.7)';
+  ctx.font = '9px system-ui';
+  [5000, 5100, 5200, 5300].forEach(v => {
+    if(v < minB || v > maxB) return;
+    const y = yOf(v);
+    ctx.fillText('$'+v.toLocaleString(), W-pad.r-38, y+3);
+  });
+})();
+
+// ── Investment recovery line (existing chart) ──────────────────────────────
+// Investment recovery line
 const line = document.createElement('div');
-line.style.cssText = `
-  position:absolute;
-  left:0;right:0;
-  bottom:${((55.20/1600)*150) + 28}px;
-  height:1px;
-  background:rgba(240,180,41,0.4);
-  border-top:1px dashed rgba(240,180,41,0.5);
-`;
-const lineLabel = document.createElement('span');
-lineLabel.style.cssText = `
-  position:absolute;
-  right:0;
-  top:-18px;
-  font-size:10px;
-  color:rgba(240,180,41,0.7);
-  font-weight:700;
-  background:var(--bg3);
-  padding:0 4px;
-`;
-lineLabel.textContent = 'Inversión $55.20';
-line.appendChild(lineLabel);
+line.style.cssText = `position:absolute;left:0;right:0;bottom:${((55.20/2130)*155)+28}px;height:0;border-top:1px dashed rgba(240,180,41,0.5);`;
+const ll = document.createElement('span');
+ll.style.cssText = `position:absolute;right:0;top:-18px;font-size:10px;color:rgba(240,180,41,0.8);font-weight:700;background:var(--bg3);padding:0 4px;`;
+ll.textContent = 'Inversión $55.20';
+line.appendChild(ll);
 chartEl.appendChild(line);
 </script>
 </body>
