@@ -233,20 +233,31 @@ public:
    //+----------------------------------------------------------------+
    //| 3. Friday UTC force close.                                     |
    //|    Returns true → close all positions immediately.             |
+   //|                                                                |
+   //|  IMPORTANT: Uses pure UTC calculation to avoid broker TZ bugs.|
+   //|  Bug case: broker UTC+3 → Friday 21:00 UTC = Sat 00:00 broker |
+   //|  → day_of_week = 6 → old check would MISS the close entirely. |
+   //|  Also triggers all day Saturday: handles EA restarts with      |
+   //|  residual open positions after the weekend gap.                |
    //+----------------------------------------------------------------+
    bool IsFridayCloseTime()
    {
       if(!m_enabled || m_fridayCloseUTC <= 0) return false;
 
-      MqlDateTime dt; TimeCurrent(dt);
-      if(dt.day_of_week != 5) return false; // Not Friday
+      // Convert broker time to UTC by subtracting the broker offset
+      // (broker_time = UTC + offset → UTC = broker_time - offset)
+      datetime utcNow = TimeCurrent() - (datetime)(m_brokerUTCOffset * 3600);
+      MqlDateTime utc;
+      TimeToStruct(utcNow, utc);
 
-      // Convert broker time → UTC
-      int utcHour = dt.hour - m_brokerUTCOffset;
-      if(utcHour < 0)  utcHour += 24;
-      if(utcHour > 23) utcHour -= 24;
+      // Friday after target UTC hour — standard case
+      bool fridayAfterClose = (utc.day_of_week == 5 && utc.hour >= m_fridayCloseUTC);
 
-      return (utcHour >= m_fridayCloseUTC);
+      // All day Saturday UTC — catches EA restarts with residual positions
+      // (market opens Sunday ~21:00 UTC; before that we should be flat)
+      bool saturdayClosed   = (utc.day_of_week == 6);
+
+      return (fridayAfterClose || saturdayClosed);
    }
 };
 

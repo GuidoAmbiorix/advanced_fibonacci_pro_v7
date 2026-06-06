@@ -1063,7 +1063,9 @@ void ResetDailyLossIfNewDay()
       g_consecutiveLosses = 0;
       GlobalVariableSet("PG_ConsecLoss_" + _Symbol, 0);
       g_dailyTradesCount = 0;
-      g_fridayCloseExecuted = false;
+      // Reset friday flag only on Monday — not every day.
+      // Resetting on Saturday/Sunday would re-trigger the close log needlessly.
+      if(dt.day_of_week == 1) g_fridayCloseExecuted = false;
       g_lastResetDate = currentDate;
 
       // EquityGuard daily reset
@@ -1289,21 +1291,72 @@ void OnTick()
    // --- GOVERNOR EMERGENCY CLOSE GUARD ---
    if(!selfGov.IsTradingEnabled()) return; // Governor paused — do not manage positions during DD halt
 
-   // --- FRIDAY PRE-WEEKEND BLOCK ---
-   if(InpFridayCloseHour > 0)
+   // --- FRIDAY / WEEKEND FORCE CLOSE (unified) ---
+   // Checks two independent conditions — either one triggers a full close:
+   //   A) Standard: broker-time Friday hour (InpFridayCloseHour, any account)
+   //   B) PFC UTC:  Friday 21:00 UTC / all-day Saturday (InpPFC_Enabled accounts)
+   // NOTE: Do NOT put an early return before this block or the close will be skipped.
    {
-      MqlDateTime dtFri;
-      TimeCurrent(dtFri);
-      if(dtFri.day_of_week == 5 && dtFri.hour >= InpFridayCloseHour)
+      bool doClose    = false;
+      string closeReason = "";
+
+      // A) Standard Friday close — broker time, works for all account types
+      if(InpFridayCloseHour > 0)
       {
-         if(!g_fridayCloseExecuted) Print("[FRIDAY] Pre-weekend block active. No new signals.");
-         g_fridayCloseExecuted = true;
-         ManagePositions(); // Still manage existing positions
-         return;            // Block new signal evaluation
+         MqlDateTime dtFri; TimeCurrent(dtFri);
+         // Also catch Saturday: broker UTC+3 means Friday 21 UTC = Sat 00 broker
+         bool isFriLate = (dtFri.day_of_week == 5 && dtFri.hour >= InpFridayCloseHour);
+         bool isSat     = (dtFri.day_of_week == 6);
+         if(isFriLate || isSat)
+         {
+            doClose     = true;
+            closeReason = StringFormat("[FRIDAY] Broker time %02d:%02d (day=%d) — weekend force close.",
+                                       dtFri.hour, dtFri.min, dtFri.day_of_week);
+         }
+      }
+
+      // B) PFC UTC-based close (overrides or supplements A)
+      if(InpPFC_Enabled && pfCompliance.IsFridayCloseTime())
+      {
+         doClose     = true;
+         closeReason = StringFormat("[PF_COMPLIANCE] Friday/Saturday UTC — force close (limit %d:00 UTC).",
+                                    InpPFC_FridayUTCHour);
+      }
+
+      if(doClose)
+      {
+         if(!g_fridayCloseExecuted)
+         {
+            Print(closeReason);
+            g_fridayCloseExecuted = true;
+            // Force-close ALL positions for this symbol + magic
+            for(int i = PositionsTotal() - 1; i >= 0; i--)
+            {
+               if(position.SelectByIndex(i) &&
+                  position.Symbol() == _Symbol &&
+                  position.Magic() == InpMagicNumber)
+               {
+                  bool ok = trade.PositionClose(position.Ticket());
+                  if(!ok)
+                     Print("[FRIDAY] Failed to close ticket ", position.Ticket(),
+                           " — retrying next tick. Error: ", GetLastError());
+               }
+            }
+         }
+         else
+         {
+            // Retry any position that failed to close on first attempt
+            for(int i = PositionsTotal() - 1; i >= 0; i--)
+               if(position.SelectByIndex(i) &&
+                  position.Symbol() == _Symbol &&
+                  position.Magic() == InpMagicNumber)
+                  trade.PositionClose(position.Ticket());
+         }
+         return; // Block all further logic — no signals, no management
       }
    }
 
-   // --- PROP FIRM COMPLIANCE: Floating loss emergency close + Friday UTC force close ---
+   // --- PROP FIRM COMPLIANCE: Floating loss emergency close ---
    if(InpPFC_Enabled)
    {
       double totalFloat = 0;
@@ -1311,19 +1364,6 @@ void OnTick()
       {
          Print("[PF_COMPLIANCE] EMERGENCY CLOSE: floating P/L = $", DoubleToString(totalFloat, 2),
                " exceeded hard stop -$", DoubleToString(InpPFC_FloatLossLimit, 2), ". Closing all.");
-         for(int i = PositionsTotal() - 1; i >= 0; i--)
-            if(position.SelectByIndex(i) && position.Symbol() == _Symbol && position.Magic() == InpMagicNumber)
-               trade.PositionClose(position.Ticket());
-         return;
-      }
-      if(pfCompliance.IsFridayCloseTime())
-      {
-         static bool pfFridayClosed = false;
-         if(!pfFridayClosed)
-         {
-            Print("[PF_COMPLIANCE] Friday UTC ", InpPFC_FridayUTCHour, ":00 reached — force closing all positions.");
-            pfFridayClosed = true;
-         }
          for(int i = PositionsTotal() - 1; i >= 0; i--)
             if(position.SelectByIndex(i) && position.Symbol() == _Symbol && position.Magic() == InpMagicNumber)
                trade.PositionClose(position.Ticket());
