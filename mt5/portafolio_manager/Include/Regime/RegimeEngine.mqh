@@ -93,7 +93,7 @@ public:
    int RegimeCat(MARKET_REGIME r)
    {
       if(r == REGIME_TREND_STRONG || r == REGIME_TREND_WEAK) return 1;
-      if(r == REGIME_RANGING) return 2;
+      if(r == REGIME_RANGING || r == REGIME_SQUEEZE)         return 2;
       return 0;
    }
 
@@ -105,6 +105,8 @@ public:
          case REGIME_TREND_WEAK:   return  9.0;
          case REGIME_RANGING:      return  7.0;
          case REGIME_VOLATILE:     return  5.0;
+         case REGIME_SQUEEZE:      return  4.0;
+         case REGIME_CHOPPY:       return  0.0;
          case REGIME_CRISIS:       return  0.0;
          default:                  return  7.0;
       }
@@ -219,6 +221,23 @@ public:
       ctx.regimeConfidence      = rr.confidence;
       ctx.regimePersistenceBars = m_detector.GetPersistenceBars();
 
+      // ── 1b. Post-process: RANGING can be overridden to CHOPPY or SQUEEZE ──
+      // CHOPPY: pure random walk (ADX < 13 AND ER < 0.20) — no institutional footprint
+      // SQUEEZE: deliberate ATR compression pre-breakout (atrRatio < 0.65 + active compression)
+      if(rr.regime == REGIME_RANGING)
+      {
+         if(rr.adxValue < 13.0 && rr.erValue < 0.20)
+         {
+            rr.regime = REGIME_CHOPPY;
+            rr.label  = "CHOPPY";
+         }
+         else if(rr.atrRatio < 0.65 && m_vol.IsInCompression() && m_vol.GetCompressionBars() >= 3)
+         {
+            rr.regime = REGIME_SQUEEZE;
+            rr.label  = "SQUEEZE";
+         }
+      }
+
       // ── 2. Detect D1 regime (HTF confirmation) ────────────────────
       RegimeResult rrD1 = m_detectorD1.Detect();
       ctx.htfRegime   = rrD1.regime;
@@ -233,7 +252,7 @@ public:
       // ── 4. Adjusted risk and confluence ──────────────────────────
       ctx.riskMultiplier   = m_detector.GetRiskMultiplier(rr.regime);
       ctx.minConfluence    = m_detector.GetMinConfluenceForRegime(rr.regime, baseMinConfluence);
-      ctx.allowEntries     = (rr.regime != REGIME_CRISIS);
+      ctx.allowEntries     = (rr.regime != REGIME_CRISIS && rr.regime != REGIME_CHOPPY);
 
       // ── 4. Module-specific signals ────────────────────────────────
       ctx.mrSignalValid  = false;

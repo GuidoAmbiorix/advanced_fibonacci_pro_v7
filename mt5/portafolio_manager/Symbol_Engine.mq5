@@ -65,6 +65,7 @@ CPatternMemory      patternMemory;
 #include "Include\EquityGuard.mqh"
 #include "Include\SessionVWAP.mqh"
 #include "Include\PropFirmCompliance.mqh"
+#include "Include\ConfluenceGates.mqh"
 
 //+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                  |
@@ -1379,7 +1380,8 @@ void OnTick()
 
    // --- SIGNAL DOMINANCE FILTER ---
    // Skip in RANGING/VOLATILE: buy≈sell is normal when market has no clear bias
-   bool dominanceApplies = (g_currentRegime == REGIME_TREND_STRONG || g_currentRegime == REGIME_TREND_WEAK);
+   bool dominanceApplies = (g_currentRegime == REGIME_TREND_STRONG || g_currentRegime == REGIME_TREND_WEAK
+                         || g_currentRegime == REGIME_SQUEEZE);
    if(InpDominanceThreshold > 0 && dominanceApplies)
    {
       double delta = MathAbs(g_cachedBuyScore - g_cachedSellScore);
@@ -1943,6 +1945,21 @@ void OnTick()
                 asmaReason = "ASMA_VOLATILE_NO_ENTRY";
                 break;
 
+             case REGIME_CHOPPY:
+                // Choppy: pure random walk — no institutional structure to trade
+                asmaBlock  = true;
+                asmaReason = "ASMA_CHOPPY_RANDOM_WALK";
+                break;
+
+             case REGIME_SQUEEZE:
+                // Squeeze: only VOLATILE module breakout signals are valid here
+                if(!g_regimeCtx.volSignalValid)
+                {
+                   asmaBlock  = true;
+                   asmaReason = "ASMA_SQUEEZE_NO_BREAKOUT_SIGNAL";
+                }
+                break;
+
              default:
                 break;
           }
@@ -1962,10 +1979,11 @@ void OnTick()
           // Dynamic threshold: base from .set + regime adjustment
           double minEntry = (double)g_regimeCtx.minConfluence;
 
-          // Regime duration: fresh regime = less confidence → require more confluence
-          // Regime just switched (< 3 bars) is still establishing itself
-          if(g_regimeCtx.regimePersistenceBars < 3)
-             minEntry += 2.0;
+          // TRANSITION: fresh regime (< 4 bars) = structure rebuilding → require more confluence
+          // Prevents premature entries immediately after a regime flip
+          if(g_regimeCtx.regimePersistenceBars < 4 &&
+             g_currentRegime != REGIME_CHOPPY && g_currentRegime != REGIME_CRISIS)
+             minEntry += 3.0;
 
           // Use adaptive threshold if enabled
           if(InpEnableAdaptiveFilters && adaptiveFilter.IsAdaptationEnabled())
@@ -3821,6 +3839,40 @@ double CalculateConfluenceScore(int direction)
 {
    double score = 0;
    double currentPrice = symbolInfo.Bid();
+
+   // ============ MANDATORY GATES — check BEFORE computing any score ============
+   // If any gate fails → return 0 immediately. No enrichment points matter.
+   {
+      int swingHigh = iHighest(_Symbol, PERIOD_CURRENT, MODE_HIGH, InpSwingLookback, 1);
+      int swingLow  = iLowest(_Symbol,  PERIOD_CURRENT, MODE_LOW,  InpSwingLookback, 1);
+
+      bool gateDisp  = CheckDisplacement(direction);
+      double gateOB  = InpUseSMC ? smcOrderBlocks.GetConfluenceScore(direction)       : 0.0;
+      double gateFVG = InpUseSMC ? smcFVG.GetConfluenceScore(direction)               : 0.0;
+      double gateLiq = InpUseSMC ? smcLiquidity.GetConfluenceScore(direction)         : 0.0;
+      double gateChoCH = InpUseSMC ? breakerBlocks.GetBreakerScore(direction, g_ATR)  : 0.0;
+
+      GateResult gr = CheckMandatoryGates(
+         direction, g_currentRegime,
+         currentPrice, g_EMA, g_ATR,
+         g_RSI, InpRSI_Oversold, InpRSI_Overbought,
+         gateDisp, gateOB, gateFVG, gateLiq, gateChoCH,
+         swingHigh, swingLow,
+         g_regimeEngine.IsInCompression(), g_regimeEngine.GetCompressionBars()
+      );
+
+      if(!gr.passed)
+      {
+         static datetime lastGateLog = 0;
+         if(TimeCurrent() - lastGateLog > 300)
+         {
+            Print(gr.blockedBy);
+            lastGateLog = TimeCurrent();
+         }
+         return 0;
+      }
+   }
+   // ============ END MANDATORY GATES ============
 
    // PHASE 3: Get regime-adaptive weights
    double weights[];

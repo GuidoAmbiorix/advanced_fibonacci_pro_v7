@@ -15,9 +15,11 @@ enum MARKET_REGIME
    REGIME_UNKNOWN      = -1,
    REGIME_TREND_STRONG =  0,   // ~25% of time — momentum, ADX high, autocorr positive
    REGIME_TREND_WEAK   =  1,   // ~15% of time — directional but fading
-   REGIME_RANGING      =  2,   // ~35% of time — chop, flat EMA, ATR compressed
-   REGIME_VOLATILE     =  3,   // ~20% of time — ATR spike, no clear direction
-   REGIME_CRISIS       =  4    //  ~5% of time — extreme spike, stay out
+   REGIME_RANGING      =  2,   // ~35% of time — structured S/R, flat EMA, ATR compressed
+   REGIME_VOLATILE     =  3,   // ~15% of time — ATR spike expansion, no clear direction
+   REGIME_CRISIS       =  4,   //  ~5% of time — extreme spike, stay out completely
+   REGIME_CHOPPY       =  5,   //  ~8% of time — pure random walk: ADX<13 + ER<0.20, no trades
+   REGIME_SQUEEZE      =  6    //  ~7% of time — deliberate compression pre-breakout (BB squeeze)
 };
 // Backward compatibility — old enum values used by Adaptive modules
 #define REGIME_TREND  REGIME_TREND_STRONG
@@ -484,9 +486,25 @@ public:
             cfg.timeStaleMins   = 40.0;
             break;
 
+         case REGIME_SQUEEZE:
+            // Compression breakout: harvest fast, no runner (breakout can reverse)
+            cfg.enabled         = true;
+            cfg.firstR          = 0.50;
+            cfg.firstSL_R       = -0.05;
+            cfg.stepR           = 0.30;
+            cfg.growthFactor    = 1.10;
+            cfg.baseHarvest     = 50.0;  // take half immediately
+            cfg.harvestDecay    = 0.80;
+            cfg.minHarvest      = 20.0;
+            cfg.maxStages       = 4;
+            cfg.runnerTrailTight = 0.97; // very tight runner — squeeze reversals are fast
+            cfg.timeStaleMins   = 40.0;
+            break;
+
+         case REGIME_CHOPPY:
          case REGIME_CRISIS:
          default:
-            // Escalator OFF — only momentum exit decides
+            // Escalator OFF — no trading in these regimes
             cfg.enabled         = false;
             cfg.firstR          = 0.0;
             cfg.firstSL_R       = 0.0;
@@ -524,6 +542,11 @@ public:
          case REGIME_VOLATILE:
             weights[0]=0.8; weights[1]=1.2; weights[2]=0.9; weights[3]=0.9; weights[4]=1.3;
             break;
+         case REGIME_SQUEEZE:
+            // Breakout: structure/displacement dominant, MTF important
+            weights[0]=1.0; weights[1]=1.4; weights[2]=1.3; weights[3]=0.8; weights[4]=1.1;
+            break;
+         case REGIME_CHOPPY:
          case REGIME_CRISIS:
          default:
             weights[0]=0.5; weights[1]=0.5; weights[2]=0.5; weights[3]=0.5; weights[4]=0.5;
@@ -543,6 +566,8 @@ public:
          case REGIME_RANGING:      return baseMin - 2;      // mean reversion: easier entry
          case REGIME_VOLATILE:     return baseMin + 1;      // small filter — size reduced via riskMult
          case REGIME_CRISIS:       return 999;              // no entries in crisis
+         case REGIME_CHOPPY:       return 999;              // no entries in random walk
+         case REGIME_SQUEEZE:      return baseMin + 3;      // breakout needs high conviction
          default:                  return baseMin;
       }
    }
@@ -559,6 +584,8 @@ public:
          case REGIME_RANGING:      return 0.6;   // smaller — TP is closer
          case REGIME_VOLATILE:     return 0.4;   // spike: small size
          case REGIME_CRISIS:       return 0.0;   // no trading
+         case REGIME_CHOPPY:       return 0.0;   // no trading — pure noise
+         case REGIME_SQUEEZE:      return 0.3;   // very small — breakout can fail fast
          default:                  return 0.5;
       }
    }
@@ -583,6 +610,8 @@ public:
          case REGIME_RANGING:      return "RANGING";
          case REGIME_VOLATILE:     return "VOLATILE";
          case REGIME_CRISIS:       return "CRISIS";
+         case REGIME_CHOPPY:       return "CHOPPY";
+         case REGIME_SQUEEZE:      return "SQUEEZE";
          default:                  return "UNKNOWN";
       }
    }
