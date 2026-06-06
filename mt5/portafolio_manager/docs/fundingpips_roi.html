@@ -153,6 +153,11 @@
   .tab-panel { display:none; }
   .tab-panel.active { display:block; }
 
+  /* ── FULL-WIDTH LAYOUT ───────────────────────────── */
+  .container-wide { width:100%; max-width:100%; padding:40px 32px; }
+  #tab-journal .j-table { overflow-x:auto; }
+  #tab-journal .j-table table { min-width:1100px; }
+
   /* ── JOURNAL ─────────────────────────────────────── */
   .j-stats { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:28px; }
   .j-stat  { background:var(--bg3); border:1px solid var(--border); border-radius:14px; padding:16px 14px; text-align:center; }
@@ -583,7 +588,7 @@
 
 <!-- ═══════════════════════ TAB 2: DIARIO DE TRADES ═══════════════════════ -->
 <div id="tab-journal" class="tab-panel">
-<div class="container">
+<div class="container-wide">
 
   <p class="section-title">Simulación realista — 3 meses fondeado FundingPips Zero $5k</p>
   <p style="font-size:13px;color:var(--text-dim);margin-top:-12px;margin-bottom:24px;line-height:1.6;">
@@ -630,9 +635,12 @@
     <table>
       <thead>
         <tr>
-          <th>#</th><th>Fecha</th><th>Sesión</th><th>Símbolo</th>
-          <th>Dir</th><th>Régimen</th><th>Score</th>
-          <th>R</th><th>P&amp;L $</th><th>Balance</th><th>Flags</th><th>Setup / Notas</th>
+          <th>#</th><th>Fecha</th><th>Sesión</th><th>Símbolo</th><th>Dir</th>
+          <th title="Pérdida máxima si SL hit (1R en $)">Riesgo $</th>
+          <th title="Dinero asegurado al ejecutarse el parcial (40% posición)">Parcial $</th>
+          <th title="Garantía mínima tras mover SL a breakeven">BE Piso $</th>
+          <th>Régimen</th><th>Score</th>
+          <th>R real</th><th>P&amp;L $</th><th>Balance</th><th>Flags</th><th>Setup / Notas</th>
         </tr>
       </thead>
       <tbody id="tradeBody"></tbody>
@@ -692,7 +700,7 @@
     </div>
   </div>
 
-</div><!-- /container journal -->
+</div><!-- /container-wide journal -->
 </div><!-- /tab-journal -->
 
 <div class="footer">
@@ -744,8 +752,29 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // ── TRADE DATA ─────────────────────────────────────────────────────────────
 // 1R values per symbol with 0.01 lots (realistic ATR-based SL distances)
-// XAUUSD: 1R≈$18 | GBPJPY: 1R≈$6.30 | GBPUSD: 1R≈$6.00 | EURJPY: 1R≈$5.10 | AUDJPY: 1R≈$4.30
+// ── 1R values per symbol: 0.01 lots × ATR-based SL distance ───────────────
+// XAUUSD 0.01lot=1oz: price moves $1 → $1 P&L. H4 ATR≈$15, SL=1.2ATR=$18
+// GBPJPY/EURJPY/AUDJPY: pip≈$0.065@0.01lot, ATR×1.2-1.3 → ~$6.30/$5.10/$4.30
+// GBPUSD: pip=$0.10@0.01lot, ATR60pips×SL1.1 → $6.00
 const R1 = {XAUUSD:18.00, GBPJPY:6.30, GBPUSD:6.00, EURJPY:5.10, AUDJPY:4.30};
+
+// ── Partial TP config (from set files) ────────────────────────────────────
+// InpPartialTP_R: XAUUSD=0.80, GBPJPY=0.70, GBPUSD=0.65, EURJPY=0.65, AUDJPY=0.65
+// InpPartialClosePercent=40% | InpBE_Threshold_R=0.20
+const partialR = {XAUUSD:0.80, GBPJPY:0.70, GBPUSD:0.65, EURJPY:0.65, AUDJPY:0.65};
+const PARTIAL_PCT = 0.40;  // 40% of position closed at partial
+const BE_R        = 0.20;  // SL moves to +0.20R after partial fires
+
+// For a trade that reaches the partial level, then trails the runner:
+//   partialGained$  = PARTIAL_PCT × partialR[sym] × R1[sym]
+//   beFloor$        = partialGained$ + (1-PARTIAL_PCT) × BE_R × R1[sym]
+//   → This is the minimum guaranteed once BE is set
+function computeRisk(sym) {
+  const r = R1[sym];
+  const partial = +(PARTIAL_PCT * partialR[sym] * r).toFixed(2);
+  const beFloor = +(partial + (1-PARTIAL_PCT) * BE_R * r).toFixed(2);
+  return { riskAmt: r, partial, beFloor };
+}
 const trades = [
   // ─── ENERO 2026 ────────────────────────────────────────────────────────
   {id:1, month:'ene',date:'Mar 06 Ene',ses:'London Open',sym:'GBPUSD',dir:'BUY', reg:'TREND_STRONG',score:17, r:+1.50, flag:'',   note:'SMC BOS + Fib 61.8 + H1 trigger. Parcial 40% en 0.80R, runner a 2R'},
@@ -841,7 +870,7 @@ function renderTable(monthF, symF) {
         // month header
         const hr = document.createElement('tr');
         hr.className = 'month-header';
-        hr.innerHTML = `<td colspan="12">${months2[t.month]}</td>`;
+        hr.innerHTML = `<td colspan="15">${months2[t.month]}</td>`;
         tbody.appendChild(hr);
       }
       curMonth = t.month;
@@ -852,12 +881,16 @@ function renderTable(monthF, symF) {
     tr.dataset.sym = t.sym;
     const sign = t.pnl >= 0 ? '+' : '';
     const rSign = t.r >= 0 ? '+' : '';
+    const risk = computeRisk(t.sym);
     tr.innerHTML = `
       <td>${t.id}</td>
       <td>${t.date}</td>
       <td style="font-size:11px">${t.ses}</td>
       <td><span class="${symClass(t.sym)}">${t.sym}</span></td>
       <td><span class="${t.dir==='BUY'?'dir-buy':'dir-sell'}">${t.dir==='BUY'?'▲ BUY':'▼ SELL'}</span></td>
+      <td style="color:var(--red);font-weight:600">−$${risk.riskAmt.toFixed(2)}</td>
+      <td style="color:var(--green)">+$${risk.partial.toFixed(2)}<br><span style="font-size:9px;color:var(--text-dim)">@${partialR[t.sym]}R·40%</span></td>
+      <td style="color:#5b9bd5">+$${risk.beFloor.toFixed(2)}<br><span style="font-size:9px;color:var(--text-dim)">BE@0.20R</span></td>
       <td>${regimePill(t.reg)}</td>
       <td style="text-align:center">${t.score}</td>
       <td>${rSign}${t.r.toFixed(2)}R</td>
@@ -876,7 +909,7 @@ function renderTable(monthF, symF) {
       const sign = mPnL[m]>=0?'+':'';
       const sr = document.createElement('tr');
       sr.className = 'month-summary';
-      sr.innerHTML = `<td colspan="7" style="text-align:left">▷ Resumen ${months2[m]}: ${mT[m]} trades · WR ${wr}%</td>
+      sr.innerHTML = `<td colspan="10" style="text-align:left">▷ Resumen ${months2[m]}: ${mT[m]} trades · WR ${wr}%</td>
         <td colspan="2" style="color:${mPnL[m]>=0?'var(--green)':'var(--red)'}">
           ${sign}$${Math.abs(mPnL[m]).toFixed(2)}
         </td><td colspan="3" style="color:var(--text-dim)">Balance: $${trades.filter(t=>t.month===m).slice(-1)[0].balance.toFixed(2)}</td>`;
