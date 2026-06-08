@@ -138,7 +138,7 @@ InpStaleBarLimit=6
 
 ;═══════ SPREAD ═══════
 InpMaxSpreadPoints=60
-InpMaxSpreadRanging=80
+InpMaxSpreadRanging=9999
 InpMaxSpreadVolatile=90
 
 ;═══════ SMC ═══════

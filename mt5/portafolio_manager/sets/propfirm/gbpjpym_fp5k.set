@@ -141,7 +141,7 @@ InpStaleBarLimit=6
 
 ;═══════ SPREAD ═══════
 ; GBPJPY: wider spread tolerance.
-InpMaxSpreadPoints=80
+InpMaxSpreadPoints=9999
 InpMaxSpreadRanging=60
 InpMaxSpreadVolatile=120
 
