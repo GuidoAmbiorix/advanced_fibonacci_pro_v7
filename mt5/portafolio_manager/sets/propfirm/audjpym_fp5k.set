@@ -5,7 +5,7 @@
 
 InpMagicNumber=100035
 InpDirection=0
-InpBrokerUTCOffset=2
+InpBrokerUTCOffset=3
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=true
@@ -138,7 +138,7 @@ InpStaleBarLimit=6
 
 ;═══════ SPREAD ═══════
 InpMaxSpreadPoints=60
-InpMaxSpreadRanging=50
+InpMaxSpreadRanging=80
 InpMaxSpreadVolatile=90
 
 ;═══════ SMC ═══════
@@ -222,6 +222,6 @@ InpEnableVisualLevels=true
 InpTickThrottleSeconds=30
 InpUseRollingMode=true
 InpSymbolCooldown=4
-InpUseH1Trigger=true
+InpUseH1Trigger=false
 InpUseVolTarget=true
 InpUseHMM=true

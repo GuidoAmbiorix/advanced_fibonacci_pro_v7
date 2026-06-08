@@ -5,7 +5,7 @@
 
 InpMagicNumber=100032
 InpDirection=0
-InpBrokerUTCOffset=2
+InpBrokerUTCOffset=3
 
 ;═══════ KILLZONES ═══════
 ; London + NY — GBPJPY moves strongly on London open and NY overlap.
@@ -226,6 +226,6 @@ InpEnableVisualLevels=true
 InpTickThrottleSeconds=30
 InpUseRollingMode=true
 InpSymbolCooldown=4
-InpUseH1Trigger=true
+InpUseH1Trigger=false
 InpUseVolTarget=true
 InpUseHMM=true
