@@ -33,30 +33,41 @@ public:
       m_symbol.Name(_Symbol);
    }
    
-   bool IsExecutionSafe(bool isNewTrade = true)
+   bool IsExecutionSafe(bool isNewTrade = true, string &reason = "")
    {
-      // 1. Spread Check (Adaptive ATR-Relative)
       m_symbol.RefreshRates();
-      
-      // Calculate dynamic spread limit (30% of current ATR)
-      double currentATR = iATR(_Symbol, _Period, 14);
-      double dynamicMaxSpread = currentATR * 0.30;
-      
-      // Safety floor: 20 points (to handle ECN/raw spreads)
-      if(dynamicMaxSpread < 20) dynamicMaxSpread = 20;
 
-      // Tighten for new trades, allow 50% extra for existing trades to avoid "Quick Closes"
-      double limit = isNewTrade ? dynamicMaxSpread : (dynamicMaxSpread * 1.5);
+      // 1. Spread Check — skipped entirely if m_maxSpread >= 9999 (disabled)
+      if(m_maxSpread < 9999)
+      {
+         double currentATR = iATR(_Symbol, _Period, 14);
+         double dynamicLimit = currentATR * 0.30;
+         if(dynamicLimit < 20) dynamicLimit = 20;
+         double limit = isNewTrade ? dynamicLimit : dynamicLimit * 1.5;
+         // Honor the parameter: use whichever is tighter
+         if(m_maxSpread < (int)limit) limit = (double)m_maxSpread;
 
-      if(m_symbol.Spread() > limit) return false;
-      
-      // 2. Circuit Breaker (if too many failures recently)
+         if(m_symbol.Spread() > limit)
+         {
+            reason = StringFormat("spread=%d > limit=%.0f (ATR_dynamic=%.0f param=%d)",
+                                  m_symbol.Spread(), limit, dynamicLimit, m_maxSpread);
+            return false;
+         }
+      }
+
+      // 2. Circuit Breaker — 3 consecutive failures → 5 min cooldown
       if(m_consecutiveFailures >= 3)
       {
-         if(TimeCurrent() - m_lastFailureTime < 300) return false; // Cool down 5 mins
-         m_consecutiveFailures = 0; // Reset after cooldown
+         int remaining = 300 - (int)(TimeCurrent() - m_lastFailureTime);
+         if(remaining > 0)
+         {
+            reason = StringFormat("circuit_breaker: %d failures, %ds cooldown left",
+                                  m_consecutiveFailures, remaining);
+            return false;
+         }
+         m_consecutiveFailures = 0;
       }
-      
+
       return true;
    }
    

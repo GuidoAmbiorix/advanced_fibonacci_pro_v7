@@ -1584,23 +1584,29 @@ void OnTick()
          bestQuality = (g_cachedSellScore >= 22) ? 3.0 : (g_cachedSellScore >= 18) ? 2.0 : 1.0;
       GlobalVariableSet("PG_Quality_" + _Symbol, bestQuality);
 
-      // --- SCAN LOG: visibility into regime and signal strength ---
-      Print("[SCAN] ", _Symbol, " | ", g_regimeCtx.regimeLabel,
-            "(", IntegerToString(g_regimeCtx.regimeScore), "%)",
-            " | Buy=", DoubleToString(g_cachedBuyScore, 1),
-            " Sell=", DoubleToString(g_cachedSellScore, 1),
-            " | Need=", g_regimeCtx.minConfluence,
-            " | Esc.FirstR=", DoubleToString(g_escCfg.firstR, 2),
-            " Harvest=", DoubleToString(g_escCfg.baseHarvest, 0), "%");
+      // --- SCAN LOG: throttled to once every 5 minutes ---
+      static datetime lastScanLog = 0;
+      if(TimeCurrent() - lastScanLog >= 60)
+      {
+         Print("[SCAN] ", _Symbol, " | ", g_regimeCtx.regimeLabel,
+               "(", IntegerToString(g_regimeCtx.regimeScore), "%)",
+               " | Buy=", DoubleToString(g_cachedBuyScore, 1),
+               " Sell=", DoubleToString(g_cachedSellScore, 1),
+               " | Need=", g_regimeCtx.minConfluence,
+               " | Spread=", (int)symbolInfo.Spread(),
+               " | Esc.FirstR=", DoubleToString(g_escCfg.firstR, 2),
+               " Harvest=", DoubleToString(g_escCfg.baseHarvest, 0), "%");
+         lastScanLog = TimeCurrent();
+      }
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---
-   if(!failSafe.IsExecutionSafe())
+   string fsReason = "";
+   if(!failSafe.IsExecutionSafe(true, fsReason))
    {
       static datetime lastFSLog = 0;
-      if(TimeCurrent() - lastFSLog > 60)
+      if(TimeCurrent() - lastFSLog >= 60)
       {
-         Print("[BLOCKED] FAILSAFE: spread=", (int)symbolInfo.Spread(),
-               " (maxSpread=", InpMaxSpreadPoints, " or circuit breaker active)");
+         Print("[BLOCKED] FAILSAFE(", _Symbol, "): ", fsReason);
          lastFSLog = TimeCurrent();
       }
       return;
