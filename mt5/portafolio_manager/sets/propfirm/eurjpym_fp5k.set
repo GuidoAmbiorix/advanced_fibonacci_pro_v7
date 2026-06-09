@@ -8,10 +8,10 @@ InpDirection=0
 InpBrokerUTCOffset=3
 
 ;═══════ KILLZONES ═══════
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpEnableAsianKZ=false
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=false
 InpEnableLondonCloseKZ=false
 InpCloseOnKillzoneEnd=false
 InpKZBEMinutesBefore=0
@@ -137,9 +137,9 @@ InpUseStaleTrade=true
 InpStaleBarLimit=6
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=70
-InpMaxSpreadRanging=55
-InpMaxSpreadVolatile=100
+InpMaxSpreadPoints=9999
+InpMaxSpreadRanging=9999
+InpMaxSpreadVolatile=9999
 
 ;═══════ SMC ═══════
 InpUseSMC=true

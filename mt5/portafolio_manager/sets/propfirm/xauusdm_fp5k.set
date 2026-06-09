@@ -9,10 +9,10 @@ InpBrokerUTCOffset=3
 
 ;═══════ KILLZONES ═══════
 ; London + NY only — Gold moves institutionally in these windows.
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpEnableAsianKZ=false
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=false
 InpEnableLondonCloseKZ=false
 InpCloseOnKillzoneEnd=false
 InpKZBEMinutesBefore=0
@@ -145,9 +145,9 @@ InpUseStaleTrade=true
 InpStaleBarLimit=6
 
 ;═══════ SPREAD ═══════
-InpMaxSpreadPoints=200
+InpMaxSpreadPoints=9999
 InpMaxSpreadRanging=9999
-InpMaxSpreadVolatile=150
+InpMaxSpreadVolatile=9999
 
 ;═══════ SMC ═══════
 InpUseSMC=true

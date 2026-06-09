@@ -23,9 +23,12 @@ private:
    int         m_maxSpread;
    int         m_consecutiveFailures;
    datetime    m_lastFailureTime;
+   string      m_lastBlockReason;
    
 public:
-   CFailSafe() : m_maxSpread(50), m_consecutiveFailures(0), m_lastFailureTime(0) {}
+   CFailSafe() : m_maxSpread(50), m_consecutiveFailures(0), m_lastFailureTime(0), m_lastBlockReason("") {}
+
+   string GetLastReason() { return m_lastBlockReason; }
    
    void Init(int maxSpread)
    {
@@ -33,9 +36,10 @@ public:
       m_symbol.Name(_Symbol);
    }
    
-   bool IsExecutionSafe(bool isNewTrade = true, string &reason = "")
+   bool IsExecutionSafe(bool isNewTrade = true)
    {
       m_symbol.RefreshRates();
+      m_lastBlockReason = "";
 
       // 1. Spread Check — skipped entirely if m_maxSpread >= 9999 (disabled)
       if(m_maxSpread < 9999)
@@ -44,13 +48,12 @@ public:
          double dynamicLimit = currentATR * 0.30;
          if(dynamicLimit < 20) dynamicLimit = 20;
          double limit = isNewTrade ? dynamicLimit : dynamicLimit * 1.5;
-         // Honor the parameter: use whichever is tighter
          if(m_maxSpread < (int)limit) limit = (double)m_maxSpread;
 
          if(m_symbol.Spread() > limit)
          {
-            reason = StringFormat("spread=%d > limit=%.0f (ATR_dynamic=%.0f param=%d)",
-                                  m_symbol.Spread(), limit, dynamicLimit, m_maxSpread);
+            m_lastBlockReason = StringFormat("spread=%d > limit=%.0f (ATR_dynamic=%.0f param=%d)",
+                                             m_symbol.Spread(), limit, dynamicLimit, m_maxSpread);
             return false;
          }
       }
@@ -61,8 +64,8 @@ public:
          int remaining = 300 - (int)(TimeCurrent() - m_lastFailureTime);
          if(remaining > 0)
          {
-            reason = StringFormat("circuit_breaker: %d failures, %ds cooldown left",
-                                  m_consecutiveFailures, remaining);
+            m_lastBlockReason = StringFormat("circuit_breaker: %d failures, %ds cooldown left",
+                                             m_consecutiveFailures, remaining);
             return false;
          }
          m_consecutiveFailures = 0;

@@ -1600,13 +1600,12 @@ void OnTick()
       }
 
    // --- MODULE: FAIL SAFE (Quick Exit) ---
-   string fsReason = "";
-   if(!failSafe.IsExecutionSafe(true, fsReason))
+   if(!failSafe.IsExecutionSafe())
    {
       static datetime lastFSLog = 0;
       if(TimeCurrent() - lastFSLog >= 60)
       {
-         Print("[BLOCKED] FAILSAFE(", _Symbol, "): ", fsReason);
+         Print("[BLOCKED] FAILSAFE(", _Symbol, "): ", failSafe.GetLastReason());
          lastFSLog = TimeCurrent();
       }
       return;

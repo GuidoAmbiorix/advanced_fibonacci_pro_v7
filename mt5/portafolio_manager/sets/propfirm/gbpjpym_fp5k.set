@@ -9,10 +9,10 @@ InpBrokerUTCOffset=3
 
 ;═══════ KILLZONES ═══════
 ; London + NY — GBPJPY moves strongly on London open and NY overlap.
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpEnableAsianKZ=false
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=false
 InpEnableLondonCloseKZ=false
 InpCloseOnKillzoneEnd=false
 InpKZBEMinutesBefore=0
@@ -142,8 +142,8 @@ InpStaleBarLimit=6
 ;═══════ SPREAD ═══════
 ; GBPJPY: wider spread tolerance.
 InpMaxSpreadPoints=9999
-InpMaxSpreadRanging=60
-InpMaxSpreadVolatile=120
+InpMaxSpreadRanging=9999
+InpMaxSpreadVolatile=9999
 
 ;═══════ SMC ═══════
 InpUseSMC=true

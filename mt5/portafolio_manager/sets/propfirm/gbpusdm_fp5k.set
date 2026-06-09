@@ -8,11 +8,11 @@ InpDirection=0
 InpBrokerUTCOffset=3
 
 ;═══════ KILLZONES ═══════
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpEnableAsianKZ=false
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
-InpEnableLondonCloseKZ=true
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=false
+InpEnableLondonCloseKZ=false
 InpCloseOnKillzoneEnd=false
 InpKZBEMinutesBefore=0
 InpKZBEMinProfitR=0.0
