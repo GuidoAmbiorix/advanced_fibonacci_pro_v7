@@ -65,6 +65,12 @@ CPatternMemory      patternMemory;
 #include "Include\EquityGuard.mqh"
 #include "Include\SessionVWAP.mqh"
 #include "Include\PropFirmCompliance.mqh"
+
+// APEX 4-Strategy Modules
+#include "Include\ReversionScore.mqh"
+#include "Include\TrendScore.mqh"
+#include "Include\MomentumScore.mqh"
+#include "Include\BreakoutScore.mqh"
 #include "Include\ConfluenceGates.mqh"
 #include "Include\Learning\ScoreIntelligence.mqh"
 #include "Include\Learning\MFECalibration.mqh"
@@ -74,6 +80,16 @@ CPatternMemory      patternMemory;
 //| INPUT PARAMETERS                                                  |
 //+------------------------------------------------------------------+
 input group "======= IDENTITY ======="
+enum ENUM_APEX_MODE
+{
+   APEX_LEGACY    = 0,  // Original confluence system (default — unchanged)
+   APEX_REVERSION = 1,  // Mean reversion: M30 | H1+H4 context
+   APEX_TREND     = 2,  // Trend following: H4 | D1 context
+   APEX_MOMENTUM  = 3,  // Momentum burst: H1 | H4 context
+   APEX_BREAKOUT  = 4   // Range breakout: M30/H1 | Asia range
+};
+input ENUM_APEX_MODE    InpApexMode = APEX_LEGACY;        // APEX Strategy Mode
+
 enum ENUM_TRAIL_TYPE
 {
    TRAIL_R_BASED,    // R-Multiple Based
@@ -351,6 +367,12 @@ EscalatorConfig   g_escCfg;         // Dynamic escalator config (updated each ba
 CKillSwitch       killSwitch;
 CLearningEngine   learning;
 CSelfGovernor      selfGov;
+
+// APEX 4-STRATEGY OBJECTS
+CReversionScore  g_revScore;
+CTrendScore      g_trendScore;
+CMomentumScore   g_momentumScore;
+CBreakoutScore   g_breakoutScore;
 
 // ADVANCED MODULE OBJECTS
 CVolumeAnalysis   volumeAnalysis;
@@ -882,6 +904,12 @@ int OnInit()
       Print("[KILLSWITCH] Hard lock manually reset via InpResetKillSwitch.");
    }
 
+   // APEX strategy modules — init the active mode only
+   if(InpApexMode == APEX_REVERSION) g_revScore.Init(_Symbol);
+   if(InpApexMode == APEX_TREND)     g_trendScore.Init(_Symbol);
+   if(InpApexMode == APEX_MOMENTUM)  g_momentumScore.Init(_Symbol);
+   if(InpApexMode == APEX_BREAKOUT)  g_breakoutScore.Init(_Symbol);
+
    return INIT_SUCCEEDED;
 }
 
@@ -967,6 +995,12 @@ void OnDeinit(const int reason)
 
    // Cleanup Macro Sentiment
    if(InpUseMacroSentiment) macroSentiment.Deinit();
+
+   // APEX strategy module cleanup
+   g_revScore.Deinit();
+   g_trendScore.Deinit();
+   g_momentumScore.Deinit();
+   g_breakoutScore.Deinit();
 
    // Save learning data before exit
    if(InpEnableLearning)
@@ -1526,6 +1560,12 @@ void OnTick()
    g_isKZActive = !InpUseKillzoneFilter || CheckKillzone();
    equityGuard.UpdateWeekHigh(account.Equity());
    sessionVWAP.Update();
+
+   // Update active APEX module once per bar
+   if(InpApexMode == APEX_REVERSION) g_revScore.UpdateVWAP();
+   if(InpApexMode == APEX_TREND)     g_trendScore.Update();
+   if(InpApexMode == APEX_MOMENTUM)  g_momentumScore.Update();
+   if(InpApexMode == APEX_BREAKOUT)  g_breakoutScore.Update();
 
    // --- THROTTLED CONFLUENCE CALCULATION ---
    // Recalculate confluence scores based on throttle (not just on new bar)
@@ -4036,6 +4076,31 @@ void BuildConfluenceFactors(ConfluenceFactors &factors, int direction, double sc
 //+------------------------------------------------------------------+
 double CalculateConfluenceScore(int direction)
 {
+   // ── APEX MODE ROUTING ─────────────────────────────────────────────────────
+   // When an APEX strategy mode is selected, bypass the legacy confluence system
+   // entirely and return the APEX score (0-12 scale, min 6 = valid signal).
+   if(InpApexMode == APEX_REVERSION)
+   {
+      ReversionSignal sig = g_revScore.Evaluate(direction);
+      return sig.score;
+   }
+   if(InpApexMode == APEX_TREND)
+   {
+      TrendSignal sig = g_trendScore.Evaluate(direction);
+      return sig.score;
+   }
+   if(InpApexMode == APEX_MOMENTUM)
+   {
+      MomentumSignal sig = g_momentumScore.Evaluate(direction);
+      return sig.score;
+   }
+   if(InpApexMode == APEX_BREAKOUT)
+   {
+      BreakoutSignal sig = g_breakoutScore.Evaluate(direction);
+      return sig.score;
+   }
+   // ── END APEX ROUTING — legacy path below ──────────────────────────────────
+
    double score = 0;
    double currentPrice = symbolInfo.Bid();
 

@@ -1,0 +1,237 @@
+; XAUUSD — APEX Breakout (Asia Range + Key Level Break)
+; Timeframe: M30/H1 | Entry: confirmed close outside Asia range with expansion
+; Philosophy: Trade the London/NY breakout of Asia consolidation on Gold.
+; Best window: 07:00-11:00 UTC (London) and 13:00-16:00 UTC (NY open).
+
+InpMagicNumber=100044
+InpApexMode=4
+InpDirection=0
+InpBrokerUTCOffset=3
+
+;═══════ KILLZONES ═══════
+; Breakouts live at London Open — this is the sweet spot
+InpUseKillzoneFilter=true
+InpEnableAsianKZ=false
+InpEnableLondonOpenKZ=true
+InpEnableNYKZ=true
+InpEnableLondonCloseKZ=false
+InpCloseOnKillzoneEnd=false
+InpKZBEMinutesBefore=15
+InpKZBEMinProfitR=0.3
+InpNotifyKillzoneOpen=true
+
+;═══════ CONFLUENCE ═══════
+InpMinConfluenceEntry=6
+InpDominanceThreshold=1.0
+InpMaxPositions=2
+
+;═══════ RISK ═══════
+InpRiskBase=0.5
+InpMaxRisk=1.0
+InpMaxLotsPerTrade=0.5
+InpFixedLots=0.0
+InpEnableMarginCheck=true
+
+;═══════ FIBONACCI ═══════
+InpSwingLookback=20
+InpFibLevelLow=0.500
+InpFibLevelHigh=0.618
+InpZoneTolerance=0.30
+
+;═══════ DISPLACEMENT ═══════
+InpUseDisplacement=true
+InpDisplacementATR=1.5
+InpDisplacementLookback=3
+
+;═══════ RSI ═══════
+InpRSI_Period=14
+InpRSI_Oversold=35
+InpRSI_Overbought=65
+InpRSI_Momentum=true
+
+;═══════ TREND FILTER ═══════
+InpUseTrendFilter=false
+InpEMA_Period=200
+InpEMA_MinSlope=0.0
+
+;═══════ CHOP FILTER ═══════
+; Disable — breakout EA should enter even from choppy state
+InpUseChopFilter=false
+InpChopThreshold=0.75
+InpATR_MA_Period=20
+
+;═══════ TAKE PROFIT ═══════
+; Breakout: quick TP1 for 1R, runner at 3R
+InpTPMode=2
+InpFixedTP_R=3.0
+InpMinTP_R=1.5
+InpMaxTP_R=5.0
+InpTPUseLearnedMFE=false
+
+;═══════ TRAILING STOP ═══════
+InpTrailingMode=1
+InpTrailType=0
+InpTrailStepATR=0.4
+
+;═══════ VOLATILITY FILTER ═══════
+InpMinVolatilityPips=15.0
+InpMaxVolatilityFactor=4.0
+InpVolatilityTP_Mult=2.5
+
+;═══════ PARTIAL TP & TRAILING ═══════
+; 40% at 1.2R to lock in, runner trails
+InpPartialTP_R=1.2
+InpPartialClosePercent=40.0
+InpBE_Threshold_R=0.5
+InpTrailStart_R=0.5
+InpTrailATR_Mult=1.5
+InpTrailDecayRate=0.25
+InpTrailMinMult=0.45
+InpTrailRegimeAware=false
+InpTrailMinBufferATR=0.20
+
+;═══════ INFINITE ESCALATOR ═══════
+InpEsc_FirstR=0.6
+InpEsc_FirstSL_R=-0.05
+InpEsc_StepR=0.7
+InpEsc_GrowthFactor=1.3
+InpEsc_BaseHarvest=25.0
+InpEsc_HarvestDecay=0.85
+InpEsc_MinHarvest=8.0
+InpEsc_MaxStages=12
+InpRunnerTrailTight=0.88
+InpTimeStaleMins=120.0
+InpTimeStaleTight1=0.88
+InpTimeStaleTight2=0.75
+
+;═══════ PIP LADDER TRAIL ═══════
+InpPipLadder=false
+
+;═══════ SCALE-IN PYRAMID ═══════
+InpPyr_Enable=false
+InpPyr_Frequency=3
+InpPyr_FirstRiskPct=0.10
+InpPyr_RiskDecay=0.70
+InpPyr_MinRiskPct=0.03
+InpPyr_MaxAddOns=2
+InpPyr_MinProfitR=1.0
+InpAgg_MaxTotalRisk=1.5
+InpAgg_MaxPositions=3
+
+;═══════ ADAPTIVE ESCALATOR ═══════
+InpAdaptiveEscalator=false
+InpScoreAdaptFactor=0.05
+InpRegimeHarvest=false
+InpMFECalibration=false
+InpMomentumTrail=true
+InpChaosEmergencyLock=true
+InpFridayCloseHour=22
+
+;═══════ STALE TRADE EXIT ═══════
+; M30 breakout: 10 bars = 5h before exit
+InpUseStaleTrade=true
+InpStaleBarLimit=10
+
+;═══════ SPREAD ═══════
+InpMaxSpreadPoints=9999
+InpMaxSpreadRanging=9999
+InpMaxSpreadVolatile=9999
+
+;═══════ SMC ═══════
+InpUseSMC=false
+InpSMC_SwingLookback=20
+InpSMC_MinImpulseATR=1.2
+InpSMC_MinFVG_ATR=0.5
+
+;═══════ MULTI-TIMEFRAME ═══════
+InpUseMTF=false
+InpHTF=49153
+InpMTF=16408
+InpMTF_EMAPeriod=50
+
+;═══════ NEWS FILTER ═══════
+InpUseNewsFilter=true
+InpNewsMinutesBefore=15
+InpNewsMinutesAfter=15
+
+;═══════ VOLATILITY SPIKE PROTECTION ═══════
+InpEnableVolatilityFilter=true
+InpVolatilityThreshold=4.0
+InpVolatilitySpikeCooldown=20
+
+;═══════ KELLY ═══════
+InpUseKelly=false
+InpKellyFraction=0.5
+InpDailyMaxDD=3.0
+InpWeeklyMaxDD=6.0
+InpDailyTarget=0.0
+
+;═══════ LEARNING ═══════
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=90
+InpMinTradesForLearning=20
+
+;═══════ ADAPTIVE BEHAVIOR ═══════
+InpEnableAdaptiveRisk=false
+InpEnableAdaptiveExits=false
+InpEnableAdaptiveFilters=false
+
+;═══════ PORTFOLIO PROTECTION ═══════
+InpUseCorrelationFilter=false
+InpDailyMaxLoss_R=4.0
+InpLossCooldownMinutes=30
+InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=4
+InpUseReversalFilter=false
+InpReversalCooldownMinutes=30
+
+;═══════ SESSION GOVERNOR ═══════
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=2
+InpTradeCooldownMinutes=30
+InpCloseIntradayProfits=false
+InpEndOfDayHour=22
+
+;═══════ EQUITY GUARD ═══════
+InpDailyProfitCapPct=3.0
+InpEquityTrailPct=0.35
+InpHotStreakBonus=0
+InpADR_MaxConsumed=0.0
+
+;═══════ PROP FIRM COMPLIANCE ═══════
+InpPFC_Enabled=false
+InpPFC_FloatLossLimit=0.0
+InpPFC_ConsistencyPct=0.0
+InpPFC_DailyLossMaxPct=0.0
+InpPFC_FridayUTCHour=0
+
+;═══════ GOVERNOR ═══════
+InpGov_Enabled=true
+InpGov_DD_Reduce=3.0
+InpGov_DD_Pause=6.0
+InpGov_ReducedMult=0.5
+InpGov_DailyMaxDD=3.0
+
+;═══════ MOMENTUM EXIT ═══════
+InpUseMomentumExit=true
+InpMomADX_Period=14
+InpMomADX_Threshold=22.0
+InpMomATR_CollapseRatio=0.60
+InpMomBarsNoProgress=6
+InpMomProgressATR=0.25
+InpMomSignalsToExit=2
+InpMomRecoveryMinScore=1
+
+;═══════ VISUAL / REGIME ═══════
+InpEnableVisualLevels=true
+InpTickThrottleSeconds=30
+InpUseRollingMode=false
+InpSymbolCooldown=2
+InpUseH1Trigger=false
+InpUseVolTarget=false
+InpUseHMM=false
+InpUseERFractal=false
+InpUseMacroSentiment=false
+InpUseDXYConflict=false
+InpMaxCurrencyExposure=0.0
