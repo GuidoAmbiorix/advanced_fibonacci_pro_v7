@@ -172,7 +172,7 @@ private:
    {
       if(m_asiaHigh <= 0) return 0;
 
-      double closes[3];
+      double closes[];
       ArraySetAsSeries(closes, true);
       if(CopyClose(m_symbol, PERIOD_M30, 0, 3, closes) < 3) return 0;
 
@@ -194,7 +194,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreATRExpansion()
    {
-      double atr[21];
+      double atr[];
       ArraySetAsSeries(atr, true);
       if(CopyBuffer(m_atrH1, 0, 0, 21, atr) < 21) return 0;
       double avg = 0;
@@ -213,7 +213,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreBBSqueeze()
    {
-      double upper[5], lower[5];
+      double upper[], lower[];
       ArraySetAsSeries(upper, true); ArraySetAsSeries(lower, true);
       if(CopyBuffer(m_bbH1, 1, 0, 5, upper) < 5) return 0;
       if(CopyBuffer(m_bbH1, 2, 0, 5, lower) < 5) return 0;
@@ -235,7 +235,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreVolume()
    {
-      long vol[21];
+      long vol[];
       ArraySetAsSeries(vol, true);
       if(CopyTickVolume(m_symbol, PERIOD_H1, 0, 21, vol) < 21) return 0;
 
@@ -256,7 +256,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreH4Context(int dir)
    {
-      double ema[2];
+      double ema[];
       ArraySetAsSeries(ema, true);
       if(m_emaH4 == INVALID_HANDLE) return 0;
       if(CopyBuffer(m_emaH4, 0, 0, 2, ema) < 2) return 0;

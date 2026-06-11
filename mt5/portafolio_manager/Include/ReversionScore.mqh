@@ -213,7 +213,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreRSI_Divergence(int dir)
    {
-      double rsi[25];
+      double rsi[];
       ArraySetAsSeries(rsi, true);
       if(CopyBuffer(m_rsiH1, 0, 0, 25, rsi) < 25) return 0;
 
@@ -281,7 +281,7 @@ private:
    {
       // Use M30 bars for entry-level sweep detection
       // Look at current + previous 3 bars for sweep signature
-      double highs[5], lows[5], opens[5], closes[5];
+      double highs[], lows[], opens[], closes[];
       ArraySetAsSeries(highs,  true);
       ArraySetAsSeries(lows,   true);
       ArraySetAsSeries(opens,  true);
@@ -346,7 +346,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreBBExtreme(int dir)
    {
-      double bbUpper[3], bbLower[3], bbMid[3];
+      double bbUpper[], bbLower[], bbMid[];
       ArraySetAsSeries(bbUpper, true);
       ArraySetAsSeries(bbLower, true);
       ArraySetAsSeries(bbMid,   true);
@@ -354,7 +354,7 @@ private:
       if(CopyBuffer(m_bbH1, 2, 0, 3, bbLower) < 3) return 0; // lower
       if(CopyBuffer(m_bbH1, 0, 0, 3, bbMid)   < 3) return 0; // middle
 
-      double highH1[3], lowH1[3], closeH1[3];
+      double highH1[], lowH1[], closeH1[];
       ArraySetAsSeries(highH1,  true);
       ArraySetAsSeries(lowH1,   true);
       ArraySetAsSeries(closeH1, true);

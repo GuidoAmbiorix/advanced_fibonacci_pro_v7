@@ -140,7 +140,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreRSICross(int dir)
    {
-      double rsi[4];
+      double rsi[];
       ArraySetAsSeries(rsi, true);
       if(CopyBuffer(m_rsiH1, 0, 0, 4, rsi) < 4) return 0;
 
@@ -198,7 +198,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreH4Alignment(int dir)
    {
-      double ema[2];
+      double ema[];
       ArraySetAsSeries(ema, true);
       if(m_emaH4 == INVALID_HANDLE) return 0;
       if(CopyBuffer(m_emaH4, 0, 0, 2, ema) < 2) return 0;
@@ -216,7 +216,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreVolume()
    {
-      long vol[21];
+      long vol[];
       ArraySetAsSeries(vol, true);
       if(CopyTickVolume(m_symbol, PERIOD_H1, 0, 21, vol) < 21) return 0;
 
@@ -236,7 +236,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreATR()
    {
-      double atr[21];
+      double atr[];
       ArraySetAsSeries(atr, true);
       if(CopyBuffer(m_atrH1, 0, 0, 21, atr) < 21) return 0;
 
@@ -256,7 +256,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreStructure(int dir)
    {
-      double h[6], l[6];
+      double h[], l[];
       ArraySetAsSeries(h, true); ArraySetAsSeries(l, true);
       if(CopyHigh(m_symbol, PERIOD_H1, 1, 6, h) < 6) return 0;
       if(CopyLow (m_symbol, PERIOD_H1, 1, 6, l) < 6) return 0;

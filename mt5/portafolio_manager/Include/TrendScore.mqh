@@ -149,7 +149,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreEMA(int dir)
    {
-      double ema[3];
+      double ema[];
       ArraySetAsSeries(ema, true);
       if(CopyBuffer(m_emaH4, 0, 0, 3, ema) < 3) return 0;
 
@@ -170,7 +170,7 @@ private:
    int ScoreD1Structure(int dir)
    {
       // Use D1 bars 1-6 (confirmed, not current forming)
-      double h[6], l[6];
+      double h[], l[];
       ArraySetAsSeries(h, true);
       ArraySetAsSeries(l, true);
       if(CopyHigh(m_symbol, PERIOD_D1, 1, 6, h) < 6) return 0;
@@ -226,7 +226,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreATRExpansion()
    {
-      double atr[21];
+      double atr[];
       ArraySetAsSeries(atr, true);
       if(CopyBuffer(m_atrH4, 0, 0, 21, atr) < 21) return 0;
 
@@ -249,7 +249,7 @@ private:
    //+----------------------------------------------------------------+
    int ScoreRSIMomentum(int dir)
    {
-      double rsi[2];
+      double rsi[];
       ArraySetAsSeries(rsi, true);
       if(CopyBuffer(m_rsiH4, 0, 0, 2, rsi) < 2) return 0;
 
@@ -273,8 +273,8 @@ private:
    int ScoreVWAP(int dir)
    {
       // Approximate D1 VWAP from 5 recent D1 bars (simplified)
-      double h[5], l[5], c[5];
-      long   v[5];
+      double h[], l[], c[];
+      long   v[];
       ArraySetAsSeries(h, true); ArraySetAsSeries(l, true);
       ArraySetAsSeries(c, true); ArraySetAsSeries(v, true);
       if(CopyHigh(m_symbol, PERIOD_D1, 0, 5, h)        < 5) return 0;
