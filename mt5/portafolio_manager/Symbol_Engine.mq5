@@ -71,6 +71,7 @@ CPatternMemory      patternMemory;
 #include "Include\TrendScore.mqh"
 #include "Include\MomentumScore.mqh"
 #include "Include\BreakoutScore.mqh"
+#include "Include\SweepScore.mqh"
 #include "Include\ConfluenceGates.mqh"
 #include "Include\Learning\ScoreIntelligence.mqh"
 #include "Include\Learning\MFECalibration.mqh"
@@ -86,7 +87,8 @@ enum ENUM_APEX_MODE
    APEX_REVERSION = 1,  // Mean reversion: M30 | H1+H4 context
    APEX_TREND     = 2,  // Trend following: H4 | D1 context
    APEX_MOMENTUM  = 3,  // Momentum burst: H1 | H4 context
-   APEX_BREAKOUT  = 4   // Range breakout: M30/H1 | Asia range
+   APEX_BREAKOUT  = 4,  // Range breakout: M30/H1 | Asia range
+   APEX_SWEEP     = 5   // Asian liquidity sweep reversal: M5 | London open 07-09:30 UTC
 };
 input ENUM_APEX_MODE    InpApexMode = APEX_LEGACY;        // APEX Strategy Mode
 
@@ -368,11 +370,12 @@ CKillSwitch       killSwitch;
 CLearningEngine   learning;
 CSelfGovernor      selfGov;
 
-// APEX 4-STRATEGY OBJECTS
+// APEX 5-STRATEGY OBJECTS
 CReversionScore  g_revScore;
 CTrendScore      g_trendScore;
 CMomentumScore   g_momentumScore;
 CBreakoutScore   g_breakoutScore;
+CSweepScore      g_sweepScore;
 
 // ADVANCED MODULE OBJECTS
 CVolumeAnalysis   volumeAnalysis;
@@ -909,6 +912,7 @@ int OnInit()
    if(InpApexMode == APEX_TREND)     g_trendScore.Init(_Symbol);
    if(InpApexMode == APEX_MOMENTUM)  g_momentumScore.Init(_Symbol);
    if(InpApexMode == APEX_BREAKOUT)  g_breakoutScore.Init(_Symbol);
+   if(InpApexMode == APEX_SWEEP)     g_sweepScore.Init(_Symbol, InpBrokerUTCOffset);
 
    return INIT_SUCCEEDED;
 }
@@ -1001,6 +1005,7 @@ void OnDeinit(const int reason)
    g_trendScore.Deinit();
    g_momentumScore.Deinit();
    g_breakoutScore.Deinit();
+   g_sweepScore.Deinit();
 
    // Save learning data before exit
    if(InpEnableLearning)
@@ -1566,6 +1571,7 @@ void OnTick()
    if(InpApexMode == APEX_TREND)     g_trendScore.Update();
    if(InpApexMode == APEX_MOMENTUM)  g_momentumScore.Update();
    if(InpApexMode == APEX_BREAKOUT)  g_breakoutScore.Update();
+   if(InpApexMode == APEX_SWEEP)     g_sweepScore.Update();
 
    // --- THROTTLED CONFLUENCE CALCULATION ---
    // Recalculate confluence scores based on throttle (not just on new bar)
@@ -4104,6 +4110,11 @@ double CalculateConfluenceScore(int direction)
    if(InpApexMode == APEX_BREAKOUT)
    {
       BreakoutSignal sig = g_breakoutScore.Evaluate(direction);
+      return sig.score;
+   }
+   if(InpApexMode == APEX_SWEEP)
+   {
+      SweepSignal sig = g_sweepScore.Evaluate(direction);
       return sig.score;
    }
    // ── END APEX ROUTING — legacy path below ──────────────────────────────────

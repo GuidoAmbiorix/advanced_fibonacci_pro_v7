@@ -16,13 +16,14 @@
 //--- Magic number range
 input group "======= SYMBOL ENGINE MAGIC RANGE ======="
 input int    InpMagicMin             = 100001;  // Lowest magic number to monitor
-input int    InpMagicMax             = 100020;  // Highest magic number to monitor
+input int    InpMagicMax             = 100044;  // Highest magic number to monitor
 
 //--- Daily P&L
 input group "======= DAILY P&L CONTROL ======="
 input double InpDailyProfitTarget    = 0.0;     // Daily profit target in $ (0 = disabled)
 input double InpDailyLossLimit       = -132.0;  // *** Adjusted for $6000 account (2.2%) ***
 input bool   InpPauseOnProfitTarget  = true;    // Pause new entries when target hit
+input bool   InpCloseOnProfitTarget  = false;   // Close ALL positions when daily profit target hit
 input bool   InpCloseOnDailyLoss     = true;    // Close ALL positions on daily loss limit
 
 //--- Portfolio drawdown
@@ -211,11 +212,19 @@ void OnTimer()
    string closeReason  = "";
 
    // Rules
-   if(InpDailyProfitTarget > 0 && dailyPnL >= InpDailyProfitTarget && InpPauseOnProfitTarget)
+   if(InpDailyProfitTarget > 0 && dailyPnL >= InpDailyProfitTarget)
    {
-      pauseEntries = true;
-      pauseReason  = "Daily target hit";
       GlobalVariableSet(GV_DAILY_TARGET_HIT, 1.0);
+      if(InpPauseOnProfitTarget)
+      {
+         pauseEntries = true;
+         pauseReason  = StringFormat("Daily target $%.2f hit", InpDailyProfitTarget);
+      }
+      if(InpCloseOnProfitTarget)
+      {
+         emergencyClose = true;
+         closeReason    = StringFormat("Daily target $%.2f — closing all", InpDailyProfitTarget);
+      }
    }
 
    if(dailyPnL <= InpDailyLossLimit && InpCloseOnDailyLoss)
