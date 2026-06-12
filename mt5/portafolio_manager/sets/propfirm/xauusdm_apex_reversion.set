@@ -196,8 +196,8 @@ InpCloseIntradayProfits=false
 InpEndOfDayHour=22
 
 ;═══════ EQUITY GUARD ═══════
-InpDailyProfitCapPct=3.0
-InpEquityTrailPct=0.30
+InpDailyProfitCapPct=0.0
+InpEquityTrailPct=0.0
 InpHotStreakBonus=0
 InpADR_MaxConsumed=0.0
 
