@@ -10,15 +10,15 @@ InpBrokerUTCOffset=3
 
 ;═══════ KILLZONES ═══════
 ; Momentum ignites at London Open + NY Open
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpEnableAsianKZ=false
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=false
 InpEnableLondonCloseKZ=false
 InpCloseOnKillzoneEnd=false
-InpKZBEMinutesBefore=20
-InpKZBEMinProfitR=0.2
-InpNotifyKillzoneOpen=true
+InpKZBEMinutesBefore=0
+InpKZBEMinProfitR=0.0
+InpNotifyKillzoneOpen=false
 
 ;═══════ CONFLUENCE ═══════
 InpMinConfluenceEntry=6

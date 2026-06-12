@@ -10,15 +10,15 @@ InpBrokerUTCOffset=3
 
 ;═══════ KILLZONES ═══════
 ; Breakouts live at London Open — this is the sweet spot
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpEnableAsianKZ=false
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=false
 InpEnableLondonCloseKZ=false
 InpCloseOnKillzoneEnd=false
-InpKZBEMinutesBefore=15
-InpKZBEMinProfitR=0.3
-InpNotifyKillzoneOpen=true
+InpKZBEMinutesBefore=0
+InpKZBEMinProfitR=0.0
+InpNotifyKillzoneOpen=false
 
 ;═══════ CONFLUENCE ═══════
 InpMinConfluenceEntry=6

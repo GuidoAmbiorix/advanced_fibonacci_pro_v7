@@ -10,15 +10,15 @@ InpBrokerUTCOffset=3
 
 ;═══════ KILLZONES ═══════
 ; H4 trend: London + NY provide the big moves
-InpUseKillzoneFilter=true
+InpUseKillzoneFilter=false
 InpEnableAsianKZ=false
-InpEnableLondonOpenKZ=true
-InpEnableNYKZ=true
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=false
 InpEnableLondonCloseKZ=false
 InpCloseOnKillzoneEnd=false
-InpKZBEMinutesBefore=30
-InpKZBEMinProfitR=0.3
-InpNotifyKillzoneOpen=true
+InpKZBEMinutesBefore=0
+InpKZBEMinProfitR=0.0
+InpNotifyKillzoneOpen=false
 
 ;═══════ CONFLUENCE ═══════
 ; APEX scoring: 0-12. Min 6 valid, target 8+ for trend.
