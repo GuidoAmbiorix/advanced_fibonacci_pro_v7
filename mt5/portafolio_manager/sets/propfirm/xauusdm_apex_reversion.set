@@ -30,7 +30,7 @@ InpMaxPositions=2
 InpRiskBase=0.5
 InpMaxRisk=1.0
 InpMaxLotsPerTrade=0.5
-InpFixedLots=0.0
+InpFixedLots=0.01
 InpEnableMarginCheck=true
 
 ;═══════ FIBONACCI (unused in APEX mode, set neutral) ═══════
