@@ -145,6 +145,22 @@ public:
 
       sig.valid = (sig.score >= 6);
 
+      // ── 90% WIN RATE GATES — hard blocks even if score passes ────────
+      // Gate 1: window already enforced in ScoreSweepConfirmed (07:00-07:45 UTC)
+      // Gate 2: reversal candle must close back INSIDE the Asia range
+      if(sig.valid && !GateReversalInsideRange(dir))
+      {
+         sig.valid  = false;
+         sig.reason += "[G2:CANDLE_OUTSIDE] ";
+      }
+      // Gate 3: spread must be <= 3 pips at entry moment
+      if(sig.valid && !GateSpreadOK())
+      {
+         sig.valid  = false;
+         sig.reason += "[G3:SPREAD_WIDE] ";
+      }
+      // ── END GATES ─────────────────────────────────────────────────────
+
       // SL: beyond sweep extreme + 0.5 ATR
       double atr = GetATR_M5();
       if(dir == 1)
@@ -343,7 +359,33 @@ private:
       // Convert broker time to UTC
       int utcMinutes = dt.hour * 60 + dt.min - m_brokerOffset * 60;
       if(utcMinutes < 0) utcMinutes += 24 * 60;
-      return (utcMinutes >= 7*60 && utcMinutes <= 9*60+30);
+      // Gate 1: ultra-precise window 07:00-07:45 UTC — strongest sweeps only
+      return (utcMinutes >= 7*60 && utcMinutes <= 7*60+45);
+   }
+
+   //+----------------------------------------------------------------+
+   // Gate 2 — Reversal candle (bar 1) closed INSIDE the Asia range
+   //   BUY:  close > asiaLow  (not just a wick — real close back in)
+   //   SELL: close < asiaHigh
+   //+----------------------------------------------------------------+
+   bool GateReversalInsideRange(int dir)
+   {
+      double closes[];
+      ArraySetAsSeries(closes, true);
+      if(CopyClose(m_symbol, PERIOD_M5, 0, 3, closes) < 3) return false;
+      if(dir == 1) return (closes[1] > m_asiaLow);
+      else         return (closes[1] < m_asiaHigh);
+   }
+
+   //+----------------------------------------------------------------+
+   // Gate 3 — Spread <= 3 pips at moment of entry
+   //   For gold (5-digit broker): 30 points = 3.0 pips
+   //+----------------------------------------------------------------+
+   bool GateSpreadOK()
+   {
+      long spreadPts = SymbolInfoInteger(m_symbol, SYMBOL_SPREAD);
+      // Gold: 1 pip = 10 points (5-digit). 3 pips = 30 points.
+      return (spreadPts <= 30);
    }
 
    //+----------------------------------------------------------------+
