@@ -1984,7 +1984,9 @@ void OnTick()
    double sellScore = g_cachedSellScore;
 
    // Apply adaptive filter (pattern bonus/penalty)
-   if(InpEnableLearning && InpEnableAdaptiveFilters && performanceAnalyzer.IsLearningActive())
+   // APEX modes skip this — g_lastBuyFactors are legacy-only and would corrupt APEX scores
+   if(InpApexMode == APEX_LEGACY &&
+      InpEnableLearning && InpEnableAdaptiveFilters && performanceAnalyzer.IsLearningActive())
    {
       // Use REAL factors captured during CalculateConfluenceScore() (not score proxies)
       double buyBonus = adaptiveFilter.GetAdjustedConfluence(buyScore, g_lastBuyFactors) - buyScore;
@@ -2055,9 +2057,19 @@ void OnTick()
       double bestScore = (buyScore > sellScore) ? buyScore : sellScore;
       int bestDirection = (buyScore > sellScore) ? 1 : -1;
 
-      // Get Entry Tier from confluence force multiplier system
-      ENUM_ENTRY_TIER tier = GetEntryTier(bestScore);
-      if(tier == TIER_NO_TRADE) return;  // Score < 8 = no trade
+      // Get Entry Tier — APEX modes use 0-12 scale, legacy uses 0-30 scale
+      ENUM_ENTRY_TIER tier;
+      if(InpApexMode != APEX_LEGACY)
+      {
+         // APEX tiers: 6-7=BASE, 8-9=GOOD, 10-12=STRONG
+         if(bestScore >= 10) tier = TIER_STRONG;
+         else if(bestScore >= 8) tier = TIER_GOOD;
+         else if(bestScore >= 6) tier = TIER_BASE;
+         else tier = TIER_NO_TRADE;
+      }
+      else
+         tier = GetEntryTier(bestScore);
+      if(tier == TIER_NO_TRADE) return;
 
       // Calculate Quality using Learning Module Logic
       ENTRY_QUALITY quality = learning.CalculateQuality(bestScore);
@@ -2079,8 +2091,11 @@ void OnTick()
          baseRisk = kellySizer.GetAdjustedRisk(quality, newsMultiplier, killzoneMultiplier, regimeMultiplier);
       }
 
-      // Apply confluence force multiplier (continuous scaling by score)
-      baseRisk *= GetConfluenceMultiplier(bestScore);
+      // Apply confluence force multiplier — APEX uses own scale (6-12), legacy uses 0-30
+      double confMult = (InpApexMode != APEX_LEGACY)
+                        ? ((bestScore >= 10) ? 1.0 : (bestScore >= 8) ? 0.8 : 0.6)
+                        : GetConfluenceMultiplier(bestScore);
+      baseRisk *= confMult;
 
       // Apply adaptive risk (if enabled and learning active)
       if(InpEnableLearning && InpEnableAdaptiveRisk && adaptiveRisk.IsAdaptationEnabled())
