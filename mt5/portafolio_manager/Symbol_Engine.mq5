@@ -1618,10 +1618,20 @@ void OnTick()
       // Fix #3: Publish regime and signal quality for RankManager multipliers
       GlobalVariableSet("PG_Regime_" + _Symbol, (double)g_currentRegime);
       double bestQuality = 0;
-      if(g_cachedBuyScore >= g_cachedSellScore && g_cachedBuyScore >= InpMinConfluenceEntry)
-         bestQuality = (g_cachedBuyScore >= 22) ? 3.0 : (g_cachedBuyScore >= 18) ? 2.0 : 1.0;
-      else if(g_cachedSellScore > g_cachedBuyScore && g_cachedSellScore >= InpMinConfluenceEntry)
-         bestQuality = (g_cachedSellScore >= 22) ? 3.0 : (g_cachedSellScore >= 18) ? 2.0 : 1.0;
+      if(InpApexMode != APEX_LEGACY)
+      {
+         // APEX scale: 0-12. Quality tiers: 6-7=Good, 8-9=Strong, 10+=Elite
+         double apexScore = MathMax(g_cachedBuyScore, g_cachedSellScore);
+         if(apexScore >= InpMinConfluenceEntry)
+            bestQuality = (apexScore >= 10) ? 3.0 : (apexScore >= 8) ? 2.0 : 1.0;
+      }
+      else
+      {
+         if(g_cachedBuyScore >= g_cachedSellScore && g_cachedBuyScore >= InpMinConfluenceEntry)
+            bestQuality = (g_cachedBuyScore >= 22) ? 3.0 : (g_cachedBuyScore >= 18) ? 2.0 : 1.0;
+         else if(g_cachedSellScore > g_cachedBuyScore && g_cachedSellScore >= InpMinConfluenceEntry)
+            bestQuality = (g_cachedSellScore >= 22) ? 3.0 : (g_cachedSellScore >= 18) ? 2.0 : 1.0;
+      }
       GlobalVariableSet("PG_Quality_" + _Symbol, bestQuality);
 
       // --- SCAN LOG: throttled to once every 5 minutes ---
@@ -2117,70 +2127,51 @@ void OnTick()
       else
       {
           // ── ASMA: Regime-Based Strategy Filter ─────────────────────
-          // Adapt allowed signal TYPE based on current regime (MQL5 ASMA pattern)
+          // APEX modes bypass ASMA — each module is already regime-specific by design
           bool asmaBlock = false;
           string asmaReason = "";
 
-          switch(g_currentRegime)
+          if(InpApexMode == APEX_LEGACY)
           {
-             case REGIME_TREND_STRONG:
-             case REGIME_TREND_WEAK:
-                // Trend regimes: block mean-reversion signals (mrSignalValid = counter-trend)
-                if(g_regimeCtx.mrSignalValid)
-                {
-                   asmaBlock  = true;
-                   asmaReason = "ASMA_MR_IN_TREND(" + g_regimeCtx.regimeLabel + ")";
-                }
-                break;
-
-             case REGIME_RANGING:
-                // Ranging: block if volSignal (breakout) is driving the score
-                if(g_regimeCtx.volSignalValid && !g_regimeCtx.mrSignalValid)
-                {
-                   asmaBlock  = true;
-                   asmaReason = "ASMA_BREAKOUT_IN_RANGING";
-                }
-                break;
-
-             case REGIME_VOLATILE:
-                // Volatile: no new entries — manage existing only
-                asmaBlock  = true;
-                asmaReason = "ASMA_VOLATILE_NO_ENTRY";
-                break;
-
-             case REGIME_CHOPPY:
-                // Choppy: pure random walk — no institutional structure to trade
-                asmaBlock  = true;
-                asmaReason = "ASMA_CHOPPY_RANDOM_WALK";
-                break;
-
-             case REGIME_SQUEEZE:
-                // Squeeze: only VOLATILE module breakout signals are valid here
-                if(!g_regimeCtx.volSignalValid)
-                {
-                   asmaBlock  = true;
-                   asmaReason = "ASMA_SQUEEZE_NO_BREAKOUT_SIGNAL";
-                }
-                break;
-
-             default:
-                break;
-          }
-
-          if(asmaBlock)
-          {
-             static datetime lastASMALog = 0;
-             if(TimeCurrent() - lastASMALog > 300)
+             switch(g_currentRegime)
              {
-                Print("[ASMA] Signal suppressed: ", asmaReason);
-                lastASMALog = TimeCurrent();
+                case REGIME_TREND_STRONG:
+                case REGIME_TREND_WEAK:
+                   if(g_regimeCtx.mrSignalValid)
+                   { asmaBlock = true; asmaReason = "ASMA_MR_IN_TREND(" + g_regimeCtx.regimeLabel + ")"; }
+                   break;
+                case REGIME_RANGING:
+                   if(g_regimeCtx.volSignalValid && !g_regimeCtx.mrSignalValid)
+                   { asmaBlock = true; asmaReason = "ASMA_BREAKOUT_IN_RANGING"; }
+                   break;
+                case REGIME_VOLATILE:
+                   asmaBlock = true; asmaReason = "ASMA_VOLATILE_NO_ENTRY";
+                   break;
+                case REGIME_CHOPPY:
+                   asmaBlock = true; asmaReason = "ASMA_CHOPPY_RANDOM_WALK";
+                   break;
+                case REGIME_SQUEEZE:
+                   if(!g_regimeCtx.volSignalValid)
+                   { asmaBlock = true; asmaReason = "ASMA_SQUEEZE_NO_BREAKOUT_SIGNAL"; }
+                   break;
+                default:
+                   break;
              }
-             return;
+             if(asmaBlock)
+             {
+                static datetime lastASMALog = 0;
+                if(TimeCurrent() - lastASMALog > 300)
+                { Print("[ASMA] Signal suppressed: ", asmaReason); lastASMALog = TimeCurrent(); }
+                return;
+             }
           }
           // ── End ASMA ─────────────────────────────────────────────────
 
-          // Dynamic threshold: base from .set + regime adjustment
-          double minEntry = (double)g_regimeCtx.minConfluence;
+          // Dynamic threshold: APEX modes use InpMinConfluenceEntry directly (0-12 scale)
+          // Legacy mode uses regime-computed minConfluence (0-30 scale)
+          double minEntry = (InpApexMode != APEX_LEGACY)
+                            ? (double)InpMinConfluenceEntry
+                            : (double)g_regimeCtx.minConfluence;
 
           // Module 3: Override with DB-calibrated minimum if score intelligence has data
           if(InpEnableLearning && !MQLInfoInteger(MQL_TESTER))
@@ -2200,8 +2191,9 @@ void OnTick()
           }
 
           // TRANSITION: fresh regime (< 4 bars) = structure rebuilding → require more confluence
-          // Prevents premature entries immediately after a regime flip
-          if(g_regimeCtx.regimePersistenceBars < 4 &&
+          // Prevents premature entries immediately after a regime flip (legacy only)
+          if(InpApexMode == APEX_LEGACY &&
+             g_regimeCtx.regimePersistenceBars < 4 &&
              g_currentRegime != REGIME_CHOPPY && g_currentRegime != REGIME_CRISIS)
              minEntry += 3.0;
 
