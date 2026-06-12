@@ -1879,6 +1879,21 @@ void OnTick()
       }
    }
 
+   // --- GOVERNOR v2: PER-SYMBOL DAILY TARGET ---
+   {
+      string _symGV = "GOV_SYM_PAUSED_" + IntegerToString(InpMagicNumber);
+      if(GlobalVariableCheck(_symGV) && GlobalVariableGet(_symGV) >= 1.0)
+      {
+         static datetime _lastSymLog = 0;
+         if(TimeCurrent() - _lastSymLog > 300)
+         {
+            Print("[BLOCKED] SYM_DAILY_TARGET: Magic ", InpMagicNumber, " hit daily target — no more entries today");
+            _lastSymLog = TimeCurrent();
+         }
+         return;
+      }
+   }
+
    // PRE-ENTRY FILTERS (Quick Exits for Performance)
    if(!CheckSpread(true)) return;
 

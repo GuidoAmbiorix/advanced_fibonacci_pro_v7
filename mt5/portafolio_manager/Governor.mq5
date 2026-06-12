@@ -25,6 +25,7 @@ input double InpDailyLossLimit       = -132.0;  // *** Adjusted for $6000 accoun
 input bool   InpPauseOnProfitTarget  = true;    // Pause new entries when target hit
 input bool   InpCloseOnProfitTarget  = false;   // Close ALL positions when daily profit target hit
 input bool   InpCloseOnDailyLoss     = true;    // Close ALL positions on daily loss limit
+input double InpSymbolDailyTarget    = 0.0;     // Per-symbol daily profit target $ (0=disabled) — pauses that symbol only
 
 //--- Portfolio drawdown
 input group "======= PORTFOLIO DRAWDOWN ======="
@@ -90,6 +91,7 @@ input double InpEqCurveReductMult    = 0.6;     // Risk multiplier when equity <
 #define GV_PREFRIDAY_BLOCK   "GOV_PREFRIDAY_BLOCK"
 #define GV_COOLDOWN_PREFIX   "GV_COOLDOWN_"
 #define GV_CONSEC_LOSSES     "GOV_CONSEC_LOSSES"
+#define GV_SYM_PAUSE_PREFIX  "GOV_SYM_PAUSED_"
 
 //+------------------------------------------------------------------+
 //| State                                                             |
@@ -312,6 +314,10 @@ void OnTimer()
 
    PublishCooldowns();
 
+   // --- PER-SYMBOL DAILY TARGET ---
+   if(InpSymbolDailyTarget > 0)
+      CheckSymbolTargets();
+
    if(emergencyClose)
    {
       CloseAllManagedPositions(closeReason);
@@ -353,6 +359,10 @@ void CheckNewDay()
       GlobalVariableSet(GV_DAY_DATE, (double)today);
       g_lastDay = today;
       GlobalVariableSet(GV_DAILY_TARGET_HIT, 0.0);
+      // Reset per-symbol daily targets
+      for(int _i = InpMagicMin; _i <= InpMagicMax; _i++)
+         if(GlobalVariableCheck(GV_SYM_PAUSE_PREFIX + IntegerToString(_i)))
+            GlobalVariableSet(GV_SYM_PAUSE_PREFIX + IntegerToString(_i), 0.0);
       double _eq = AccountInfoDouble(ACCOUNT_EQUITY);
       double _dd = (g_equityPeak > 0) ? (g_equityPeak - _eq) / g_equityPeak * 100.0 : 0.0;
       bool _stillEmergency = (InpCloseAllOnMaxDD && _dd >= InpMaxPortfolioDD_Pct);
@@ -530,12 +540,98 @@ double GetEqCurveMultiplier()
    return (eq < sum/g_eqBufFilled) ? InpEqCurveReductMult : 1.0;
 }
 
+// Returns realized + floating P&L for today for a specific magic number
+double CalcSymbolDailyPnL(int magic)
+{
+   // Floating
+   double floating = 0;
+   for(int i = 0; i < PositionsTotal(); i++)
+   {
+      if(!PositionSelectByTicket(PositionGetTicket(i))) continue;
+      if((int)PositionGetInteger(POSITION_MAGIC) != magic) continue;
+      floating += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
+   }
+   // Realized today
+   HistorySelect(GetDayStart(TimeCurrent()), TimeCurrent());
+   double realized = 0;
+   for(int i = 0; i < HistoryDealsTotal(); i++)
+   {
+      ulong t = HistoryDealGetTicket(i);
+      if((int)HistoryDealGetInteger(t, DEAL_MAGIC) != magic) continue;
+      if((ENUM_DEAL_ENTRY)HistoryDealGetInteger(t, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+      realized += HistoryDealGetDouble(t, DEAL_PROFIT)
+                + HistoryDealGetDouble(t, DEAL_SWAP)
+                + HistoryDealGetDouble(t, DEAL_COMMISSION);
+   }
+   return realized + floating;
+}
+
+// Scan all active magics today and pause those that hit InpSymbolDailyTarget
+void CheckSymbolTargets()
+{
+   // Collect unique magic numbers seen today (open positions + today's history)
+   int magics[];
+   int magicCount = 0;
+
+   for(int i = 0; i < PositionsTotal(); i++)
+   {
+      if(!PositionSelectByTicket(PositionGetTicket(i))) continue;
+      int m = (int)PositionGetInteger(POSITION_MAGIC);
+      if(m < InpMagicMin || m > InpMagicMax) continue;
+      bool found = false;
+      for(int j = 0; j < magicCount; j++) if(magics[j] == m) { found = true; break; }
+      if(!found) { ArrayResize(magics, magicCount + 1); magics[magicCount++] = m; }
+   }
+
+   HistorySelect(GetDayStart(TimeCurrent()), TimeCurrent());
+   for(int i = 0; i < HistoryDealsTotal(); i++)
+   {
+      ulong t = HistoryDealGetTicket(i);
+      int m = (int)HistoryDealGetInteger(t, DEAL_MAGIC);
+      if(m < InpMagicMin || m > InpMagicMax) continue;
+      bool found = false;
+      for(int j = 0; j < magicCount; j++) if(magics[j] == m) { found = true; break; }
+      if(!found) { ArrayResize(magics, magicCount + 1); magics[magicCount++] = m; }
+   }
+
+   for(int i = 0; i < magicCount; i++)
+   {
+      string gvName = GV_SYM_PAUSE_PREFIX + IntegerToString(magics[i]);
+      double symPnL = CalcSymbolDailyPnL(magics[i]);
+      bool alreadyPaused = GlobalVariableCheck(gvName) && GlobalVariableGet(gvName) >= 1.0;
+      if(symPnL >= InpSymbolDailyTarget)
+      {
+         if(!alreadyPaused)
+            Print("[SYM_TARGET] Magic ", magics[i], " hit $", DoubleToString(symPnL, 2),
+                  " — pausing entries for this symbol today");
+         GlobalVariableSet(gvName, 1.0);
+      }
+      else
+         GlobalVariableSet(gvName, 0.0);
+   }
+}
+
 void DrawDashboard(double dailyPnL, double dd, double riskMult, double eqMult, bool paused, string pauseReason, bool emergency, string closeReason, string correlWarning, int td, int tw)
 {
-   string msg = StringFormat("\n GOVERNOR AGGRESSIVE v2.0\n Balance: $%.2f | Equity: $%.2f\n DD: %.2f%% | Risk: %.2fx\n Trades: %d/%d (Daily) | %d/%d (Weekly)\n", AccountInfoDouble(ACCOUNT_BALANCE), AccountInfoDouble(ACCOUNT_EQUITY), dd, riskMult, td, InpMaxDailyTrades, tw, InpMaxWeeklyTrades);
+   string msg = StringFormat("\n GOVERNOR v2.0\n Balance: $%.2f | Equity: $%.2f\n DD: %.2f%% | Risk: %.2fx\n Daily P&L: $%.2f\n Trades: %d/%d (Daily) | %d/%d (Weekly)\n",
+      AccountInfoDouble(ACCOUNT_BALANCE), AccountInfoDouble(ACCOUNT_EQUITY), dd, riskMult,
+      CalcDailyPnL(), td, InpMaxDailyTrades, tw, InpMaxWeeklyTrades);
    if(emergency) msg += " !! EMERGENCY: " + closeReason + "\n";
    else if(paused) msg += " PAUSED: " + pauseReason + "\n";
    else msg += " Status: ENTRIES OPEN\n";
-   if(correlWarning != "") msg += " Warning: " + correlWarning + "\n";
+   if(correlWarning != "") msg += " Correl: " + correlWarning + "\n";
+   // Per-symbol daily targets
+   if(InpSymbolDailyTarget > 0)
+   {
+      msg += " --- Per-Symbol ($" + DoubleToString(InpSymbolDailyTarget, 2) + " cap) ---\n";
+      for(int _m = InpMagicMin; _m <= InpMagicMax; _m++)
+      {
+         string _gv = GV_SYM_PAUSE_PREFIX + IntegerToString(_m);
+         if(!GlobalVariableCheck(_gv)) continue;
+         double _pnl = CalcSymbolDailyPnL(_m);
+         bool _paused = GlobalVariableGet(_gv) >= 1.0;
+         msg += StringFormat("  Magic %d: $%.2f %s\n", _m, _pnl, _paused ? "[DONE]" : "[active]");
+      }
+   }
    Comment(msg);
 }

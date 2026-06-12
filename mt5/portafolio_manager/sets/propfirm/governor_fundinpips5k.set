@@ -22,6 +22,8 @@ InpDailyLossLimit=-130.0
 InpPauseOnProfitTarget=true
 InpCloseOnProfitTarget=true
 InpCloseOnDailyLoss=true
+; Solo 1 símbolo — el global target ($20) ya lo maneja, per-symbol desactivado
+InpSymbolDailyTarget=0.0
 
 ;═══════ PORTFOLIO DRAWDOWN ═══════
 ; 5% max = $250 — usamos 4% = $200 de buffer
