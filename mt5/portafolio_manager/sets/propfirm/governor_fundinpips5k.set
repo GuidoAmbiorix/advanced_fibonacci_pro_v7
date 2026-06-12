@@ -1,0 +1,73 @@
+; Governor — FundingPips Zero Challenge $5K
+; ─────────────────────────────────────────────────
+; REGLAS FUNDINPIPS $5K:
+;   Daily Loss:  3%  = $150  → límite interno $130 (buffer $20)
+;   Max Loss:    5%  = $250  → DD interno 4.0% = $200 (buffer $50)
+;   Consistency: 15% → DailyProfitTarget $20 (satisface automáticamente)
+;   Split:       95% biweekly
+; ─────────────────────────────────────────────────
+; Solo monitorea APEX Sweep (Magic 100045)
+; ─────────────────────────────────────────────────
+
+;═══════ MAGIC RANGE ═══════
+InpMagicMin=100045
+InpMagicMax=100045
+
+;═══════ DAILY P&L ═══════
+; $20/día máximo — ningún día supera el 15% del profit total
+; (día 1: $20/$20 = 100% pero se normaliza en ~10 días)
+; (día 10: $20/$180 = 11.1% ✓)
+InpDailyProfitTarget=20.0
+InpDailyLossLimit=-130.0
+InpPauseOnProfitTarget=true
+InpCloseOnProfitTarget=true
+InpCloseOnDailyLoss=true
+
+;═══════ PORTFOLIO DRAWDOWN ═══════
+; 5% max = $250 — usamos 4% = $200 de buffer
+InpMaxPortfolioDD_Pct=4.0
+InpReduceRiskAt_Pct=2.0
+InpCloseAllOnMaxDD=true
+
+;═══════ CORRELATION FILTER ═══════
+; Desactivado — solo opera 1 símbolo (XAUUSDm)
+InpUseCorrelFilter=false
+InpMaxSameCurrency=1
+InpCloseCorrelOnBreech=false
+
+;═══════ INSTITUTIONAL SAFETY ═══════
+; Más sensible para prop firm — reducir riesgo si cae 0.5% en 1h
+InpEquityVelocityLimit=0.5
+InpGlobalVolatileLimit=3
+
+;═══════ FRIDAY CLOSE ═══════
+; Cerrar antes del cierre del mercado del viernes
+InpFridayClose=true
+InpFridayCloseHour=20
+InpFridayCloseMinute=0
+
+;═══════ DISPLAY ═══════
+InpShowDashboard=true
+InpRefreshSeconds=5
+
+;═══════ TIEMPO Y COOLDOWN ═══════
+; Bloquear nuevas entradas 3h antes del cierre del viernes
+InpFridayBlockHours=3
+; Sin cooldown por símbolo — solo 1 ventana al día (07:00-07:45)
+InpSymbolCooldownHours=0
+
+;═══════ LÍMITES DE OPERACIÓN ═══════
+; Max 1 posición abierta, max 3 trades por día (ventana 45 min)
+InpMaxOpenPositions=1
+InpMaxDailyTrades=3
+InpMaxWeeklyTrades=15
+
+;═══════ RACHA DE PÉRDIDAS ═══════
+; Reducir riesgo después de 2 losses, pausar después de 3
+InpConsecLossReduce=2
+InpConsecLossPause=3
+
+;═══════ EQUITY CURVE FILTER ═══════
+InpUseEqCurve=true
+InpEqCurvePeriod=20
+InpEqCurveReductMult=0.5
