@@ -11,14 +11,14 @@ InpMagicMin=100045
 InpMagicMax=100049
 
 ;═══════ DAILY P&L ═══════
-; Por símbolo: $2.00 — 1er win ($15-22) ya supera el cap → para ese símbolo
-; Global target: $50.00 — safety net (5 × $10 aprox)
+; Por símbolo: $5.00 — cualquier win lo supera, pero captura edge cases de spread/comisión
+; Global target: $50.00 — safety net
 InpDailyProfitTarget=50.0
 InpDailyLossLimit=-50.0
 InpPauseOnProfitTarget=true
 InpCloseOnProfitTarget=false
 InpCloseOnDailyLoss=true
-InpSymbolDailyTarget=10.0
+InpSymbolDailyTarget=5.0
 
 ;═══════ PORTFOLIO DRAWDOWN ═══════
 ; DD máximo $30 en cuenta $500 (6%) — ajustar según capital
