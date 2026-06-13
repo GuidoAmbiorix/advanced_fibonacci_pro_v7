@@ -18,7 +18,7 @@ InpDailyLossLimit=-50.0
 InpPauseOnProfitTarget=true
 InpCloseOnProfitTarget=false
 InpCloseOnDailyLoss=true
-InpSymbolDailyTarget=2.0
+InpSymbolDailyTarget=10.0
 
 ;═══════ PORTFOLIO DRAWDOWN ═══════
 ; DD máximo $30 en cuenta $500 (6%) — ajustar según capital
