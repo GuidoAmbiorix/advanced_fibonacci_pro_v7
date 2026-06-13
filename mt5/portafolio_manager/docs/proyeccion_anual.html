@@ -94,6 +94,69 @@
     letter-spacing: 1px;
   }
 
+  /* INVEST BANNER */
+  .invest-banner {
+    background: rgba(246,201,14,0.12);
+    border: 1px solid rgba(246,201,14,0.35);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin: 24px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+  }
+  .invest-icon { font-size: 28px; flex-shrink: 0; }
+  .invest-text { font-size: 13px; line-height: 1.5; opacity: 0.9; }
+  .invest-text strong { color: var(--gold); font-size: 15px; }
+
+  /* STRATEGY EXPLAINER */
+  .strategy-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .strat-card {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    text-align: left;
+  }
+  .strat-num {
+    width: 28px; height: 28px;
+    background: var(--gold);
+    color: var(--purple-dark);
+    border-radius: 50%;
+    font-weight: 900;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .strat-body { font-size: 13px; line-height: 1.5; opacity: 0.9; }
+  .strat-body b { color: var(--gold); opacity: 1; }
+
+  /* WIN RATE PILLS */
+  .wr-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .wr-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+  .wr-icon { font-size: 16px; flex-shrink: 0; }
+  .wr-text { font-size: 13px; opacity: 0.9; flex: 1; line-height: 1.4; }
+  .wr-text b { color: var(--gold); }
+
   /* CONTAINER */
   .container { max-width: 600px; margin: 0 auto; padding: 20px 16px 40px; }
 
@@ -358,6 +421,58 @@
       <span class="lbl">ROI anual</span>
     </div>
   </div>
+
+  <!-- INVERSIÓN -->
+  <div class="invest-banner">
+    <div class="invest-icon">💰</div>
+    <div class="invest-text">
+      <strong>Inversión inicial: $60</strong><br>
+      Cuenta fondeada de $5,000 con FundingPips Zero Challenge. Sin evaluación, acceso inmediato. Ganás el 95% de todo lo que genera el sistema — la empresa pone el capital.
+    </div>
+  </div>
+
+  <!-- QUÉ ES LA ESTRATEGIA -->
+  <div style="margin-top:24px; text-align:left;">
+    <div style="font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; opacity:0.6; margin-bottom:12px; text-align:center;">Qué hace el sistema</div>
+    <div class="strategy-cards">
+      <div class="strat-card">
+        <div class="strat-num">1</div>
+        <div class="strat-body">Durante la noche, el oro y las divisas forman un rango de precios tranquilo. Los bancos dejan órdenes arriba y abajo de ese rango — son las <b>trampas de liquidez</b>.</div>
+      </div>
+      <div class="strat-card">
+        <div class="strat-num">2</div>
+        <div class="strat-body">A las <b>07:00 AM UTC</b> abre Londres — el mercado más grande del mundo. Los bancos "barren" esas trampas: suben o bajan el precio para activarlas y tomar ese dinero.</div>
+      </div>
+      <div class="strat-card">
+        <div class="strat-num">3</div>
+        <div class="strat-body">Inmediatamente después, el precio <b>revierte</b>. Ahí es donde entra el sistema — a favor del rebote, con stop loss ajustado y take profit en el punto medio del rango.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POR QUÉ ALTO WIN RATE -->
+  <div style="margin-top:24px; text-align:left;">
+    <div style="font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; opacity:0.6; margin-bottom:12px; text-align:center;">Por qué el win rate es tan alto</div>
+    <div class="wr-grid">
+      <div class="wr-row">
+        <div class="wr-icon">🏦</div>
+        <div class="wr-text">Los bancos hacen esto <b>casi todos los días</b> — es comportamiento institucional predecible, no especulación.</div>
+      </div>
+      <div class="wr-row">
+        <div class="wr-icon">⏱️</div>
+        <div class="wr-text">Solo operamos en una ventana de <b>45–90 minutos</b>. Fuera de ese horario, el sistema no hace nada.</div>
+      </div>
+      <div class="wr-row">
+        <div class="wr-icon">🔒</div>
+        <div class="wr-text"><b>3 filtros de calidad</b> rechazan setups dudosos: si el spread es alto, si el vela no revirtió dentro del rango, o si el mercado ya se movió demasiado — no entra.</div>
+      </div>
+      <div class="wr-row">
+        <div class="wr-icon">📊</div>
+        <div class="wr-text">El resultado: <b>80–88% de win rate</b> según el par. De cada 10 trades, 8 o más ganan.</div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="container">
