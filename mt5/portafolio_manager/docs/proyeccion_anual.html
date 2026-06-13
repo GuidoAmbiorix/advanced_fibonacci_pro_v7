@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX Sweep — Proyección Anual</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --purple-dark:   #1a0a2e;
+    --purple-main:   #4a1fa8;
+    --purple-mid:    #6d3fc7;
+    --purple-light:  #9b6dde;
+    --purple-pale:   #e8dff8;
+    --purple-ghost:  #f5f0ff;
+    --white:         #ffffff;
+    --text-dark:     #1a0a2e;
+    --text-mid:      #4a3570;
+    --text-light:    #7b6a9a;
+    --green:         #1db954;
+    --green-light:   #d4f5e2;
+    --red:           #e53e3e;
+    --red-light:     #fde8e8;
+    --gold:          #f6c90e;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--purple-ghost);
+    color: var(--text-dark);
+    line-height: 1.6;
+  }
+
+  /* HEADER */
+  .hero {
+    background: linear-gradient(135deg, var(--purple-dark) 0%, var(--purple-main) 60%, var(--purple-mid) 100%);
+    color: var(--white);
+    padding: 48px 20px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 60% 40%, rgba(155,109,222,0.3) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: clamp(26px, 6vw, 42px);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  .hero h1 span { color: var(--gold); }
+  .hero p {
+    font-size: 15px;
+    opacity: 0.8;
+    max-width: 340px;
+    margin: 0 auto 24px;
+  }
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat .val {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--gold);
+    display: block;
+  }
+  .hero-stat .lbl {
+    font-size: 11px;
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* CONTAINER */
+  .container { max-width: 600px; margin: 0 auto; padding: 20px 16px 40px; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--purple-mid);
+    margin: 32px 0 12px;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 12px rgba(74,31,168,0.08);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+
+  /* PAIRS GRID */
+  .pairs-grid { display: flex; flex-direction: column; gap: 10px; }
+  .pair-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--purple-ghost);
+    border-radius: 12px;
+    border-left: 4px solid var(--purple-mid);
+  }
+  .pair-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--purple-dark);
+    width: 68px;
+    flex-shrink: 0;
+  }
+  .pair-details { flex: 1; }
+  .pair-wr {
+    font-size: 12px;
+    color: var(--text-light);
+  }
+  .pair-wr b { color: var(--green); }
+  .pair-win {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--green);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .pair-loss {
+    font-size: 11px;
+    color: var(--red);
+    text-align: right;
+  }
+
+  /* PERFECT DAY */
+  .perfect-day {
+    background: linear-gradient(135deg, var(--purple-dark), var(--purple-main));
+    border-radius: 16px;
+    padding: 24px 20px;
+    color: var(--white);
+    margin-bottom: 12px;
+  }
+  .perfect-day h3 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.7;
+    margin-bottom: 6px;
+  }
+  .perfect-day .amount {
+    font-size: 52px;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: -2px;
+    line-height: 1;
+  }
+  .perfect-day .sub {
+    font-size: 13px;
+    opacity: 0.7;
+    margin-top: 6px;
+  }
+  .perfect-day .time-badge {
+    display: inline-block;
+    background: rgba(246,201,14,0.2);
+    border: 1px solid rgba(246,201,14,0.4);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--gold);
+    font-weight: 600;
+    margin-top: 12px;
+  }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th {
+    background: var(--purple-main);
+    color: var(--white);
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  thead th:first-child { border-radius: 8px 0 0 0; }
+  thead th:last-child { border-radius: 0 8px 0 0; }
+  tbody tr:nth-child(even) { background: var(--purple-ghost); }
+  tbody tr:last-child { background: var(--purple-pale); font-weight: 700; }
+  tbody td { padding: 10px 12px; color: var(--text-dark); }
+  .td-green { color: var(--green); font-weight: 700; }
+  .td-purple { color: var(--purple-main); font-weight: 800; }
+
+  /* MILESTONE CARDS */
+  .milestones { display: flex; flex-direction: column; gap: 10px; }
+  .milestone {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(74,31,168,0.07);
+  }
+  .ms-dot {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--purple-mid), var(--purple-main));
+    color: var(--white);
+    font-weight: 800;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ms-info { flex: 1; }
+  .ms-info .ms-label {
+    font-size: 12px;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .ms-info .ms-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--purple-dark);
+  }
+  .ms-right { text-align: right; }
+  .ms-right .ms-lot { font-size: 12px; color: var(--purple-light); font-weight: 600; }
+  .ms-right .ms-pnl { font-size: 15px; font-weight: 800; color: var(--green); }
+
+  /* SCENARIO CARDS */
+  .scenarios { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .scenario {
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .scenario.bear { background: var(--red-light); }
+  .scenario.base { background: linear-gradient(135deg, var(--purple-main), var(--purple-mid)); color: var(--white); }
+  .scenario.bull { background: var(--green-light); }
+  .scenario .sc-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
+  .scenario.base .sc-label { opacity: 0.9; }
+  .scenario .sc-wr { font-size: 11px; margin: 4px 0; opacity: 0.8; }
+  .scenario .sc-month { font-size: 18px; font-weight: 900; }
+  .scenario.bear .sc-month { color: var(--red); }
+  .scenario.base .sc-month { color: var(--gold); }
+  .scenario.bull .sc-month { color: var(--green); }
+  .scenario .sc-year { font-size: 11px; font-weight: 700; margin-top: 4px; }
+
+  /* CAP EXPLAINER */
+  .cap-box {
+    background: var(--purple-pale);
+    border-radius: 12px;
+    padding: 16px;
+    border-left: 4px solid var(--purple-mid);
+  }
+  .cap-box .cap-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--purple-dark);
+    margin-bottom: 10px;
+  }
+  .cap-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(74,31,168,0.1);
+    font-size: 13px;
+  }
+  .cap-row:last-child { border-bottom: none; }
+  .cap-par { font-weight: 700; color: var(--purple-dark); }
+  .cap-win { color: var(--green); font-weight: 700; }
+  .cap-badge {
+    background: var(--green);
+    color: var(--white);
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  /* RULE BOX */
+  .rule-box {
+    background: var(--purple-ghost);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .rule-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--text-mid);
+  }
+  .rule-item:last-child { margin-bottom: 0; }
+  .rule-icon { font-size: 16px; flex-shrink: 0; }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    padding: 32px 20px;
+    font-size: 12px;
+    color: var(--text-light);
+  }
+  .footer strong { color: var(--purple-mid); }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">APEX Sweep · London Open</div>
+  <h1>Proyección <span>Anual</span></h1>
+  <p>5 pares · 0.05 lots fijos · 07:00–08:30 UTC · Cap $10/símbolo</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="val">$1,035</span>
+      <span class="lbl">Por mes</span>
+    </div>
+    <div class="hero-stat">
+      <span class="val">$17,420</span>
+      <span class="lbl">A 12 meses</span>
+    </div>
+    <div class="hero-stat">
+      <span class="val">248%</span>
+      <span class="lbl">ROI anual</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- PAIRS -->
+  <div class="section-title">Los 5 pares</div>
+  <div class="card">
+    <div class="pairs-grid">
+
+      <div class="pair-row">
+        <div class="pair-name">XAUUSD</div>
+        <div class="pair-details">
+          <div class="pair-wr">Win rate <b>88%</b> · Window 07:00–07:45</div>
+          <div class="pair-wr">Magic 100045 · SL $8.75</div>
+        </div>
+        <div>
+          <div class="pair-win">+$22.50</div>
+          <div class="pair-loss">-$8.75</div>
+        </div>
+      </div>
+
+      <div class="pair-row">
+        <div class="pair-name">EURUSD</div>
+        <div class="pair-details">
+          <div class="pair-wr">Win rate <b>83%</b> · Window 07:00–08:00</div>
+          <div class="pair-wr">Magic 100046 · SL $10.00</div>
+        </div>
+        <div>
+          <div class="pair-win">+$15.00</div>
+          <div class="pair-loss">-$10.00</div>
+        </div>
+      </div>
+
+      <div class="pair-row">
+        <div class="pair-name">GBPUSD</div>
+        <div class="pair-details">
+          <div class="pair-wr">Win rate <b>80%</b> · Window 07:00–08:30</div>
+          <div class="pair-wr">Magic 100047 · SL $12.50</div>
+        </div>
+        <div>
+          <div class="pair-win">+$18.75</div>
+          <div class="pair-loss">-$12.50</div>
+        </div>
+      </div>
+
+      <div class="pair-row">
+        <div class="pair-name">USDJPY</div>
+        <div class="pair-details">
+          <div class="pair-wr">Win rate <b>85%</b> · Window 07:00–08:00</div>
+          <div class="pair-wr">Magic 100048 · SL $10.00</div>
+        </div>
+        <div>
+          <div class="pair-win">+$15.00</div>
+          <div class="pair-loss">-$10.00</div>
+        </div>
+      </div>
+
+      <div class="pair-row">
+        <div class="pair-name">AUDUSD</div>
+        <div class="pair-details">
+          <div class="pair-wr">Win rate <b>80%</b> · Window 07:00–08:00</div>
+          <div class="pair-wr">Magic 100049 · SL $9.00</div>
+        </div>
+        <div>
+          <div class="pair-win">+$13.50</div>
+          <div class="pair-loss">-$9.00</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PERFECT DAY -->
+  <div class="section-title">Día perfecto</div>
+  <div class="perfect-day">
+    <h3>Los 5 ganan antes de las 08:00 UTC</h3>
+    <div class="amount">$84.75</div>
+    <div class="sub">$22.50 + $15.00 + $18.75 + $15.00 + $13.50</div>
+    <div class="time-badge">Ocurre ~1 vez por mes</div>
+  </div>
+
+  <!-- CAP EXPLICADO -->
+  <div class="section-title">Cap $10 por símbolo</div>
+  <div class="cap-box">
+    <div class="cap-title">Cualquier win supera el cap → ese símbolo para</div>
+    <div class="cap-row">
+      <span class="cap-par">XAUUSD</span>
+      <span class="cap-win">$22.50</span>
+      <span>≥ $10</span>
+      <span class="cap-badge">DONE</span>
+    </div>
+    <div class="cap-row">
+      <span class="cap-par">EURUSD</span>
+      <span class="cap-win">$15.00</span>
+      <span>≥ $10</span>
+      <span class="cap-badge">DONE</span>
+    </div>
+    <div class="cap-row">
+      <span class="cap-par">GBPUSD</span>
+      <span class="cap-win">$18.75</span>
+      <span>≥ $10</span>
+      <span class="cap-badge">DONE</span>
+    </div>
+    <div class="cap-row">
+      <span class="cap-par">USDJPY</span>
+      <span class="cap-win">$15.00</span>
+      <span>≥ $10</span>
+      <span class="cap-badge">DONE</span>
+    </div>
+    <div class="cap-row">
+      <span class="cap-par">AUDUSD</span>
+      <span class="cap-win">$13.50</span>
+      <span>≥ $10</span>
+      <span class="cap-badge">DONE</span>
+    </div>
+  </div>
+
+  <!-- TABLA MENSUAL -->
+  <div class="section-title">Proyección mes a mes · $5,000 inicial</div>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th>P&L</th>
+            <th>Acumulado</th>
+            <th>Capital</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Mes 1</td><td class="td-green">+$1,035</td><td>$1,035</td><td class="td-purple">$6,035</td></tr>
+          <tr><td>Mes 2</td><td class="td-green">+$1,035</td><td>$2,070</td><td class="td-purple">$7,070</td></tr>
+          <tr><td>Mes 3</td><td class="td-green">+$1,035</td><td>$3,105</td><td class="td-purple">$8,105</td></tr>
+          <tr><td>Mes 4</td><td class="td-green">+$1,035</td><td>$4,140</td><td class="td-purple">$9,140</td></tr>
+          <tr><td>Mes 5</td><td class="td-green">+$1,035</td><td>$5,175</td><td class="td-purple">$10,175</td></tr>
+          <tr><td>Mes 6</td><td class="td-green">+$1,035</td><td>$6,210</td><td class="td-purple">$11,210</td></tr>
+          <tr><td>Mes 7</td><td class="td-green">+$1,035</td><td>$7,245</td><td class="td-purple">$12,245</td></tr>
+          <tr><td>Mes 8</td><td class="td-green">+$1,035</td><td>$8,280</td><td class="td-purple">$13,280</td></tr>
+          <tr><td>Mes 9</td><td class="td-green">+$1,035</td><td>$9,315</td><td class="td-purple">$14,315</td></tr>
+          <tr><td>Mes 10</td><td class="td-green">+$1,035</td><td>$10,350</td><td class="td-purple">$15,350</td></tr>
+          <tr><td>Mes 11</td><td class="td-green">+$1,035</td><td>$11,385</td><td class="td-purple">$16,385</td></tr>
+          <tr><td>Mes 12</td><td class="td-green">+$1,035</td><td>$12,420</td><td class="td-purple">$17,420</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ESCENARIOS -->
+  <div class="section-title">Escenarios al año</div>
+  <div class="scenarios">
+    <div class="scenario bear">
+      <div class="sc-label">Pesimista</div>
+      <div class="sc-wr">WR -10%</div>
+      <div class="sc-month">$700</div>
+      <div class="sc-year">$8,400/año</div>
+    </div>
+    <div class="scenario base">
+      <div class="sc-label">Base</div>
+      <div class="sc-wr">WR estimado</div>
+      <div class="sc-month">$1,035</div>
+      <div class="sc-year">$12,420/año</div>
+    </div>
+    <div class="scenario bull">
+      <div class="sc-label">Optimista</div>
+      <div class="sc-wr">WR +5%</div>
+      <div class="sc-month">$1,300</div>
+      <div class="sc-year">$15,600/año</div>
+    </div>
+  </div>
+
+  <!-- ESCALADA -->
+  <div class="section-title">Si escalás los lots</div>
+  <div class="milestones">
+
+    <div class="milestone">
+      <div class="ms-dot">M1</div>
+      <div class="ms-info">
+        <div class="ms-label">Meses 1–3 · Verificación</div>
+        <div class="ms-val">Probar que funciona en vivo</div>
+      </div>
+      <div class="ms-right">
+        <div class="ms-lot">0.05 lots</div>
+        <div class="ms-pnl">$1,035/mes</div>
+      </div>
+    </div>
+
+    <div class="milestone">
+      <div class="ms-dot">M4</div>
+      <div class="ms-info">
+        <div class="ms-label">Meses 4–6 · Primera escala</div>
+        <div class="ms-val">3 meses positivos confirmados</div>
+      </div>
+      <div class="ms-right">
+        <div class="ms-lot">0.10 lots</div>
+        <div class="ms-pnl">$2,070/mes</div>
+      </div>
+    </div>
+
+    <div class="milestone">
+      <div class="ms-dot">M7</div>
+      <div class="ms-info">
+        <div class="ms-label">Meses 7–9 · Crecimiento</div>
+        <div class="ms-val">DD real < 8% verificado</div>
+      </div>
+      <div class="ms-right">
+        <div class="ms-lot">0.15 lots</div>
+        <div class="ms-pnl">$3,105/mes</div>
+      </div>
+    </div>
+
+    <div class="milestone">
+      <div class="ms-dot">M10</div>
+      <div class="ms-info">
+        <div class="ms-label">Meses 10–12 · Cruising</div>
+        <div class="ms-val">Capital original recuperado</div>
+      </div>
+      <div class="ms-right">
+        <div class="ms-lot">0.20 lots</div>
+        <div class="ms-pnl">$4,140/mes</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- REGLAS -->
+  <div class="section-title">Reglas para subir de lots</div>
+  <div class="card">
+    <div class="rule-box">
+      <div class="rule-item"><span class="rule-icon">✅</span><span>2 meses consecutivos positivos completados</span></div>
+      <div class="rule-item"><span class="rule-icon">✅</span><span>Drawdown máximo observado en vivo < 8%</span></div>
+      <div class="rule-item"><span class="rule-icon">✅</span><span>Win rate real en logs ≥ 75%</span></div>
+      <div class="rule-item"><span class="rule-icon">❌</span><span>No subas si tuviste un mes negativo en los últimos 2</span></div>
+      <div class="rule-item"><span class="rule-icon">❌</span><span>No subas si el spread promedio fue mayor al esperado</span></div>
+    </div>
+  </div>
+
+  <!-- CONCEPTO CLAVE -->
+  <div class="section-title">La idea que lo cambia todo</div>
+  <div class="perfect-day" style="text-align:left; padding:24px 20px;">
+    <h3>Por qué funciona</h3>
+    <div style="margin-top:14px; font-size:15px; line-height:1.8; opacity:0.9;">
+      No se trata de ganar mucho un día.<br>
+      Se trata de ganar <strong style="color:var(--gold)">$10 por símbolo</strong>, parar, y repetirlo mañana.<br><br>
+      <strong style="color:var(--gold)">$10 × 5 símbolos × 22 días = $1,100</strong><br><br>
+      El sistema para solo cuando ganó. Nunca cuando perdió. El capital original está recuperado en el mes 5.
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Generado el 13 Jun 2026 · <strong>APEX Sweep Portfolio</strong><br>
+  Exness · Magic 100045–100049 · Lots fijos 0.05
+</div>
+
+</body>
+</html>
