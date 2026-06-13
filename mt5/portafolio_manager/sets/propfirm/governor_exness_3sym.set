@@ -1,19 +1,19 @@
-; Governor — Exness Personal Account (XAUUSD + EURUSD + GBPUSD)
+; Governor — Exness Personal Account (5 símbolos)
 ; ─────────────────────────────────────────────────
-; 3 símbolos: Magic 100045 (XAU), 100046 (EUR), 100047 (GBP)
-; Lots fijos 0.01 en los 3 — riesgo por trade máximo $2.50
-; Target: $2/símbolo → $6 acumulado cuando los 3 llegan
+; Magic 100045 (XAU), 100046 (EUR), 100047 (GBP), 100048 (JPY), 100049 (AUD)
+; Lots fijos 0.01 en los 5 — riesgo por trade máximo $2.50
+; Target: $2/símbolo → $10 acumulado cuando los 5 llegan
 ; ─────────────────────────────────────────────────
 
 ;═══════ MAGIC RANGE ═══════
 InpMagicMin=100045
-InpMagicMax=100047
+InpMagicMax=100049
 
 ;═══════ DAILY P&L ═══════
 ; Por símbolo: $2.00 — cuando llega, pausa ese símbolo solo
-; Global target: $6.00 — si los 3 llegan, pausa todo
-InpDailyProfitTarget=6.0
-InpDailyLossLimit=-15.0
+; Global target: $10.00 — si los 5 llegan, pausa todo
+InpDailyProfitTarget=10.0
+InpDailyLossLimit=-20.0
 InpPauseOnProfitTarget=true
 InpCloseOnProfitTarget=false
 InpCloseOnDailyLoss=true
@@ -26,9 +26,10 @@ InpReduceRiskAt_Pct=3.0
 InpCloseAllOnMaxDD=true
 
 ;═══════ CORRELATION FILTER ═══════
-; EUR y GBP comparten USD — permitir hasta 2 exposiciones
+; EUR, GBP, AUD comparten USD — permitir hasta 3 exposiciones
+; USDJPY es inverso: protege días de USD fuerte
 InpUseCorrelFilter=true
-InpMaxSameCurrency=2
+InpMaxSameCurrency=3
 InpCloseCorrelOnBreech=false
 
 ;═══════ INSTITUTIONAL SAFETY ═══════
@@ -49,10 +50,10 @@ InpFridayBlockHours=3
 InpSymbolCooldownHours=0
 
 ;═══════ LÍMITES DE OPERACIÓN ═══════
-; 3 símbolos × max 3 trades c/u = 9 diarios max
-InpMaxOpenPositions=3
-InpMaxDailyTrades=9
-InpMaxWeeklyTrades=45
+; 5 símbolos × max 3 trades c/u = 15 diarios max
+InpMaxOpenPositions=5
+InpMaxDailyTrades=15
+InpMaxWeeklyTrades=75
 
 ;═══════ RACHA DE PÉRDIDAS ═══════
 ; Reducir riesgo después de 3 losses globales, pausar a los 5
