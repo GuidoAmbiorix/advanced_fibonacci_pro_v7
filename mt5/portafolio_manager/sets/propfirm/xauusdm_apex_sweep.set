@@ -30,8 +30,8 @@ InpMaxPositions=1
 ; Fixed lots for small account — bypasses min-lot rejection
 InpRiskBase=0.5
 InpMaxRisk=1.0
-InpMaxLotsPerTrade=0.01
-InpFixedLots=0.01
+InpMaxLotsPerTrade=0.05
+InpFixedLots=0.05
 InpEnableMarginCheck=true
 
 ;═══════ FIBONACCI ═══════

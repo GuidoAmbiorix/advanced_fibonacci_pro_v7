@@ -33,8 +33,8 @@ InpMaxPositions=1
 ; 0.01 lots fijos — pip value $0.10
 InpRiskBase=0.5
 InpMaxRisk=1.0
-InpMaxLotsPerTrade=0.01
-InpFixedLots=0.01
+InpMaxLotsPerTrade=0.05
+InpFixedLots=0.05
 InpEnableMarginCheck=true
 
 ;═══════ FIBONACCI ═══════

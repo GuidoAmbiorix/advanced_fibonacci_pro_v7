@@ -1,8 +1,9 @@
 ; Governor — Exness Personal Account (5 símbolos)
 ; ─────────────────────────────────────────────────
 ; Magic 100045 (XAU), 100046 (EUR), 100047 (GBP), 100048 (JPY), 100049 (AUD)
-; Lots fijos 0.01 en los 5 — riesgo por trade máximo $2.50
-; Target: $2/símbolo → $10 acumulado cuando los 5 llegan
+; Lots fijos 0.05 en los 5 — riesgo por trade máximo $12.50
+; Target: $2/símbolo → 1er win ya supera el cap → para ese símbolo
+; Global cap $50 → safety net si algo explota
 ; ─────────────────────────────────────────────────
 
 ;═══════ MAGIC RANGE ═══════
@@ -10,10 +11,10 @@ InpMagicMin=100045
 InpMagicMax=100049
 
 ;═══════ DAILY P&L ═══════
-; Por símbolo: $2.00 — cuando llega, pausa ese símbolo solo
-; Global target: $10.00 — si los 5 llegan, pausa todo
-InpDailyProfitTarget=10.0
-InpDailyLossLimit=-20.0
+; Por símbolo: $2.00 — 1er win ($15-22) ya supera el cap → para ese símbolo
+; Global target: $50.00 — safety net (5 × $10 aprox)
+InpDailyProfitTarget=50.0
+InpDailyLossLimit=-50.0
 InpPauseOnProfitTarget=true
 InpCloseOnProfitTarget=false
 InpCloseOnDailyLoss=true
