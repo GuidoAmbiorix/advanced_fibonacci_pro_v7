@@ -7,7 +7,7 @@
 InpMagicNumber=100045
 InpApexMode=5
 InpDirection=0
-InpBrokerUTCOffset=3
+InpBrokerUTCOffset=0
 
 ;═══════ KILLZONES ═══════
 ; Window handled internally by SweepScore (07:00-09:30 UTC)

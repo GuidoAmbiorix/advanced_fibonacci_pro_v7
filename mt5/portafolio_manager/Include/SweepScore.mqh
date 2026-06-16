@@ -113,6 +113,15 @@ public:
       if(m_atrM5 == INVALID_HANDLE) return sig;
       if(m_asiaHigh <= 0 || m_asiaLow <= 0) return sig;
 
+      // GATE 1 HARD — must be inside sweep window before scoring anything
+      if(!IsInSweepWindow())
+      {
+         sig.valid  = false;
+         sig.score  = 0;
+         sig.reason = "[G1:OUTSIDE_WINDOW] ";
+         return sig;
+      }
+
       // P1 — Asia range valid (2pts)
       int p1 = ScoreAsiaRange();
       sig.score += p1;

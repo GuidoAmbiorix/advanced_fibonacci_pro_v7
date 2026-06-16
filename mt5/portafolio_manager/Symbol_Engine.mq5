@@ -4130,6 +4130,7 @@ double CalculateConfluenceScore(int direction)
    if(InpApexMode == APEX_SWEEP)
    {
       SweepSignal sig = g_sweepScore.Evaluate(direction);
+      if(!sig.valid) return 0;   // hard block — outside window or gates failed
       return sig.score;
    }
    // ── END APEX ROUTING — legacy path below ──────────────────────────────────

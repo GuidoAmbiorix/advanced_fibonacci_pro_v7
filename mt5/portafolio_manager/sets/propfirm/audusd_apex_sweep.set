@@ -13,7 +13,7 @@
 InpMagicNumber=100049
 InpApexMode=5
 InpDirection=0
-InpBrokerUTCOffset=3
+InpBrokerUTCOffset=0
 
 ;═══════ KILLZONES ═══════
 InpUseKillzoneFilter=false
