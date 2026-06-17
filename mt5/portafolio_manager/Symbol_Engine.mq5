@@ -1446,10 +1446,16 @@ void OnTick()
       }
 
       // 3. Trailing DD from all-time equity peak (5% — FundingPips hard rule)
+      // Throttled: log once per day to avoid tick-by-tick spam.
+      static datetime s_trailBreachDay = 0;
       string trailReason = "";
       if(pfCompliance.CheckTrailingDD(equityGuard.GetAllTimePeak(), trailReason))
       {
-         Print(trailReason);
+         if(s_trailBreachDay != s_today)
+         {
+            s_trailBreachDay = s_today;
+            Print(trailReason);
+         }
          for(int i = PositionsTotal() - 1; i >= 0; i--)
             if(position.SelectByIndex(i) && position.Symbol() == _Symbol && position.Magic() == InpMagicNumber)
                trade.PositionClose(position.Ticket());
