@@ -1407,6 +1407,11 @@ void OnTick()
       }
    }
 
+   // Daily reset MUST run before any protective check that uses dayStartBal.
+   // Previously this was placed at line ~1718, causing the PFC breach to return early
+   // every tick and never reaching the reset — dayStartBal stayed stale forever.
+   ResetDailyLossIfNewDay();
+
    // --- PROP FIRM COMPLIANCE: Floating loss + Daily 3% + Activity warning ---
    if(InpPFC_Enabled)
    {
@@ -1423,10 +1428,17 @@ void OnTick()
       }
 
       // 2. Daily 3% breach (closed + floating combined) — FundingPips hard rule
+      // Throttled: log once per day to avoid tick-by-tick spam after positions are already closed.
+      static datetime s_pfcBreachDay = 0;
+      datetime        s_today        = iTime(_Symbol, PERIOD_D1, 0);
       string dailyReason = "";
       if(pfCompliance.IsDailyLossBreached(equityGuard.GetDayStartBalance(), dailyReason))
       {
-         Print(dailyReason);
+         if(s_pfcBreachDay != s_today)
+         {
+            s_pfcBreachDay = s_today;
+            Print(dailyReason);
+         }
          for(int i = PositionsTotal() - 1; i >= 0; i--)
             if(position.SelectByIndex(i) && position.Symbol() == _Symbol && position.Magic() == InpMagicNumber)
                trade.PositionClose(position.Ticket());
@@ -1715,7 +1727,7 @@ void OnTick()
 
 
    // --- PORTFOLIO PROTECTION: DAILY LOSS CIRCUIT BREAKER ---
-   ResetDailyLossIfNewDay();
+   // ResetDailyLossIfNewDay() was moved above the PFC block to prevent stale dayStartBal.
    if(InpDailyMaxLoss_R > 0 && g_dailyLossR <= -InpDailyMaxLoss_R)
    {
       static datetime lastWarning = 0;
