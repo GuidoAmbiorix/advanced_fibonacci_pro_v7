@@ -1,0 +1,66 @@
+; Governor — Exness Personal Account (7 símbolos: 5 forex/oro + 2 crypto)
+; ─────────────────────────────────────────────────────────────────────────
+; Magic 100045 (XAUUSD), 100046 (EURUSD), 100047 (GBPUSD)
+;       100048 (USDJPY), 100049 (AUDUSD)
+;       100050 (BTCUSD), 100051 (ETHUSD)
+; Forex/Oro: 0.05 lots | Crypto: BTC 0.01 / ETH 0.05
+; Cap por símbolo: $5 forex/oro, $5 crypto
+; Global cap $70 — safety net
+; ─────────────────────────────────────────────────────────────────────────
+
+;═══════ MAGIC RANGE ═══════
+InpMagicMin=100045
+InpMagicMax=100051
+
+;═══════ DAILY P&L ═══════
+InpDailyProfitTarget=70.0
+InpDailyLossLimit=-70.0
+InpPauseOnProfitTarget=true
+InpCloseOnProfitTarget=false
+InpCloseOnDailyLoss=true
+InpSymbolDailyTarget=5.0
+
+;═══════ PORTFOLIO DRAWDOWN ═══════
+InpMaxPortfolioDD_Pct=6.0
+InpReduceRiskAt_Pct=3.0
+InpCloseAllOnMaxDD=true
+
+;═══════ CORRELATION FILTER ═══════
+; EUR, GBP, AUD comparten USD — máx 3 exposiciones USD simultáneas
+; BTC y ETH están correlacionados entre sí — contar como misma clase
+InpUseCorrelFilter=true
+InpMaxSameCurrency=3
+InpCloseCorrelOnBreech=false
+
+;═══════ INSTITUTIONAL SAFETY ═══════
+InpEquityVelocityLimit=1.5
+InpGlobalVolatileLimit=3
+
+;═══════ FRIDAY CLOSE ═══════
+; Crypto no tiene cierre de semana pero cerramos igual para evitar gaps
+InpFridayClose=true
+InpFridayCloseHour=20
+InpFridayCloseMinute=0
+
+;═══════ DISPLAY ═══════
+InpShowDashboard=true
+InpRefreshSeconds=5
+
+;═══════ TIEMPO Y COOLDOWN ═══════
+InpFridayBlockHours=3
+InpSymbolCooldownHours=0
+
+;═══════ LÍMITES DE OPERACIÓN ═══════
+; 7 símbolos × max 5 trades c/u = 35 diarios max
+InpMaxOpenPositions=7
+InpMaxDailyTrades=35
+InpMaxWeeklyTrades=175
+
+;═══════ RACHA DE PÉRDIDAS ═══════
+InpConsecLossReduce=3
+InpConsecLossPause=5
+
+;═══════ EQUITY CURVE FILTER ═══════
+InpUseEqCurve=true
+InpEqCurvePeriod=20
+InpEqCurveReductMult=0.5

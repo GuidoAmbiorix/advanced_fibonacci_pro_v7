@@ -72,6 +72,7 @@ CPatternMemory      patternMemory;
 #include "Include\MomentumScore.mqh"
 #include "Include\BreakoutScore.mqh"
 #include "Include\SweepScore.mqh"
+#include "Include\SweepScoreCrypto.mqh"
 #include "Include\ConfluenceGates.mqh"
 #include "Include\Learning\ScoreIntelligence.mqh"
 #include "Include\Learning\MFECalibration.mqh"
@@ -88,7 +89,8 @@ enum ENUM_APEX_MODE
    APEX_TREND     = 2,  // Trend following: H4 | D1 context
    APEX_MOMENTUM  = 3,  // Momentum burst: H1 | H4 context
    APEX_BREAKOUT  = 4,  // Range breakout: M30/H1 | Asia range
-   APEX_SWEEP     = 5   // Asian liquidity sweep reversal: M5 | London open 07-09:30 UTC
+   APEX_SWEEP        = 5,  // Asian liquidity sweep reversal: M5 | London open 07-09:30 UTC
+   APEX_SWEEP_CRYPTO = 6   // Sessionless crypto sweep: dynamic H1 swing H/L | 24/7 BTC/ETH/XRP/SOL
 };
 input ENUM_APEX_MODE    InpApexMode = APEX_LEGACY;        // APEX Strategy Mode
 
@@ -376,6 +378,7 @@ CTrendScore      g_trendScore;
 CMomentumScore   g_momentumScore;
 CBreakoutScore   g_breakoutScore;
 CSweepScore      g_sweepScore;
+CSweepScoreCrypto g_sweepCrypto;
 
 // ADVANCED MODULE OBJECTS
 CVolumeAnalysis   volumeAnalysis;
@@ -912,7 +915,8 @@ int OnInit()
    if(InpApexMode == APEX_TREND)     g_trendScore.Init(_Symbol);
    if(InpApexMode == APEX_MOMENTUM)  g_momentumScore.Init(_Symbol);
    if(InpApexMode == APEX_BREAKOUT)  g_breakoutScore.Init(_Symbol);
-   if(InpApexMode == APEX_SWEEP)     g_sweepScore.Init(_Symbol, InpBrokerUTCOffset);
+   if(InpApexMode == APEX_SWEEP)        g_sweepScore.Init(_Symbol, InpBrokerUTCOffset);
+   if(InpApexMode == APEX_SWEEP_CRYPTO) g_sweepCrypto.Init(_Symbol);
 
    return INIT_SUCCEEDED;
 }
@@ -1006,6 +1010,7 @@ void OnDeinit(const int reason)
    g_momentumScore.Deinit();
    g_breakoutScore.Deinit();
    g_sweepScore.Deinit();
+   g_sweepCrypto.Deinit();
 
    // Save learning data before exit
    if(InpEnableLearning)
@@ -1589,7 +1594,8 @@ void OnTick()
    if(InpApexMode == APEX_TREND)     g_trendScore.Update();
    if(InpApexMode == APEX_MOMENTUM)  g_momentumScore.Update();
    if(InpApexMode == APEX_BREAKOUT)  g_breakoutScore.Update();
-   if(InpApexMode == APEX_SWEEP)     g_sweepScore.Update();
+   if(InpApexMode == APEX_SWEEP)        g_sweepScore.Update();
+   if(InpApexMode == APEX_SWEEP_CRYPTO) g_sweepCrypto.Update();
 
    // --- THROTTLED CONFLUENCE CALCULATION ---
    // Recalculate confluence scores based on throttle (not just on new bar)
@@ -4149,6 +4155,12 @@ double CalculateConfluenceScore(int direction)
    {
       SweepSignal sig = g_sweepScore.Evaluate(direction);
       if(!sig.valid) return 0;   // hard block — outside window or gates failed
+      return sig.score;
+   }
+   if(InpApexMode == APEX_SWEEP_CRYPTO)
+   {
+      SweepSignalCrypto sig = g_sweepCrypto.Evaluate(direction);
+      if(!sig.valid) return 0;   // hard block — no wick trap or gates failed
       return sig.score;
    }
    // ── END APEX ROUTING — legacy path below ──────────────────────────────────

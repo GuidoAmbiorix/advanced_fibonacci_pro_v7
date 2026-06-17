@@ -1,0 +1,233 @@
+; ETHUSD — APEX Sweep CRYPTO (Sessionless Swing Sweep Reversal)
+; Timeframe: M5 | No fixed window — 24/7
+; Strategy: Detect wick traps on dynamic H1 swing H/L (last 20 H1 bars).
+; ETH has cleaner structure than BTC — slightly higher win rate expected.
+
+InpMagicNumber=100051
+InpApexMode=6
+InpDirection=0
+InpBrokerUTCOffset=0
+
+;═══════ KILLZONES ═══════
+InpUseKillzoneFilter=false
+InpEnableAsianKZ=false
+InpEnableLondonOpenKZ=false
+InpEnableNYKZ=false
+InpEnableLondonCloseKZ=false
+InpCloseOnKillzoneEnd=false
+InpKZBEMinutesBefore=0
+InpKZBEMinProfitR=0.0
+InpNotifyKillzoneOpen=false
+
+;═══════ CONFLUENCE ═══════
+InpMinConfluenceEntry=6
+InpDominanceThreshold=0.0
+InpMaxPositions=1
+
+;═══════ RISK ═══════
+; ETH: 0.05 lots — smaller pip value than BTC, more accessible
+InpRiskBase=0.5
+InpMaxRisk=1.0
+InpMaxLotsPerTrade=0.05
+InpFixedLots=0.05
+InpEnableMarginCheck=true
+
+;═══════ FIBONACCI ═══════
+InpSwingLookback=10
+InpFibLevelLow=0.500
+InpFibLevelHigh=0.618
+InpZoneTolerance=0.20
+
+;═══════ DISPLACEMENT ═══════
+InpUseDisplacement=false
+InpDisplacementATR=1.0
+InpDisplacementLookback=3
+
+;═══════ RSI ═══════
+InpRSI_Period=8
+InpRSI_Oversold=30
+InpRSI_Overbought=70
+InpRSI_Momentum=false
+
+;═══════ TREND FILTER ═══════
+InpUseTrendFilter=false
+InpEMA_Period=200
+InpEMA_MinSlope=0.0
+
+;═══════ CHOP FILTER ═══════
+InpUseChopFilter=false
+InpChopThreshold=0.75
+InpATR_MA_Period=20
+
+;═══════ TAKE PROFIT ═══════
+InpTPMode=1
+InpFixedTP_R=1.5
+InpMinTP_R=1.0
+InpMaxTP_R=2.5
+InpTPUseLearnedMFE=false
+
+;═══════ TRAILING STOP ═══════
+InpTrailingMode=0
+InpTrailType=0
+InpTrailStepATR=0.3
+
+;═══════ VOLATILITY FILTER ═══════
+InpMinVolatilityPips=5.0
+InpMaxVolatilityFactor=5.0
+InpVolatilityTP_Mult=1.5
+
+;═══════ PARTIAL TP & TRAILING ═══════
+InpPartialTP_R=0.8
+InpPartialClosePercent=100.0
+InpBE_Threshold_R=0.3
+InpTrailStart_R=0.3
+InpTrailATR_Mult=0.8
+InpTrailDecayRate=0.40
+InpTrailMinMult=0.30
+InpTrailRegimeAware=false
+InpTrailMinBufferATR=0.10
+
+;═══════ INFINITE ESCALATOR ═══════
+InpEsc_FirstR=0.3
+InpEsc_FirstSL_R=-0.05
+InpEsc_StepR=0.4
+InpEsc_GrowthFactor=1.1
+InpEsc_BaseHarvest=50.0
+InpEsc_HarvestDecay=0.80
+InpEsc_MinHarvest=15.0
+InpEsc_MaxStages=4
+InpRunnerTrailTight=0.85
+InpTimeStaleMins=30.0
+InpTimeStaleTight1=0.85
+InpTimeStaleTight2=0.75
+
+;═══════ PIP LADDER TRAIL ═══════
+InpPipLadder=false
+
+;═══════ SCALE-IN PYRAMID ═══════
+InpPyr_Enable=false
+InpPyr_Frequency=3
+InpPyr_FirstRiskPct=0.10
+InpPyr_RiskDecay=0.70
+InpPyr_MinRiskPct=0.03
+InpPyr_MaxAddOns=1
+InpPyr_MinProfitR=1.0
+InpAgg_MaxTotalRisk=1.0
+InpAgg_MaxPositions=1
+
+;═══════ ADAPTIVE ESCALATOR ═══════
+InpAdaptiveEscalator=false
+InpScoreAdaptFactor=0.05
+InpRegimeHarvest=false
+InpMFECalibration=false
+InpMomentumTrail=false
+InpChaosEmergencyLock=true
+InpFridayCloseHour=22
+
+;═══════ STALE TRADE EXIT ═══════
+InpUseStaleTrade=true
+InpStaleBarLimit=8
+
+;═══════ SPREAD ═══════
+InpMaxSpreadPoints=9999
+InpMaxSpreadRanging=9999
+InpMaxSpreadVolatile=9999
+
+;═══════ SMC ═══════
+InpUseSMC=false
+InpSMC_SwingLookback=10
+InpSMC_MinImpulseATR=1.0
+InpSMC_MinFVG_ATR=0.3
+
+;═══════ MULTI-TIMEFRAME ═══════
+InpUseMTF=false
+InpHTF=49153
+InpMTF=16408
+InpMTF_EMAPeriod=50
+
+;═══════ NEWS FILTER ═══════
+InpUseNewsFilter=true
+InpNewsMinutesBefore=10
+InpNewsMinutesAfter=10
+
+;═══════ VOLATILITY SPIKE PROTECTION ═══════
+InpEnableVolatilityFilter=true
+InpVolatilityThreshold=5.0
+InpVolatilitySpikeCooldown=15
+
+;═══════ KELLY ═══════
+InpUseKelly=false
+InpKellyFraction=0.5
+InpDailyMaxDD=3.0
+InpWeeklyMaxDD=6.0
+InpDailyTarget=0.0
+
+;═══════ LEARNING ═══════
+InpEnableLearning=true
+InpLogTradesToFile=true
+InpLearningHistory=60
+InpMinTradesForLearning=15
+
+;═══════ ADAPTIVE BEHAVIOR ═══════
+InpEnableAdaptiveRisk=false
+InpEnableAdaptiveExits=false
+InpEnableAdaptiveFilters=false
+
+;═══════ PORTFOLIO PROTECTION ═══════
+InpUseCorrelationFilter=false
+InpDailyMaxLoss_R=3.0
+InpLossCooldownMinutes=60
+InpMaxConsecutiveLosses=2
+InpMaxDailyTrades=5
+InpUseReversalFilter=false
+InpReversalCooldownMinutes=30
+
+;═══════ SESSION GOVERNOR ═══════
+InpUseSessionGovernor=true
+InpMaxTradesPerSession=5
+InpTradeCooldownMinutes=20
+InpCloseIntradayProfits=false
+InpEndOfDayHour=23
+
+;═══════ EQUITY GUARD ═══════
+InpDailyProfitCapPct=0.0
+InpEquityTrailPct=0.0
+InpHotStreakBonus=0
+InpADR_MaxConsumed=0.0
+
+;═══════ PROP FIRM COMPLIANCE ═══════
+InpPFC_Enabled=false
+InpPFC_FloatLossLimit=0.0
+InpPFC_ConsistencyPct=0.0
+InpPFC_DailyLossMaxPct=0.0
+InpPFC_FridayUTCHour=0
+
+;═══════ GOVERNOR ═══════
+InpGov_Enabled=true
+InpGov_DD_Reduce=3.0
+InpGov_DD_Pause=6.0
+InpGov_ReducedMult=0.5
+InpGov_DailyMaxDD=3.0
+
+;═══════ MOMENTUM EXIT ═══════
+InpUseMomentumExit=true
+InpMomADX_Period=14
+InpMomADX_Threshold=18.0
+InpMomATR_CollapseRatio=0.60
+InpMomBarsNoProgress=3
+InpMomProgressATR=0.15
+InpMomSignalsToExit=2
+InpMomRecoveryMinScore=1
+
+;═══════ VISUAL / REGIME ═══════
+InpEnableVisualLevels=true
+InpTickThrottleSeconds=5
+InpUseRollingMode=false
+InpSymbolCooldown=1
+InpUseH1Trigger=false
+InpUseVolTarget=false
+InpUseHMM=false
+InpUseERFractal=false
+InpUseMacroSentiment=false
+InpUseDXYConflict=false
+InpMaxCurrencyExposure=0.0
