@@ -76,7 +76,10 @@
       "Bash(mkdir -p \"C:\\\\Users\\\\Ing Guido\\\\Desktop\\\\advanced_fibonacci_pro_v7\\\\mt5\\\\portafolio_manager\\\\sets\\\\marlon\")",
       "Bash(mkdir -p \"C:\\\\Users\\\\Ing Guido\\\\Desktop\\\\advanced_fibonacci_pro_v7\\\\mt5\\\\portafolio_manager\\\\docs\")",
       "WebFetch(domain:get.exness.help)",
-      "Bash(\"C:/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:\"Symbol_Engine.mq5\" /log:\"compile.log\")"
+      "Bash(\"C:/Program Files/MetaTrader 5/metaeditor64.exe\" /compile:\"Symbol_Engine.mq5\" /log:\"compile.log\")",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Read(//c/Users/**)",
+      "Bash(\"/c/Program Files/MetaTrader 5/MetaEditor64.exe\" /compile:\"C:/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/Symbol_Engine.mq5\" /log:\"C:/Users/Ing Guido/Desktop/advanced_fibonacci_pro_v7/mt5/portafolio_manager/compile.log\")"
     ]
   }
 }

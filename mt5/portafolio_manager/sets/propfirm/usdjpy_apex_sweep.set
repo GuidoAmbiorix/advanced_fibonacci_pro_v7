@@ -11,7 +11,7 @@
 ; ─────────────────────────────────────────────────
 
 InpMagicNumber=100048
-InpApexMode=5
+InpApexMode=6
 InpDirection=0
 InpBrokerUTCOffset=0
 
@@ -35,8 +35,8 @@ InpMaxPositions=1
 ; 0.01 lots fijos — pip value ~$0.067 (varía con el tipo de cambio)
 InpRiskBase=0.5
 InpMaxRisk=1.0
-InpMaxLotsPerTrade=0.05
-InpFixedLots=0.05
+InpMaxLotsPerTrade=0.10
+InpFixedLots=0.10
 InpEnableMarginCheck=true
 
 ;═══════ FIBONACCI ═══════
@@ -87,7 +87,7 @@ InpVolatilityTP_Mult=1.5
 
 ;═══════ PARTIAL TP & TRAILING ═══════
 InpPartialTP_R=0.8
-InpPartialClosePercent=100.0
+InpPartialClosePercent=50.0
 InpBE_Threshold_R=0.3
 InpTrailStart_R=0.3
 InpTrailATR_Mult=0.8
@@ -125,7 +125,7 @@ InpAgg_MaxTotalRisk=1.0
 InpAgg_MaxPositions=1
 
 ;═══════ ADAPTIVE ESCALATOR ═══════
-InpAdaptiveEscalator=false
+InpAdaptiveEscalator=true
 InpScoreAdaptFactor=0.05
 InpRegimeHarvest=false
 InpMFECalibration=false
