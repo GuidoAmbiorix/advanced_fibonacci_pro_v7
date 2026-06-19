@@ -3,9 +3,10 @@
 ; Magic 100045 (XAUUSD), 100046 (EURUSD), 100047 (GBPUSD)
 ;       100048 (USDJPY), 100049 (AUDUSD)
 ;       100050 (BTCUSD), 100051 (ETHUSD)
-; Forex/Oro: 0.05 lots | Crypto: BTC 0.01 / ETH 0.05
-; Cap por símbolo: $5 forex/oro, $5 crypto
-; Global cap $70 — safety net
+; Forex/Oro: 0.10 lots | Crypto: BTC 0.01 / ETH 0.05
+; Escalator activo: 50% cerrado en TP1, runner cosecha etapas
+; Cap por símbolo: $10 (win típico $10-40 con 0.10 lots)
+; Global cap $140 — safety net (7 × $10 mínimo + escalator)
 ; ─────────────────────────────────────────────────────────────────────────
 
 ;═══════ MAGIC RANGE ═══════
@@ -13,12 +14,12 @@ InpMagicMin=100045
 InpMagicMax=100051
 
 ;═══════ DAILY P&L ═══════
-InpDailyProfitTarget=70.0
-InpDailyLossLimit=-70.0
+InpDailyProfitTarget=140.0
+InpDailyLossLimit=-100.0
 InpPauseOnProfitTarget=true
 InpCloseOnProfitTarget=false
 InpCloseOnDailyLoss=true
-InpSymbolDailyTarget=5.0
+InpSymbolDailyTarget=10.0
 
 ;═══════ PORTFOLIO DRAWDOWN ═══════
 InpMaxPortfolioDD_Pct=6.0
