@@ -855,7 +855,7 @@ int OnInit()
    Print("-------------------------------------------");
    Print("  RISK PARAMETERS:");
    Print("    Base Risk: ", DoubleToString(InpRiskBase, 2), "%");
-   Print("    Entry Threshold: 10.0/30 (GOOD - STRICT)");
+   Print("    Entry Threshold: ", InpMinConfluenceEntry, "/12 | Mode: ", EnumToString(InpApexMode));
    Print("    Add-Ons: DISABLED (Performance)");
    Print("-------------------------------------------");
 

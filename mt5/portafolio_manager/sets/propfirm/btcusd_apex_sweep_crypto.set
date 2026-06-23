@@ -28,12 +28,11 @@ InpDominanceThreshold=0.0
 InpMaxPositions=1
 
 ;═══════ RISK ═══════
-; BTC volatility is 5-10x forex — use 0.01 lots fixed
-; $1 pip value per 0.01 lot. ~$20-30 per trade with ATR SL.
+; BTC fixed lots 0.10 — aggressive mode per user request
 InpRiskBase=0.5
 InpMaxRisk=1.0
-InpMaxLotsPerTrade=0.01
-InpFixedLots=0.01
+InpMaxLotsPerTrade=0.10
+InpFixedLots=0.10
 InpEnableMarginCheck=true
 
 ;═══════ FIBONACCI ═══════
