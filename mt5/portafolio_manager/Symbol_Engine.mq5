@@ -833,6 +833,9 @@ int OnInit()
    Print("  [START] SYMBOL ENGINE v2.0: ", _Symbol);
    Print("===========================================");
    Print("  Magic: ", InpMagicNumber);
+   Print("  [LOT_CHECK] InpFixedLots=", DoubleToString(InpFixedLots, 2),
+         " | InpMaxLotsPerTrade=", DoubleToString(InpMaxLotsPerTrade, 2),
+         " | InpApexMode=", EnumToString(InpApexMode));
    Print("  Governor: ", selfGov.GetStatus());
    Print("-------------------------------------------");
    Print("  CORE MODULES:");
